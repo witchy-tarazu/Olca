@@ -1,0 +1,67 @@
+# =============== #
+# Third Party     #
+# =============== #
+Assets/*/Rogue/
+Assets/*/Rogue.meta
+Assets/Scripts/MasterMemory
+Assets/Scripts/MasterMemory.meta
+Assets/Scripts/MessagePack
+Assets/Scripts/MessagePack.meta
+Assets/Plugins
+Assets/Plugins.meta
+
+# =============== #
+# Unity generated #
+# =============== #
+Temp/
+Obj/
+UnityGenerated/
+Library/
+Build/
+Logs/
+ProjectSettings/
+UserSettings/
+Assets/TextMesh Pro/
+Assets/TextMesh Pro.meta
+Assets/AddressableAssetsData/
+Assets/AddressableAssetsData.meta
+.vsconfig
+
+# Visual Studio cache directory
+.vs/
+.vscode/
+
+# ===================================== #
+# Visual Studio / MonoDevelop generated #
+# ===================================== #
+ExportedObj/
+*.svd
+*.userprefs
+*.csproj
+*.pidb
+*.suo
+*.sln
+*.swp
+*.user
+*.unityproj
+*.booproj
+
+# ============ #
+# OS generated #
+# ============ #
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# ============ #
+# for others   #
+# ============ #
+
+*.log #log files, for some plugins
+*.pyc #python bytecode cache, for some plugins.
+sysinfo.txt #Unity3D Generated File On Crash Reports
