@@ -1,0 +1,17 @@
+{
+    "name": "Olca.Presentation",
+    "rootNamespace": "Olca.Presentation",
+    "references": [
+        "Olca.Core",
+        "Olca.Application"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
