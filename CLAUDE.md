@@ -402,6 +402,49 @@ public class BattleSystem
 
 ---
 
+## 名前空間の競合対策
+
+本プロジェクトでは、Unityと独自実装で同名の型が存在する場合があります。以下のガイドラインに従ってください。
+
+### 競合が発生する型
+
+1. **Vector2Int**: `UnityEngine.Vector2Int` vs `Olca.Core.Domain.Vector2Int`
+2. **Card**: 名前空間 `Olca.Tests.Card` vs 型 `Olca.Core.Domain.Card`
+
+### 対処方法
+
+#### 方法1: エイリアスを使用（推奨）
+
+```csharp
+using UnityEngine;
+using Olca.Core.Domain;
+using Vector2Int = Olca.Core.Domain.Vector2Int; // エイリアス定義
+
+public class Example : MonoBehaviour
+{
+    void Start()
+    {
+        // Vector2Intは自動的にOlca.Core.Domain.Vector2Intを参照
+        var pos = new Vector2Int(3, 5);
+    }
+}
+```
+
+#### 方法2: 完全修飾名を使用
+
+```csharp
+var pos = new Olca.Core.Domain.Vector2Int(3, 5);
+var unityPos = new UnityEngine.Vector2Int(1, 2);
+```
+
+#### 方法3: 名前空間名を変更（テストコードの場合）
+
+型名と競合する名前空間は避ける：
+- ❌ `namespace Olca.Tests.Card` ← Card型と競合
+- ✅ `namespace Olca.Tests.CardTests` ← 競合なし
+
+---
+
 ## よくある質問
 
 ### Q: MonoBehaviourを使わずにどうやってUpdateループを実現しますか？

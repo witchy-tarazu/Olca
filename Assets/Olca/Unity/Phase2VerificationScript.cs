@@ -2,6 +2,7 @@ using UnityEngine;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using System.Collections.Generic;
+using Vector2Int = Olca.Core.Domain.Vector2Int;
 
 namespace Olca.Unity
 {
