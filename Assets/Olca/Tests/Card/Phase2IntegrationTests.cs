@@ -3,6 +3,7 @@ using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Tests.Mocks;
 using System.Collections.Generic;
+using Card = Olca.Core.Domain.Card;
 
 namespace Olca.Tests.Card
 {
@@ -29,8 +30,8 @@ namespace Olca.Tests.Card
             // 敵作成
             var enemies = new List<Enemy>
             {
-                new Enemy("スライム", 50, ElementType.None),
-                new Enemy("ゴブリン", 80, ElementType.Fire)
+                new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(4, 0)),
+                new Enemy("goblin", "ゴブリン", 80, ElementType.Fire, new Vector2Int(5, 0))
             };
 
             // デッキ作成（系統ボーナステスト用）
@@ -154,7 +155,7 @@ namespace Olca.Tests.Card
             });
 
             var player = new PlayerCharacter(100);
-            var enemies = new List<Enemy> { new Enemy("敵", 50, ElementType.None) };
+            var enemies = new List<Enemy> { new Enemy("enemy", "敵", 50, ElementType.None, new Vector2Int(4, 0)) };
             var battle = new BattleSystem(player, enemies, deck, logger: logger);
 
             battle.CustomGauge.SetGauge(1.0f);

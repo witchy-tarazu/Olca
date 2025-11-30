@@ -40,8 +40,8 @@ namespace Olca.Unity
             // 敵作成
             var enemies = new List<Enemy>
             {
-                new Enemy("スライム", 30, ElementType.None),
-                new Enemy("ゴブリン", 50, ElementType.Fire)
+                new Enemy("slime", "スライム", 30, ElementType.None, new Vector2Int(4, 0)),
+                new Enemy("goblin", "ゴブリン", 50, ElementType.Fire, new Vector2Int(5, 0))
             };
 
             // デッキ作成

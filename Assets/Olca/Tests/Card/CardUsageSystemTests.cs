@@ -3,6 +3,7 @@ using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Tests.Mocks;
 using System.Collections.Generic;
+using Card = Olca.Core.Domain.Card;
 
 namespace Olca.Tests.Card
 {
@@ -29,7 +30,7 @@ namespace Olca.Tests.Card
 
             var enemies = new List<Enemy>
             {
-                new Enemy("テスト敵", 50, ElementType.None)
+                new Enemy("test_enemy", "テスト敵", 50, ElementType.None, new Vector2Int(4, 0))
             };
 
             var deck = new Deck();
