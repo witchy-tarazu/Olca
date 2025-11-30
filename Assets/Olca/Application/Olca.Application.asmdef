@@ -2,7 +2,8 @@
     "name": "Olca.Application",
     "rootNamespace": "Olca.Application",
     "references": [
-        "Olca.Core"
+        "Olca.Core",
+        "Olca.Unity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

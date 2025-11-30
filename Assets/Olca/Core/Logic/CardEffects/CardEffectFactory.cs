@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Olca.Core.Logic.Card
+namespace Olca.Core.Logic.CardEffects
 {
     /// <summary>
     /// カード効果のファクトリ

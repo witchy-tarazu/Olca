@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(test:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: フェーズ0 プロジェクト基盤構築完了\n\n## 実装内容\n\n### アーキテクチャ基盤\n- ディレクトリ構造の構築（Core/Application/Presentation/Unity/Tests）\n- Assembly Definition設定（Unity非依存アーキテクチャ）\n- ロジックと表示の完全分離\n\n### 基盤インターフェース（Core/Interfaces）\n- IRandomProvider: 乱数生成の抽象化\n- ITimeProvider: 時間情報の抽象化  \n- IInputProvider: 入力の抽象化\n- IGameLogger: ログ出力の抽象化\n\n### Unity実装（Unity層）\n- UnityRandomProvider\n- UnityTimeProvider\n- UnityInputProvider（キーコード直接指定、長押し計測機能）\n- UnityLogger\n\n### テスト基盤\n- モッククラス（MockRandomProvider等）\n- EditModeテスト環境構築\n- MockProviderTests（4つのテストケース）\n\n### 動作確認\n- Phase0VerificationScript（入力・乱数・時間の動作確認）\n\n### ドキュメント\n- CLAUDE.md: アーキテクチャ原則とコーディング規約\n- 開発計画.md: 全フェーズの詳細タスク\n- 各層のREADME.md\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(if [ -f \"f:\\G\\UnityProjects\\Olca\\Assets\\Olca\\Core\\Logic\\Card.meta\" ])",
+      "Bash(then mv \"f:\\G\\UnityProjects\\Olca\\Assets\\Olca\\Core\\Logic\\Card.meta\" \"f:\\G\\UnityProjects\\Olca\\Assets\\Olca\\Core\\Logic\\CardEffects.meta\")",
+      "Bash(fi)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

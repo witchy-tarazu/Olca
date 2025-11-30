@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 
-namespace Olca.Core.Logic.Card
+namespace Olca.Core.Logic.CardEffects
 {
     /// <summary>
     /// カード効果実行時のコンテキスト

@@ -1,4 +1,4 @@
-namespace Olca.Core.Logic.Card
+namespace Olca.Core.Logic.CardEffects
 {
     /// <summary>
     /// カード効果のインターフェース（Strategyパターン）
