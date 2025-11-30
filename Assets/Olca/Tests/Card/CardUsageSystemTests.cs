@@ -23,7 +23,6 @@ namespace Olca.Tests.Card
             logger = new MockLogger();
 
             var player = new PlayerCharacter(
-                name: "テストプレイヤー",
                 maxHp: 100,
                 attackPower: 10
             );

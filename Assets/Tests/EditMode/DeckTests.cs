@@ -37,7 +37,7 @@ namespace Olca.Tests
         {
             // Arrange
             var deck = new Deck();
-            var card = new Card("card_01", "テストカード", 3, CardRarity.Normal, CardCategory.Attack, ElementType.Fire, 50, "説明");
+            var card = new Card("card_01", "テストカード", 3, CardRarity.Normal, CardCategory.Attack, ElementType.Fire, CardSeries.None, 50, "説明");
 
             // Act
             deck.AddCard(card);
@@ -52,9 +52,9 @@ namespace Olca.Tests
             // Arrange
             var cards = new List<Card>
             {
-                new Card("card_01", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, 10, ""),
-                new Card("card_02", "カード2", 2, CardRarity.Normal, CardCategory.Attack, ElementType.None, 20, ""),
-                new Card("card_03", "カード3", 3, CardRarity.Normal, CardCategory.Attack, ElementType.None, 30, "")
+                new Card("card_01", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, ""),
+                new Card("card_02", "カード2", 2, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 20, ""),
+                new Card("card_03", "カード3", 3, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 30, "")
             };
             var deck = new Deck(cards);
             var random = new MockRandomProvider(0);
@@ -73,7 +73,7 @@ namespace Olca.Tests
             // Arrange
             var cards = new List<Card>
             {
-                new Card("card_01", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, 10, "")
+                new Card("card_01", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "")
             };
             var deck = new Deck(cards);
             var random = new MockRandomProvider(0);
@@ -93,7 +93,7 @@ namespace Olca.Tests
             // Arrange
             var cards = new List<Card>
             {
-                new Card("card_01", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, 10, "")
+                new Card("card_01", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "")
             };
             var deck = new Deck(cards);
             var random = new MockRandomProvider(0);
