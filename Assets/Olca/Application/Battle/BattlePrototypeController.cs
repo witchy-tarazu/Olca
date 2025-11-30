@@ -14,7 +14,6 @@ namespace Olca.Application.Battle
     public class BattlePrototypeController : MonoBehaviour
     {
         private BattleSystem battleSystem;
-        private CustomScreenSystem customScreenSystem;
         private ITimeProvider timeProvider;
         private IInputProvider inputProvider;
         private IGameLogger logger;
@@ -39,17 +38,16 @@ namespace Olca.Application.Battle
             // デッキ作成
             var initialCards = new List<Card>
             {
-                new Card("cannon", "キャノン", 2, CardRarity.Normal, CardCategory.Attack, ElementType.None, 40, "前方の敵に40ダメージ"),
-                new Card("sword", "ソード", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, 20, "前方1マスに斬撃"),
-                new Card("recover", "リカバリー", 3, CardRarity.Normal, CardCategory.Defense, ElementType.None, 30, "HP30回復"),
-                new Card("water_ball", "ウォーターボール", 2, CardRarity.Normal, CardCategory.Attack, ElementType.Water, 30, "水属性攻撃"),
-                new Card("fire_sword", "フレイムソード", 3, CardRarity.Limited, CardCategory.Attack, ElementType.Fire, 50, "火属性斬撃"),
+                new Card("cannon", "キャノン", 2, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 40, "前方の敵に40ダメージ"),
+                new Card("sword", "ソード", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Sword, 20, "前方1マスに斬撃"),
+                new Card("recover", "リカバリー", 3, CardRarity.Normal, CardCategory.Defense, ElementType.None, CardSeries.None, 30, "HP30回復"),
+                new Card("water_ball", "ウォーターボール", 2, CardRarity.Normal, CardCategory.Attack, ElementType.Water, CardSeries.None, 30, "水属性攻撃"),
+                new Card("fire_sword", "フレイムソード", 3, CardRarity.Limited, CardCategory.Attack, ElementType.Fire, CardSeries.Sword, 50, "火属性斬撃"),
             };
             var deck = new Deck(initialCards);
 
             // バトルシステム初期化
-            battleSystem = new BattleSystem(player, enemies, customGaugeSpeed: 0.5f, logger);
-            customScreenSystem = new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10);
+            battleSystem = new BattleSystem(player, enemies, deck, customGaugeSpeed: 0.5f, logger);
 
             // イベント登録
             battleSystem.CustomGauge.OnGaugeFull += OnCustomGaugeFull;
@@ -127,26 +125,26 @@ namespace Olca.Application.Battle
         private void OpenCustomScreen()
         {
             logger.LogInfo("=== カスタム画面を開く ===");
-            battleSystem.Pause();
 
             var random = new UnityRandomProvider();
-            customScreenSystem.Open(random);
+            battleSystem.OpenCustomScreen(random);
 
             // カードリストを表示
-            logger.LogInfo($"ドロー可能なカード（{customScreenSystem.CurrentHand.Count}枚）:");
-            foreach (var card in customScreenSystem.CurrentHand)
+            var customScreen = battleSystem.CustomScreen;
+            logger.LogInfo($"ドロー可能なカード（{customScreen.CurrentHand.Count}枚）:");
+            foreach (var card in customScreen.CurrentHand)
             {
                 logger.LogInfo($"  - {card}");
             }
 
-            logger.LogInfo($"最大コスト: {customScreenSystem.MaxHandSize}");
+            logger.LogInfo($"最大コスト: {customScreen.MaxHandSize}");
             logger.LogInfo("※実際のゲームではUIで選択しますが、今回は自動で全選択します");
 
             // テスト: 自動的にコスト内で選択
             var selectedCount = 0;
-            foreach (var card in new List<Card>(customScreenSystem.CurrentHand))
+            foreach (var card in new List<Card>(customScreen.CurrentHand))
             {
-                if (customScreenSystem.TrySelectCard(card))
+                if (customScreen.TrySelectCard(card))
                 {
                     logger.LogInfo($"選択: {card.Name}");
                     selectedCount++;
@@ -158,10 +156,8 @@ namespace Olca.Application.Battle
             }
 
             logger.LogInfo($"合計{selectedCount}枚選択");
-            customScreenSystem.Confirm();
+            customScreen.Confirm();
 
-            battleSystem.CustomGauge.Reset();
-            battleSystem.Resume();
             logger.LogInfo("=== カスタム画面を閉じる ===");
         }
 

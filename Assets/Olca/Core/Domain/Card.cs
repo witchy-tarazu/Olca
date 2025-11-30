@@ -23,6 +23,9 @@ namespace Olca.Core.Domain
         /// <summary>属性</summary>
         public ElementType Element { get; }
 
+        /// <summary>系統（ソード系、ボム系など）</summary>
+        public CardSeries Series { get; }
+
         /// <summary>威力（攻撃カードの場合）</summary>
         public int Power { get; }
 
@@ -39,6 +42,7 @@ namespace Olca.Core.Domain
             CardRarity rarity,
             CardCategory category,
             ElementType element,
+            CardSeries series,
             int power,
             string description)
         {
@@ -48,6 +52,7 @@ namespace Olca.Core.Domain
             Rarity = rarity;
             Category = category;
             Element = element;
+            Series = series ?? CardSeries.None;
             Power = power;
             Description = description;
         }
@@ -57,7 +62,7 @@ namespace Olca.Core.Domain
         /// </summary>
         public Card Clone()
         {
-            return new Card(Id, Name, Cost, Rarity, Category, Element, Power, Description);
+            return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description);
         }
 
         public override string ToString()

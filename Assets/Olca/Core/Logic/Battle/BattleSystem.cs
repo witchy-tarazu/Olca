@@ -14,6 +14,8 @@ namespace Olca.Core.Logic.Battle
         private readonly List<Enemy> enemies;
         private readonly BattleField battleField;
         private readonly CustomGaugeSystem customGauge;
+        private readonly CustomScreenSystem customScreen;
+        private readonly CardUsageSystem cardUsage;
         private readonly IGameLogger logger;
 
         private bool isPaused; // カスタム画面中はtrue
@@ -31,6 +33,12 @@ namespace Olca.Core.Logic.Battle
         /// <summary>カスタムゲージ</summary>
         public CustomGaugeSystem CustomGauge => customGauge;
 
+        /// <summary>カスタム画面システム</summary>
+        public CustomScreenSystem CustomScreen => customScreen;
+
+        /// <summary>カード使用システム</summary>
+        public CardUsageSystem CardUsage => cardUsage;
+
         /// <summary>バトル状態</summary>
         public BattleState State => state;
 
@@ -46,6 +54,7 @@ namespace Olca.Core.Logic.Battle
         public BattleSystem(
             PlayerCharacter player,
             List<Enemy> enemies,
+            Deck deck,
             float customGaugeSpeed = 1.0f,
             IGameLogger logger = null)
         {
@@ -53,6 +62,8 @@ namespace Olca.Core.Logic.Battle
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
             this.battleField = new BattleField();
             this.customGauge = new CustomGaugeSystem(customGaugeSpeed);
+            this.customScreen = new CustomScreenSystem(deck);
+            this.cardUsage = new CardUsageSystem(this, logger);
             this.logger = logger;
             this.state = BattleState.InProgress;
 
@@ -64,6 +75,9 @@ namespace Olca.Core.Logic.Battle
             {
                 enemy.OnDeath += () => CheckVictoryCondition();
             }
+
+            // カスタム画面イベントの購読
+            customScreen.OnScreenClosed += OnCustomScreenClosed;
         }
 
         /// <summary>
@@ -114,16 +128,44 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// カードを使用
+        /// カスタム画面を開く
         /// </summary>
-        public void UseCard(Card card)
+        public void OpenCustomScreen(IRandomProvider random)
         {
-            if (card == null) throw new ArgumentNullException(nameof(card));
+            if (!customGauge.IsFull)
+            {
+                logger?.LogWarning("カスタムゲージが満タンではありません");
+                return;
+            }
 
-            logger?.LogInfo($"カード使用: {card.Name}");
-            OnCardUsed?.Invoke(card);
+            customScreen.Open(random);
+            Pause();
+        }
 
-            // TODO: カード効果の実行（フェーズ1後半で実装）
+        /// <summary>
+        /// カスタム画面を閉じた時の処理
+        /// </summary>
+        private void OnCustomScreenClosed(List<Card> selectedCards)
+        {
+            // 選択されたカードをキューに追加
+            if (selectedCards.Count > 0)
+            {
+                cardUsage.EnqueueCards(selectedCards);
+            }
+
+            // ゲージをリセット
+            customGauge.Reset();
+
+            // バトル再開
+            Resume();
+        }
+
+        /// <summary>
+        /// 現在のカードを使用
+        /// </summary>
+        public bool UseCurrentCard()
+        {
+            return cardUsage.TryUseCurrentCard();
         }
 
         /// <summary>
@@ -179,11 +221,6 @@ namespace Olca.Core.Logic.Battle
         /// プレイヤー攻撃時のイベント
         /// </summary>
         public event Action<Enemy, int> OnPlayerAttack;
-
-        /// <summary>
-        /// カード使用時のイベント
-        /// </summary>
-        public event Action<Card> OnCardUsed;
 
         /// <summary>
         /// バトル終了時のイベント

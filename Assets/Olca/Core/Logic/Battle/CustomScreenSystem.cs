@@ -28,7 +28,7 @@ namespace Olca.Core.Logic.Battle
         public int MaxHandSize => maxHandSize;
 
         /// <summary>残りコスト</summary>
-        public int RemainingCost => maxCost - selectedCards.Sum(c => c.Cost);
+        public int RemainingCost => maxCost - GetTotalUsedCost();
 
         /// <summary>カスタム画面が開いているか</summary>
         public bool IsOpen { get; private set; }
@@ -73,8 +73,11 @@ namespace Olca.Core.Logic.Battle
             if (card == null) throw new ArgumentNullException(nameof(card));
             if (!currentHand.Contains(card)) return false;
 
+            // 実際のコストを計算（系統ボーナスを考慮）
+            int actualCost = CalculateCardCost(card);
+
             // コスト制限チェック
-            if (RemainingCost < card.Cost)
+            if (RemainingCost < actualCost)
             {
                 OnSelectionFailed?.Invoke("コストが足りません");
                 return false;
@@ -93,6 +96,58 @@ namespace Olca.Core.Logic.Battle
 
             OnCardSelected?.Invoke(card);
             return true;
+        }
+
+        /// <summary>
+        /// カードの実際のコストを計算（系統ボーナスを考慮）
+        /// </summary>
+        private int CalculateCardCost(Card card)
+        {
+            int baseCost = card.Cost;
+
+            // 系統ボーナス: 前回選択したカードと同じ系統なら-1
+            if (selectedCards.Count > 0)
+            {
+                var lastCard = selectedCards[selectedCards.Count - 1];
+                if (lastCard.Series != null &&
+                    card.Series != null &&
+                    lastCard.Series.Equals(card.Series) &&
+                    !card.Series.Equals(CardSeries.None))
+                {
+                    baseCost = Math.Max(0, baseCost - 1);
+                }
+            }
+
+            return baseCost;
+        }
+
+        /// <summary>
+        /// 選択済みカードの合計コストを取得（系統ボーナス込み）
+        /// </summary>
+        private int GetTotalUsedCost()
+        {
+            int total = 0;
+            for (int i = 0; i < selectedCards.Count; i++)
+            {
+                var card = selectedCards[i];
+                int cost = card.Cost;
+
+                // 系統ボーナスの適用
+                if (i > 0)
+                {
+                    var prevCard = selectedCards[i - 1];
+                    if (prevCard.Series != null &&
+                        card.Series != null &&
+                        prevCard.Series.Equals(card.Series) &&
+                        !card.Series.Equals(CardSeries.None))
+                    {
+                        cost = Math.Max(0, cost - 1);
+                    }
+                }
+
+                total += cost;
+            }
+            return total;
         }
 
         /// <summary>
