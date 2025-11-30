@@ -3,9 +3,8 @@ using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Tests.Mocks;
 using System.Collections.Generic;
-using Card = Olca.Core.Domain.Card;
 
-namespace Olca.Tests.Card
+namespace Olca.Tests.CardTests
 {
     /// <summary>
     /// CardUsageSystemのテスト
