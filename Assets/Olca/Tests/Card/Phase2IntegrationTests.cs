@@ -29,7 +29,7 @@ namespace Olca.Tests.CardTests
             // 敵作成
             var enemies = new List<Enemy>
             {
-                new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(4, 0)),
+                new Enemy("slime", "スライム", 100, ElementType.None, new Vector2Int(4, 0)), // HP100に増やして3枚分のダメージを受けられるように
                 new Enemy("goblin", "ゴブリン", 80, ElementType.Fire, new Vector2Int(5, 0))
             };
 
@@ -194,6 +194,43 @@ namespace Olca.Tests.CardTests
             // Assert: コスト10以下なので、すべては選択できない
             Assert.Less(selectedCount, 5, "5枚すべて選択できてしまった");
             Assert.LessOrEqual(customScreen.RemainingCost, 10, "残りコストが不正");
+        }
+
+        [Test]
+        public void 統合テスト_敵を倒すと次の敵に攻撃が当たる()
+        {
+            // Arrange: 敵のHPを低く設定して、1体目が確実に倒れるようにする
+            var deck = new Deck(new List<Card>
+            {
+                CreateCard("sword1", "ソード", 3, CardSeries.Sword, 30),
+                CreateCard("sword2", "ソード2", 3, CardSeries.Sword, 30),
+            });
+
+            var player = new PlayerCharacter(100);
+            var enemies = new List<Enemy>
+            {
+                new Enemy("slime", "スライム", 30, ElementType.None, new Vector2Int(4, 0)), // 1撃で倒れる
+                new Enemy("goblin", "ゴブリン", 100, ElementType.Fire, new Vector2Int(5, 0))
+            };
+            var battle = new BattleSystem(player, enemies, deck, logger: logger);
+
+            // カスタム画面を開いてカードを選択
+            battle.CustomGauge.SetGauge(1.0f);
+            battle.OpenCustomScreen(random);
+
+            var card1 = battle.CustomScreen.CurrentHand[0];
+            var card2 = battle.CustomScreen.CurrentHand[1];
+            battle.CustomScreen.TrySelectCard(card1);
+            battle.CustomScreen.TrySelectCard(card2);
+            battle.CustomScreen.Confirm();
+
+            // Act: カードを使用
+            battle.UseCurrentCard(); // 1枚目: スライムに30ダメージ → スライム撃破
+            battle.UseCurrentCard(); // 2枚目: ゴブリンに30ダメージ
+
+            // Assert: 1体目が倒れて、2体目にダメージが入っている
+            Assert.IsTrue(enemies[0].IsDead, "1体目が倒れていない");
+            Assert.AreEqual(70, enemies[1].CurrentHp, "2体目に30ダメージ入っていない（100-30=70）");
         }
 
         private Card FindCardByName(IReadOnlyList<Card> cards, string name)

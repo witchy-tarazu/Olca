@@ -6,7 +6,9 @@
         "UnityEditor.TestRunner",
         "Olca.Core"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
