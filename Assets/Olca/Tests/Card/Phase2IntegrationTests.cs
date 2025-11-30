@@ -34,7 +34,7 @@ namespace Olca.Tests.Card
             };
 
             // デッキ作成（系統ボーナステスト用）
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateCard("sword1", "ソード", 3, CardSeries.Sword, 20),
                 CreateCard("sword2", "ワイドソード", 4, CardSeries.Sword, 30),
@@ -48,10 +48,10 @@ namespace Olca.Tests.Card
             battleSystem = new BattleSystem(player, enemies, deck, logger: logger);
         }
 
-        private Domain.Card CreateCard(string id, string name, int cost, CardSeries series,
+        private Card CreateCard(string id, string name, int cost, CardSeries series,
             int power, CardCategory category = CardCategory.Attack)
         {
-            return new Domain.Card(
+            return new Card(
                 id, name, cost, CardRarity.Normal, category,
                 ElementType.None, series, power, "テストカード"
             );
@@ -147,7 +147,7 @@ namespace Olca.Tests.Card
         public void 統合テスト_同名カードは選択できない()
         {
             // Arrange: 同名カードを2枚追加
-            var deck = new Deck(new List<Domain.Card>
+            var deck = new Deck(new List<Card>
             {
                 CreateCard("sword1", "ソード", 3, CardSeries.Sword, 20),
                 CreateCard("sword2", "ソード", 3, CardSeries.Sword, 20), // 同名
@@ -183,7 +183,7 @@ namespace Olca.Tests.Card
             var customScreen = battleSystem.CustomScreen;
             var selectedCount = 0;
 
-            foreach (var card in new List<Domain.Card>(customScreen.CurrentHand))
+            foreach (var card in new List<Card>(customScreen.CurrentHand))
             {
                 if (customScreen.TrySelectCard(card))
                 {
@@ -196,7 +196,7 @@ namespace Olca.Tests.Card
             Assert.LessOrEqual(customScreen.RemainingCost, 10, "残りコストが不正");
         }
 
-        private Domain.Card FindCardByName(IReadOnlyList<Domain.Card> cards, string name)
+        private Card FindCardByName(IReadOnlyList<Card> cards, string name)
         {
             foreach (var card in cards)
             {

@@ -38,9 +38,9 @@ namespace Olca.Tests.Card
             cardUsage = battleSystem.CardUsage;
         }
 
-        private Domain.Card CreateTestCard(string id, string name, int cost = 3)
+        private Card CreateTestCard(string id, string name, int cost = 3)
         {
-            return new Domain.Card(
+            return new Card(
                 id,
                 name,
                 cost,
@@ -57,7 +57,7 @@ namespace Olca.Tests.Card
         public void EnqueueCards_カードがキューに追加される()
         {
             // Arrange
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "カード1"),
                 CreateTestCard("card2", "カード2"),
@@ -76,7 +76,7 @@ namespace Olca.Tests.Card
         public void TryUseCurrentCard_カードを順番に使用できる()
         {
             // Arrange
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "カード1"),
                 CreateTestCard("card2", "カード2"),
@@ -111,7 +111,7 @@ namespace Olca.Tests.Card
         public void SkipCurrentCard_カードをスキップできる()
         {
             // Arrange
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "カード1"),
                 CreateTestCard("card2", "カード2"),
@@ -130,7 +130,7 @@ namespace Olca.Tests.Card
         public void Clear_キューがクリアされる()
         {
             // Arrange
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "カード1"),
                 CreateTestCard("card2", "カード2"),
@@ -149,13 +149,13 @@ namespace Olca.Tests.Card
         public void OnCardUsed_カード使用時にイベントが発火する()
         {
             // Arrange
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "カード1"),
             };
             cardUsage.EnqueueCards(cards);
 
-            Domain.Card usedCard = null;
+            Card usedCard = null;
             cardUsage.OnCardUsed += card => usedCard = card;
 
             // Act

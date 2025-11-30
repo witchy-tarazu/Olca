@@ -22,7 +22,7 @@ namespace Olca.Tests.Card
             random = new MockRandomProvider(0);
 
             // テスト用カードを作成
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "ソード", 3, CardSeries.Sword),
                 CreateTestCard("card2", "ワイドソード", 4, CardSeries.Sword),
@@ -35,9 +35,9 @@ namespace Olca.Tests.Card
             customScreen = new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10);
         }
 
-        private Domain.Card CreateTestCard(string id, string name, int cost, CardSeries series)
+        private Card CreateTestCard(string id, string name, int cost, CardSeries series)
         {
-            return new Domain.Card(
+            return new Card(
                 id,
                 name,
                 cost,
@@ -81,7 +81,7 @@ namespace Olca.Tests.Card
         public void TrySelectCard_同名カードは選択できない()
         {
             // Arrange
-            var cards = new List<Domain.Card>
+            var cards = new List<Card>
             {
                 CreateTestCard("card1", "ソード", 3, CardSeries.Sword),
                 CreateTestCard("card2", "ソード", 3, CardSeries.Sword), // 同名
