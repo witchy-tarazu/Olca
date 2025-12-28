@@ -16,6 +16,8 @@ namespace Olca.Core.Logic.Battle
         private readonly CustomGaugeSystem customGauge;
         private readonly CustomScreenSystem customScreen;
         private readonly CardUsageSystem cardUsage;
+        private readonly PlayerMovementSystem playerMovement;
+        private readonly PanelEffectSystem panelEffects;
         private readonly IGameLogger logger;
 
         private bool isPaused; // カスタム画面中はtrue
@@ -38,6 +40,12 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>カード使用システム</summary>
         public CardUsageSystem CardUsage => cardUsage;
+
+        /// <summary>プレイヤー移動システム</summary>
+        public PlayerMovementSystem PlayerMovement => playerMovement;
+
+        /// <summary>パネル効果システム</summary>
+        public PanelEffectSystem PanelEffects => panelEffects;
 
         /// <summary>バトル状態</summary>
         public BattleState State => state;
@@ -64,6 +72,8 @@ namespace Olca.Core.Logic.Battle
             this.customGauge = new CustomGaugeSystem(customGaugeSpeed);
             this.customScreen = new CustomScreenSystem(deck);
             this.cardUsage = new CardUsageSystem(this, logger);
+            this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
+            this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.logger = logger;
             this.state = BattleState.InProgress;
 
@@ -78,18 +88,33 @@ namespace Olca.Core.Logic.Battle
 
             // カスタム画面イベントの購読
             customScreen.OnScreenClosed += OnCustomScreenClosed;
+
+            // プレイヤー移動時にパネル効果を適用
+            playerMovement.OnMoved += (newPos, oldPos) =>
+            {
+                panelEffects.ApplyOnLeaveEffect(player, oldPos);
+                panelEffects.ApplyOnEnterEffect(player, newPos);
+            };
         }
 
         /// <summary>
         /// バトルを更新（毎フレーム呼び出す）
         /// </summary>
         /// <param name="deltaTime">前フレームからの経過時間</param>
-        public void Tick(float deltaTime)
+        /// <param name="input">入力プロバイダー（オプショナル）</param>
+        public void Tick(float deltaTime, IInputProvider input = null)
         {
             if (isPaused || IsGameOver) return;
 
             // カスタムゲージを更新
             customGauge.Update(deltaTime);
+
+            // プレイヤー移動とパネル効果を更新
+            if (input != null)
+            {
+                playerMovement.Tick(deltaTime, input, enemies);
+                panelEffects.Tick(deltaTime, player);
+            }
 
             // TODO: 敵のAI更新など
         }

@@ -46,5 +46,21 @@ namespace Olca.Tests.Mocks
         {
             CustomScreenButtonDown = true;
         }
+
+        /// <summary>
+        /// 横方向入力を設定（テスト用）
+        /// </summary>
+        public void SetHorizontal(float value)
+        {
+            Horizontal = value;
+        }
+
+        /// <summary>
+        /// 縦方向入力を設定（テスト用）
+        /// </summary>
+        public void SetVertical(float value)
+        {
+            Vertical = value;
+        }
     }
 }
