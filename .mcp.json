@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "run_serena_olca.bat",
+      "args": [],
+      "env": {}
+    }
+  }
+}
