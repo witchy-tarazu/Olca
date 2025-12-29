@@ -12,7 +12,8 @@
       "Bash(dotnet test:*)",
       "Bash(dotnet build:*)",
       "Bash(timeout 30 dotnet test:*)",
-      "Bash(dotnet clean:*)"
+      "Bash(dotnet clean:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

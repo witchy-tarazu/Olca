@@ -18,6 +18,8 @@ namespace Olca.Core.Logic.Battle
         private readonly CardUsageSystem cardUsage;
         private readonly PlayerMovementSystem playerMovement;
         private readonly PanelEffectSystem panelEffects;
+        private readonly EnemyAISystem enemyAI;
+        private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
 
         private bool isPaused; // カスタム画面中はtrue
@@ -64,6 +66,7 @@ namespace Olca.Core.Logic.Battle
             List<Enemy> enemies,
             Deck deck,
             float customGaugeSpeed = 1.0f,
+            IRandomProvider randomProvider = null,
             IGameLogger logger = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
@@ -74,16 +77,29 @@ namespace Olca.Core.Logic.Battle
             this.cardUsage = new CardUsageSystem(this, logger);
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
+            this.enemyAI = new EnemyAISystem(logger);
+            this.randomProvider = randomProvider;
             this.logger = logger;
             this.state = BattleState.InProgress;
 
             // プレイヤー死亡時の処理
             player.OnDeath += OnPlayerDeath;
 
-            // 敵死亡時の処理
+            // 敵死亡時の処理と敵AI登録
             foreach (var enemy in enemies)
             {
-                enemy.OnDeath += () => CheckVictoryCondition();
+                enemy.OnDeath += () =>
+                {
+                    CheckVictoryCondition();
+                    enemyAI.UnregisterEnemy(enemy);
+                };
+
+                // 敵をAI管理に登録（基本攻撃のみ）
+                var actions = new List<IEnemyAIAction>
+                {
+                    new BasicAttackAction(attackDamage: 10, cooldown: 2.0f)
+                };
+                enemyAI.RegisterEnemy(enemy, actions);
             }
 
             // カスタム画面イベントの購読
@@ -116,7 +132,8 @@ namespace Olca.Core.Logic.Battle
                 panelEffects.Tick(deltaTime, player);
             }
 
-            // TODO: 敵のAI更新など
+            // 敵のAI更新
+            enemyAI.Tick(deltaTime, player, battleField, randomProvider);
         }
 
         /// <summary>

@@ -16,6 +16,7 @@ namespace Olca.Application.Battle
         private BattleSystem battleSystem;
         private ITimeProvider timeProvider;
         private IInputProvider inputProvider;
+        private IRandomProvider randomProvider;
         private IGameLogger logger;
 
         private void Start()
@@ -23,6 +24,7 @@ namespace Olca.Application.Battle
             // プロバイダー初期化
             timeProvider = new UnityTimeProvider();
             inputProvider = new UnityInputProvider();
+            randomProvider = new UnityRandomProvider();
             logger = new UnityLogger();
 
             // プレイヤー作成
@@ -47,7 +49,7 @@ namespace Olca.Application.Battle
             var deck = new Deck(initialCards);
 
             // バトルシステム初期化
-            battleSystem = new BattleSystem(player, enemies, deck, customGaugeSpeed: 0.5f, logger);
+            battleSystem = new BattleSystem(player, enemies, deck, customGaugeSpeed: 0.5f, randomProvider: randomProvider, logger: logger);
 
             // イベント登録
             battleSystem.CustomGauge.OnGaugeFull += OnCustomGaugeFull;
