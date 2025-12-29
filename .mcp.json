@@ -5,6 +5,12 @@
       "command": "run_serena_olca.bat",
       "args": [],
       "env": {}
+    },
+    "UnityMCP": {
+      "type": "stdio",
+      "command": "run_unity_mcp.bat",
+      "args": [],
+      "env": {}
     }
   }
 }

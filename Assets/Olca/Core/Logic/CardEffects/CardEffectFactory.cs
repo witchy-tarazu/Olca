@@ -75,13 +75,26 @@ namespace Olca.Core.Logic.CardEffects
             }
 
             // カテゴリに基づくデフォルト効果
+            // ModifiableDamageEffectを使用することで、調律効果（Modifier）が自動的に適用される
             switch (card.Category)
             {
                 case CardCategory.Attack:
-                    return new DamageEffect(card.Power, DamageTargetType.Single);
+                    // 攻撃カードは ModifiableDamageEffect を使用
+                    // Modifier の追加効果（スプレッド、貫通、多段ヒット等）が自動適用される
+                    return new ModifiableDamageEffect(DamageTargetType.Single);
 
                 case CardCategory.Defense:
+                    // 回復カードは HealEffect を使用
                     return new HealEffect(card.Power);
+
+                case CardCategory.Field:
+                    // フィールド操作カードも ModifiableDamageEffect で対応
+                    // PanelIce, PanelMagma 等の効果は Modifier で指定
+                    return new ModifiableDamageEffect(DamageTargetType.Single);
+
+                case CardCategory.Support:
+                    // サポートカードは単独では何もしない（調律用）
+                    return new NullEffect();
 
                 default:
                     return new NullEffect();

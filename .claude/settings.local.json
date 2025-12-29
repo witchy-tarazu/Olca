@@ -8,9 +8,18 @@
       "Bash(git commit:*)",
       "Bash(if [ -f \"f:\\G\\UnityProjects\\Olca\\Assets\\Olca\\Core\\Logic\\Card.meta\" ])",
       "Bash(then mv \"f:\\G\\UnityProjects\\Olca\\Assets\\Olca\\Core\\Logic\\Card.meta\" \"f:\\G\\UnityProjects\\Olca\\Assets\\Olca\\Core\\Logic\\CardEffects.meta\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet build:*)",
+      "Bash(timeout 30 dotnet test:*)",
+      "Bash(dotnet clean:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "serena",
+    "UnityMCP"
+  ]
 }
