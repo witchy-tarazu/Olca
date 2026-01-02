@@ -85,6 +85,9 @@ namespace Olca.Core.Logic.Battle
             // プレイヤー死亡時の処理
             player.OnDeath += OnPlayerDeath;
 
+            // プレイヤーのけぞり時の処理（カード効果の中断）
+            player.OnStaggered += OnPlayerStaggered;
+
             // 敵死亡時の処理と敵AI登録
             foreach (var enemy in enemies)
             {
@@ -218,6 +221,15 @@ namespace Olca.Core.Logic.Battle
             state = BattleState.Defeat;
             logger?.LogInfo("プレイヤー死亡 - 敗北");
             OnBattleEnd?.Invoke(BattleResult.Defeat);
+        }
+
+        /// <summary>
+        /// プレイヤーのけぞり時の処理（現在実行中のカード効果を中断）
+        /// </summary>
+        private void OnPlayerStaggered()
+        {
+            cardUsage.InterruptCurrentCard();
+            logger?.LogInfo("プレイヤーがのけぞり - カード効果を中断");
         }
 
         /// <summary>

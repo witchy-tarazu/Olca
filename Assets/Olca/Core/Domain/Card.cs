@@ -37,6 +37,15 @@ namespace Olca.Core.Domain
         /// <summary>カード効果のクラス名</summary>
         public string EffectClassName { get; }
 
+        /// <summary>一時移動カードの移動モーション時間（秒）</summary>
+        public float MoveMotionTime { get; }
+
+        /// <summary>一時移動カードの攻撃モーション時間（秒）</summary>
+        public float AttackMotionTime { get; }
+
+        /// <summary>一時移動時の貫通モード</summary>
+        public MovePenetrationMode PenetrationMode { get; }
+
         /// <summary>調律による追加効果</summary>
         public CardModifier Modifier { get; private set; }
 
@@ -54,7 +63,10 @@ namespace Olca.Core.Domain
             int power,
             string description,
             string effectClassName = null,
-            CardModifier modifier = null)
+            CardModifier modifier = null,
+            float moveMotionTime = 0f,
+            float attackMotionTime = 0f,
+            MovePenetrationMode penetrationMode = MovePenetrationMode.Blocking)
         {
             Id = id;
             Name = name;
@@ -66,6 +78,9 @@ namespace Olca.Core.Domain
             Power = power;
             Description = description;
             EffectClassName = effectClassName;
+            MoveMotionTime = moveMotionTime;
+            AttackMotionTime = attackMotionTime;
+            PenetrationMode = penetrationMode;
             Modifier = modifier ?? new CardModifier();
         }
 
@@ -83,7 +98,8 @@ namespace Olca.Core.Domain
 
             // 新しいカードインスタンスを作成（元のカードは変更しない）
             return new Card(
-                Id, Name, Cost, Rarity, Category, Element, Series, Power, Description, EffectClassName, newModifier
+                Id, Name, Cost, Rarity, Category, Element, Series, Power, Description, EffectClassName,
+                newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode
             );
         }
 
@@ -123,7 +139,11 @@ namespace Olca.Core.Domain
                 series,
                 master.Power,
                 master.Description,
-                master.EffectClassName
+                master.EffectClassName,
+                null,  // modifier
+                master.MoveMotionTime,
+                master.AttackMotionTime,
+                master.PenetrationMode
             );
         }
 
@@ -147,7 +167,8 @@ namespace Olca.Core.Domain
         /// </summary>
         public Card Clone()
         {
-            return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description, EffectClassName, Modifier);
+            return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description, EffectClassName,
+                Modifier, MoveMotionTime, AttackMotionTime, PenetrationMode);
         }
 
         public override string ToString()

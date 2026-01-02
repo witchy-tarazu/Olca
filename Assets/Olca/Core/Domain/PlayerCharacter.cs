@@ -12,6 +12,7 @@ namespace Olca.Core.Domain
         private readonly int attackPower;
         private readonly float customSpeed;
         private Vector2Int gridPosition;
+        private Vector2Int? temporaryPosition;
 
         /// <summary>現在HP</summary>
         public int CurrentHp => currentHp;
@@ -25,14 +26,17 @@ namespace Olca.Core.Domain
         /// <summary>カスタムゲージの溜まる速度</summary>
         public float CustomSpeed => customSpeed;
 
-        /// <summary>グリッド上の位置</summary>
-        public Vector2Int GridPosition => gridPosition;
+        /// <summary>グリッド上の位置（一時移動中は一時位置を返す）</summary>
+        public Vector2Int GridPosition => temporaryPosition ?? gridPosition;
 
         /// <summary>死亡しているか</summary>
         public bool IsDead => currentHp <= 0;
 
         /// <summary>HP割合（0.0～1.0）</summary>
         public float HpRatio => maxHp > 0 ? (float)currentHp / maxHp : 0f;
+
+        /// <summary>一時移動中かどうか</summary>
+        public bool IsInTemporaryMove => temporaryPosition.HasValue;
 
         /// <summary>
         /// コンストラクタ（互換性用：位置指定なし）
@@ -65,7 +69,12 @@ namespace Olca.Core.Domain
         /// ダメージを受ける
         /// </summary>
         /// <param name="damage">ダメージ量</param>
-        public void TakeDamage(int damage)
+        /// <summary>
+        /// ダメージを受ける
+        /// </summary>
+        /// <param name="damage">ダメージ量</param>
+        /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
+        public void TakeDamage(int damage, bool forceStagger = false)
         {
             if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
 
@@ -76,6 +85,14 @@ namespace Olca.Core.Domain
             }
 
             OnHpChanged?.Invoke(currentHp, maxHp);
+
+            // のけぞり判定
+            // TODO: 将来的には強靭度システムを実装し、damage > poise の場合にのけぞり
+            // 現時点では forceStagger パラメータでのみのけぞりが発生
+            if (forceStagger && !IsDead)
+            {
+                OnStaggered?.Invoke();
+            }
 
             if (IsDead)
             {
@@ -120,6 +137,36 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>
+        /// 一時的に指定位置に移動します（元の位置は保持）
+        /// </summary>
+        /// <param name="position">一時的な移動先</param>
+        public void MoveTemporarily(Vector2Int position)
+        {
+            if (temporaryPosition.HasValue)
+                throw new InvalidOperationException("既に一時移動中です");
+
+            temporaryPosition = position;
+            OnPositionChanged?.Invoke(GridPosition);
+        }
+
+        /// <summary>
+        /// 一時移動を解除し、元の位置に戻ります
+        /// </summary>
+        public void ReturnToOriginalPosition()
+        {
+            if (!temporaryPosition.HasValue)
+                throw new InvalidOperationException("一時移動中ではありません");
+
+            temporaryPosition = null;
+            OnPositionChanged?.Invoke(GridPosition);
+        }
+
+        /// <summary>
+        /// 論理位置（敵の移動判定用）を取得
+        /// </summary>
+        public Vector2Int GetLogicalPosition() => gridPosition;
+
+        /// <summary>
         /// HP変更時のイベント
         /// </summary>
         public event Action<int, int> OnHpChanged; // (currentHp, maxHp)
@@ -128,6 +175,11 @@ namespace Olca.Core.Domain
         /// 死亡時のイベント
         /// </summary>
         public event Action OnDeath;
+
+        /// <summary>
+        /// のけぞり時のイベント（カード効果の中断に使用）
+        /// </summary>
+        public event Action OnStaggered;
 
         /// <summary>
         /// 位置変更時のイベント

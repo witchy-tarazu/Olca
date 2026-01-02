@@ -5,8 +5,14 @@
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "UniTask.dll",
+        "MessagePack.dll",
+        "MessagePack.Annotations.dll",
+        "MasterMemory.dll",
+        "MasterMemory.Annotations.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

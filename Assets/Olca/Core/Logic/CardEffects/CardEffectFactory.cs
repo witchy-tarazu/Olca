@@ -64,9 +64,18 @@ namespace Olca.Core.Logic.CardEffects
         /// <summary>
         /// staticメソッド: カードから効果を生成
         /// </summary>
+        /// <summary>
+        /// staticメソッド: カードから効果を生成
+        /// </summary>
         public static ICardEffect CreateEffect(Card card)
         {
             if (card == null) return new NullEffect();
+
+            // 一時移動カードの判定（モーション時間が設定されている）
+            if (card.MoveMotionTime > 0 || card.AttackMotionTime > 0)
+            {
+                return CreateTemporaryMoveEffect(card);
+            }
 
             // 登録済みの効果を検索
             if (staticEffectCreators.TryGetValue(card.Id, out var creator))
@@ -104,6 +113,61 @@ namespace Olca.Core.Logic.CardEffects
         /// <summary>
         /// 何もしない効果（デフォルト）
         /// </summary>
+
+        /// <summary>
+        /// 一時移動カード効果を生成
+        /// EffectClassNameの形式: "TemporaryMove_Direction_Distance"
+        /// 例: "TemporaryMove_Right_2" → 右に2マス一時移動して攻撃
+        /// </summary>
+        private static ICardEffect CreateTemporaryMoveEffect(Card card)
+        {
+            // EffectClassNameをパース
+            string effectName = card.EffectClassName ?? "";
+            string[] parts = effectName.Split('_');
+
+            // デフォルト値
+            Vector2Int direction = new Vector2Int(1, 0); // 右
+            int distance = 1;
+
+            // パース処理
+            if (parts.Length >= 3 && parts[0] == "TemporaryMove")
+            {
+                direction = ParseDirection(parts[1]);
+                if (int.TryParse(parts[2], out int parsedDistance))
+                {
+                    distance = parsedDistance;
+                }
+            }
+
+            return new TemporaryMoveAttackEffect(
+                direction: direction,
+                distance: distance,
+                moveMotionTime: card.MoveMotionTime,
+                attackMotionTime: card.AttackMotionTime,
+                penetrationMode: card.PenetrationMode
+            );
+        }
+
+        /// <summary>
+        /// 方向文字列をVector2Intに変換
+        /// </summary>
+        private static Vector2Int ParseDirection(string directionStr)
+        {
+            switch (directionStr.ToUpper())
+            {
+                case "RIGHT":
+                    return new Vector2Int(1, 0);
+                case "LEFT":
+                    return new Vector2Int(-1, 0);
+                case "UP":
+                    return new Vector2Int(0, 1);
+                case "DOWN":
+                    return new Vector2Int(0, -1);
+                default:
+                    return new Vector2Int(1, 0); // デフォルトは右
+            }
+        }
+
         private class NullEffect : ICardEffect
         {
             public void Execute(BattleContext context)

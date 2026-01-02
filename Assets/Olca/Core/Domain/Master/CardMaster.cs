@@ -34,5 +34,20 @@ namespace Olca.Core.Domain.Master
         /// リフレクションまたはファクトリーパターンで効果を生成する際に使用
         /// </summary>
         public string EffectClassName { get; set; }
+
+        /// <summary>
+        /// 一時移動カードの移動モーション時間（秒）
+        /// </summary>
+        public float MoveMotionTime { get; set; }
+
+        /// <summary>
+        /// 一時移動カードの攻撃モーション時間（秒）
+        /// </summary>
+        public float AttackMotionTime { get; set; }
+
+        /// <summary>
+        /// 一時移動時の貫通モード
+        /// </summary>
+        public MovePenetrationMode PenetrationMode { get; set; }
     }
 }

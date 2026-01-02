@@ -12,6 +12,7 @@ namespace Olca.Core.Logic.Battle
         public const int GRID_HEIGHT = 1;
 
         private readonly PanelType[,] panels;
+        private Vector2Int? protectedPosition;
 
         public BattleField()
         {
@@ -53,12 +54,25 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>
         /// パネルタイプを変更
+        /// パネル保護機能: 保護位置が穴パネルに変更されようとした場合、ヒビパネルにする
         /// </summary>
         public void ChangePanelType(Vector2Int position, PanelType type)
         {
             if (!IsInBounds(position))
             {
                 throw new ArgumentOutOfRangeException(nameof(position), "位置がグリッド範囲外です");
+            }
+
+            // パネル保護: 保護位置が穴パネルに変更されようとした場合、ヒビパネルにする
+            if (protectedPosition.HasValue && position == protectedPosition.Value)
+            {
+                PanelType currentType = panels[position.X, position.Y];
+
+                // 元々穴パネルでない場合のみ保護
+                if (currentType != PanelType.Hole && type == PanelType.Hole)
+                {
+                    type = PanelType.Cracked;
+                }
             }
 
             panels[position.X, position.Y] = type;
@@ -90,6 +104,14 @@ namespace Olca.Core.Logic.Battle
                     panels[x, y] = PanelType.Normal;
                 }
             }
+        }
+
+        /// <summary>
+        /// パネル保護を設定（一時移動の移動元を保護）
+        /// </summary>
+        public void SetProtectedPosition(Vector2Int? position)
+        {
+            protectedPosition = position;
         }
 
         /// <summary>

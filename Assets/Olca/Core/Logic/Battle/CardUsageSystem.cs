@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Core.Logic.CardEffects;
 using Olca.Core.Interfaces;
@@ -16,6 +18,7 @@ namespace Olca.Core.Logic.Battle
         private readonly List<Card> queuedCards; // 使用待ちカードのキュー
         private readonly IGameLogger logger;
         private int currentCardIndex; // 現在使用中のカードのインデックス
+        private CancellationTokenSource currentCardCts; // 現在実行中のカード効果のCancellationTokenSource
 
         /// <summary>使用待ちカードのリスト</summary>
         public IReadOnlyList<Card> QueuedCards => queuedCards.AsReadOnly();
@@ -100,6 +103,89 @@ namespace Olca.Core.Logic.Battle
             {
                 logger?.LogWarning($"カード効果が見つかりません: {card.Name}");
             }
+        }
+
+        /// <summary>
+        /// カード効果を非同期で実行
+        /// </summary>
+        private async UniTask ExecuteCardEffectAsync(Card card, CancellationToken ct)
+        {
+            // BattleContextを作成
+            var context = new BattleContext(battleSystem, card);
+
+            // カード効果を取得して実行
+            var effect = CardEffectFactory.CreateEffect(card);
+            if (effect != null)
+            {
+                if (effect is IAsyncCardEffect asyncEffect)
+                {
+                    await asyncEffect.ExecuteAsync(context, ct);
+                }
+                else
+                {
+                    effect.Execute(context);
+                }
+                logger?.LogInfo($"カード効果実行: {card.Name}");
+            }
+            else
+            {
+                logger?.LogWarning($"カード効果が見つかりません: {card.Name}");
+            }
+        }
+
+        /// <summary>
+        /// 現在のカード（先頭のカード）を非同期で使用
+        /// </summary>
+        public async UniTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
+        {
+            if (IsEmpty)
+            {
+                logger?.LogWarning("使用可能なカードがありません");
+                return false;
+            }
+
+            var card = CurrentCard;
+
+            // 新しいCTSを作成
+            currentCardCts?.Cancel();
+            currentCardCts?.Dispose();
+            currentCardCts = new CancellationTokenSource();
+
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                ct,
+                currentCardCts.Token);
+
+            try
+            {
+                // カード効果を実行
+                await ExecuteCardEffectAsync(card, linkedCts.Token);
+
+                // 次のカードに進む
+                currentCardIndex++;
+
+                logger?.LogInfo($"カード使用: {card.Name} (残り{RemainingCount}枚)");
+                OnCardUsed?.Invoke(card);
+
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                // カード効果が中断された
+                logger?.LogWarning($"カード効果が中断されました: {card.Name}");
+                return false;
+            }
+            finally
+            {
+                linkedCts?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 現在実行中のカード効果を中断します（のけぞり時）
+        /// </summary>
+        public void InterruptCurrentCard()
+        {
+            currentCardCts?.Cancel();
         }
 
         /// <summary>
