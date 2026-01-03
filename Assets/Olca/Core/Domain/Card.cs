@@ -1,7 +1,11 @@
 using Olca.Core.Domain.Master;
+using Olca.Core.Logic.CardEffects.Effects;
 
 namespace Olca.Core.Domain
 {
+    /// <summary>
+    /// カード
+    /// </summary>
     /// <summary>
     /// カード
     /// </summary>
@@ -34,8 +38,20 @@ namespace Olca.Core.Domain
         /// <summary>説明文</summary>
         public string Description { get; }
 
-        /// <summary>カード効果のクラス名</summary>
-        public string EffectClassName { get; }
+        // ========== 攻撃範囲指定 ==========
+        /// <summary>攻撃カードの基本対象タイプ</summary>
+        public DamageTargetType TargetType { get; }
+
+        // ========== フィールド操作カード用 ==========
+        /// <summary>変化させるパネルの種類（"Ice", "Magma"等）</summary>
+        public string PanelChangeType { get; }
+
+        // ========== 一時移動カード専用 ==========
+        /// <summary>一時移動方向（"Right", "Left", "Up", "Down"）</summary>
+        public string MoveDirection { get; }
+
+        /// <summary>一時移動距離（マス数）</summary>
+        public int MoveDistance { get; }
 
         /// <summary>一時移動カードの移動モーション時間（秒）</summary>
         public float MoveMotionTime { get; }
@@ -45,6 +61,13 @@ namespace Olca.Core.Domain
 
         /// <summary>一時移動時の貫通モード</summary>
         public MovePenetrationMode PenetrationMode { get; }
+
+        // ========== 硬直時間 ==========
+        /// <summary>カード使用後の硬直時間（秒）</summary>
+        public float RecoveryTime { get; }
+
+        /// <summary>派生効果中も硬直を継続するか</summary>
+        public bool ExtendRecoveryDuringDerivative { get; }
 
         /// <summary>調律による追加効果</summary>
         public CardModifier Modifier { get; private set; }
@@ -62,11 +85,16 @@ namespace Olca.Core.Domain
             CardSeries series,
             int power,
             string description,
-            string effectClassName = null,
+            DamageTargetType targetType = DamageTargetType.Single,
+            string panelChangeType = null,
+            string moveDirection = null,
+            int moveDistance = 0,
             CardModifier modifier = null,
             float moveMotionTime = 0f,
             float attackMotionTime = 0f,
-            MovePenetrationMode penetrationMode = MovePenetrationMode.Blocking)
+            MovePenetrationMode penetrationMode = MovePenetrationMode.Blocking,
+            float recoveryTime = 0.5f,
+            bool extendRecoveryDuringDerivative = false)
         {
             Id = id;
             Name = name;
@@ -77,10 +105,15 @@ namespace Olca.Core.Domain
             Series = series;
             Power = power;
             Description = description;
-            EffectClassName = effectClassName;
+            TargetType = targetType;
+            PanelChangeType = panelChangeType;
+            MoveDirection = moveDirection;
+            MoveDistance = moveDistance;
             MoveMotionTime = moveMotionTime;
             AttackMotionTime = attackMotionTime;
             PenetrationMode = penetrationMode;
+            RecoveryTime = recoveryTime;
+            ExtendRecoveryDuringDerivative = extendRecoveryDuringDerivative;
             Modifier = modifier ?? new CardModifier();
         }
 
@@ -98,8 +131,10 @@ namespace Olca.Core.Domain
 
             // 新しいカードインスタンスを作成（元のカードは変更しない）
             return new Card(
-                Id, Name, Cost, Rarity, Category, Element, Series, Power, Description, EffectClassName,
-                newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode
+                Id, Name, Cost, Rarity, Category, Element, Series, Power, Description,
+                TargetType, PanelChangeType, MoveDirection, MoveDistance,
+                newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
+                RecoveryTime, ExtendRecoveryDuringDerivative
             );
         }
 
@@ -129,6 +164,9 @@ namespace Olca.Core.Domain
             // SeriesTypeからCardSeriesに変換
             CardSeries series = ConvertSeriesType(master.Series);
 
+            // Modifierの構築（追加効果を解析）
+            CardModifier modifier = ParseAdditionalEffects(master);
+
             return new Card(
                 master.Id,
                 master.Name,
@@ -139,12 +177,85 @@ namespace Olca.Core.Domain
                 series,
                 master.Power,
                 master.Description,
-                master.EffectClassName,
-                null,  // modifier
+                master.TargetType,
+                master.PanelChangeType,
+                master.MoveDirection,
+                master.MoveDistance,
+                modifier,
                 master.MoveMotionTime,
                 master.AttackMotionTime,
-                master.PenetrationMode
+                master.PenetrationMode,
+                master.RecoveryTime,
+                master.ExtendRecoveryDuringDerivative
             );
+        }
+
+        /// <summary>
+        /// マスターデータの追加効果フィールドを解析してCardModifierを生成
+        /// </summary>
+        private static CardModifier ParseAdditionalEffects(CardMaster master)
+        {
+            var modifier = new CardModifier();
+
+            if (string.IsNullOrEmpty(master.AdditionalEffectTypes))
+                return modifier;
+
+            // カンマ区切りで分割
+            string[] effectTypes = master.AdditionalEffectTypes.Split(',');
+            string[] triggerStrs = string.IsNullOrEmpty(master.DerivativeTrigger)
+                ? new string[0]
+                : master.DerivativeTrigger.Split(',');
+
+            for (int i = 0; i < effectTypes.Length; i++)
+            {
+                string trimmed = effectTypes[i].Trim();
+
+                if (System.Enum.TryParse<AdditionalEffectType>(trimmed, out var effectType))
+                {
+                    // 対応するトリガーを取得（トリガー数が足りない場合は最後のトリガーを使用、なければImmediate）
+                    DerivativeTrigger trigger;
+                    if (i < triggerStrs.Length)
+                    {
+                        trigger = ParseDerivativeTrigger(triggerStrs[i].Trim());
+                    }
+                    else if (triggerStrs.Length > 0)
+                    {
+                        trigger = ParseDerivativeTrigger(triggerStrs[triggerStrs.Length - 1].Trim());
+                    }
+                    else
+                    {
+                        trigger = DerivativeTrigger.Immediate;
+                    }
+
+                    var effect = new AdditionalEffect
+                    {
+                        EffectType = effectType,
+                        Power = master.AdditionalEffectPower,
+                        Duration = master.AdditionalEffectDuration,
+                        HitCount = master.AdditionalEffectHitCount,
+                        ChainCardId = master.ChainCardId,
+                        Trigger = trigger
+                    };
+
+                    modifier.AdditionalEffects.Add(effect);
+                }
+            }
+
+            return modifier;
+        }
+
+        /// <summary>
+        /// DerivativeTrigger文字列をenumに変換
+        /// </summary>
+        private static DerivativeTrigger ParseDerivativeTrigger(string triggerStr)
+        {
+            if (string.IsNullOrEmpty(triggerStr))
+                return DerivativeTrigger.Immediate;
+
+            if (System.Enum.TryParse<DerivativeTrigger>(triggerStr, out var trigger))
+                return trigger;
+
+            return DerivativeTrigger.Immediate;
         }
 
         /// <summary>
@@ -152,14 +263,13 @@ namespace Olca.Core.Domain
         /// </summary>
         private static CardSeries ConvertSeriesType(SeriesType seriesType)
         {
-            return seriesType switch
+            switch (seriesType)
             {
-                SeriesType.None => CardSeries.None,
-                SeriesType.Sword => CardSeries.Sword,
-                SeriesType.Bomb => CardSeries.Bomb,
-                SeriesType.Canon => CardSeries.Canon,
-                _ => CardSeries.None
-            };
+                case SeriesType.Sword: return CardSeries.Sword;
+                case SeriesType.Canon: return CardSeries.Canon;
+                case SeriesType.Bomb: return CardSeries.Bomb;
+                default: return CardSeries.None;
+            }
         }
 
         /// <summary>
@@ -167,8 +277,10 @@ namespace Olca.Core.Domain
         /// </summary>
         public Card Clone()
         {
-            return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description, EffectClassName,
-                Modifier, MoveMotionTime, AttackMotionTime, PenetrationMode);
+            return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description,
+                TargetType, PanelChangeType, MoveDirection, MoveDistance,
+                Modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
+                RecoveryTime, ExtendRecoveryDuringDerivative);
         }
 
         public override string ToString()

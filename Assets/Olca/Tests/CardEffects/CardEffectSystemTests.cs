@@ -30,7 +30,7 @@ namespace Olca.Tests.CardEffects
 
             var cards = new List<Card>
             {
-                new Card("cannon", "キャノン", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 40, "単体攻撃", "CannonEffect"),
+                new Card("cannon", "キャノン", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 40, "単体攻撃", DamageTargetType.Single),
             };
             deck = new Deck(cards);
             logger = new MockLogger();
@@ -38,10 +38,10 @@ namespace Olca.Tests.CardEffects
         }
 
         [Test]
-        public void ModifiableDamageEffectで単体攻撃できる()
+        public void ModifiableCardEffectで単体攻撃できる()
         {
             // Arrange
-            var cannonEffect = new ModifiableDamageEffect(DamageTargetType.Single);
+            var cannonEffect = new ModifiableCardEffect(DamageTargetType.Single);
             var cannon = new Card("cannon", "キャノン", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 40, "単体攻撃");
             var context = new BattleContext(battle, cannon);
             int initialHp = enemies[0].CurrentHp;
@@ -55,10 +55,10 @@ namespace Olca.Tests.CardEffects
         }
 
         [Test]
-        public void ModifiableDamageEffectで前方1マス攻撃できる()
+        public void ModifiableCardEffectで前方1マス攻撃できる()
         {
             // Arrange
-            var swordEffect = new ModifiableDamageEffect(DamageTargetType.FrontTile);
+            var swordEffect = new ModifiableCardEffect(DamageTargetType.FrontTile);
             var sword = new Card("sword", "ソード", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Sword, 80, "前方1マス攻撃");
             var context = new BattleContext(battle, sword);
             int initialHp = enemies[0].CurrentHp; // 50
@@ -78,7 +78,7 @@ namespace Olca.Tests.CardEffects
             var icePanelModifier = CardModifier.CreateAdditionalEffect(AdditionalEffectType.PanelIce);
             var icePanel = new Card("ice_panel", "アイスパネル", 1, CardRarity.Normal, CardCategory.Field, ElementType.Water, CardSeries.None, 0, "前方1マスをIceに",
                 modifier: icePanelModifier);
-            var effect = new ModifiableDamageEffect(DamageTargetType.FrontTile);
+            var effect = new ModifiableCardEffect(DamageTargetType.FrontTile);
             var context = new BattleContext(battle, icePanel);
             Vector2Int targetPos = new Vector2Int(player.GridPosition.X + 1, player.GridPosition.Y);
 
@@ -93,14 +93,14 @@ namespace Olca.Tests.CardEffects
         public void CardEffectFactoryでカードから効果を生成できる()
         {
             // Arrange
-            var attackCard = new Card("test", "テスト", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 30, "攻撃", null);
+            var attackCard = new Card("test", "テスト", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 30, "攻撃", DamageTargetType.Single);
 
             // Act
             var effect = CardEffectFactory.CreateEffect(attackCard);
 
             // Assert
             Assert.IsNotNull(effect, "効果が生成されるべき");
-            Assert.IsInstanceOf<ModifiableDamageEffect>(effect, "Attack カテゴリなのでModifiableDamageEffectが生成されるべき");
+            Assert.IsInstanceOf<ModifiableCardEffect>(effect, "Attack カテゴリなのでModifiableCardEffectが生成されるべき");
         }
 
         [Test]
@@ -110,7 +110,7 @@ namespace Olca.Tests.CardEffects
             player.TakeDamage(50); // 50ダメージを受ける
             int hpBeforeHeal = player.CurrentHp;
             var healEffect = new HealEffect(30);
-            var healCard = new Card("heal", "回復", 1, CardRarity.Normal, CardCategory.Defense, ElementType.None, CardSeries.None, 30, "HP回復", "HealEffect");
+            var healCard = new Card("heal", "回復", 1, CardRarity.Normal, CardCategory.Defense, ElementType.None, CardSeries.None, 30, "HP回復", DamageTargetType.Single);
             var context = new BattleContext(battle, healCard);
 
             // Act
@@ -127,8 +127,8 @@ namespace Olca.Tests.CardEffects
             // Arrange
             var cards = new List<Card>
             {
-                new Card("card1", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "攻撃1", null),
-                new Card("card2", "カード2", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 20, "攻撃2", null)
+                new Card("card1", "カード1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "攻撃1", DamageTargetType.Single),
+                new Card("card2", "カード2", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 20, "攻撃2", DamageTargetType.Single)
             };
 
             // Act

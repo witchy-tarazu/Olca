@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
@@ -24,10 +25,58 @@ namespace Olca.Core.Logic.CardEffects
         /// <summary>使用したカード</summary>
         public Domain.Card UsedCard { get; }
 
+        /// <summary>
+        /// カードデータベース（チェイン効果でカードを取得する際に使用）
+        /// Application層から注入される
+        /// </summary>
+        public ICardDatabase CardDatabase { get; set; }
+
+        /// <summary>
+        /// チェイン効果用の一時的なプレイヤー位置オーバーライド
+        /// null の場合は通常のプレイヤー位置を使用
+        /// </summary>
+        public Vector2Int? TemporaryPlayerPosition { get; set; }
+
+        /// <summary>
+        /// 有効なプレイヤー位置を取得（オーバーライドがあればそちらを優先）
+        /// </summary>
+        public Vector2Int GetEffectivePlayerPosition()
+        {
+            return TemporaryPlayerPosition ?? Player.GridPosition;
+        }
+
         public BattleContext(BattleSystem battle, Domain.Card usedCard)
         {
             Battle = battle;
             UsedCard = usedCard;
         }
+
+        /// <summary>
+        /// カードIDからカードを取得
+        /// チェイン効果で使用
+        /// </summary>
+        public Domain.Card GetCardById(string cardId)
+        {
+            if (CardDatabase == null)
+            {
+                throw new InvalidOperationException(
+                    "CardDatabase が設定されていません。Application層でBattleContext.CardDatabaseを設定してください。");
+            }
+
+            return CardDatabase.GetCardById(cardId);
+        }
+    }
+
+    /// <summary>
+    /// カードデータベースインターフェース
+    /// チェイン効果でカードを取得するために使用
+    /// Application層で実装
+    /// </summary>
+    public interface ICardDatabase
+    {
+        /// <summary>
+        /// カードIDからカードを取得
+        /// </summary>
+        Domain.Card GetCardById(string cardId);
     }
 }

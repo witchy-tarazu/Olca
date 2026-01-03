@@ -1,5 +1,6 @@
 using MasterMemory;
 using MessagePack;
+using Olca.Core.Logic.CardEffects.Effects;
 
 namespace Olca.Core.Domain.Master
 {
@@ -29,14 +30,36 @@ namespace Olca.Core.Domain.Master
 
         public string Description { get; set; }
 
+        // ========== 攻撃範囲指定 ==========
         /// <summary>
-        /// カード効果のクラス名（例: "CannonEffect"）
-        /// リフレクションまたはファクトリーパターンで効果を生成する際に使用
+        /// 攻撃カードの基本対象タイプ（Single, All, FrontTile等）
+        /// CategoryがAttackの場合に使用される
         /// </summary>
-        public string EffectClassName { get; set; }
+        public DamageTargetType TargetType { get; set; }
+
+        // ========== フィールド操作カード用 ==========
+        /// <summary>
+        /// 変化させるパネルの種類（CategoryがFieldの場合に使用）
+        /// 例: "Ice", "Magma", "Grass" など
+        /// </summary>
+        public string PanelChangeType { get; set; }
+
+        // ========== 一時移動カード専用 ==========
+        /// <summary>
+        /// 一時移動方向（"Right", "Left", "Up", "Down"）
+        /// MoveMotionTime > 0 の場合に使用される
+        /// </summary>
+        public string MoveDirection { get; set; }
+
+        /// <summary>
+        /// 一時移動距離（マス数）
+        /// MoveMotionTime > 0 の場合に使用される
+        /// </summary>
+        public int MoveDistance { get; set; }
 
         /// <summary>
         /// 一時移動カードの移動モーション時間（秒）
+        /// 0より大きい場合、一時移動カードとして扱われる
         /// </summary>
         public float MoveMotionTime { get; set; }
 
@@ -49,5 +72,58 @@ namespace Olca.Core.Domain.Master
         /// 一時移動時の貫通モード
         /// </summary>
         public MovePenetrationMode PenetrationMode { get; set; }
+
+        // ========== 硬直時間 ==========
+        /// <summary>
+        /// カード使用後の硬直時間（秒）
+        /// この時間中、プレイヤーは移動や他のカード使用ができない
+        /// </summary>
+        public float RecoveryTime { get; set; }
+
+        /// <summary>
+        /// 派生効果中も硬直を継続するか
+        /// true: 派生効果終了まで硬直が続く（例: 三段突き）
+        /// false: 派生効果中でも動ける（例: スプレッドガン）
+        /// </summary>
+        public bool ExtendRecoveryDuringDerivative { get; set; }
+
+        // ========== 追加効果（派生効果）==========
+        /// <summary>
+        /// 追加効果のタイプ（カンマ区切りで複数指定可能）
+        /// 例: "ChainCard", "PanelIceAll", "MultiHit"
+        /// </summary>
+        public string AdditionalEffectTypes { get; set; }
+
+        /// <summary>
+        /// チェイン発動するカードID
+        /// - 空文字列またはnull: 自分自身を再発動
+        /// - カードID指定: 別カードを発動（爆風カードなど）
+        /// </summary>
+        public string ChainCardId { get; set; }
+
+        /// <summary>
+        /// 追加効果の威力
+        /// - ChainCardで自分自身を再発動する場合: 威力倍率（%）
+        ///   例: 60 = 60%の威力（元が25なら15ダメージ）
+        /// - 状態異常の場合: 継続ダメージ量
+        /// </summary>
+        public int AdditionalEffectPower { get; set; }
+
+        /// <summary>
+        /// 追加効果の持続時間（秒）
+        /// 状態異常の持続時間など
+        /// </summary>
+        public float AdditionalEffectDuration { get; set; }
+
+        /// <summary>
+        /// ヒット回数（多段ヒット、チェイン回数など）
+        /// </summary>
+        public int AdditionalEffectHitCount { get; set; }
+
+        /// <summary>
+        /// 派生効果のトリガータイミング
+        /// "Immediate", "OnHit", "OnDamage"
+        /// </summary>
+        public string DerivativeTrigger { get; set; }
     }
 }

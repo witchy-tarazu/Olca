@@ -67,6 +67,10 @@ namespace Olca.Core.Logic.CardEffects
         /// <summary>
         /// staticメソッド: カードから効果を生成
         /// </summary>
+        /// <summary>
+        /// staticメソッド: カードから効果を生成
+        /// CardMasterの情報に基づいて適切な効果クラスを自動生成
+        /// </summary>
         public static ICardEffect CreateEffect(Card card)
         {
             if (card == null) return new NullEffect();
@@ -77,29 +81,30 @@ namespace Olca.Core.Logic.CardEffects
                 return CreateTemporaryMoveEffect(card);
             }
 
-            // 登録済みの効果を検索
+            // 登録済みの効果を検索（カスタム効果用）
             if (staticEffectCreators.TryGetValue(card.Id, out var creator))
             {
                 return creator();
             }
 
             // カテゴリに基づくデフォルト効果
-            // ModifiableDamageEffectを使用することで、調律効果（Modifier）が自動的に適用される
+            // ModifiableCardEffectを使用することで、調律効果（Modifier）が自動的に適用される
             switch (card.Category)
             {
                 case CardCategory.Attack:
-                    // 攻撃カードは ModifiableDamageEffect を使用
+                    // 攻撃カードは ModifiableCardEffect を使用
+                    // CardMasterの TargetType に基づいて攻撃範囲を決定
                     // Modifier の追加効果（スプレッド、貫通、多段ヒット等）が自動適用される
-                    return new ModifiableDamageEffect(DamageTargetType.Single);
+                    return new ModifiableCardEffect(card.TargetType);
 
                 case CardCategory.Defense:
                     // 回復カードは HealEffect を使用
                     return new HealEffect(card.Power);
 
                 case CardCategory.Field:
-                    // フィールド操作カードも ModifiableDamageEffect で対応
-                    // PanelIce, PanelMagma 等の効果は Modifier で指定
-                    return new ModifiableDamageEffect(DamageTargetType.Single);
+                    // フィールド操作カードも ModifiableCardEffect で対応
+                    // パネル変化は AdditionalEffect (PanelIce, PanelMagma等) で指定
+                    return new ModifiableCardEffect(card.TargetType);
 
                 case CardCategory.Support:
                     // サポートカードは単独では何もしない（調律用）
@@ -119,25 +124,15 @@ namespace Olca.Core.Logic.CardEffects
         /// EffectClassNameの形式: "TemporaryMove_Direction_Distance"
         /// 例: "TemporaryMove_Right_2" → 右に2マス一時移動して攻撃
         /// </summary>
+        /// <summary>
+        /// 一時移動カード効果を生成
+        /// CardMasterの MoveDirection と MoveDistance フィールドを使用
+        /// </summary>
         private static ICardEffect CreateTemporaryMoveEffect(Card card)
         {
-            // EffectClassNameをパース
-            string effectName = card.EffectClassName ?? "";
-            string[] parts = effectName.Split('_');
-
-            // デフォルト値
-            Vector2Int direction = new Vector2Int(1, 0); // 右
-            int distance = 1;
-
-            // パース処理
-            if (parts.Length >= 3 && parts[0] == "TemporaryMove")
-            {
-                direction = ParseDirection(parts[1]);
-                if (int.TryParse(parts[2], out int parsedDistance))
-                {
-                    distance = parsedDistance;
-                }
-            }
+            // CardMasterから方向と距離を取得
+            Vector2Int direction = ParseDirection(card.MoveDirection ?? "Right");
+            int distance = card.MoveDistance > 0 ? card.MoveDistance : 1;
 
             return new TemporaryMoveAttackEffect(
                 direction: direction,
@@ -165,6 +160,31 @@ namespace Olca.Core.Logic.CardEffects
                     return new Vector2Int(0, -1);
                 default:
                     return new Vector2Int(1, 0); // デフォルトは右
+            }
+        }
+
+        /// <summary>
+        /// パネル種類文字列をPanelTypeに変換
+        /// </summary>
+        private static PanelType ParsePanelType(string panelTypeStr)
+        {
+            if (string.IsNullOrEmpty(panelTypeStr))
+                return PanelType.Normal;
+
+            switch (panelTypeStr.ToUpper())
+            {
+                case "ICE":
+                    return PanelType.Ice;
+                case "GRASS":
+                    return PanelType.Grass;
+                case "MAGMA":
+                    return PanelType.Magma;
+                case "CRACKED":
+                    return PanelType.Cracked;
+                case "HOLE":
+                    return PanelType.Hole;
+                default:
+                    return PanelType.Normal;
             }
         }
 
