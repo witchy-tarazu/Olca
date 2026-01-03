@@ -19,6 +19,7 @@ namespace Olca.Core.Logic.Battle
         private readonly PlayerMovementSystem playerMovement;
         private readonly PanelEffectSystem panelEffects;
         private readonly EnemyAISystem enemyAI;
+        private readonly DelayedEffectSystem delayedEffects;
         private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
 
@@ -49,6 +50,9 @@ namespace Olca.Core.Logic.Battle
         /// <summary>パネル効果システム</summary>
         public PanelEffectSystem PanelEffects => panelEffects;
 
+        /// <summary>遅延効果システム</summary>
+        public DelayedEffectSystem DelayedEffects => delayedEffects;
+
         /// <summary>バトル状態</summary>
         public BattleState State => state;
 
@@ -78,6 +82,7 @@ namespace Olca.Core.Logic.Battle
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
+            this.delayedEffects = new DelayedEffectSystem(this);
             this.randomProvider = randomProvider;
             this.logger = logger;
             this.state = BattleState.InProgress;
@@ -134,6 +139,9 @@ namespace Olca.Core.Logic.Battle
                 playerMovement.Tick(deltaTime, input, enemies);
                 panelEffects.Tick(deltaTime, player);
             }
+
+            // 遅延効果を更新（投擲物の着弾など）
+            delayedEffects.Update(deltaTime);
 
             // 敵のAI更新
             enemyAI.Tick(deltaTime, player, battleField, randomProvider);

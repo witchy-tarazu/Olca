@@ -93,6 +93,22 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
+        /// 指定位置が穴パネルかどうかを判定
+        /// </summary>
+        /// <param name="position">判定する位置</param>
+        /// <returns>穴パネルならtrue</returns>
+        public bool IsHole(Vector2Int position)
+        {
+            if (!IsInBounds(position))
+            {
+                // 範囲外は穴扱い（投擲物が落下する）
+                return true;
+            }
+
+            return GetPanelType(position) == PanelType.Hole;
+        }
+
+        /// <summary>
         /// すべてのパネルを通常に戻す
         /// </summary>
         public void ResetAllPanels()

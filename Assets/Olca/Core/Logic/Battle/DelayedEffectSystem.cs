@@ -1,0 +1,90 @@
+using System.Collections.Generic;
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>
+    /// 遅延効果を管理するシステム
+    /// 投擲カードなど、時間差で発動する効果を時間経過に応じて管理・実行する
+    /// </summary>
+    public class DelayedEffectSystem
+    {
+        private readonly List<DelayedEffect> activeEffects = new List<DelayedEffect>();
+        private readonly BattleSystem battleSystem;
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="battleSystem">バトルシステムの参照（パネル状態確認用）</param>
+        public DelayedEffectSystem(BattleSystem battleSystem)
+        {
+            this.battleSystem = battleSystem;
+        }
+
+        /// <summary>
+        /// 遅延効果を登録
+        /// </summary>
+        /// <param name="effect">登録する遅延効果</param>
+        public void RegisterDelayedEffect(DelayedEffect effect)
+        {
+            activeEffects.Add(effect);
+
+#if UNITY_EDITOR || DEBUG
+            System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 遅延効果登録: 位置={effect.TargetPosition}, 残り時間={effect.RemainingTime}秒");
+#endif
+        }
+
+        /// <summary>
+        /// 時間経過を更新し、発動タイミングに達した効果を実行
+        /// </summary>
+        /// <param name="deltaTime">経過時間（秒）</param>
+        public void Update(float deltaTime)
+        {
+            for (int i = activeEffects.Count - 1; i >= 0; i--)
+            {
+                var effect = activeEffects[i];
+                effect.RemainingTime -= deltaTime;
+
+                if (effect.RemainingTime <= 0)
+                {
+                    // 着弾位置が穴パネルかチェック
+                    if (effect.CancelOnHole && battleSystem.Field.IsHole(effect.TargetPosition))
+                    {
+#if UNITY_EDITOR || DEBUG
+                        System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 穴パネルに落下してキャンセル: {effect.TargetPosition}");
+#endif
+                        // 穴パネルに落下 → キャンセル
+                        effect.OnCancelled?.Invoke();
+                    }
+                    else
+                    {
+#if UNITY_EDITOR || DEBUG
+                        System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 着弾実行: {effect.TargetPosition}");
+#endif
+                        // 効果を実行
+                        effect.Execute();
+                    }
+
+                    activeEffects.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 現在アクティブな遅延効果のリストを取得（表示層用）
+        /// </summary>
+        public IReadOnlyList<DelayedEffect> GetActiveEffects() => activeEffects;
+
+        /// <summary>
+        /// すべての遅延効果をクリア（バトル終了時など）
+        /// </summary>
+        public void Clear()
+        {
+            activeEffects.Clear();
+        }
+
+        /// <summary>
+        /// 現在アクティブな遅延効果の数を取得
+        /// </summary>
+        public int ActiveEffectCount => activeEffects.Count;
+    }
+}

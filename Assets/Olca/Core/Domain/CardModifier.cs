@@ -150,7 +150,11 @@ namespace Olca.Core.Domain
 
         // ========== チェイン効果 ==========
         /// <summary>別のカードを連鎖発動（ChainCardIdで指定されたカードを実行）</summary>
-        ChainCard
+        ChainCard,
+
+        // ========== 遅延効果 ==========
+        /// <summary>遅延投擲効果（一定時間後に着弾地点で発動）</summary>
+        DelayedProjectile
     }
 
     /// <summary>
@@ -191,6 +195,24 @@ namespace Olca.Core.Domain
         /// EffectTypeがChainCardの場合に使用
         /// </summary>
         public ChainEffectOrigin EffectOrigin { get; set; }
+
+        /// <summary>
+        /// 遅延時間（秒）
+        /// EffectTypeがDelayedProjectileの場合に使用
+        /// </summary>
+        public float DelayTime { get; set; }
+
+        /// <summary>
+        /// 着弾地点（プレイヤー位置からの相対座標）
+        /// EffectTypeがDelayedProjectileの場合に使用
+        /// </summary>
+        public Vector2Int TargetOffset { get; set; }
+
+        /// <summary>
+        /// 穴パネルで無効化されるか
+        /// EffectTypeがDelayedProjectileの場合に使用
+        /// </summary>
+        public bool CancelOnHole { get; set; }
     }
 
     /// <summary>

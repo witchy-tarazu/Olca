@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 
@@ -70,7 +71,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             bool damageHandledByImmediate = immediateEffects.Exists(e =>
                 e.EffectType == AdditionalEffectType.MultiHit ||
                 e.EffectType == AdditionalEffectType.Penetration ||
-                e.EffectType == AdditionalEffectType.Spread);
+                e.EffectType == AdditionalEffectType.Spread ||
+                e.EffectType == AdditionalEffectType.DelayedProjectile); // 遅延投擲は着弾時にダメージ処理
 
             // 1. Immediate効果を先に実行（パネル変化など）
             foreach (var effect in immediateEffects)
@@ -300,6 +302,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 case AdditionalEffectType.PanelHoleAll:
                     ApplyPanelChangeAll(context, PanelType.Hole);
                     DealDamageToTargets(targets, damage, element);
+                    break;
+
+                // ========== 遅延効果 ==========
+                case AdditionalEffectType.DelayedProjectile:
+                    // 遅延投擲効果: 即座に登録のみ（実行は DelayedEffectSystem が担当）
+                    RegisterDelayedProjectile(context, effect);
+                    // 投擲物自体のダメージは着弾時に処理されるため、ここではダメージなし
                     break;
 
                 default:
@@ -617,6 +626,96 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 var chainEffect = CardEffectFactory.CreateEffect(chainCard);
                 chainEffect.Execute(chainContext);
             }
+        }
+
+        /// <summary>
+        /// 遅延投擲効果を登録
+        /// </summary>
+        private void RegisterDelayedProjectile(BattleContext context, AdditionalEffect effect)
+        {
+            // 着弾位置を計算（プレイヤー位置 + 相対オフセット）
+            Vector2Int playerPos = context.GetEffectivePlayerPosition();
+            Vector2Int targetPosition = new Vector2Int(
+                playerPos.X + effect.TargetOffset.X,
+                playerPos.Y + effect.TargetOffset.Y
+            );
+
+#if UNITY_EDITOR || DEBUG
+            System.Diagnostics.Debug.WriteLine($"[RegisterDelayedProjectile] 投擲登録: 着弾位置={targetPosition}, 遅延={effect.DelayTime}秒");
+#endif
+
+            var delayedEffect = new Battle.DelayedEffect(effect.DelayTime, targetPosition, effect.CancelOnHole)
+            {
+                ExecuteAction = () =>
+                {
+                    // 着弾時の処理
+                    ExecuteProjectileLanding(context, effect, targetPosition);
+                },
+                OnCancelled = () =>
+                {
+                    // キャンセル時のログ（デバッグ用）
+#if UNITY_EDITOR || DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[RegisterDelayedProjectile] 穴パネルに落下してキャンセル: {targetPosition}");
+#endif
+                }
+            };
+
+            context.Battle.DelayedEffects.RegisterDelayedEffect(delayedEffect);
+        }
+
+        /// <summary>
+        /// 投擲物着弾時の処理
+        /// </summary>
+        private void ExecuteProjectileLanding(BattleContext context, AdditionalEffect effect, Vector2Int landingPosition)
+        {
+#if UNITY_EDITOR || DEBUG
+            System.Diagnostics.Debug.WriteLine($"[ExecuteProjectileLanding] 着弾: {landingPosition}, Power={context.UsedCard.Power}");
+#endif
+
+            // 着弾地点の敵を取得
+            var landingTargets = context.Battle.Enemies
+                .Where(e => !e.IsDead && e.GridPosition == landingPosition)
+                .ToList();
+
+            // 直接ダメージ（Power > 0 の場合）
+            if (context.UsedCard.Power > 0)
+            {
+#if UNITY_EDITOR || DEBUG
+                System.Diagnostics.Debug.WriteLine($"[ExecuteProjectileLanding] 直接ダメージ: {context.UsedCard.Power}, ターゲット数={landingTargets.Count}");
+#endif
+                DealDamageToTargets(landingTargets, context.UsedCard.Power, context.UsedCard.Element);
+            }
+
+            // チェイン効果を発動（爆風など）
+            if (!string.IsNullOrEmpty(effect.ChainCardId))
+            {
+#if UNITY_EDITOR || DEBUG
+                System.Diagnostics.Debug.WriteLine($"[ExecuteProjectileLanding] チェイン効果実行: {effect.ChainCardId}");
+#endif
+                ExecuteChainEffectAtPosition(context, effect, landingPosition);
+            }
+        }
+
+        /// <summary>
+        /// 指定位置からチェイン効果を実行
+        /// </summary>
+        private void ExecuteChainEffectAtPosition(BattleContext context, AdditionalEffect effect, Vector2Int position)
+        {
+            var chainCard = context.GetCardById(effect.ChainCardId);
+            if (chainCard == null)
+            {
+#if UNITY_EDITOR || DEBUG
+                System.Diagnostics.Debug.WriteLine($"[ExecuteChainEffectAtPosition] カード未発見: {effect.ChainCardId}");
+#endif
+                return;
+            }
+
+            var chainContext = new BattleContext(context.Battle, chainCard);
+            chainContext.TemporaryPlayerPosition = position; // 着弾位置から発動
+            chainContext.CardDatabase = context.CardDatabase;
+
+            var chainEffect = CardEffectFactory.CreateEffect(chainCard);
+            chainEffect.Execute(chainContext);
         }
     }
 }
