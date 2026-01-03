@@ -1,13 +1,14 @@
 {
     "name": "Olca.Core",
     "rootNamespace": "Olca.Core",
-    "references": [],
+    "references": [
+        "UniTask"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "UniTask.dll",
         "MessagePack.dll",
         "MessagePack.Annotations.dll",
         "MasterMemory.dll",
