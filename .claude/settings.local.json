@@ -13,7 +13,11 @@
       "Bash(dotnet build:*)",
       "Bash(timeout 30 dotnet test:*)",
       "Bash(dotnet clean:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git mv:*)",
+      "Bash(if [ -f \"f:/G/UnityProjects/Olca/Assets/Olca/Core/Logic/CardEffects/Effects/ModifiableDamageEffect.cs.meta\" ])",
+      "Bash(then mv \"f:/G/UnityProjects/Olca/Assets/Olca/Core/Logic/CardEffects/Effects/ModifiableDamageEffect.cs.meta\" \"f:/G/UnityProjects/Olca/Assets/Olca/Core/Logic/CardEffects/Effects/ModifiableCardEffect.cs.meta\")",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
