@@ -46,8 +46,10 @@ namespace Olca.Core.Logic.Battle
 
                 if (effect.RemainingTime <= 0)
                 {
-                    // 着弾位置が穴パネルかチェック
-                    if (effect.CancelOnHole && battleSystem.Field.IsHole(effect.TargetPosition))
+                    // 投擲物タイプの場合のみ穴パネルチェック
+                    if (effect.EffectType == DelayedEffectType.Projectile &&
+                        effect.CancelOnHole &&
+                        battleSystem.Field.IsHole(effect.TargetPosition))
                     {
 #if UNITY_EDITOR || DEBUG
                         System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 穴パネルに落下してキャンセル: {effect.TargetPosition}");
@@ -58,7 +60,10 @@ namespace Olca.Core.Logic.Battle
                     else
                     {
 #if UNITY_EDITOR || DEBUG
-                        System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 着弾実行: {effect.TargetPosition}");
+                        string effectTypeName = effect.EffectType == DelayedEffectType.Projectile
+                            ? $"着弾実行: {effect.TargetPosition}"
+                            : $"{effect.EffectType}実行";
+                        System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] {effectTypeName}");
 #endif
                         // 効果を実行
                         effect.Execute();

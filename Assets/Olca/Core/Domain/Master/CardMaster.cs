@@ -75,7 +75,13 @@ namespace Olca.Core.Domain.Master
 
         // ========== 硬直時間 ==========
         /// <summary>
-        /// カード使用後の硬直時間（秒）
+        /// 前隙時間（秒） - カード発動からヒット判定が出るまでの時間
+        /// この時間中、ダメージ判定は発生しない
+        /// </summary>
+        public float StartupTime { get; set; }
+
+        /// <summary>
+        /// 後隙時間（秒） - ヒット判定後、行動可能になるまでの時間
         /// この時間中、プレイヤーは移動や他のカード使用ができない
         /// </summary>
         public float RecoveryTime { get; set; }
@@ -86,6 +92,13 @@ namespace Olca.Core.Domain.Master
         /// false: 派生効果中でも動ける（例: スプレッドガン）
         /// </summary>
         public bool ExtendRecoveryDuringDerivative { get; set; }
+
+        /// <summary>
+        /// 暗転系カード（前隙・後隙なしで即座に発動）
+        /// true: 前隙・後隙を無視して即座に効果発動
+        /// false: 通常の前隙・後隙処理を行う
+        /// </summary>
+        public bool IsInstantEffect { get; set; }
 
         // ========== 追加効果（派生効果）==========
         /// <summary>

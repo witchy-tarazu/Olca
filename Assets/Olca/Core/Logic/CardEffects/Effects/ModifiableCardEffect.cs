@@ -29,6 +29,73 @@ namespace Olca.Core.Logic.CardEffects.Effects
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var card = context.UsedCard;
+
+            // 暗転系カードは前隙・後隙なしで即座に発動
+            if (card.IsInstantEffect)
+            {
+                ExecuteCardEffect(context);
+                return;
+            }
+
+            // 前隙がある場合は遅延登録
+            if (card.StartupTime > 0)
+            {
+                // 前隙遅延効果を登録
+                var startupEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Startup, card.StartupTime)
+                {
+                    ExecuteAction = () =>
+                    {
+                        // 前隙終了後にヒット判定（ダメージ処理）
+                        ExecuteCardEffect(context);
+
+                        // 後隙がある場合は遅延登録
+                        if (card.RecoveryTime > 0)
+                        {
+                            var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, card.RecoveryTime)
+                            {
+                                ExecuteAction = () =>
+                                {
+                                    // 後隙終了（行動可能になる）
+#if UNITY_EDITOR || DEBUG
+                                    System.Diagnostics.Debug.WriteLine($"[ModifiableCardEffect] 後隙終了: {card.Name}");
+#endif
+                                }
+                            };
+                            context.Battle.DelayedEffects.RegisterDelayedEffect(recoveryEffect);
+                        }
+                    }
+                };
+                context.Battle.DelayedEffects.RegisterDelayedEffect(startupEffect);
+            }
+            else
+            {
+                // 前隙がない場合は即座に発動
+                ExecuteCardEffect(context);
+
+                // 後隙がある場合は遅延登録
+                if (card.RecoveryTime > 0)
+                {
+                    var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, card.RecoveryTime)
+                    {
+                        ExecuteAction = () =>
+                        {
+                            // 後隙終了（行動可能になる）
+#if UNITY_EDITOR || DEBUG
+                            System.Diagnostics.Debug.WriteLine($"[ModifiableCardEffect] 後隙終了: {card.Name}");
+#endif
+                        }
+                    };
+                    context.Battle.DelayedEffects.RegisterDelayedEffect(recoveryEffect);
+                }
+            }
+        }
+
+        /// <summary>
+        /// カード効果の実行（前隙後のヒット判定・ダメージ処理）
+        /// </summary>
+        private void ExecuteCardEffect(BattleContext context)
+        {
+            var card = context.UsedCard;
             var modifier = card.Modifier;
 
             // 最終的な威力を計算
@@ -545,7 +612,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     modifier: null, // Modifierを空にして無限ループを防ぐ
                     context.UsedCard.MoveMotionTime,
                     context.UsedCard.AttackMotionTime, context.UsedCard.PenetrationMode,
-                    context.UsedCard.RecoveryTime, context.UsedCard.ExtendRecoveryDuringDerivative
+                    context.UsedCard.StartupTime, context.UsedCard.RecoveryTime,
+                    context.UsedCard.ExtendRecoveryDuringDerivative, context.UsedCard.IsInstantEffect
                 );
             }
             else

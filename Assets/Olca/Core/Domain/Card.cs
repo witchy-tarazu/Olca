@@ -63,11 +63,17 @@ namespace Olca.Core.Domain
         public MovePenetrationMode PenetrationMode { get; }
 
         // ========== 硬直時間 ==========
-        /// <summary>カード使用後の硬直時間（秒）</summary>
+        /// <summary>前隙時間（秒） - カード発動からヒット判定が出るまでの時間</summary>
+        public float StartupTime { get; }
+
+        /// <summary>後隙時間（秒） - ヒット判定後、行動可能になるまでの時間</summary>
         public float RecoveryTime { get; }
 
         /// <summary>派生効果中も硬直を継続するか</summary>
         public bool ExtendRecoveryDuringDerivative { get; }
+
+        /// <summary>暗転系カード（前隙・後隙なしで即座に発動）</summary>
+        public bool IsInstantEffect { get; }
 
         /// <summary>調律による追加効果</summary>
         public CardModifier Modifier { get; private set; }
@@ -93,8 +99,10 @@ namespace Olca.Core.Domain
             float moveMotionTime = 0f,
             float attackMotionTime = 0f,
             MovePenetrationMode penetrationMode = MovePenetrationMode.Blocking,
-            float recoveryTime = 0.5f,
-            bool extendRecoveryDuringDerivative = false)
+            float startupTime = 0f,
+            float recoveryTime = 0f,
+            bool extendRecoveryDuringDerivative = false,
+            bool isInstantEffect = false)
         {
             Id = id;
             Name = name;
@@ -112,8 +120,10 @@ namespace Olca.Core.Domain
             MoveMotionTime = moveMotionTime;
             AttackMotionTime = attackMotionTime;
             PenetrationMode = penetrationMode;
+            StartupTime = startupTime;
             RecoveryTime = recoveryTime;
             ExtendRecoveryDuringDerivative = extendRecoveryDuringDerivative;
+            IsInstantEffect = isInstantEffect;
             Modifier = modifier ?? new CardModifier();
         }
 
@@ -134,7 +144,7 @@ namespace Olca.Core.Domain
                 Id, Name, Cost, Rarity, Category, Element, Series, Power, Description,
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
-                RecoveryTime, ExtendRecoveryDuringDerivative
+                StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect
             );
         }
 
@@ -185,8 +195,10 @@ namespace Olca.Core.Domain
                 master.MoveMotionTime,
                 master.AttackMotionTime,
                 master.PenetrationMode,
+                master.StartupTime,
                 master.RecoveryTime,
-                master.ExtendRecoveryDuringDerivative
+                master.ExtendRecoveryDuringDerivative,
+                master.IsInstantEffect
             );
         }
 
@@ -280,7 +292,7 @@ namespace Olca.Core.Domain
             return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description,
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 Modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
-                RecoveryTime, ExtendRecoveryDuringDerivative);
+                StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect);
         }
 
         public override string ToString()
