@@ -34,9 +34,15 @@ namespace Olca.Presentation.CustomScreen
         [SerializeField] private float cardShootDuration = 0.35f;  // カード1枚あたりの射出時間
         [SerializeField] private float cardShootInterval = 0.05f; // カード間の射出間隔
 
+        [Header("カーソル設定")]
+        [SerializeField] private GameObject cursorIndicator;  // カーソル表示用のUI要素（枠線等）
+        [SerializeField] private CanvasGroup screenCanvasGroup;  // 一時非表示用
+
         private CustomScreenSystem customScreen;
         private List<HandCardView> handCardViews = new List<HandCardView>();
         private CancellationTokenSource animationCts;
+        private CustomScreenCursor cursor;
+        private bool isScreenVisible = true;
 
         public void Initialize(CustomScreenSystem customScreen)
         {
@@ -48,6 +54,211 @@ namespace Olca.Presentation.CustomScreen
             // イベント購読
             customScreen.OnScreenOpened += OnScreenOpened;
             customScreen.OnScreenClosed += OnScreenClosed;
+
+            // カーソル初期化
+            cursor = new CustomScreenCursor();
+            cursor.OnCursorMoved += OnCursorMoved;
+
+            // カーソル表示を初期非表示
+            if (cursorIndicator != null)
+            {
+                cursorIndicator.SetActive(false);
+            }
+        }
+
+        private void Update()
+        {
+            // カスタム画面が開いていない場合は入力を受け付けない
+            if (!customScreen.IsOpen) return;
+
+            HandleInput();
+        }
+
+        /// <summary>
+        /// 入力処理
+        /// </summary>
+        private void HandleInput()
+        {
+            // カーソル移動（方向キー/WASD）
+            // TODO: コントローラ対応時に左スティック/十字キーの処理を追加
+            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+            {
+                cursor.MoveLeft();
+            }
+            else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+            {
+                cursor.MoveRight();
+            }
+            else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+            {
+                cursor.MoveUp();
+            }
+            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+            {
+                cursor.MoveDown();
+            }
+
+            // 決定（Space）
+            // TODO: コントローラ対応時にAボタン（Fire1）の処理を追加
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                OnDecidePressed();
+            }
+
+            // ショートカット確定（Enter）
+            // TODO: コントローラ対応時にStartボタン（Submit）の処理を追加
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            {
+                if (customScreen.CanConfirm())
+                {
+                    OnConfirmClicked();
+                }
+            }
+
+            // 一時非表示（Tab - ホールド）
+            // TODO: コントローラ対応時に左トリガー（LT）の処理を追加
+            if (Input.GetKey(KeyCode.Tab))
+            {
+                SetScreenVisibility(false);
+            }
+            else if (Input.GetKeyUp(KeyCode.Tab))
+            {
+                SetScreenVisibility(true);
+            }
+
+            // カスタマイズモード（Cキー）
+            // TODO: コントローラ対応時にYボタン（Fire3）の処理を追加
+            if (Input.GetKeyDown(KeyCode.C))
+            {
+                Debug.Log("[CustomScreenView] カスタマイズモードに入ります（未実装）");
+            }
+
+            // キャンセル（ESC）
+            // TODO: コントローラ対応時にBボタン（Cancel）の処理を追加
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                DeselectAllCards();
+            }
+        }
+
+        /// <summary>
+        /// 画面の表示/非表示を切り替え
+        /// </summary>
+        private void SetScreenVisibility(bool visible)
+        {
+            if (isScreenVisible == visible) return;
+
+            isScreenVisible = visible;
+
+            if (screenCanvasGroup != null)
+            {
+                screenCanvasGroup.alpha = visible ? 1f : 0.3f;  // 30%の透明度で背景を確認可能
+            }
+        }
+
+        /// <summary>
+        /// 決定ボタンが押された
+        /// </summary>
+        private void OnDecidePressed()
+        {
+            if (cursor.IsOnConfirmButton)
+            {
+                // 確定ボタンで決定 → 選択確定
+                if (customScreen.CanConfirm())
+                {
+                    OnConfirmClicked();
+                }
+            }
+            else
+            {
+                // カードで決定 → 選択/解除トグル
+                int cardIndex = cursor.CurrentIndex;
+                if (cardIndex >= 0 && cardIndex < handCardViews.Count)
+                {
+                    var cardView = handCardViews[cardIndex];
+                    OnCardClicked(cardView.Card);
+                }
+            }
+        }
+
+        /// <summary>
+        /// すべてのカードの選択を解除
+        /// </summary>
+        private void DeselectAllCards()
+        {
+            foreach (var card in customScreen.SelectedCards.ToList())
+            {
+                customScreen.TryDeselectCard(card);
+            }
+
+            // View更新
+            foreach (var view in handCardViews)
+            {
+                view.UpdateSelection(false);
+            }
+
+            UpdateConfirmButton();
+            UpdateCostDisplay();
+            UpdateSelectedCardDisplay();
+        }
+
+        /// <summary>
+        /// カーソル位置が変更された
+        /// </summary>
+        private void OnCursorMoved(int index)
+        {
+            UpdateCursorIndicator(index);
+            UpdateCursorCardDisplay(index);
+        }
+
+        /// <summary>
+        /// アニメーション完了後にカーソルを表示
+        /// </summary>
+        private void ShowCursorAfterAnimation()
+        {
+            if (handCardViews.Count > 0)
+            {
+                // カードが存在する場合は最初のカード（インデックス0）に移動
+                cursor.Initialize(handCardViews.Count);
+                UpdateCursorIndicator(0);
+            }
+            else
+            {
+                // カードが存在しない場合は確定ボタンに移動
+                cursor.Initialize(0);
+                cursor.MoveToConfirmButton();
+                UpdateCursorIndicator(-1);
+            }
+        }
+
+        /// <summary>
+        /// カーソル表示を更新
+        /// </summary>
+        private void UpdateCursorIndicator(int index)
+        {
+            if (cursorIndicator == null) return;
+
+            cursorIndicator.SetActive(true);
+
+            RectTransform cursorRect = cursorIndicator.GetComponent<RectTransform>();
+
+            if (index == -1)
+            {
+                // 確定ボタンにカーソル
+                if (confirmButton != null)
+                {
+                    RectTransform buttonRect = confirmButton.GetComponent<RectTransform>();
+                    cursorRect.position = buttonRect.position;
+                    cursorRect.sizeDelta = buttonRect.sizeDelta;
+                }
+            }
+            else if (index >= 0 && index < handCardViews.Count)
+            {
+                // カードにカーソル
+                RectTransform cardRect = handCardViews[index].GetComponent<RectTransform>();
+                cursorRect.position = cardRect.position;
+                cursorRect.sizeDelta = cardRect.sizeDelta;
+            }
         }
 
         private void OnScreenOpened(List<Card> hand)
@@ -65,6 +276,19 @@ namespace Olca.Presentation.CustomScreen
 
             // 新しい手札View生成（アニメーション付き）
             AnimateCardsShootAsync(hand, animationCts.Token).Forget();
+
+            // カーソルは非表示（アニメーション完了後に表示）
+            if (cursorIndicator != null)
+            {
+                cursorIndicator.SetActive(false);
+            }
+
+            // 画面表示状態をリセット
+            isScreenVisible = true;
+            if (screenCanvasGroup != null)
+            {
+                screenCanvasGroup.alpha = 1f;
+            }
         }
 
         /// <summary>
@@ -94,6 +318,9 @@ namespace Olca.Presentation.CustomScreen
             UpdateConfirmButton();
             UpdateCostDisplay();
             UpdateSelectedCardDisplay();
+
+            // アニメーション完了後、カーソルを表示
+            ShowCursorAfterAnimation();
         }
 
         /// <summary>
@@ -399,25 +626,55 @@ namespace Olca.Presentation.CustomScreen
         }
 
         /// <summary>
-        /// 選択カード表示エリアを更新
+        /// 選択カード表示エリアを更新（旧実装 - 非推奨）
+        /// 現在はUpdateCursorCardDisplay()を使用
         /// </summary>
         private void UpdateSelectedCardDisplay()
         {
-            if (customScreen.SelectedCards.Count > 0)
+            // カーソル位置のカード表示に統一するため、このメソッドは使用しない
+            // 互換性のため残しているが、何もしない
+        }
+
+        /// <summary>
+        /// カーソル位置のカード情報を表示エリアに表示
+        /// </summary>
+        private void UpdateCursorCardDisplay(int cursorIndex)
+        {
+            if (cursorIndex >= 0 && cursorIndex < handCardViews.Count)
             {
-                // 最後に選択されたカード（最新）を表示
-                var lastSelectedCard = customScreen.SelectedCards[customScreen.SelectedCards.Count - 1];
+                // カーソルが置かれているカードの情報を表示
+                var cursorCard = handCardViews[cursorIndex].Card;
 
                 if (selectedCardDescription != null)
                 {
                     // コスト、威力、説明を表示
                     selectedCardDescription.text =
-                        $"コスト: {lastSelectedCard.Cost}\n" +
-                        $"威力: {lastSelectedCard.Power}\n\n" +
-                        $"{lastSelectedCard.Description}";
+                        $"コスト: {cursorCard.Cost}\n" +
+                        $"威力: {cursorCard.Power}\n\n" +
+                        $"{cursorCard.Description}";
                 }
 
-                // 画像は現時点では設定なし（Phase2では白背景）
+                // 画像は現時点では設定なし（将来的にカードイラストを表示）
+                if (selectedCardImage != null)
+                {
+                    selectedCardImage.color = Color.white;
+                }
+            }
+            else if (cursorIndex == -1)
+            {
+                // 確定ボタンにカーソルがある場合
+                if (selectedCardDescription != null)
+                {
+                    if (customScreen.SelectedCards.Count > 0)
+                    {
+                        selectedCardDescription.text = "選択したカードを確定します";
+                    }
+                    else
+                    {
+                        selectedCardDescription.text = "カードを選択してください";
+                    }
+                }
+
                 if (selectedCardImage != null)
                 {
                     selectedCardImage.color = Color.white;
@@ -425,10 +682,10 @@ namespace Olca.Presentation.CustomScreen
             }
             else
             {
-                // 何も選択されていない場合
+                // カードが存在しない場合
                 if (selectedCardDescription != null)
                 {
-                    selectedCardDescription.text = "カードを選択してください";
+                    selectedCardDescription.text = "カードがありません";
                 }
 
                 if (selectedCardImage != null)

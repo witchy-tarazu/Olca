@@ -18,7 +18,6 @@ namespace Olca.Presentation.Effects
         [Header("Animation Settings")]
         [SerializeField] private float floatSpeed = 50f;           // 上昇速度（ピクセル/秒）
         [SerializeField] private float fadeDuration = 1f;          // フェードアウト時間（秒）
-        [SerializeField] private float horizontalSpread = 30f;     // 横方向のランダムばらつき
 
         [Header("Color Settings")]
         [SerializeField] private Color normalColor = Color.white;      // 通常ダメージ色

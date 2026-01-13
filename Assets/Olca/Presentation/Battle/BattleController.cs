@@ -187,7 +187,7 @@ namespace Olca.Presentation.Battle
                     targetType: Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,
                     startupTime: 0.2f, recoveryTime: 0.3f),
 
-                new Card("heal", "ヒール", 1, CardRarity.Normal, CardCategory.Support,
+                new Card("heal", "ヒール", 2, CardRarity.Normal, CardCategory.Defense,
                     ElementType.None, CardSeries.None, 20, "HP回復",
                     targetType: Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,
                     startupTime: 0.1f, recoveryTime: 0.2f)
