@@ -143,7 +143,8 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// 選択を確定してカスタム画面を閉じる
+        /// 選択を確定してカスタム画面を閉じる準備をする
+        /// IsOpenはまだtrueのまま（アニメーション中はゲージを停止するため）
         /// </summary>
         public void Confirm()
         {
@@ -162,8 +163,18 @@ namespace Olca.Core.Logic.Battle
             }
             // else: 何も選択していない場合は、前回の使用可能カードをそのまま保持
 
-            IsOpen = false;
+            // 閉じるアニメーション開始イベントを発行（IsOpenはまだtrue）
             OnScreenClosed?.Invoke(availableCards);
+        }
+
+        /// <summary>
+        /// カスタム画面の閉じる処理を完了する
+        /// アニメーション完了後に呼ばれ、IsOpenをfalseにする
+        /// </summary>
+        public void CompleteClose()
+        {
+            if (!IsOpen) return;
+            IsOpen = false;
         }
 
         /// <summary>

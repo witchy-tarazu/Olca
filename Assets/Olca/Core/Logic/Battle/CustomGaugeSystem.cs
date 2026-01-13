@@ -8,20 +8,26 @@ namespace Olca.Core.Logic.Battle
     /// </summary>
     public class CustomGaugeSystem
     {
-        private float currentGauge; // 0.0 ~ 1.0
+        private float currentGauge; // 0.0 ~ MAX_GAUGE
         private readonly float gaugeSpeed;
 
-        /// <summary>現在のゲージ量（0.0～1.0）</summary>
+        /// <summary>ゲージの最大値</summary>
+        public const float MAX_GAUGE = 10.0f;
+
+        /// <summary>現在のゲージ量（0.0～MAX_GAUGE）</summary>
         public float CurrentGauge => currentGauge;
 
+        /// <summary>現在のゲージ量（正規化: 0.0～1.0）View表示用</summary>
+        public float NormalizedGauge => currentGauge / MAX_GAUGE;
+
         /// <summary>ゲージが満タンか</summary>
-        public bool IsFull => currentGauge >= 1.0f;
+        public bool IsFull => currentGauge >= MAX_GAUGE;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="gaugeSpeed">ゲージの溜まる速度（1.0で1秒で満タン）</param>
-        public CustomGaugeSystem(float gaugeSpeed = 1.0f)
+        /// <param name="gaugeSpeed">ゲージの溜まる速度（1秒あたりの増加量、デフォルト2.0）</param>
+        public CustomGaugeSystem(float gaugeSpeed = 2.0f)
         {
             this.gaugeSpeed = gaugeSpeed;
             this.currentGauge = 0f;
@@ -37,13 +43,13 @@ namespace Olca.Core.Logic.Battle
 
             currentGauge += gaugeSpeed * deltaTime;
 
-            if (currentGauge >= 1.0f)
+            if (currentGauge >= MAX_GAUGE)
             {
-                currentGauge = 1.0f;
+                currentGauge = MAX_GAUGE;
                 OnGaugeFull?.Invoke();
             }
 
-            OnGaugeChanged?.Invoke(currentGauge);
+            OnGaugeChanged?.Invoke(NormalizedGauge);
         }
 
         /// <summary>
@@ -52,16 +58,17 @@ namespace Olca.Core.Logic.Battle
         public void Reset()
         {
             currentGauge = 0f;
-            OnGaugeChanged?.Invoke(currentGauge);
+            OnGaugeChanged?.Invoke(NormalizedGauge);
         }
 
         /// <summary>
         /// ゲージを任意の値に設定（デバッグ用）
         /// </summary>
+        /// <param name="value">設定する値（0.0～MAX_GAUGE）</param>
         public void SetGauge(float value)
         {
-            currentGauge = Math.Max(0f, Math.Min(value, 1.0f));
-            OnGaugeChanged?.Invoke(currentGauge);
+            currentGauge = Math.Max(0f, Math.Min(value, MAX_GAUGE));
+            OnGaugeChanged?.Invoke(NormalizedGauge);
 
             if (IsFull)
             {

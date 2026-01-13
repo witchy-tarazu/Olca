@@ -440,8 +440,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   handCardContainer: {fileID: 1036611406}
   handCardPrefab: {fileID: 3131497170375134461, guid: 981065e80999ace4a89d0cecf2d402a6, type: 3}
-  confirmButton: {fileID: 1152319799}
-  costDisplay: {fileID: 1009964843}
   cardPositionMarkers:
   - {fileID: 1010548418}
   - {fileID: 291475916}
@@ -456,8 +454,14 @@ MonoBehaviour:
   rightWall: {fileID: 725077932}
   topWall: {fileID: 264940566}
   bottomWall: {fileID: 1699981269}
+  confirmButton: {fileID: 1152319799}
+  costDisplay: {fileID: 1009964843}
   selectedCardImage: {fileID: 1865415703}
   selectedCardDescription: {fileID: 243500724}
+  cardShootDuration: 0.5
+  cardShootInterval: 0.05
+  initialVelocityMin: 800
+  initialVelocityMax: 1200
 --- !u!1 &358947057
 GameObject:
   m_ObjectHideFlags: 0
@@ -724,6 +728,9 @@ MonoBehaviour:
   battleFieldView: {fileID: 1097832888}
   enemyContainer: {fileID: 822723659}
   enemyViewPrefab: {fileID: 2270076673927616265, guid: 02e3f5fb7bdfe5f43a3c53b96b3bc73b, type: 3}
+  damageNumberPool: {fileID: 704799827}
+  animationDuration: 0.4
+  overshootAmount: 50
 --- !u!114 &426570075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -802,6 +809,7 @@ RectTransform:
   - {fileID: 432485238}
   - {fileID: 358947058}
   - {fileID: 342902084}
+  - {fileID: 704799828}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -878,6 +886,58 @@ RectTransform:
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 75}
   m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &704799826
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 704799828}
+  - component: {fileID: 704799827}
+  m_Layer: 5
+  m_Name: DamageNumberPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &704799827
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 704799826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ce975850bf2fd2448121c4c6a5db55c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageNumberPrefab: {fileID: 6887696597120322799, guid: ac28f60668bea364687634fef723b6de, type: 3}
+  initialPoolSize: 10
+  maxPoolSize: 20
+  poolParent: {fileID: 704799828}
+--- !u!224 &704799828
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 704799826}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 426570078}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &709723749
 GameObject:

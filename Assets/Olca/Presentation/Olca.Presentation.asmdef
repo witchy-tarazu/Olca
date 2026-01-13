@@ -3,7 +3,8 @@
     "rootNamespace": "Olca.Presentation",
     "references": [
         "Olca.Core",
-        "Olca.Unity"
+        "Olca.Unity",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

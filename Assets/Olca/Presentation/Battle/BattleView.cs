@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
+using Olca.Presentation.Effects;
 
 namespace Olca.Presentation.Battle
 {
@@ -28,10 +31,18 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Transform enemyContainer;
         [SerializeField] private GameObject enemyViewPrefab;
 
+        [Header("エフェクト")]
+        [SerializeField] private DamageNumberPool damageNumberPool;
+
+        [Header("アニメーション設定")]
+        [SerializeField] private float animationDuration = 0.4f;  // アニメーション時間
+        [SerializeField] private float overshootAmount = 50f;     // オーバーラン量
+
         // ========== 内部状態 ==========
         private BattleSystem battleSystem;
         private List<EnemyView> enemyViews = new List<EnemyView>();
         private bool isCustomScreenOpen = false;
+        private CancellationTokenSource animationCts;
 
         // ========== 定数 ==========
         private const float CUSTOM_SCREEN_HIDDEN_X = -960f;  // カスタム画面非表示時のX座標（画面外）
@@ -59,8 +70,6 @@ namespace Olca.Presentation.Battle
             }
 
             // 初期状態設定：カスタム画面コンテナを画面外に配置
-            // Phase2でスライドインアニメーション実装予定
-            // 注意: HP・ゲージもCustomScreenContainerの子なので、別途配置が必要
             if (customScreenContainer != null)
             {
                 var anchoredPos = customScreenContainer.anchoredPosition;
@@ -96,59 +105,202 @@ namespace Olca.Presentation.Battle
                 }
             }
 
-            // 敵View更新
+            // 敵View更新（ダメージ検出機能付き）
             foreach (var enemyView in enemyViews)
             {
-                enemyView.Refresh();
+                // DamageNumberPoolが設定されていればダメージ検出機能を使用
+                if (damageNumberPool != null)
+                {
+                    enemyView.RefreshWithDamageDetection(damageNumberPool);
+                }
+                else
+                {
+                    enemyView.Refresh();
+                }
             }
 
             // グリッド更新
             battleFieldView.Refresh();
         }
 
-        // ========== カスタム画面制御 ==========
+        // ========== カスタム画面制御（UniTaskベース） ==========
         /// <summary>
-        /// カスタム画面を開く
-        /// Phase1: 座標を即座に切り替え（アニメーションなし）
-        /// Phase2: UniTask/DOTweenでスライドインアニメーション実装予定
+        /// カスタム画面を開く（UniTaskベースのアニメーション）
+        /// Phase2: オーバーランを含むスライドインアニメーション
         /// </summary>
         public void OpenCustomScreen()
         {
             if (isCustomScreenOpen) return;
             isCustomScreenOpen = true;
 
-            // CustomScreenContainerを画面内に移動（Phase1: 即座に移動）
-            if (customScreenContainer != null)
-            {
-                var anchoredPos = customScreenContainer.anchoredPosition;
-                anchoredPos.x = CUSTOM_SCREEN_VISIBLE_X;
-                customScreenContainer.anchoredPosition = anchoredPos;
-            }
+            // 前回のアニメーションをキャンセル
+            animationCts?.Cancel();
+            animationCts = new CancellationTokenSource();
 
-            // 「準備中」ラベルをゲージの上に表示
-            if (customGaugeLabel != null) customGaugeLabel.SetActive(true);
+            // アニメーション実行（非同期）
+            AnimateCustomScreenOpenAsync(animationCts.Token).Forget();
         }
 
         /// <summary>
-        /// カスタム画面を閉じる
-        /// Phase1: 座標を即座に切り替え（アニメーションなし）
-        /// Phase2: UniTask/DOTweenでスライドアウトアニメーション実装予定
+        /// カスタム画面を閉じる（UniTaskベースのアニメーション）
+        /// Phase2: オーバーランを含むスライドアウトアニメーション
+        /// アニメーション完了まで待つ
         /// </summary>
-        public void CloseCustomScreen()
+        public async UniTask CloseCustomScreenAsync()
         {
             if (!isCustomScreenOpen) return;
             isCustomScreenOpen = false;
 
-            // CustomScreenContainerを画面外に移動（Phase1: 即座に移動）
-            if (customScreenContainer != null)
+            // 前回のアニメーションをキャンセル
+            animationCts?.Cancel();
+            animationCts = new CancellationTokenSource();
+
+            // アニメーション実行（完了まで待つ）
+            await AnimateCustomScreenCloseAsync(animationCts.Token);
+        }
+
+        // ========== アニメーション実装（UniTask） ==========
+        /// <summary>
+        /// カスタム画面を開くアニメーション
+        /// 画面外 → オーバーラン → 定位置
+        /// </summary>
+        private async UniTask AnimateCustomScreenOpenAsync(CancellationToken ct)
+        {
+            if (customScreenContainer == null) return;
+
+            // 「準備中」ラベルを表示
+            if (customGaugeLabel != null) customGaugeLabel.SetActive(true);
+
+            // Phase 1: 画面外 → オーバーラン (0.25秒、EaseOutQuad)
+            float phase1Duration = animationDuration * 0.625f; // 0.25秒
+            float elapsed = 0f;
+
+            while (elapsed < phase1Duration)
             {
-                var anchoredPos = customScreenContainer.anchoredPosition;
-                anchoredPos.x = CUSTOM_SCREEN_HIDDEN_X;
-                customScreenContainer.anchoredPosition = anchoredPos;
+                elapsed += Time.deltaTime;
+                float t = elapsed / phase1Duration;
+                float easedT = EaseOutQuad(t);
+
+                float currentX = Mathf.Lerp(CUSTOM_SCREEN_HIDDEN_X, CUSTOM_SCREEN_VISIBLE_X + overshootAmount, easedT);
+                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+
+                await UniTask.Yield(ct);
             }
+
+            // Phase 2: オーバーラン → 定位置 (0.15秒、EaseInQuad)
+            float phase2Duration = animationDuration * 0.375f; // 0.15秒
+            elapsed = 0f;
+
+            while (elapsed < phase2Duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / phase2Duration;
+                float easedT = EaseInQuad(t);
+
+                float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X + overshootAmount, CUSTOM_SCREEN_VISIBLE_X, easedT);
+                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+
+                await UniTask.Yield(ct);
+            }
+
+            // 最終位置を保証
+            customScreenContainer.anchoredPosition = new Vector2(CUSTOM_SCREEN_VISIBLE_X, customScreenContainer.anchoredPosition.y);
+        }
+
+        /// <summary>
+        /// カスタム画面を閉じるアニメーション
+        /// 定位置 → オーバーラン → 画面外
+        /// </summary>
+        private async UniTask AnimateCustomScreenCloseAsync(CancellationToken ct)
+        {
+            if (customScreenContainer == null) return;
+
+            // Phase 1: 定位置 → オーバーラン (0.15秒、EaseOutQuad)
+            float phase1Duration = animationDuration * 0.375f; // 0.15秒
+            float elapsed = 0f;
+
+            while (elapsed < phase1Duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / phase1Duration;
+                float easedT = EaseOutQuad(t);
+
+                float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X, CUSTOM_SCREEN_VISIBLE_X + overshootAmount, easedT);
+                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+
+                await UniTask.Yield(ct);
+            }
+
+            // Phase 2: オーバーラン → 画面外 (0.25秒、EaseInQuad)
+            float phase2Duration = animationDuration * 0.625f; // 0.25秒
+            elapsed = 0f;
+
+            while (elapsed < phase2Duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / phase2Duration;
+                float easedT = EaseInQuad(t);
+
+                float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X + overshootAmount, CUSTOM_SCREEN_HIDDEN_X, easedT);
+                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+
+                await UniTask.Yield(ct);
+            }
+
+            // 最終位置を保証
+            customScreenContainer.anchoredPosition = new Vector2(CUSTOM_SCREEN_HIDDEN_X, customScreenContainer.anchoredPosition.y);
 
             // 「準備中」ラベルを非表示
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
+
+            // カスタムゲージを0にリセット（急速アニメーション）
+            await AnimateGaugeResetAsync(ct);
+        }
+
+        /// <summary>
+        /// カスタムゲージを最大から0へ急速にアニメーション
+        /// </summary>
+        private async UniTask AnimateGaugeResetAsync(CancellationToken ct)
+        {
+            if (customGaugeContainer == null) return;
+
+            var slider = customGaugeContainer.GetComponentInChildren<Slider>();
+            if (slider == null) return;
+
+            float resetDuration = 0.3f; // 0.3秒で急速にリセット
+            float elapsed = 0f;
+            float startValue = slider.value;
+
+            while (elapsed < resetDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / resetDuration;
+                float easedT = EaseInQuad(t);
+
+                slider.value = Mathf.Lerp(startValue, 0f, easedT);
+
+                await UniTask.Yield(ct);
+            }
+
+            // 最終値を保証
+            slider.value = 0f;
+        }
+
+        // ========== イージング関数 ==========
+        /// <summary>
+        /// EaseOutQuad: 速く始まり、ゆっくり終わる
+        /// </summary>
+        private float EaseOutQuad(float t)
+        {
+            return 1f - (1f - t) * (1f - t);
+        }
+
+        /// <summary>
+        /// EaseInQuad: ゆっくり始まり、速く終わる
+        /// </summary>
+        private float EaseInQuad(float t)
+        {
+            return t * t;
         }
 
         // ========== イベントハンドラー ==========
@@ -172,6 +324,10 @@ namespace Olca.Presentation.Battle
 
         private void OnDestroy()
         {
+            // アニメーション用CancellationTokenをキャンセル
+            animationCts?.Cancel();
+            animationCts?.Dispose();
+
             if (battleSystem != null)
             {
                 battleSystem.CustomGauge.OnGaugeChanged -= OnGaugeChanged;

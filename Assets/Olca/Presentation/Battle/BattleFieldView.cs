@@ -64,7 +64,7 @@ namespace Olca.Presentation.Battle
         {
             switch (type)
             {
-                case PanelType.Normal: return Color.white;
+                case PanelType.Normal: return new Color(0.8f, 0.8f, 0.8f);  // ライトグレー
                 case PanelType.Ice: return Color.cyan;
                 case PanelType.Grass: return Color.green;
                 case PanelType.Magma: return Color.red;
