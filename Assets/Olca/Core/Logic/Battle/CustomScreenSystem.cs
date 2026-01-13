@@ -14,18 +14,29 @@ namespace Olca.Core.Logic.Battle
     {
         private readonly Deck deck;
         private readonly List<Card> currentHand; // 現在表示されているカード
-        private readonly List<Card> selectedCards; // 選択されたカード
+        private readonly List<Card> selectedCards; // カスタム画面で今回選択中のカード（確定前）
+        private readonly List<Card> availableCards; // バトル中に使用可能なカード（確定済み）
         private int maxHandSize;
-        private int maxCost;
+        private int maxSelectionCount; // 最大選択枚数
+        private int maxCost; // 最大コスト
 
         /// <summary>現在の手札</summary>
         public IReadOnlyList<Card> CurrentHand => currentHand.AsReadOnly();
 
-        /// <summary>選択中のカード</summary>
+        /// <summary>カスタム画面で選択中のカード</summary>
         public IReadOnlyList<Card> SelectedCards => selectedCards.AsReadOnly();
+
+        /// <summary>バトル中に使用可能なカード（確定済みのカードのみ）</summary>
+        public IReadOnlyList<Card> AvailableCards => availableCards.AsReadOnly();
 
         /// <summary>手札上限</summary>
         public int MaxHandSize => maxHandSize;
+
+        /// <summary>最大選択枚数</summary>
+        public int MaxSelectionCount => maxSelectionCount;
+
+        /// <summary>最大コスト</summary>
+        public int MaxCost => maxCost;
 
         /// <summary>残りコスト</summary>
         public int RemainingCost => maxCost - GetTotalUsedCost();
@@ -36,25 +47,34 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public CustomScreenSystem(Deck deck, int maxHandSize = 5, int maxCost = 10)
+        public CustomScreenSystem(Deck deck, int maxHandSize = 10, int maxSelectionCount = 5, int maxCost = 10)
         {
             this.deck = deck ?? throw new ArgumentNullException(nameof(deck));
             this.currentHand = new List<Card>();
             this.selectedCards = new List<Card>();
+            this.availableCards = new List<Card>();
             this.maxHandSize = maxHandSize;
+            this.maxSelectionCount = maxSelectionCount;
             this.maxCost = maxCost;
         }
 
         /// <summary>
-        /// カスタム画面を開く
+        /// カスタム画面を開く（バトルシステムから未使用カードを受け取る）
         /// </summary>
-        public void Open(IRandomProvider random)
+        /// <param name="remainingCards">バトル中に未使用だったカード</param>
+        public void Open(IEnumerable<Card> remainingCards, IRandomProvider random)
         {
             if (IsOpen) return;
+            if (remainingCards == null) throw new ArgumentNullException(nameof(remainingCards));
 
             IsOpen = true;
 
-            // 手札が上限になるまでドロー
+            // バトルシステムから受け取った未使用カードを保持
+            availableCards.Clear();
+            availableCards.AddRange(remainingCards);
+
+            // 仕様: 選択しなかったカードは次のターンも手札に残る
+            // 手札が上限になるまでドロー（既存の手札枚数を考慮）
             int drawCount = maxHandSize - currentHand.Count;
             if (drawCount > 0)
             {
@@ -73,20 +93,19 @@ namespace Olca.Core.Logic.Battle
             if (card == null) throw new ArgumentNullException(nameof(card));
             if (!currentHand.Contains(card)) return false;
 
-            // 実際のコストを計算（系統ボーナスを考慮）
-            int actualCost = CalculateCardCost(card);
-
-            // コスト制限チェック
-            if (RemainingCost < actualCost)
+            // 選択枚数制限チェック
+            if (selectedCards.Count >= maxSelectionCount)
             {
-                OnSelectionFailed?.Invoke("コストが足りません");
+                OnSelectionFailed?.Invoke($"最大{maxSelectionCount}枚まで選択できます");
                 return false;
             }
 
-            // 同名カード制限チェック
-            if (selectedCards.Any(c => c.Name == card.Name))
+            // コスト制限チェック
+            int currentCost = GetTotalUsedCost();
+            int cardCost = CalculateCardCost(card);
+            if (currentCost + cardCost > maxCost)
             {
-                OnSelectionFailed?.Invoke("同名カードは1ターンに1枚しか選択できません");
+                OnSelectionFailed?.Invoke($"コストが上限（{maxCost}）を超えます");
                 return false;
             }
 
@@ -98,57 +117,6 @@ namespace Olca.Core.Logic.Battle
             return true;
         }
 
-        /// <summary>
-        /// カードの実際のコストを計算（系統ボーナスを考慮）
-        /// </summary>
-        private int CalculateCardCost(Card card)
-        {
-            int baseCost = card.Cost;
-
-            // 系統ボーナス: 前回選択したカードと同じ系統なら-1
-            if (selectedCards.Count > 0)
-            {
-                var lastCard = selectedCards[selectedCards.Count - 1];
-                if (lastCard.Series != null &&
-                    card.Series != null &&
-                    lastCard.Series.Equals(card.Series) &&
-                    !card.Series.Equals(CardSeries.None))
-                {
-                    baseCost = Math.Max(0, baseCost - 1);
-                }
-            }
-
-            return baseCost;
-        }
-
-        /// <summary>
-        /// 選択済みカードの合計コストを取得（系統ボーナス込み）
-        /// </summary>
-        private int GetTotalUsedCost()
-        {
-            int total = 0;
-            for (int i = 0; i < selectedCards.Count; i++)
-            {
-                var card = selectedCards[i];
-                int cost = card.Cost;
-
-                // 系統ボーナスの適用
-                if (i > 0)
-                {
-                    var prevCard = selectedCards[i - 1];
-                    if (prevCard.Series != null &&
-                        card.Series != null &&
-                        prevCard.Series.Equals(card.Series) &&
-                        !card.Series.Equals(CardSeries.None))
-                    {
-                        cost = Math.Max(0, cost - 1);
-                    }
-                }
-
-                total += cost;
-            }
-            return total;
-        }
 
         /// <summary>
         /// カードの選択を解除
@@ -166,17 +134,36 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
+        /// 確定ボタンが有効かどうか
+        /// </summary>
+        public bool CanConfirm()
+        {
+            // カスタム画面が開いていれば、0枚選択でも確定可能
+            return IsOpen;
+        }
+
+        /// <summary>
         /// 選択を確定してカスタム画面を閉じる
         /// </summary>
         public void Confirm()
         {
             if (!IsOpen) return;
 
-            // 未選択のカードを破棄
-            currentHand.Clear();
+            // 仕様:
+            // - 今回1枚以上選択した場合: availableCardsをクリアし、selectedCardsの内容をavailableCardsに移動
+            // - 今回0枚選択した場合: availableCardsをそのまま保持
+            // - 選択しなかったカード（currentHand）は次回も保持される
+            if (selectedCards.Count > 0)
+            {
+                // 前回の使用可能カードを破棄し、今回選択したカードを使用可能にする
+                availableCards.Clear();
+                availableCards.AddRange(selectedCards);
+                selectedCards.Clear();
+            }
+            // else: 何も選択していない場合は、前回の使用可能カードをそのまま保持
 
             IsOpen = false;
-            OnScreenClosed?.Invoke(selectedCards);
+            OnScreenClosed?.Invoke(availableCards);
         }
 
         /// <summary>
@@ -191,15 +178,15 @@ namespace Olca.Core.Logic.Battle
             selectedCards.Clear();
 
             IsOpen = false;
-            OnScreenClosed?.Invoke(selectedCards);
+            OnScreenClosed?.Invoke(availableCards);
         }
 
         /// <summary>
-        /// 選択済みカードをクリア（ターン開始時など）
+        /// 使用可能カードをクリア（バトル終了時など）
         /// </summary>
-        public void ClearSelectedCards()
+        public void ClearAvailableCards()
         {
-            selectedCards.Clear();
+            availableCards.Clear();
         }
 
         /// <summary>
@@ -212,12 +199,63 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
+        /// 最大選択枚数を変更
+        /// </summary>
+        public void SetMaxSelectionCount(int newMax)
+        {
+            if (newMax < 0) throw new ArgumentException("最大選択枚数は0以上である必要があります", nameof(newMax));
+            maxSelectionCount = newMax;
+        }
+
+        /// <summary>
         /// 最大コストを変更
         /// </summary>
         public void SetMaxCost(int newMax)
         {
             if (newMax < 0) throw new ArgumentException("最大コストは0以上である必要があります", nameof(newMax));
             maxCost = newMax;
+        }
+
+        /// <summary>
+        /// カードのコストを計算（同シリーズボーナス適用）
+        /// </summary>
+        private int CalculateCardCost(Card card)
+        {
+            int baseCost = card.Cost;
+
+            // 同シリーズボーナス: すでに選択されているカードと同じシリーズなら-1
+            if (selectedCards.Any(c => c.Series == card.Series))
+            {
+                baseCost = Math.Max(0, baseCost - 1);
+            }
+
+            return baseCost;
+        }
+
+        /// <summary>
+        /// 現在選択中のカードの合計コストを取得
+        /// </summary>
+        public int GetTotalUsedCost()
+        {
+            // 選択順にコストを計算（シリーズボーナスを考慮）
+            int totalCost = 0;
+            var processedCards = new List<Card>();
+
+            foreach (var card in selectedCards)
+            {
+                int cardCost = card.Cost;
+
+                // すでに選択されているカードと同じシリーズなら-1
+                if (processedCards.Any(c => c.Series == card.Series))
+                {
+                    cardCost = Math.Max(0, cardCost - 1);
+                }
+
+                totalCost += cardCost;
+                processedCards.Add(card);
+            }
+
+            return totalCost;
         }
 
         /// <summary>

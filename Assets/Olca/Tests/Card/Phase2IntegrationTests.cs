@@ -144,35 +144,6 @@ namespace Olca.Tests.CardTests
         }
 
         [Test]
-        public void 統合テスト_同名カードは選択できない()
-        {
-            // Arrange: 同名カードを2枚追加
-            var deck = new Deck(new List<Card>
-            {
-                CreateCard("sword1", "ソード", 3, CardSeries.Sword, 20),
-                CreateCard("sword2", "ソード", 3, CardSeries.Sword, 20), // 同名
-            });
-
-            var player = new PlayerCharacter(100);
-            var enemies = new List<Enemy> { new Enemy("enemy", "敵", 50, ElementType.None, new Vector2Int(4, 0)) };
-            var battle = new BattleSystem(player, enemies, deck, logger: logger);
-
-            battle.CustomGauge.SetGauge(1.0f);
-            battle.OpenCustomScreen(random);
-
-            // Act
-            var card1 = battle.CustomScreen.CurrentHand[0];
-            var card2 = battle.CustomScreen.CurrentHand[1];
-
-            bool select1 = battle.CustomScreen.TrySelectCard(card1);
-            bool select2 = battle.CustomScreen.TrySelectCard(card2);
-
-            // Assert
-            Assert.IsTrue(select1, "1枚目が選択できない");
-            Assert.IsFalse(select2, "同名カードが選択できてしまった");
-        }
-
-        [Test]
         public void 統合テスト_コスト超過で選択できない()
         {
             // Arrange

@@ -10,8 +10,23 @@ namespace Olca.Unity
     {
         private float basicAttackButtonPressTime;
         private bool wasBasicAttackButtonPressed;
+        private float lastHorizontal;
 
         public float Horizontal => Input.GetAxisRaw("Horizontal");
+
+        public float HorizontalDown
+        {
+            get
+            {
+                float current = Input.GetAxisRaw("Horizontal");
+                // 前フレームが0で、今フレームが0でない場合に立ち上がり
+                if (lastHorizontal == 0f && current != 0f)
+                {
+                    return current;
+                }
+                return 0f;
+            }
+        }
 
         public float Vertical => Input.GetAxisRaw("Vertical");
 
@@ -53,6 +68,9 @@ namespace Olca.Unity
                 basicAttackButtonPressTime = 0f;
                 wasBasicAttackButtonPressed = false;
             }
+
+            // 前フレームの横方向入力を記録（HorizontalDownの立ち上がり検出用）
+            lastHorizontal = Input.GetAxisRaw("Horizontal");
         }
     }
 }

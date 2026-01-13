@@ -72,9 +72,16 @@ public class BattleManager : MonoBehaviour
 #### 依存を避けるべきUnity固有要素:
 - `MonoBehaviour`
 - `Transform`、`GameObject`
-- `Coroutine`
+- **`Coroutine`（使用禁止）**
 - `UnityEngine.Random`
 - Unity固有の属性（`[SerializeField]`等）
+
+#### **重要: Coroutineの使用禁止**
+**このプロジェクトではCoroutineの使用を禁止します。**
+
+- **理由**: Coroutineはテスト困難、Unity依存、デバッグが難しい
+- **代替手段**: UniTask または async/await を使用
+- **アニメーション**: Animator または UniTask によるTween実装を使用
 
 #### 推奨する実装パターン:
 
@@ -136,7 +143,7 @@ namespace Olca.Tests
 }
 ```
 
-##### ✅ 良い例: コルーチンを使わない非同期処理
+##### ✅ 良い例: Coroutineを使わない処理
 ```csharp
 // Core/Logic/BattleSystem.cs
 public class BattleSystem
@@ -167,6 +174,49 @@ public class BattleController : MonoBehaviour
     {
         // Unity側でdeltaTimeを渡す
         battleSystem.UpdateGauge(Time.deltaTime);
+    }
+}
+```
+
+##### ✅ 良い例: UniTaskを使った非同期処理（将来実装予定）
+```csharp
+using Cysharp.Threading.Tasks;
+
+// Presentation/Battle/BattleView.cs
+public class BattleView : MonoBehaviour
+{
+    public async UniTask OpenCustomScreenAsync(CancellationToken ct)
+    {
+        // UniTaskによるアニメーション
+        await UniTask.WhenAll(
+            AnimateHpPositionAsync(ct),
+            AnimateGaugePositionAsync(ct),
+            AnimateCustomScreenAsync(ct)
+        );
+    }
+
+    private async UniTask AnimateHpPositionAsync(CancellationToken ct)
+    {
+        // DOTweenやUniTask.Delayを使用したアニメーション
+        await hpTransform.DOAnchorPosX(960f, 0.3f).ToUniTask(cancellationToken: ct);
+    }
+}
+```
+
+##### ❌ 悪い例: Coroutineの使用（禁止）
+```csharp
+// ❌ このようなコードは書かないでください
+public class BattleView : MonoBehaviour
+{
+    public void OpenCustomScreen()
+    {
+        StartCoroutine(AnimateOpen());  // NG: Coroutine使用禁止
+    }
+
+    private IEnumerator AnimateOpen()  // NG
+    {
+        // ...
+        yield return null;  // NG
     }
 }
 ```
@@ -221,8 +271,29 @@ Assets/
 │
 └── Planning/                   # 仕様書（既存）
     ├── バトルシステムについて
-    └── ダンジョンについて
+    ├── ダンジョンについて
+    └── ビジュアル・アート/    # UI/UXデザイン仕様（ビジュアルのみ）
+        ├── UIデザイン仕様.md
+        └── カスタム画面仕様.md
 ```
+
+### 仕様書の役割分担（重要）
+
+**Planning/配下の仕様書は役割が明確に分かれています:**
+
+1. **ゲームシステム仕様** (`Planning/バトルシステムについて`, `Planning/ダンジョンについて`)
+   - ゲームロジック・ルール・計算式
+   - コスト計算、選択制限ルール、シリーズボーナス等
+   - **実装時はこちらを参照してロジックを組む**
+
+2. **ビジュアル・UI仕様** (`Planning/ビジュアル・アート/`)
+   - 画面レイアウト、アニメーション、演出
+   - 色・サイズ・配置などの視覚要素
+   - **ゲームロジックは含まない（UI/UXのみ）**
+
+**注意**: カスタム画面の実装時は以下の両方を参照すること:
+- ゲームロジック → `Planning/バトルシステムについて` の「4.3. カードコストと選択ルール」
+- ビジュアル → `Planning/ビジュアル・アート/カスタム画面仕様.md`
 
 ---
 

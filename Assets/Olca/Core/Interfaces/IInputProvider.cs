@@ -12,6 +12,11 @@ namespace Olca.Core.Interfaces
         float Horizontal { get; }
 
         /// <summary>
+        /// 横方向の入力が押された瞬間か（-1.0 ~ 1.0）
+        /// </summary>
+        float HorizontalDown { get; }
+
+        /// <summary>
         /// 縦方向の入力（-1.0 ~ 1.0）
         /// </summary>
         float Vertical { get; }

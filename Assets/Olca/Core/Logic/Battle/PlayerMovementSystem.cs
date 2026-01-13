@@ -15,10 +15,11 @@ namespace Olca.Core.Logic.Battle
         private readonly BattleField field;
         private readonly IGameLogger logger;
 
-        private float moveCooldown; // 移動クールダウン（Grass効果用）
+        private float moveCooldown; // 移動クールダウン
         private Vector2Int? pendingSlideDirection; // Ice滑り中の方向
 
         private const float GRASS_MOVE_DELAY = 0.2f; // Grassパネルから移動時のクールダウン
+        private const float NORMAL_MOVE_DELAY = 0.15f; // 通常移動時のクールダウン（押しっぱなし対応）
 
         /// <summary>移動可能か（クールダウンと滑り状態をチェック）</summary>
         public bool CanMove => moveCooldown <= 0f && !pendingSlideDirection.HasValue;
@@ -64,6 +65,7 @@ namespace Olca.Core.Logic.Battle
             if (!CanMove) return;
 
             // 入力から移動方向を決定（現在は横移動のみ）
+            // Horizontalを使用して押しっぱなし移動に対応
             Vector2Int direction = Vector2Int.Zero;
 
             if (input.Horizontal > 0.5f) direction = new Vector2Int(1, 0); // 右
@@ -133,12 +135,17 @@ namespace Olca.Core.Logic.Battle
                 return false;
             }
 
-            // Grassパネルからの移動はクールダウン追加
+            // Grassパネルからの移動は長めのクールダウン、それ以外は通常のクールダウン
             PanelType currentPanel = field.GetPanelType(player.GridPosition);
             if (currentPanel == PanelType.Grass)
             {
                 moveCooldown = GRASS_MOVE_DELAY;
-                logger?.LogInfo("Grassパネルから移動: クールダウン追加");
+                logger?.LogInfo("Grassパネルから移動: 長めのクールダウン追加");
+            }
+            else
+            {
+                moveCooldown = NORMAL_MOVE_DELAY;
+                logger?.LogInfo("通常移動: クールダウン追加");
             }
 
             // 移動実行

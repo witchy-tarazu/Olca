@@ -17,7 +17,13 @@
       "Bash(git mv:*)",
       "Bash(if [ -f \"f:/G/UnityProjects/Olca/Assets/Olca/Core/Logic/CardEffects/Effects/ModifiableDamageEffect.cs.meta\" ])",
       "Bash(then mv \"f:/G/UnityProjects/Olca/Assets/Olca/Core/Logic/CardEffects/Effects/ModifiableDamageEffect.cs.meta\" \"f:/G/UnityProjects/Olca/Assets/Olca/Core/Logic/CardEffects/Effects/ModifiableCardEffect.cs.meta\")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__UnityMCP__read_console",
+      "mcp__serena__find_symbol",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__think_about_collected_information",
+      "mcp__serena__list_dir",
+      "mcp__serena__rename_symbol"
     ],
     "deny": [],
     "ask": []

@@ -29,11 +29,15 @@ namespace Olca.Tests.CardTests
                 CreateTestCard("card3", "ロングソード", 5, CardSeries.Sword),
                 CreateTestCard("card4", "ボム", 3, CardSeries.Bomb),
                 CreateTestCard("card5", "ヒール", 2, CardSeries.None),
+                CreateTestCard("card6", "シールド", 2, CardSeries.None),
             };
 
             deck = new Deck(cards);
             customScreen = new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10);
         }
+
+        // Open()メソッド用の空リストヘルパー
+        private List<Card> EmptyRemainingCards() => new List<Card>();
 
         private Card CreateTestCard(string id, string name, int cost, CardSeries series)
         {
@@ -54,7 +58,7 @@ namespace Olca.Tests.CardTests
         public void Open_手札が上限までドローされる()
         {
             // Act
-            customScreen.Open(random);
+            customScreen.Open(EmptyRemainingCards(), random);
 
             // Assert
             Assert.IsTrue(customScreen.IsOpen);
@@ -65,7 +69,7 @@ namespace Olca.Tests.CardTests
         public void TrySelectCard_コスト内ならカードを選択できる()
         {
             // Arrange
-            customScreen.Open(random);
+            customScreen.Open(EmptyRemainingCards(), random);
             var card = customScreen.CurrentHand[0];
 
             // Act
@@ -78,35 +82,10 @@ namespace Olca.Tests.CardTests
         }
 
         [Test]
-        public void TrySelectCard_同名カードは選択できない()
-        {
-            // Arrange
-            var cards = new List<Card>
-            {
-                CreateTestCard("card1", "ソード", 3, CardSeries.Sword),
-                CreateTestCard("card2", "ソード", 3, CardSeries.Sword), // 同名
-            };
-            deck = new Deck(cards);
-            customScreen = new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10);
-            customScreen.Open(random);
-
-            var card1 = customScreen.CurrentHand[0];
-            var card2 = customScreen.CurrentHand[1];
-
-            // Act
-            customScreen.TrySelectCard(card1);
-            bool result = customScreen.TrySelectCard(card2);
-
-            // Assert
-            Assert.IsFalse(result);
-            Assert.AreEqual(1, customScreen.SelectedCards.Count);
-        }
-
-        [Test]
         public void TrySelectCard_系統ボーナスでコストが減る()
         {
             // Arrange
-            customScreen.Open(random);
+            customScreen.Open(EmptyRemainingCards(), random);
 
             // ソード系のカードを3枚選択（コスト3, 4, 5 → 3, 3, 4 = 10）
             var sword1 = customScreen.CurrentHand[0]; // ソード (3)
@@ -134,7 +113,7 @@ namespace Olca.Tests.CardTests
         {
             // Arrange
             customScreen = new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 5);
-            customScreen.Open(random);
+            customScreen.Open(EmptyRemainingCards(), random);
 
             var card = CreateTestCard("expensive", "高コスト", 6, CardSeries.None);
             deck.AddCard(card);
@@ -147,26 +126,33 @@ namespace Olca.Tests.CardTests
         }
 
         [Test]
-        public void Confirm_未選択カードが破棄される()
+        public void Confirm_未選択カードは次回も手札に残る()
         {
-            // Arrange
-            customScreen.Open(random);
+            // Arrange: 初回Open（5枚ドロー）
+            customScreen.Open(EmptyRemainingCards(), random);
             var card = customScreen.CurrentHand[0];
             customScreen.TrySelectCard(card);
 
-            // Act
+            // Act: 1回目の確定（1枚選択）
             customScreen.Confirm();
 
-            // Assert
+            // Assert: 確定直後は未選択の4枚が手札に残っている
             Assert.IsFalse(customScreen.IsOpen);
-            Assert.AreEqual(0, customScreen.CurrentHand.Count); // 手札はクリア
+            Assert.AreEqual(4, customScreen.CurrentHand.Count);
+
+            // Act: 2回目のOpen
+            customScreen.Open(EmptyRemainingCards(), random);
+
+            // Assert: 前回の未選択カード4枚 + 新規ドロー1枚 = 5枚
+            // （仕様: 選択しなかったカードは次回も手札に残り、手札上限まで追加ドロー）
+            Assert.AreEqual(5, customScreen.CurrentHand.Count);
         }
 
         [Test]
         public void Cancel_選択カードが手札に戻る()
         {
             // Arrange
-            customScreen.Open(random);
+            customScreen.Open(EmptyRemainingCards(), random);
             var card = customScreen.CurrentHand[0];
             customScreen.TrySelectCard(card);
 

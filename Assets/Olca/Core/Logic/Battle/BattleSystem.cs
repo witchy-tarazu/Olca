@@ -191,7 +191,9 @@ namespace Olca.Core.Logic.Battle
                 return;
             }
 
-            customScreen.Open(random);
+            // 未使用カードを取得してカスタム画面に渡す
+            var remainingCards = cardUsage.QueuedCards;
+            customScreen.Open(remainingCards, random);
             Pause();
         }
 

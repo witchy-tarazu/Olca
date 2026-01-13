@@ -85,6 +85,7 @@ namespace Olca.Tests
         private class MockInputProvider : IInputProvider
         {
             public float Horizontal { get; set; }
+            public float HorizontalDown { get; set; }
             public float Vertical { get; set; }
             public bool JumpButtonDown { get; set; }
             public bool DashButton { get; set; }
@@ -96,6 +97,7 @@ namespace Olca.Tests
             public void Reset()
             {
                 Horizontal = 0f;
+                HorizontalDown = 0f;
                 Vertical = 0f;
                 JumpButtonDown = false;
                 DashButton = false;
