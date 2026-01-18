@@ -177,7 +177,7 @@ namespace Olca.Tests.Battle
             float initialCooldown = movement.CurrentCooldown;
 
             // Act
-            movement.Tick(0.1f, input, enemies);
+            movement.Tick(deltaTimeMs: 100, input, enemies);
 
             // Assert
             Assert.Less(movement.CurrentCooldown, initialCooldown, "クールダウンが減少するべき");
@@ -209,8 +209,8 @@ namespace Olca.Tests.Battle
             // Act: 右に移動してIceに入る
             movement.TryMove(new Vector2Int(1, 0), enemies);
             // Tick で滑りを処理
-            movement.Tick(0.1f, input, enemies); // 4→5
-            movement.Tick(0.1f, input, enemies); // 5→壁でストップ
+            movement.Tick(deltaTimeMs: 100, input, enemies); // 4→5
+            movement.Tick(deltaTimeMs: 100, input, enemies); // 5→壁でストップ
 
             // Assert
             Assert.AreEqual(new Vector2Int(5, 0), player.GridPosition, "右端で止まるべき");
@@ -229,8 +229,8 @@ namespace Olca.Tests.Battle
             // Act: 右に移動してIceに入る
             movement.TryMove(new Vector2Int(1, 0), enemies);
             // Tick で滑りを処理
-            movement.Tick(0.1f, input, enemies); // 3→4
-            movement.Tick(0.1f, input, enemies); // 4→敵でストップ
+            movement.Tick(deltaTimeMs: 100, input, enemies); // 3→4
+            movement.Tick(deltaTimeMs: 100, input, enemies); // 4→敵でストップ
 
             // Assert
             Assert.AreEqual(new Vector2Int(4, 0), player.GridPosition, "敵の手前で止まるべき");
@@ -247,7 +247,7 @@ namespace Olca.Tests.Battle
             // Act: 右に移動してIceに入る
             movement.TryMove(new Vector2Int(1, 0), enemies);
             // Tick で滑りを処理
-            movement.Tick(0.1f, input, enemies); // 3→4（通常パネル）でストップ
+            movement.Tick(deltaTimeMs: 100, input, enemies); // 3→4（通常パネル）でストップ
 
             // Assert
             Assert.AreEqual(new Vector2Int(4, 0), player.GridPosition, "通常パネルで止まるべき");
@@ -262,7 +262,7 @@ namespace Olca.Tests.Battle
             Vector2Int initialPos = player.GridPosition;
 
             // Act
-            movement.Tick(0.1f, input, enemies);
+            movement.Tick(deltaTimeMs: 100, input, enemies);
 
             // Assert
             Assert.AreEqual(new Vector2Int(initialPos.X + 1, initialPos.Y), player.GridPosition);

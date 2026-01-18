@@ -69,14 +69,15 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
-        /// 毎フレーム更新（deltaTimeを外部から受け取る）
+        /// 毎フレーム更新 - 整数ベース版
         /// </summary>
-        public void Tick(float deltaTime)
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        public void Tick(int deltaTimeMs)
         {
             if (IsInBattle || IsDungeonCleared) return;
 
             // プレイヤー移動更新
-            playerMovement.Update(deltaTime);
+            playerMovement.Update(deltaTimeMs);
 
             // 障害物判定
             CheckObstacles();

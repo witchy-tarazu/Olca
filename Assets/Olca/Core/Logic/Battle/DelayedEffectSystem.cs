@@ -5,6 +5,7 @@ namespace Olca.Core.Logic.Battle
     /// <summary>
     /// 遅延効果を管理するシステム
     /// 投擲カードなど、時間差で発動する効果を時間経過に応じて管理・実行する
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
     public class DelayedEffectSystem
     {
@@ -29,22 +30,22 @@ namespace Olca.Core.Logic.Battle
             activeEffects.Add(effect);
 
 #if UNITY_EDITOR || DEBUG
-            System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 遅延効果登録: 位置={effect.TargetPosition}, 残り時間={effect.RemainingTime}秒");
+            System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 遅延効果登録: 位置={effect.TargetPosition}, 残り時間={effect.RemainingTimeMs}ms");
 #endif
         }
 
         /// <summary>
-        /// 時間経過を更新し、発動タイミングに達した効果を実行
+        /// 時間経過を更新し、発動タイミングに達した効果を実行 - 整数ベース版
         /// </summary>
-        /// <param name="deltaTime">経過時間（秒）</param>
-        public void Update(float deltaTime)
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        public void Update(int deltaTimeMs)
         {
             for (int i = activeEffects.Count - 1; i >= 0; i--)
             {
                 var effect = activeEffects[i];
-                effect.RemainingTime -= deltaTime;
+                effect.RemainingTimeMs -= deltaTimeMs;
 
-                if (effect.RemainingTime <= 0)
+                if (effect.RemainingTimeMs <= 0)
                 {
                     // 投擲物タイプの場合のみ穴パネルチェック
                     if (effect.EffectType == DelayedEffectType.Projectile &&

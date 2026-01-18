@@ -69,7 +69,7 @@ namespace Olca.Tests.Battle
             int initialHp = player.CurrentHp;
 
             // Act
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
 
             // Assert
             Assert.Less(player.CurrentHp, initialHp, "プレイヤーがダメージを受けるべき");
@@ -91,7 +91,7 @@ namespace Olca.Tests.Battle
             int initialHp = player.CurrentHp;
 
             // Act
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
 
             // Assert
             Assert.AreEqual(initialHp, player.CurrentHp, "離れているので攻撃されないべき");
@@ -110,11 +110,11 @@ namespace Olca.Tests.Battle
             aiSystem.RegisterEnemy(enemy, actions);
 
             // 1回目の攻撃
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
             int hpAfterFirstAttack = player.CurrentHp;
 
             // Act: クールダウン中に再度更新
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
 
             // Assert
             Assert.AreEqual(hpAfterFirstAttack, player.CurrentHp, "クールダウン中は攻撃しないべき");
@@ -133,11 +133,11 @@ namespace Olca.Tests.Battle
             aiSystem.RegisterEnemy(enemy, actions);
 
             // 1回目の攻撃
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
             int hpAfterFirstAttack = player.CurrentHp;
 
             // Act: クールダウン時間経過
-            aiSystem.Tick(0.6f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 600, player, field, random);
 
             // Assert
             Assert.Less(player.CurrentHp, hpAfterFirstAttack, "クールダウン後に再攻撃するべき");
@@ -161,7 +161,7 @@ namespace Olca.Tests.Battle
             int hpBeforeUpdate = player.CurrentHp;
 
             // Act
-            aiSystem.Tick(0.2f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 200, player, field, random);
 
             // Assert
             Assert.AreEqual(hpBeforeUpdate, player.CurrentHp, "死んだ敵は攻撃しないべき");
@@ -186,7 +186,7 @@ namespace Olca.Tests.Battle
             int initialHp = player.CurrentHp;
 
             // Act
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
 
             // Assert
             Assert.AreEqual(initialHp - 10, player.CurrentHp, "2体の敵が同時に攻撃するべき（5+5=10ダメージ）");
@@ -206,12 +206,12 @@ namespace Olca.Tests.Battle
             aiSystem.RegisterEnemy(enemy, actions);
 
             // 1回目の攻撃でプレイヤーを倒す
-            aiSystem.Tick(0.1f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 100, player, field, random);
             Assert.IsTrue(player.IsDead, "プレイヤーが死亡するべき");
 
             // Act: 死んだプレイヤーに再度攻撃を試みる
             int hpAfterDeath = player.CurrentHp;
-            aiSystem.Tick(0.2f, player, field, random);
+            aiSystem.Tick(deltaTimeMs: 200, player, field, random);
 
             // Assert
             Assert.AreEqual(hpAfterDeath, player.CurrentHp, "死んだプレイヤーは攻撃されないべき");

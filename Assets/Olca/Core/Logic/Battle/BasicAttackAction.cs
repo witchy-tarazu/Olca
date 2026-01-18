@@ -4,21 +4,32 @@ namespace Olca.Core.Logic.Battle
 {
     /// <summary>
     /// 基本攻撃AI: プレイヤーに隣接したら攻撃
+    /// 整数ベース（ミリ秒）で時間を管理
     /// </summary>
     public class BasicAttackAction : IEnemyAIAction
     {
         private readonly int attackDamage;
-        private readonly float cooldown;
+        private readonly int cooldownMs;
 
         /// <summary>
-        /// コンストラクタ
+        /// コンストラクタ - ミリ秒版
+        /// </summary>
+        /// <param name="attackDamage">攻撃ダメージ</param>
+        /// <param name="cooldownMs">攻撃後のクールダウン時間（ミリ秒）</param>
+        public BasicAttackAction(int attackDamage, int cooldownMs)
+        {
+            this.attackDamage = attackDamage;
+            this.cooldownMs = cooldownMs;
+        }
+
+        /// <summary>
+        /// コンストラクタ - float版（後方互換）
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldown">攻撃後のクールダウン時間（秒）</param>
         public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f)
+            : this(attackDamage, (int)(cooldown * 1000f))
         {
-            this.attackDamage = attackDamage;
-            this.cooldown = cooldown;
         }
 
         /// <summary>
@@ -45,8 +56,13 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// 攻撃後のクールダウン時間を取得
+        /// 攻撃後のクールダウン時間を取得（ミリ秒）
         /// </summary>
-        public float GetCooldown() => cooldown;
+        public int GetCooldownMs() => cooldownMs;
+
+        /// <summary>
+        /// 攻撃後のクールダウン時間を取得（秒）- 互換性用
+        /// </summary>
+        public float GetCooldown() => cooldownMs / 1000f;
     }
 }

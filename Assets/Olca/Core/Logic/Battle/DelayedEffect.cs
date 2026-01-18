@@ -21,11 +21,12 @@ namespace Olca.Core.Logic.Battle
     /// <summary>
     /// 個別の遅延効果データ
     /// カードの前隙・後隙、投擲カードなど、時間差で発動する効果を表現する
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
     public class DelayedEffect
     {
-        /// <summary>残り時間（秒）</summary>
-        public float RemainingTime { get; set; }
+        /// <summary>残り時間（ミリ秒）</summary>
+        public int RemainingTimeMs { get; set; }
 
         /// <summary>効果タイプ</summary>
         public DelayedEffectType EffectType { get; set; }
@@ -43,23 +44,23 @@ namespace Olca.Core.Logic.Battle
         public Action OnCancelled { get; set; }
 
         /// <summary>
-        /// コンストラクタ（投擲物用）
+        /// コンストラクタ（投擲物用）- ミリ秒版
         /// </summary>
-        public DelayedEffect(float delayTime, Vector2Int targetPosition, bool cancelOnHole = true)
+        public DelayedEffect(int delayTimeMs, Vector2Int targetPosition, bool cancelOnHole = true)
         {
-            RemainingTime = delayTime;
+            RemainingTimeMs = delayTimeMs;
             EffectType = DelayedEffectType.Projectile;
             TargetPosition = targetPosition;
             CancelOnHole = cancelOnHole;
         }
 
         /// <summary>
-        /// コンストラクタ（前隙・後隙用）
+        /// コンストラクタ（前隙・後隙用）- ミリ秒版
         /// </summary>
-        public DelayedEffect(DelayedEffectType effectType, float delayTime)
+        public DelayedEffect(DelayedEffectType effectType, int delayTimeMs)
         {
             EffectType = effectType;
-            RemainingTime = delayTime;
+            RemainingTimeMs = delayTimeMs;
             TargetPosition = new Vector2Int(0, 0); // 未使用
             CancelOnHole = false; // 未使用
         }

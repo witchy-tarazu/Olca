@@ -8,6 +8,7 @@ namespace Olca.Core.Logic.Battle
     /// <summary>
     /// 全敵のAIを統括管理するシステム
     /// BattleSystem.Tick()から呼び出される
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
     public class EnemyAISystem
     {
@@ -63,13 +64,13 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// 全敵のAIを更新
+        /// 全敵のAIを更新 - 整数ベース版
         /// </summary>
-        /// <param name="deltaTime">経過時間（秒）</param>
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         /// <param name="player">プレイヤーキャラクター</param>
         /// <param name="field">バトルフィールド</param>
         /// <param name="random">乱数プロバイダー</param>
-        public void Tick(float deltaTime, PlayerCharacter player, BattleField field, IRandomProvider random)
+        public void Tick(int deltaTimeMs, PlayerCharacter player, BattleField field, IRandomProvider random)
         {
             if (player == null || field == null) return;
 
@@ -82,8 +83,9 @@ namespace Olca.Core.Logic.Battle
                 var context = new AIContext(behavior.Enemy, player, field, random, logger);
 
                 // AI更新
-                behavior.Update(deltaTime, context);
+                behavior.Update(deltaTimeMs, context);
             }
         }
+
     }
 }

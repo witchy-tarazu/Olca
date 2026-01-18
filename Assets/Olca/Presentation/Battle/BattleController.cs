@@ -76,8 +76,9 @@ namespace Olca.Presentation.Battle
             // 入力プロバイダーの状態を更新（立ち上がり検出用）
             inputProvider?.Update();
 
-            // Core層のTickを呼ぶ（deltaTimeとinputを渡す）
-            battleSystem.Tick(Time.deltaTime, inputProvider);
+            // Core層のTickを呼ぶ（整数ベースのdeltaTimeMsとinputを渡す）
+            int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
+            battleSystem.Tick(deltaTimeMs, inputProvider);
 
             // View更新（必要に応じて）
             battleView.Refresh();

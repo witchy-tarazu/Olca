@@ -5,47 +5,57 @@ namespace Olca.Core.Logic.Battle
     /// <summary>
     /// カスタムゲージシステム
     /// リアルタイムに溜まり、満タンでカスタム画面を開ける
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
     public class CustomGaugeSystem
     {
-        private float currentGauge; // 0.0 ~ MAX_GAUGE
-        private readonly float gaugeSpeed;
+        private long currentGaugeMs; // 0 ~ MAX_GAUGE_MS
+        private readonly int gaugeSpeedPerSecond; // 1秒あたりの増加量（ミリ秒単位で計算時に使用）
 
-        /// <summary>ゲージの最大値</summary>
+        /// <summary>ゲージの最大値（ミリ秒単位）- 10秒相当</summary>
+        public const int MAX_GAUGE_MS = 10000;
+
+        /// <summary>ゲージの最大値（旧インターフェース互換）</summary>
         public const float MAX_GAUGE = 10.0f;
 
-        /// <summary>現在のゲージ量（0.0～MAX_GAUGE）</summary>
-        public float CurrentGauge => currentGauge;
+        /// <summary>現在のゲージ量（ミリ秒単位）</summary>
+        public long CurrentGaugeMs => currentGaugeMs;
+
+        /// <summary>現在のゲージ量（0.0～MAX_GAUGE）- 互換性用</summary>
+        public float CurrentGauge => currentGaugeMs / 1000f;
 
         /// <summary>現在のゲージ量（正規化: 0.0～1.0）View表示用</summary>
-        public float NormalizedGauge => currentGauge / MAX_GAUGE;
+        public float NormalizedGauge => (float)currentGaugeMs / MAX_GAUGE_MS;
 
         /// <summary>ゲージが満タンか</summary>
-        public bool IsFull => currentGauge >= MAX_GAUGE;
+        public bool IsFull => currentGaugeMs >= MAX_GAUGE_MS;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="gaugeSpeed">ゲージの溜まる速度（1秒あたりの増加量、デフォルト2.0）</param>
-        public CustomGaugeSystem(float gaugeSpeed = 2.0f)
+        /// <param name="gaugeSpeedPerSecond">ゲージの溜まる速度（1秒あたりの増加量、デフォルト2.0）</param>
+        public CustomGaugeSystem(float gaugeSpeedPerSecond = 2.0f)
         {
-            this.gaugeSpeed = gaugeSpeed;
-            this.currentGauge = 0f;
+            // 1秒あたりの増加量をミリ秒単位に変換して保持
+            this.gaugeSpeedPerSecond = (int)(gaugeSpeedPerSecond * 1000f);
+            this.currentGaugeMs = 0;
         }
 
         /// <summary>
-        /// ゲージを更新（毎フレーム呼び出す）
+        /// ゲージを更新（毎フレーム呼び出す）- 整数ベース版
         /// </summary>
-        /// <param name="deltaTime">前フレームからの経過時間</param>
-        public void Update(float deltaTime)
+        /// <param name="deltaTimeMs">前フレームからの経過時間（ミリ秒）</param>
+        public void Update(int deltaTimeMs)
         {
             if (IsFull) return;
 
-            currentGauge += gaugeSpeed * deltaTime;
+            // 整数演算: gaugeSpeedPerSecond は「1000ms あたりの増加量（ms単位）」
+            // deltaTimeMs ミリ秒経過時の増加量 = gaugeSpeedPerSecond * deltaTimeMs / 1000
+            currentGaugeMs += (long)gaugeSpeedPerSecond * deltaTimeMs / 1000;
 
-            if (currentGauge >= MAX_GAUGE)
+            if (currentGaugeMs >= MAX_GAUGE_MS)
             {
-                currentGauge = MAX_GAUGE;
+                currentGaugeMs = MAX_GAUGE_MS;
                 OnGaugeFull?.Invoke();
             }
 
@@ -57,23 +67,32 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void Reset()
         {
-            currentGauge = 0f;
+            currentGaugeMs = 0;
             OnGaugeChanged?.Invoke(NormalizedGauge);
         }
 
         /// <summary>
-        /// ゲージを任意の値に設定（デバッグ用）
+        /// ゲージを任意の値に設定（デバッグ用）- ミリ秒版
         /// </summary>
-        /// <param name="value">設定する値（0.0～MAX_GAUGE）</param>
-        public void SetGauge(float value)
+        /// <param name="valueMs">設定する値（ミリ秒、0～MAX_GAUGE_MS）</param>
+        public void SetGaugeMs(long valueMs)
         {
-            currentGauge = Math.Max(0f, Math.Min(value, MAX_GAUGE));
+            currentGaugeMs = Math.Max(0, Math.Min(valueMs, MAX_GAUGE_MS));
             OnGaugeChanged?.Invoke(NormalizedGauge);
 
             if (IsFull)
             {
                 OnGaugeFull?.Invoke();
             }
+        }
+
+        /// <summary>
+        /// ゲージを任意の値に設定（デバッグ用）- float版（後方互換）
+        /// </summary>
+        /// <param name="value">設定する値（0.0～MAX_GAUGE）</param>
+        public void SetGauge(float value)
+        {
+            SetGaugeMs((long)(value * 1000f));
         }
 
         /// <summary>

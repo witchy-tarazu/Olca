@@ -63,7 +63,7 @@ namespace Olca.Tests.Integration
             float initialPosition = manager.Dungeon.PlayerPosition;
 
             // Act
-            manager.Tick(1.0f);
+            manager.Tick(deltaTimeMs: 1000);
 
             // Assert
             Assert.Greater(manager.Dungeon.PlayerPosition, initialPosition, "ダンジョンでプレイヤーが前進");
@@ -84,7 +84,7 @@ namespace Olca.Tests.Integration
             // Act: 敵まで進める
             for (int i = 0; i < 200; i++)
             {
-                manager.Tick(0.1f);
+                manager.Tick(deltaTimeMs: 100);
                 if (battleStarted != null) break;
             }
 
@@ -109,7 +109,7 @@ namespace Olca.Tests.Integration
             // 敵まで進める
             for (int i = 0; i < 200; i++)
             {
-                manager.Tick(0.1f);
+                manager.Tick(deltaTimeMs: 100);
                 if (manager.CurrentPhase == GamePhase.Battle) break;
             }
 
@@ -126,7 +126,7 @@ namespace Olca.Tests.Integration
             }
 
             // Tick を進めてバトル終了を処理
-            manager.Tick(0.1f);
+            manager.Tick(deltaTimeMs: 100);
 
             // Assert
             Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase, "ダンジョンフェーズに戻る");
@@ -148,7 +148,7 @@ namespace Olca.Tests.Integration
             // 敵まで進める
             for (int i = 0; i < 200; i++)
             {
-                manager.Tick(0.1f);
+                manager.Tick(deltaTimeMs: 100);
                 if (manager.CurrentPhase == GamePhase.Battle) break;
             }
 
@@ -158,7 +158,7 @@ namespace Olca.Tests.Integration
             player.TakeDamage(200);
 
             // Tick を進めてバトル終了を処理
-            manager.Tick(0.1f);
+            manager.Tick(deltaTimeMs: 100);
 
             // Assert
             Assert.AreEqual(GamePhase.GameOver, manager.CurrentPhase);
@@ -181,7 +181,7 @@ namespace Olca.Tests.Integration
             manager.StartDash();
             for (int i = 0; i < 200; i++)
             {
-                manager.Tick(0.1f);
+                manager.Tick(deltaTimeMs: 100);
                 if (receivedContactInfo != null) break;
             }
 
@@ -207,7 +207,7 @@ namespace Olca.Tests.Integration
 
             // Act: ダンジョンフェーズでジャンプ
             manager.Jump();
-            manager.Tick(0.1f);  // Tickを呼んでHeightを更新
+            manager.Tick(deltaTimeMs: 100);  // Tickを呼んでHeightを更新
 
             // Assert
             Assert.Greater(manager.Dungeon.PlayerHeight, 0f, "ジャンプした");
@@ -215,7 +215,7 @@ namespace Olca.Tests.Integration
             // バトルフェーズに移行
             for (int i = 0; i < 200; i++)
             {
-                manager.Tick(0.1f);
+                manager.Tick(deltaTimeMs: 100);
                 if (manager.CurrentPhase == GamePhase.Battle) break;
             }
 

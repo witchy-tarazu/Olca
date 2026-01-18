@@ -199,10 +199,11 @@ namespace Olca.Unity
 
         private void Update()
         {
-            // バトルシステムの更新
+            // バトルシステムの更新（整数ベースのdeltaTimeMs）
             if (battleSystem != null && !battleSystem.IsGameOver)
             {
-                battleSystem.Tick(Time.deltaTime);
+                int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
+                battleSystem.Tick(deltaTimeMs);
             }
         }
     }

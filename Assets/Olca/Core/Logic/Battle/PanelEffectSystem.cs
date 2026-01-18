@@ -7,6 +7,7 @@ namespace Olca.Core.Logic.Battle
     /// <summary>
     /// パネル効果システム
     /// Magma即時ダメージ、Cracked破壊など、パネルタイプに応じた効果を管理
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
     public class PanelEffectSystem
     {
@@ -25,13 +26,13 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// パネル効果を更新（毎フレーム呼び出す）
+        /// パネル効果を更新（毎フレーム呼び出す）- 整数ベース版
         /// </summary>
         /// <remarks>
         /// 現在は継続効果がないため、このメソッドは何もしません。
         /// 将来的に継続効果が追加される場合はここで処理します。
         /// </remarks>
-        public void Tick(float deltaTime, PlayerCharacter player)
+        public void Tick(int deltaTimeMs, PlayerCharacter player)
         {
             // 現在は継続効果なし
         }

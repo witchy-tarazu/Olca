@@ -4,54 +4,80 @@ namespace Olca.Core.Logic.Dungeon
 {
     /// <summary>
     /// プレイヤーの移動ロジック（Unity非依存）
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
+    /// 位置は1/1000単位（ミリ単位）で管理
     /// </summary>
     public class PlayerMovement
     {
-        private float currentPosition;  // 現在位置（浮動小数点）
-        private float velocity;         // 速度
+        private long currentPositionMilli;  // 現在位置（1/1000単位）
         private bool isJumping;
         private bool isDashing;
         private bool isPaused;          // 一時停止中（バトル中など）
 
-        private float jumpTimer;
-        private const float BASE_SPEED = 2.0f;      // 基本移動速度（マス/秒）
-        private const float DASH_SPEED = 5.0f;      // ダッシュ速度
-        private const float JUMP_DURATION = 0.5f;   // ジャンプ時間（秒）
-        private const float JUMP_HEIGHT = 1.5f;     // ジャンプの最大高さ
+        private int jumpTimerMs;
+        private const int BASE_SPEED_MILLI_PER_SEC = 2000;  // 基本移動速度（ミリ単位/秒）= 2.0
+        private const int DASH_SPEED_MILLI_PER_SEC = 5000;  // ダッシュ速度（ミリ単位/秒）= 5.0
+        private const int JUMP_DURATION_MS = 500;           // ジャンプ時間（ミリ秒）= 0.5秒
+        private const int JUMP_HEIGHT_MILLI = 1500;         // ジャンプの最大高さ（ミリ単位）= 1.5
 
-        public float CurrentPosition => currentPosition;
-        public float Height { get; private set; }  // 高さ（0.0=地上）
+        private int heightMilli;  // 高さ（ミリ単位、0=地上）
+
+        /// <summary>現在位置（ミリ単位）</summary>
+        public long CurrentPositionMilli => currentPositionMilli;
+
+        /// <summary>現在位置（float互換）</summary>
+        public float CurrentPosition => currentPositionMilli / 1000f;
+
+        /// <summary>高さ（ミリ単位）</summary>
+        public int HeightMilli => heightMilli;
+
+        /// <summary>高さ（float互換、0.0=地上）</summary>
+        public float Height => heightMilli / 1000f;
+
+        /// <summary>ダッシュ中か</summary>
         public bool IsDashing => isDashing;
+
+        /// <summary>ジャンプ中か</summary>
         public bool IsJumping => isJumping;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public PlayerMovement(float initialPosition = 0f)
+        /// <param name="initialPosition">初期位置（ミリ単位、デフォルト0）</param>
+        public PlayerMovement(long initialPositionMilli = 0)
         {
-            currentPosition = initialPosition;
-            velocity = 0f;
-            Height = 0f;
+            currentPositionMilli = initialPositionMilli;
+            heightMilli = 0;
             isJumping = false;
             isDashing = false;
             isPaused = false;
         }
 
         /// <summary>
-        /// 毎フレーム更新（deltaTimeを外部から受け取る）
+        /// コンストラクタ - float版（後方互換）
         /// </summary>
-        public void Update(float deltaTime)
+        public PlayerMovement(float initialPosition)
+            : this((long)(initialPosition * 1000f))
+        {
+        }
+
+        /// <summary>
+        /// 毎フレーム更新 - 整数ベース版
+        /// </summary>
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        public void Update(int deltaTimeMs)
         {
             if (isPaused) return;
 
-            // 速度決定
-            float speed = isDashing ? DASH_SPEED : BASE_SPEED;
-            currentPosition += speed * deltaTime;
+            // 速度決定（ミリ単位/秒）
+            int speedMilliPerSec = isDashing ? DASH_SPEED_MILLI_PER_SEC : BASE_SPEED_MILLI_PER_SEC;
+            // 移動量 = 速度 × 時間 / 1000（速度が「/秒」なので1000で割る）
+            currentPositionMilli += (long)speedMilliPerSec * deltaTimeMs / 1000;
 
             // ジャンプ処理
             if (isJumping)
             {
-                UpdateJump(deltaTime);
+                UpdateJump(deltaTimeMs);
             }
         }
 
@@ -79,27 +105,28 @@ namespace Olca.Core.Logic.Dungeon
             if (isJumping || isPaused) return;
 
             isJumping = true;
-            jumpTimer = 0f;
+            jumpTimerMs = 0;
         }
 
         /// <summary>
         /// ジャンプ更新
         /// </summary>
-        private void UpdateJump(float deltaTime)
+        private void UpdateJump(int deltaTimeMs)
         {
-            jumpTimer += deltaTime;
+            jumpTimerMs += deltaTimeMs;
 
-            // 放物線運動（sin波で簡易実装）
-            float t = jumpTimer / JUMP_DURATION;
-            if (t > 1.0f)
+            if (jumpTimerMs >= JUMP_DURATION_MS)
             {
                 // ジャンプ終了
                 isJumping = false;
-                Height = 0f;
+                heightMilli = 0;
             }
             else
             {
-                Height = (float)Math.Sin(t * Math.PI) * JUMP_HEIGHT;
+                // 放物線運動（sin波で簡易実装）
+                // t = jumpTimerMs / JUMP_DURATION_MS (0.0 ～ 1.0)
+                float t = (float)jumpTimerMs / JUMP_DURATION_MS;
+                heightMilli = (int)(Math.Sin(t * Math.PI) * JUMP_HEIGHT_MILLI);
             }
         }
 
@@ -120,11 +147,19 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
-        /// 位置をリセット
+        /// 位置をリセット（ミリ単位版）
+        /// </summary>
+        public void SetPositionMilli(long positionMilli)
+        {
+            currentPositionMilli = positionMilli;
+        }
+
+        /// <summary>
+        /// 位置をリセット（float版、後方互換）
         /// </summary>
         public void SetPosition(float position)
         {
-            currentPosition = position;
+            currentPositionMilli = (long)(position * 1000f);
         }
     }
 }

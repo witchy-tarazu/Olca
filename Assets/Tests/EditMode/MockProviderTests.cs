@@ -47,35 +47,52 @@ namespace Olca.Tests
 
         /// <summary>
         /// テスト用の時間プロバイダー
+        /// 整数ベース（ミリ秒）で時間を管理
         /// </summary>
         private class MockTimeProvider : ITimeProvider
         {
-            private float deltaTime;
-            private float time;
+            private int deltaTimeMs;
+            private long timeMs;
 
-            public MockTimeProvider(float deltaTime = 0.016f)
+            public MockTimeProvider(int deltaTimeMs = 16)  // 16ms ≈ 60fps
             {
-                this.deltaTime = deltaTime;
-                this.time = 0f;
+                this.deltaTimeMs = deltaTimeMs;
+                this.timeMs = 0;
             }
 
-            public float DeltaTime => deltaTime;
-            public float Time => time;
-            public float UnscaledDeltaTime => deltaTime;
+            // 整数ベースのプロパティ（推奨）
+            public int DeltaTimeMs => deltaTimeMs;
+            public long TimeMs => timeMs;
+            public int UnscaledDeltaTimeMs => deltaTimeMs;
+
+            // float版（後方互換・View層用）
+            public float DeltaTime => deltaTimeMs / 1000f;
+            public float Time => timeMs / 1000f;
+            public float UnscaledDeltaTime => deltaTimeMs / 1000f;
+
+            public void SetDeltaTime(int valueMs)
+            {
+                deltaTimeMs = valueMs;
+            }
 
             public void SetDeltaTime(float value)
             {
-                deltaTime = value;
+                deltaTimeMs = (int)(value * 1000f);
+            }
+
+            public void Advance(int milliseconds)
+            {
+                timeMs += milliseconds;
             }
 
             public void Advance(float seconds)
             {
-                time += seconds;
+                timeMs += (long)(seconds * 1000f);
             }
 
             public void Reset()
             {
-                time = 0f;
+                timeMs = 0;
             }
         }
 

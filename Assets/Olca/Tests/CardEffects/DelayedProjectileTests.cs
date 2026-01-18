@@ -100,15 +100,15 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(100, enemies[0].CurrentHp, "着弾前は敵1はダメージを受けないべき");
             Assert.AreEqual(100, enemies[1].CurrentHp, "着弾前は敵2はダメージを受けないべき");
 
-            // Act: 0.5秒経過（まだ着弾しない）
-            battle.DelayedEffects.Update(0.5f);
+            // Act: 500ms経過（まだ着弾しない）
+            battle.DelayedEffects.Update(deltaTimeMs: 500);
 
             // Assert: まだダメージなし
-            Assert.AreEqual(100, enemies[0].CurrentHp, "0.5秒後も敵1はダメージを受けないべき");
-            Assert.AreEqual(100, enemies[1].CurrentHp, "0.5秒後も敵2はダメージを受けないべき");
+            Assert.AreEqual(100, enemies[0].CurrentHp, "500ms後も敵1はダメージを受けないべき");
+            Assert.AreEqual(100, enemies[1].CurrentHp, "500ms後も敵2はダメージを受けないべき");
 
-            // Act: さらに0.5秒経過（合計1.0秒で着弾）
-            battle.DelayedEffects.Update(0.5f);
+            // Act: さらに500ms経過（合計1000msで着弾）
+            battle.DelayedEffects.Update(deltaTimeMs: 500);
 
             // Assert: 着弾して爆風ダメージが発生
             // 着弾位置(3,0)から前方1マス(4,0)に爆風
@@ -144,8 +144,8 @@ namespace Olca.Tests.CardEffects
             // Assert: 着弾前はダメージなし
             Assert.AreEqual(100, enemies[0].CurrentHp);
 
-            // Act: 1.0秒経過で着弾
-            battle.DelayedEffects.Update(1.0f);
+            // Act: 1000ms経過で着弾
+            battle.DelayedEffects.Update(deltaTimeMs: 1000);
 
             // Assert: 着弾地点(3,0)の敵1が直接ダメージを受ける
             Assert.AreEqual(50, enemies[0].CurrentHp, "敵1が直接ダメージ50を受けるべき");
@@ -185,8 +185,8 @@ namespace Olca.Tests.CardEffects
             // 着弾前に着弾地点を穴パネルにする
             battle.Field.ChangePanelType(new Vector2Int(3, 0), PanelType.Hole);
 
-            // 1.0秒経過で着弾
-            battle.DelayedEffects.Update(1.0f);
+            // 1000ms経過で着弾
+            battle.DelayedEffects.Update(deltaTimeMs: 1000);
 
             // Assert: 穴パネルに落下して効果が無効化される
             Assert.AreEqual(100, enemies[0].CurrentHp, "穴に落ちて効果が無効化されるべき");
@@ -243,15 +243,15 @@ namespace Olca.Tests.CardEffects
             // Assert: 2つの遅延効果が登録される
             Assert.AreEqual(2, battle.DelayedEffects.ActiveEffectCount, "2つの遅延効果が登録されるべき");
 
-            // Act: 1.0秒経過（1つ目が着弾）
-            battle.DelayedEffects.Update(1.0f);
+            // Act: 1000ms経過（1つ目が着弾）
+            battle.DelayedEffects.Update(deltaTimeMs: 1000);
 
             // Assert: 1つ目のボムが着弾（位置3,0から前方1マス4,0に爆風）
             Assert.AreEqual(85, enemies[1].CurrentHp, "敵2が1つ目の爆風で15ダメージを受けるべき");
             Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount, "1つの遅延効果が残っているべき");
 
-            // Act: さらに0.5秒経過（2つ目が着弾）
-            battle.DelayedEffects.Update(0.5f);
+            // Act: さらに500ms経過（2つ目が着弾）
+            battle.DelayedEffects.Update(deltaTimeMs: 500);
 
             // Assert: 2つ目のボムが着弾（位置4,0から前方1マス5,0に爆風）
             Assert.AreEqual(85, enemies[2].CurrentHp, "敵3が2つ目の爆風で15ダメージを受けるべき");

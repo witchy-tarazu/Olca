@@ -53,8 +53,8 @@ namespace Olca.Tests.Dungeon
             var dungeon = CreateDungeonSystem();
             float initialPosition = dungeon.PlayerPosition;
 
-            // Act
-            dungeon.Tick(deltaTime: 1.0f);
+            // Act - 整数ベース版: 1000ms = 1秒
+            dungeon.Tick(deltaTimeMs: 1000);
 
             // Assert
             Assert.Greater(dungeon.PlayerPosition, initialPosition, "プレイヤーが前進している");
@@ -70,7 +70,7 @@ namespace Olca.Tests.Dungeon
             // 今回は接敵まで進める
             for (int i = 0; i < 100; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (dungeon.IsInBattle) break;
             }
 
@@ -79,7 +79,7 @@ namespace Olca.Tests.Dungeon
             float positionDuringBattle = dungeon.PlayerPosition;
 
             // Act
-            dungeon.Tick(1.0f);
+            dungeon.Tick(deltaTimeMs: 1000);  // 1000ms = 1秒
 
             // Assert
             Assert.AreEqual(positionDuringBattle, dungeon.PlayerPosition, "バトル中は移動しない");
@@ -102,7 +102,7 @@ namespace Olca.Tests.Dungeon
             // Act: 敵がいるマスまで進める（5マス目に敵がいる）
             for (int i = 0; i < 200; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (battleStarted) break;
             }
 
@@ -129,7 +129,7 @@ namespace Olca.Tests.Dungeon
             dungeon.StartDash();
             for (int i = 0; i < 200; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (receivedContactInfo != null) break;
             }
 
@@ -148,7 +148,7 @@ namespace Olca.Tests.Dungeon
 
             // Act
             dungeon.Jump();
-            dungeon.Tick(0.1f);  // ジャンプ更新
+            dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒、ジャンプ更新
 
             // Assert
             Assert.Greater(dungeon.PlayerHeight, initialHeight, "ジャンプして高さが上がっている");
@@ -163,7 +163,7 @@ namespace Olca.Tests.Dungeon
             // 接敵までTickを進める
             for (int i = 0; i < 200; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (dungeon.IsInBattle) break;
             }
 
@@ -180,7 +180,7 @@ namespace Olca.Tests.Dungeon
 
             // プレイヤーが再び移動できることを確認
             float positionAfterBattle = dungeon.PlayerPosition;
-            dungeon.Tick(1.0f);
+            dungeon.Tick(deltaTimeMs: 1000);  // 1000ms = 1秒
             Assert.Greater(dungeon.PlayerPosition, positionAfterBattle, "バトル後も移動できる");
         }
 
@@ -196,7 +196,7 @@ namespace Olca.Tests.Dungeon
             // 接敵までTickを進める
             for (int i = 0; i < 200; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (dungeon.IsInBattle) break;
             }
 
@@ -222,7 +222,7 @@ namespace Olca.Tests.Dungeon
             // 接敵までTickを進める
             for (int i = 0; i < 200; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (dungeon.IsInBattle) break;
             }
 
@@ -246,7 +246,7 @@ namespace Olca.Tests.Dungeon
             // 接敵までTickを進める
             for (int i = 0; i < 200; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (dungeon.IsInBattle) break;
             }
 
@@ -310,7 +310,7 @@ namespace Olca.Tests.Dungeon
             // Act: 障害物位置まで進める（位置3に到達）
             for (int i = 0; i < 50; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (receivedPenalty != null) break;
             }
 
@@ -346,8 +346,8 @@ namespace Olca.Tests.Dungeon
             dungeon.OnObstaclePenalty += (penalty) => receivedPenalty = penalty;
 
             // Act: 障害物の手前でジャンプして飛び越える
-            // BASE_SPEED=2.0, deltaTime=0.1 → 1Tickで0.2移動
-            // JUMP_DURATION=0.5秒 → 5Tickでジャンプ終了（その間に0.2*5=1.0マス移動）
+            // BASE_SPEED_MILLI_PER_SEC=2000, deltaTimeMs=100 → 1Tickで0.2移動
+            // JUMP_DURATION_MS=500 → 5Tickでジャンプ終了（その間に0.2*5=1.0マス移動）
             // 位置2に到達するまで約10Tick
             // 位置1.5付近でジャンプ開始すれば、位置2通過時（2.5Tick後）にまだジャンプ中
             bool jumped = false;
@@ -359,7 +359,7 @@ namespace Olca.Tests.Dungeon
                     dungeon.Jump();
                     jumped = true;
                 }
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (dungeon.PlayerPosition > 3.0f) break;
             }
 
@@ -399,7 +399,7 @@ namespace Olca.Tests.Dungeon
             // Act: 障害物位置まで進める
             for (int i = 0; i < 50; i++)
             {
-                dungeon.Tick(0.1f);
+                dungeon.Tick(deltaTimeMs: 100);  // 100ms = 0.1秒
                 if (gameOverFired) break;
             }
 

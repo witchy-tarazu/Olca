@@ -7,18 +7,25 @@ namespace Olca.Core.Logic.Battle
     /// <summary>
     /// 個別の敵のAI行動を管理
     /// クールダウン管理、行動決定、実行を担当
+    /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
     public class EnemyAIBehavior
     {
         private readonly Enemy enemy;
         private readonly List<IEnemyAIAction> actions;
-        private float currentCooldown;
+        private int currentCooldownMs;
 
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
 
         /// <summary>行動可能か（クールダウンが終了していて、敵が生存している）</summary>
-        public bool CanAct => currentCooldown <= 0f && !enemy.IsDead;
+        public bool CanAct => currentCooldownMs <= 0 && !enemy.IsDead;
+
+        /// <summary>現在のクールダウン時間（ミリ秒）</summary>
+        public int CurrentCooldownMs => currentCooldownMs;
+
+        /// <summary>現在のクールダウン時間（秒）- 互換性用</summary>
+        public float CurrentCooldown => currentCooldownMs / 1000f;
 
         /// <summary>
         /// コンストラクタ
@@ -33,23 +40,23 @@ namespace Olca.Core.Logic.Battle
             if (actions.Count == 0)
                 throw new ArgumentException("AI行動リストは空であってはいけません", nameof(actions));
 
-            this.currentCooldown = 0f;
+            this.currentCooldownMs = 0;
         }
 
         /// <summary>
-        /// AI更新
+        /// AI更新 - 整数ベース版
         /// </summary>
-        /// <param name="deltaTime">経過時間（秒）</param>
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         /// <param name="context">AI判断に必要な情報</param>
-        public void Update(float deltaTime, AIContext context)
+        public void Update(int deltaTimeMs, AIContext context)
         {
             if (enemy.IsDead) return;
 
             // クールダウン減少
-            if (currentCooldown > 0f)
+            if (currentCooldownMs > 0)
             {
-                currentCooldown -= deltaTime;
-                if (currentCooldown < 0f) currentCooldown = 0f;
+                currentCooldownMs -= deltaTimeMs;
+                if (currentCooldownMs < 0) currentCooldownMs = 0;
             }
 
             // 行動可能な場合、行動を決定して実行
@@ -70,7 +77,7 @@ namespace Olca.Core.Logic.Battle
                 if (action.CanExecute(context))
                 {
                     action.Execute(context);
-                    currentCooldown = action.GetCooldown();
+                    currentCooldownMs = action.GetCooldownMs();
                     return;
                 }
             }

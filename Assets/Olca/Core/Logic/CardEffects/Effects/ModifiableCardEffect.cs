@@ -41,7 +41,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             if (card.StartupTime > 0)
             {
                 // 前隙遅延効果を登録
-                var startupEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Startup, card.StartupTime)
+                var startupEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Startup, (int)(card.StartupTime * 1000f))
                 {
                     ExecuteAction = () =>
                     {
@@ -51,7 +51,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         // 後隙がある場合は遅延登録
                         if (card.RecoveryTime > 0)
                         {
-                            var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, card.RecoveryTime)
+                            var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, (int)(card.RecoveryTime * 1000f))
                             {
                                 ExecuteAction = () =>
                                 {
@@ -75,7 +75,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 // 後隙がある場合は遅延登録
                 if (card.RecoveryTime > 0)
                 {
-                    var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, card.RecoveryTime)
+                    var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, (int)(card.RecoveryTime * 1000f))
                     {
                         ExecuteAction = () =>
                         {
@@ -712,7 +712,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             System.Diagnostics.Debug.WriteLine($"[RegisterDelayedProjectile] 投擲登録: 着弾位置={targetPosition}, 遅延={effect.DelayTime}秒");
 #endif
 
-            var delayedEffect = new Battle.DelayedEffect(effect.DelayTime, targetPosition, effect.CancelOnHole)
+            var delayedEffect = new Battle.DelayedEffect((int)(effect.DelayTime * 1000f), targetPosition, effect.CancelOnHole)
             {
                 ExecuteAction = () =>
                 {

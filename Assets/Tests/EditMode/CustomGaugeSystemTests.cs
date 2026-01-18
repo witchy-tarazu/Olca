@@ -5,32 +5,33 @@ namespace Olca.Tests
 {
     /// <summary>
     /// CustomGaugeSystemのテスト
+    /// 整数ベース（ミリ秒）での時間管理をテスト
     /// </summary>
     public class CustomGaugeSystemTests
     {
         [Test]
         public void Update_ゲージが溜まる()
         {
-            // Arrange
-            var gauge = new CustomGaugeSystem(gaugeSpeed: 1.0f);
+            // Arrange: 1秒あたり1.0ずつゲージが溜まる
+            var gauge = new CustomGaugeSystem(gaugeSpeedPerSecond: 1.0f);
 
-            // Act
-            gauge.Update(0.5f); // 0.5秒経過
+            // Act: 500ms経過
+            gauge.Update(deltaTimeMs: 500);
 
-            // Assert
+            // Assert: 0.5秒分 = 0.5ゲージ
             Assert.AreEqual(0.5f, gauge.CurrentGauge, 0.01f);
         }
 
         [Test]
         public void Update_ゲージが満タンになる()
         {
-            // Arrange
-            var gauge = new CustomGaugeSystem(gaugeSpeed: 1.0f);
+            // Arrange: 1秒あたり1.0ずつゲージが溜まる
+            var gauge = new CustomGaugeSystem(gaugeSpeedPerSecond: 1.0f);
             bool eventFired = false;
             gauge.OnGaugeFull += () => eventFired = true;
 
-            // Act
-            gauge.Update(10.0f); // 10秒経過（MAX_GAUGE = 10.0に到達）
+            // Act: 10000ms（10秒）経過（MAX_GAUGE = 10.0に到達）
+            gauge.Update(deltaTimeMs: 10000);
 
             // Assert
             Assert.IsTrue(gauge.IsFull);
@@ -42,8 +43,8 @@ namespace Olca.Tests
         public void Reset_ゲージが0に戻る()
         {
             // Arrange
-            var gauge = new CustomGaugeSystem(gaugeSpeed: 1.0f);
-            gauge.Update(0.8f);
+            var gauge = new CustomGaugeSystem(gaugeSpeedPerSecond: 1.0f);
+            gauge.Update(deltaTimeMs: 800);  // 800ms経過
 
             // Act
             gauge.Reset();
@@ -57,13 +58,13 @@ namespace Olca.Tests
         public void Update_満タン後は増加しない()
         {
             // Arrange
-            var gauge = new CustomGaugeSystem(gaugeSpeed: 1.0f);
-            gauge.Update(10.0f); // 満タン（MAX_GAUGE = 10.0に到達）
+            var gauge = new CustomGaugeSystem(gaugeSpeedPerSecond: 1.0f);
+            gauge.Update(deltaTimeMs: 10000);  // 10000ms（10秒）で満タン
 
-            // Act
-            gauge.Update(0.5f); // さらに更新
+            // Act: さらに500ms更新
+            gauge.Update(deltaTimeMs: 500);
 
-            // Assert
+            // Assert: 満タンのまま
             Assert.AreEqual(CustomGaugeSystem.MAX_GAUGE, gauge.CurrentGauge, 0.01f);
         }
     }

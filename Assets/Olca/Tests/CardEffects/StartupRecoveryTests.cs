@@ -69,8 +69,8 @@ namespace Olca.Tests.CardEffects
             // Assert: 前隙中はダメージなし
             Assert.AreEqual(100, enemies[0].CurrentHp, "前隙中はダメージを受けないべき");
 
-            // Act: 0.3秒経過（前隙終了）
-            battle.DelayedEffects.Update(0.3f);
+            // Act: 300ms経過（前隙終了）
+            battle.DelayedEffects.Update(deltaTimeMs: 300);
 
             // Assert: 前隙経過後にダメージ発生
             Assert.AreEqual(70, enemies[0].CurrentHp, "前隙経過後に30ダメージを受けるべき");
@@ -92,15 +92,15 @@ namespace Olca.Tests.CardEffects
             // Assert: 前隙効果が登録される
             Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount, "前隙効果が1つ登録されるべき");
 
-            // Act: 0.3秒経過（前隙終了、ダメージ発生、後隙登録）
-            battle.DelayedEffects.Update(0.3f);
+            // Act: 300ms経過（前隙終了、ダメージ発生、後隙登録）
+            battle.DelayedEffects.Update(deltaTimeMs: 300);
 
             // Assert: ダメージ発生 + 後隙効果が登録される
             Assert.AreEqual(70, enemies[0].CurrentHp, "前隙経過後に30ダメージを受けるべき");
             Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount, "後隙効果が1つ登録されるべき");
 
-            // Act: さらに0.5秒経過（後隙終了）
-            battle.DelayedEffects.Update(0.5f);
+            // Act: さらに500ms経過（後隙終了）
+            battle.DelayedEffects.Update(deltaTimeMs: 500);
 
             // Assert: すべての遅延効果が完了
             Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount, "すべての遅延効果が完了しているべき");
@@ -142,8 +142,8 @@ namespace Olca.Tests.CardEffects
             // 後隙効果が登録される
             Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount, "後隙効果が1つ登録されるべき");
 
-            // Act: 0.5秒経過（後隙終了）
-            battle.DelayedEffects.Update(0.5f);
+            // Act: 500ms経過（後隙終了）
+            battle.DelayedEffects.Update(deltaTimeMs: 500);
 
             // Assert: 後隙完了
             Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount, "すべての遅延効果が完了しているべき");
@@ -184,22 +184,22 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount, "前隙効果が1つ登録されるべき");
             Assert.AreEqual(100, enemies[0].CurrentHp, "前隙中はダメージなし");
 
-            // Act: 0.2秒経過（前隙終了 → 投擲登録 + 後隙登録）
-            battle.DelayedEffects.Update(0.2f);
+            // Act: 200ms経過（前隙終了 → 投擲登録 + 後隙登録）
+            battle.DelayedEffects.Update(deltaTimeMs: 200);
 
             // Assert: 投擲遅延効果 + 後隙効果 = 2つ
             Assert.AreEqual(2, battle.DelayedEffects.ActiveEffectCount, "投擲遅延 + 後隙 = 2つの効果が登録されるべき");
             Assert.AreEqual(100, enemies[0].CurrentHp, "投擲着弾前はダメージなし");
 
-            // Act: 0.3秒経過（後隙終了、投擲は残り0.7秒）
-            battle.DelayedEffects.Update(0.3f);
+            // Act: 300ms経過（後隙終了、投擲は残り700ms）
+            battle.DelayedEffects.Update(deltaTimeMs: 300);
 
             // Assert: 投擲遅延効果のみ残る
             Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount, "投擲遅延効果のみ残っているべき");
             Assert.AreEqual(100, enemies[0].CurrentHp, "まだ投擲着弾前");
 
-            // Act: さらに0.7秒経過（合計1.2秒、投擲着弾）
-            battle.DelayedEffects.Update(0.7f);
+            // Act: さらに700ms経過（合計1200ms、投擲着弾）
+            battle.DelayedEffects.Update(deltaTimeMs: 700);
 
             // Assert: 投擲着弾して爆風ダメージ発生
             Assert.AreEqual(80, enemies[1].CurrentHp, "敵2が爆風で20ダメージを受けるべき");

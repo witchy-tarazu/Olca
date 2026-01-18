@@ -74,8 +74,9 @@ namespace Olca.Application.Dungeon
             // 入力処理
             HandleInput();
 
-            // ロジック更新
-            manager.Tick(Time.deltaTime, inputProvider);
+            // ロジック更新（整数ベースのdeltaTimeMs）
+            int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
+            manager.Tick(deltaTimeMs, inputProvider);
 
             // View更新
             UpdateViews();

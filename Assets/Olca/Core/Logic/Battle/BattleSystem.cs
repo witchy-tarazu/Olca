@@ -123,29 +123,29 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// バトルを更新（毎フレーム呼び出す）
+        /// バトルを更新（毎フレーム呼び出す）- 整数ベース版
         /// </summary>
-        /// <param name="deltaTime">前フレームからの経過時間</param>
+        /// <param name="deltaTimeMs">前フレームからの経過時間（ミリ秒）</param>
         /// <param name="input">入力プロバイダー（オプショナル）</param>
-        public void Tick(float deltaTime, IInputProvider input = null)
+        public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (isPaused || IsGameOver) return;
 
             // カスタムゲージを更新
-            customGauge.Update(deltaTime);
+            customGauge.Update(deltaTimeMs);
 
             // プレイヤー移動とパネル効果を更新
             if (input != null)
             {
-                playerMovement.Tick(deltaTime, input, enemies);
-                panelEffects.Tick(deltaTime, player);
+                playerMovement.Tick(deltaTimeMs, input, enemies);
+                panelEffects.Tick(deltaTimeMs, player);
             }
 
             // 遅延効果を更新（投擲物の着弾など）
-            delayedEffects.Update(deltaTime);
+            delayedEffects.Update(deltaTimeMs);
 
             // 敵のAI更新
-            enemyAI.Tick(deltaTime, player, battleField, randomProvider);
+            enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider);
         }
 
         /// <summary>

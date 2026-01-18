@@ -65,18 +65,20 @@ namespace Olca.Core.Logic.Integration
         }
 
         /// <summary>
-        /// 毎フレーム更新
+        /// 毎フレーム更新 - 整数ベース版
         /// </summary>
-        public void Tick(float deltaTime, IInputProvider input = null)
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        /// <param name="input">入力プロバイダー（オプショナル）</param>
+        public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             switch (currentPhase)
             {
                 case GamePhase.Dungeon:
-                    dungeonSystem.Tick(deltaTime);
+                    dungeonSystem.Tick(deltaTimeMs);
                     break;
 
                 case GamePhase.Battle:
-                    currentBattle?.Tick(deltaTime, input);
+                    currentBattle?.Tick(deltaTimeMs, input);
                     break;
 
                 case GamePhase.CardReward:

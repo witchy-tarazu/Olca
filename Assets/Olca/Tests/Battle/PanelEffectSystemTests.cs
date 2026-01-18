@@ -205,7 +205,7 @@ namespace Olca.Tests.Battle
 
             // Act
             panelEffects.ApplyOnEnterEffect(player, normalPos);
-            panelEffects.Tick(0.5f, player);
+            panelEffects.Tick(deltaTimeMs: 500, player);
 
             // Assert
             Assert.AreEqual(initialHp, player.CurrentHp, "通常パネルではダメージを受けないべき");

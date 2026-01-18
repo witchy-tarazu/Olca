@@ -39,7 +39,7 @@ namespace Olca.Tests.Battle
             Vector2Int initialPos = player.GridPosition;
 
             // Act
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.AreEqual(new Vector2Int(initialPos.X + 1, initialPos.Y), player.GridPosition, "右に移動するべき");
@@ -54,7 +54,7 @@ namespace Olca.Tests.Battle
             Vector2Int initialPos = player.GridPosition;
 
             // Act
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.AreEqual(initialPos, player.GridPosition, "一時停止中は移動しないべき");
@@ -69,7 +69,7 @@ namespace Olca.Tests.Battle
             Vector2Int initialPos = player.GridPosition;
 
             // Act
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.AreEqual(initialPos, player.GridPosition, "GameOver時は移動しないべき");
@@ -86,12 +86,12 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act: 右に移動（Ice に入る）
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
             input.SetHorizontal(0f); // 入力を解除
 
             // Ice滑り処理
-            battle.Tick(0.2f, input); // 3→4
-            battle.Tick(0.2f, input); // 4→5（通常パネルで停止）
+            battle.Tick(deltaTimeMs: 200, input); // 3→4
+            battle.Tick(deltaTimeMs: 200, input); // 4→5（通常パネルで停止）
 
             // Assert
             Assert.AreEqual(new Vector2Int(5, 0), player.GridPosition, "Ice滑りで(5,0)まで到達するべき");
@@ -107,7 +107,7 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act: 右に移動してMagmaパネルに乗る
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.AreEqual(new Vector2Int(3, 0), player.GridPosition, "Magmaパネルに移動");
@@ -124,14 +124,14 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act: Crackedパネルに移動
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert: Crackedパネルに乗った時点ではまだCracked
             Assert.AreEqual(new Vector2Int(3, 0), player.GridPosition, "Crackedに移動");
             Assert.AreEqual(PanelType.Cracked, battle.Field.GetPanelType(new Vector2Int(3, 0)), "まだCrackedパネル");
 
             // さらに右に移動
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Crackedから離れたのでHoleに変化しているべき
             Assert.AreEqual(new Vector2Int(4, 0), player.GridPosition, "右に移動成功");
@@ -148,7 +148,7 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.AreEqual(1, moveCount, "OnMovedイベントが発火するべき");
@@ -165,8 +165,8 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act: Crackedに移動して、さらに離れる
-            battle.Tick(0.2f, input); // Crackedに移動（イベントなし）
-            battle.Tick(0.2f, input); // Crackedから離れる（イベント発火）
+            battle.Tick(deltaTimeMs: 200, input); // Crackedに移動（イベントなし）
+            battle.Tick(deltaTimeMs: 200, input); // Crackedから離れる（イベント発火）
 
             // Assert
             Assert.AreEqual(1, effectCount, "Crackedから離れた時にOnPanelEffectAppliedイベントが発火するべき");
@@ -179,7 +179,7 @@ namespace Olca.Tests.Battle
             Vector2Int initialPos = player.GridPosition;
 
             // Act: input = null で Tick
-            battle.Tick(0.2f, null);
+            battle.Tick(deltaTimeMs: 200, null);
 
             // Assert
             Assert.AreEqual(initialPos, player.GridPosition, "入力がnullの場合は移動しないべき");
@@ -195,11 +195,11 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act: Grassから移動
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
             Vector2Int posAfterFirstMove = player.GridPosition;
 
             // さらに移動を試みる（クールダウン中）
-            battle.Tick(0.01f, input);
+            battle.Tick(deltaTimeMs: 10, input);
 
             // Assert
             Assert.AreEqual(new Vector2Int(3, 0), posAfterFirstMove, "最初の移動は成功");
@@ -215,7 +215,7 @@ namespace Olca.Tests.Battle
             Vector2Int initialPos = player.GridPosition;
 
             // Act
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.AreEqual(initialPos, player.GridPosition, "敵がいる位置には移動できないべき");
@@ -229,7 +229,7 @@ namespace Olca.Tests.Battle
             input.SetHorizontal(1.0f);
 
             // Act
-            battle.Tick(0.2f, input);
+            battle.Tick(deltaTimeMs: 200, input);
 
             // Assert
             Assert.Greater(battle.CustomGauge.CurrentGauge, initialGauge, "カスタムゲージが更新されるべき");

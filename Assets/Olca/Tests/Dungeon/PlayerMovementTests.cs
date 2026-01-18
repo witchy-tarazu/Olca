@@ -12,8 +12,8 @@ namespace Olca.Tests.Dungeon
             // Arrange
             var movement = new PlayerMovement(initialPosition: 0f);
 
-            // Act
-            movement.Update(deltaTime: 1.0f);
+            // Act - 整数ベース版: 1000ms = 1秒
+            movement.Update(deltaTimeMs: 1000);
 
             // Assert
             // 基本速度は2.0マス/秒なので、1秒で2.0マス進む
@@ -28,7 +28,7 @@ namespace Olca.Tests.Dungeon
 
             // Act
             movement.StartDash();
-            movement.Update(deltaTime: 1.0f);
+            movement.Update(deltaTimeMs: 1000);  // 1000ms = 1秒
 
             // Assert
             // ダッシュ速度は5.0マス/秒なので、1秒で5.0マス進む
@@ -41,13 +41,13 @@ namespace Olca.Tests.Dungeon
             // Arrange
             var movement = new PlayerMovement(initialPosition: 0f);
             movement.StartDash();
-            movement.Update(1.0f);  // ダッシュで5マス進む
+            movement.Update(deltaTimeMs: 1000);  // ダッシュで5マス進む
 
             float positionAfterDash = movement.CurrentPosition;  // 5.0
 
             // Act
             movement.StopDash();
-            movement.Update(1.0f);  // 通常速度で2マス進む
+            movement.Update(deltaTimeMs: 1000);  // 通常速度で2マス進む
 
             // Assert
             Assert.AreEqual(positionAfterDash + 2.0f, movement.CurrentPosition, 0.01f);
@@ -61,7 +61,7 @@ namespace Olca.Tests.Dungeon
 
             // Act
             movement.Jump();
-            movement.Update(0.1f);  // ジャンプ開始直後
+            movement.Update(deltaTimeMs: 100);  // 100ms = 0.1秒、ジャンプ開始直後
 
             // Assert
             Assert.Greater(movement.Height, 0f, "ジャンプして高さが上がっている");
@@ -74,10 +74,10 @@ namespace Olca.Tests.Dungeon
             var movement = new PlayerMovement();
             movement.Jump();
 
-            // Act: ジャンプ時間（0.5秒）経過させる
+            // Act: ジャンプ時間（0.5秒 = 500ms）経過させる
             for (int i = 0; i < 6; i++)
             {
-                movement.Update(0.1f);
+                movement.Update(deltaTimeMs: 100);  // 100ms × 6 = 600ms
             }
 
             // Assert
@@ -90,12 +90,12 @@ namespace Olca.Tests.Dungeon
         {
             // Arrange
             var movement = new PlayerMovement();
-            movement.Update(0.5f);  // 1マス進む
+            movement.Update(deltaTimeMs: 500);  // 500ms = 0.5秒、1マス進む
             float positionBeforePause = movement.CurrentPosition;
 
             // Act
             movement.Pause();
-            movement.Update(1.0f);
+            movement.Update(deltaTimeMs: 1000);  // 1000ms = 1秒
 
             // Assert
             Assert.AreEqual(positionBeforePause, movement.CurrentPosition, "一時停止中は移動しない");
@@ -107,13 +107,13 @@ namespace Olca.Tests.Dungeon
             // Arrange
             var movement = new PlayerMovement();
             movement.Pause();
-            movement.Update(1.0f);  // 停止中なので移動しない
+            movement.Update(deltaTimeMs: 1000);  // 停止中なので移動しない
 
             float positionDuringPause = movement.CurrentPosition;  // 0.0
 
             // Act
             movement.Resume();
-            movement.Update(1.0f);
+            movement.Update(deltaTimeMs: 1000);
 
             // Assert
             Assert.Greater(movement.CurrentPosition, positionDuringPause, "再開後に移動している");
