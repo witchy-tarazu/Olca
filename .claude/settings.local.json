@@ -28,7 +28,11 @@
       "mcp__serena__find_file",
       "mcp__serena__think_about_whether_you_are_done",
       "mcp__serena__list_memories",
-      "Bash(timeout /t 3)"
+      "Bash(timeout /t 3)",
+      "mcp__serena__replace_symbol_body",
+      "mcp__serena__insert_after_symbol",
+      "mcp__serena__insert_before_symbol",
+      "mcp__UnityMCP__manage_script"
     ],
     "deny": [],
     "ask": []

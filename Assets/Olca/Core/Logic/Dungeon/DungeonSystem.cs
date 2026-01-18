@@ -16,6 +16,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly PlayerMovement playerMovement;
         private readonly ContactSystem contactSystem;
         private readonly ActionSystem actionSystem;
+        private readonly CardRewardSystem cardRewardSystem;
         private readonly PlayerCharacter playerCharacter;
         private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
@@ -23,6 +24,9 @@ namespace Olca.Core.Logic.Dungeon
         // ========== 状態管理 ==========
         public bool IsInBattle { get; private set; }
         public bool IsDungeonCleared { get; private set; }
+
+        // ========== 接敵情報保持 ==========
+        private ContactInfo currentContactInfo;
 
         // ========== プロパティ ==========
         public float PlayerPosition => playerMovement.CurrentPosition;
@@ -36,6 +40,7 @@ namespace Olca.Core.Logic.Dungeon
         public DungeonSystem(
             DungeonConfig config,
             PlayerCharacter player,
+            Deck initialDeck,
             IRandomProvider random,
             IGameLogger logger)
         {
@@ -44,6 +49,7 @@ namespace Olca.Core.Logic.Dungeon
             playerMovement = new PlayerMovement(initialPosition: 0f);
             contactSystem = new ContactSystem(map);
             actionSystem = new ActionSystem();
+            cardRewardSystem = new CardRewardSystem(initialDeck, random);
             playerCharacter = player;
             randomProvider = random;
             this.logger = logger;
@@ -108,6 +114,7 @@ namespace Olca.Core.Logic.Dungeon
         private void OnEnemyContact(ContactInfo contactInfo)
         {
             IsInBattle = true;
+            currentContactInfo = contactInfo;  // 接敵情報を保持
 
             // プレイヤー移動を停止
             playerMovement.Pause();
@@ -140,11 +147,30 @@ namespace Olca.Core.Logic.Dungeon
             {
                 logger.LogInfo("[Dungeon] バトル勝利");
 
-                // TODO: カードドロップ判定（フェーズ3で実装）
+                // カードドロップ判定
+                if (currentContactInfo != null && currentContactInfo.Enemy != null)
+                {
+                    Enemy defeatedEnemy = currentContactInfo.Enemy;
 
-                // 敵をマップから削除
-                // contactSystem.GetLastContactedEnemy() が必要だが、
-                // 今は簡易実装として、外部から敵を渡してもらう形にする
+                    if (cardRewardSystem.ShouldDropCard(defeatedEnemy))
+                    {
+                        // カード選択肢を生成
+                        List<Card> choices = cardRewardSystem.GenerateCardChoices(defeatedEnemy);
+                        logger.LogInfo($"[Dungeon] カードドロップ！{choices.Count}枚から選択");
+
+                        // カード選択画面を表示（イベント発火）
+                        OnCardRewardOffered?.Invoke(choices);
+                        // カード選択が完了するまで、ダンジョンには戻らない
+                        return;
+                    }
+                    else
+                    {
+                        logger.LogInfo("[Dungeon] カードドロップなし");
+                    }
+
+                    // 敵をマップから削除
+                    map.RemoveEnemy(defeatedEnemy);
+                }
             }
             else
             {
@@ -153,6 +179,36 @@ namespace Olca.Core.Logic.Dungeon
                 return;
             }
 
+            // ダンジョン再開
+            ReturnToDungeon();
+        }
+
+        /// <summary>
+        /// カード選択完了後、ダンジョンに戻る
+        /// </summary>
+        public void OnCardSelectionCompleted(Card selectedCard)
+        {
+            if (selectedCard != null)
+            {
+                cardRewardSystem.SelectCard(selectedCard);
+                logger.LogInfo($"[Dungeon] カード獲得: {selectedCard.Name}");
+            }
+
+            // 敵をマップから削除
+            if (currentContactInfo != null && currentContactInfo.Enemy != null)
+            {
+                map.RemoveEnemy(currentContactInfo.Enemy);
+            }
+
+            // ダンジョン再開
+            ReturnToDungeon();
+        }
+
+        /// <summary>
+        /// ダンジョンに戻る（内部処理）
+        /// </summary>
+        private void ReturnToDungeon()
+        {
             // 接敵リセット
             contactSystem.ResetContact();
 
@@ -162,8 +218,19 @@ namespace Olca.Core.Logic.Dungeon
             logger.LogInfo("[Dungeon] ダンジョン再開");
         }
 
+        /// <summary>
+        /// 現在のデッキを取得
+        /// </summary>
+        public Deck GetCurrentDeck() => cardRewardSystem.GetCurrentDeck();
+
+        /// <summary>
+        /// 入手したカード一覧を取得
+        /// </summary>
+        public IReadOnlyList<Card> GetObtainedCards() => cardRewardSystem.ObtainedCards;
+
         // ========== イベント ==========
         public event Action<ContactInfo> OnBattleStart;
+        public event Action<List<Card>> OnCardRewardOffered;  // カード選択画面表示
         public event Action OnDungeonFailed;
         public event Action OnDungeonCleared;
     }
