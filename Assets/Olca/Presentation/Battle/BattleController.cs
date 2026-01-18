@@ -135,12 +135,9 @@ namespace Olca.Presentation.Battle
             // アニメーション完了まで待つ
             await battleView.CloseCustomScreenAsync();
 
-            // アニメーション完了後、カスタム画面の閉じる処理を完了
-            // （IsOpenをfalseにして、カスタムゲージが溜まり始める）
-            battleSystem.CustomScreen.CompleteClose();
-
-            // カスタムゲージをリセット
-            battleSystem.CustomGauge.Reset();
+            // アニメーション完了後、カスタム画面を完全に閉じる
+            // （IsOpenをfalseにして、OnScreenClosedイベントを発行し、バトル再開）
+            battleSystem.CustomScreen.Close();
         }
 
         // ========== テスト用: キューの次のカードを使用 ==========

@@ -164,7 +164,7 @@ namespace Olca.Core.Logic.Battle
             // else: 何も選択していない場合は、前回の使用可能カードをそのまま保持
 
             // 閉じるアニメーション開始イベントを発行（IsOpenはまだtrue）
-            OnScreenClosed?.Invoke(availableCards);
+            OnConfirmed?.Invoke(availableCards);
         }
 
         /// <summary>
@@ -187,6 +187,17 @@ namespace Olca.Core.Logic.Battle
             // 選択中のカードを手札に戻す
             currentHand.AddRange(selectedCards);
             selectedCards.Clear();
+
+            IsOpen = false;
+            OnScreenClosed?.Invoke(availableCards);
+        }
+
+        /// <summary>
+        /// カスタム画面を完全に閉じる（アニメーション完了後に呼ばれる）
+        /// </summary>
+        public void Close()
+        {
+            if (!IsOpen) return;
 
             IsOpen = false;
             OnScreenClosed?.Invoke(availableCards);
@@ -275,7 +286,12 @@ namespace Olca.Core.Logic.Battle
         public event Action<List<Card>> OnScreenOpened;
 
         /// <summary>
-        /// カスタム画面を閉じた時のイベント
+        /// 確定ボタンが押された時のイベント（アニメーション開始）
+        /// </summary>
+        public event Action<List<Card>> OnConfirmed;
+
+        /// <summary>
+        /// カスタム画面を閉じた時のイベント（アニメーション完了後）
         /// </summary>
         public event Action<List<Card>> OnScreenClosed;
 

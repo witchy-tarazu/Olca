@@ -53,7 +53,7 @@ namespace Olca.Presentation.CustomScreen
 
             // イベント購読
             customScreen.OnScreenOpened += OnScreenOpened;
-            customScreen.OnScreenClosed += OnScreenClosed;
+            customScreen.OnConfirmed += OnConfirmed;
 
             // カーソル初期化
             cursor = new CustomScreenCursor();
@@ -701,7 +701,7 @@ namespace Olca.Presentation.CustomScreen
             customScreen.Confirm();
         }
 
-        private void OnScreenClosed(List<Card> selectedCards)
+        private void OnConfirmed(List<Card> selectedCards)
         {
             // BattleControllerに通知（BattleViewを再表示）
             var battleController = FindFirstObjectByType<Olca.Presentation.Battle.BattleController>();
@@ -720,7 +720,7 @@ namespace Olca.Presentation.CustomScreen
             if (customScreen != null)
             {
                 customScreen.OnScreenOpened -= OnScreenOpened;
-                customScreen.OnScreenClosed -= OnScreenClosed;
+                customScreen.OnConfirmed -= OnConfirmed;
             }
 
             if (confirmButton != null)

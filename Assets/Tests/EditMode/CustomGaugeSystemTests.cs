@@ -30,11 +30,11 @@ namespace Olca.Tests
             gauge.OnGaugeFull += () => eventFired = true;
 
             // Act
-            gauge.Update(1.0f); // 1秒経過
+            gauge.Update(10.0f); // 10秒経過（MAX_GAUGE = 10.0に到達）
 
             // Assert
             Assert.IsTrue(gauge.IsFull);
-            Assert.AreEqual(1.0f, gauge.CurrentGauge, 0.01f);
+            Assert.AreEqual(CustomGaugeSystem.MAX_GAUGE, gauge.CurrentGauge, 0.01f);
             Assert.IsTrue(eventFired);
         }
 
@@ -58,13 +58,13 @@ namespace Olca.Tests
         {
             // Arrange
             var gauge = new CustomGaugeSystem(gaugeSpeed: 1.0f);
-            gauge.Update(1.0f); // 満タン
+            gauge.Update(10.0f); // 満タン（MAX_GAUGE = 10.0に到達）
 
             // Act
             gauge.Update(0.5f); // さらに更新
 
             // Assert
-            Assert.AreEqual(1.0f, gauge.CurrentGauge, 0.01f);
+            Assert.AreEqual(CustomGaugeSystem.MAX_GAUGE, gauge.CurrentGauge, 0.01f);
         }
     }
 }

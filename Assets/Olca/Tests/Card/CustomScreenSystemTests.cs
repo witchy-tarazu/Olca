@@ -135,8 +135,9 @@ namespace Olca.Tests.CardTests
 
             // Act: 1回目の確定（1枚選択）
             customScreen.Confirm();
+            customScreen.Close(); // アニメーション完了を模擬
 
-            // Assert: 確定直後は未選択の4枚が手札に残っている
+            // Assert: 閉じた後は未選択の4枚が手札に残っている
             Assert.IsFalse(customScreen.IsOpen);
             Assert.AreEqual(4, customScreen.CurrentHand.Count);
 

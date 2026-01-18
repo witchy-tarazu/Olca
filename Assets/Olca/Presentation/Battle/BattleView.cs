@@ -101,7 +101,7 @@ namespace Olca.Presentation.Battle
                 var slider = customGaugeContainer.GetComponentInChildren<Slider>();
                 if (slider != null)
                 {
-                    slider.value = battleSystem.CustomGauge.CurrentGauge;
+                    slider.value = battleSystem.CustomGauge.NormalizedGauge;  // 正規化された値（0～1）を使用
                 }
             }
 

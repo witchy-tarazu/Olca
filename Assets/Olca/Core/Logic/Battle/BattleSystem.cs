@@ -111,6 +111,7 @@ namespace Olca.Core.Logic.Battle
             }
 
             // カスタム画面イベントの購読
+            customScreen.OnConfirmed += OnCustomScreenConfirmed;
             customScreen.OnScreenClosed += OnCustomScreenClosed;
 
             // プレイヤー移動時にパネル効果を適用
@@ -198,9 +199,9 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// カスタム画面を閉じた時の処理
+        /// カスタム画面で確定ボタンが押された時の処理（アニメーション開始）
         /// </summary>
-        private void OnCustomScreenClosed(List<Card> selectedCards)
+        private void OnCustomScreenConfirmed(List<Card> selectedCards)
         {
             // 選択されたカードをキューに追加
             if (selectedCards.Count > 0)
@@ -210,7 +211,13 @@ namespace Olca.Core.Logic.Battle
 
             // ゲージをリセット
             customGauge.Reset();
+        }
 
+        /// <summary>
+        /// カスタム画面を閉じた時の処理（アニメーション完了後）
+        /// </summary>
+        private void OnCustomScreenClosed(List<Card> selectedCards)
+        {
             // バトル再開
             Resume();
         }

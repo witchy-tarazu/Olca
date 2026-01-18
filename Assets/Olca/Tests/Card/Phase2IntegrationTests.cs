@@ -61,7 +61,7 @@ namespace Olca.Tests.CardTests
         public void 統合テスト_カスタム画面からカード使用まで()
         {
             // Arrange: カスタムゲージを満タンにする
-            battleSystem.CustomGauge.SetGauge(1.0f);
+            battleSystem.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             Assert.IsTrue(battleSystem.CustomGauge.IsFull, "ゲージが満タンになっていない");
 
             // Act 1: カスタム画面を開く
@@ -93,6 +93,7 @@ namespace Olca.Tests.CardTests
 
             // Act 3: カスタム画面を確定
             customScreen.Confirm();
+            customScreen.Close(); // アニメーション完了を模擬
 
             // Assert 3: カスタム画面が閉じて、カードがキューに入った
             Assert.IsFalse(customScreen.IsOpen, "カスタム画面が閉じていない");
@@ -127,7 +128,7 @@ namespace Olca.Tests.CardTests
             battleSystem.Player.TakeDamage(50); // HPを50減らす
             Assert.AreEqual(50, battleSystem.Player.CurrentHp);
 
-            battleSystem.CustomGauge.SetGauge(1.0f);
+            battleSystem.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             battleSystem.OpenCustomScreen(random);
 
             // Act: ヒールカードを選択して使用
@@ -136,6 +137,7 @@ namespace Olca.Tests.CardTests
 
             battleSystem.CustomScreen.TrySelectCard(healCard);
             battleSystem.CustomScreen.Confirm();
+            battleSystem.CustomScreen.Close(); // アニメーション完了を模擬
 
             battleSystem.UseCurrentCard();
 
@@ -147,7 +149,7 @@ namespace Olca.Tests.CardTests
         public void 統合テスト_コスト超過で選択できない()
         {
             // Arrange
-            battleSystem.CustomGauge.SetGauge(1.0f);
+            battleSystem.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             battleSystem.OpenCustomScreen(random);
 
             // Act: すべてのカードを選択しようとする（合計コストは17）
@@ -186,7 +188,7 @@ namespace Olca.Tests.CardTests
             var battle = new BattleSystem(player, enemies, deck, logger: logger);
 
             // カスタム画面を開いてカードを選択
-            battle.CustomGauge.SetGauge(1.0f);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             battle.OpenCustomScreen(random);
 
             var card1 = battle.CustomScreen.CurrentHand[0];
@@ -194,6 +196,7 @@ namespace Olca.Tests.CardTests
             battle.CustomScreen.TrySelectCard(card1);
             battle.CustomScreen.TrySelectCard(card2);
             battle.CustomScreen.Confirm();
+            battle.CustomScreen.Close(); // アニメーション完了を模擬
 
             // Act: カードを使用
             battle.UseCurrentCard(); // 1枚目: スライムに30ダメージ → スライム撃破

@@ -101,7 +101,7 @@ namespace Olca.Unity
             logger.LogInfo("\n--- 1. カスタムゲージのテスト ---");
 
             // カスタムゲージを満タンにする
-            battleSystem.CustomGauge.SetGauge(1.0f);
+            battleSystem.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             logger.LogInfo($"カスタムゲージ: {battleSystem.CustomGauge.CurrentGauge:F2} (満タン: {battleSystem.CustomGauge.IsFull})");
 
             logger.LogInfo("\n--- 2. カスタム画面を開く ---");
