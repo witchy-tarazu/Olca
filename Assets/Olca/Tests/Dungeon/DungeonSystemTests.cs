@@ -279,5 +279,133 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(1, dungeon.GetObtainedCards().Count, "入手カード一覧に1枚追加");
             Assert.AreEqual(card1, dungeon.GetObtainedCards()[0]);
         }
+
+        [Test]
+        public void Tick_障害物に接触_ペナルティイベントが発火する()
+        {
+            // Arrange
+            var obstacle = new Obstacle("spike", "トゲ", 15);  // 即時ダメージ障害物
+            // マップはインデックスでセルを取得するため、インデックス3に障害物を配置するなら
+            // それ以前のセルも必要
+            var cells = new System.Collections.Generic.List<MapCell>
+            {
+                new MapCell(0),  // 空白
+                new MapCell(1),  // 空白
+                new MapCell(2),  // 空白
+                new MapCell(3, obstacle, height: 0f)  // 障害物
+            };
+            var config = new DungeonConfig(
+                dungeonId: "test_obstacle",
+                dungeonName: "障害物テストダンジョン",
+                totalCellCount: 10,
+                mapCells: cells);
+            var player = new PlayerCharacter(maxHp: 100, initialPosition: new Vector2Int(0, 0), attackPower: 10);
+            var deck = CreateTestDeck();
+
+            var dungeon = new DungeonSystem(config, player, deck, mockRandom, mockLogger);
+
+            PenaltyInfo receivedPenalty = null;
+            dungeon.OnObstaclePenalty += (penalty) => receivedPenalty = penalty;
+
+            // Act: 障害物位置まで進める（位置3に到達）
+            for (int i = 0; i < 50; i++)
+            {
+                dungeon.Tick(0.1f);
+                if (receivedPenalty != null) break;
+            }
+
+            // Assert
+            Assert.IsNotNull(receivedPenalty, "ペナルティイベントが発火");
+            Assert.AreEqual(ObstaclePenaltyType.ImmediateDamage, receivedPenalty.PenaltyType);
+            Assert.AreEqual(15, receivedPenalty.Damage);
+        }
+
+        [Test]
+        public void Tick_障害物をジャンプで回避_ペナルティが発生しない()
+        {
+            // Arrange
+            // 障害物を位置2に配置（より近い位置でテスト）
+            var obstacle = new Obstacle("spike", "トゲ", 15);  // 即時ダメージ障害物
+            var cells = new System.Collections.Generic.List<MapCell>
+            {
+                new MapCell(0),  // 空白
+                new MapCell(1),  // 空白
+                new MapCell(2, obstacle, height: 0f)  // 障害物
+            };
+            var config = new DungeonConfig(
+                dungeonId: "test_obstacle",
+                dungeonName: "障害物テストダンジョン",
+                totalCellCount: 10,
+                mapCells: cells);
+            var player = new PlayerCharacter(maxHp: 100, initialPosition: new Vector2Int(0, 0), attackPower: 10);
+            var deck = CreateTestDeck();
+
+            var dungeon = new DungeonSystem(config, player, deck, mockRandom, mockLogger);
+
+            PenaltyInfo receivedPenalty = null;
+            dungeon.OnObstaclePenalty += (penalty) => receivedPenalty = penalty;
+
+            // Act: 障害物の手前でジャンプして飛び越える
+            // BASE_SPEED=2.0, deltaTime=0.1 → 1Tickで0.2移動
+            // JUMP_DURATION=0.5秒 → 5Tickでジャンプ終了（その間に0.2*5=1.0マス移動）
+            // 位置2に到達するまで約10Tick
+            // 位置1.5付近でジャンプ開始すれば、位置2通過時（2.5Tick後）にまだジャンプ中
+            bool jumped = false;
+            for (int i = 0; i < 30; i++)
+            {
+                // 位置1.5付近でジャンプ開始
+                if (!jumped && dungeon.PlayerPosition >= 1.5f)
+                {
+                    dungeon.Jump();
+                    jumped = true;
+                }
+                dungeon.Tick(0.1f);
+                if (dungeon.PlayerPosition > 3.0f) break;
+            }
+
+            // デバッグ: ログを確認
+            string logInfo = string.Join("\n", mockLogger.InfoLogs);
+            UnityEngine.Debug.Log($"Position: {dungeon.PlayerPosition}, Height: {dungeon.PlayerHeight}\nLogs:\n{logInfo}");
+
+            // Assert
+            Assert.IsNull(receivedPenalty, $"ジャンプで回避したのでペナルティなし\nLogs:\n{logInfo}");
+        }
+
+        [Test]
+        public void 障害物ダメージでゲームオーバー()
+        {
+            // Arrange
+            var obstacle = new Obstacle("spike", "トゲ", 150);  // 即死ダメージ障害物
+            var cells = new System.Collections.Generic.List<MapCell>
+            {
+                new MapCell(0),  // 空白
+                new MapCell(1),  // 空白
+                new MapCell(2),  // 空白
+                new MapCell(3, obstacle, height: 0f)  // 障害物
+            };
+            var config = new DungeonConfig(
+                dungeonId: "test_obstacle",
+                dungeonName: "障害物テストダンジョン",
+                totalCellCount: 10,
+                mapCells: cells);
+            var player = new PlayerCharacter(maxHp: 100, initialPosition: new Vector2Int(0, 0), attackPower: 10);
+            var deck = CreateTestDeck();
+
+            var dungeon = new DungeonSystem(config, player, deck, mockRandom, mockLogger);
+
+            bool gameOverFired = false;
+            dungeon.OnDungeonFailed += () => gameOverFired = true;
+
+            // Act: 障害物位置まで進める
+            for (int i = 0; i < 50; i++)
+            {
+                dungeon.Tick(0.1f);
+                if (gameOverFired) break;
+            }
+
+            // Assert
+            Assert.IsTrue(gameOverFired, "HPが0以下になりゲームオーバー");
+            Assert.LessOrEqual(player.CurrentHp, 0);
+        }
     }
 }

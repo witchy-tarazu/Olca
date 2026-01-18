@@ -17,6 +17,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly ContactSystem contactSystem;
         private readonly ActionSystem actionSystem;
         private readonly CardRewardSystem cardRewardSystem;
+        private readonly ObstacleSystem obstacleSystem;
         private readonly PlayerCharacter playerCharacter;
         private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
@@ -27,6 +28,9 @@ namespace Olca.Core.Logic.Dungeon
 
         // ========== 接敵情報保持 ==========
         private ContactInfo currentContactInfo;
+
+        // ========== 障害物通過済み管理 ==========
+        private readonly HashSet<int> processedObstacleCells = new HashSet<int>();
 
         // ========== プロパティ ==========
         public float PlayerPosition => playerMovement.CurrentPosition;
@@ -50,6 +54,7 @@ namespace Olca.Core.Logic.Dungeon
             contactSystem = new ContactSystem(map);
             actionSystem = new ActionSystem();
             cardRewardSystem = new CardRewardSystem(initialDeck, random);
+            obstacleSystem = new ObstacleSystem(logger);
             playerCharacter = player;
             randomProvider = random;
             this.logger = logger;
@@ -72,6 +77,9 @@ namespace Olca.Core.Logic.Dungeon
 
             // プレイヤー移動更新
             playerMovement.Update(deltaTime);
+
+            // 障害物判定
+            CheckObstacles();
 
             // 接敵判定
             contactSystem.CheckContact(playerMovement);
@@ -228,9 +236,69 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public IReadOnlyList<Card> GetObtainedCards() => cardRewardSystem.ObtainedCards;
 
+        // ========== 障害物処理 ==========
+
+        /// <summary>
+        /// 障害物判定
+        /// </summary>
+        private void CheckObstacles()
+        {
+            MapCell currentCell = map.GetCellAtPosition(playerMovement.CurrentPosition);
+            if (currentCell == null) return;
+
+            // 既に処理済みの障害物セルはスキップ
+            if (processedObstacleCells.Contains(currentCell.Index))
+            {
+                return;
+            }
+
+            var result = obstacleSystem.CheckObstacleContact(
+                currentCell,
+                playerMovement.CurrentPosition,
+                playerMovement.Height);
+
+            if (result.IsContact)
+            {
+                // 接触した時点で処理済みとしてマーク（回避成功・失敗に関わらず）
+                processedObstacleCells.Add(currentCell.Index);
+
+                if (!result.IsAvoided)
+                {
+                    // ペナルティ適用
+                    ApplyObstaclePenalty(result.Obstacle);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 障害物ペナルティを適用
+        /// </summary>
+        private void ApplyObstaclePenalty(Obstacle obstacle)
+        {
+            var penaltyInfo = obstacleSystem.CreatePenaltyInfo(obstacle);
+
+            // ペナルティイベント発火（外部で処理）
+            OnObstaclePenalty?.Invoke(penaltyInfo);
+
+            // 即時ダメージの場合はプレイヤーHPを減らす
+            if (penaltyInfo.PenaltyType == ObstaclePenaltyType.ImmediateDamage)
+            {
+                playerCharacter.TakeDamage(penaltyInfo.Damage);
+                logger.LogInfo($"[Dungeon] 障害物ダメージ: {penaltyInfo.Damage}");
+
+                // HP0以下でゲームオーバー
+                if (playerCharacter.CurrentHp <= 0)
+                {
+                    logger.LogInfo("[Dungeon] 障害物でゲームオーバー");
+                    OnDungeonFailed?.Invoke();
+                }
+            }
+        }
+
         // ========== イベント ==========
         public event Action<ContactInfo> OnBattleStart;
         public event Action<List<Card>> OnCardRewardOffered;  // カード選択画面表示
+        public event Action<PenaltyInfo> OnObstaclePenalty;   // 障害物ペナルティ
         public event Action OnDungeonFailed;
         public event Action OnDungeonCleared;
     }
