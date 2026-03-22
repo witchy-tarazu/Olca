@@ -78,6 +78,9 @@ namespace Olca.Core.Domain
         /// <summary>調律による追加効果</summary>
         public CardModifier Modifier { get; private set; }
 
+        /// <summary>超越グレード</summary>
+        public ExceedLevel ExceedLevel { get; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -102,7 +105,8 @@ namespace Olca.Core.Domain
             float startupTime = 0f,
             float recoveryTime = 0f,
             bool extendRecoveryDuringDerivative = false,
-            bool isInstantEffect = false)
+            bool isInstantEffect = false,
+            ExceedLevel exceedLevel = ExceedLevel.Normal)
         {
             Id = id;
             Name = name;
@@ -125,6 +129,7 @@ namespace Olca.Core.Domain
             ExtendRecoveryDuringDerivative = extendRecoveryDuringDerivative;
             IsInstantEffect = isInstantEffect;
             Modifier = modifier ?? new CardModifier();
+            ExceedLevel = exceedLevel;
         }
 
         /// <summary>
@@ -144,7 +149,8 @@ namespace Olca.Core.Domain
                 Id, Name, Cost, Rarity, Category, Element, Series, Power, Description,
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
-                StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect
+                StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
+                ExceedLevel
             );
         }
 
