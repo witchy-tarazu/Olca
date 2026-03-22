@@ -52,6 +52,13 @@ namespace Olca.Core.Logic.Battle
         {
             if (enemy.IsDead) return;
 
+            // スタン中はスタン時間をカウントダウンし、行動をスキップ
+            if (enemy.IsStunned)
+            {
+                enemy.TickStun(deltaTimeMs);
+                return;
+            }
+
             // クールダウン減少
             if (currentCooldownMs > 0)
             {

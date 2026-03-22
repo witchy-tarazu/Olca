@@ -167,6 +167,16 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
+        /// 先制攻撃を設定する（ダッシュ接敵の先制攻撃権）
+        /// カスタムゲージを満タンにして、プレイヤーがすぐに行動できる状態にする
+        /// </summary>
+        public void SetFirstStrike()
+        {
+            customGauge.SetGaugeMs(CustomGaugeSystem.MAX_GAUGE_MS);
+            logger?.LogInfo("[BattleSystem] 先制攻撃: カスタムゲージ満タン");
+        }
+
+        /// <summary>
         /// プレイヤーの基本攻撃
         /// </summary>
         public void PlayerBasicAttack(Enemy target)

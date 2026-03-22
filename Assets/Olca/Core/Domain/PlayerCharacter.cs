@@ -11,6 +11,8 @@ namespace Olca.Core.Domain
         private readonly int maxHp;
         private readonly int attackPower;
         private readonly float customSpeed;
+        private int poise;              // 強靭度（累計ダメージがこれを超えるとのけぞり）
+        private int accumulatedDamage;  // 現在行動中の累計ダメージ
         private Vector2Int gridPosition;
         private Vector2Int? temporaryPosition;
 
@@ -25,6 +27,12 @@ namespace Olca.Core.Domain
 
         /// <summary>カスタムゲージの溜まる速度</summary>
         public float CustomSpeed => customSpeed;
+
+        /// <summary>強靭度（累計ダメージがこれを超えるとのけぞり）</summary>
+        public int Poise => poise;
+
+        /// <summary>現在行動中の累計ダメージ</summary>
+        public int AccumulatedDamage => accumulatedDamage;
 
         /// <summary>グリッド上の位置（一時移動中は一時位置を返す）</summary>
         public Vector2Int GridPosition => temporaryPosition ?? gridPosition;
@@ -44,8 +52,9 @@ namespace Olca.Core.Domain
         /// <param name="maxHp">最大HP</param>
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
-        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f)
-            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed)
+        /// <param name="poise">強靭度（デフォルト30）</param>
+        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30)
+            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise)
         {
         }
 
@@ -56,12 +65,15 @@ namespace Olca.Core.Domain
         /// <param name="initialPosition">初期位置</param>
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
-        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f)
+        /// <param name="poise">強靭度（デフォルト30）</param>
+        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30)
         {
             this.maxHp = maxHp;
             this.currentHp = maxHp;
             this.attackPower = attackPower;
             this.customSpeed = customSpeed;
+            this.poise = poise;
+            this.accumulatedDamage = 0;
             this.gridPosition = initialPosition;
         }
 
@@ -86,12 +98,16 @@ namespace Olca.Core.Domain
 
             OnHpChanged?.Invoke(currentHp, maxHp);
 
-            // のけぞり判定
-            // TODO: 将来的には強靭度システムを実装し、damage > poise の場合にのけぞり
-            // 現時点では forceStagger パラメータでのみのけぞりが発生
-            if (forceStagger && !IsDead)
+            // のけぞり判定（強靭度システム）
+            // 累計ダメージが強靭度を超えると、のけぞりが発生する
+            if (!IsDead)
             {
-                OnStaggered?.Invoke();
+                accumulatedDamage += damage;
+                if (forceStagger || accumulatedDamage >= poise)
+                {
+                    accumulatedDamage = 0;  // のけぞり後はリセット
+                    OnStaggered?.Invoke();
+                }
             }
 
             if (IsDead)
@@ -115,6 +131,24 @@ namespace Olca.Core.Domain
             }
 
             OnHpChanged?.Invoke(currentHp, maxHp);
+        }
+
+        /// <summary>
+        /// 強靭度の累計ダメージをリセットする
+        /// カード使用完了時や行動キャンセル後に呼び出す
+        /// </summary>
+        public void ResetPoiseAccumulation()
+        {
+            accumulatedDamage = 0;
+        }
+
+        /// <summary>
+        /// 強靭度を変更する（バフ・装備などによる変動用）
+        /// </summary>
+        /// <param name="newPoise">新しい強靭度</param>
+        public void SetPoise(int newPoise)
+        {
+            poise = Math.Max(0, newPoise);
         }
 
         /// <summary>

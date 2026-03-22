@@ -73,6 +73,19 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
+        /// マップ上に敵が1体でも残っているか
+        /// </summary>
+        public bool HasAnyEnemy()
+        {
+            foreach (var cell in cells)
+            {
+                if (cell != null && cell.Enemy != null)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// 総マス数を取得
         /// </summary>
         public int TotalCellCount => totalCellCount;

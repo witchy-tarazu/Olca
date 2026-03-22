@@ -2,15 +2,16 @@
   "mcpServers": {
     "serena": {
       "type": "stdio",
-      "command": "run_serena_olca.bat",
+      "command": "run_serena.bat",
       "args": [],
       "env": {}
     },
     "UnityMCP": {
       "type": "stdio",
-      "command": "run_unity_mcp.bat",
-      "args": [],
-      "env": {}
+      "command": "C:\\Users\\mdkwi\\.unity\\relay\\relay_win.exe",
+      "args": [
+        "--mcp"
+      ]
     }
   }
 }

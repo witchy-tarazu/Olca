@@ -34,7 +34,16 @@
       "mcp__serena__insert_before_symbol",
       "mcp__UnityMCP__manage_script",
       "Bash(mcp__UnityMCP__read_console)",
-      "Bash(nc localhost 54321)"
+      "Bash(nc localhost 54321)",
+      "mcp__UnityMCP__manage_editor",
+      "mcp__UnityMCP__execute_menu_item",
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__onboarding",
+      "mcp__serena__write_memory",
+      "mcp__serena__read_memory",
+      "mcp__UnityMCP__Unity_ReadConsole",
+      "mcp__UnityMCP__Unity_GetProjectData",
+      "mcp__UnityMCP__Unity_GetConsoleLogs"
     ],
     "deny": [],
     "ask": []

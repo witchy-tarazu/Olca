@@ -11,6 +11,7 @@ namespace Olca.Core.Domain
         private readonly int maxHp;
         private readonly ElementType element;
         private Vector2Int gridPosition;
+        private int stunDurationMs;
 
         /// <summary>現在HP</summary>
         public int CurrentHp => currentHp;
@@ -26,6 +27,12 @@ namespace Olca.Core.Domain
 
         /// <summary>死亡しているか</summary>
         public bool IsDead => currentHp <= 0;
+
+        /// <summary>スタン中か</summary>
+        public bool IsStunned => stunDurationMs > 0;
+
+        /// <summary>残スタン時間（ミリ秒）</summary>
+        public int StunDurationMs => stunDurationMs;
 
         /// <summary>HP割合（0.0～1.0）</summary>
         public float HpRatio => maxHp > 0 ? (float)currentHp / maxHp : 0f;
@@ -75,6 +82,28 @@ namespace Olca.Core.Domain
             {
                 OnDeath?.Invoke();
             }
+        }
+
+        /// <summary>
+        /// スタン状態を付与する
+        /// 既存のスタン時間より長い場合のみ上書き
+        /// </summary>
+        /// <param name="durationMs">スタン持続時間（ミリ秒）</param>
+        public void ApplyStun(int durationMs)
+        {
+            if (durationMs <= 0) return;
+            stunDurationMs = Math.Max(stunDurationMs, durationMs);
+        }
+
+        /// <summary>
+        /// スタン時間をカウントダウンする（毎フレーム呼び出す）
+        /// </summary>
+        /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        public void TickStun(int deltaTimeMs)
+        {
+            if (stunDurationMs <= 0) return;
+            stunDurationMs -= deltaTimeMs;
+            if (stunDurationMs < 0) stunDurationMs = 0;
         }
 
         /// <summary>

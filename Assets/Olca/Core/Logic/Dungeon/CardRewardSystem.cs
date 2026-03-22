@@ -13,16 +13,24 @@ namespace Olca.Core.Logic.Dungeon
     {
         private readonly Deck dungeonDeck;  // 攻略中のデッキ
         private readonly IRandomProvider random;
+        private readonly ICardPool cardPool;  // カードプール（nullの場合はフォールバック生成）
         private readonly List<Card> obtainedCards;  // 入手したカード（クリア報酬用）
 
         private const int REWARD_CHOICE_COUNT = 3;  // 選択肢の枚数
         private const float NORMAL_ENEMY_DROP_RATE = 0.6f;  // 通常敵のドロップ率（60%）
 
-        public CardRewardSystem(Deck initialDeck, IRandomProvider random)
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="initialDeck">初期デッキ（コピーして管理）</param>
+        /// <param name="random">乱数プロバイダー</param>
+        /// <param name="cardPool">カードプール（省略時はダミーカードを生成）</param>
+        public CardRewardSystem(Deck initialDeck, IRandomProvider random, ICardPool cardPool = null)
         {
             // 初期デッキをコピー（元のデッキは変更しない）
             dungeonDeck = new Deck(new List<Card>(initialDeck.GetAllCards()));
             this.random = random;
+            this.cardPool = cardPool;
             obtainedCards = new List<Card>();
         }
 
@@ -71,13 +79,18 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
-        /// カードを生成（仮実装）
+        /// カードを生成する
+        /// カードプールが設定されている場合はそこから取得し、なければフォールバックカードを生成する
         /// </summary>
         private Card GenerateCard(CardRarity targetRarity)
         {
-            // TODO: CardMasterから適切なカードを取得
-            // 今回は仮実装として、ダミーカードを生成
+            // カードプールが設定されている場合はそこから取得
+            if (cardPool != null)
+            {
+                return cardPool.GetRandomCard(targetRarity, random);
+            }
 
+            // フォールバック: カードプール未設定時はダミーカードを生成
             string[] cardIds = { "sword", "heal", "shield", "fire", "ice" };
             int randomIndex = random.Range(0, cardIds.Length);
             string cardId = cardIds[randomIndex];
@@ -91,7 +104,7 @@ namespace Olca.Core.Logic.Dungeon
                 element: ElementType.None,
                 series: CardSeries.Sword,
                 power: 30,
-                description: "Test card"
+                description: "Fallback card"
             );
         }
 

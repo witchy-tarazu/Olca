@@ -3,6 +3,7 @@ using Olca.Core.Logic.Dungeon;
 using Olca.Core.Domain;
 using Olca.Tests.Mocks;
 using System.Collections.Generic;
+using Olca.Core.Interfaces;
 
 namespace Olca.Tests.Dungeon
 {
@@ -128,6 +129,62 @@ namespace Olca.Tests.Dungeon
             // Assert
             Assert.IsTrue(eventFired, "OnCardAddedイベントが発火した");
             Assert.AreEqual(newCard, receivedCard);
+        }
+
+        // ========== ICardPool 注入テスト ==========
+
+        [Test]
+        public void GenerateCardChoices_CardPoolを注入するとプールからカードが取得される()
+        {
+            // Arrange: 特定カードだけのプールを注入
+            var poolCard = new Card("pool_sword", "プールソード", 1, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.Sword, 30, "プール内カード");
+            var cardPool = new SimpleCardPool(new List<Card> { poolCard });
+
+            var rewardSystem = new CardRewardSystem(CreateTestDeck(), mockRandom, cardPool);
+            var enemy = new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(5, 0));
+
+            // Act
+            var choices = rewardSystem.GenerateCardChoices(enemy);
+
+            // Assert
+            Assert.AreEqual(3, choices.Count, "通常敵は3枚の選択肢");
+            foreach (var card in choices)
+            {
+                Assert.AreEqual("pool_sword", card.Id, "プールからカードが取得されている");
+            }
+        }
+
+        [Test]
+        public void GenerateCardChoices_CardPoolなしはフォールバックカードが生成される()
+        {
+            // Arrange: cardPool を注入しない（デフォルト null）
+            var rewardSystem = new CardRewardSystem(CreateTestDeck(), mockRandom);
+            var enemy = new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(5, 0));
+
+            // Act & Assert: 例外なく生成できること
+            var choices = rewardSystem.GenerateCardChoices(enemy);
+            Assert.AreEqual(3, choices.Count, "フォールバックでも3枚生成される");
+            Assert.IsNotNull(choices[0], "生成されたカードはnullでない");
+        }
+
+        [Test]
+        public void GenerateCardChoices_SimpleCardPool_該当レアリティがなければ全カードから選ぶ()
+        {
+            // Arrange: Normalカードのみのプールにボス（Limited）を要求する
+            var normalCard = new Card("normal_card", "ノーマル", 1, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.None, 20, "テスト");
+            var cardPool = new SimpleCardPool(new List<Card> { normalCard });
+
+            var rewardSystem = new CardRewardSystem(CreateTestDeck(), mockRandom, cardPool);
+            var boss = new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(10, 0));
+
+            // Act: ボスへのドロップ（Limitedを要求するが、Normalしかない）
+            var choices = rewardSystem.GenerateCardChoices(boss);
+
+            // Assert: Limitedがないので全カードからフォールバック
+            Assert.AreEqual(1, choices.Count, "ボスは1枚");
+            Assert.AreEqual("normal_card", choices[0].Id, "フォールバックでNormalカードが返る");
         }
     }
 }

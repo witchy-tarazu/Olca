@@ -148,15 +148,16 @@ namespace Olca.Core.Logic.Integration
                     break;
 
                 case ActionSystem.DashContactEffect.Stun:
-                    // スタン効果（仮実装：2秒間行動不可）
-                    logger?.LogInfo("[DungeonBattleManager] ダッシュ接敵: スタン効果");
-                    // TODO: 敵にスタン状態を付与
+                    // 敵に3秒スタンを付与
+                    const int STUN_DURATION_MS = 3000;
+                    enemy.ApplyStun(STUN_DURATION_MS);
+                    logger?.LogInfo($"[DungeonBattleManager] ダッシュ接敵: スタン（{STUN_DURATION_MS / 1000}秒）");
                     break;
 
                 case ActionSystem.DashContactEffect.FirstStrike:
-                    // 先制攻撃権（プレイヤーが先に行動）
-                    logger?.LogInfo("[DungeonBattleManager] ダッシュ接敵: 先制攻撃権");
-                    // TODO: バトルシステムに先制フラグを設定
+                    // カスタムゲージを満タンにして先制攻撃権を付与
+                    currentBattle.SetFirstStrike();
+                    logger?.LogInfo("[DungeonBattleManager] ダッシュ接敵: 先制攻撃 - カスタムゲージ満タン");
                     break;
             }
         }

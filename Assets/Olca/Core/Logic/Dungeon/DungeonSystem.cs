@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
+using Olca.Core.Logic.Battle;
 
 namespace Olca.Core.Logic.Dungeon
 {
@@ -22,6 +23,9 @@ namespace Olca.Core.Logic.Dungeon
         private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
 
+        // ========== バトルシステム統合 ==========
+        private BattleSystem currentBattle;
+
         // ========== 状態管理 ==========
         public bool IsInBattle { get; private set; }
         public bool IsDungeonCleared { get; private set; }
@@ -37,6 +41,11 @@ namespace Olca.Core.Logic.Dungeon
         public float PlayerHeight => playerMovement.Height;
         public bool IsDashing => playerMovement.IsDashing;
         public PlayerCharacter Player => playerCharacter;
+
+        /// <summary>
+        /// 現在のバトルシステム（バトル中のみ有効）
+        /// </summary>
+        public BattleSystem CurrentBattle => currentBattle;
 
         /// <summary>
         /// コンストラクタ
@@ -122,27 +131,188 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         private void OnEnemyContact(ContactInfo contactInfo)
         {
-            IsInBattle = true;
-            currentContactInfo = contactInfo;  // 接敵情報を保持
-
-            // プレイヤー移動を停止
-            playerMovement.Pause();
-
             // ダッシュ接敵の場合、効果を設定
             if (contactInfo.IsDashContact)
             {
                 contactInfo.DashEffect = actionSystem.GetDashEffect();
-                logger.LogInfo($"[Dungeon] ダッシュ接敵！効果: {contactInfo.DashEffect}");
-            }
-            else
-            {
-                logger.LogInfo($"[Dungeon] 通常接敵");
             }
 
-            logger.LogInfo($"[Dungeon] 接敵: {contactInfo.Enemy.Name}");
+            // バトル開始
+            StartBattle(contactInfo);
+        }
+
+        // ========== バトル統合（フェーズ5） ==========
+
+        /// <summary>
+        /// バトルを開始する
+        /// </summary>
+        /// <param name="contactInfo">接敵情報</param>
+        public void StartBattle(ContactInfo contactInfo)
+        {
+            IsInBattle = true;
+            currentContactInfo = contactInfo;
+
+            // プレイヤー移動を停止
+            playerMovement.Pause();
+
+            logger.LogInfo($"[Dungeon→Battle] 接敵開始");
+            logger.LogInfo($"  - 敵: {contactInfo.Enemy.Name}");
+            logger.LogInfo($"  - ダッシュ: {contactInfo.IsDashContact}");
+            logger.LogInfo($"  - プレイヤーHP: {playerCharacter.CurrentHp}/{playerCharacter.MaxHp}");
+
+            // 画面内の敵を集める
+            List<Enemy> enemies = GatherEnemiesForBattle(contactInfo);
+
+            // ダンジョンの位置からバトルグリッドに変換
+            SetupBattlePositions(contactInfo, enemies);
+
+            // バトルシステムを初期化
+            // 注意: プレイヤーのHPはダンジョン探索中のまま（参照共有）
+            currentBattle = new BattleSystem(
+                playerCharacter,
+                enemies,
+                cardRewardSystem.GetCurrentDeck(),
+                customGaugeSpeed: 2.0f,
+                randomProvider,
+                logger
+            );
+
+            // ダッシュ接敵の効果を適用
+            if (contactInfo.IsDashContact && contactInfo.DashEffect.HasValue)
+            {
+                ApplyDashEffect(contactInfo.DashEffect.Value, enemies);
+            }
+
+            // バトル終了イベントを購読
+            currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
+
+            logger.LogInfo($"[Dungeon→Battle] バトルシステム初期化完了");
+            logger.LogInfo($"  - 参加敵数: {enemies.Count}");
+            logger.LogInfo($"  - デッキ枚数: {cardRewardSystem.GetCurrentDeck().TotalCount}");
 
             // バトル開始イベント発火
             OnBattleStart?.Invoke(contactInfo);
+        }
+
+        /// <summary>
+        /// 画面内の敵を集めてバトルに参加させる
+        /// </summary>
+        private List<Enemy> GatherEnemiesForBattle(ContactInfo contactInfo)
+        {
+            List<Enemy> enemies = new List<Enemy>();
+
+            // 接敵した敵を追加
+            enemies.Add(contactInfo.Enemy);
+
+            // 画面内にいる他の敵も巻き込む（仕様より）
+            const float SCREEN_RANGE = 10.0f;  // 画面の範囲
+            List<Enemy> nearbyEnemies = map.GetEnemiesInRange(
+                playerMovement.CurrentPosition,
+                SCREEN_RANGE
+            );
+
+            foreach (var enemy in nearbyEnemies)
+            {
+                if (enemy != contactInfo.Enemy && !enemies.Contains(enemy))
+                {
+                    enemies.Add(enemy);
+                    logger.LogInfo($"  - 巻き込み: {enemy.Name}");
+                }
+            }
+
+            return enemies;
+        }
+
+        /// <summary>
+        /// ダンジョンの位置関係からバトルグリッド（6x1）に位置を変換
+        /// </summary>
+        private void SetupBattlePositions(ContactInfo contactInfo, List<Enemy> enemies)
+        {
+            // プレイヤーは左側（0〜2マス目）、敵は右側（3〜5マス目）に配置
+            int playerGridX;
+            int primaryEnemyGridX;
+
+            if (contactInfo.IsDashContact)
+            {
+                // ダッシュ接敵: プレイヤーは2マス目、敵は5マス目（吹き飛ばされた状態）
+                playerGridX = 2;
+                primaryEnemyGridX = 5;
+            }
+            else
+            {
+                // 通常接敵: プレイヤーは1マス目、敵は4マス目
+                playerGridX = 1;
+                primaryEnemyGridX = 4;
+            }
+
+            // プレイヤー位置を設定
+            playerCharacter.MoveTo(new Vector2Int(playerGridX, 0));
+            logger.LogInfo($"  - プレイヤー位置: ({playerGridX}, 0)");
+
+            // メインの敵位置を設定
+            contactInfo.Enemy.MoveTo(new Vector2Int(primaryEnemyGridX, 0));
+
+            // 他の敵は隣接マスに配置
+            int nextEnemyX = primaryEnemyGridX - 1;
+            for (int i = 1; i < enemies.Count; i++)
+            {
+                if (nextEnemyX >= 3)  // 敵エリア（3〜5）に収める
+                {
+                    enemies[i].MoveTo(new Vector2Int(nextEnemyX, 0));
+                    logger.LogInfo($"  - {enemies[i].Name}位置: ({nextEnemyX}, 0)");
+                    nextEnemyX--;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ダッシュ接敵の効果をバトルに適用
+        /// </summary>
+        private void ApplyDashEffect(ActionSystem.DashContactEffect effect, List<Enemy> enemies)
+        {
+            switch (effect)
+            {
+                case ActionSystem.DashContactEffect.InitialDamage:
+                    // 全敵に初期ダメージ
+                    const int DASH_DAMAGE = 15;  // TODO: プレイヤー攻撃力に応じて調整
+                    foreach (var enemy in enemies)
+                    {
+                        enemy.TakeDamage(DASH_DAMAGE, ElementType.None);
+                        logger.LogInfo($"  - {enemy.Name}に{DASH_DAMAGE}ダメージ！（ダッシュ接敵）");
+                    }
+                    break;
+
+                case ActionSystem.DashContactEffect.Stun:
+                    // 全敵に3秒スタンを付与
+                    const int STUN_DURATION_MS = 3000;
+                    foreach (var enemy in enemies)
+                    {
+                        enemy.ApplyStun(STUN_DURATION_MS);
+                    }
+                    logger.LogInfo($"  - 敵をスタン（{STUN_DURATION_MS / 1000}秒）！（ダッシュ接敵）");
+                    break;
+
+                case ActionSystem.DashContactEffect.FirstStrike:
+                    // カスタムゲージを満タンにして先制攻撃権を付与
+                    currentBattle.SetFirstStrike();
+                    logger.LogInfo("  - 先制攻撃！カスタムゲージ満タン（ダッシュ接敵）");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// BattleSystemからのバトル終了イベントハンドラ
+        /// </summary>
+        private void OnBattleEndFromBattleSystem(BattleResult result)
+        {
+            // イベント購読解除
+            if (currentBattle != null)
+            {
+                currentBattle.OnBattleEnd -= OnBattleEndFromBattleSystem;
+            }
+
+            // OnBattleCompletedを呼び出す（内部でOnBattleEndが発火される）
+            OnBattleCompleted(result == BattleResult.Victory);
         }
 
         /// <summary>
@@ -151,6 +321,10 @@ namespace Olca.Core.Logic.Dungeon
         public void OnBattleCompleted(bool victory)
         {
             IsInBattle = false;
+
+            // バトル終了イベント発火
+            BattleResult result = victory ? BattleResult.Victory : BattleResult.Defeat;
+            OnBattleEnd?.Invoke(result);
 
             if (victory)
             {
@@ -218,11 +392,30 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         private void ReturnToDungeon()
         {
+            // バトルシステムをクリーンアップ
+            currentBattle = null;
+
             // 接敵リセット
             contactSystem.ResetContact();
 
+            // HP回復なし（ダンジョンの特殊ルール）
+            // プレイヤーHPはバトル終了時のまま維持
+            logger.LogInfo($"[Dungeon] HP維持: {playerCharacter.CurrentHp}/{playerCharacter.MaxHp}");
+
+            // 全ての敵を倒したらダンジョンクリア
+            if (!map.HasAnyEnemy())
+            {
+                IsDungeonCleared = true;
+                logger.LogInfo("[Dungeon] 全敵撃破 - ダンジョンクリア！");
+                OnDungeonCleared?.Invoke();
+                return;
+            }
+
             // プレイヤー移動を再開
             playerMovement.Resume();
+
+            // ダンジョン復帰イベント
+            OnReturnToDungeon?.Invoke();
 
             logger.LogInfo("[Dungeon] ダンジョン再開");
         }
@@ -298,7 +491,9 @@ namespace Olca.Core.Logic.Dungeon
 
         // ========== イベント ==========
         public event Action<ContactInfo> OnBattleStart;
+        public event Action<BattleResult> OnBattleEnd;        // バトル終了（勝敗通知）
         public event Action<List<Card>> OnCardRewardOffered;  // カード選択画面表示
+        public event Action OnReturnToDungeon;                // ダンジョン復帰
         public event Action<PenaltyInfo> OnObstaclePenalty;   // 障害物ペナルティ
         public event Action OnDungeonFailed;
         public event Action OnDungeonCleared;

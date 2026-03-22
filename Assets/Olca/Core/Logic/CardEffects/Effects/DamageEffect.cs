@@ -78,15 +78,14 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
         /// <summary>
         /// 敵にダメージを与える
+        /// 属性相性はEnemy.TakeDamage内で自動的に計算される（水→火=2倍など）
         /// </summary>
         private void DealDamageToEnemy(Enemy enemy, BattleContext context)
         {
             // baseDamageには既にカードのPowerが含まれている（CardEffectFactoryで設定済み）
             int finalDamage = baseDamage;
 
-            // 属性相性を考慮（TODO: 後で実装）
-            // finalDamage = ApplyElementalBonus(finalDamage, context.UsedCard.Element, enemy.Element);
-
+            // カードの属性を渡すことで、Enemy.TakeDamage内の属性相性計算が適用される
             enemy.TakeDamage(finalDamage, context.UsedCard.Element);
         }
 
