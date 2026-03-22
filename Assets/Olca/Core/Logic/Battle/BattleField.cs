@@ -1,8 +1,39 @@
 using System;
+using System.Collections.Generic;
 using Olca.Core.Domain;
 
 namespace Olca.Core.Logic.Battle
 {
+    /// <summary>
+    /// バトルフィールド上に設置される障害物（ロックキューブ等）
+    /// </summary>
+    public class FieldObstacle
+    {
+        /// <summary>障害物ID</summary>
+        public string ObstacleId { get; }
+
+        /// <summary>残耐久値</summary>
+        public int Hp { get; private set; }
+
+        /// <summary>破壊済みか</summary>
+        public bool IsDestroyed => Hp <= 0;
+
+        public FieldObstacle(string obstacleId, int hp)
+        {
+            ObstacleId = obstacleId ?? throw new ArgumentNullException(nameof(obstacleId));
+            if (hp <= 0) throw new ArgumentException("耐久値は1以上である必要があります", nameof(hp));
+            Hp = hp;
+        }
+
+        /// <summary>ダメージを受ける</summary>
+        public void TakeDamage(int damage)
+        {
+            if (damage <= 0) return;
+            Hp -= damage;
+            if (Hp < 0) Hp = 0;
+        }
+    }
+
     /// <summary>
     /// 6x1グリッドのバトルフィールド
     /// </summary>
@@ -13,6 +44,7 @@ namespace Olca.Core.Logic.Battle
 
         private readonly PanelType[,] panels;
         private Vector2Int? protectedPosition;
+        private readonly Dictionary<string, FieldObstacle> obstacles = new Dictionary<string, FieldObstacle>();
 
         public BattleField()
         {
@@ -39,6 +71,9 @@ namespace Olca.Core.Logic.Battle
             // 穴パネルは移動不可（将来的にフロート能力を考慮）
             PanelType panelType = GetPanelType(position);
             if (panelType == PanelType.Hole) return false;
+
+            // 障害物があるマスも移動不可
+            if (HasObstacle(position)) return false;
 
             return true;
         }
@@ -121,6 +156,55 @@ namespace Olca.Core.Logic.Battle
                 }
             }
         }
+
+        /// <summary>
+        /// 指定位置に障害物を設置可能か（グリッド内 かつ 既存障害物なし）
+        /// </summary>
+        public bool CanPlaceObstacle(Vector2Int position)
+        {
+            if (!IsInBounds(position)) return false;
+            string key = ObstacleKey(position);
+            return !obstacles.ContainsKey(key);
+        }
+
+        /// <summary>
+        /// 指定位置に障害物を設置する
+        /// </summary>
+        public void PlaceObstacle(Vector2Int position, FieldObstacle obstacle)
+        {
+            if (obstacle == null) throw new ArgumentNullException(nameof(obstacle));
+            if (!IsInBounds(position))
+                throw new ArgumentOutOfRangeException(nameof(position), "位置がグリッド範囲外です");
+
+            obstacles[ObstacleKey(position)] = obstacle;
+        }
+
+        /// <summary>
+        /// 指定位置の障害物を取得（存在しない場合はnull）
+        /// </summary>
+        public FieldObstacle GetObstacle(Vector2Int position)
+        {
+            obstacles.TryGetValue(ObstacleKey(position), out var obstacle);
+            return obstacle;
+        }
+
+        /// <summary>
+        /// 指定位置の障害物を削除する
+        /// </summary>
+        public void RemoveObstacle(Vector2Int position)
+        {
+            obstacles.Remove(ObstacleKey(position));
+        }
+
+        /// <summary>
+        /// 障害物があるか（移動不可判定に使用）
+        /// </summary>
+        public bool HasObstacle(Vector2Int position)
+        {
+            return obstacles.ContainsKey(ObstacleKey(position));
+        }
+
+        private static string ObstacleKey(Vector2Int position) => $"{position.X},{position.Y}";
 
         /// <summary>
         /// パネル保護を設定（一時移動の移動元を保護）

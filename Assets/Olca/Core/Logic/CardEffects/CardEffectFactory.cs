@@ -98,7 +98,10 @@ namespace Olca.Core.Logic.CardEffects
                     return new ModifiableCardEffect(card.TargetType);
 
                 case CardCategory.Defense:
-                    // 回復カードは HealEffect を使用
+                    // バリアカード（IDが"barrier"で始まる）はBarrierEffectを使用
+                    if (card.Id.StartsWith("barrier", StringComparison.OrdinalIgnoreCase))
+                        return new BarrierEffect(card.Power > 0 ? card.Power : 20);
+                    // それ以外の防御カードはHealEffect（回復）
                     return new HealEffect(card.Power);
 
                 case CardCategory.Field:
@@ -107,7 +110,13 @@ namespace Olca.Core.Logic.CardEffects
                     return new ModifiableCardEffect(card.TargetType);
 
                 case CardCategory.Support:
-                    // サポートカードは単独では何もしない（調律用）
+                    // 集中カード（IDが"concentrate"で始まる）はConcentrateEffectを使用
+                    if (card.Id.StartsWith("concentrate", StringComparison.OrdinalIgnoreCase))
+                    {
+                        float mult = card.Power > 0 ? 1.0f + card.Power / 100.0f : 1.5f;
+                        return new ConcentrateEffect(mult);
+                    }
+                    // それ以外のサポートカードは調律用（何もしない）
                     return new NullEffect();
 
                 default:

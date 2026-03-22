@@ -527,11 +527,52 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     break;
 
                 case AdditionalEffectType.Paralyze:
+                    // 麻痺: 行動不能状態を付与
+                    foreach (var t in targets)
+                    {
+                        if (!t.IsDead)
+                        {
+                            int durationMs = effect.Duration > 0 ? (int)(effect.Duration * 1000) : 3000;
+                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Paralyze, durationMs));
+                        }
+                    }
+                    break;
+
                 case AdditionalEffectType.Poison:
+                    // 毒: 継続ダメージを付与
+                    foreach (var t in targets)
+                    {
+                        if (!t.IsDead)
+                        {
+                            int durationMs = effect.Duration > 0 ? (int)(effect.Duration * 1000) : 5000;
+                            int damagePerTick = effect.Power > 0 ? effect.Power : 5;
+                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Poison, durationMs, damagePerTick));
+                        }
+                    }
+                    break;
+
                 case AdditionalEffectType.Confusion:
+                    // 混乱: 操作反転状態を付与
+                    foreach (var t in targets)
+                    {
+                        if (!t.IsDead)
+                        {
+                            int durationMs = effect.Duration > 0 ? (int)(effect.Duration * 1000) : 3000;
+                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Confusion, durationMs));
+                        }
+                    }
+                    break;
+
                 case AdditionalEffectType.Blind:
-                    // 状態異常を適用（実装予定）
-                    // TODO: 状態異常システム実装後に追加
+                    // 盲目: 命中率低下状態を付与
+                    foreach (var t in targets)
+                    {
+                        if (!t.IsDead)
+                        {
+                            int durationMs = effect.Duration > 0 ? (int)(effect.Duration * 1000) : 3000;
+                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Blind, durationMs));
+                        }
+                    }
                     break;
 
                 case AdditionalEffectType.PanelIce:

@@ -12,6 +12,7 @@ namespace Olca.Core.Domain
         private readonly ElementType element;
         private Vector2Int gridPosition;
         private int stunDurationMs;
+        private StatusEffect activeStatusEffect;
 
         /// <summary>現在HP</summary>
         public int CurrentHp => currentHp;
@@ -33,6 +34,17 @@ namespace Olca.Core.Domain
 
         /// <summary>残スタン時間（ミリ秒）</summary>
         public int StunDurationMs => stunDurationMs;
+
+        /// <summary>現在の状態異常</summary>
+        public StatusEffect ActiveStatus => activeStatusEffect;
+
+        /// <summary>麻痺中か</summary>
+        public bool IsParalyzed => activeStatusEffect?.Type == StatusEffectType.Paralyze
+                                && activeStatusEffect.RemainingMs > 0;
+
+        /// <summary>毒状態か</summary>
+        public bool IsPoisoned => activeStatusEffect?.Type == StatusEffectType.Poison
+                               && activeStatusEffect.RemainingMs > 0;
 
         /// <summary>HP割合（0.0～1.0）</summary>
         public float HpRatio => maxHp > 0 ? (float)currentHp / maxHp : 0f;
@@ -104,6 +116,42 @@ namespace Olca.Core.Domain
             if (stunDurationMs <= 0) return;
             stunDurationMs -= deltaTimeMs;
             if (stunDurationMs < 0) stunDurationMs = 0;
+        }
+
+        /// <summary>
+        /// 状態異常を付与する（既存の状態異常は上書き）
+        /// </summary>
+        /// <param name="status">付与する状態異常</param>
+        public void ApplyStatus(StatusEffect status)
+        {
+            if (status == null) throw new ArgumentNullException(nameof(status));
+            if (IsDead) return;
+            activeStatusEffect = status;
+        }
+
+        /// <summary>
+        /// 状態異常の時間をカウントダウンする（毎ティック呼び出す）
+        /// </summary>
+        /// <param name="elapsedMs">経過時間（ミリ秒）</param>
+        /// <returns>毒ダメージ量（毒以外・消滅時は0）</returns>
+        public int TickStatus(int elapsedMs)
+        {
+            if (activeStatusEffect == null) return 0;
+
+            int poisonDamage = 0;
+            if (activeStatusEffect.Type == StatusEffectType.Poison)
+            {
+                // 毒: 1ティックあたりのダメージ × 経過時間
+                poisonDamage = activeStatusEffect.DamagePerTick * elapsedMs / 1000;
+            }
+
+            bool expired = activeStatusEffect.Tick(elapsedMs);
+            if (expired)
+            {
+                activeStatusEffect = null;
+            }
+
+            return poisonDamage;
         }
 
         /// <summary>

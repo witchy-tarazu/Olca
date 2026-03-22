@@ -144,6 +144,20 @@ namespace Olca.Core.Logic.Battle
             // 遅延効果を更新（投擲物の着弾など）
             delayedEffects.Update(deltaTimeMs);
 
+            // プレイヤーの無敵時間ティック処理
+            player.TickInvincible(deltaTimeMs);
+
+            // 敵の状態異常ティック処理（毒ダメージ等）
+            foreach (var enemy in enemies)
+            {
+                if (enemy.IsDead) continue;
+                int poisonDamage = enemy.TickStatus(deltaTimeMs);
+                if (poisonDamage > 0)
+                {
+                    enemy.TakeDamage(poisonDamage, ElementType.None);
+                }
+            }
+
             // 敵のAI更新
             enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider);
         }
