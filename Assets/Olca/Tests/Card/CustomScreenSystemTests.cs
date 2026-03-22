@@ -1,8 +1,10 @@
 using NUnit.Framework;
 using Olca.Core.Domain;
+using Olca.Core.Interfaces;
 using Olca.Core.Logic.Battle;
 using Olca.Tests.Mocks;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Olca.Tests.CardTests
 {
@@ -163,6 +165,149 @@ namespace Olca.Tests.CardTests
             // Assert
             Assert.IsFalse(customScreen.IsOpen);
             Assert.AreEqual(0, customScreen.SelectedCards.Count);
+        }
+
+        // ===== カスタマイズ操作（超越・調律・融合）=====
+
+        private CustomScreenSystem CreateCustomScreenWithSystems()
+        {
+            var mockFactory = new MockCardFactory();
+            var mockRecipe = new MockFusionRecipeProvider();
+            var exceed = new ExceedSystem(mockFactory);
+            var tuning = new TuningSystem();
+            var fusion = new FusionSystem(mockRecipe, mockFactory);
+            return new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10,
+                exceedSystem: exceed, tuningSystem: tuning, fusionSystem: fusion);
+        }
+
+        [Test]
+        public void ExecuteExceed_システム未設定時_エラー()
+        {
+            customScreen.Open(EmptyRemainingCards(), random);
+            var cardA = customScreen.CurrentHand[0];
+            var cardB = customScreen.CurrentHand[1];
+
+            var result = customScreen.ExecuteExceed(cardA, cardB);
+
+            Assert.IsFalse(result.IsSuccess);
+            StringAssert.Contains("超越システム", result.ErrorMessage);
+        }
+
+        [Test]
+        public void ExecuteExceed_同名カード2枚_手札が変化する()
+        {
+            var cs = CreateCustomScreenWithSystems();
+            // 同名カードを2枚手札に持つデッキを作成
+            var sameCards = new List<Card>
+            {
+                CreateTestCard("sword", "ソード", 2, CardSeries.Sword),
+                CreateTestCard("sword", "ソード", 2, CardSeries.Sword),
+            };
+            var testDeck = new Deck(sameCards);
+            var mockFactory = new MockCardFactory();
+            var cs2 = new CustomScreenSystem(testDeck, maxHandSize: 5, maxCost: 10,
+                exceedSystem: new ExceedSystem(mockFactory));
+            cs2.Open(EmptyRemainingCards(), random);
+
+            var handBefore = cs2.CurrentHand.Count;
+            var cardA = cs2.CurrentHand[0];
+            var cardB = cs2.CurrentHand[1];
+
+            var result = cs2.ExecuteExceed(cardA, cardB);
+
+            Assert.IsTrue(result.IsSuccess);
+            // 素材2枚→超越カード1枚（手札-1）
+            Assert.AreEqual(handBefore - 1, cs2.CurrentHand.Count);
+            Assert.IsTrue(cs2.CurrentHand.Contains(result.ResultCard));
+        }
+
+        [Test]
+        public void ExecuteExceed_手札にないカード_エラー()
+        {
+            var cs = CreateCustomScreenWithSystems();
+            cs.Open(EmptyRemainingCards(), random);
+            var outsideCard = CreateTestCard("outside", "外のカード", 1, CardSeries.None);
+
+            var result = cs.ExecuteExceed(outsideCard, cs.CurrentHand[0]);
+
+            Assert.IsFalse(result.IsSuccess);
+        }
+
+        [Test]
+        public void ExecuteTuning_システム未設定時_エラー()
+        {
+            customScreen.Open(EmptyRemainingCards(), random);
+            var target = customScreen.CurrentHand[0];
+            var tuning = customScreen.CurrentHand[1];
+
+            var result = customScreen.ExecuteTuning(target, tuning);
+
+            Assert.IsFalse(result.IsSuccess);
+            StringAssert.Contains("調律システム", result.ErrorMessage);
+        }
+
+        [Test]
+        public void ExecuteTuning_調律カード消費_対象カード強化()
+        {
+            // 調律カードと攻撃カードを含むデッキ
+            var modifier = new CardModifier { BonusDamage = 5 };
+            var tuningCard = new Card("t1", "チューナー", 1, CardRarity.Normal, CardCategory.Tuning,
+                ElementType.None, CardSeries.None, 0, "", modifier: modifier);
+            var attackCard = CreateTestCard("atk", "アタック", 2, CardSeries.Sword);
+
+            var testCards = new List<Card> { attackCard, tuningCard };
+            var testDeck = new Deck(testCards);
+            var cs = new CustomScreenSystem(testDeck, maxHandSize: 5, maxCost: 10,
+                tuningSystem: new TuningSystem());
+            cs.Open(EmptyRemainingCards(), random);
+
+            var handBefore = cs.CurrentHand.Count;
+            var result = cs.ExecuteTuning(cs.CurrentHand[0], cs.CurrentHand[1]);
+
+            Assert.IsTrue(result.IsSuccess);
+            // 調律カードが消費されて手札-1
+            Assert.AreEqual(handBefore - 1, cs.CurrentHand.Count);
+            // 強化されたカードが手札にある
+            Assert.IsTrue(cs.CurrentHand.Contains(result.ResultCard));
+        }
+
+        [Test]
+        public void ExecuteFusion_システム未設定時_エラー()
+        {
+            customScreen.Open(EmptyRemainingCards(), random);
+            var materials = new List<Card> { customScreen.CurrentHand[0], customScreen.CurrentHand[1] };
+
+            var result = customScreen.ExecuteFusion(materials);
+
+            Assert.IsFalse(result.IsSuccess);
+            StringAssert.Contains("融合システム", result.ErrorMessage);
+        }
+
+        [Test]
+        public void ExecuteFusion_素材2枚_手札が変化する()
+        {
+            var mockFactory = new MockCardFactory();
+            var resultCard = new Card("dragon", "ドラゴン", 5, CardRarity.Normal,
+                CardCategory.Attack, ElementType.Fire, CardSeries.None, 50, "");
+            mockFactory.Register("dragon", resultCard);
+
+            var mockRecipe = new MockFusionRecipeProvider();
+            mockRecipe.Register("dragon", "card1", "card2");
+
+            var cs = new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10,
+                fusionSystem: new FusionSystem(mockRecipe, mockFactory));
+            cs.Open(EmptyRemainingCards(), random);
+
+            var handBefore = cs.CurrentHand.Count;
+            var mat1 = cs.CurrentHand.First(c => c.Id == "card1");
+            var mat2 = cs.CurrentHand.First(c => c.Id == "card2");
+
+            var result = cs.ExecuteFusion(new List<Card> { mat1, mat2 });
+
+            Assert.IsTrue(result.IsSuccess);
+            // 素材2枚→融合カード1枚（手札-1）
+            Assert.AreEqual(handBefore - 1, cs.CurrentHand.Count);
+            Assert.IsTrue(cs.CurrentHand.Contains(result.ResultCard));
         }
     }
 }

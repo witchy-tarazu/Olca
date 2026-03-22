@@ -20,6 +20,11 @@ namespace Olca.Core.Logic.Battle
         private int maxSelectionCount; // 最大選択枚数
         private int maxCost; // 最大コスト
 
+        // カスタマイズシステム（省略可能）
+        private readonly ExceedSystem exceedSystem;
+        private readonly TuningSystem tuningSystem;
+        private readonly FusionSystem fusionSystem;
+
         /// <summary>現在の手札</summary>
         public IReadOnlyList<Card> CurrentHand => currentHand.AsReadOnly();
 
@@ -47,7 +52,11 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public CustomScreenSystem(Deck deck, int maxHandSize = 10, int maxSelectionCount = 5, int maxCost = 10)
+        /// <param name="exceedSystem">超越システム（省略可能）</param>
+        /// <param name="tuningSystem">調律システム（省略可能）</param>
+        /// <param name="fusionSystem">融合システム（省略可能）</param>
+        public CustomScreenSystem(Deck deck, int maxHandSize = 10, int maxSelectionCount = 5, int maxCost = 10,
+            ExceedSystem exceedSystem = null, TuningSystem tuningSystem = null, FusionSystem fusionSystem = null)
         {
             this.deck = deck ?? throw new ArgumentNullException(nameof(deck));
             this.currentHand = new List<Card>();
@@ -56,6 +65,9 @@ namespace Olca.Core.Logic.Battle
             this.maxHandSize = maxHandSize;
             this.maxSelectionCount = maxSelectionCount;
             this.maxCost = maxCost;
+            this.exceedSystem = exceedSystem;
+            this.tuningSystem = tuningSystem;
+            this.fusionSystem = fusionSystem;
         }
 
         /// <summary>
@@ -279,6 +291,97 @@ namespace Olca.Core.Logic.Battle
 
             return totalCost;
         }
+
+        // ========== カスタマイズ操作 ==========
+
+        /// <summary>
+        /// 超越を実行する（同名カード2枚 → 上位グレードカード1枚）
+        /// </summary>
+        /// <param name="cardA">超越素材カード1（手札にあること）</param>
+        /// <param name="cardB">超越素材カード2（同名・手札にあること）</param>
+        public ExceedResult ExecuteExceed(Card cardA, Card cardB)
+        {
+            if (exceedSystem == null)
+                return ExceedResult.Fail("超越システムが設定されていません");
+            if (!currentHand.Contains(cardA) || !currentHand.Contains(cardB))
+                return ExceedResult.Fail("指定カードが手札にありません");
+
+            var result = exceedSystem.Execute(cardA, cardB);
+            if (result.IsSuccess)
+            {
+                currentHand.Remove(cardA);
+                currentHand.Remove(cardB);
+                currentHand.Add(result.ResultCard);
+                OnExceeded?.Invoke(result.ResultCard);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 調律を実行する（調律カードを対象カードに適用して追加効果を付与）
+        /// </summary>
+        /// <param name="targetCard">調律対象カード（手札にあること）</param>
+        /// <param name="tuningCard">調律素材カード（手札にあること・CategoryがTuning）</param>
+        public TuningResult ExecuteTuning(Card targetCard, Card tuningCard)
+        {
+            if (tuningSystem == null)
+                return TuningResult.Fail("調律システムが設定されていません");
+            if (!currentHand.Contains(targetCard) || !currentHand.Contains(tuningCard))
+                return TuningResult.Fail("指定カードが手札にありません");
+
+            var result = tuningSystem.Execute(targetCard, tuningCard);
+            if (result.IsSuccess)
+            {
+                currentHand.Remove(tuningCard);
+                int idx = currentHand.IndexOf(targetCard);
+                if (idx >= 0)
+                    currentHand[idx] = result.ResultCard;
+                OnTuned?.Invoke(result.ResultCard);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 融合を実行する（複数カード → 新カード）
+        /// </summary>
+        /// <param name="materials">融合素材カードリスト（すべて手札にあること）</param>
+        public FusionResult ExecuteFusion(IReadOnlyList<Card> materials)
+        {
+            if (fusionSystem == null)
+                return FusionResult.Fail("融合システムが設定されていません");
+            if (materials == null || materials.Count < 2)
+                return FusionResult.Fail("2枚以上の素材が必要です");
+            foreach (var card in materials)
+            {
+                if (card == null || !currentHand.Contains(card))
+                    return FusionResult.Fail("指定カードが手札にありません");
+            }
+
+            var result = fusionSystem.Execute(materials);
+            if (result.IsSuccess)
+            {
+                foreach (var card in materials)
+                    currentHand.Remove(card);
+                currentHand.Add(result.ResultCard);
+                OnFused?.Invoke(result.ResultCard);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 超越成功時のイベント
+        /// </summary>
+        public event Action<Card> OnExceeded;
+
+        /// <summary>
+        /// 調律成功時のイベント
+        /// </summary>
+        public event Action<Card> OnTuned;
+
+        /// <summary>
+        /// 融合成功時のイベント
+        /// </summary>
+        public event Action<Card> OnFused;
 
         /// <summary>
         /// カスタム画面を開いた時のイベント
