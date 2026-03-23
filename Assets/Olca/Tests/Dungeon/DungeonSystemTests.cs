@@ -497,7 +497,7 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
-        public void 通常接敵時_プレイヤーは1マス目敵は4マス目に配置される()
+        public void 通常接敵時_プレイヤーは左中央敵は右中央に配置される()
         {
             // Arrange
             var config = DungeonConfig.CreateTestDungeon(10);
@@ -515,15 +515,15 @@ namespace Olca.Tests.Dungeon
                 if (dungeon.IsInBattle) break;
             }
 
-            // Assert
+            // Assert: バトルグリッド上の位置は常に固定（左中央=1、右中央=4）
             Assert.IsNotNull(contactInfo, "接敵した");
             Assert.IsFalse(contactInfo.IsDashContact, "通常接敵");
-            Assert.AreEqual(1, player.GridPosition.X, "プレイヤーは1マス目");
-            Assert.AreEqual(4, contactInfo.Enemy.GridPosition.X, "敵は4マス目");
+            Assert.AreEqual(1, player.GridPosition.X, "プレイヤーは左側中央（グリッド1）");
+            Assert.AreEqual(4, contactInfo.Enemy.GridPosition.X, "敵は右側中央（グリッド4）");
         }
 
         [Test]
-        public void ダッシュ接敵時_プレイヤーは2マス目敵は5マス目に配置される()
+        public void ダッシュ接敵時_プレイヤーは左中央敵は右中央に配置される()
         {
             // Arrange
             var config = DungeonConfig.CreateTestDungeon(10);
@@ -542,11 +542,12 @@ namespace Olca.Tests.Dungeon
                 if (dungeon.IsInBattle) break;
             }
 
-            // Assert
+            // Assert: バトルグリッド上の位置は常に固定（左中央=1、右中央=4）
+            // ノックバック量はダンジョンマップ上の移動量で表現され、グリッド位置には影響しない
             Assert.IsNotNull(contactInfo, "接敵した");
             Assert.IsTrue(contactInfo.IsDashContact, "ダッシュ接敵");
-            Assert.AreEqual(2, player.GridPosition.X, "プレイヤーは2マス目（ダッシュ）");
-            Assert.AreEqual(5, contactInfo.Enemy.GridPosition.X, "敵は5マス目（吹き飛ばし）");
+            Assert.AreEqual(1, player.GridPosition.X, "プレイヤーは左側中央（グリッド1）");
+            Assert.AreEqual(4, contactInfo.Enemy.GridPosition.X, "敵は右側中央（グリッド4）");
         }
 
         [Test]

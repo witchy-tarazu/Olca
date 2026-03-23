@@ -41,6 +41,8 @@ namespace Olca.Core.Logic.Dungeon
         public float PlayerHeight => playerMovement.Height;
         public bool IsDashing => playerMovement.IsDashing;
         public PlayerCharacter Player => playerCharacter;
+        /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
+        public DungeonMap Map => map;
 
         /// <summary>
         /// 現在のバトルシステム（バトル中のみ有効）
@@ -166,6 +168,12 @@ namespace Olca.Core.Logic.Dungeon
             // ダンジョンの位置からバトルグリッドに変換
             SetupBattlePositions(contactInfo, enemies);
 
+            // グリッド原点を「敵セル - 4」に統一
+            // 通常接敵: 敵がセル4 → originX = cellIndex - 4 → 敵は cellIndex に留まる
+            // ダッシュ接敵: 敵がセル5 → originX = cellIndex - 4 → 敵は cellIndex+1 に見える（ノックバック表現）
+            const int GRID_ORIGIN_OFFSET = 4;
+            contactInfo.ContactPositionX = contactInfo.EnemyCellIndex - GRID_ORIGIN_OFFSET;
+
             // バトルシステムを初期化
             // 注意: プレイヤーのHPはダンジョン探索中のまま（参照共有）
             currentBattle = new BattleSystem(
@@ -204,8 +212,10 @@ namespace Olca.Core.Logic.Dungeon
             // 接敵した敵を追加
             enemies.Add(contactInfo.Enemy);
 
-            // 画面内にいる他の敵も巻き込む（仕様より）
-            const float SCREEN_RANGE = 10.0f;  // 画面の範囲
+            // バトルグリッド内（6セル幅）に収まる敵のみ巻き込む
+            // originX = enemyCellIndex - 4 なのでグリッド範囲は [enemyCellIndex-4, enemyCellIndex+2]
+            // プレイヤー位置からの検索範囲はグリッド右端（enemyCellIndex+2）まで
+            const float SCREEN_RANGE = 4.0f;
             List<Enemy> nearbyEnemies = map.GetEnemiesInRange(
                 playerMovement.CurrentPosition,
                 SCREEN_RANGE
@@ -232,18 +242,10 @@ namespace Olca.Core.Logic.Dungeon
             int playerGridX;
             int primaryEnemyGridX;
 
-            if (contactInfo.IsDashContact)
-            {
-                // ダッシュ接敵: プレイヤーは2マス目、敵は5マス目（吹き飛ばされた状態）
-                playerGridX = 2;
-                primaryEnemyGridX = 5;
-            }
-            else
-            {
-                // 通常接敵: プレイヤーは1マス目、敵は4マス目
-                playerGridX = 1;
-                primaryEnemyGridX = 4;
-            }
+            // バトルグリッド上の位置は常に固定（左中央・右中央）
+            // ノックバック量はダンジョンマップ上の移動量で表現する
+            playerGridX = 1;        // 左側中央（グリッド0〜2の中央）
+            primaryEnemyGridX = 4;  // 右側中央（グリッド3〜5の中央）
 
             // プレイヤー位置を設定
             playerCharacter.MoveTo(new Vector2Int(playerGridX, 0));

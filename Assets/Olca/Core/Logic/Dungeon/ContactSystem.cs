@@ -11,6 +11,10 @@ namespace Olca.Core.Logic.Dungeon
         public Enemy Enemy { get; set; }
         public bool IsDashContact { get; set; }
         public ActionSystem.DashContactEffect? DashEffect { get; set; }
+        /// <summary>接触時のプレイヤー世界X座標（バトルグリッド配置の起点）</summary>
+        public float ContactPositionX { get; set; }
+        /// <summary>接触した敵のダンジョンセルインデックス</summary>
+        public int EnemyCellIndex { get; set; }
     }
 
     /// <summary>
@@ -19,8 +23,8 @@ namespace Olca.Core.Logic.Dungeon
     public class ContactSystem
     {
         private readonly DungeonMap map;
-        private const float CONTACT_DISTANCE = 2.0f;  // 非ダッシュ時の停止距離（マス）
-        private const float DASH_CONTACT_DISTANCE = 0.5f;  // ダッシュ時の接触距離
+        private const float CONTACT_DISTANCE = 1.0f;      // 非ダッシュ時の停止距離（敵に隣接したとき）
+        private const float DASH_CONTACT_DISTANCE = 1.5f;  // ダッシュ時の接触距離（貫通防止のため余裕を持たせる）
 
         private Enemy lastContactedEnemy;  // 最後に接触した敵（連続判定防止）
 
@@ -56,11 +60,14 @@ namespace Olca.Core.Logic.Dungeon
                 // 接敵！
                 lastContactedEnemy = nextCell.Enemy;
 
+                int enemyCellIndex = (int)Math.Floor(player.CurrentPosition + checkDistance);
                 ContactInfo contactInfo = new ContactInfo
                 {
                     Enemy = nextCell.Enemy,
                     IsDashContact = player.IsDashing,
-                    DashEffect = null  // ActionSystemで決定
+                    DashEffect = null,  // ActionSystemで決定
+                    ContactPositionX = player.CurrentPosition,
+                    EnemyCellIndex = enemyCellIndex
                 };
 
                 OnEnemyContact?.Invoke(contactInfo);

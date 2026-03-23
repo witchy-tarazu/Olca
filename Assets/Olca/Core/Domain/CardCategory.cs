@@ -18,6 +18,9 @@ namespace Olca.Core.Domain
         Defense,
 
         /// <summary>状態異常系</summary>
-        StatusAilment
+        StatusAilment,
+
+        /// <summary>調律素材専用カード（他カードへの追加効果付与に使用）</summary>
+        Tuning
     }
 }

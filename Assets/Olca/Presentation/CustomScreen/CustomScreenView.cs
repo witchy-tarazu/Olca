@@ -46,6 +46,14 @@ namespace Olca.Presentation.CustomScreen
 
         public void Initialize(CustomScreenSystem customScreen)
         {
+            // 再初期化時は既存の購読を解除
+            if (this.customScreen != null)
+            {
+                this.customScreen.OnScreenOpened -= OnScreenOpened;
+                this.customScreen.OnConfirmed -= OnConfirmed;
+                confirmButton.onClick.RemoveListener(OnConfirmClicked);
+            }
+
             this.customScreen = customScreen;
 
             // 確定ボタン
@@ -68,8 +76,8 @@ namespace Olca.Presentation.CustomScreen
 
         private void Update()
         {
-            // カスタム画面が開いていない場合は入力を受け付けない
-            if (!customScreen.IsOpen) return;
+            // 未初期化またはカスタム画面が開いていない場合は入力を受け付けない
+            if (customScreen == null || !customScreen.IsOpen) return;
 
             HandleInput();
         }

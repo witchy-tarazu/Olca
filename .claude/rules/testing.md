@@ -1,9 +1,3 @@
----
-paths:
-  - "Assets/Olca/Tests/**/*.cs"
-  - "Assets/Olca/**/Tests/**/*.cs"
----
-
 # テストコード作成ルール
 
 ## 基本方針

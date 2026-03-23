@@ -85,8 +85,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             // baseDamageには既にカードのPowerが含まれている（CardEffectFactoryで設定済み）
             int finalDamage = baseDamage;
 
-            // カードの属性を渡すことで、Enemy.TakeDamage内の属性相性計算が適用される
-            enemy.TakeDamage(finalDamage, context.UsedCard.Element);
+            // GetFinalElement()でElementOverrideを考慮した最終属性を使用
+            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement());
         }
 
         /// <summary>

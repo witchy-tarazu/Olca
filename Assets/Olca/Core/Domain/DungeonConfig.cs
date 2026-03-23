@@ -42,8 +42,8 @@ namespace Olca.Core.Domain
                     var boss = new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(i, 0));
                     cells.Add(new MapCell(i, boss));
                 }
-                // 5マスごとに敵を配置
-                else if (i % 5 == 0 && i > 0)
+                // 最初の敵はマス30以降、その後は5マスごとに配置
+                else if (i % 5 == 0 && i >= 30)
                 {
                     var enemy = new Enemy($"enemy_{i}", "スライム", 50, ElementType.None, new Vector2Int(i, 0));
                     cells.Add(new MapCell(i, enemy));

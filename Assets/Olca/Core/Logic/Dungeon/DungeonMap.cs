@@ -86,6 +86,21 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
+        /// マップ上の全敵と配置セル番号を取得（View側のスプライト初期配置に使用）
+        /// </summary>
+        public List<(int cellIndex, Enemy enemy)> GetAllEnemies()
+        {
+            var result = new List<(int, Enemy)>();
+            for (int i = 0; i < cells.Count; i++)
+            {
+                var cell = cells[i];
+                if (cell != null && cell.Enemy != null)
+                    result.Add((i, cell.Enemy));
+            }
+            return result;
+        }
+
+        /// <summary>
         /// 総マス数を取得
         /// </summary>
         public int TotalCellCount => totalCellCount;

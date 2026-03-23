@@ -1,11 +1,9 @@
-using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
-using Olca.Presentation.Effects;
 
 namespace Olca.Presentation.Battle
 {
@@ -15,7 +13,7 @@ namespace Olca.Presentation.Battle
     /// </summary>
     public class BattleView : MonoBehaviour
     {
-        // ========== UI要素 ==========
+        // ========== UI要素（カードUI・HP・ゲージのみ。フィールドはGameFieldViewが担当）==========
         [Header("プレイヤー情報")]
         [SerializeField] private Text playerHpText;
         [SerializeField] private RectTransform customGaugeContainer;  // 縦置きゲージコンテナ
@@ -24,23 +22,12 @@ namespace Olca.Presentation.Battle
         [Header("カスタム画面コンテナ")]
         [SerializeField] private RectTransform customScreenContainer;  // HP・ゲージ・カスタム画面を統合したコンテナ
 
-        [Header("グリッド表示")]
-        [SerializeField] private BattleFieldView battleFieldView;
-
-        [Header("敵表示")]
-        [SerializeField] private Transform enemyContainer;
-        [SerializeField] private GameObject enemyViewPrefab;
-
-        [Header("エフェクト")]
-        [SerializeField] private DamageNumberPool damageNumberPool;
-
         [Header("アニメーション設定")]
         [SerializeField] private float animationDuration = 0.4f;  // アニメーション時間
         [SerializeField] private float overshootAmount = 50f;     // オーバーラン量
 
         // ========== 内部状態 ==========
         private BattleSystem battleSystem;
-        private List<EnemyView> enemyViews = new List<EnemyView>();
         private bool isCustomScreenOpen = false;
         private CancellationTokenSource animationCts;
 
@@ -57,23 +44,11 @@ namespace Olca.Presentation.Battle
             battleSystem.CustomGauge.OnGaugeChanged += OnGaugeChanged;
             battleSystem.OnPlayerAttack += OnPlayerAttack;
 
-            // フィールド初期化
-            battleFieldView.Initialize(battleSystem.Field, battleSystem.Player);
-
-            // 敵View生成
-            foreach (var enemy in battleSystem.Enemies)
-            {
-                var enemyObj = Instantiate(enemyViewPrefab, enemyContainer);
-                var enemyView = enemyObj.GetComponent<EnemyView>();
-                enemyView.Initialize(enemy);
-                enemyViews.Add(enemyView);
-            }
-
             // 初期状態設定：カスタム画面コンテナを画面外に配置
             if (customScreenContainer != null)
             {
                 var anchoredPos = customScreenContainer.anchoredPosition;
-                anchoredPos.x = CUSTOM_SCREEN_HIDDEN_X;  // -960に設定（画面外）
+                anchoredPos.x = CUSTOM_SCREEN_HIDDEN_X;
                 customScreenContainer.anchoredPosition = anchoredPos;
             }
 
@@ -91,36 +66,16 @@ namespace Olca.Presentation.Battle
             // プレイヤーHP表示（数値のみ）
             var player = battleSystem.Player;
             if (playerHpText != null)
-            {
                 playerHpText.text = $"{player.CurrentHp}";
-            }
 
             // カスタムゲージ表示（カスタム画面が開いていない場合のみ）
             if (!isCustomScreenOpen && customGaugeContainer != null)
             {
                 var slider = customGaugeContainer.GetComponentInChildren<Slider>();
                 if (slider != null)
-                {
-                    slider.value = battleSystem.CustomGauge.NormalizedGauge;  // 正規化された値（0～1）を使用
-                }
+                    slider.value = battleSystem.CustomGauge.NormalizedGauge;
             }
-
-            // 敵View更新（ダメージ検出機能付き）
-            foreach (var enemyView in enemyViews)
-            {
-                // DamageNumberPoolが設定されていればダメージ検出機能を使用
-                if (damageNumberPool != null)
-                {
-                    enemyView.RefreshWithDamageDetection(damageNumberPool);
-                }
-                else
-                {
-                    enemyView.Refresh();
-                }
-            }
-
-            // グリッド更新
-            battleFieldView.Refresh();
+            // フィールド・敵の更新は GameFieldView.RefreshBattleField() が担当
         }
 
         // ========== カスタム画面制御（UniTaskベース） ==========

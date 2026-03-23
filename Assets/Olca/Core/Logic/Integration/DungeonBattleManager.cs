@@ -117,13 +117,7 @@ namespace Olca.Core.Logic.Integration
                 ApplyDashContactEffect(contactInfo.DashEffect.Value, contactInfo.Enemy);
             }
 
-            // プレイヤー初期配置（ダンジョン位置に基づく）
-            var initialPlayerPos = CalculateInitialPlayerPosition(dungeonSystem.PlayerPosition);
-            player.MoveTo(initialPlayerPos);
-
-            // 敵の初期配置
-            var enemyPosition = CalculateEnemyPosition(contactInfo.Enemy, dungeonSystem.PlayerPosition);
-            contactInfo.Enemy.MoveTo(enemyPosition);
+            // プレイヤー・敵の初期配置はDungeonSystem.SetupBattlePositionsが設定済みのため省略
 
             // バトル終了イベント購読
             currentBattle.OnBattleEnd += OnBattleEnd;
