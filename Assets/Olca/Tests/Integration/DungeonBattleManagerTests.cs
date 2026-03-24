@@ -97,13 +97,21 @@ namespace Olca.Tests.Integration
         [Test]
         public void バトル勝利後ダンジョンに戻る()
         {
-            // Arrange
-            var config = DungeonConfig.CreateTestDungeon(10);
+            // Arrange: index 3 に通常敵（スライム）、index 9 にボスを配置
+            // CreateTestDungeon(10) はボスのみ（100%ドロップ）のため専用の構成を使用
+            var cells = new List<MapCell>
+            {
+                new MapCell(0), new MapCell(1), new MapCell(2),
+                new MapCell(3, new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(3, 0))),
+                new MapCell(4), new MapCell(5), new MapCell(6), new MapCell(7), new MapCell(8),
+                new MapCell(9, new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(9, 0))),
+            };
+            var config = new DungeonConfig("test_dungeon", "テストダンジョン", 10, cells);
             var player = new PlayerCharacter(maxHp: 100, initialPosition: new Vector2Int(0, 0), attackPower: 10);
             var deck = CreateTestDeck();
             var manager = new DungeonBattleManager(config, player, deck, mockRandom, mockLogger);
 
-            // カードドロップなしに設定
+            // カードドロップなし（通常敵は0.7f >= 0.6f でドロップしない）
             mockRandom.SetFixedValue(0.7f);
 
             // 敵まで進める

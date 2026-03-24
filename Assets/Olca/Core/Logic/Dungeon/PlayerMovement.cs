@@ -15,8 +15,8 @@ namespace Olca.Core.Logic.Dungeon
         private bool isPaused;          // 一時停止中（バトル中など）
 
         private int jumpTimerMs;
-        private const int BASE_SPEED_MILLI_PER_SEC = 2000;  // 基本移動速度（ミリ単位/秒）= 2.0
-        private const int DASH_SPEED_MILLI_PER_SEC = 5000;  // ダッシュ速度（ミリ単位/秒）= 5.0
+        private const int BASE_SPEED_MILLI_PER_SEC = 4000;  // 基本移動速度（ミリ単位/秒）= 4.0
+        private const int DASH_SPEED_MILLI_PER_SEC = 10000;  // ダッシュ速度（ミリ単位/秒）= 10.0
         private const int JUMP_DURATION_MS = 500;           // ジャンプ時間（ミリ秒）= 0.5秒
         private const int JUMP_HEIGHT_MILLI = 1500;         // ジャンプの最大高さ（ミリ単位）= 1.5
 

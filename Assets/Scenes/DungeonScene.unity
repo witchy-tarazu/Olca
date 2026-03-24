@@ -787,6 +787,7 @@ RectTransform:
   - {fileID: 432485238}
   - {fileID: 342902084}
   - {fileID: 704799828}
+  - {fileID: 1216205518}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1039,10 +1040,12 @@ MonoBehaviour:
   dungeonCellCount: 100
   playerMaxHp: 100
   playerAttackPower: 10
-  dashDuration: 0.5
+  dashDistanceCells: 3
   dashCooldown: 0.1
   hudFadeDuration: 0.25
   contactAnimator: {fileID: 848117818}
+  dungeonHudView: {fileID: 0}
+  cardSelectionView: {fileID: 0}
 --- !u!114 &848117818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1992,6 +1995,41 @@ RectTransform:
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1216205517
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1216205518}
+  m_Layer: 0
+  m_Name: EnemyContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1216205518
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1216205517}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 426570078}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1258751655
 GameObject:
@@ -3377,6 +3415,7 @@ MonoBehaviour:
   cameraFollowSpeed: 5
   cameraPlayerOffsetX: 2.5
   battleGridView: {fileID: 1701501774}
+  enemyViewPrefab: {fileID: 2270076673927616265, guid: 02e3f5fb7bdfe5f43a3c53b96b3bc73b, type: 3}
   defaultEnemyColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
   enemyY: 0
   enemyZ: 0

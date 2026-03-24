@@ -2,19 +2,20 @@ using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
+using Olca.Presentation.Battle;
 
 namespace Olca.Presentation.Field
 {
     /// <summary>
     /// World Space上の敵スプライト
     /// ダンジョン探索中・バトル中を問わず同一オブジェクトが継続して存在する
-    /// - ダンジョン中: ダンジョンマップ上の配置座標に表示
-    /// - バトル中: WorldBattleGridView のグリッド座標に移動して表示
+    /// - ダンジョン中: ダンジョンマップ上の配置座標に表示。HPは非表示
+    /// - バトル中: WorldBattleGridView のグリッド座標に移動。HPを表示
+    /// EnemyView と組み合わせて使用する（視覚表現は EnemyView に委譲）
     /// </summary>
     public class WorldEnemyView : MonoBehaviour
     {
-        [SerializeField] private SpriteRenderer bodyRenderer;
-        [SerializeField] private UnityEngine.UI.Text nameLabel;  // World Space Canvas上のラベル（省略可）
+        [SerializeField] private EnemyView enemyView;  // 視覚表現コンポーネント
 
         private Enemy enemy;
         private float dungeonPositionX;       // ダンジョン上の配置X座標
@@ -38,20 +39,28 @@ namespace Olca.Presentation.Field
         // ==================== 初期化 ====================
 
         /// <summary>ダンジョン配置時に呼ぶ</summary>
-        public void Initialize(Enemy enemy, float dungeonX, Sprite sprite = null)
+        public void Initialize(Enemy enemy, float dungeonX)
         {
             this.enemy = enemy;
             this.dungeonPositionX = dungeonX;
             this.gridView = null;
             this.previousHp = enemy.CurrentHp;
 
-            if (bodyRenderer != null && sprite != null)
-                bodyRenderer.sprite = sprite;
+            // Prefab 経由では Sprite がシリアライズされないためランタイムで生成
+            var bodyRenderer = enemyView?.BodyRenderer;
+            if (bodyRenderer != null && bodyRenderer.sprite == null)
+                bodyRenderer.sprite = CreateWhiteSprite();
 
-            if (nameLabel != null)
-                nameLabel.text = enemy.Name;
-
+            enemyView?.Initialize(enemy);
             UpdatePosition();
+        }
+
+        private static Sprite CreateWhiteSprite()
+        {
+            var tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
         }
 
         // ==================== バトル遷移 ====================
@@ -59,7 +68,7 @@ namespace Olca.Presentation.Field
         /// <summary>バトル開始時 - グリッド座標モードに切り替え（グリッド範囲内の敵のみ）</summary>
         public void OnBattleStarted(WorldBattleGridView grid)
         {
-            positionAnimating = false;  // アニメーション終了・位置上書きを再開
+            positionAnimating = false;
             if (enemy == null) return;
             // GridPosition.X がグリッド範囲外の敵はバトルに参加しない → 一時非表示
             if (enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
@@ -69,6 +78,7 @@ namespace Olca.Presentation.Field
                 return;
             }
             gridView = grid;
+            enemyView?.ShowHp();
             UpdatePosition();
         }
 
@@ -76,6 +86,7 @@ namespace Olca.Presentation.Field
         public void OnBattleEnded()
         {
             gridView = null;
+            enemyView?.HideHp();
             if (hiddenForBattle)
             {
                 hiddenForBattle = false;
@@ -91,24 +102,18 @@ namespace Olca.Presentation.Field
         public void Refresh()
         {
             if (enemy == null) return;
-
-            // バトル不参加で非表示中は何もしない（SetActive を上書きしない）
             if (hiddenForBattle) return;
 
-            // 死亡時は非表示
-            gameObject.SetActive(!enemy.IsDead);
+            enemyView?.Refresh();
             if (enemy.IsDead) return;
 
-            // アニメーション中は ContactAnimator が位置を管理するので上書きしない
             if (!positionAnimating) UpdatePosition();
 
             // HP変化を検出してダメージエフェクト
             int currentHp = enemy.CurrentHp;
             int damage = previousHp - currentHp;
             if (damage > 0)
-            {
                 PlayDamageEffectAsync(damage, destroyCts.Token).Forget();
-            }
             previousHp = currentHp;
         }
 
@@ -116,27 +121,24 @@ namespace Olca.Presentation.Field
 
         private async UniTaskVoid PlayDamageEffectAsync(int damage, CancellationToken ct)
         {
+            var bodyRenderer = enemyView?.BodyRenderer;
             if (bodyRenderer == null) return;
 
             // 点滅エフェクト（ヒット感）
             var originalColor = bodyRenderer.color;
-            var hitColor = Color.white;
-
             for (int i = 0; i < 2; i++)
             {
-                bodyRenderer.color = hitColor;
+                bodyRenderer.color = Color.white;
                 await UniTask.Delay(50, cancellationToken: ct);
                 bodyRenderer.color = originalColor;
                 await UniTask.Delay(50, cancellationToken: ct);
             }
 
-            // ダメージ数値をWorld Spaceに浮遊表示
             ShowWorldDamageNumber(damage);
         }
 
         private void ShowWorldDamageNumber(int damage)
         {
-            // TextMesh を使ったシンプルな浮遊数値
             var go = new GameObject("DamageNumber");
             go.transform.position = transform.position + new Vector3(0f, 0.6f, -0.5f);
 
@@ -174,11 +176,9 @@ namespace Olca.Presentation.Field
 
         private void UpdatePosition()
         {
-            float worldX;
-            if (gridView != null && enemy != null)
-                worldX = gridView.GridIndexToWorldX(enemy.GridPosition.X);
-            else
-                worldX = dungeonPositionX;
+            float worldX = (gridView != null && enemy != null)
+                ? gridView.GridIndexToWorldX(enemy.GridPosition.X)
+                : dungeonPositionX;
 
             transform.position = new Vector3(worldX, transform.position.y, transform.position.z);
         }

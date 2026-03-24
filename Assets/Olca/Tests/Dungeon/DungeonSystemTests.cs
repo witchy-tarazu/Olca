@@ -32,6 +32,25 @@ namespace Olca.Tests.Dungeon
         }
 
         /// <summary>
+        /// 通常敵（スライム、index 3）とボス（index 9）を配置したダンジョンを作成
+        /// ボスのみになる CreateTestDungeon(10) の代替として使用する
+        /// </summary>
+        private DungeonSystem CreateDungeonSystemWithEarlyNormalEnemy()
+        {
+            var cells = new System.Collections.Generic.List<MapCell>
+            {
+                new MapCell(0), new MapCell(1), new MapCell(2),
+                new MapCell(3, new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(3, 0))),
+                new MapCell(4), new MapCell(5), new MapCell(6), new MapCell(7), new MapCell(8),
+                new MapCell(9, new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(9, 0))),
+            };
+            var config = new DungeonConfig("test_dungeon", "テストダンジョン", 10, cells);
+            var player = new PlayerCharacter(maxHp: 100, initialPosition: new Vector2Int(0, 0), attackPower: 10);
+            var deck = CreateTestDeck();
+            return new DungeonSystem(config, player, deck, mockRandom, mockLogger);
+        }
+
+        /// <summary>
         /// テスト用のデッキを作成
         /// </summary>
         private Deck CreateTestDeck()
@@ -158,8 +177,8 @@ namespace Olca.Tests.Dungeon
         [Test]
         public void OnBattleCompleted_勝利後にダンジョンが再開される()
         {
-            // Arrange
-            var dungeon = CreateDungeonSystem(cellCount: 10);
+            // Arrange: index 3 に通常敵、index 9 にボス（通常敵撃破後も移動継続できる構成）
+            var dungeon = CreateDungeonSystemWithEarlyNormalEnemy();
 
             // 接敵までTickを進める
             for (int i = 0; i < 200; i++)
@@ -170,7 +189,7 @@ namespace Olca.Tests.Dungeon
 
             Assert.IsTrue(dungeon.IsInBattle, "バトル状態になっている");
 
-            // カードドロップなし（60%未満にする）
+            // カードドロップなし（通常敵の閾値0.6未満にならない）
             mockRandom.SetFixedValue(0.7f);
 
             // Act: バトル勝利
@@ -585,8 +604,8 @@ namespace Olca.Tests.Dungeon
         [Test]
         public void バトル終了後_CurrentBattleがnullになる()
         {
-            // Arrange
-            var dungeon = CreateDungeonSystem(cellCount: 10);
+            // Arrange: index 3 に通常敵、index 9 にボス
+            var dungeon = CreateDungeonSystemWithEarlyNormalEnemy();
 
             // 接敵までTickを進める
             for (int i = 0; i < 200; i++)
@@ -637,8 +656,8 @@ namespace Olca.Tests.Dungeon
         [Test]
         public void ダンジョン復帰時_OnReturnToDungeonイベントが発火する()
         {
-            // Arrange
-            var dungeon = CreateDungeonSystem(cellCount: 10);
+            // Arrange: index 3 に通常敵、index 9 にボス（通常敵撃破後も復帰できる構成）
+            var dungeon = CreateDungeonSystemWithEarlyNormalEnemy();
             bool returnEventFired = false;
 
             dungeon.OnReturnToDungeon += () => returnEventFired = true;

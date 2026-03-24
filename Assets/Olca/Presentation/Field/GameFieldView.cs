@@ -31,7 +31,10 @@ namespace Olca.Presentation.Field
         [Header("バトルグリッド（World Space）")]
         [SerializeField] private WorldBattleGridView battleGridView;
 
-        [Header("敵スプライトのデフォルト設定")]
+        [Header("敵Prefab")]
+        [SerializeField] private GameObject enemyViewPrefab;   // WorldEnemyView + EnemyView を持つ prefab
+
+        [Header("敵スプライトのデフォルト設定（prefab未設定時のフォールバック）")]
         [SerializeField] private Color defaultEnemyColor = new Color(0.9f, 0.2f, 0.2f);
         [SerializeField] private float enemyY = 0f;
         [SerializeField] private float enemyZ = 0f;
@@ -57,6 +60,7 @@ namespace Olca.Presentation.Field
         }
 
         private DungeonSystem dungeonSystem;
+        private BattleSystem currentBattle; // バトル中のプレイヤー座標更新用
         private readonly List<WorldEnemyView> enemyViews = new List<WorldEnemyView>();
         private bool cameraFollowEnabled = true;
         private float? battleCameraTargetX = null;  // バトル開始時のカメラ移動先（スムーズlerp用）
@@ -111,19 +115,28 @@ namespace Olca.Presentation.Field
 
         private WorldEnemyView CreateEnemyView(Enemy enemy, float dungeonX)
         {
-            var go = new GameObject($"Enemy_{enemy.Name}");
-            go.transform.SetParent(transform, false);
+            GameObject go;
+            if (enemyViewPrefab != null)
+            {
+                go = Instantiate(enemyViewPrefab, transform);
+            }
+            else
+            {
+                // フォールバック: 白スプライト + SpriteRenderer のシンプル表示
+                go = new GameObject($"Enemy_{enemy.Name}");
+                go.transform.SetParent(transform, false);
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.color = defaultEnemyColor;
+                sr.sortingOrder = 2;
+                sr.sprite = CreateWhiteSprite();
+                go.AddComponent<Olca.Presentation.Battle.EnemyView>();
+                go.AddComponent<WorldEnemyView>();
+            }
+
             go.transform.position = new Vector3(dungeonX, enemyY, enemyZ);
-            // グリッド1セル(1 unit)に対して約0.8unitのサイズ（旧BattlePrototypeSceneのサイズ感に合わせる）
             go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
 
-            // SpriteRenderer（白スプライト + 色で表現、PPU=1なので scale=0.8 → 0.8unit角）
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.color = defaultEnemyColor;
-            sr.sortingOrder = 2;
-            sr.sprite = CreateWhiteSprite();
-
-            var view = go.AddComponent<WorldEnemyView>();
+            var view = go.GetComponent<WorldEnemyView>();
             view.Initialize(enemy, dungeonX);
             return view;
         }
@@ -138,6 +151,8 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleStarted(BattleSystem battle, float contactPositionX)
         {
+            currentBattle = battle;
+
             // グリッド原点をプレイヤーの現在位置から逆算
             // → プレイヤーをワープさせず、グリッドをプレイヤーに合わせて出現させる
             float originX = contactPositionX;
@@ -164,6 +179,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleEnded()
         {
+            currentBattle = null;
             battleGridView?.Hide();
             battleCameraTargetX = null;
             cameraFollowEnabled = true;
@@ -187,6 +203,13 @@ namespace Olca.Presentation.Field
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>
         public void RefreshBattleField()
         {
+            // バトル中のプレイヤー位置をグリッド座標からワールド座標に変換して反映
+            if (playerTransform != null && battleGridView != null && currentBattle != null)
+            {
+                float worldX = battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
+                playerTransform.position = new Vector3(worldX, playerTransform.position.y, 0f);
+            }
+
             // 通常接敵アニメーション中: プレイヤーに追従（cameraFollowEnabled=true）
             if (cameraFollowEnabled) UpdateCamera();
 

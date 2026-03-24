@@ -2,6 +2,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
 
@@ -11,7 +12,7 @@ namespace Olca.Presentation.Battle
     /// バトル画面全体のView
     /// BattleSystemの状態を表示する
     /// </summary>
-    public class BattleView : MonoBehaviour
+    public class BattleView : MonoBehaviour, IBattleView
     {
         // ========== UI要素（カードUI・HP・ゲージのみ。フィールドはGameFieldViewが担当）==========
         [Header("プレイヤー情報")]
@@ -113,6 +114,14 @@ namespace Olca.Presentation.Battle
             // アニメーション実行（完了まで待つ）
             await AnimateCustomScreenCloseAsync(animationCts.Token);
         }
+
+        // ========== IBattleView 明示的実装 ==========
+        /// <summary>
+        /// IBattleView.CloseCustomScreenAsync の実装。
+        /// UniTask版をTask に変換して返す。
+        /// </summary>
+        async System.Threading.Tasks.Task IBattleView.CloseCustomScreenAsync()
+            => await CloseCustomScreenAsync();
 
         // ========== アニメーション実装（UniTask） ==========
         /// <summary>

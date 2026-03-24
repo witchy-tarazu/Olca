@@ -4,6 +4,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
 
@@ -12,8 +13,13 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>
     /// カスタム画面（カード選択UI）
     /// </summary>
-    public class CustomScreenView : MonoBehaviour
+    public class CustomScreenView : MonoBehaviour, ICustomScreenView
     {
+        /// <summary>
+        /// 確定ボタンが押されてカスタム画面が確定された時に発行されるイベント。
+        /// DungeonBattleController など外部コントローラーが購読して画面を閉じる処理を行う。
+        /// </summary>
+        public event System.Action OnCustomScreenConfirmed;
         [Header("カード配置")]
         [SerializeField] private Transform handCardContainer;
         [SerializeField] private GameObject handCardPrefab;
@@ -711,12 +717,8 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnConfirmed(List<Card> selectedCards)
         {
-            // BattleControllerに通知（BattleViewを再表示）
-            var battleController = FindFirstObjectByType<Olca.Presentation.Battle.BattleController>();
-            if (battleController != null)
-            {
-                battleController.OnCustomScreenClosed();
-            }
+            // 購読者（BattleController・DungeonBattleControllerなど）に通知
+            OnCustomScreenConfirmed?.Invoke();
         }
 
         private void OnDestroy()

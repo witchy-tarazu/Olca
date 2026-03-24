@@ -4,7 +4,6 @@ using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Interfaces;
-using Vector2Int = Olca.Core.Domain.Vector2Int;
 
 namespace Olca.Core.Logic.Integration
 {
@@ -16,7 +15,6 @@ namespace Olca.Core.Logic.Integration
     {
         private readonly DungeonSystem dungeonSystem;
         private readonly PlayerCharacter player;
-        private readonly Deck masterDeck;
         private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
 
@@ -43,7 +41,6 @@ namespace Olca.Core.Logic.Integration
             IGameLogger logger)
         {
             this.player = player;
-            this.masterDeck = initialDeck;
             this.randomProvider = randomProvider;
             this.logger = logger;
 
@@ -59,6 +56,8 @@ namespace Olca.Core.Logic.Integration
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
             dungeonSystem.OnDungeonFailed += OnDungeonFailed;
             dungeonSystem.OnDungeonCleared += OnDungeonCleared;
+            dungeonSystem.OnCardRewardOffered += OnCardRewardOfferedHandler;
+            dungeonSystem.OnReturnToDungeon += OnReturnedToDungeon;
 
             currentPhase = GamePhase.Dungeon;
             logger?.LogInfo("[DungeonBattleManager] 初期化完了 - ダンジョンフェーズ開始");
@@ -93,31 +92,23 @@ namespace Olca.Core.Logic.Integration
 
         /// <summary>
         /// ダンジョンからバトル開始時
+        /// DungeonSystem がバトルシステムを生成済みなので、そちらを参照する
         /// </summary>
         private void OnDungeonBattleStart(ContactInfo contactInfo)
         {
             logger?.LogInfo("[DungeonBattleManager] バトル開始");
             currentPhase = GamePhase.BattleTransition;
 
-            // バトルシステムを初期化
-            var enemies = new List<Enemy> { contactInfo.Enemy };
-            var currentDeck = dungeonSystem.GetCurrentDeck();
+            // DungeonSystem が生成したバトルシステムを使用する
+            // （DungeonBattleManager が独自に生成すると二重バトルになる）
+            currentBattle = dungeonSystem.CurrentBattle;
 
-            currentBattle = new BattleSystem(
-                player,
-                enemies,
-                currentDeck,
-                customGaugeSpeed: 1.0f,
-                randomProvider,
-                logger);
-
-            // ダッシュ接敵効果を適用
-            if (contactInfo.IsDashContact && contactInfo.DashEffect.HasValue)
+            if (currentBattle == null)
             {
-                ApplyDashContactEffect(contactInfo.DashEffect.Value, contactInfo.Enemy);
+                logger?.LogWarning("[DungeonBattleManager] DungeonSystem.CurrentBattle が null - バトル開始失敗");
+                currentPhase = GamePhase.Dungeon;
+                return;
             }
-
-            // プレイヤー・敵の初期配置はDungeonSystem.SetupBattlePositionsが設定済みのため省略
 
             // バトル終了イベント購読
             currentBattle.OnBattleEnd += OnBattleEnd;
@@ -128,86 +119,61 @@ namespace Olca.Core.Logic.Integration
         }
 
         /// <summary>
-        /// ダッシュ接敵効果を適用
-        /// </summary>
-        private void ApplyDashContactEffect(ActionSystem.DashContactEffect effect, Enemy enemy)
-        {
-            switch (effect)
-            {
-                case ActionSystem.DashContactEffect.InitialDamage:
-                    // 初撃ダメージ（プレイヤー攻撃力の50%）
-                    int damage = player.AttackPower / 2;
-                    enemy.TakeDamage(damage, ElementType.None);
-                    logger?.LogInfo($"[DungeonBattleManager] ダッシュ接敵: 初撃{damage}ダメージ");
-                    break;
-
-                case ActionSystem.DashContactEffect.Stun:
-                    // 敵に3秒スタンを付与
-                    const int STUN_DURATION_MS = 3000;
-                    enemy.ApplyStun(STUN_DURATION_MS);
-                    logger?.LogInfo($"[DungeonBattleManager] ダッシュ接敵: スタン（{STUN_DURATION_MS / 1000}秒）");
-                    break;
-
-                case ActionSystem.DashContactEffect.FirstStrike:
-                    // カスタムゲージを満タンにして先制攻撃権を付与
-                    currentBattle.SetFirstStrike();
-                    logger?.LogInfo("[DungeonBattleManager] ダッシュ接敵: 先制攻撃 - カスタムゲージ満タン");
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// ダンジョン位置からバトル初期位置を計算
-        /// ダンジョンの進行度に応じてプレイヤーの開始位置を決定
-        /// </summary>
-        private Vector2Int CalculateInitialPlayerPosition(float dungeonPosition)
-        {
-            // プレイヤーは常に左側（X=0）から開始
-            return new Vector2Int(0, 0);
-        }
-
-        /// <summary>
-        /// 敵のバトル位置を計算
-        /// </summary>
-        private Vector2Int CalculateEnemyPosition(Enemy enemy, float dungeonPosition)
-        {
-            // 敵は右側（X=5）に配置
-            // 後方の敵ほど遠くに配置する仕様も可能
-            return new Vector2Int(5, 0);
-        }
-
-        /// <summary>
         /// バトル終了時
+        /// DungeonSystem.OnBattleEndFromBattleSystem が同じイベントを先に処理して
+        /// OnBattleCompleted を呼ぶため、ここでは二重呼び出しを避ける。
+        /// フェーズ遷移は DungeonSystem が発火するイベント経由で完結する：
+        ///   勝利+カードドロップ → OnCardRewardOfferedHandler → CardReward
+        ///   勝利+ドロップなし   → OnReturnedToDungeon → Dungeon
+        ///   敗北               → OnDungeonFailed → GameOver
+        /// このハンドラでは currentPhase を変更しない（上書き禁止）。
         /// </summary>
         private void OnBattleEnd(BattleResult result)
         {
             logger?.LogInfo($"[DungeonBattleManager] バトル終了: {result}");
-            currentPhase = GamePhase.DungeonTransition;
 
-            bool victory = result == BattleResult.Victory;
-
-            // ダンジョンシステムに結果を通知
-            dungeonSystem.OnBattleCompleted(victory);
-
-            if (victory)
-            {
-                // 勝利後、カードドロップ判定はDungeonSystemが行う
-                // カード選択画面が表示される場合は OnCardRewardOffered イベントで通知される
-                // 表示されない場合はすぐにダンジョンフェーズに戻る
-                currentPhase = GamePhase.Dungeon;
-            }
-            else
-            {
-                // 敗北時はゲームオーバー（DungeonSystem.OnDungeonFailedで処理）
-                currentPhase = GamePhase.GameOver;
-            }
-
-            // バトルシステムを破棄
+            // バトルシステムの購読解除・参照を破棄
             if (currentBattle != null)
             {
                 currentBattle.OnBattleEnd -= OnBattleEnd;
                 currentBattle = null;
             }
+
+            // バトル終了イベント（View遷移のトリガー）
+            OnBattleEnded?.Invoke();
+        }
+
+        /// <summary>
+        /// カード報酬選択画面表示のハンドラ
+        /// </summary>
+        private void OnCardRewardOfferedHandler(List<Card> choices)
+        {
+            logger?.LogInfo("[DungeonBattleManager] カード報酬選択画面 - CardRewardフェーズへ移行");
+            currentPhase = GamePhase.CardReward;
+            OnCardRewardPresented?.Invoke(choices);
+        }
+
+        /// <summary>
+        /// ダンジョン復帰のハンドラ
+        /// </summary>
+        private void OnReturnedToDungeon()
+        {
+            currentPhase = GamePhase.Dungeon;
+        }
+
+        /// <summary>
+        /// カード報酬を選択してダンジョンに戻る
+        /// </summary>
+        /// <param name="selectedCard">選択したカード（null でスキップ）</param>
+        public void SelectCardReward(Card selectedCard)
+        {
+            if (currentPhase != GamePhase.CardReward)
+            {
+                logger?.LogWarning("[DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効");
+                return;
+            }
+            dungeonSystem.OnCardSelectionCompleted(selectedCard);
+            // OnReturnedToDungeon が発火してフェーズが Dungeon に戻る
         }
 
         /// <summary>
@@ -266,6 +232,12 @@ namespace Olca.Core.Logic.Integration
         // ========== イベント ==========
         /// <summary>バトル開始時（カメラ遷移などに使用）</summary>
         public event Action<BattleSystem, ContactInfo> OnBattleStarted;
+
+        /// <summary>バトル終了時（View遷移のトリガー）</summary>
+        public event Action OnBattleEnded;
+
+        /// <summary>カード報酬選択画面表示時（選択肢リスト付き）</summary>
+        public event Action<IReadOnlyList<Card>> OnCardRewardPresented;
 
         /// <summary>ゲームオーバー時</summary>
         public event Action OnGameOver;

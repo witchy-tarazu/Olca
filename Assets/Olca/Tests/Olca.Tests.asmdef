@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Olca.Core"
+        "Olca.Core",
+        "Olca.Application"
     ],
     "includePlatforms": [
         "Editor"
