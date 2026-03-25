@@ -25,8 +25,23 @@ namespace Olca.Presentation.Field
 
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
-        [SerializeField] private float cameraFollowSpeed = 5f;
-        [SerializeField] private float cameraPlayerOffsetX = 2.5f;  // プレイヤーからカメラ中央までのXオフセット（グリッド半幅）
+        [SerializeField] private float cameraFollowSpeed = 50f;            // 通常時の追従速度
+        [SerializeField] private float cameraFollowSpeedDash = 15f;       // ダッシュ時の追従速度（プレイヤーが前に出る演出）
+        [SerializeField] private float cameraFollowSpeedTransition = 3f;  // 速度切替のなめらかさ（小さいほどゆっくり）
+
+        private float currentFollowSpeed;  // 実際に使用する追従速度（Lerpで遷移）
+        // スナップ距離 = CameraOffsetXの2倍（ダッシュ程度のラグでは発動しない大きさ）
+        private float cameraMaxLagDistance => CameraOffsetX * 2f;
+        [SerializeField] private float cameraPlayerOffsetX = 2.5f;  // フォールバック用（非orthographicカメラ等）
+
+        /// <summary>
+        /// プレイヤーがグリッド左半分の中央列（列1）に来るためのカメラXオフセット。
+        /// battleGridView が設定されていればグリッド幅から算出、なければInspector値を使用。
+        /// </summary>
+        private float CameraOffsetX =>
+            battleGridView != null
+                ? battleGridView.LeftHalfCenterCameraOffsetX
+                : cameraPlayerOffsetX;
 
         [Header("バトルグリッド（World Space）")]
         [SerializeField] private WorldBattleGridView battleGridView;
@@ -72,12 +87,13 @@ namespace Olca.Presentation.Field
         {
             dungeonSystem = dungeon;
             cameraFollowEnabled = true;
+            currentFollowSpeed = cameraFollowSpeed;  // 初期値は通常速度
 
             // カメラを初期位置にスナップ（ダンジョン開始時のヌルっとした動きを防ぐ）
             if (fieldCamera != null)
             {
                 Vector3 camPos = fieldCamera.transform.position;
-                camPos.x = dungeon.PlayerPosition + cameraPlayerOffsetX;
+                camPos.x = dungeon.PlayerPosition + CameraOffsetX;
                 fieldCamera.transform.position = camPos;
             }
 
@@ -160,6 +176,8 @@ namespace Olca.Presentation.Field
                 originX = playerTransform.position.x - battle.Player.GridPosition.X;
 
             battleGridView?.Show(battle.Field, originX);
+
+            Debug.Log($"[Camera] OnBattleStarted: playerPos={playerTransform?.position.x:F2}, gridColumn={battle.Player.GridPosition.X}, originX={originX:F2}, gridCenterX={battleGridView?.GridCenterWorldX:F2}, cameraX={fieldCamera?.transform.position.x:F2}, CameraOffsetX={CameraOffsetX:F2}");
 
             // カメラ追従を停止し、グリッド中央へのスムーズ移動を開始
             cameraFollowEnabled = false;
@@ -265,12 +283,30 @@ namespace Olca.Presentation.Field
         {
             if (fieldCamera == null || playerTransform == null) return;
             Vector3 targetPos = new Vector3(
-                playerTransform.position.x + cameraPlayerOffsetX,
+                playerTransform.position.x + CameraOffsetX,
                 fieldCamera.transform.position.y,
                 fieldCamera.transform.position.z);
+
+            // 離れすぎた場合はターゲット位置に直接スナップ（ダッシュ通常ラグでは発動しない）
+            float distX = Mathf.Abs(fieldCamera.transform.position.x - targetPos.x);
+            if (distX > cameraMaxLagDistance)
+            {
+                Debug.Log($"[Camera] SNAP: camX={fieldCamera.transform.position.x:F2} → targetX={targetPos.x:F2} (distX={distX:F2}, maxLag={cameraMaxLagDistance:F2})");
+                Vector3 snapped = fieldCamera.transform.position;
+                snapped.x = targetPos.x;
+                fieldCamera.transform.position = snapped;
+            }
+
+            bool isDashing = dungeonSystem != null && dungeonSystem.IsDashing;
+            float targetFollowSpeed = isDashing ? cameraFollowSpeedDash : cameraFollowSpeed;
+            currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, targetFollowSpeed, Time.deltaTime * cameraFollowSpeedTransition);
             fieldCamera.transform.position = Vector3.Lerp(
                 fieldCamera.transform.position, targetPos,
-                Time.deltaTime * cameraFollowSpeed);
+                Time.deltaTime * currentFollowSpeed);
+
+            // 定期ログ（60フレームに1回）
+            if (Time.frameCount % 60 == 0)
+                Debug.Log($"[Camera] camX={fieldCamera.transform.position.x:F2}, playerX={playerTransform.position.x:F2}, targetX={targetPos.x:F2}, offset={CameraOffsetX:F2}, distX={distX:F2}");
         }
 
         private void UpdateEnemyViews()

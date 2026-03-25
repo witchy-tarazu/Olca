@@ -82,8 +82,19 @@ namespace Olca.Presentation.Field
         /// <summary>グリッドインデックスから World X 座標を返す</summary>
         public float GridIndexToWorldX(int gridX) => originX + gridX * panelSize;
 
+        /// <summary>グリッド全体の幅（Unity単位）</summary>
+        public float GridWidth => GRID_WIDTH * panelSize;
+
         /// <summary>グリッド中央の World X 座標（カメラ中央合わせ用）</summary>
         public float GridCenterWorldX => originX + (GRID_WIDTH - 1) * 0.5f * panelSize;
+
+        /// <summary>
+        /// プレイヤーがグリッド左半分の中央列に見えるためのカメラオフセットX
+        /// （プレイヤー座標からカメラ中心までの距離）
+        /// 左半分の中央列 = 列1（0,1,2の中央）、グリッド中心 = 列2.5 → オフセット = 1.5
+        /// </summary>
+        public float LeftHalfCenterCameraOffsetX =>
+            ((GRID_WIDTH - 1) * 0.5f - (GRID_WIDTH / 2 / 2)) * panelSize;
 
         // ==================== 内部処理 ====================
 
