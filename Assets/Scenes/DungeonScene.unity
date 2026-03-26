@@ -1090,7 +1090,7 @@ MonoBehaviour:
   dungeonCellCount: 100
   playerMaxHp: 100
   playerAttackPower: 10
-  dashDistanceCells: 3
+  dashDistanceCells: 5
   dashCooldown: 0.1
   hudFadeDuration: 0.25
   contactAnimator: {fileID: 848117818}
@@ -1110,7 +1110,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   normalContactDuration: 0.4
   dashRushDuration: 0.2
-  dashRollbackDuration: 0.2
+  dashRollbackDuration: 0.5
   pauseAfterContactDuration: 0.1
   normalBumpDistance: 0.15
   normalKnockbackDistance: 3
@@ -3527,7 +3527,9 @@ MonoBehaviour:
   playerTransform: {fileID: 1380017649}
   playerSprite: {fileID: 1380017650}
   fieldCamera: {fileID: 1974572033}
-  cameraFollowSpeed: 5
+  cameraFollowSpeed: 50
+  cameraFollowSpeedDash: 30
+  cameraFollowSpeedTransition: 3
   cameraPlayerOffsetX: 2.5
   battleGridView: {fileID: 1701501774}
   enemyViewPrefab: {fileID: 2270076673927616265, guid: 02e3f5fb7bdfe5f43a3c53b96b3bc73b, type: 3}
