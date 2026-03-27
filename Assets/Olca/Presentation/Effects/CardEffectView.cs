@@ -61,11 +61,23 @@ namespace Olca.Presentation.Effects
         }
 
         /// <summary>
-        /// カード選択時のハイライト（オン）
+        /// カード選択時のハイライト（オン）- 色を指定してオーバーライド可能
         /// </summary>
-        public async UniTask ShowHighlightAsync(CancellationToken ct)
+        public async UniTask ShowHighlightAsync(CancellationToken ct, Color? overrideColor = null)
         {
-            if (isHighlighted || targetImage == null) return;
+            Color targetColor = overrideColor.HasValue
+                ? overrideColor.Value * highlightIntensity
+                : highlightColor * highlightIntensity;
+            await ShowHighlightWithColorAsync(ct, targetColor);
+        }
+
+        /// <summary>
+        /// カード選択時のハイライト（オン）- 内部実装
+        /// </summary>
+        private async UniTask ShowHighlightWithColorAsync(CancellationToken ct, Color targetColor)
+        {
+            if (targetImage == null) return;
+            // 既にハイライト中でも色変更要求があれば再アニメーション（カスタマイズモード中の色切替に対応）
             isHighlighted = true;
 
             effectCts?.Cancel();
@@ -75,7 +87,7 @@ namespace Olca.Presentation.Effects
             {
                 // ハイライト色に変更 + スケール拡大
                 await UniTask.WhenAll(
-                    AnimateColorAsync(highlightColor * highlightIntensity, scaleDuration, effectCts.Token),
+                    AnimateColorAsync(targetColor, scaleDuration, effectCts.Token),
                     AnimateScaleAsync(originalScale * selectedScale, scaleDuration, effectCts.Token)
                 );
 

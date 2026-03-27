@@ -3,6 +3,7 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Presentation.Battle;
+using Olca.Presentation.Effects;
 
 namespace Olca.Presentation.Field
 {
@@ -24,6 +25,7 @@ namespace Olca.Presentation.Field
         private bool positionAnimating;       // trueの間はRefreshによる位置上書きを禁止
         private bool hiddenForBattle;         // バトル不参加のため一時非表示中
         private CancellationTokenSource destroyCts;
+        private WorldDamageNumberPool damageNumberPool;
 
         /// <summary>この View が追跡している Enemy（ContactAnimator のルックアップ用）</summary>
         public Enemy TrackedEnemy => enemy;
@@ -37,6 +39,12 @@ namespace Olca.Presentation.Field
         }
 
         // ==================== 初期化 ====================
+
+        /// <summary>ダメージ数値プールを設定する（GameFieldView から呼ぶ）</summary>
+        public void SetDamageNumberPool(WorldDamageNumberPool pool)
+        {
+            damageNumberPool = pool;
+        }
 
         /// <summary>ダンジョン配置時に呼ぶ</summary>
         public void Initialize(Enemy enemy, float dungeonX)
@@ -124,7 +132,17 @@ namespace Olca.Presentation.Field
             var bodyRenderer = enemyView?.BodyRenderer;
             if (bodyRenderer == null) return;
 
-            // 点滅エフェクト（ヒット感）
+            ShowWorldDamageNumber(damage);
+
+            // 点滅 + スケールパルスを並行実行（ヒット感）
+            await UniTask.WhenAll(
+                FlashEffectAsync(bodyRenderer, ct),
+                ScalePulseEffectAsync(ct)
+            );
+        }
+
+        private async UniTask FlashEffectAsync(SpriteRenderer bodyRenderer, CancellationToken ct)
+        {
             var originalColor = bodyRenderer.color;
             for (int i = 0; i < 2; i++)
             {
@@ -133,43 +151,41 @@ namespace Olca.Presentation.Field
                 bodyRenderer.color = originalColor;
                 await UniTask.Delay(50, cancellationToken: ct);
             }
+        }
 
-            ShowWorldDamageNumber(damage);
+        private async UniTask ScalePulseEffectAsync(CancellationToken ct)
+        {
+            var originalScale = transform.localScale;
+            var peakScale = originalScale * 1.25f;
+            float halfDuration = 0.08f;
+            float elapsed = 0f;
+
+            // 拡大フェーズ
+            while (elapsed < halfDuration)
+            {
+                elapsed += Time.deltaTime;
+                transform.localScale = Vector3.Lerp(originalScale, peakScale, elapsed / halfDuration);
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+
+            elapsed = 0f;
+
+            // 縮小フェーズ
+            while (elapsed < halfDuration)
+            {
+                elapsed += Time.deltaTime;
+                transform.localScale = Vector3.Lerp(peakScale, originalScale, elapsed / halfDuration);
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+
+            transform.localScale = originalScale;
         }
 
         private void ShowWorldDamageNumber(int damage)
         {
-            var go = new GameObject("DamageNumber");
-            go.transform.position = transform.position + new Vector3(0f, 0.6f, -0.5f);
-
-            var tm = go.AddComponent<TextMesh>();
-            tm.text = damage.ToString();
-            tm.fontSize = 24;
-            tm.color = Color.red;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-
-            FloatAndFadeAsync(go, destroyCts.Token).Forget();
-        }
-
-        private async UniTaskVoid FloatAndFadeAsync(GameObject go, CancellationToken ct)
-        {
-            float duration = 0.8f;
-            float elapsed = 0f;
-            var tm = go.GetComponent<TextMesh>();
-            var startPos = go.transform.position;
-
-            while (elapsed < duration && go != null)
-            {
-                elapsed += Time.deltaTime;
-                float t = elapsed / duration;
-                go.transform.position = startPos + new Vector3(0f, t * 0.5f, 0f);
-                if (tm != null)
-                    tm.color = new Color(1f, 0.2f, 0.2f, 1f - t);
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-
-            if (go != null) Destroy(go);
+            if (damageNumberPool == null) return;
+            var position = transform.position + new Vector3(0f, 0.6f, -0.5f);
+            damageNumberPool.ShowDamage(damage, position, destroyCts.Token);
         }
 
         // ==================== 座標計算 ====================

@@ -58,6 +58,10 @@ namespace Olca.Application.Battle
             if (currentBattle != null)
             {
                 currentBattle.CustomGauge.OnGaugeFull -= OnGaugeFull;
+                // バトル終了時にカスタム画面が開きっぱなしの場合は強制クローズ
+                // （確定アニメーション中にバトルが終了した際、Close()が呼ばれないケースへの対処）
+                if (currentBattle.CustomScreen.IsOpen)
+                    currentBattle.CustomScreen.Close();
                 currentBattle = null;
             }
             customScreenView.OnCustomScreenConfirmed -= OnCustomScreenConfirmed;

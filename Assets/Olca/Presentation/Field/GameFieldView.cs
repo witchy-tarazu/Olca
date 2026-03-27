@@ -49,6 +49,9 @@ namespace Olca.Presentation.Field
         [Header("敵Prefab")]
         [SerializeField] private GameObject enemyViewPrefab;   // WorldEnemyView + EnemyView を持つ prefab
 
+        [Header("ダメージ数値プール（World Space）")]
+        [SerializeField] private Olca.Presentation.Effects.WorldDamageNumberPool worldDamageNumberPool;
+
         [Header("敵スプライトのデフォルト設定（prefab未設定時のフォールバック）")]
         [SerializeField] private Color defaultEnemyColor = new Color(0.9f, 0.2f, 0.2f);
         [SerializeField] private float enemyY = 0f;
@@ -154,6 +157,7 @@ namespace Olca.Presentation.Field
 
             var view = go.GetComponent<WorldEnemyView>();
             view.Initialize(enemy, dungeonX);
+            view.SetDamageNumberPool(worldDamageNumberPool);
             return view;
         }
 
