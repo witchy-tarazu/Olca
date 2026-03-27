@@ -71,13 +71,19 @@ namespace Olca.Core.Logic.Battle
             Deck deck,
             float customGaugeSpeed = 1.0f,
             IRandomProvider randomProvider = null,
-            IGameLogger logger = null)
+            IGameLogger logger = null,
+            ExceedSystem exceedSystem = null,
+            TuningSystem tuningSystem = null,
+            FusionSystem fusionSystem = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
             this.battleField = new BattleField();
             this.customGauge = new CustomGaugeSystem(customGaugeSpeed);
-            this.customScreen = new CustomScreenSystem(deck);
+            this.customScreen = new CustomScreenSystem(deck,
+                exceedSystem: exceedSystem,
+                tuningSystem: tuningSystem,
+                fusionSystem: fusionSystem);
             this.cardUsage = new CardUsageSystem(this, logger);
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
             this.panelEffects = new PanelEffectSystem(battleField, logger);

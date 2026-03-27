@@ -292,6 +292,43 @@ namespace Olca.Core.Logic.Battle
             return totalCost;
         }
 
+        // ========== カスタマイズ互換性チェック ==========
+
+        /// <summary>
+        /// カスタマイズモードで、現在の選択状態に対して候補カードが追加可能かを判定する。
+        /// 超越・調律・融合のいずれかが成立する可能性があれば true を返す。
+        /// </summary>
+        /// <param name="currentSelection">既に選択済みのカード</param>
+        /// <param name="candidate">追加候補のカード</param>
+        public bool IsCompatibleWithCurrentSelection(IReadOnlyList<Card> currentSelection, Card candidate)
+        {
+            if (candidate == null) return false;
+            if (currentSelection == null || currentSelection.Count == 0) return true;
+
+            var first = currentSelection[0];
+
+            // 超越: 同名カード（Lv3未満）
+            if (exceedSystem != null && candidate.Id == first.Id && first.ExceedLevel < ExceedLevel.Lv3)
+                return true;
+
+            // 調律: TuningカードとTuning以外のカードの組み合わせ
+            if (tuningSystem != null)
+            {
+                bool firstIsTuning = first.Category == CardCategory.Tuning;
+                bool candidateIsTuning = candidate.Category == CardCategory.Tuning;
+                if (firstIsTuning != candidateIsTuning) return true;
+            }
+
+            // 融合: 現在の選択＋候補がいずれかのレシピに含まれる（部分一致）
+            if (fusionSystem != null)
+            {
+                var ids = currentSelection.Select(c => c.Id).Append(candidate.Id).ToList();
+                if (fusionSystem.HasCompatibleRecipe(ids)) return true;
+            }
+
+            return false;
+        }
+
         // ========== カスタマイズ操作 ==========
 
         /// <summary>
@@ -309,9 +346,14 @@ namespace Olca.Core.Logic.Battle
             var result = exceedSystem.Execute(cardA, cardB);
             if (result.IsSuccess)
             {
+                // 最初の素材カードの位置に結果カードを挿入
+                int insertIdx = currentHand.IndexOf(cardA);
                 currentHand.Remove(cardA);
                 currentHand.Remove(cardB);
-                currentHand.Add(result.ResultCard);
+                if (insertIdx >= 0 && insertIdx <= currentHand.Count)
+                    currentHand.Insert(insertIdx, result.ResultCard);
+                else
+                    currentHand.Add(result.ResultCard);
                 OnExceeded?.Invoke(result.ResultCard);
             }
             return result;
@@ -360,9 +402,14 @@ namespace Olca.Core.Logic.Battle
             var result = fusionSystem.Execute(materials);
             if (result.IsSuccess)
             {
+                // 最初の素材カードの位置に結果カードを挿入
+                int insertIdx = currentHand.IndexOf(materials[0]);
                 foreach (var card in materials)
                     currentHand.Remove(card);
-                currentHand.Add(result.ResultCard);
+                if (insertIdx >= 0 && insertIdx <= currentHand.Count)
+                    currentHand.Insert(insertIdx, result.ResultCard);
+                else
+                    currentHand.Add(result.ResultCard);
                 OnFused?.Invoke(result.ResultCard);
             }
             return result;

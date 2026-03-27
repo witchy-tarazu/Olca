@@ -366,15 +366,15 @@ namespace Olca.Tests.Dungeon
             dungeon.OnObstaclePenalty += (penalty) => receivedPenalty = penalty;
 
             // Act: 障害物の手前でジャンプして飛び越える
-            // BASE_SPEED_MILLI_PER_SEC=2000, deltaTimeMs=100 → 1Tickで0.2移動
-            // JUMP_DURATION_MS=500 → 5Tickでジャンプ終了（その間に0.2*5=1.0マス移動）
-            // 位置2に到達するまで約10Tick
-            // 位置1.5付近でジャンプ開始すれば、位置2通過時（2.5Tick後）にまだジャンプ中
+            // BASE_SPEED_MILLI_PER_SEC=10000, deltaTimeMs=100 → 1Tickで1.0移動
+            // JUMP_DURATION_MS=500 → 5Tickでジャンプ終了（その間に1.0*5=5.0マス移動）
+            // 位置2に到達するまで約2Tick
+            // 位置0.9以上でジャンプ開始すれば、次のTick（位置2通過時）にまだジャンプ中
             bool jumped = false;
             for (int i = 0; i < 30; i++)
             {
-                // 位置1.5付近でジャンプ開始
-                if (!jumped && dungeon.PlayerPosition >= 1.5f)
+                // 位置0.9付近でジャンプ開始（速度10/s・100ms刻みの場合、1Tick=1.0マス）
+                if (!jumped && dungeon.PlayerPosition >= 0.9f)
                 {
                     dungeon.Jump();
                     jumped = true;

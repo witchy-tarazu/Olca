@@ -79,5 +79,24 @@ namespace Olca.Tests.Mocks
             }
             return null;
         }
+
+        /// <summary>
+        /// 指定した素材IDリストを全て含む融合レシピが存在するか判定する（部分一致）
+        /// </summary>
+        public bool HasRecipeContaining(IReadOnlyList<string> partialMaterialIds)
+        {
+            if (partialMaterialIds == null || partialMaterialIds.Count == 0) return false;
+
+            foreach (var (materials, _) in recipes)
+            {
+                bool allContained = true;
+                foreach (var id in partialMaterialIds)
+                {
+                    if (!materials.Contains(id)) { allContained = false; break; }
+                }
+                if (allContained) return true;
+            }
+            return false;
+        }
     }
 }

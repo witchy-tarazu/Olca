@@ -42,6 +42,13 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
+        /// 部分的な素材リストに対して互換性のあるレシピが存在するか判定する。
+        /// カスタマイズモードでの選択可能カード絞り込みに使用する。
+        /// </summary>
+        public bool HasCompatibleRecipe(IReadOnlyList<string> partialIds)
+            => recipeProvider.HasRecipeContaining(partialIds);
+
+        /// <summary>
         /// 融合を実行し、生成カードを返す
         /// </summary>
         /// <param name="materials">融合素材カードリスト（2枚以上）</param>

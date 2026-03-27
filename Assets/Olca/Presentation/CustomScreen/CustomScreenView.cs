@@ -7,9 +7,21 @@ using Cysharp.Threading.Tasks;
 using Olca.Core.Interfaces;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
+using Olca.Presentation.CustomScreen.CustomizeMode;
 
 namespace Olca.Presentation.CustomScreen
 {
+    /// <summary>
+    /// カスタマイズ操作の種別（カードの組み合わせから自動判定）
+    /// </summary>
+    internal enum CustomizeOperationType
+    {
+        None,
+        Exceed,
+        Tuning,
+        Fusion,
+    }
+
     /// <summary>
     /// カスタム画面（カード選択UI）
     /// </summary>
@@ -44,11 +56,18 @@ namespace Olca.Presentation.CustomScreen
         [SerializeField] private GameObject cursorIndicator;  // カーソル表示用のUI要素（枠線等）
         [SerializeField] private CanvasGroup screenCanvasGroup;  // 一時非表示用
 
+        [Header("カスタマイズモード")]
+        [SerializeField] private CustomizeModeView customizeModeView; // カスタマイズモードUI（子オブジェクト）
+        [SerializeField] private Image customizeModeOverlay;          // モード中に画面全体にかける半透明オーバーレイ
+
         private CustomScreenSystem customScreen;
         private List<HandCardView> handCardViews = new List<HandCardView>();
         private CancellationTokenSource animationCts;
         private CustomScreenCursor cursor;
         private bool isScreenVisible = true;
+
+        // カスタマイズ選択中のカード（統合リスト）
+        private readonly List<Card> customizeSelectedCards = new List<Card>();
 
         public void Initialize(CustomScreenSystem customScreen)
         {
@@ -78,6 +97,19 @@ namespace Olca.Presentation.CustomScreen
             {
                 cursorIndicator.SetActive(false);
             }
+
+            // カスタマイズ操作イベント購読
+            customScreen.OnExceeded += OnCustomizeOperationCompleted;
+            customScreen.OnTuned += OnCustomizeOperationCompleted;
+            customScreen.OnFused += OnCustomizeOperationCompleted;
+            customScreen.OnSelectionFailed += OnCustomizeSelectionFailed;
+
+            // CustomizeModeView のイベント購読
+            if (customizeModeView != null)
+            {
+                customizeModeView.OnExecuteRequested += OnCustomizeExecuteRequested;
+                customizeModeView.OnCancelled += OnCustomizeModeCancelled;
+            }
         }
 
         private void Update()
@@ -93,6 +125,32 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void HandleInput()
         {
+            // カスタマイズモード中
+            if (customizeModeView != null && customizeModeView.IsActive)
+            {
+                // カーソル移動（方向キー/WASD）
+                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+                    cursor.MoveLeft();
+                else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+                    cursor.MoveRight();
+                else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+                    cursor.MoveUp();
+                else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+                    cursor.MoveDown();
+
+                // Space でカーソル位置のカードを選択/解除
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    int cardIndex = cursor.CurrentIndex;
+                    if (!cursor.IsOnConfirmButton && cardIndex >= 0 && cardIndex < handCardViews.Count)
+                        OnCardClicked(handCardViews[cardIndex].Card);
+                }
+
+                // Enter/ESCはcustomizeModeViewに委譲
+                customizeModeView.HandleKeyInput();
+                return;
+            }
+
             // カーソル移動（方向キー/WASD）
             // TODO: コントローラ対応時に左スティック/十字キーの処理を追加
             if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
@@ -140,11 +198,12 @@ namespace Olca.Presentation.CustomScreen
                 SetScreenVisibility(true);
             }
 
-            // カスタマイズモード（Cキー）
+            // カスタマイズモード開始（Cキー）
             // TODO: コントローラ対応時にYボタン（Fire3）の処理を追加
             if (Input.GetKeyDown(KeyCode.C))
             {
-                Debug.Log("[CustomScreenView] カスタマイズモードに入ります（未実装）");
+                EnterCustomizeMode();
+                return;
             }
 
             // キャンセル（ESC）
@@ -296,6 +355,9 @@ namespace Olca.Presentation.CustomScreen
             {
                 cursorIndicator.SetActive(false);
             }
+
+            // カスタマイズ選択状態のリセット
+            customizeSelectedCards.Clear();
 
             // 画面表示状態をリセット
             isScreenVisible = true;
@@ -579,7 +641,14 @@ namespace Olca.Presentation.CustomScreen
 
         public void OnCardClicked(Card card)
         {
-            // カード選択トグル
+            // カスタマイズモード中はカスタマイズ選択へ転送
+            if (customizeModeView != null && customizeModeView.IsActive)
+            {
+                OnCardClickedInCustomizeMode(card);
+                return;
+            }
+
+            // 通常モード: カード選択トグル
             if (customScreen.SelectedCards.Any(c => c == card))
             {
                 customScreen.TryDeselectCard(card);
@@ -603,6 +672,248 @@ namespace Olca.Presentation.CustomScreen
 
             // 選択カード表示エリアを更新
             UpdateSelectedCardDisplay();
+        }
+
+        /// <summary>
+        /// カスタマイズモードに入る
+        /// </summary>
+        private void EnterCustomizeMode()
+        {
+            if (customizeModeView == null) return;
+            customizeSelectedCards.Clear();
+            customizeModeView.Enter();
+            if (customizeModeOverlay != null)
+                customizeModeOverlay.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// カスタマイズモード中のカード選択処理。
+        /// カードをトグルし、組み合わせから操作種別を自動判定してUIを更新する。
+        /// 1枚選択済みの場合は互換性のないカードの選択をブロックする。
+        /// </summary>
+        private void OnCardClickedInCustomizeMode(Card card)
+        {
+            if (customizeSelectedCards.Contains(card))
+            {
+                // 選択解除は常に許可
+                customizeSelectedCards.Remove(card);
+                customizeModeView.ClearError();
+            }
+            else
+            {
+                // 1枚以上選択済みの場合は互換性チェック
+                if (customizeSelectedCards.Count > 0 &&
+                    !customScreen.IsCompatibleWithCurrentSelection(customizeSelectedCards, card))
+                {
+                    customizeModeView.ShowError("このカードは現在の選択と組み合わせできません");
+                    return;
+                }
+                customizeSelectedCards.Add(card);
+                customizeModeView.ClearError();
+            }
+
+            // 操作種別を判定してUIに反映
+            var opType = DetectCustomizeOperation();
+            bool canExecute = opType != CustomizeOperationType.None;
+            customizeModeView.UpdateExecuteButton(canExecute);
+            customizeModeView.UpdateOperationHint(GetOperationHint(opType));
+
+            RefreshCustomizeHighlights(opType);
+        }
+
+        /// <summary>
+        /// 選択中のカードから操作種別を自動判定する
+        /// </summary>
+        private CustomizeOperationType DetectCustomizeOperation()
+        {
+            int count = customizeSelectedCards.Count;
+            if (count < 2) return CustomizeOperationType.None;
+
+            if (count == 2)
+            {
+                var a = customizeSelectedCards[0];
+                var b = customizeSelectedCards[1];
+
+                // 超越: 同名カード2枚
+                if (a.Id == b.Id)
+                    return CustomizeOperationType.Exceed;
+
+                // 調律: 片方が調律カード
+                if (a.Category == CardCategory.Tuning || b.Category == CardCategory.Tuning)
+                    return CustomizeOperationType.Tuning;
+            }
+
+            // 融合: 2枚以上（レシピはCore層で検証）
+            return CustomizeOperationType.Fusion;
+        }
+
+        /// <summary>操作種別に応じたガイドテキストを返す</summary>
+        private string GetOperationHint(CustomizeOperationType opType)
+        {
+            switch (opType)
+            {
+                case CustomizeOperationType.Exceed:
+                    return $"超越: {customizeSelectedCards[0].Name} × 2 → Enterで実行";
+                case CustomizeOperationType.Tuning:
+                    return $"調律: Enterで実行";
+                case CustomizeOperationType.Fusion:
+                    return $"融合: {customizeSelectedCards.Count}枚選択中 → Enterで実行";
+                default:
+                    return "カスタマイズ: カードを選んでください（ESC でキャンセル）";
+            }
+        }
+
+        /// <summary>
+        /// 実行ボタン押下: 自動判定した操作種別でカスタマイズを実行する
+        /// </summary>
+        private void OnCustomizeExecuteRequested()
+        {
+            var opType = DetectCustomizeOperation();
+            switch (opType)
+            {
+                case CustomizeOperationType.Exceed:
+                    var exceedResult = customScreen.ExecuteExceed(
+                        customizeSelectedCards[0], customizeSelectedCards[1]);
+                    if (!exceedResult.IsSuccess)
+                        customizeModeView.ShowError(exceedResult.ErrorMessage);
+                    break;
+
+                case CustomizeOperationType.Tuning:
+                    var target = customizeSelectedCards.First(c => c.Category != CardCategory.Tuning);
+                    var tuning = customizeSelectedCards.First(c => c.Category == CardCategory.Tuning);
+                    var tuningResult = customScreen.ExecuteTuning(target, tuning);
+                    if (!tuningResult.IsSuccess)
+                        customizeModeView.ShowError(tuningResult.ErrorMessage);
+                    break;
+
+                case CustomizeOperationType.Fusion:
+                    var fusionResult = customScreen.ExecuteFusion(customizeSelectedCards);
+                    if (!fusionResult.IsSuccess)
+                        customizeModeView.ShowError(fusionResult.ErrorMessage);
+                    break;
+
+                default:
+                    customizeModeView.ShowError("カードを2枚以上選んでください");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// カスタマイズ操作成功時（超越・調律・融合いずれか）
+        /// </summary>
+        private void OnCustomizeOperationCompleted(Card resultCard)
+        {
+            customizeSelectedCards.Clear();
+            customizeModeView.Exit();
+            if (customizeModeOverlay != null)
+                customizeModeOverlay.gameObject.SetActive(false);
+            RefreshHandCardViews();
+        }
+
+        /// <summary>
+        /// カスタマイズ選択失敗時（CustomScreenSystem.OnSelectionFailed）
+        /// </summary>
+        private void OnCustomizeSelectionFailed(string message)
+        {
+            if (customizeModeView != null && customizeModeView.IsActive)
+                customizeModeView.ShowError(message);
+        }
+
+        /// <summary>
+        /// カスタマイズモードキャンセル
+        /// </summary>
+        private void OnCustomizeModeCancelled()
+        {
+            customizeSelectedCards.Clear();
+            customizeModeView.Exit();
+            if (customizeModeOverlay != null)
+                customizeModeOverlay.gameObject.SetActive(false);
+            RefreshAllHighlights();
+        }
+
+        /// <summary>
+        /// 手札Viewを即時再描画する（カスタマイズ操作後に手札が変化した際に使用）
+        /// </summary>
+        private void RefreshHandCardViews()
+        {
+            foreach (var view in handCardViews)
+                Destroy(view.gameObject);
+            handCardViews.Clear();
+
+            var hand = customScreen.CurrentHand;
+            for (int i = 0; i < hand.Count; i++)
+            {
+                var card = hand[i];
+                var cardObj = Instantiate(handCardPrefab, handCardContainer);
+                var cardView = cardObj.GetComponent<HandCardView>();
+                cardView.Initialize(card, this);
+                handCardViews.Add(cardView);
+
+                var rectTransform = cardView.GetComponent<RectTransform>();
+                rectTransform.anchoredPosition = GetCardPosition(i);
+                rectTransform.rotation = Quaternion.identity;
+            }
+
+            cursor.Initialize(handCardViews.Count);
+            UpdateConfirmButton();
+            UpdateCostDisplay();
+        }
+
+        /// <summary>
+        /// 操作種別に応じたカードハイライトを全View に適用する。
+        /// 1枚以上選択済みの場合、互換性のないカードは暗転表示する。
+        /// </summary>
+        private void RefreshCustomizeHighlights(CustomizeOperationType opType)
+        {
+            bool hasSelection = customizeSelectedCards.Count > 0;
+
+            foreach (var view in handCardViews)
+            {
+                var card = view.Card;
+                bool isSelected = customizeSelectedCards.Contains(card);
+
+                CardHighlightType highlightType;
+                if (isSelected)
+                {
+                    switch (opType)
+                    {
+                        case CustomizeOperationType.Exceed:
+                            highlightType = CardHighlightType.ExceedMaterial;
+                            break;
+                        case CustomizeOperationType.Tuning:
+                            highlightType = card.Category == CardCategory.Tuning
+                                ? CardHighlightType.TuningMaterial
+                                : CardHighlightType.TuningTarget;
+                            break;
+                        default: // Fusion または None（選択中だが未確定）
+                            highlightType = CardHighlightType.FusionMaterial;
+                            break;
+                    }
+                }
+                else if (hasSelection && !customScreen.IsCompatibleWithCurrentSelection(customizeSelectedCards, card))
+                {
+                    // 現在の選択と組み合わせ不可 → 暗転
+                    highlightType = CardHighlightType.Incompatible;
+                }
+                else
+                {
+                    highlightType = CardHighlightType.None;
+                }
+
+                view.UpdateHighlight(highlightType);
+            }
+        }
+
+        /// <summary>
+        /// 通常モードのハイライト（デッキ選択状態）に戻す
+        /// </summary>
+        private void RefreshAllHighlights()
+        {
+            foreach (var view in handCardViews)
+            {
+                bool isSelected = customScreen.SelectedCards.Any(c => c == view.Card);
+                view.UpdateHighlight(isSelected ? CardHighlightType.Selected : CardHighlightType.None);
+            }
         }
 
         /// <summary>
@@ -731,11 +1042,21 @@ namespace Olca.Presentation.CustomScreen
             {
                 customScreen.OnScreenOpened -= OnScreenOpened;
                 customScreen.OnConfirmed -= OnConfirmed;
+                customScreen.OnExceeded -= OnCustomizeOperationCompleted;
+                customScreen.OnTuned -= OnCustomizeOperationCompleted;
+                customScreen.OnFused -= OnCustomizeOperationCompleted;
+                customScreen.OnSelectionFailed -= OnCustomizeSelectionFailed;
             }
 
             if (confirmButton != null)
             {
                 confirmButton.onClick.RemoveListener(OnConfirmClicked);
+            }
+
+            if (customizeModeView != null)
+            {
+                customizeModeView.OnExecuteRequested -= OnCustomizeExecuteRequested;
+                customizeModeView.OnCancelled -= OnCustomizeModeCancelled;
             }
         }
     }

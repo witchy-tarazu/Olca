@@ -52,12 +52,19 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>
         /// コンストラクタ
         /// </summary>
+        private readonly ExceedSystem exceedSystem;
+        private readonly TuningSystem tuningSystem;
+        private readonly FusionSystem fusionSystem;
+
         public DungeonSystem(
             DungeonConfig config,
             PlayerCharacter player,
             Deck initialDeck,
             IRandomProvider random,
-            IGameLogger logger)
+            IGameLogger logger,
+            ExceedSystem exceedSystem = null,
+            TuningSystem tuningSystem = null,
+            FusionSystem fusionSystem = null)
         {
             // 依存関係の初期化
             map = new DungeonMap(config);
@@ -69,6 +76,9 @@ namespace Olca.Core.Logic.Dungeon
             playerCharacter = player;
             randomProvider = random;
             this.logger = logger;
+            this.exceedSystem = exceedSystem;
+            this.tuningSystem = tuningSystem;
+            this.fusionSystem = fusionSystem;
 
             // イベント購読
             contactSystem.OnEnemyContact += OnEnemyContact;
@@ -182,7 +192,10 @@ namespace Olca.Core.Logic.Dungeon
                 cardRewardSystem.GetCurrentDeck(),
                 customGaugeSpeed: 2.0f,
                 randomProvider,
-                logger
+                logger,
+                exceedSystem: exceedSystem,
+                tuningSystem: tuningSystem,
+                fusionSystem: fusionSystem
             );
 
             // ダッシュ接敵の効果を適用

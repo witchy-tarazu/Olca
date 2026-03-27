@@ -72,8 +72,17 @@ namespace Olca.Application.Dungeon
                 initialPosition: new Vector2Int(0, 0),
                 attackPower: playerAttackPower);
 
+            var cardFactory = new SimpleCardFactory();
+            var recipeProvider = new SimpleFusionRecipeProvider();
+            var exceedSystem = new ExceedSystem(cardFactory);
+            var tuningSystem = new TuningSystem();
+            var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
+
             manager = new DungeonBattleManager(
-                dungeonConfig, playerCharacter, CreateInitialDeck(), randomProvider, logger);
+                dungeonConfig, playerCharacter, CreateInitialDeck(), randomProvider, logger,
+                exceedSystem: exceedSystem,
+                tuningSystem: tuningSystem,
+                fusionSystem: fusionSystem);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -139,6 +148,16 @@ namespace Olca.Application.Dungeon
                     // AltキーでBattleSessionControllerに委譲してカスタム画面を開く
                     if (Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt))
                         battleSession?.TryOpenCustomScreen();
+
+                    // Spaceキーでキューの次のカードを使用
+                    var battle = manager.CurrentBattle;
+                    if (Input.GetKeyDown(KeyCode.Space)
+                        && battle != null
+                        && !battle.CustomScreen.IsOpen
+                        && !battle.CardUsage.IsEmpty)
+                    {
+                        battle.UseCurrentCard();
+                    }
                     break;
 
                 case GamePhase.CardReward:
@@ -320,14 +339,19 @@ namespace Olca.Application.Dungeon
 
         private Deck CreateInitialDeck()
         {
+            var f = new SimpleCardFactory();
             return new Deck(new List<Card>
             {
-                new Card("sword",  "ソード",  1, CardRarity.Normal, CardCategory.Attack,
-                    ElementType.None, CardSeries.Sword, 30, "前方1マス攻撃"),
-                new Card("heal",   "ヒール",  2, CardRarity.Normal, CardCategory.Defense,
-                    ElementType.None, CardSeries.None,  20, "HP回復"),
-                new Card("shield", "シールド", 1, CardRarity.Normal, CardCategory.Defense,
-                    ElementType.None, CardSeries.None,  15, "防御")
+                // 超越テスト用: 同名カード2枚
+                f.CreateById(SimpleCardFactory.Sword),
+                f.CreateById(SimpleCardFactory.Sword),
+                // 融合テスト用: ソード＋ボム → ファイアソード
+                f.CreateById(SimpleCardFactory.Bomb),
+                // 調律テスト用: 調律カード
+                f.CreateById(SimpleCardFactory.Tuning),
+                // 通常カード
+                f.CreateById(SimpleCardFactory.Heal),
+                f.CreateById(SimpleCardFactory.Shield),
             });
         }
 

@@ -16,8 +16,8 @@ namespace Olca.Tests.Dungeon
             movement.Update(deltaTimeMs: 1000);
 
             // Assert
-            // 基本速度は4.0マス/秒なので、1秒で4.0マス進む
-            Assert.AreEqual(4.0f, movement.CurrentPosition, 0.01f);
+            // 基本速度は10.0マス/秒なので、1秒で10.0マス進む
+            Assert.AreEqual(10.0f, movement.CurrentPosition, 0.01f);
         }
 
         [Test]
@@ -31,8 +31,8 @@ namespace Olca.Tests.Dungeon
             movement.Update(deltaTimeMs: 1000);  // 1000ms = 1秒
 
             // Assert
-            // ダッシュ速度は10.0マス/秒なので、1秒で10.0マス進む
-            Assert.AreEqual(10.0f, movement.CurrentPosition, 0.01f);
+            // ダッシュ速度は20.0マス/秒なので、1秒で20.0マス進む
+            Assert.AreEqual(20.0f, movement.CurrentPosition, 0.01f);
         }
 
         [Test]
@@ -41,16 +41,16 @@ namespace Olca.Tests.Dungeon
             // Arrange
             var movement = new PlayerMovement(initialPosition: 0f);
             movement.StartDash();
-            movement.Update(deltaTimeMs: 1000);  // ダッシュで10マス進む
+            movement.Update(deltaTimeMs: 1000);  // ダッシュで20マス進む
 
-            float positionAfterDash = movement.CurrentPosition;  // 10.0
+            float positionAfterDash = movement.CurrentPosition;  // 20.0
 
             // Act
             movement.StopDash();
-            movement.Update(deltaTimeMs: 1000);  // 通常速度で4マス進む
+            movement.Update(deltaTimeMs: 1000);  // 通常速度で10マス進む
 
             // Assert
-            Assert.AreEqual(positionAfterDash + 4.0f, movement.CurrentPosition, 0.01f);
+            Assert.AreEqual(positionAfterDash + 10.0f, movement.CurrentPosition, 0.01f);
         }
 
         [Test]

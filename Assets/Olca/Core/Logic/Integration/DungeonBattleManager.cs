@@ -38,7 +38,10 @@ namespace Olca.Core.Logic.Integration
             PlayerCharacter player,
             Deck initialDeck,
             IRandomProvider randomProvider,
-            IGameLogger logger)
+            IGameLogger logger,
+            ExceedSystem exceedSystem = null,
+            TuningSystem tuningSystem = null,
+            FusionSystem fusionSystem = null)
         {
             this.player = player;
             this.randomProvider = randomProvider;
@@ -50,7 +53,10 @@ namespace Olca.Core.Logic.Integration
                 player,
                 initialDeck,
                 randomProvider,
-                logger);
+                logger,
+                exceedSystem: exceedSystem,
+                tuningSystem: tuningSystem,
+                fusionSystem: fusionSystem);
 
             // イベント購読
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
