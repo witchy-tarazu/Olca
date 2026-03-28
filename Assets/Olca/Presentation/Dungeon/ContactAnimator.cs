@@ -146,6 +146,36 @@ namespace Olca.Presentation.Dungeon
                 enemyTransform.position = enemyEnd;
         }
 
+        // ==================== バトル後復帰 ====================
+
+        /// <summary>
+        /// バトル後の定位置復帰ジャンプ
+        /// 現在位置から指定位置へ放物線を描いて移動する（ダッシュ宙返りと同じ弧）
+        /// </summary>
+        public async UniTask PlayReturnJumpAsync(Transform playerTransform, Vector3 targetPosition, CancellationToken ct = default)
+        {
+            if (playerTransform == null) return;
+
+            Vector3 jumpStart = playerTransform.position;
+            // X方向のみ目標位置へ移動、Y/Zは元の高さを維持
+            Vector3 jumpEnd = new Vector3(targetPosition.x, jumpStart.y, jumpStart.z);
+
+            float elapsed = 0f;
+            while (elapsed < dashRollbackDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
+
+                // X: 線形補間、Y: 放物線（ダッシュ宙返りと同じ）
+                float x = Mathf.Lerp(jumpStart.x, jumpEnd.x, t);
+                float y = jumpStart.y + jumpHeight * Mathf.Sin(t * Mathf.PI);
+                playerTransform.position = new Vector3(x, y, jumpStart.z);
+
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            playerTransform.position = jumpEnd;
+        }
+
         // ==================== イージング ====================
 
         private float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);

@@ -40,6 +40,12 @@ namespace Olca.Application.Dungeon
         [SerializeField] private float dashDistanceCells = 3f;  // ダッシュで進むマス数
         [SerializeField] private float dashCooldown = 0.1f;   // ダッシュのクールタイム（秒）
 
+        [Header("敵配置設定")]
+        [Tooltip("敵と敵の間隔（セル数）")]
+        [SerializeField] private int enemySpacing = 30;
+        [Tooltip("最初の敵が出現するセルインデックス")]
+        [SerializeField] private int firstEnemyCell = 10;
+
         [Header("遷移設定")]
         [SerializeField] private float hudFadeDuration = 0.25f;
         [SerializeField] private ContactAnimator contactAnimator;
@@ -68,7 +74,7 @@ namespace Olca.Application.Dungeon
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
 
-            var dungeonConfig = DungeonConfig.CreateTestDungeon(dungeonCellCount);
+            var dungeonConfig = DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
             var playerCharacter = new PlayerCharacter(
                 maxHp: playerMaxHp,
                 initialPosition: new Vector2Int(0, 0),
@@ -321,6 +327,24 @@ namespace Olca.Application.Dungeon
                     }
                 }
 
+                // 定位置（グリッド列1）へ復帰ジャンプ（ダッシュ宙返りと同じ放物線）
+                // UpdatePlayerPositionによるY座標上書きを抑制してジャンプアニメを保護
+                if (contactAnimator != null
+                    && gameFieldView?.PlayerTransform != null
+                    && gameFieldView?.BattleGrid != null)
+                {
+                    float targetX = gameFieldView.BattleGrid.GridIndexToWorldX(1);
+                    var targetPos = new UnityEngine.Vector3(
+                        targetX, gameFieldView.PlayerTransform.position.y, 0f);
+                    gameFieldView.SetPlayerPositionUpdateEnabled(false);
+                    await contactAnimator.PlayReturnJumpAsync(
+                        gameFieldView.PlayerTransform, targetPos, ct);
+                    gameFieldView.SetPlayerPositionUpdateEnabled(true);
+                }
+
+                // ジャンプ完了後にカメラをプレイヤー位置にスナップして追従を再開
+                gameFieldView?.SnapCameraToPlayerAndResumeFollow();
+
                 // インターバル後に移動を再開（遷移アニメーション完了を保証）
                 await UniTask.Delay(returnToDungeonDelayMs, cancellationToken: ct);
                 manager.ResumeAfterBattle();
@@ -330,13 +354,15 @@ namespace Olca.Application.Dungeon
 
         /// <summary>
         /// バトル → ダンジョンへの復帰シーケンス
+        /// カメラ追従の再開は SnapCameraToPlayerAndResumeFollow() に委譲する
         /// </summary>
         private async UniTask TransitionToDungeonAsync(CancellationToken ct)
         {
             battleView?.gameObject.SetActive(false);
             gameFieldView?.OnBattleEnded();
             await (gameFieldView?.ShowHUDAsync(hudFadeDuration, ct) ?? UniTask.CompletedTask);
-            gameFieldView?.SetCameraFollowEnabled(true);
+            // SetCameraFollowEnabled(true) はここでは呼ばない
+            // → カード選択後に SnapCameraToPlayerAndResumeFollow() でスナップしてから再開
             logger.LogInfo("[Controller] ダンジョン復帰完了");
         }
 

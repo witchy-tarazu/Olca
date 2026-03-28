@@ -82,6 +82,7 @@ namespace Olca.Presentation.Field
         private readonly List<WorldEnemyView> enemyViews = new List<WorldEnemyView>();
         private bool cameraFollowEnabled = true;
         private float? battleCameraTargetX = null;  // バトル開始時のカメラ移動先（スムーズlerp用）
+        private bool playerPositionUpdateEnabled = true;  // 復帰ジャンプ中はfalseにしてY座標の上書きを防ぐ
 
         // ==================== 初期化 ====================
 
@@ -204,10 +205,28 @@ namespace Olca.Presentation.Field
             currentBattle = null;
             battleGridView?.Hide();
             battleCameraTargetX = null;
-            cameraFollowEnabled = true;
+            // cameraFollowEnabled はここで再開しない
+            // → SnapCameraToPlayerAndResumeFollow() でカード選択後にスナップしてから再開する
 
             foreach (var view in enemyViews)
                 view?.OnBattleEnded();
+        }
+
+        /// <summary>
+        /// カード報酬選択終了後に呼ぶ。
+        /// カメラをプレイヤー現在位置に即スナップしてから追従を再開することで
+        /// カメラ飛び（ジャンプ）を防ぐ。
+        /// </summary>
+        public void SnapCameraToPlayerAndResumeFollow()
+        {
+            if (playerTransform != null && fieldCamera != null)
+            {
+                // カメラをプレイヤー位置に即スナップ（Lerpなし）
+                Vector3 camPos = fieldCamera.transform.position;
+                camPos.x = playerTransform.position.x + CameraOffsetX;
+                fieldCamera.transform.position = camPos;
+            }
+            cameraFollowEnabled = true;
         }
 
         // ==================== 毎フレーム更新 ====================
@@ -276,8 +295,15 @@ namespace Olca.Presentation.Field
 
         // ==================== 内部処理 ====================
 
+        /// <summary>復帰ジャンプ中はfalseにするとUpdatePlayerPositionによるY座標上書きを抑制できる</summary>
+        public void SetPlayerPositionUpdateEnabled(bool enabled)
+        {
+            playerPositionUpdateEnabled = enabled;
+        }
+
         private void UpdatePlayerPosition()
         {
+            if (!playerPositionUpdateEnabled) return;
             if (playerTransform == null) return;
             playerTransform.position = new Vector3(
                 dungeonSystem.PlayerPosition, dungeonSystem.PlayerHeight, 0f);

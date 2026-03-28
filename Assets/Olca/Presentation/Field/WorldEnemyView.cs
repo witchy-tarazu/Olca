@@ -97,7 +97,7 @@ namespace Olca.Presentation.Field
             UpdatePosition();
         }
 
-        /// <summary>バトル終了時 - ダンジョン座標モードに戻す</summary>
+        /// <summary>バトル終了時 - ダンジョン座標モードに戻す。撃破済みの敵は非表示にする。</summary>
         public void OnBattleEnded()
         {
             gridView = null;
@@ -107,6 +107,12 @@ namespace Olca.Presentation.Field
                 hiddenForBattle = false;
                 if (enemy != null && !enemy.IsDead)
                     gameObject.SetActive(true);
+            }
+            // 撃破済みの敵は非表示（カード選択中に背後に映らないよう）
+            if (enemy != null && enemy.IsDead)
+            {
+                gameObject.SetActive(false);
+                return;
             }
             UpdatePosition();
         }

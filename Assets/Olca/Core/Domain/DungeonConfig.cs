@@ -30,7 +30,10 @@ namespace Olca.Core.Domain
         /// <summary>
         /// テスト用の簡易ダンジョン生成
         /// </summary>
-        public static DungeonConfig CreateTestDungeon(int cellCount = 20)
+        /// <param name="cellCount">総マス数</param>
+        /// <param name="enemySpacing">敵と敵の間隔（セル数）</param>
+        /// <param name="firstEnemyCell">最初の敵が出現するセルインデックス</param>
+        public static DungeonConfig CreateTestDungeon(int cellCount = 20, int enemySpacing = 30, int firstEnemyCell = 10)
         {
             var cells = new List<MapCell>();
 
@@ -42,8 +45,8 @@ namespace Olca.Core.Domain
                     var boss = new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(i, 0));
                     cells.Add(new MapCell(i, boss));
                 }
-                // 最初の敵はマス30以降、その後は5マスごとに配置
-                else if (i % 5 == 0 && i >= 30)
+                // firstEnemyCell以降、enemySpacingマスごとに通常敵を配置
+                else if (i >= firstEnemyCell && (i - firstEnemyCell) % enemySpacing == 0)
                 {
                     var enemy = new Enemy($"enemy_{i}", "スライム", 50, ElementType.None, new Vector2Int(i, 0));
                     cells.Add(new MapCell(i, enemy));
