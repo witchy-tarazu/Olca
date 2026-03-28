@@ -51,7 +51,9 @@ namespace Olca.Application.Battle
         {
             if (cardId == null) return null;
             catalog.TryGetValue(cardId, out var card);
-            return card;
+            // 同じIDで複数枚作成できるようClone()で新インスタンスを返す
+            // （同一参照が複数手札に入ると選択判定が誤作動するため）
+            return card?.Clone();
         }
 
         /// <summary>
