@@ -2,6 +2,7 @@ using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Logic.Dungeon;
+using Olca.Presentation.Field;
 
 namespace Olca.Presentation.Dungeon
 {
@@ -115,6 +116,9 @@ namespace Olca.Presentation.Dungeon
             await UniTask.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
 
             // フェーズ3: プレイヤー宙返り戻り + 敵吹き飛び（同時）
+            // ノックバック開始と同時にダメージエフェクトを発動（フェーズ2までの自動発動を抑制済み）
+            enemyTransform?.GetComponent<WorldEnemyView>()?.TriggerPendingDamageEffect();
+
             Vector3 rollStart = rushEnd;
             Vector3 rollEnd = rushEnd - new Vector3(rollbackDistance, 0f, 0f);
             Vector3 enemyStart = enemyTransform != null ? enemyTransform.position : Vector3.zero;
@@ -131,9 +135,9 @@ namespace Olca.Presentation.Dungeon
                 float y = rollStart.y + jumpHeight * Mathf.Sin(t * Mathf.PI);
                 playerTransform.position = new Vector3(x, y, rollStart.z);
 
-                // 敵: 吹き飛び（EaseOutQuad）
+                // 敵: 吹き飛び（EaseOutExpo: 初速が非常に速く、終速がゆっくり止まる）
                 if (enemyTransform != null)
-                    enemyTransform.position = Vector3.Lerp(enemyStart, enemyEnd, EaseOutQuad(t));
+                    enemyTransform.position = Vector3.Lerp(enemyStart, enemyEnd, EaseOutExpo(t));
 
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
@@ -146,5 +150,7 @@ namespace Olca.Presentation.Dungeon
 
         private float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);
         private float EaseInQuad(float t) => t * t;
+        // 指数的イーズアウト: 初速が非常に速く、終盤でなめらかに止まる
+        private float EaseOutExpo(float t) => t >= 1f ? 1f : 1f - Mathf.Pow(2f, -10f * t);
     }
 }

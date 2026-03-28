@@ -22,6 +22,7 @@ namespace Olca.Presentation.Field
         private float dungeonPositionX;       // ダンジョン上の配置X座標
         private WorldBattleGridView gridView;  // バトル中のみセットされる
         private int previousHp;
+        private int pendingContactDamage;     // バトル開始前に適用されたダッシュダメージ（フェーズ3で発動）
         private bool positionAnimating;       // trueの間はRefreshによる位置上書きを禁止
         private bool hiddenForBattle;         // バトル不参加のため一時非表示中
         private CancellationTokenSource destroyCts;
@@ -78,6 +79,12 @@ namespace Olca.Presentation.Field
         {
             positionAnimating = false;
             if (enemy == null) return;
+
+            // バトル開始前（ダッシュ接触時）に適用済みのダメージをここで保存し、
+            // Refresh() による自動エフェクト発動を防ぐ。
+            // エフェクトは TriggerPendingDamageEffect() でノックバックと同時に発動させる。
+            pendingContactDamage = previousHp - enemy.CurrentHp;
+            previousHp = enemy.CurrentHp;
             // GridPosition.X がグリッド範囲外の敵はバトルに参加しない → 一時非表示
             if (enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
             {
@@ -126,6 +133,17 @@ namespace Olca.Presentation.Field
         }
 
         // ==================== エフェクト ====================
+
+        /// <summary>
+        /// ダッシュ接触ダメージのエフェクトを発動する（ContactAnimator のノックバック開始時に呼ぶ）
+        /// OnBattleStarted() で保存した pendingContactDamage を消化する
+        /// </summary>
+        public void TriggerPendingDamageEffect()
+        {
+            if (pendingContactDamage <= 0) return;
+            PlayDamageEffectAsync(pendingContactDamage, destroyCts.Token).Forget();
+            pendingContactDamage = 0;
+        }
 
         private async UniTaskVoid PlayDamageEffectAsync(int damage, CancellationToken ct)
         {
