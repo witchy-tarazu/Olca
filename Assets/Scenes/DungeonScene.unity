@@ -1088,21 +1088,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 361196064}
   m_CullTransparentMesh: 1
---- !u!115 &385203771
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: CardSelectionItemView
-  m_Namespace: Olca.Presentation.Dungeon
-  m_AssemblyName: Olca.Presentation
 --- !u!1 &389304113
 GameObject:
   m_ObjectHideFlags: 0
@@ -2044,6 +2029,8 @@ MonoBehaviour:
   playerAttackPower: 10
   dashDistanceCells: 5
   dashCooldown: 0.1
+  enemySpacing: 30
+  firstEnemyCell: 10
   hudFadeDuration: 0.25
   contactAnimator: {fileID: 848117818}
   returnToDungeonDelayMs: 1000
@@ -2144,7 +2131,7 @@ MonoBehaviour:
   cardItems:
   - {fileID: 1944570662}
   - {fileID: 1542915754}
-  - {fileID: 1265121312}
+  - {fileID: 1265121309}
   deckCountText: {fileID: 2089575817}
   fadeInDuration: 0.3
 --- !u!1 &867199334
@@ -3787,7 +3774,6 @@ GameObject:
   - component: {fileID: 1265121311}
   - component: {fileID: 1265121310}
   - component: {fileID: 1265121309}
-  - component: {fileID: 1265121312}
   m_Layer: 0
   m_Name: CardItem_2
   m_TagString: Untagged
@@ -3874,23 +3860,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1265121307}
   m_CullTransparentMesh: 1
---- !u!114 &1265121312
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1265121307}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 385203771}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardNameText: {fileID: 1376271654}
-  cardCostText: {fileID: 982395005}
-  cardDescText: {fileID: 1414112794}
-  cardRarityText: {fileID: 545262486}
-  selectButton: {fileID: 118353012}
 --- !u!1 &1289455669
 GameObject:
   m_ObjectHideFlags: 0
@@ -4855,7 +4824,6 @@ GameObject:
   - component: {fileID: 1542915750}
   - component: {fileID: 1542915753}
   - component: {fileID: 1542915752}
-  - component: {fileID: 1542915751}
   - component: {fileID: 1542915754}
   m_Layer: 0
   m_Name: CardItem_1
@@ -4888,23 +4856,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 280, y: 380}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1542915751
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1542915749}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2bdcfcdb3082e7944ac3c9c8f280cdc8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardNameText: {fileID: 1947892364}
-  cardCostText: {fileID: 1136238770}
-  cardDescText: {fileID: 969064462}
-  cardRarityText: {fileID: 1890418533}
-  selectButton: {fileID: 870358669}
 --- !u!114 &1542915752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4952,7 +4903,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1542915749}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 385203771}
+  m_Script: {fileID: 11500000, guid: 2bdcfcdb3082e7944ac3c9c8f280cdc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   cardNameText: {fileID: 1947892364}
@@ -5625,21 +5576,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!115 &1796494921
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: CardSelectionItemView
-  m_Namespace: Olca.Presentation.Dungeon
-  m_AssemblyName: Olca.Presentation
 --- !u!21 &1805314495
 Material:
   serializedVersion: 8
@@ -5965,7 +5901,6 @@ GameObject:
   - component: {fileID: 1944570658}
   - component: {fileID: 1944570661}
   - component: {fileID: 1944570660}
-  - component: {fileID: 1944570659}
   - component: {fileID: 1944570662}
   m_Layer: 0
   m_Name: CardItem_0
@@ -5998,23 +5933,6 @@ RectTransform:
   m_AnchoredPosition: {x: -320, y: 0}
   m_SizeDelta: {x: 280, y: 380}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1944570659
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1944570657}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1796494921}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardNameText: {fileID: 281811998}
-  cardCostText: {fileID: 462237151}
-  cardDescText: {fileID: 1776370987}
-  cardRarityText: {fileID: 172012704}
-  selectButton: {fileID: 1309194314}
 --- !u!114 &1944570660
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6062,7 +5980,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1944570657}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 385203771}
+  m_Script: {fileID: 11500000, guid: 2bdcfcdb3082e7944ac3c9c8f280cdc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   cardNameText: {fileID: 281811998}

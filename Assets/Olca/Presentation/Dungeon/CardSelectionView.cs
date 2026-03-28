@@ -42,6 +42,12 @@ namespace Olca.Presentation.Dungeon
             if (deckCountText != null)
                 deckCountText.text = $"デッキ: {currentDeckCount}枚";
 
+            // cardItems未登録のものも含め、全CardSelectionItemViewを一旦非表示にする
+            // （cardItemsに含まれていない余分なビューが card=null のままクリックを受けるのを防ぐ）
+            var allItems = GetComponentsInChildren<CardSelectionItemView>(true);
+            foreach (var item in allItems)
+                item.gameObject.SetActive(false);
+
             // カード選択肢をセット
             for (int i = 0; i < cardItems.Length; i++)
             {
@@ -49,10 +55,6 @@ namespace Olca.Presentation.Dungeon
                 {
                     cardItems[i].Setup(choices[i]);
                     cardItems[i].gameObject.SetActive(true);
-                }
-                else
-                {
-                    cardItems[i].gameObject.SetActive(false);
                 }
             }
 
