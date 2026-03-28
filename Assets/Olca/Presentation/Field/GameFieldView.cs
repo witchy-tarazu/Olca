@@ -328,11 +328,20 @@ namespace Olca.Presentation.Field
             }
 
             bool isDashing = dungeonSystem != null && dungeonSystem.IsDashing;
-            float targetFollowSpeed = isDashing ? cameraFollowSpeedDash : cameraFollowSpeed;
-            currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, targetFollowSpeed, Time.deltaTime * cameraFollowSpeedTransition);
-            fieldCamera.transform.position = Vector3.Lerp(
-                fieldCamera.transform.position, targetPos,
-                Time.deltaTime * currentFollowSpeed);
+            if (!isDashing)
+            {
+                // 通常移動: プレイヤーに直接追従（Lerpなし・ラグなし）
+                fieldCamera.transform.position = targetPos;
+                currentFollowSpeed = cameraFollowSpeed;  // ダッシュ開始時のLerp初期値としてリセット
+            }
+            else
+            {
+                // ダッシュ中: Lerpで追従（ダッシュ開始・終了の切り替えをなめらかに）
+                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Time.deltaTime * cameraFollowSpeedTransition);
+                fieldCamera.transform.position = Vector3.Lerp(
+                    fieldCamera.transform.position, targetPos,
+                    Time.deltaTime * currentFollowSpeed);
+            }
 
             // 定期ログ（60フレームに1回）
             if (Time.frameCount % 60 == 0)

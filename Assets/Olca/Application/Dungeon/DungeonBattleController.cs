@@ -309,6 +309,11 @@ namespace Olca.Application.Dungeon
             {
                 await TransitionToDungeonAsync(ct);
 
+                // SelectCardReward を呼ぶと同期的に GamePhase.Dungeon に切り替わり、
+                // 次フレームの UpdatePlayerPosition でプレイヤーがダンジョン座標にワープして
+                // カメラちらつきが起きるため、先に位置更新を無効化しておく
+                gameFieldView?.SetPlayerPositionUpdateEnabled(false);
+
                 if (manager.CurrentPhase == GamePhase.CardReward && pendingCardChoices != null)
                 {
                     if (cardSelectionView != null)
@@ -328,7 +333,6 @@ namespace Olca.Application.Dungeon
                 }
 
                 // 定位置（グリッド列1）へ復帰ジャンプ（ダッシュ宙返りと同じ放物線）
-                // UpdatePlayerPositionによるY座標上書きを抑制してジャンプアニメを保護
                 if (contactAnimator != null
                     && gameFieldView?.PlayerTransform != null
                     && gameFieldView?.BattleGrid != null)
@@ -336,14 +340,13 @@ namespace Olca.Application.Dungeon
                     float targetX = gameFieldView.BattleGrid.GridIndexToWorldX(1);
                     var targetPos = new UnityEngine.Vector3(
                         targetX, gameFieldView.PlayerTransform.position.y, 0f);
-                    gameFieldView.SetPlayerPositionUpdateEnabled(false);
                     await contactAnimator.PlayReturnJumpAsync(
                         gameFieldView.PlayerTransform, targetPos, ct);
                     gameFieldView.SetPlayerPositionUpdateEnabled(true);
                 }
 
-                // ジャンプ完了後にカメラをプレイヤー位置にスナップして追従を再開
-                gameFieldView?.SnapCameraToPlayerAndResumeFollow();
+                // ジャンプ完了後にカメラ追従を再開（バトル中にカメラはすでに列1+オフセット位置にあるため、スナップ不要）
+                gameFieldView?.SetCameraFollowEnabled(true);
 
                 // インターバル後に移動を再開（遷移アニメーション完了を保証）
                 await UniTask.Delay(returnToDungeonDelayMs, cancellationToken: ct);

@@ -443,6 +443,7 @@ namespace Olca.Core.Logic.Dungeon
         public void ResumePlayerMovement()
         {
             if (IsInBattle || IsDungeonCleared) return;
+            playerMovement.StopDash();  // バトル前のダッシュ状態を引き継がないようリセット
             playerMovement.Resume();
             logger.LogInfo("[Dungeon] ダンジョン移動再開");
         }
