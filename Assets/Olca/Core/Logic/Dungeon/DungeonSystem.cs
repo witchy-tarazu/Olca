@@ -407,6 +407,7 @@ namespace Olca.Core.Logic.Dungeon
 
         /// <summary>
         /// ダンジョンに戻る（内部処理）
+        /// ※プレイヤー移動の再開は行わない。呼び出し元が遷移完了後に ResumePlayerMovement() を呼ぶこと。
         /// </summary>
         private void ReturnToDungeon()
         {
@@ -429,13 +430,21 @@ namespace Olca.Core.Logic.Dungeon
                 return;
             }
 
-            // プレイヤー移動を再開
-            playerMovement.Resume();
-
-            // ダンジョン復帰イベント
+            // ダンジョン復帰イベント（移動再開は ResumePlayerMovement() で別途行う）
             OnReturnToDungeon?.Invoke();
 
-            logger.LogInfo("[Dungeon] ダンジョン再開");
+            logger.LogInfo("[Dungeon] ダンジョン復帰準備完了（移動再開待ち）");
+        }
+
+        /// <summary>
+        /// プレイヤー移動を再開する
+        /// バトル→ダンジョン遷移アニメーション完了後に呼び出すこと
+        /// </summary>
+        public void ResumePlayerMovement()
+        {
+            if (IsInBattle || IsDungeonCleared) return;
+            playerMovement.Resume();
+            logger.LogInfo("[Dungeon] ダンジョン移動再開");
         }
 
         /// <summary>

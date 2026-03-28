@@ -183,6 +183,15 @@ namespace Olca.Core.Logic.Integration
         }
 
         /// <summary>
+        /// バトル→ダンジョン遷移アニメーション完了後にプレイヤー移動を再開する
+        /// DungeonBattleController が遷移・報酬処理をすべて終えた後に呼び出すこと
+        /// </summary>
+        public void ResumeAfterBattle()
+        {
+            dungeonSystem.ResumePlayerMovement();
+        }
+
+        /// <summary>
         /// ダンジョン失敗時
         /// </summary>
         private void OnDungeonFailed()

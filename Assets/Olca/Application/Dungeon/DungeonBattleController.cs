@@ -43,6 +43,8 @@ namespace Olca.Application.Dungeon
         [Header("遷移設定")]
         [SerializeField] private float hudFadeDuration = 0.25f;
         [SerializeField] private ContactAnimator contactAnimator;
+        [Tooltip("バトル終了後、ダンジョン移動を再開するまでの待機時間（ミリ秒）")]
+        [SerializeField] private int returnToDungeonDelayMs = 1000;
 
         [Header("Dungeon UI")]
         [SerializeField] private DungeonHudView dungeonHudView;
@@ -285,6 +287,7 @@ namespace Olca.Application.Dungeon
         /// 1. BattleSessionController.Detach
         /// 2. バトルUI退場 → グリッド消滅 → HUD復帰
         /// 3. カード報酬がある場合はカード選択画面を表示
+        /// 4. インターバル後にダンジョン移動を再開
         /// </summary>
         private async UniTaskVoid HandleBattleEndAsync()
         {
@@ -300,15 +303,27 @@ namespace Olca.Application.Dungeon
             {
                 await TransitionToDungeonAsync(ct);
 
-                if (manager.CurrentPhase == GamePhase.CardReward
-                    && cardSelectionView != null
-                    && pendingCardChoices != null)
+                if (manager.CurrentPhase == GamePhase.CardReward && pendingCardChoices != null)
                 {
-                    int deckCount = manager.Dungeon.GetCurrentDeck().TotalCount;
-                    Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct);
-                    pendingCardChoices = null;
-                    manager.SelectCardReward(selectedCard);
+                    if (cardSelectionView != null)
+                    {
+                        int deckCount = manager.Dungeon.GetCurrentDeck().TotalCount;
+                        Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct);
+                        pendingCardChoices = null;
+                        manager.SelectCardReward(selectedCard);
+                    }
+                    else
+                    {
+                        // CardSelectionView が未アサインの場合はスキップしてダンジョン復帰
+                        logger.LogWarning("[Controller] CardSelectionView が未設定のためカード報酬をスキップします");
+                        pendingCardChoices = null;
+                        manager.SelectCardReward(null);
+                    }
                 }
+
+                // インターバル後に移動を再開（遷移アニメーション完了を保証）
+                await UniTask.Delay(returnToDungeonDelayMs, cancellationToken: ct);
+                manager.ResumeAfterBattle();
             }
             catch (System.OperationCanceledException) { }
         }

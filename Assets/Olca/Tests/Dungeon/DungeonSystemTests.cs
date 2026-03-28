@@ -198,10 +198,15 @@ namespace Olca.Tests.Dungeon
             // Assert
             Assert.IsFalse(dungeon.IsInBattle, "バトル状態が解除された");
 
-            // プレイヤーが再び移動できることを確認
+            // ResumePlayerMovement() を呼ぶまでは移動しない（遷移アニメーション待ち）
             float positionAfterBattle = dungeon.PlayerPosition;
+            dungeon.Tick(deltaTimeMs: 1000);
+            Assert.AreEqual(positionAfterBattle, dungeon.PlayerPosition, "ResumePlayerMovement前は移動しない");
+
+            // ResumePlayerMovement() 後は再び移動できる
+            dungeon.ResumePlayerMovement();
             dungeon.Tick(deltaTimeMs: 1000);  // 1000ms = 1秒
-            Assert.Greater(dungeon.PlayerPosition, positionAfterBattle, "バトル後も移動できる");
+            Assert.Greater(dungeon.PlayerPosition, positionAfterBattle, "ResumePlayerMovement後は移動できる");
         }
 
         [Test]
