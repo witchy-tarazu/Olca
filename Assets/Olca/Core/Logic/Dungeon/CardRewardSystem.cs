@@ -17,7 +17,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly List<Card> obtainedCards;  // 入手したカード（クリア報酬用）
 
         private const int REWARD_CHOICE_COUNT = 3;  // 選択肢の枚数
-        private const float NORMAL_ENEMY_DROP_RATE = 0.6f;  // 通常敵のドロップ率（60%）
+        private const float NORMAL_ENEMY_DROP_RATE = 1.0f;  // 通常敵のドロップ率（100%）
 
         /// <summary>
         /// コンストラクタ
