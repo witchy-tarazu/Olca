@@ -184,6 +184,9 @@ namespace Olca.Core.Logic.Dungeon
             const int GRID_ORIGIN_OFFSET = 4;
             contactInfo.ContactPositionX = contactInfo.EnemyCellIndex - GRID_ORIGIN_OFFSET;
 
+            // バトル開始前にデッキをシャッフル（2戦目以降のドロー履歴リセット）
+            cardRewardSystem.GetCurrentDeck().Shuffle(randomProvider);
+
             // バトルシステムを初期化
             // 注意: プレイヤーのHPはダンジョン探索中のまま（参照共有）
             currentBattle = new BattleSystem(
