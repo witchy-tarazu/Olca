@@ -6411,7 +6411,7 @@ MonoBehaviour:
   playerTransform: {fileID: 1380017649}
   playerSprite: {fileID: 1380017650}
   fieldCamera: {fileID: 1974572033}
-  cameraFollowSpeed: 50
+  cameraFollowSpeed: 60
   cameraFollowSpeedDash: 30
   cameraFollowSpeedTransition: 3
   cameraPlayerOffsetX: 2.5
