@@ -1,0 +1,4 @@
+interface:
+  display_name: "Olca Console"
+  short_description: "Diagnose Unity console errors in Olca"
+  default_prompt: "Use $olca-console to diagnose Unity console errors in Olca."

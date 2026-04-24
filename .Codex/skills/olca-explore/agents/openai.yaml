@@ -1,0 +1,4 @@
+interface:
+  display_name: "Olca Explore"
+  short_description: "Research Olca codebase patterns and dependencies"
+  default_prompt: "Use $olca-explore to research existing Olca code patterns."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Olca Review"
+  short_description: "Review Olca architecture and test compliance"
+  default_prompt: "Use $olca-review to review recent Olca changes."

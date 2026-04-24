@@ -1,0 +1,4 @@
+interface:
+  display_name: "Olca Spec"
+  short_description: "Summarize Olca Planning specs for implementation"
+  default_prompt: "Use $olca-spec to summarize Planning specs before implementation."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Olca Git"
+  short_description: "Perform safe Git operations for Olca"
+  default_prompt: "Use $olca-git to inspect or prepare Olca Git changes."

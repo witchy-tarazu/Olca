@@ -1,0 +1,4 @@
+interface:
+  display_name: "Olca Plan"
+  short_description: "Plan Olca features with architecture and tests"
+  default_prompt: "Use $olca-plan to create an implementation plan for an Olca feature."
