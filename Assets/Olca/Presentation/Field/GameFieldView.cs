@@ -27,6 +27,11 @@ namespace Olca.Presentation.Field
         [SerializeField] private Sprite idlePlayerSprite;
         [SerializeField] private Sprite dashPlayerSprite;
 
+        [Header("プレイヤーアニメーション")]
+        [SerializeField] private Animator playerAnimator;
+
+        private static readonly int IsRunningParameter = Animator.StringToHash("isRunning");
+
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
         [SerializeField] private float cameraFollowSpeed = 50f;            // 通常時の追従速度
@@ -332,6 +337,15 @@ namespace Olca.Presentation.Field
             bool isDashing = dungeonSystem != null
                 && dungeonSystem.IsDashing
                 && !dungeonSystem.IsInBattle;
+
+            // Animatorを設定した場合は、状態だけを渡してスプライトの再生を任せる。
+            // 未設定のシーンでは従来のモック画像表示を使用する。
+            if (playerAnimator != null && playerAnimator.runtimeAnimatorController != null)
+            {
+                playerAnimator.SetBool(IsRunningParameter, isDashing);
+                return;
+            }
+
             SetPlayerSprite(isDashing ? dashPlayerSprite : idlePlayerSprite);
         }
 
