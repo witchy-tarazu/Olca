@@ -16,7 +16,7 @@ namespace Olca.Tests.Dungeon
         [SetUp]
         public void SetUp()
         {
-            mockRandom = new MockRandomProvider(0);  // roll=0 → カードドロップあり（0 < 0.6）
+            mockRandom = new MockRandomProvider(0);  // 通常敵もカードをドロップする
             mockLogger = new MockLogger();
         }
 
@@ -64,7 +64,7 @@ namespace Olca.Tests.Dungeon
         [Test]
         public void バトル勝利_カードドロップあり_CardRewardフェーズになる()
         {
-            // Arrange: roll=0 → 必ずドロップ（0 < 0.6）
+            // Arrange: 通常敵のカード報酬を確認する
             mockRandom.SetFixedValue(0f);
             var manager = CreateManager();
             var battle = AdvanceToBattle(manager);
@@ -82,9 +82,9 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
-        public void バトル勝利_カードドロップなし_Dungeonフェーズに戻る()
+        public void バトル勝利_乱数が高くても報酬を提示し_選択完了後Dungeonフェーズに戻る()
         {
-            // Arrange: roll=0.9 → ドロップなし（0.9 >= 0.6）
+            // Arrange: 現在の通常敵ドロップ率は100%のため、0.9でも報酬が出る
             mockRandom.SetFixedValue(0.9f);
             var manager = CreateManager();
             var battle = AdvanceToBattle(manager);
@@ -97,8 +97,11 @@ namespace Olca.Tests.Dungeon
             manager.Tick(deltaTimeMs: 100);
 
             // Assert
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase,
+                "通常敵も報酬選択を待つ");
+            manager.SelectCardReward(null);
             Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase,
-                "ドロップなしはDungeonフェーズに直接戻る");
+                "報酬をスキップするとDungeonフェーズに戻る");
         }
 
         [Test]

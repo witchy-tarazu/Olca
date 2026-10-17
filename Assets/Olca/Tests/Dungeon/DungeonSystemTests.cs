@@ -160,6 +160,43 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
+        public void ジャンプ中に通常敵へ接近すると接敵せず回避できる()
+        {
+            // Arrange
+            var enemy = new Enemy("enemy_5", "スライム", 50, ElementType.None, new Vector2Int(5, 0));
+            var cells = new System.Collections.Generic.List<MapCell>
+            {
+                new MapCell(0),
+                new MapCell(1),
+                new MapCell(2),
+                new MapCell(3),
+                new MapCell(4),
+                new MapCell(5, enemy),
+                new MapCell(6),
+                new MapCell(7),
+                new MapCell(8),
+                new MapCell(9)
+            };
+            var config = new DungeonConfig("jump_avoid_test", "ジャンプ回避テスト", 10, cells);
+            var player = new PlayerCharacter(maxHp: 100, initialPosition: new Vector2Int(0, 0), attackPower: 10);
+            var dungeon = new DungeonSystem(config, player, CreateTestDeck(), mockRandom, mockLogger);
+            bool battleStarted = false;
+            dungeon.OnBattleStart += _ => battleStarted = true;
+
+            // Act: 接敵判定が敵セル5を見るタイミングまでジャンプを維持する
+            dungeon.Jump();
+            for (int i = 0; i < 5; i++)
+            {
+                dungeon.Tick(deltaTimeMs: 100);
+            }
+
+            // Assert
+            Assert.IsFalse(battleStarted, "ジャンプ中なので通常敵を回避して接敵しない");
+            Assert.IsFalse(dungeon.IsInBattle, "回避時はバトル状態にならない");
+            Assert.Greater(dungeon.PlayerPosition, 4f, "敵の手前まで進んでいる");
+        }
+
+        [Test]
         public void Jump_ジャンプできる()
         {
             // Arrange
@@ -627,6 +664,10 @@ namespace Olca.Tests.Dungeon
             // Act: バトル勝利
             dungeon.OnBattleCompleted(victory: true);
 
+            // 報酬選択が完了するまでバトル参照を保持する
+            Assert.IsNotNull(dungeon.CurrentBattle, "報酬選択中はバトル参照を保持する");
+            dungeon.OnCardSelectionCompleted(null);
+
             // Assert
             Assert.IsNull(dungeon.CurrentBattle, "バトル終了後はCurrentBattleがnull");
         }
@@ -679,6 +720,9 @@ namespace Olca.Tests.Dungeon
 
             // Act: バトル勝利
             dungeon.OnBattleCompleted(victory: true);
+
+            Assert.IsFalse(returnEventFired, "報酬選択中はまだ復帰しない");
+            dungeon.OnCardSelectionCompleted(null);
 
             // Assert
             Assert.IsTrue(returnEventFired, "OnReturnToDungeonが発火した");
@@ -767,6 +811,8 @@ namespace Olca.Tests.Dungeon
 
             // バトル勝利
             dungeon.OnBattleCompleted(victory: true);
+            Assert.IsFalse(dungeon.IsDungeonCleared, "報酬選択完了まではクリアを待つ");
+            dungeon.OnCardSelectionCompleted(null);
             Assert.IsTrue(dungeon.IsDungeonCleared, "クリア済み");
 
             float posAfterClear = dungeon.PlayerPosition;

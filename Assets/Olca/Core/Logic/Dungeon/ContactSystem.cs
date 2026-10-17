@@ -23,14 +23,16 @@ namespace Olca.Core.Logic.Dungeon
     public class ContactSystem
     {
         private readonly DungeonMap map;
+        private readonly ActionSystem actionSystem;
         private const float CONTACT_DISTANCE = 1.0f;      // 非ダッシュ時の停止距離（敵に隣接したとき）
         private const float DASH_CONTACT_DISTANCE = 1.5f;  // ダッシュ時の接触距離（貫通防止のため余裕を持たせる）
 
         private Enemy lastContactedEnemy;  // 最後に接触した敵（連続判定防止）
 
-        public ContactSystem(DungeonMap map)
+        public ContactSystem(DungeonMap map, ActionSystem actionSystem = null)
         {
             this.map = map;
+            this.actionSystem = actionSystem ?? new ActionSystem();
             lastContactedEnemy = null;
         }
 
@@ -51,8 +53,14 @@ namespace Olca.Core.Logic.Dungeon
                     return;
                 }
 
-                // 空中の敵は高さが足りないと接触しない
+                // 空中の敵は高さが足りないと接触しない。
                 if (nextCell.Height > 0f && player.Height < nextCell.Height - 0.2f)
+                {
+                    return;
+                }
+
+                // 地上の通常敵は十分な高さでジャンプ中なら接敵せずに通過する。
+                if (nextCell.Height <= 0f && actionSystem.CanAvoidWithJump(nextCell, player.Height))
                 {
                     return;
                 }

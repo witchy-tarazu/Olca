@@ -23,6 +23,10 @@ namespace Olca.Presentation.Field
         [SerializeField] private Transform playerTransform;
         [SerializeField] private SpriteRenderer playerSprite;
 
+        [Header("プレイヤーモックスプライト")]
+        [SerializeField] private Sprite idlePlayerSprite;
+        [SerializeField] private Sprite dashPlayerSprite;
+
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
         [SerializeField] private float cameraFollowSpeed = 50f;            // 通常時の追従速度
@@ -112,6 +116,13 @@ namespace Olca.Presentation.Field
 
             // マップ上の全敵スプライトを生成
             PlaceAllEnemySprites();
+            UpdatePlayerSprite();
+        }
+
+        private void LateUpdate()
+        {
+            // Controllerの更新タイミングに依存せず、最新のダンジョン状態から表示を決定する。
+            UpdatePlayerSprite();
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -236,6 +247,7 @@ namespace Olca.Presentation.Field
         {
             if (dungeonSystem == null) return;
             UpdatePlayerPosition();
+            UpdatePlayerSprite();
             if (cameraFollowEnabled) UpdateCamera();
             UpdateEnemyViews();
             UpdateDebugUI();
@@ -307,6 +319,26 @@ namespace Olca.Presentation.Field
             if (playerTransform == null) return;
             playerTransform.position = new Vector3(
                 dungeonSystem.PlayerPosition, dungeonSystem.PlayerHeight, 0f);
+        }
+
+        /// <summary>
+        /// ダンジョン移動状態に応じてプレイヤーモックスプライトを切り替える。
+        /// 各素材は Inspector から差し替えられるため、モック追加時にコード変更は不要。
+        /// </summary>
+        private void UpdatePlayerSprite()
+        {
+            // 接敵後の宙返り中はダッシュフラグが残る場合があるため、
+            // バトル中でないこともダッシュ表示の条件にする。
+            bool isDashing = dungeonSystem != null
+                && dungeonSystem.IsDashing
+                && !dungeonSystem.IsInBattle;
+            SetPlayerSprite(isDashing ? dashPlayerSprite : idlePlayerSprite);
+        }
+
+        private void SetPlayerSprite(Sprite sprite)
+        {
+            if (playerSprite == null || sprite == null || playerSprite.sprite == sprite) return;
+            playerSprite.sprite = sprite;
         }
 
         private void UpdateCamera()

@@ -235,7 +235,7 @@ namespace Olca.Application.Dungeon
                 // 1. 接敵アニメーション
                 if (contactAnimator != null && gameFieldView != null)
                 {
-                        // ダッシュ接触時もアニメーション中はカメラ追従を維持する。
+                    // ダッシュ接触時もアニメーション中はカメラ追従を維持する。
                     // 即停止するとダッシュ中の追従遅延分だけカメラが後方に残り、
                     // バトル開始時にグリッド中央へ一気に動いてカメラジャンプが起きる。
                     // cameraFollowEnabled = false は OnBattleStarted 内で設定される。

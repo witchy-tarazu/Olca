@@ -68,6 +68,20 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
+        public void Jump_最大高度は2マス分まで上がる()
+        {
+            // Arrange
+            var movement = new PlayerMovement();
+
+            // Act
+            movement.Jump();
+            movement.Update(deltaTimeMs: 250);  // ジャンプ時間の中間が最大高度
+
+            // Assert
+            Assert.AreEqual(2.0f, movement.Height, 0.01f, "ジャンプ最大高度が2マス分になっている");
+        }
+
+        [Test]
         public void Jump_放物線を描いて着地する()
         {
             // Arrange

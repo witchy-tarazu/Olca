@@ -69,8 +69,8 @@ namespace Olca.Core.Logic.Dungeon
             // 依存関係の初期化
             map = new DungeonMap(config);
             playerMovement = new PlayerMovement(initialPosition: 0f);
-            contactSystem = new ContactSystem(map);
             actionSystem = new ActionSystem();
+            contactSystem = new ContactSystem(map, actionSystem);
             cardRewardSystem = new CardRewardSystem(initialDeck, random);
             obstacleSystem = new ObstacleSystem(logger);
             playerCharacter = player;

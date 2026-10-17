@@ -22,6 +22,7 @@ namespace Olca.Presentation.Dungeon
         [SerializeField] private float normalBumpDistance = 0.15f;      // 通常接敵: 衝突時の前進量
         [SerializeField] private float normalKnockbackDistance = 3f;    // 通常接敵: ノックバック距離（接触距離1マス分+2マス余裕）
         [SerializeField] private float normalKnockbackDuration = 0.35f; // 通常接敵: ノックバック時間
+        [SerializeField] private float normalContactGroundY = 0f;       // 通常接敵: ノックバック後に戻す地上高さ
         [SerializeField] private float dashRushDistance = 1f;       // ダッシュ: プレイヤーの突進距離（rushEnd = start + dashRushDistance + 0.5）
         [SerializeField] private float dashEnemyKnockback = 2f;   // ダッシュ: 敵の吹き飛び距離（グリッド配置位置に合わせて2に設定）
         [SerializeField] private float rollbackDistance = 1f;    // プレイヤーの宙返り距離（ダッシュ）
@@ -74,13 +75,18 @@ namespace Olca.Presentation.Dungeon
             await UniTask.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
 
             // フェーズ3: ノックバック後退
-            Vector3 knockbackPos = bumpPos - new Vector3(normalKnockbackDistance, 0f, 0f);
+            Vector3 knockbackPos = new Vector3(
+                bumpPos.x - normalKnockbackDistance,
+                normalContactGroundY,
+                bumpPos.z);
             elapsed = 0f;
             while (elapsed < normalKnockbackDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / normalKnockbackDuration);
-                playerTransform.position = Vector3.Lerp(bumpPos, knockbackPos, EaseOutQuad(t));
+                float x = Mathf.Lerp(bumpPos.x, knockbackPos.x, EaseOutQuad(t));
+                float y = Mathf.Lerp(bumpPos.y, normalContactGroundY, EaseInQuad(t));
+                playerTransform.position = new Vector3(x, y, bumpPos.z);
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
             playerTransform.position = knockbackPos;

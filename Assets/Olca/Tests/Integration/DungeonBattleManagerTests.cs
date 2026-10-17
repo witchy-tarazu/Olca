@@ -136,6 +136,10 @@ namespace Olca.Tests.Integration
             // Tick を進めてバトル終了を処理
             manager.Tick(deltaTimeMs: 100);
 
+            // 通常敵も報酬を提示するため、選択を完了してから復帰を確認する
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase, "報酬選択を待つ");
+            manager.SelectCardReward(null);
+
             // Assert
             Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase, "ダンジョンフェーズに戻る");
             Assert.IsNull(manager.CurrentBattle, "バトルシステムが破棄される");
