@@ -17,6 +17,7 @@ namespace Olca.Presentation.Field
         [SerializeField] private float panelY = -0.25f;     // グリッドのY座標（地面付近）
         [SerializeField] private float panelZ = 0.1f;       // 背景より手前・キャラより奥
         [SerializeField] private float panelScale = 0.95f;  // 隙間を作るスケール
+        [SerializeField] private Sprite panelSprite;
 
         private const int GRID_WIDTH = 6;
 
@@ -28,7 +29,7 @@ namespace Olca.Presentation.Field
 
         private void Awake()
         {
-            whiteSprite = CreateWhiteSprite();
+            if (panelSprite == null) whiteSprite = CreateWhiteSprite();
             panelRenderers = new SpriteRenderer[GRID_WIDTH];
 
             for (int x = 0; x < GRID_WIDTH; x++)
@@ -38,7 +39,7 @@ namespace Olca.Presentation.Field
                 go.transform.localScale = new Vector3(panelScale, panelScale, 1f);
 
                 var sr = go.AddComponent<SpriteRenderer>();
-                sr.sprite = whiteSprite;
+                sr.sprite = panelSprite != null ? panelSprite : whiteSprite;
                 sr.sortingOrder = 1;  // 背景より手前、キャラより奥
                 sr.color = GetPanelColor(PanelType.Normal);
 
