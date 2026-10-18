@@ -132,6 +132,7 @@ namespace Olca.Tests
                 var refresh = typeof(GameFieldView).GetMethod("UpdateCameraFraming", flags);
                 refresh.Invoke(view, null);
                 Assert.AreEqual(7f, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
+                Assert.AreEqual(0.25f, camera.WorldToViewportPoint(new Vector3(0f, -0.25f, 0f)).y, 0.0001f);
                 Assert.AreEqual(Vector3.one, camera.transform.localScale);
                 camera.aspect = 2f;
                 refresh.Invoke(view, null);
@@ -366,6 +367,57 @@ namespace Olca.Tests
                 Assert.AreEqual(1.6f, view.LogicalToWorld(1f), 0.0001f);
             }
             finally { Object.DestroyImmediate(go); Object.DestroyImmediate(root); }
+        }
+        [Test]
+        public void 前景は床より下を覆い等比タイルで控えめに速く流れる()
+        {
+            var go = new GameObject("ForegroundTest");
+            var cameraObject = new GameObject("ForegroundCamera");
+            var texture = new Texture2D(64, 16);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, 64, 16), new Vector2(0.5f, 0.5f), 64f);
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.orthographic = true; camera.aspect = 16f / 9f; camera.orthographicSize = 3.15f;
+                camera.transform.position = new Vector3(0f, 1.275f, -10f);
+                var grid = go.AddComponent<WorldBattleGridView>();
+                var layer = go.AddComponent<ScrollingBackgroundView>();
+                typeof(ScrollingBackgroundView).GetField("targetCamera", flags).SetValue(layer, camera);
+                typeof(ScrollingBackgroundView).GetField("foregroundGrid", flags).SetValue(layer, grid);
+                var refresh = typeof(ScrollingBackgroundView).GetMethod("UpdateForeground", flags);
+                refresh.Invoke(layer, null);
+                Assert.IsNull(typeof(ScrollingBackgroundView).GetField("foregroundRoot", flags).GetValue(layer), "素材なしで仮前景を出さない");
+                typeof(ScrollingBackgroundView).GetField("foregroundSprite", flags).SetValue(layer, sprite);
+                refresh.Invoke(layer, null);
+                var root = (Transform)typeof(ScrollingBackgroundView).GetField("foregroundRoot", flags).GetValue(layer);
+                var fill = root.Find("ForegroundOpaqueBase").GetComponent<SpriteRenderer>();
+                Assert.AreEqual(-1.1f, fill.bounds.max.y, 0.0001f);
+                Assert.AreEqual(-1.875f, fill.bounds.min.y, 0.0001f);
+                Assert.GreaterOrEqual(fill.bounds.size.x, 11.2f);
+                var rock = root.Find("ForegroundRock_0").GetComponent<SpriteRenderer>();
+                Assert.AreEqual(rock.transform.localScale.x, rock.transform.localScale.y);
+                Assert.AreEqual(-1.1f, rock.bounds.max.y, 0.0001f);
+                typeof(ScrollingBackgroundView).GetField("foregroundOpaqueTop", flags).SetValue(layer, 0.25f);
+                refresh.Invoke(layer, null);
+                Assert.AreEqual(-1.1f, rock.bounds.min.y + rock.bounds.size.y * 0.25f, 0.0001f, "透過余白ではなく不透明部分の最高点を床下端に合わせる");
+                float before = rock.transform.position.x;
+                camera.transform.position += new Vector3(0.1f, 0f, 0f);
+                refresh.Invoke(layer, null);
+                Assert.AreEqual(-0.012f, rock.transform.position.x - before, 0.0001f);
+                camera.transform.position -= new Vector3(0.1f, 0f, 0f);
+                refresh.Invoke(layer, null);
+                Assert.AreEqual(before, rock.transform.position.x, 0.0001f);
+                // EditModeでは通常MonoBehaviourのライフサイクルが自動実行されない。
+                typeof(ScrollingBackgroundView).GetMethod("OnDisable", flags).Invoke(layer, null);
+                Assert.IsFalse(root.gameObject.activeSelf);
+            }
+            finally
+            {
+                var layer = go.GetComponent<ScrollingBackgroundView>();
+                if (layer != null) typeof(ScrollingBackgroundView).GetMethod("OnDestroy", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(layer, null);
+                Object.DestroyImmediate(go); Object.DestroyImmediate(cameraObject); Object.DestroyImmediate(sprite); Object.DestroyImmediate(texture);
+            }
         }
     }
 }

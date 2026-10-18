@@ -243,7 +243,7 @@ namespace Olca.Presentation.Field
             // 地面を下寄りに置き、拡大後も頭部・敵名の表示領域を確保する。
             float groundY = battleGridView != null ? battleGridView.GroundY : -0.25f;
             var position = fieldCamera.transform.position;
-            position.y = groundY + fieldCamera.orthographicSize * 0.65f;
+            position.y = groundY + fieldCamera.orthographicSize * 0.5f;
             fieldCamera.transform.position = position;
         }
 
