@@ -50,7 +50,7 @@ namespace Olca.Presentation.Battle
             // 大型ボスでも名前とHPが絵に重ならないよう、スプライトの上に配置する。
             float top = sprite.bounds.max.y;
             if (enemyNameText != null)
-                enemyNameText.transform.localPosition = new Vector3(0f, top + 0.65f, -0.1f);
+                enemyNameText.transform.localPosition = new Vector3(0f, top + 1.05f, -0.1f);
             if (hpText != null)
                 hpText.transform.localPosition = new Vector3(0f, top + 0.25f, -0.1f);
         }
