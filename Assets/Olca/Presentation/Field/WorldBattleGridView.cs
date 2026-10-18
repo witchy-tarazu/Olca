@@ -14,8 +14,8 @@ namespace Olca.Presentation.Field
     public class WorldBattleGridView : MonoBehaviour
     {
         [Header("グリッド設定")]
-        [SerializeField] private float panelSize = 1.92f;   // 192px / PPU100 = 1グリッドセル
-        [SerializeField] private float panelHeight = 0.96f; // 幅:高さ = 2:1
+        [SerializeField] private float panelSize = 1.6f;   // 160px / PPU100 = 1グリッドセル
+        [SerializeField] private float panelHeight = 0.8f; // 幅:高さ = 2:1
         [SerializeField] private float panelY = -0.3f;      // 探索・戦闘共通の接地面
         [SerializeField] private float panelZ = 0.1f;       // 背景より手前・キャラより奥
         [SerializeField] private float panelScale = 0.95f;  // 隙間を作るスケール

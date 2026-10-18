@@ -5150,8 +5150,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc797bc1aaafdd74ca4dd3999a720de5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panelSize: 1.92
-  panelHeight: 0.96
+  panelSize: 1.6
+  panelHeight: 0.8
   panelY: -0.3
   panelZ: 0.1
   panelScale: 1

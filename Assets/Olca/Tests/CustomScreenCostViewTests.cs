@@ -288,8 +288,8 @@ namespace Olca.Tests
                     Assert.AreEqual(64f, renderer.sprite.rect.width);
                     Assert.AreEqual(32f, renderer.sprite.rect.height);
                     Assert.AreEqual(renderer.transform.localScale.x, renderer.transform.localScale.y);
-                    Assert.AreEqual(1.92f, renderer.bounds.size.x, 0.0001f);
-                    Assert.AreEqual(0.96f, renderer.bounds.size.y, 0.0001f);
+                    Assert.AreEqual(1.6f, renderer.bounds.size.x, 0.0001f);
+                    Assert.AreEqual(0.8f, renderer.bounds.size.y, 0.0001f);
                     if (renderer.enabled) Assert.AreEqual(-0.3f, renderer.bounds.max.y, 0.0001f);
                 }
                 grid.Show(new BattleField(), 0f);
@@ -303,12 +303,13 @@ namespace Olca.Tests
                 grid.Hide();
                 Assert.IsTrue(go.activeSelf);
                 Assert.IsTrue(System.Array.Exists(floor, renderer => renderer.enabled));
-                Assert.AreEqual(3 * 1.92f, grid.SnapWorldXToCellCenter(5.5f), 0.0001f);
+                Assert.AreEqual(3 * 1.6f, grid.SnapWorldXToCellCenter(5.5f), 0.0001f);
             }
             finally { Object.DestroyImmediate(go); Object.DestroyImmediate(source); Object.DestroyImmediate(texture); }
         }
 
         [TestCase(1f)]
+        [TestCase(1.6f)]
         [TestCase(1.92f)]
         [TestCase(2.56f)]
         public void 表示単位を変えても論理マス距離と共通カメラの七マス幅を保つ(float units)
@@ -358,11 +359,11 @@ namespace Olca.Tests
                 var apply = typeof(GameFieldView).GetMethod("ApplyCharacterDisplayOffset", flags);
                 apply.Invoke(view, null);
                 apply.Invoke(view, null);
-                Assert.AreEqual(-0.432f, view.CharacterDisplayOffsetY, 0.0001f);
-                Assert.AreEqual(-0.732f, sprite.transform.localPosition.y, 0.0001f);
+                Assert.AreEqual(-0.36f, view.CharacterDisplayOffsetY, 0.0001f);
+                Assert.AreEqual(-0.66f, sprite.transform.localPosition.y, 0.0001f);
                 Assert.AreEqual(new Vector3(12f, 3f, 0f), root.transform.position);
                 Assert.AreEqual(Vector3.one, sprite.transform.localScale);
-                Assert.AreEqual(1.92f, view.LogicalToWorld(1f), 0.0001f);
+                Assert.AreEqual(1.6f, view.LogicalToWorld(1f), 0.0001f);
             }
             finally { Object.DestroyImmediate(go); Object.DestroyImmediate(root); }
         }
