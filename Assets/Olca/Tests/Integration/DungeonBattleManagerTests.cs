@@ -34,6 +34,75 @@ namespace Olca.Tests.Integration
             return new Deck(cards);
         }
 
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void 最奥ボス勝利_回避敵が残っても報酬完了後に一度だけクリア(bool selectReward, bool wrappedBoss)
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 12; i++) cells.Add(new MapCell(i));
+            var avoided = new Enemy("avoided", "回避敵", 20, ElementType.None, new Vector2Int(2, 0));
+            var boss = new Enemy("boss", "最奥ボス", 200, ElementType.None, new Vector2Int(11, 0));
+            cells[2] = new MapCell(2, avoided);
+            cells[11] = new MapCell(11, boss);
+            if (wrappedBoss) cells[10] = new MapCell(10,
+                new Enemy("primary", "主敵", 20, ElementType.None, new Vector2Int(10, 0)));
+            var manager = new DungeonBattleManager(new DungeonConfig("boss", "ボスクリア", 12, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            int clears = 0, returns = 0, rewards = 0;
+            IReadOnlyList<Card> choices = null;
+            manager.OnDungeonClearCompleted += _ => clears++;
+            manager.Dungeon.OnReturnToDungeon += () => returns++;
+            manager.OnCardRewardPresented += cards => { rewards++; choices = cards; };
+            manager.Jump();
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            Assert.AreEqual(GamePhase.Battle, manager.CurrentPhase);
+            Assert.AreEqual(wrappedBoss ? 2 : 1, manager.CurrentBattle.Enemies.Count);
+            foreach (var enemy in new List<Enemy>(manager.CurrentBattle.Enemies)) enemy.TakeDamage(1000, ElementType.None);
+            manager.Tick(100);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            Assert.AreEqual(0, clears, "報酬完了前にはクリアしない");
+            manager.SelectCardReward(selectReward ? choices[0] : null);
+            Assert.AreEqual(GamePhase.DungeonCleared, manager.CurrentPhase);
+            Assert.IsTrue(manager.Dungeon.IsDungeonCleared);
+            Assert.AreSame(avoided, manager.Dungeon.Map.GetCell(2).Enemy);
+            Assert.IsFalse(avoided.IsDead);
+            Assert.IsNull(manager.Dungeon.Map.GetCell(11).Enemy);
+            Assert.AreEqual(selectReward ? 1 : 0, manager.Dungeon.GetObtainedCards().Count);
+            manager.ResumeAfterBattle();
+            manager.Tick(1000);
+            manager.Dungeon.OnCardSelectionCompleted(null);
+            Assert.AreEqual(1, clears);
+            Assert.AreEqual(1, rewards);
+            Assert.AreEqual(0, returns);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 最奥ボス未撃破_通常敵や手前のボスの勝利ではクリアしない(bool earlierBoss)
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 12; i++) cells.Add(new MapCell(i));
+            cells[2] = new MapCell(2, new Enemy(earlierBoss ? "boss" : "slime", "手前の敵", 20,
+                ElementType.None, new Vector2Int(2, 0)));
+            var boss = new Enemy("boss", "最奥ボス", 200, ElementType.None, new Vector2Int(11, 0));
+            cells[11] = new MapCell(11, boss);
+            var manager = new DungeonBattleManager(new DungeonConfig("boss", "最奥未撃破", 12, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            int clears = 0;
+            manager.OnDungeonClearCompleted += _ => clears++;
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            manager.CurrentBattle.Enemies[0].TakeDamage(1000, ElementType.None);
+            manager.Tick(100);
+            manager.SelectCardReward(null);
+            Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase);
+            Assert.IsFalse(manager.Dungeon.IsDungeonCleared);
+            Assert.AreSame(boss, manager.Dungeon.Map.GetCell(11).Enemy);
+            Assert.IsFalse(boss.IsDead);
+            Assert.AreEqual(0, clears);
+        }
+
         [TestCase(1, false)]
         [TestCase(2, false)]
         [TestCase(1, true)]

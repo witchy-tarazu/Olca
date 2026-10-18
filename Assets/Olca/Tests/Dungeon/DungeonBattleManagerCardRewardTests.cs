@@ -44,16 +44,12 @@ namespace Olca.Tests.Dungeon
         [TestCase(true)]
         public void 最後の敵の報酬確定_クリアイベントで最終獲得数とデッキ数を参照できる(bool skip)
         {
-            var manager = CreateManager();
+            var manager = new DungeonBattleManager(DungeonConfig.CreateTestDungeon(10),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
             var battle = AdvanceToBattle(manager);
-            foreach (var entry in manager.Dungeon.Map.GetAllEnemies())
-            {
-                if (!ReferenceEquals(entry.enemy, battle.Enemies[0]))
-                    manager.Dungeon.Map.RemoveEnemy(entry.enemy);
-            }
             List<Card> choices = null;
             manager.OnCardRewardPresented += cards => choices = new List<Card>(cards);
-            battle.Enemies[0].TakeDamage(100, ElementType.None);
+            battle.Enemies[0].TakeDamage(1000, ElementType.None);
             manager.Tick(100);
             Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
             Assert.IsNotNull(choices);

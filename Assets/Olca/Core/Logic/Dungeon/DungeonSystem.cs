@@ -14,6 +14,8 @@ namespace Olca.Core.Logic.Dungeon
     {
         // ========== 依存関係 ==========
         private readonly DungeonMap map;
+        private readonly Enemy finalBoss;
+        private bool finalBossDefeated;
         private readonly PlayerMovement playerMovement;
         private readonly ContactSystem contactSystem;
         private readonly ActionSystem actionSystem;
@@ -68,6 +70,17 @@ namespace Olca.Core.Logic.Dungeon
         {
             // 依存関係の初期化
             map = new DungeonMap(config);
+            // 現行マップのボス種別を使い、最奥のボスをクリア対象として保持する。
+            // 撃破後はマスが空になるため、敵の参照を初期化時に確定する。
+            int finalBossCell = -1;
+            foreach (var cell in config.MapCells)
+            {
+                if (cell != null && cell.Type == CellType.Boss && cell.Index > finalBossCell)
+                {
+                    finalBoss = cell.Enemy;
+                    finalBossCell = cell.Index;
+                }
+            }
             playerMovement = new PlayerMovement(initialPosition: 0f);
             actionSystem = new ActionSystem();
             contactSystem = new ContactSystem(map, actionSystem);
@@ -348,12 +361,20 @@ namespace Olca.Core.Logic.Dungeon
             {
                 logger.LogInfo("[Dungeon] バトル勝利");
 
+                // 外部からの勝利通知も従来どおり接敵主敵の撃破として扱う。
+                if (finalBoss != null && ReferenceEquals(currentContactInfo?.Enemy, finalBoss))
+                    finalBossDefeated = true;
+
                 // 接敵主敵だけでなく、この戦闘で撃破した巻込み敵も探索マップから除去する。
                 if (currentBattle != null)
                 {
                     foreach (var enemy in currentBattle.Enemies)
                     {
-                        if (enemy.IsDead) map.RemoveEnemy(enemy);
+                        if (enemy.IsDead)
+                        {
+                            if (ReferenceEquals(enemy, finalBoss)) finalBossDefeated = true;
+                            map.RemoveEnemy(enemy);
+                        }
                     }
                 }
 
@@ -398,6 +419,8 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void OnCardSelectionCompleted(Card selectedCard)
         {
+            if (IsDungeonCleared) return;
+
             if (selectedCard != null)
             {
                 cardRewardSystem.SelectCard(selectedCard);
@@ -420,6 +443,8 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         private void ReturnToDungeon()
         {
+            if (IsDungeonCleared) return;
+
             // バトルシステムをクリーンアップ
             currentBattle = null;
 
@@ -430,11 +455,11 @@ namespace Olca.Core.Logic.Dungeon
             // プレイヤーHPはバトル終了時のまま維持
             logger.LogInfo($"[Dungeon] HP維持: {playerCharacter.CurrentHp}/{playerCharacter.MaxHp}");
 
-            // 全ての敵を倒したらダンジョンクリア
-            if (!map.HasAnyEnemy())
+            // ボス撃破と報酬完了でクリア。ボスなしのマップは従来の全敵撃破条件を維持する。
+            if (finalBoss != null ? finalBossDefeated : !map.HasAnyEnemy())
             {
                 IsDungeonCleared = true;
-                logger.LogInfo("[Dungeon] 全敵撃破 - ダンジョンクリア！");
+                logger.LogInfo("[Dungeon] クリア条件達成 - ダンジョンクリア！");
                 OnDungeonCleared?.Invoke();
                 return;
             }
