@@ -33,6 +33,14 @@ namespace Olca.Presentation.Battle
         private Image customScreenBackdrop;
         private CancellationTokenSource animationCts;
 
+        private Slider gaugeSlider;
+        private Image gaugeFill;
+        private Image gaugeHighlight;
+        private Color normalGaugeColor;
+        private Vector3 normalGaugeScale;
+        private bool gaugeResetting;
+        private float gaugePulseTime;
+
         // ========== 定数 ==========
         private const float CUSTOM_SCREEN_HIDDEN_X = -960f;  // カスタム画面非表示時のX座標（画面外）
         private const float CUSTOM_SCREEN_VISIBLE_X = 0f;    // カスタム画面表示時のX座標（画面内）
@@ -40,13 +48,19 @@ namespace Olca.Presentation.Battle
         // ========== 初期化 ==========
         public void Initialize(BattleSystem battleSystem)
         {
+            DetachBattleEvents();
+            ResetGaugeVisual();
+            gaugeResetting = false;
+            isCustomScreenOpen = false;
             this.battleSystem = battleSystem;
+            EnsureGaugeVisual();
             EnsureCustomScreenBackdrop();
             customScreenBackdrop.gameObject.SetActive(false);
 
             // イベント購読
             battleSystem.CustomGauge.OnGaugeChanged += OnGaugeChanged;
             battleSystem.OnPlayerAttack += OnPlayerAttack;
+            battleSystem.OnBattleEnd += OnBattleEnded;
 
             // 初期状態設定：カスタム画面コンテナを画面外に配置
             if (customScreenContainer != null)
@@ -79,6 +93,74 @@ namespace Olca.Presentation.Battle
             customScreenBackdrop.raycastTarget = false;
         }
 
+        // フィルの子として生成し、既存のゲージ配置や入力対象を変えない。
+        private void EnsureGaugeVisual()
+        {
+            if (gaugeSlider != null || customGaugeContainer == null) return;
+            gaugeSlider = customGaugeContainer.GetComponentInChildren<Slider>(true);
+            if (gaugeSlider == null || gaugeSlider.fillRect == null) return;
+            gaugeFill = gaugeSlider.fillRect.GetComponent<Image>();
+            if (gaugeFill == null) return;
+            normalGaugeColor = gaugeFill.color;
+            normalGaugeScale = gaugeSlider.transform.localScale;
+            var highlight = new GameObject("FullGaugeHighlight", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            highlight.transform.SetParent(gaugeSlider.fillRect, false);
+            gaugeHighlight = highlight.GetComponent<Image>();
+            gaugeHighlight.color = new Color(1f, 1f, 1f, 0.65f);
+            gaugeHighlight.raycastTarget = false;
+            gaugeHighlight.gameObject.SetActive(false);
+        }
+
+        private void Update()
+        {
+            UpdateGaugeVisual(Time.unscaledDeltaTime);
+        }
+
+        private void UpdateGaugeVisual(float deltaTime)
+        {
+            if (gaugeFill == null) return;
+            bool full = isActiveAndEnabled && battleSystem != null
+                && !battleSystem.IsGameOver && battleSystem.CustomGauge.IsFull && !gaugeResetting;
+            if (!full)
+            {
+                ResetGaugeVisual();
+                return;
+            }
+
+            gaugePulseTime = Mathf.Repeat(gaugePulseTime + deltaTime, 0.5f);
+            float phase = gaugePulseTime / 0.5f;
+            float pulse = 0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f);
+            gaugeFill.color = new Color32(0xF3, 0x9C, 0x12, 0xFF);
+            gaugeSlider.transform.localScale = normalGaugeScale * (1f + 0.05f * pulse);
+            gaugeHighlight.gameObject.SetActive(true);
+            var rect = gaugeHighlight.rectTransform;
+            float y = phase * 0.84f;
+            rect.anchorMin = new Vector2(0f, y);
+            rect.anchorMax = new Vector2(1f, y + 0.16f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        private void ResetGaugeVisual()
+        {
+            gaugePulseTime = 0f;
+            if (gaugeFill != null) gaugeFill.color = normalGaugeColor;
+            if (gaugeSlider != null) gaugeSlider.transform.localScale = normalGaugeScale;
+            if (gaugeHighlight != null) gaugeHighlight.gameObject.SetActive(false);
+        }
+
+        private void OnBattleEnded(BattleResult result) => ResetGaugeVisual();
+
+        private void OnDisable() => ResetGaugeVisual();
+
+        private void DetachBattleEvents()
+        {
+            if (battleSystem == null) return;
+            battleSystem.CustomGauge.OnGaugeChanged -= OnGaugeChanged;
+            battleSystem.OnPlayerAttack -= OnPlayerAttack;
+            battleSystem.OnBattleEnd -= OnBattleEnded;
+        }
+
         // ========== 更新 ==========
         public void Refresh()
         {
@@ -96,6 +178,7 @@ namespace Olca.Presentation.Battle
                 if (slider != null)
                     slider.value = battleSystem.CustomGauge.NormalizedGauge;
             }
+            UpdateGaugeVisual(0f);
             // フィールド・敵の更新は GameFieldView.RefreshBattleField() が担当
         }
 
@@ -135,7 +218,16 @@ namespace Olca.Presentation.Battle
             animationCts = new CancellationTokenSource();
 
             // アニメーション実行（完了まで待つ）
-            await AnimateCustomScreenCloseAsync(animationCts.Token);
+            gaugeResetting = true;
+            ResetGaugeVisual();
+            try
+            {
+                await AnimateCustomScreenCloseAsync(animationCts.Token);
+            }
+            finally
+            {
+                gaugeResetting = false;
+            }
         }
 
         // ========== IBattleView 明示的実装 ==========
@@ -293,6 +385,7 @@ namespace Olca.Presentation.Battle
         // ========== イベントハンドラー ==========
         private void OnGaugeChanged(float newValue)
         {
+            UpdateGaugeVisual(0f);
             if (!isCustomScreenOpen && customGaugeContainer != null)
             {
                 var slider = customGaugeContainer.GetComponentInChildren<Slider>();
@@ -315,11 +408,8 @@ namespace Olca.Presentation.Battle
             animationCts?.Cancel();
             animationCts?.Dispose();
 
-            if (battleSystem != null)
-            {
-                battleSystem.CustomGauge.OnGaugeChanged -= OnGaugeChanged;
-                battleSystem.OnPlayerAttack -= OnPlayerAttack;
-            }
+            DetachBattleEvents();
+            ResetGaugeVisual();
         }
     }
 }
