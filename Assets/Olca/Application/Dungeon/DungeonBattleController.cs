@@ -189,7 +189,8 @@ namespace Olca.Application.Dungeon
                             dungeonLength: dungeonCellCount,
                             isDashing: manager.Dungeon.IsDashing,
                             isDashCooldown: dashCooldownRemaining > 0f,
-                            deckCount: manager.Dungeon.GetCurrentDeck().TotalCount
+                            deckCount: manager.Dungeon.GetCurrentDeck().TotalCount,
+                            obtainedCardCount: manager.Dungeon.GetObtainedCards().Count
                         );
                         dungeonHudView.Refresh(data);
                     }

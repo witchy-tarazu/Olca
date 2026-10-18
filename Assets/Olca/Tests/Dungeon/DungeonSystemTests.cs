@@ -326,6 +326,44 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
+        public void GetObtainedCards_初期デッキは獲得履歴に含めない()
+        {
+            var dungeon = CreateDungeonSystem();
+
+            Assert.AreEqual(2, dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(0, dungeon.GetObtainedCards().Count);
+        }
+
+        [Test]
+        public void GetObtainedCards_報酬取得で増加しスキップでは変化しない()
+        {
+            var dungeon = CreateDungeonSystem();
+            var reward = CreateTestDeck().GetAllCards()[0];
+
+            dungeon.OnCardSelectionCompleted(null);
+            Assert.AreEqual(0, dungeon.GetObtainedCards().Count);
+            dungeon.OnCardSelectionCompleted(reward);
+            dungeon.OnCardSelectionCompleted(reward);
+            dungeon.OnCardSelectionCompleted(null);
+
+            Assert.AreEqual(2, dungeon.GetObtainedCards().Count, "同種カードも取得枚数として数える");
+            Assert.AreEqual(4, dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        [Test]
+        public void GetObtainedCards_新規ダンジョンには獲得履歴を持ち越さない()
+        {
+            var previous = CreateDungeonSystem();
+            previous.OnCardSelectionCompleted(CreateTestDeck().GetAllCards()[0]);
+
+            var next = CreateDungeonSystem();
+
+            Assert.AreEqual(1, previous.GetObtainedCards().Count);
+            Assert.AreEqual(0, next.GetObtainedCards().Count);
+            Assert.AreEqual(2, next.GetCurrentDeck().TotalCount);
+        }
+
+        [Test]
         public void GetObtainedCards_入手したカード一覧を取得できる()
         {
             // Arrange

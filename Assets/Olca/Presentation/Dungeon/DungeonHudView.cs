@@ -5,7 +5,7 @@ namespace Olca.Presentation.Dungeon
 {
     /// <summary>
     /// ダンジョン探索中のHUD表示
-    /// プレイヤーHP・進行度・ダッシュ状態・デッキ枚数を表示する
+    /// プレイヤーHP・進行度・ダッシュ状態・デッキ枚数・獲得履歴枚数を表示する
     /// </summary>
     public class DungeonHudView : MonoBehaviour
     {
@@ -47,7 +47,7 @@ namespace Olca.Presentation.Dungeon
             }
 
             if (deckCountText != null)
-                deckCountText.text = $"デッキ: {data.DeckCount}枚";
+                deckCountText.text = $"デッキ: {data.DeckCount}枚\n獲得: {data.ObtainedCardCount}枚";
         }
     }
 
@@ -63,12 +63,13 @@ namespace Olca.Presentation.Dungeon
         public readonly bool IsDashing;
         public readonly bool IsDashCooldown;
         public readonly int DeckCount;
+        public readonly int ObtainedCardCount;
 
         public DungeonHudData(
             int currentHp, int maxHp,
             float playerPosition, float dungeonLength,
             bool isDashing, bool isDashCooldown,
-            int deckCount)
+            int deckCount, int obtainedCardCount)
         {
             CurrentHp = currentHp;
             MaxHp = maxHp;
@@ -77,6 +78,7 @@ namespace Olca.Presentation.Dungeon
             IsDashing = isDashing;
             IsDashCooldown = isDashCooldown;
             DeckCount = deckCount;
+            ObtainedCardCount = obtainedCardCount;
         }
     }
 }
