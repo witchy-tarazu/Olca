@@ -113,7 +113,7 @@ namespace Olca.Presentation.Battle
 
         private void Update()
         {
-            UpdateGaugeVisual(Time.unscaledDeltaTime);
+            if (!Olca.Unity.GameplayPause.IsPaused) UpdateGaugeVisual(Time.unscaledDeltaTime);
         }
 
         private void UpdateGaugeVisual(float deltaTime)
@@ -266,14 +266,14 @@ namespace Olca.Presentation.Battle
 
             while (elapsed < phase1Duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / phase1Duration;
                 float easedT = EaseOutQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_HIDDEN_X, CUSTOM_SCREEN_VISIBLE_X + overshootAmount, easedT);
                 customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
 
-                await UniTask.Yield(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // Phase 2: オーバーラン → 定位置 (0.15秒、EaseInQuad)
@@ -282,14 +282,14 @@ namespace Olca.Presentation.Battle
 
             while (elapsed < phase2Duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / phase2Duration;
                 float easedT = EaseInQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X + overshootAmount, CUSTOM_SCREEN_VISIBLE_X, easedT);
                 customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
 
-                await UniTask.Yield(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終位置を保証
@@ -310,14 +310,14 @@ namespace Olca.Presentation.Battle
 
             while (elapsed < phase1Duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / phase1Duration;
                 float easedT = EaseOutQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X, CUSTOM_SCREEN_VISIBLE_X + overshootAmount, easedT);
                 customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
 
-                await UniTask.Yield(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // Phase 2: オーバーラン → 画面外 (0.25秒、EaseInQuad)
@@ -326,14 +326,14 @@ namespace Olca.Presentation.Battle
 
             while (elapsed < phase2Duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / phase2Duration;
                 float easedT = EaseInQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X + overshootAmount, CUSTOM_SCREEN_HIDDEN_X, easedT);
                 customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
 
-                await UniTask.Yield(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終位置を保証
@@ -362,13 +362,13 @@ namespace Olca.Presentation.Battle
 
             while (elapsed < resetDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / resetDuration;
                 float easedT = EaseInQuad(t);
 
                 slider.value = Mathf.Lerp(startValue, 0f, easedT);
 
-                await UniTask.Yield(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終値を保証

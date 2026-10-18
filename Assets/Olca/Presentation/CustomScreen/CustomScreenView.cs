@@ -174,6 +174,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnUndoClicked()
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             if (customScreen == null || !customScreen.CanUndoCustomization || undoInProgress || lastUndoFrame == Time.frameCount) return;
             undoInProgress = true;
             lastUndoFrame = Time.frameCount;
@@ -195,6 +196,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void HandleInput()
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             // カスタマイズモード中
             if (customizeModeView != null && customizeModeView.IsActive)
             {
@@ -350,6 +352,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         public void OnCardPointerEntered(HandCardView view)
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
             int index = handCardViews.IndexOf(view);
             if (index >= 0) cursor.MoveToCard(index);
@@ -357,6 +360,7 @@ namespace Olca.Presentation.CustomScreen
 
         public void OnCardPointerExited(HandCardView view)
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             if (cursor != null && handCardViews.IndexOf(view) == cursor.CurrentIndex)
                 cursor.MoveToConfirmButton();
         }
@@ -471,11 +475,11 @@ namespace Olca.Presentation.CustomScreen
                 AnimateCardShootAsync(cardView, i, ct).Forget();
 
                 // 次のカードまで少し待つ
-                await UniTask.Delay((int)(cardShootInterval * 1000f), cancellationToken: ct);
+                await Olca.Unity.GameplayPause.Delay((int)(cardShootInterval * 1000f), cancellationToken: ct);
             }
 
             // すべてのカードが配置されるまで待つ
-            await UniTask.Delay((int)(cardShootDuration * 1000f), cancellationToken: ct);
+            await Olca.Unity.GameplayPause.Delay((int)(cardShootDuration * 1000f), cancellationToken: ct);
 
             // UI更新
             UpdateConfirmButton();
@@ -525,7 +529,7 @@ namespace Olca.Presentation.CustomScreen
 
             while (elapsed < cardShootDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / cardShootDuration;
 
                 // 経路上の位置を計算（Catmull-Rom補間）
@@ -538,7 +542,7 @@ namespace Olca.Presentation.CustomScreen
                 rectTransform.anchoredPosition = currentPos;
                 rectTransform.rotation = Quaternion.Euler(0f, 0f, currentRotation);
 
-                await UniTask.Yield(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終位置と回転を保証
@@ -728,6 +732,7 @@ namespace Olca.Presentation.CustomScreen
 
         public void OnCardClicked(Card card)
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             // カスタマイズモード中はカスタマイズ選択へ転送
             if (customizeModeView != null && customizeModeView.IsActive)
             {
@@ -846,6 +851,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void OnCustomizeExecuteRequested()
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             var result = customScreen.ExecuteCustomization(customizeSelectedCards);
             if (!result.CanExecute)
             {
@@ -1126,6 +1132,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnConfirmClicked()
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             // 選択確定
             customScreen.Confirm();
         }

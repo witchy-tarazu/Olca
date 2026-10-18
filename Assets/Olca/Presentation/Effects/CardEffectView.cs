@@ -149,10 +149,10 @@ namespace Olca.Presentation.Effects
             {
                 // フラッシュ: 白色に変更 → 元の色に戻る
                 targetImage.color = flashColor;
-                await UniTask.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: effectCts.Token);
+                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: effectCts.Token);
 
                 targetImage.color = originalColor;
-                await UniTask.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: effectCts.Token);
+                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: effectCts.Token);
             }
             catch (System.OperationCanceledException)
             {
@@ -174,11 +174,11 @@ namespace Olca.Presentation.Effects
             {
                 if (ct.IsCancellationRequested) break;
 
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / duration;
                 targetImage.color = Color.Lerp(startColor, targetColor, t);
 
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             targetImage.color = targetColor;
@@ -198,11 +198,11 @@ namespace Olca.Presentation.Effects
             {
                 if (ct.IsCancellationRequested) break;
 
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / duration;
                 rectTransform.localScale = Vector3.Lerp(startScale, targetScale, t);
 
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             rectTransform.localScale = targetScale;

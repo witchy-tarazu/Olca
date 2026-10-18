@@ -263,7 +263,7 @@ namespace Olca.Presentation.Field
             // 移動差分は1フレームに一度、Controllerの位置反映後に判定する。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
-            UpdatePlayerHitEffect(Time.deltaTime);
+            UpdatePlayerHitEffect(Olca.Unity.GameplayPause.DeltaTime);
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -430,7 +430,7 @@ namespace Olca.Presentation.Field
             if (!cameraFollowEnabled && battleCameraTargetX.HasValue && fieldCamera != null)
             {
                 Vector3 camPos = fieldCamera.transform.position;
-                camPos.x = Mathf.Lerp(camPos.x, battleCameraTargetX.Value, Time.deltaTime * cameraFollowSpeed);
+                camPos.x = Mathf.Lerp(camPos.x, battleCameraTargetX.Value, Olca.Unity.GameplayPause.DeltaTime * cameraFollowSpeed);
                 fieldCamera.transform.position = camPos;
             }
 
@@ -521,7 +521,7 @@ namespace Olca.Presentation.Field
             bool canMove = dungeonSystem != null && playerTransform != null
                 && !dungeonSystem.IsInBattle && !dungeonSystem.IsDungeonCleared
                 && playerPositionUpdateEnabled && cameraFollowEnabled
-                && dungeonSystem.PlayerHeight <= 0.001f && Time.deltaTime > 0f;
+                && dungeonSystem.PlayerHeight <= 0.001f && Olca.Unity.GameplayPause.DeltaTime > 0f;
             if (!canMove)
             {
                 previousAnimationPosition = null;
@@ -533,7 +533,7 @@ namespace Olca.Presentation.Field
             {
                 float delta = position - previousAnimationPosition.Value;
                 // 論理マス単位で通常10・Dash20/秒を超える変位はワープとして除外する。
-                isMoving = delta > 0.0001f && delta <= 25f * Time.deltaTime;
+                isMoving = delta > 0.0001f && delta <= 25f * Olca.Unity.GameplayPause.DeltaTime;
             }
             previousAnimationPosition = position;
         }
@@ -572,10 +572,10 @@ namespace Olca.Presentation.Field
             else
             {
                 // ダッシュ中: Lerpで追従（ダッシュ開始・終了の切り替えをなめらかに）
-                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Time.deltaTime * cameraFollowSpeedTransition);
+                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.GameplayPause.DeltaTime * cameraFollowSpeedTransition);
                 fieldCamera.transform.position = Vector3.Lerp(
                     fieldCamera.transform.position, targetPos,
-                    Time.deltaTime * currentFollowSpeed);
+                    Olca.Unity.GameplayPause.DeltaTime * currentFollowSpeed);
             }
 
             // 定期ログ（60フレームに1回）
@@ -638,10 +638,10 @@ namespace Olca.Presentation.Field
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 group.alpha = Mathf.Lerp(from, to, t);
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             group.alpha = to;
         }

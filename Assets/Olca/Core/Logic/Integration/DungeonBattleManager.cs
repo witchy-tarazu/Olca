@@ -20,6 +20,16 @@ namespace Olca.Core.Logic.Integration
 
         private BattleSystem currentBattle;
         private GamePhase currentPhase;
+        public bool IsUserPaused { get; private set; }
+
+        /// <summary>ユーザー操作の停止だけを変更し、カスタム画面や遷移の停止は解除しない。</summary>
+        public void SetUserPaused(bool paused)
+        {
+            if (IsUserPaused == paused) return;
+            IsUserPaused = paused;
+            if (paused) currentBattle?.Pause(BattlePauseReason.User);
+            else currentBattle?.Resume(BattlePauseReason.User);
+        }
 
         /// <summary>現在のゲームフェーズ</summary>
         public GamePhase CurrentPhase => currentPhase;
@@ -78,6 +88,7 @@ namespace Olca.Core.Logic.Integration
         /// <param name="input">入力プロバイダー（オプショナル）</param>
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
+            if (IsUserPaused) return;
             switch (currentPhase)
             {
                 case GamePhase.Dungeon:
@@ -110,6 +121,7 @@ namespace Olca.Core.Logic.Integration
             // DungeonSystem が生成したバトルシステムを使用する
             // （DungeonBattleManager が独自に生成すると二重バトルになる）
             currentBattle = dungeonSystem.CurrentBattle;
+            if (IsUserPaused) currentBattle?.Pause(BattlePauseReason.User);
 
             if (currentBattle == null)
             {
@@ -175,6 +187,7 @@ namespace Olca.Core.Logic.Integration
         /// <param name="selectedCard">選択したカード（null でスキップ）</param>
         public void SelectCardReward(Card selectedCard)
         {
+            if (IsUserPaused) return;
             if (currentPhase != GamePhase.CardReward)
             {
                 logger?.LogWarning("[DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効");
@@ -190,6 +203,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void ResumeAfterBattle()
         {
+            if (IsUserPaused) return;
             dungeonSystem.ResumePlayerMovement();
         }
 
@@ -218,6 +232,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void Jump()
         {
+            if (IsUserPaused) return;
             if (currentPhase == GamePhase.Dungeon)
             {
                 dungeonSystem.Jump();
@@ -229,6 +244,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void StartDash()
         {
+            if (IsUserPaused) return;
             if (currentPhase == GamePhase.Dungeon)
             {
                 dungeonSystem.StartDash();
@@ -240,6 +256,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void StopDash()
         {
+            if (IsUserPaused) return;
             if (currentPhase == GamePhase.Dungeon)
             {
                 dungeonSystem.StopDash();

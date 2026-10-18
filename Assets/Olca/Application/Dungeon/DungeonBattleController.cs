@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Logic.Integration;
 using Olca.Core.Logic.Battle;
@@ -66,6 +67,51 @@ namespace Olca.Application.Dungeon
         private float dashCooldownRemaining = 0f; // クールタイム残り時間
 
         private bool battleFieldReady;
+        private GameObject pauseCanvas;
+        private GameObject pauseOverlay;
+        private float timeScaleBeforePause;
+
+        public bool IsUserPaused => manager != null && manager.IsUserPaused;
+        public void SetUserPaused(bool paused)
+        {
+            if (manager == null || manager.IsUserPaused == paused) return;
+            manager.SetUserPaused(paused);
+            GameplayPause.SetPaused(paused);
+            if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
+            else Time.timeScale = timeScaleBeforePause;
+            pauseOverlay?.SetActive(paused);
+        }
+
+        private void CreatePauseControls()
+        {
+            pauseCanvas = new GameObject("GameplayPauseCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = pauseCanvas.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 32000;
+            var scaler = pauseCanvas.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = 0.5f;
+            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (customScreenView != null)
+            {
+                var existing = customScreenView.GetComponentInChildren<Text>(true);
+                if (existing != null && existing.font != null) font = existing.font;
+            }
+            Button MakeButton(string name, string label, Transform parent, Vector2 anchor, Vector2 position)
+            {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); obj.transform.SetParent(parent, false);
+                var rect = (RectTransform)obj.transform; rect.anchorMin = rect.anchorMax = anchor; rect.sizeDelta = new Vector2(200, 70); rect.anchoredPosition = position;
+                obj.GetComponent<Image>().color = new Color(0.12f, 0.18f, 0.32f, 1f);
+                var button = obj.GetComponent<Button>(); button.navigation = new Navigation { mode = Navigation.Mode.None };
+                var textObj = new GameObject("Label", typeof(RectTransform), typeof(Text)); textObj.transform.SetParent(obj.transform, false);
+                var text = textObj.GetComponent<Text>(); text.font = font; text.text = label; text.fontSize = 30; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
+                var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
+                return button;
+            }
+            MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-120, -60)).onClick.AddListener(() => SetUserPaused(true));
+            pauseOverlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image)); pauseOverlay.transform.SetParent(pauseCanvas.transform, false);
+            var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
+            pauseOverlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
+            MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
+            pauseOverlay.SetActive(false);
+        }
         private CancellationTokenSource transitionCts;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
@@ -110,16 +156,19 @@ namespace Olca.Application.Dungeon
             if (battleView != null && customScreenView != null)
                 battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger);
 
+            CreatePauseControls();
             logger.LogInfo("[DungeonBattleController] 初期化完了");
         }
 
         private void Update()
         {
             if (manager == null) return;
+            GameplayPause.UpdateInputBarrier();
+            if (IsUserPaused) return;
             inputProvider.Update();
-            HandleInput();
+            if (!GameplayPause.InputBlocked) HandleInput();
             int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
-            manager.Tick(deltaTimeMs, inputProvider);
+            manager.Tick(deltaTimeMs, GameplayPause.InputBlocked ? null : inputProvider);
             UpdateViews();
         }
 
@@ -253,6 +302,7 @@ namespace Olca.Application.Dungeon
                 }
 
                 // 初撃などで戦闘終了した古い開始遷移は、UIやセッションを再開しない。
+                await GameplayPause.WaitAsync(ct);
                 ct.ThrowIfCancellationRequested();
                 if (battle.IsGameOver || !ReferenceEquals(manager.CurrentBattle, battle)) return;
 
@@ -273,6 +323,7 @@ namespace Olca.Application.Dungeon
 
                 await hudHideTask;
 
+                await GameplayPause.WaitAsync(ct);
                 ct.ThrowIfCancellationRequested();
                 if (battle.IsGameOver || !ReferenceEquals(manager.CurrentBattle, battle)) return;
 
@@ -322,6 +373,7 @@ namespace Olca.Application.Dungeon
             {
                 await TransitionToDungeonAsync(ct);
 
+                await GameplayPause.WaitAsync(ct);
                 // SelectCardReward を呼ぶと同期的に GamePhase.Dungeon に切り替わり、
                 // 次フレームの UpdatePlayerPosition でプレイヤーがダンジョン座標にワープして
                 // カメラちらつきが起きるため、先に位置更新を無効化しておく
@@ -333,6 +385,7 @@ namespace Olca.Application.Dungeon
                     {
                         int deckCount = manager.Dungeon.GetCurrentDeck().TotalCount;
                         Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct);
+                        await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         manager.SelectCardReward(selectedCard);
                     }
@@ -340,6 +393,7 @@ namespace Olca.Application.Dungeon
                     {
                         // CardSelectionView が未アサインの場合はスキップしてダンジョン復帰
                         logger.LogWarning("[Controller] CardSelectionView が未設定のためカード報酬をスキップします");
+                        await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         manager.SelectCardReward(null);
                     }
@@ -360,11 +414,13 @@ namespace Olca.Application.Dungeon
                     gameFieldView.SetPlayerPositionUpdateEnabled(true);
                 }
 
+                await GameplayPause.WaitAsync(ct);
                 // ジャンプ完了後にカメラ追従を再開（バトル中にカメラはすでに列1+オフセット位置にあるため、スナップ不要）
                 gameFieldView?.SetCameraFollowEnabled(true);
 
                 // インターバル後に移動を再開（遷移アニメーション完了を保証）
-                await UniTask.Delay(returnToDungeonDelayMs, cancellationToken: ct);
+                await GameplayPause.Delay(returnToDungeonDelayMs, cancellationToken: ct);
+                await GameplayPause.WaitAsync(ct);
                 manager.ResumeAfterBattle();
             }
             catch (System.OperationCanceledException) { }
@@ -420,6 +476,8 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            if (IsUserPaused) SetUserPaused(false);
+            if (pauseCanvas != null) Destroy(pauseCanvas);
             transitionCts?.Cancel();
             transitionCts?.Dispose();
             battleSession?.Detach();

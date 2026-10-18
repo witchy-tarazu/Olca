@@ -115,7 +115,7 @@ namespace Olca.Presentation.Effects
             {
                 if (ct.IsCancellationRequested) break;
 
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / fadeDuration;
 
                 // 上昇（線形）
@@ -125,7 +125,7 @@ namespace Olca.Presentation.Effects
                 // フェードアウト（線形）
                 canvasGroup.alpha = 1f - t;
 
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終状態

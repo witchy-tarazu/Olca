@@ -73,4 +73,42 @@ namespace Olca.Unity
             lastHorizontal = Input.GetAxisRaw("Horizontal");
         }
     }
+    /// <summary>表示・非同期演出と入力のポーズ境界。Coreの停止理由とは独立して扱う。</summary>
+    public static class GameplayPause
+    {
+        public static bool IsPaused { get; private set; }
+        private static bool awaitRelease;
+        private static int resumeFrame = -2;
+        public static bool InputBlocked => IsPaused || awaitRelease || Time.frameCount <= resumeFrame + 1;
+        public static float DeltaTime => IsPaused ? 0f : Time.deltaTime;
+        public static void SetPaused(bool paused)
+        {
+            if (IsPaused == paused) return;
+            IsPaused = paused;
+            if (!paused) { awaitRelease = true; resumeFrame = Time.frameCount; }
+        }
+        public static void UpdateInputBarrier()
+        {
+            if (!IsPaused && awaitRelease && !Input.anyKey)
+            { awaitRelease = false; resumeFrame = Time.frameCount; }
+        }
+        public static async Cysharp.Threading.Tasks.UniTask WaitAsync(System.Threading.CancellationToken ct = default)
+        {
+            while (IsPaused) await Cysharp.Threading.Tasks.UniTask.Yield(Cysharp.Threading.Tasks.PlayerLoopTiming.Update, ct);
+            ct.ThrowIfCancellationRequested();
+        }
+        public static async Cysharp.Threading.Tasks.UniTask NextFrame(System.Threading.CancellationToken ct = default)
+        {
+            await Cysharp.Threading.Tasks.UniTask.Yield(Cysharp.Threading.Tasks.PlayerLoopTiming.Update, ct);
+            await WaitAsync(ct);
+        }
+        public static async Cysharp.Threading.Tasks.UniTask Delay(int milliseconds, System.Threading.CancellationToken cancellationToken = default)
+        {
+            await WaitAsync(cancellationToken);
+            float remaining = milliseconds / 1000f;
+            while (remaining > 0f) { await NextFrame(cancellationToken); remaining -= DeltaTime; }
+        }
+        public static Cysharp.Threading.Tasks.UniTask Delay(System.TimeSpan duration, System.Threading.CancellationToken cancellationToken = default)
+            => Delay((int)duration.TotalMilliseconds, cancellationToken);
+    }
 }

@@ -26,7 +26,7 @@ namespace Olca.Core.Logic.Battle
         private readonly IRandomProvider randomProvider;
         private readonly IGameLogger logger;
 
-        private bool isPaused; // カスタム画面中はtrue
+        private BattlePauseReason pauseReasons;
         private BattleState state;
         private long actionTimeMs;
         private int resolutionDepth;
@@ -63,7 +63,7 @@ namespace Olca.Core.Logic.Battle
         public BattleState State => state;
 
         /// <summary>一時停止中か</summary>
-        public bool IsPaused => isPaused;
+        public bool IsPaused => pauseReasons != BattlePauseReason.None;
 
         /// <summary>バトル終了したか</summary>
         public bool IsGameOver => state == BattleState.Victory || state == BattleState.Defeat;
@@ -159,7 +159,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="input">入力プロバイダー（オプショナル）</param>
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
-            if (isPaused || IsGameOver) return;
+            if (IsPaused || IsGameOver) return;
 
             // 追加登録・通知は即時だが、Tick途中の召喚へ過去の経過時間を渡さない。
             // 状態異常とAIは同じ開始時参加者だけを更新する。
@@ -204,18 +204,18 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 一時停止（カスタム画面を開く時）
         /// </summary>
-        public void Pause()
+        public void Pause(BattlePauseReason reason = BattlePauseReason.CustomScreen)
         {
-            isPaused = true;
+            pauseReasons |= reason;
             logger?.LogInfo("バトル一時停止");
         }
 
         /// <summary>
         /// 再開（カスタム画面を閉じた時）
         /// </summary>
-        public void Resume()
+        public void Resume(BattlePauseReason reason = BattlePauseReason.CustomScreen)
         {
-            isPaused = false;
+            pauseReasons &= ~reason;
             logger?.LogInfo("バトル再開");
         }
 
@@ -237,7 +237,7 @@ namespace Olca.Core.Logic.Battle
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
 
-            if (IsGameOver) return;
+            if (IsGameOver || IsPaused) return;
             BeginResolution();
             try
             {
@@ -451,4 +451,6 @@ namespace Olca.Core.Logic.Battle
         /// <summary>敗北</summary>
         Defeat
     }
+    [System.Flags]
+    public enum BattlePauseReason { None = 0, CustomScreen = 1, User = 2 }
 }

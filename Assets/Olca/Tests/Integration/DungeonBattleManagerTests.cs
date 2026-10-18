@@ -34,6 +34,88 @@ namespace Olca.Tests.Integration
             return new Deck(cards);
         }
 
+        [Test]
+        public void ポーズ中の探索は時間と入力を受け付けず繰り返し再開しても状態を戻さない()
+        {
+            var manager = new DungeonBattleManager(DungeonConfig.CreateTestDungeon(30), new PlayerCharacter(100),
+                CreateTestDeck(), mockRandom, mockLogger);
+            manager.Tick(100); var position = manager.Dungeon.PlayerPosition;
+            manager.SetUserPaused(true); manager.SetUserPaused(true);
+            manager.Jump(); manager.StartDash(); manager.Tick(5000);
+            Assert.AreEqual(position, manager.Dungeon.PlayerPosition); Assert.AreEqual(0, manager.Dungeon.PlayerHeight);
+            Assert.IsFalse(manager.Dungeon.IsDashing);
+            manager.SetUserPaused(false); manager.SetUserPaused(false); manager.Tick(100);
+            Assert.Greater(manager.Dungeon.PlayerPosition, position);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 戦闘停止理由は解除順によらず最後の理由が消えるまで停止する(bool userFirst)
+        {
+            var config = DungeonConfig.CreateTestDungeon(10);
+            var manager = new DungeonBattleManager(config, new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            var battle = manager.CurrentBattle; Assert.IsNotNull(battle);
+            battle.Pause(); manager.SetUserPaused(true); manager.SetUserPaused(true);
+            if (userFirst) manager.SetUserPaused(false); else battle.Resume();
+            Assert.IsTrue(battle.IsPaused);
+            if (userFirst) battle.Resume(); else manager.SetUserPaused(false);
+            Assert.IsFalse(battle.IsPaused);
+        }
+
+        [Test]
+        public void ユーザーポーズは戦闘の毒遅延ゲージ基本攻撃を停止し残り時間から再開する()
+        {
+            var config = DungeonConfig.CreateTestDungeon(10);
+            var manager = new DungeonBattleManager(config, new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            var battle = manager.CurrentBattle; var enemy = battle.Enemies[0];
+            var poison = new StatusEffect(StatusEffectType.Poison, 5000, 2); enemy.ApplyStatus(poison);
+            int fired = 0; var delayed = new DelayedEffect(DelayedEffectType.Startup, 2000) { ExecuteAction = () => fired++ };
+            battle.DelayedEffects.RegisterDelayedEffect(delayed);
+            var gauge = battle.CustomGauge.CurrentGaugeMs; var hp = enemy.CurrentHp; var pos = battle.Player.GridPosition;
+            manager.SetUserPaused(true); manager.Tick(6000); battle.Tick(6000); battle.PlayerBasicAttack(enemy);
+            Assert.AreEqual(5000, poison.RemainingMs); Assert.AreEqual(2000, delayed.RemainingTimeMs);
+            Assert.AreEqual(0, fired); Assert.AreEqual(hp, enemy.CurrentHp); Assert.AreEqual(pos, battle.Player.GridPosition);
+            Assert.AreEqual(gauge, battle.CustomGauge.CurrentGaugeMs);
+            manager.SetUserPaused(false); manager.Tick(1000);
+            Assert.AreEqual(4000, poison.RemainingMs); Assert.AreEqual(1000, delayed.RemainingTimeMs); Assert.AreEqual(0, fired);
+            manager.Tick(1000); Assert.AreEqual(1, fired);
+        }
+
+        [Test]
+        public void カスタム画面をポーズ中に閉じてもユーザー停止を解除せず再開だけではカスタムを閉じない()
+        {
+            var manager = new DungeonBattleManager(DungeonConfig.CreateTestDungeon(10), new PlayerCharacter(100),
+                CreateTestDeck(), mockRandom, mockLogger);
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            var battle = manager.CurrentBattle; battle.SetFirstStrike(); battle.OpenCustomScreen(mockRandom);
+            manager.SetUserPaused(true); manager.SetUserPaused(false);
+            Assert.IsTrue(battle.CustomScreen.IsOpen); Assert.IsTrue(battle.IsPaused);
+            manager.SetUserPaused(true); battle.CustomScreen.Cancel();
+            Assert.IsTrue(battle.IsPaused); manager.SetUserPaused(false); Assert.IsFalse(battle.IsPaused);
+        }
+
+        [Test]
+        public void 報酬画面のポーズ再開は報酬を選択せず探索も再開しない()
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 12; i++) cells.Add(new MapCell(i));
+            cells[2] = new MapCell(2, new Enemy("slime", "敵", 15, ElementType.None, new Vector2Int(2, 0)));
+            cells[11] = new MapCell(11, new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(11, 0)));
+            var manager = new DungeonBattleManager(new DungeonConfig("pause", "停止", 12, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            manager.StartDash();
+            for (int i = 0; i < 20 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(50);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            var position = manager.Dungeon.PlayerPosition;
+            manager.SetUserPaused(true); manager.SelectCardReward(null); manager.ResumeAfterBattle(); manager.Tick(10000);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            manager.SetUserPaused(false); manager.Tick(10000);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase); Assert.AreEqual(position, manager.Dungeon.PlayerPosition);
+            Assert.AreEqual(0, manager.Dungeon.GetObtainedCards().Count);
+        }
+
         [TestCase(0, false)]
         [TestCase(0, true)]
         [TestCase(1, false)]

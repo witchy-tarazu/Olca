@@ -2,7 +2,8 @@
     "name": "Olca.Unity",
     "rootNamespace": "Olca.Unity",
     "references": [
-        "Olca.Core"
+        "Olca.Core",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

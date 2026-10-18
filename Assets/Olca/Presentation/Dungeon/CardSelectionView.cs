@@ -130,6 +130,7 @@ namespace Olca.Presentation.Dungeon
         /// </summary>
         internal void OnItemClicked(Card card)
         {
+            if (Olca.Unity.GameplayPause.InputBlocked) return;
             selectionTcs?.TrySetResult(card);
             if (containerRoot != null)
                 containerRoot.SetActive(false);
@@ -142,9 +143,9 @@ namespace Olca.Presentation.Dungeon
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 group.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / duration));
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             group.alpha = to;
         }

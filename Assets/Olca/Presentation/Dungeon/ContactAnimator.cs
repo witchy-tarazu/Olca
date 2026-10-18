@@ -64,15 +64,15 @@ namespace Olca.Presentation.Dungeon
             float bumpDuration = normalContactDuration * 0.25f;
             while (elapsed < bumpDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / bumpDuration);
                 playerTransform.position = Vector3.Lerp(startPos, bumpPos, EaseOutQuad(t));
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             playerTransform.position = bumpPos;
 
             // フェーズ2: 衝撃の一時停止
-            await UniTask.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
+            await Olca.Unity.GameplayPause.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
 
             // フェーズ3: ノックバック後退
             Vector3 knockbackPos = new Vector3(
@@ -83,12 +83,12 @@ namespace Olca.Presentation.Dungeon
             elapsed = 0f;
             while (elapsed < normalKnockbackDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / normalKnockbackDuration);
                 float x = Mathf.Lerp(bumpPos.x, knockbackPos.x, EaseOutQuad(t));
                 float y = Mathf.Lerp(bumpPos.y, normalContactGroundY * units, EaseInQuad(t));
                 playerTransform.position = new Vector3(x, y, bumpPos.z);
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             playerTransform.position = knockbackPos;
         }
@@ -112,15 +112,15 @@ namespace Olca.Presentation.Dungeon
             float elapsed = 0f;
             while (elapsed < dashRushDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRushDuration);
                 playerTransform.position = Vector3.Lerp(rushStart, rushEnd, EaseInQuad(t));
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             playerTransform.position = rushEnd;
 
             // フェーズ2: 衝撃の一時停止
-            await UniTask.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
+            await Olca.Unity.GameplayPause.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
 
             // フェーズ3: プレイヤー宙返り戻り + 敵吹き飛び（同時）
             // ノックバック開始と同時にダメージエフェクトを発動（フェーズ2までの自動発動を抑制済み）
@@ -135,7 +135,7 @@ namespace Olca.Presentation.Dungeon
             elapsed = 0f;
             while (elapsed < dashRollbackDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
 
                 // プレイヤー: 放物線移動（X: 線形、Y: 放物線）
@@ -147,7 +147,7 @@ namespace Olca.Presentation.Dungeon
                 if (enemyTransform != null)
                     enemyTransform.position = Vector3.Lerp(enemyStart, enemyEnd, EaseOutExpo(t));
 
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             playerTransform.position = rollEnd;
             if (enemyTransform != null)
@@ -171,7 +171,7 @@ namespace Olca.Presentation.Dungeon
             float elapsed = 0f;
             while (elapsed < dashRollbackDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
 
                 // X: 線形補間、Y: 放物線（ダッシュ宙返りと同じ）
@@ -179,7 +179,7 @@ namespace Olca.Presentation.Dungeon
                 float y = jumpStart.y + jumpHeight * units * Mathf.Sin(t * Mathf.PI);
                 playerTransform.position = new Vector3(x, y, jumpStart.z);
 
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             playerTransform.position = jumpEnd;
         }
