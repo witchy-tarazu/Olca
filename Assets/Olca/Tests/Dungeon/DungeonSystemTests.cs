@@ -9,6 +9,14 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class DungeonSystemTests
     {
+        // 獲得履歴・障害物の単体fixture。報酬選択の受付とは分離する。
+        private static void GrantFixtureReward(DungeonSystem dungeon, Card card)
+        {
+            var rewards = (CardRewardSystem)typeof(DungeonSystem).GetField("cardRewardSystem",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(dungeon);
+            rewards.SelectCard(card);
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 
@@ -314,10 +322,12 @@ namespace Olca.Tests.Dungeon
 
             int initialDeckSize = dungeon.GetCurrentDeck().TotalCount;
 
-            var selectedCard = new Card("fire", "ファイア", 2, CardRarity.Normal, CardCategory.Attack,
-                ElementType.Fire, CardSeries.None, 40, "炎属性攻撃");
+            Card selectedCard = null;
+            dungeon.OnCardRewardOffered += cards => selectedCard = cards[0];
+            dungeon.OnBattleCompleted(true);
+            Assert.IsNotNull(selectedCard);
 
-            // Act: カード選択完了
+            // Act: 実際に提示された候補を確定
             dungeon.OnCardSelectionCompleted(selectedCard);
 
             // Assert
@@ -342,8 +352,8 @@ namespace Olca.Tests.Dungeon
 
             dungeon.OnCardSelectionCompleted(null);
             Assert.AreEqual(0, dungeon.GetObtainedCards().Count);
-            dungeon.OnCardSelectionCompleted(reward);
-            dungeon.OnCardSelectionCompleted(reward);
+            GrantFixtureReward(dungeon, reward);
+            GrantFixtureReward(dungeon, reward);
             dungeon.OnCardSelectionCompleted(null);
 
             Assert.AreEqual(2, dungeon.GetObtainedCards().Count, "同種カードも取得枚数として数える");
@@ -354,7 +364,7 @@ namespace Olca.Tests.Dungeon
         public void GetObtainedCards_新規ダンジョンには獲得履歴を持ち越さない()
         {
             var previous = CreateDungeonSystem();
-            previous.OnCardSelectionCompleted(CreateTestDeck().GetAllCards()[0]);
+            GrantFixtureReward(previous, CreateTestDeck().GetAllCards()[0]);
 
             var next = CreateDungeonSystem();
 
@@ -373,7 +383,7 @@ namespace Olca.Tests.Dungeon
                 ElementType.Fire, CardSeries.None, 40, "炎属性攻撃");
 
             // Act
-            dungeon.OnCardSelectionCompleted(card1);
+            GrantFixtureReward(dungeon, card1);
 
             // Assert
             Assert.AreEqual(1, dungeon.GetObtainedCards().Count, "入手カード一覧に1枚追加");
@@ -628,7 +638,7 @@ namespace Olca.Tests.Dungeon
             var dungeon = CreateCardDiscardDungeon(initialDeck, 1);
             var reward = new Card("reward", "獲得カード", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.None, CardSeries.None, 10, "報酬");
-            dungeon.OnCardSelectionCompleted(reward);
+            GrantFixtureReward(dungeon, reward);
             dungeon.ResumePlayerMovement();
             mockRandom.SetFixedValue(2);
 

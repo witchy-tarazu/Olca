@@ -34,6 +34,7 @@ namespace Olca.Core.Logic.Dungeon
 
         // ========== 接敵情報保持 ==========
         private ContactInfo currentContactInfo;
+        private List<Card> pendingRewardChoices;
 
         // ========== 障害物通過済み管理 ==========
         private readonly HashSet<int> processedObstacleCells = new HashSet<int>();
@@ -176,6 +177,7 @@ namespace Olca.Core.Logic.Dungeon
         public void StartBattle(ContactInfo contactInfo)
         {
             IsInBattle = true;
+            pendingRewardChoices = null;
             currentContactInfo = contactInfo;
 
             // プレイヤー移動を停止
@@ -356,6 +358,8 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void OnBattleCompleted(bool victory)
         {
+            // 通知先が同期再入しても、同じ戦闘の抽選・終了を繰り返さない。
+            if (!IsInBattle) return;
             IsInBattle = false;
 
             // バトル終了イベント発火
@@ -394,7 +398,8 @@ namespace Olca.Core.Logic.Dungeon
                         List<Card> choices = cardRewardSystem.GenerateCardChoices(defeatedEnemy);
                         logger.LogInfo($"[Dungeon] カードドロップ！{choices.Count}枚から選択");
 
-                        // カード選択画面を表示（イベント発火）
+                        // 通知先での即時選択を許可し、渡したリストの変更で候補を増やさせない。
+                        pendingRewardChoices = new List<Card>(choices);
                         OnCardRewardOffered?.Invoke(choices);
                         // カード選択が完了するまで、ダンジョンには戻らない
                         return;
@@ -424,8 +429,11 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void OnCardSelectionCompleted(Card selectedCard)
         {
-            if (IsDungeonCleared) return;
+            if (IsDungeonCleared || pendingRewardChoices == null) return;
+            if (selectedCard != null && !pendingRewardChoices.Contains(selectedCard)) return;
 
+            // 獲得イベントからの再入より先に確定する。nullも一度だけのスキップ。
+            pendingRewardChoices = null;
             if (selectedCard != null)
             {
                 cardRewardSystem.SelectCard(selectedCard);

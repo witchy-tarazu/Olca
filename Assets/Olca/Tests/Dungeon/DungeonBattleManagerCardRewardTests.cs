@@ -14,6 +14,94 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class DungeonBattleManagerCardRewardTests
     {
+        private DungeonBattleManager OnceManager(CountingRewardRandom random)
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 30; i++) cells.Add(new MapCell(i));
+            foreach (int x in new[] { 3, 15, 29 }) cells[x] = new MapCell(x,
+                new Enemy(x == 29 ? "boss" : "slime", "敵", 50, ElementType.None, new Vector2Int(x, 0)));
+            return new DungeonBattleManager(new DungeonConfig("once", "報酬検証", 30, cells),
+                new PlayerCharacter(100), CreateTestDeck(), random, mockLogger);
+        }
+
+        [TestCase(0f)]
+        [TestCase(0.9f)]
+        public void 重複した終了通知では報酬抽選と結果通知を繰り返さない(float roll)
+        {
+            var random = new CountingRewardRandom { Roll = roll }; var m = OnceManager(random);
+            int ends = 0, offers = 0, returns = 0;
+            m.OnBattleEnded += () => ends++; m.OnCardRewardPresented += _ => offers++;
+            m.Dungeon.OnReturnToDungeon += () => returns++;
+            var battle = AdvanceToBattle(m); random.FloatCalls = 0;
+            battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            m.Dungeon.OnBattleCompleted(true); m.Dungeon.OnBattleCompleted(false);
+            Assert.AreEqual(1, ends); Assert.AreEqual(1, random.FloatCalls);
+            Assert.AreEqual(roll < 0.5f ? 1 : 0, offers);
+            if (roll < 0.5f) m.SelectCardReward(null);
+            Assert.AreEqual(1, returns); Assert.AreEqual(GamePhase.Dungeon, m.CurrentPhase);
+        }
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        public void 受取とスキップの確定後は直接再通知しても獲得と復帰を繰り返さない(bool skipFirst, bool skipSecond)
+        {
+            var m = OnceManager(new CountingRewardRandom()); IReadOnlyList<Card> choices = null;
+            m.OnCardRewardPresented += c => choices = c; int returns = 0;
+            m.Dungeon.OnReturnToDungeon += () => returns++;
+            AdvanceToBattle(m).Enemies[0].TakeDamage(1000, ElementType.None);
+            int before = m.Dungeon.GetCurrentDeck().TotalCount;
+            m.SelectCardReward(skipFirst ? null : choices[0]);
+            m.Dungeon.OnCardSelectionCompleted(skipSecond ? null : choices[0]);
+            Assert.AreEqual(skipFirst ? 0 : 1, m.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(before + (skipFirst ? 0 : 1), m.Dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(1, returns);
+        }
+
+        [Test]
+        public void 候補外カードは受け取らず正しい候補の選択待ちを維持する()
+        {
+            var m = OnceManager(new CountingRewardRandom()); IReadOnlyList<Card> choices = null;
+            m.OnCardRewardPresented += c => choices = c;
+            AdvanceToBattle(m).Enemies[0].TakeDamage(1000, ElementType.None);
+            m.SelectCardReward(choices[0].Clone());
+            Assert.AreEqual(GamePhase.CardReward, m.CurrentPhase); Assert.AreEqual(0, m.Dungeon.GetObtainedCards().Count);
+            m.SelectCardReward(choices[0]); Assert.AreEqual(1, m.Dungeon.GetObtainedCards().Count);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 終了通知または獲得イベントからの再入でも確定は一度だけ(bool duringAdd)
+        {
+            var random = new CountingRewardRandom(); var m = OnceManager(random); IReadOnlyList<Card> choices = null;
+            m.OnCardRewardPresented += c => choices = c; bool reentered = false; int ends = 0, returns = 0;
+            m.Dungeon.OnReturnToDungeon += () => returns++;
+            m.OnBattleEnded += () => { ends++; if (!duringAdd && !reentered) { reentered = true; m.Dungeon.OnBattleCompleted(true); } };
+            var rewards = (CardRewardSystem)typeof(DungeonSystem).GetField("cardRewardSystem", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(m.Dungeon);
+            rewards.OnCardAdded += card => { if (duringAdd && !reentered) { reentered = true; m.SelectCardReward(card); } };
+            var battle = AdvanceToBattle(m); random.FloatCalls = 0; battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            m.SelectCardReward(choices[0]);
+            Assert.IsTrue(reentered); Assert.AreEqual(1, ends); Assert.AreEqual(1, random.FloatCalls);
+            Assert.AreEqual(1, m.Dungeon.GetObtainedCards().Count); Assert.AreEqual(1, returns);
+        }
+
+        [Test]
+        public void 確定後の次戦は新規抽選でき最後のボス報酬後に一度だけクリアする()
+        {
+            var random = new CountingRewardRandom(); var m = OnceManager(random); IReadOnlyList<Card> choices = null;
+            int offers = 0, clears = 0, returns = 0; m.OnCardRewardPresented += c => { choices = c; offers++; };
+            m.OnDungeonClearCompleted += _ => clears++; m.Dungeon.OnReturnToDungeon += () => returns++;
+            for (int n = 0; n < 3; n++)
+            {
+                m.ResumeAfterBattle(); var battle = AdvanceToBattle(m); Assert.IsNotNull(battle);
+                battle.Enemies[0].TakeDamage(1000, ElementType.None); m.SelectCardReward(choices[0]);
+            }
+            Assert.AreEqual(2, random.FloatCalls, "雑魚2戦のみ確率抽選しボスは保証");
+            Assert.AreEqual(3, offers); Assert.AreEqual(3, m.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(2, returns); Assert.AreEqual(1, clears); Assert.AreEqual(GamePhase.DungeonCleared, m.CurrentPhase);
+            m.Dungeon.OnCardSelectionCompleted(null); m.Dungeon.OnBattleCompleted(true); Assert.AreEqual(1, clears);
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 
