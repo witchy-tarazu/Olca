@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 
@@ -15,13 +17,40 @@ namespace Olca.Core.Logic.CardEffects.Effects
     /// Modifierの追加効果（スプレッド、貫通、多段ヒット、パネル変化等）を自動的に適用する
     /// 攻撃カードとフィールド操作カードの両方で使用可能
     /// </summary>
-    public class ModifiableCardEffect : ICardEffect
+    public class ModifiableCardEffect : ICardEffect, IAsyncCardEffect
     {
         private readonly DamageTargetType baseTargetType;
 
         public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single)
         {
             this.baseTargetType = targetType;
+        }
+
+        /// <summary>
+        /// 使用動作だけを待機する。発射済みの投擲・派生効果は独立して進行する。
+        /// </summary>
+        public async UniTask ExecuteAsync(BattleContext context, CancellationToken ct)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            ct.ThrowIfCancellationRequested();
+            var card = context.UsedCard;
+            bool effectResolved = false;
+            try
+            {
+                if (!card.IsInstantEffect && card.StartupTime > 0)
+                    await context.Battle.WaitForActionAsync(card.StartupTime, ct);
+
+                ct.ThrowIfCancellationRequested();
+                ExecuteCardEffect(context);
+                effectResolved = true;
+
+                if (!card.IsInstantEffect && card.RecoveryTime > 0)
+                    await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
+            }
+            catch (OperationCanceledException) when (effectResolved)
+            {
+                // 発動後は使用済み。後隙の中断で適用済み効果を取り消したり再使用させない。
+            }
         }
 
         public void Execute(BattleContext context)
