@@ -69,6 +69,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 }
             }
 
+            bool attackResolved = false;
             try
             {
                 // 2. パネル保護を設定（一時移動中は移動元を保護）
@@ -103,6 +104,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     targetEnemy.TakeDamage(damage, attackElement);
                 }
 
+                attackResolved = true;
+
                 // 6. 攻撃モーション待機
                 if (attackMotionTime > 0)
                 {
@@ -110,6 +113,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         TimeSpan.FromSeconds(attackMotionTime),
                         cancellationToken: ct);
                 }
+            }
+            catch (OperationCanceledException) when (attackResolved)
+            {
+                // 攻撃判定後の待機中断は使用済み。適用済み効果の再実行を防ぐ。
+                // 判定前の中断だけを上位へ伝え、既存の使用失敗処理に任せる。
             }
             finally
             {

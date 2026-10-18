@@ -184,7 +184,9 @@ namespace Olca.Tests.CardEffects
         {
             var card = CreateMovingAttack(afterHit ? 0.01f : 0.05f, afterHit ? 1f : 0.05f);
             player.SetConcentrateBuff(1.5f);
-            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            var nextCard = new Card("next_attack", "次の攻撃", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 5, "威力5");
+            battle.CardUsage.EnqueueCards(new List<Card> { card, nextCard });
             using (var cts = new CancellationTokenSource())
             {
                 var pending = battle.CardUsage.TryUseCurrentCardAsync(cts.Token).AsTask();
@@ -201,16 +203,24 @@ namespace Olca.Tests.CardEffects
                 if (externalCancel) cts.Cancel();
                 else battle.CardUsage.InterruptCurrentCard();
 
-                Assert.IsFalse(await AwaitCardUse(pending), "キャンセルは使用システムへ伝わる");
+                Assert.AreEqual(afterHit, await AwaitCardUse(pending), "命中後は使用済み、命中前は中断失敗");
                 Assert.IsFalse(player.IsInTemporaryMove);
                 Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
                 Assert.AreEqual(afterHit ? 70 : 100, battle.Enemies[0].CurrentHp);
                 Assert.AreEqual(20, card.GetFinalPower());
                 Assert.AreEqual(10, card.Modifier.BonusDamage);
                 Assert.IsFalse(player.IsConcentrating);
-                Assert.AreEqual(1, battle.CardUsage.RemainingCount);
+                Assert.AreEqual(afterHit ? 1 : 2, battle.CardUsage.RemainingCount);
+                Assert.AreSame(afterHit ? nextCard : card, battle.CardUsage.CurrentCard,
+                    "命中済みカードを再使用可能にしない");
                 Assert.IsTrue(await AwaitCardUse(battle.CardUsage.TryUseCurrentCardAsync().AsTask()));
-                Assert.AreEqual(afterHit ? 50 : 80, battle.Enemies[0].CurrentHp);
+                Assert.AreEqual(afterHit ? 65 : 80, battle.Enemies[0].CurrentHp);
+                if (afterHit)
+                {
+                    Assert.IsTrue(battle.CardUsage.IsEmpty);
+                    Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());
+                    Assert.AreEqual(65, battle.Enemies[0].CurrentHp);
+                }
             }
         }
 
