@@ -191,6 +191,7 @@ namespace Olca.Presentation.Field
             ResetMovementAnimation();
             cameraFollowEnabled = true;
             currentFollowSpeed = cameraFollowSpeed;  // 初期値は通常速度
+            UpdateCameraFraming();
 
             // カメラを初期位置にスナップ（ダンジョン開始時のヌルっとした動きを防ぐ）
             if (fieldCamera != null)
@@ -214,8 +215,22 @@ namespace Olca.Presentation.Field
             UpdatePlayerSprite();
         }
 
+        private void UpdateCameraFraming()
+        {
+            if (fieldCamera == null || !fieldCamera.orthographic || fieldCamera.aspect <= 0f) return;
+            // 探索・バトル共通で横8マス。縦方向は実際の画面比率から求める。
+            float cellWidth = battleGridView != null ? battleGridView.CellSize : 1f;
+            fieldCamera.orthographicSize = 8f * cellWidth / (2f * fieldCamera.aspect);
+            // 地面を下寄りに置き、拡大後も頭部・敵名の表示領域を確保する。
+            float groundY = battleGridView != null ? battleGridView.GroundY : -0.25f;
+            var position = fieldCamera.transform.position;
+            position.y = groundY + fieldCamera.orthographicSize * 0.65f;
+            fieldCamera.transform.position = position;
+        }
+
         private void LateUpdate()
         {
+            UpdateCameraFraming();
             // 移動差分は1フレームに一度、Controllerの位置反映後に判定する。
             UpdateMovementAnimation();
             UpdatePlayerSprite();

@@ -4,6 +4,8 @@ using NUnit.Framework;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Presentation.CustomScreen;
+using Olca.Presentation.Field;
+using Olca.Presentation.Dungeon;
 using Olca.Tests.Mocks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -109,5 +111,70 @@ namespace Olca.Tests
 
         private static Card Create(string id, CardSeries series) =>
             new Card(id, id, 3, CardRarity.Normal, CardCategory.Attack, ElementType.None, series, 1, "テスト");
+
+        [TestCase(16f / 9f)]
+        [TestCase(4f / 3f)]
+        [TestCase(691f / 327f)]
+        [TestCase(9f / 16f)]
+        public void 共通カメラは画面比率にかかわらず横八マスでスケールを変えない(float aspect)
+        {
+            var go = new GameObject("EightCellCamera");
+            var viewObject = new GameObject("FieldView");
+            try
+            {
+                var camera = go.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.aspect = aspect;
+                camera.transform.localScale = new Vector3(1f, 1f, 1f);
+                var view = viewObject.AddComponent<GameFieldView>();
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(GameFieldView).GetField("fieldCamera", flags).SetValue(view, camera);
+                var refresh = typeof(GameFieldView).GetMethod("UpdateCameraFraming", flags);
+                refresh.Invoke(view, null);
+                Assert.AreEqual(8f, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
+                Assert.AreEqual(Vector3.one, camera.transform.localScale);
+                camera.aspect = 2f;
+                refresh.Invoke(view, null);
+                Assert.AreEqual(2f, camera.orthographicSize, 0.0001f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(viewObject);
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [TestCase(691, 327, 3)]
+        [TestCase(1280, 720, 3)]
+        [TestCase(640, 480, 1)]
+        public void 報酬カードは画面内へ等比配置される(int width, int height, int count)
+        {
+            var root = new GameObject("RewardLayout", typeof(RectTransform));
+            try
+            {
+                var parent = (RectTransform)root.transform;
+                parent.sizeDelta = new Vector2(width, height);
+                var view = root.AddComponent<CardSelectionView>();
+                var items = new CardSelectionItemView[count];
+                for (int i = 0; i < count; i++)
+                {
+                    var child = new GameObject("Card", typeof(RectTransform));
+                    child.transform.SetParent(root.transform, false);
+                    ((RectTransform)child.transform).sizeDelta = new Vector2(280, 380);
+                    items[i] = child.AddComponent<CardSelectionItemView>();
+                }
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CardSelectionView).GetField("cardItems", flags).SetValue(view, items);
+                typeof(CardSelectionView).GetMethod("UpdateChoiceLayout", flags).Invoke(view, null);
+                foreach (var item in items)
+                {
+                    var rect = (RectTransform)item.transform;
+                    Assert.AreEqual(rect.localScale.x, rect.localScale.y);
+                    Assert.LessOrEqual(Mathf.Abs(rect.anchoredPosition.x) + rect.rect.width * rect.localScale.x / 2f, width / 2f - 16f + 0.01f);
+                    Assert.LessOrEqual(rect.rect.height * rect.localScale.y, height - 64f + 0.01f);
+                }
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
     }
 }

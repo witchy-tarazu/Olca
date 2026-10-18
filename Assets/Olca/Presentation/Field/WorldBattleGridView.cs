@@ -82,6 +82,12 @@ namespace Olca.Presentation.Field
         /// <summary>グリッドインデックスから World X 座標を返す</summary>
         public float GridIndexToWorldX(int gridX) => originX + gridX * panelSize;
 
+        /// <summary>1マスの幅（Unity単位）</summary>
+        public float CellSize => panelSize;
+
+        /// <summary>地面の高さ（World Y）</summary>
+        public float GroundY => panelY;
+
         /// <summary>グリッド全体の幅（Unity単位）</summary>
         public float GridWidth => GRID_WIDTH * panelSize;
 

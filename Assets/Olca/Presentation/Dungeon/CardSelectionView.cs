@@ -62,6 +62,8 @@ namespace Olca.Presentation.Dungeon
             if (containerRoot != null)
                 containerRoot.SetActive(true);
 
+            UpdateChoiceLayout();
+
             // フェードイン
             if (canvasGroup != null)
             {
@@ -75,6 +77,42 @@ namespace Olca.Presentation.Dungeon
             ct.Register(() => selectionTcs.TrySetResult(null));
 
             return await selectionTcs.Task;
+        }
+
+        private void LateUpdate()
+        {
+            if (containerRoot != null && containerRoot.activeInHierarchy) UpdateChoiceLayout();
+        }
+
+        private void UpdateChoiceLayout()
+        {
+            if (cardItems == null) return;
+            var visible = new List<RectTransform>();
+            float width = 0f, height = 0f;
+            foreach (var item in cardItems)
+            {
+                if (item == null || !item.gameObject.activeSelf) continue;
+                var rect = item.transform as RectTransform;
+                if (rect == null) continue;
+                visible.Add(rect);
+                width = Mathf.Max(width, rect.rect.width);
+                height = Mathf.Max(height, rect.rect.height);
+            }
+            if (visible.Count == 0 || width <= 0f || height <= 0f) return;
+            var parent = visible[0].parent as RectTransform;
+            if (parent == null) return;
+            const float gap = 16f;
+            // 上下はHUD用の余白を残し、カードと文字を同じ比率で縮小する。
+            float availableWidth = Mathf.Max(1f, parent.rect.width - 32f - gap * (visible.Count - 1));
+            float availableHeight = Mathf.Max(1f, parent.rect.height - 64f);
+            float scale = Mathf.Min(1f, availableWidth / (width * visible.Count), availableHeight / height);
+            for (int i = 0; i < visible.Count; i++)
+            {
+                var rect = visible[i];
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.localScale = new Vector3(scale, scale, 1f);
+                rect.anchoredPosition = new Vector2((i - (visible.Count - 1) * 0.5f) * (width * scale + gap), 0f);
+            }
         }
 
         /// <summary>
