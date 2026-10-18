@@ -300,12 +300,12 @@ namespace Olca.Core.Logic.Battle
 
             var first = currentSelection[0];
 
-            // 超越の実行と候補表示で同じ検証を使用する。
-            if (CanExceed(first, candidate))
+            // 超越・調律は二枚操作。三枚目以降は融合レシピだけで判定する。
+            if (currentSelection.Count == 1 && CanExceed(first, candidate))
                 return true;
 
             // 調律: TuningカードとTuning以外のカードの組み合わせ
-            if (tuningSystem != null)
+            if (currentSelection.Count == 1 && tuningSystem != null)
             {
                 bool firstIsTuning = first.Category == CardCategory.Tuning;
                 bool candidateIsTuning = candidate.Category == CardCategory.Tuning;
@@ -333,6 +333,12 @@ namespace Olca.Core.Logic.Battle
                 if (card == null || !remaining.Remove(card)) return false;
             }
             return true;
+        }
+
+        /// <summary>融合レシピの完全一致を確認し、部分選択中の実行を防ぐ</summary>
+        public bool CanFuse(IReadOnlyList<Card> materials)
+        {
+            return fusionSystem != null && fusionSystem.Validate(materials).IsValid;
         }
 
         /// <summary>同名・同段階の素材で超越できるかを検証する</summary>

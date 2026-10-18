@@ -1,6 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.UI;
+using Olca.Presentation.CustomScreen;
+using Olca.Presentation.CustomScreen.CustomizeMode;
 using Olca.Application.Battle;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
@@ -28,6 +33,84 @@ namespace Olca.Tests
                 fusionSystem: new FusionSystem(recipes, factory));
             model.Open(new Card[0], new MockRandomProvider(0));
             return model;
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 全サービス構成_三枚目の超越調律候補を拒否し二枚融合の表示と実行を維持する(bool tuning)
+        {
+            var a = factory.CreateById(SimpleCardFactory.Sword);
+            var bomb = factory.CreateById(SimpleCardFactory.Bomb);
+            var third = tuning
+                ? new Card("tuning", "調律", 1, CardRarity.Normal, CardCategory.Tuning, ElementType.None, CardSeries.None, 1, "検証")
+                : factory.CreateById(SimpleCardFactory.Sword);
+            var model = Open(a, bomb, third);
+            Assert.IsFalse(model.IsCompatibleWithCurrentSelection(new[] { a, bomb }, third));
+            WithView(model, (view, mode, button, selected) =>
+            {
+                view.OnCardClicked(a);
+                Assert.IsFalse(button.interactable);
+                view.OnCardClicked(bomb);
+                Assert.IsTrue(button.interactable);
+                view.OnCardClicked(third);
+                CollectionAssert.AreEqual(new[] { a, bomb }, selected);
+                Assert.IsTrue(button.interactable, "元の有効な二枚融合は実行可能");
+                Assert.AreEqual("Fusion", typeof(CustomScreenView).GetMethod("DetectCustomizeOperation", Flags).Invoke(view, null).ToString());
+                typeof(CustomScreenView).GetMethod("OnCustomizeExecuteRequested", Flags).Invoke(view, null);
+                Assert.AreEqual(2, model.CurrentHand.Count);
+                Assert.IsTrue(model.CurrentHand.Contains(third));
+                Assert.IsTrue(model.CurrentHand.Any(c => c.Id == SimpleCardFactory.FireSword));
+            });
+        }
+
+        [Test]
+        public void 三枚融合レシピ_部分一致の候補を維持し完全一致でのみ実行できる()
+        {
+            // 実レシピ提供者の三枚レシピ対応を検証するためのテスト用データ。
+            var data = (List<(List<string> materials, string resultId)>)typeof(SimpleFusionRecipeProvider)
+                .GetField("recipes", Flags).GetValue(recipes);
+            data.Clear();
+            data.Add((new List<string> { SimpleCardFactory.Sword, SimpleCardFactory.Bomb, SimpleCardFactory.Heal }, SimpleCardFactory.FireSword));
+            var a = factory.CreateById(SimpleCardFactory.Sword);
+            var bomb = factory.CreateById(SimpleCardFactory.Bomb);
+            var heal = factory.CreateById(SimpleCardFactory.Heal);
+            var model = Open(a, bomb, heal);
+            Assert.IsTrue(model.IsCompatibleWithCurrentSelection(new[] { a, bomb }, heal));
+            WithView(model, (view, mode, button, selected) =>
+            {
+                view.OnCardClicked(a);
+                view.OnCardClicked(bomb);
+                Assert.AreEqual(2, selected.Count);
+                Assert.IsFalse(button.interactable, "部分一致の二枚では未完成");
+                view.OnCardClicked(heal);
+                Assert.AreEqual(3, selected.Count);
+                Assert.IsTrue(button.interactable);
+                typeof(CustomScreenView).GetMethod("OnCustomizeExecuteRequested", Flags).Invoke(view, null);
+                Assert.AreEqual(1, model.CurrentHand.Count);
+                Assert.AreEqual(SimpleCardFactory.FireSword, model.CurrentHand[0].Id);
+            });
+        }
+
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        private static void WithView(CustomScreenSystem model,
+            System.Action<CustomScreenView, CustomizeModeView, Button, List<Card>> check)
+        {
+            var root = new GameObject("CustomizeBoundaryTest", typeof(RectTransform));
+            var modeObject = new GameObject("Mode", typeof(RectTransform));
+            modeObject.transform.SetParent(root.transform);
+            try
+            {
+                var view = root.AddComponent<CustomScreenView>();
+                var mode = modeObject.AddComponent<CustomizeModeView>();
+                var button = modeObject.AddComponent<Button>();
+                typeof(CustomizeModeView).GetField("executeButton", Flags).SetValue(mode, button);
+                typeof(CustomScreenView).GetField("customScreen", Flags).SetValue(view, model);
+                typeof(CustomScreenView).GetField("customizeModeView", Flags).SetValue(view, mode);
+                mode.Enter();
+                var selected = (List<Card>)typeof(CustomScreenView).GetField("customizeSelectedCards", Flags).GetValue(view);
+                check(view, mode, button, selected);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
         [TestCase(1, false)]

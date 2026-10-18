@@ -743,8 +743,9 @@ namespace Olca.Presentation.CustomScreen
                     return CustomizeOperationType.Tuning;
             }
 
-            // 融合: 2枚以上（レシピはCore層で検証）
-            return CustomizeOperationType.Fusion;
+            // 部分一致は候補選択だけに使い、実行は完全一致のレシピに限定する。
+            return customScreen.CanFuse(customizeSelectedCards)
+                ? CustomizeOperationType.Fusion : CustomizeOperationType.None;
         }
 
         /// <summary>操作種別に応じたガイドテキストを返す</summary>
