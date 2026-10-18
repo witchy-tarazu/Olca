@@ -402,7 +402,8 @@ namespace Olca.Core.Logic.Battle
                 var source = a.Category == CardCategory.Tuning ? a : b;
                 var validation = tuningSystem.Validate(target, source);
                 if (!validation.IsValid) return CustomizationPreview.Invalid(validation.ErrorMessage, CustomizationOperation.Tuning);
-                if (target.TuningCount > 0)
+                // 固定コストだけの履歴・追加なら段階表は不要。既存の段階対象効果は再評価が必要。
+                if (target.TuningCount > 0 && (target.HasStageDependentTuning || source.Modifier.HasStageDependentValues))
                     return CustomizationPreview.Undefined(CustomizationOperation.Tuning, "総調律回数に対応する段階表が未定義です");
                 var m = source.Modifier;
                 if (m.BonusDamage == 0 && m.DamageMultiplier == 1f && m.CostAdjustment == 0 && !m.ZeroCost &&

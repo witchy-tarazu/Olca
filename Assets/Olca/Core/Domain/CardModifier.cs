@@ -26,6 +26,10 @@ namespace Olca.Core.Domain
         /// <summary>属性上書き（nullなら元の属性を使用）</summary>
         public ElementType? ElementOverride { get; set; }
 
+        /// <summary>コスト以外の付与値。再調律時に段階表の評価が必要になる。</summary>
+        public bool HasStageDependentValues => BonusDamage != 0 || DamageMultiplier != 1f ||
+            ElementOverride.HasValue || (AdditionalEffects != null && AdditionalEffects.Count > 0);
+
         public CardModifier()
         {
             BonusDamage = 0;

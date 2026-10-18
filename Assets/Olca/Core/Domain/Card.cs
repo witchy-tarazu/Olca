@@ -93,6 +93,9 @@ namespace Olca.Core.Domain
         /// <summary>再調律時に未定義の段階表を必要とすることを識別する。Clone/Undoにも保持する。</summary>
         public int TuningCount { get; private set; }
 
+        /// <summary>付与履歴の判定。合算値が相殺されても段階評価が必要な事実を保持する。</summary>
+        public bool HasStageDependentTuning { get; private set; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -163,7 +166,11 @@ namespace Olca.Core.Domain
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
                 ExceedLevel
-            ) { TuningCount = TuningCount + 1 };
+            )
+            {
+                TuningCount = TuningCount + 1,
+                HasStageDependentTuning = HasStageDependentTuning || tuningCard.Modifier.HasStageDependentValues
+            };
         }
 
         /// <summary>

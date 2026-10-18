@@ -14,6 +14,72 @@ namespace Olca.Tests.CardTests
     [TestFixture]
     public class CustomScreenSystemTests
     {
+        [TestCase(2, -8, false, 1)]
+        [TestCase(2, 3, false, 9)]
+        [TestCase(2, -2, false, 4)]
+        [TestCase(2, 100, true, 0)]
+        public void 固定コストのみの再調律は非破壊プレビューと確定が一致しUndoで回数も戻る(int first, int second, bool zero, int expected)
+        {
+            var target = ZeroCostCard("target", 4);
+            var a = ZeroCostCard("a", material: true); a.Modifier.CostAdjustment = first;
+            var b = ZeroCostCard("b", material: true); b.Modifier.CostAdjustment = second; b.Modifier.ZeroCost = zero;
+            var cs = UndoScreen(target, a, b);
+            Assert.IsTrue(cs.ExecuteCustomization(new[] { target, a }).CanExecute);
+            var once = cs.CurrentHand.Single(c => c.Id == "target"); var hand = cs.CurrentHand.ToArray();
+            var preview = cs.PreviewCustomization(new[] { once, b });
+            Assert.IsTrue(preview.CanExecute); Assert.AreEqual(expected, preview.ResultCard.GetFinalCost());
+            CollectionAssert.AreEqual(hand, cs.CurrentHand); Assert.AreEqual(1, cs.CustomizationUndoCount);
+            Assert.AreEqual(1, once.TuningCount); Assert.IsFalse(once.HasStageDependentTuning);
+            var confirmed = cs.ExecuteCustomization(new[] { b, once }); Assert.IsTrue(confirmed.CanExecute);
+            Assert.AreEqual(expected, confirmed.ResultCard.GetFinalCost()); Assert.AreEqual(2, confirmed.ResultCard.TuningCount);
+            Assert.IsFalse(confirmed.ResultCard.HasStageDependentTuning); Assert.IsTrue(cs.TryUndoCustomization());
+            var restored = cs.CurrentHand.Single(c => c.Id == "target"); Assert.AreEqual(1, restored.TuningCount);
+            Assert.AreEqual(4 + first, restored.GetFinalCost()); Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(0, cs.CurrentHand.Single(c => c.Id == "target").TuningCount);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 固定コストと段階対象を混ぜる再調律は過去と追加どちらに段階対象があっても未定義(bool stageFirst)
+        {
+            var target = ZeroCostCard("target", 4);
+            var cost = ZeroCostCard("cost", material: true); cost.Modifier.CostAdjustment = 2;
+            var stage = ZeroCostCard("stage", material: true); stage.Modifier.BonusDamage = 7;
+            var cs = UndoScreen(target, cost, stage);
+            var once = cs.ExecuteTuning(target, stageFirst ? stage : cost).ResultCard;
+            var second = stageFirst ? cost : stage;
+            var preview = cs.PreviewCustomization(new[] { once, second });
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined, preview.Status); Assert.IsNull(preview.ResultCard);
+            Assert.IsFalse(cs.ExecuteCustomization(new[] { once, second }).CanExecute);
+            Assert.AreEqual(1, cs.CustomizationUndoCount);
+        }
+
+        [Test]
+        public void 段階対象の合算値が相殺されても履歴を保持して再調律を許可しない()
+        {
+            var a = ZeroCostCard("a", material: true); a.Modifier.BonusDamage = 7;
+            var b = ZeroCostCard("b", material: true); b.Modifier.BonusDamage = -7;
+            var target = ZeroCostCard("target", 4).ApplyTuning(a).ApplyTuning(b).Clone();
+            Assert.AreEqual(0, target.Modifier.BonusDamage); Assert.IsTrue(target.HasStageDependentTuning);
+            var cost = ZeroCostCard("cost", material: true); cost.Modifier.CostAdjustment = 1;
+            var cs = UndoScreen(target, cost);
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined, cs.PreviewCustomization(new[] { target, cost }).Status);
+        }
+
+        [Test]
+        public void 元のカード固有効果は調律付与履歴と区別して固定コストの再調律を許可する()
+        {
+            var target = ZeroCostCard("target", 4);
+            target.Modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison, Power = 2, Duration = 4 });
+            var a = ZeroCostCard("a", material: true); a.Modifier.CostAdjustment = 1;
+            var b = ZeroCostCard("b", material: true); b.Modifier.CostAdjustment = 1;
+            var cs = UndoScreen(target, a, b); var once = cs.ExecuteTuning(target, a).ResultCard;
+            var preview = cs.PreviewCustomization(new[] { once, b });
+            Assert.IsTrue(preview.CanExecute); Assert.AreEqual(6, preview.ResultCard.GetFinalCost());
+            Assert.AreEqual(4, preview.ResultCard.Modifier.AdditionalEffects.Single().Duration);
+            Assert.IsFalse(preview.ResultCard.HasStageDependentTuning);
+        }
+
         private CustomScreenSystem PreviewScreen(out Deck deck, out Card[] cards, out MockCardFactory factory,
             out MockFusionRecipeProvider recipes)
         {
