@@ -38,7 +38,7 @@ namespace Olca.Tests.Integration
         [TestCase(true, false)]
         [TestCase(false, true)]
         [TestCase(true, true)]
-        public void 最奥ボス勝利_回避敵が残っても報酬完了後に一度だけクリア(bool selectReward, bool wrappedBoss)
+        public void 最奥ボス勝利_回避敵が残っても報酬完了後に一度だけクリア(bool selectReward, bool nearbyNormal)
         {
             var cells = new List<MapCell>();
             for (int i = 0; i < 12; i++) cells.Add(new MapCell(i));
@@ -46,7 +46,7 @@ namespace Olca.Tests.Integration
             var boss = new Enemy("boss", "最奥ボス", 200, ElementType.None, new Vector2Int(11, 0));
             cells[2] = new MapCell(2, avoided);
             cells[11] = new MapCell(11, boss);
-            if (wrappedBoss) cells[10] = new MapCell(10,
+            if (nearbyNormal) cells[10] = new MapCell(10,
                 new Enemy("primary", "主敵", 20, ElementType.None, new Vector2Int(10, 0)));
             var manager = new DungeonBattleManager(new DungeonConfig("boss", "ボスクリア", 12, cells),
                 new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
@@ -56,9 +56,19 @@ namespace Olca.Tests.Integration
             manager.Dungeon.OnReturnToDungeon += () => returns++;
             manager.OnCardRewardPresented += cards => { rewards++; choices = cards; };
             manager.Jump();
-            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            // 新仕様ではボス巻込みは禁止。手前の通常敵も回避し、ボス自身へ直接接敵する。
+            bool jumpedNearBoss = false;
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++)
+            {
+                if (nearbyNormal && !jumpedNearBoss && manager.Dungeon.PlayerPosition >= 8f)
+                {
+                    manager.Jump();
+                    jumpedNearBoss = true;
+                }
+                manager.Tick(100);
+            }
             Assert.AreEqual(GamePhase.Battle, manager.CurrentPhase);
-            Assert.AreEqual(wrappedBoss ? 2 : 1, manager.CurrentBattle.Enemies.Count);
+            Assert.AreEqual(nearbyNormal ? 2 : 1, manager.CurrentBattle.Enemies.Count);
             foreach (var enemy in new List<Enemy>(manager.CurrentBattle.Enemies)) enemy.TakeDamage(1000, ElementType.None);
             manager.Tick(100);
             Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
@@ -76,6 +86,44 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(1, clears);
             Assert.AreEqual(1, rewards);
             Assert.AreEqual(0, returns);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 通常接敵_近隣ボスを残し通常巻込み戦闘の後でボスへ直接接敵する(bool dash)
+        {
+            var normal = new Enemy("normal", "主敵", 50, ElementType.None, new Vector2Int(2, 0));
+            var boss = new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(3, 0));
+            var extra = new Enemy("extra", "通常巻込み", 50, ElementType.None, new Vector2Int(4, 0));
+            var cells = new List<MapCell> { new MapCell(0), new MapCell(1), new MapCell(2, normal), new MapCell(3, boss), new MapCell(4, extra) };
+            var manager = new DungeonBattleManager(new DungeonConfig("boss", "ボス除外", 5, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            int starts = 0, clears = 0;
+            ContactInfo contact = null;
+            manager.OnBattleStarted += (_, info) => { starts++; contact = info; };
+            manager.OnDungeonClearCompleted += _ => clears++;
+            if (dash) manager.StartDash();
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(50);
+            Assert.AreSame(normal, contact.Enemy);
+            CollectionAssert.AreEquivalent(new[] { normal, extra }, manager.CurrentBattle.Enemies);
+            Assert.AreEqual(200, boss.CurrentHp, "初撃もボスへ適用しない");
+            foreach (var enemy in new List<Enemy>(manager.CurrentBattle.Enemies)) enemy.TakeDamage(1000, ElementType.None);
+            manager.SelectCardReward(null);
+            Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase);
+            Assert.AreEqual(0, clears);
+            Assert.IsNull(manager.Dungeon.Map.GetCell(2).Enemy);
+            Assert.IsNull(manager.Dungeon.Map.GetCell(4).Enemy);
+            Assert.AreSame(boss, manager.Dungeon.Map.GetCell(3).Enemy);
+            manager.StopDash();
+            manager.ResumeAfterBattle();
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(50);
+            Assert.AreEqual(2, starts);
+            Assert.AreSame(boss, contact.Enemy);
+            CollectionAssert.AreEqual(new[] { boss }, manager.CurrentBattle.Enemies);
+            boss.TakeDamage(1000, ElementType.None);
+            manager.SelectCardReward(null);
+            Assert.AreEqual(GamePhase.DungeonCleared, manager.CurrentPhase);
+            Assert.AreEqual(1, clears);
         }
 
         [TestCase(false)]

@@ -252,7 +252,9 @@ namespace Olca.Core.Logic.Dungeon
 
             foreach (var enemy in nearbyEnemies)
             {
-                if (!enemy.IsDead && enemy != contactInfo.Enemy && !enemies.Contains(enemy))
+                // 全体仕様第7節: ボスは主敵として直接接敵した場合だけ参加する。
+                // MapCellのBoss判定と同じIDを用い、周囲の通常敵は従来どおり巻き込む。
+                if (!enemy.IsDead && enemy.EnemyId != "boss" && enemy != contactInfo.Enemy && !enemies.Contains(enemy))
                 {
                     enemies.Add(enemy);
                     logger.LogInfo($"  - 巻き込み: {enemy.Name}");
