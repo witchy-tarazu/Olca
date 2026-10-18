@@ -37,6 +37,13 @@ namespace Olca.Core.Domain
         /// <summary>死亡しているか</summary>
         public bool IsDead => currentHp <= 0;
 
+        // 保存の復元候補専用。ダメージ通知を発生させず、元の敵は変更しない。
+        internal void RestoreCheckpointHp(int hp)
+        {
+            if (hp < 0 || hp > maxHp) throw new ArgumentOutOfRangeException(nameof(hp));
+            currentHp = hp;
+        }
+
         /// <summary>スタン中か</summary>
         public bool IsStunned => stunDurationMs > 0;
 

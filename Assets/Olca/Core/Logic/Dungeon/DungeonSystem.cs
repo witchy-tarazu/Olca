@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
@@ -580,5 +581,341 @@ namespace Olca.Core.Logic.Dungeon
         public event Action<PenaltyInfo> OnObstaclePenalty;   // 障害物ペナルティ
         public event Action OnDungeonFailed;
         public event Action OnDungeonCleared;
+    }
+}
+
+namespace Olca.Core.Logic.Dungeon
+{
+    /// <summary>内容を固定した復元定義。製品値を補完せず、呼出側が既存定義を登録する。</summary>
+    public sealed class CheckpointDefinitions
+    {
+        public string Revision { get; }
+        public string DungeonId { get; }
+        public string MapHash { get; }
+        public int CellCount { get; }
+        private readonly Dictionary<string, Card> cards = new Dictionary<string, Card>();
+        private readonly Dictionary<string, TuningGrantDefinition> grants = new Dictionary<string, TuningGrantDefinition>();
+        private readonly Dictionary<int, Enemy> enemies = new Dictionary<int, Enemy>();
+        private readonly Dictionary<int, float> heights = new Dictionary<int, float>();
+        private readonly string dungeonName;
+        private readonly int initialDeckSize;
+        internal IReadOnlyDictionary<int, Enemy> Enemies => enemies;
+
+        public CheckpointDefinitions(string revision, DungeonConfig map)
+        {
+            if (string.IsNullOrWhiteSpace(revision) || map == null || string.IsNullOrWhiteSpace(map.DungeonId) ||
+                map.TotalCellCount <= 0 || map.MapCells.Count != map.TotalCellCount)
+                throw new ArgumentException("固定マップ定義が不完全です");
+            Revision = revision; DungeonId = map.DungeonId; CellCount = map.TotalCellCount;
+            dungeonName = map.DungeonName; initialDeckSize = map.InitialDeckSize;
+            MapHash = CheckpointValues.Hash(w => {
+                w.Write(DungeonId); w.Write(CellCount); w.Write(map.InitialDeckSize);
+                for (int i = 0; i < CellCount; i++)
+                {
+                    var cell = map.MapCells[i];
+                    if (cell == null || cell.Index != i || cell.Obstacle != null ||
+                        (cell.Type != CellType.Empty && cell.Type != CellType.Enemy && cell.Type != CellType.Boss))
+                        throw new ArgumentException("この保存版では固定敵・空白セルのみ対応します");
+                    CheckpointValues.Require(CheckpointValues.Finite(cell.Height) && cell.Height >= 0 &&
+                        ((cell.Type == CellType.Empty) == (cell.Enemy == null)), "セル内容が不整合です");
+                    w.Write((int)cell.Type); w.Write(cell.Height);
+                    if (cell.Enemy == null) continue;
+                    var e = cell.Enemy;
+                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating)
+                        throw new ArgumentException("敵の標準定義が必要です");
+                    enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition));
+                    heights.Add(i, cell.Height);
+                    w.Write(e.EnemyId); w.Write(e.Name); w.Write(e.MaxHp); w.Write((int)e.Element);
+                    w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
+                }
+            });
+        }
+
+        internal DungeonConfig RestoreMap(IReadOnlyDictionary<int, Enemy> restoredEnemies)
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < CellCount; i++)
+                cells.Add(restoredEnemies.TryGetValue(i, out var enemy) && !enemy.IsDead
+                    ? new MapCell(i, enemy, heights[i]) : new MapCell(i));
+            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize);
+        }
+
+        public void RegisterCard(string key, Card definition)
+        {
+            if (string.IsNullOrWhiteSpace(key) || definition == null || definition.TuningCount != 0 || definition.IsEffectCopy)
+                throw new ArgumentException("未加工のカード定義と定義元・版付きキーが必要です");
+            CheckpointValues.CardHash(definition); // 不完全な値は登録時にも拒否。
+            cards.Add(key, definition.Clone());
+        }
+        public void RegisterGrant(string key, TuningGrantDefinition grant)
+        {
+            if (string.IsNullOrWhiteSpace(key) || grant == null) throw new ArgumentException("調律定義が必要です");
+            grants.Add(key, grant);
+        }
+        internal Card RestoreCard(CheckpointCardDto value)
+        {
+            if (value == null || string.IsNullOrWhiteSpace(value.InstanceId) || value.DefinitionKey == null ||
+                !cards.TryGetValue(value.DefinitionKey, out var definition) || value.GrantKeys == null ||
+                value.TuningCount != value.GrantKeys.Length) throw new ArgumentException("カード定義または調律履歴が不整合です");
+            var result = definition.Clone();
+            foreach (var key in value.GrantKeys)
+            {
+                if (key == null || !grants.TryGetValue(key, out var grant)) throw new ArgumentException("旧・未定義の調律効果です");
+                var evaluation = TuningEvaluator.Evaluate(result, grant);
+                if (!evaluation.IsSuccess) throw new ArgumentException(evaluation.ErrorMessage);
+                result = evaluation.ResultCard;
+            }
+            if (CheckpointValues.CardHash(result) != value.ValueHash) throw new ArgumentException("カード値と定義・履歴が一致しません");
+            return result;
+        }
+        public CheckpointCardDto CaptureCard(string instanceId, string definitionKey, Card card, params string[] grantKeys)
+        {
+            if (card == null || card.IsEffectCopy || card.TuningCount != card.TuningHistory.Count)
+                throw new ArgumentException("使用時コピーまたは不完全な旧履歴は保存できません");
+            var dto = new CheckpointCardDto { InstanceId = instanceId, DefinitionKey = definitionKey,
+                ValueHash = CheckpointValues.CardHash(card), TuningCount = card.TuningCount,
+                GrantKeys = grantKeys == null ? null : (string[])grantKeys.Clone() };
+            RestoreCard(dto);
+            return dto;
+        }
+    }
+
+    // Hashは改竄対策ではなく、同じID/版を誤って異なる定義へ解決することの検出用。
+    internal static class CheckpointValues
+    {
+        internal static string Hash(Action<System.IO.BinaryWriter> write)
+        {
+            using (var stream = new System.IO.MemoryStream())
+            {
+                using (var writer = new System.IO.BinaryWriter(stream, System.Text.Encoding.UTF8, true)) write(writer);
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                    return BitConverter.ToString(sha.ComputeHash(stream.ToArray())).Replace("-", "");
+            }
+        }
+        private static void Text(System.IO.BinaryWriter w, string value) { w.Write(value != null); if (value != null) w.Write(value); }
+        private static void Modifier(System.IO.BinaryWriter w, CardModifier m)
+        {
+            if (m == null || m.AdditionalEffects == null) throw new ArgumentException("効果定義が不完全です");
+            w.Write(m.ZeroCost); w.Write(m.CostAdjustment); w.Write(m.BonusDamage); w.Write(m.DamageMultiplier);
+            w.Write(m.ElementOverride.HasValue); if (m.ElementOverride.HasValue) w.Write((int)m.ElementOverride.Value);
+            w.Write(m.AdditionalEffects.Count);
+            foreach (var e in m.AdditionalEffects)
+            {
+                if (e == null) throw new ArgumentException("追加効果がnullです");
+                w.Write((int)e.EffectType); w.Write(e.Power); w.Write(e.Duration); w.Write(e.HitCount); w.Write((int)e.Trigger);
+                Text(w, e.ChainCardId); w.Write((int)e.EffectOrigin); w.Write(e.DelayTime);
+                w.Write(e.TargetOffset.X); w.Write(e.TargetOffset.Y); w.Write(e.CancelOnHole);
+            }
+        }
+        private static void Grant(System.IO.BinaryWriter w, TuningGrantDefinition grant)
+        {
+            w.Write(grant != null); if (grant == null) return;
+            Text(w, grant.Id); w.Write(grant.FixedCostAdjustment); w.Write(grant.ZeroCost); w.Write(grant.Effects.Count);
+            foreach (var effect in grant.Effects)
+            {
+                if (effect == null) throw new ArgumentException("調律効果がnullです");
+                Text(w, effect.Id); w.Write(effect.MaxStage);
+                for (int stage = 1; stage <= 4; stage++)
+                {
+                    bool found = effect.TryGetStage(stage, out var value); w.Write(found); if (found) Modifier(w, value);
+                }
+            }
+        }
+        internal static string CardHash(Card c) => Hash(w => {
+            Text(w, c.Id); Text(w, c.Name); Text(w, c.Description);
+            w.Write(c.Cost); w.Write((int)c.Rarity); w.Write((int)c.Category); w.Write((int)c.Element); Text(w, c.Series?.Name);
+            w.Write(c.Power); w.Write((int)c.TargetType); Text(w, c.PanelChangeType); Text(w, c.MoveDirection); w.Write(c.MoveDistance);
+            w.Write(c.MoveMotionTime); w.Write(c.AttackMotionTime); w.Write((int)c.PenetrationMode);
+            w.Write(c.StartupTime); w.Write(c.RecoveryTime); w.Write(c.ExtendRecoveryDuringDerivative); w.Write(c.IsInstantEffect);
+            w.Write((int)c.ExceedLevel); Modifier(w, c.Modifier); Modifier(w, c.GetTuningBaseModifier()); Grant(w, c.TuningDefinition);
+            w.Write(c.TuningCount); foreach (var grant in c.TuningHistory) Grant(w, grant);
+        });
+        internal static void Require(bool valid, string message) { if (!valid) throw new ArgumentException(message); }
+        internal static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+
+    /// <summary>復元候補。検証が全件成功するまで通常ゲームの参照へ接続しない。</summary>
+    public sealed class RestoredCheckpoint
+    {
+        private readonly CheckpointDto snapshot;
+        public CheckpointDto Snapshot => snapshot.Copy();
+        public PlayerCharacter Player { get; }
+        public DungeonConfig Map { get; }
+        public IReadOnlyDictionary<string, Card> Cards { get; }
+        public IReadOnlyDictionary<int, Enemy> Enemies { get; }
+        public Deck Deck { get; }
+        public IReadOnlyList<Card> Obtained { get; }
+        public IReadOnlyList<Card> FirstHand { get; }
+        public IReadOnlyList<Card> RewardCandidates { get; }
+        internal RestoredCheckpoint(CheckpointDto dto, Dictionary<string, Card> cards, Dictionary<int, Enemy> enemies, CheckpointDefinitions definitions)
+        {
+            snapshot = dto.Copy(); Cards = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Card>(cards);
+            Enemies = new System.Collections.ObjectModel.ReadOnlyDictionary<int, Enemy>(enemies);
+            Map = definitions.RestoreMap(enemies);
+            var p = dto.Player;
+            Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise);
+            Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
+            Deck = new Deck(Array.ConvertAll(dto.DeckOrder, id => cards[id]).ToList());
+            Obtained = Array.AsReadOnly(Array.ConvertAll(dto.ObtainedOrder, id => cards[id]));
+            FirstHand = Array.AsReadOnly(Array.ConvertAll(dto.Battle?.FirstHand ?? new string[0], id => cards[id]));
+            Deck.RestoreCheckpointDrawn(FirstHand);
+            RewardCandidates = Array.AsReadOnly(Array.ConvertAll(dto.Battle?.RewardCandidates ?? new string[0], id => cards[id]));
+        }
+    }
+
+    public static class CheckpointCodec
+    {
+        public static bool TryRestore(CheckpointDto input, CheckpointDefinitions definitions, out RestoredCheckpoint restored, out string error)
+        {
+            restored = null; error = null;
+            try
+            {
+                CheckpointValues.Require(input != null && definitions != null, "保存データまたは定義がありません");
+                var d = input.Copy();
+                CheckpointValues.Require(d.SchemaVersion == 1 && d.DefinitionsRevision == definitions.Revision &&
+                    d.DungeonId == definitions.DungeonId && d.MapHash == definitions.MapHash, "保存版または定義版が一致しません");
+                CheckpointValues.Require(!string.IsNullOrWhiteSpace(d.RunId) && d.Sequence > 0 && Enum.IsDefined(typeof(CheckpointBoundary), d.Boundary), "保存境界が不正です");
+                CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
+                var p = d.Player;
+                CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp > 0 && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 &&
+                    CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
+                CheckpointValues.Require(d.Cards != null && d.DeckOrder != null && d.ObtainedOrder != null && d.Enemies != null, "必須配列が欠落しています");
+                var cards = new Dictionary<string, Card>();
+                foreach (var c in d.Cards) { var card = definitions.RestoreCard(c); cards.Add(c.InstanceId, card); }
+                ValidateReferences(d.DeckOrder, cards); ValidateReferences(d.ObtainedOrder, cards);
+                var enemies = new Dictionary<int, Enemy>();
+                foreach (var e in d.Enemies)
+                {
+                    CheckpointValues.Require(e != null && definitions.Enemies.TryGetValue(e.CellIndex, out _), "敵配置が未定義です");
+                    var template = definitions.Enemies[e.CellIndex];
+                    CheckpointValues.Require(e.EnemyId == template.EnemyId && e.Hp >= 0 && e.Hp <= template.MaxHp, "敵の値が不正です");
+                    var enemy = new Enemy(template.EnemyId, template.Name, template.MaxHp, template.Element, new Vector2Int(e.GridX, e.GridY));
+                    // ダメージ処理・属性倍率・浮動小数の丸めを経由せず、新規候補のHPを復元する。
+                    enemy.RestoreCheckpointHp(e.Hp);
+                    CheckpointValues.Require(enemy.CurrentHp == e.Hp, "敵HPを復元できません");
+                    enemies.Add(e.CellIndex, enemy);
+                }
+                CheckpointValues.Require(enemies.Count == definitions.Enemies.Count, "敵個体が欠落しています");
+                if (d.Boundary == CheckpointBoundary.BattleStart)
+                {
+                    var b = d.Battle;
+                    ValidateEncounter(b, p, enemies);
+                    ValidateReferences(b.FirstHand, cards); ValidateReferences(b.RewardCandidates, cards);
+                    bool boss = enemies[b.ContactCell].EnemyId.Contains("boss");
+                    CheckpointValues.Require(boss ? b.RewardOffered : (!b.RewardOffered || b.RewardCandidates.Length == 3), "報酬件数と接敵種別が一致しません");
+                    CheckpointValues.Require(b.FirstHand.Length == Math.Min(b.HandLimit, d.DeckOrder.Length) && b.FirstHand.All(id => d.DeckOrder.Contains(id)), "初回手札が不整合です");
+                    CheckpointValues.Require(b.RewardOffered == (b.RewardCandidates.Length > 0) && b.RewardCandidates.Length <= 3 &&
+                        b.RewardCandidates.All(id => !d.DeckOrder.Contains(id) && !d.ObtainedOrder.Contains(id)), "報酬候補が不整合です");
+                }
+                else CheckpointValues.Require(d.Battle == null, "探索境界に戦闘計画が混入しています");
+                var referenced = new HashSet<string>(d.DeckOrder.Concat(d.ObtainedOrder).Concat(d.Battle?.RewardCandidates ?? new string[0]));
+                CheckpointValues.Require(referenced.Count == cards.Count, "用途のないカード個体が混入しています");
+                restored = new RestoredCheckpoint(d, cards, enemies, definitions);
+                return true;
+            }
+            catch (ArgumentException ex) { error = ex.Message; return false; }
+            catch (OverflowException ex) { error = ex.Message; return false; }
+        }
+        internal static void ValidateEncounter(CheckpointBattleDto b, CheckpointPlayerDto p, IReadOnlyDictionary<int, Enemy> enemies)
+        {
+            CheckpointValues.Require(b != null && b.ParticipantCells != null && b.ParticipantCells.Length > 0 &&
+                b.ParticipantCells.Distinct().Count() == b.ParticipantCells.Length && b.ParticipantCells.Contains(b.ContactCell), "接敵情報が不完全です");
+            CheckpointValues.Require(b.ParticipantCells.All(i => enemies.ContainsKey(i) && !enemies[i].IsDead && ValidGrid(enemies[i].GridPosition.X, enemies[i].GridPosition.Y)) && ValidGrid(p.GridX, p.GridY), "戦闘参加者が不正です");
+            CheckpointValues.Require(CheckpointValues.Finite(b.GridOriginX) && b.HandLimit >= 0 &&
+                (!b.DashEffect.HasValue || (b.DashContact && Enum.IsDefined(typeof(ActionSystem.DashContactEffect), b.DashEffect.Value))), "戦闘開始値が不正です");
+        }
+        private static bool ValidGrid(int x, int y) => x >= 0 && x < BattleField.GRID_WIDTH && y >= 0 && y < BattleField.GRID_HEIGHT;
+        private static void ValidateReferences(string[] ids, Dictionary<string, Card> cards)
+        {
+            CheckpointValues.Require(ids != null && ids.All(id => id != null && cards.ContainsKey(id)) && ids.Distinct().Count() == ids.Length,
+                "カード個体の参照が欠落または重複しています");
+        }
+    }
+
+    public interface ICheckpointStore
+    {
+        bool TryWrite(CheckpointDto data, out string error);
+        CheckpointDto Read();
+    }
+
+    /// <summary>メモリ内の保存先。失敗時は既存世代と呼出元の値を変更しない。</summary>
+    public sealed class MemoryCheckpointStore : ICheckpointStore
+    {
+        private readonly CheckpointDefinitions definitions;
+        private CheckpointDto current;
+        public MemoryCheckpointStore(CheckpointDefinitions definitions) { this.definitions = definitions; }
+        public bool TryWrite(CheckpointDto data, out string error)
+        {
+            if (!CheckpointCodec.TryRestore(data, definitions, out var candidate, out error)) return false;
+            var snapshot = candidate.Snapshot;
+            if (current != null && (snapshot.RunId != current.RunId || snapshot.Sequence <= current.Sequence))
+            { error = "攻略IDまたは保存世代が競合しています"; return false; }
+            current = snapshot;
+            return true;
+        }
+        public CheckpointDto Read() => current?.Copy();
+    }
+
+    /// <summary>既存抽選をコピー上で一度実行する計画。内部の専用乱数のみを消費し、保存再試行ではSnapshotを再利用する。</summary>
+    public sealed class CheckpointBattlePlan
+    {
+        private readonly CheckpointDto snapshot;
+        public CheckpointDto Snapshot => snapshot.Copy();
+        public int RandomCalls { get; }
+        private CheckpointBattlePlan(CheckpointDto snapshot, int randomCalls) { this.snapshot = snapshot.Copy(); RandomCalls = randomCalls; }
+        // Seedは計画生成用。復帰はSeedから再抽選せず、保存済みの具体的結果を使う。
+        private sealed class PlanningRandom : IRandomProvider
+        {
+            private readonly Random random;
+            public int Calls { get; private set; }
+            public PlanningRandom(int seed) { random = new Random(seed); }
+            public int Range(int min, int max) { Calls++; return random.Next(min, max); }
+            public float Range(float min, float max) { Calls++; return min + (float)random.NextDouble() * (max - min); }
+            public float Value => Range(0f, 1f);
+        }
+        public static bool TryCreate(CheckpointDto state, CheckpointBattleDto encounter, CheckpointDefinitions definitions,
+            int planningSeed, ICardPool rewardPool, Func<Card, string> rewardDefinitionKey,
+            out CheckpointBattlePlan plan, out string error)
+        {
+            plan = null;
+            if (!CheckpointCodec.TryRestore(state, definitions, out var restored, out error)) return false;
+            try
+            {
+                CheckpointValues.Require(encounter != null && rewardDefinitionKey != null &&
+                    state.Boundary != CheckpointBoundary.BattleStart && restored.Enemies.ContainsKey(encounter.ContactCell), "開始計画の入力が不正です");
+                var d = restored.Snapshot;
+                d.Sequence = checked(d.Sequence + 1); d.Boundary = CheckpointBoundary.BattleStart;
+                d.Battle = encounter.Copy(); d.Battle.FirstHand = new string[0]; d.Battle.RewardCandidates = new string[0];
+                d.Battle.RewardOffered = false;
+                CheckpointCodec.ValidateEncounter(d.Battle, d.Player, restored.Enemies);
+                var random = new PlanningRandom(planningSeed);
+                var deck = restored.Deck;
+                deck.Shuffle(random);
+                var reverse = restored.Cards.ToDictionary(pair => pair.Value, pair => pair.Key);
+                d.DeckOrder = deck.GetAllCards().Select(c => reverse[c]).ToArray();
+                d.Battle.FirstHand = deck.DrawCards(d.Battle.HandLimit, random).Select(c => reverse[c]).ToArray();
+                var rewards = new CardRewardSystem(new Deck(), random, rewardPool);
+                var enemy = restored.Enemies[encounter.ContactCell];
+                d.Battle.RewardOffered = rewards.ShouldDropCard(enemy);
+                if (d.Battle.RewardOffered)
+                {
+                    var choices = rewards.GenerateCardChoices(enemy);
+                    var records = new List<CheckpointCardDto>(d.Cards);
+                    d.Battle.RewardCandidates = new string[choices.Count];
+                    for (int i = 0; i < choices.Count; i++)
+                    {
+                        string id = d.RunId + ":reward:" + d.Sequence + ":" + i;
+                        var record = definitions.CaptureCard(id, rewardDefinitionKey(choices[i]), choices[i]);
+                        records.Add(record); d.Battle.RewardCandidates[i] = id;
+                    }
+                    d.Cards = records.ToArray();
+                }
+                if (!CheckpointCodec.TryRestore(d, definitions, out _, out error)) return false;
+                plan = new CheckpointBattlePlan(d, random.Calls); return true;
+            }
+            catch (ArgumentException ex) { error = ex.Message; return false; }
+            catch (InvalidOperationException ex) { error = ex.Message; return false; }
+            catch (OverflowException ex) { error = ex.Message; return false; }
+        }
     }
 }

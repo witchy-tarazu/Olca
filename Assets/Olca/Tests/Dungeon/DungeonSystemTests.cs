@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Linq;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
@@ -1037,6 +1038,236 @@ namespace Olca.Tests.Dungeon
             Assert.IsNotNull(dungeon.CurrentBattle, "バトル開始");
             Assert.GreaterOrEqual(dungeon.CurrentBattle.Enemies.Count, 2,
                 "画面内の複数敵がバトルに参加している");
+        }
+    }
+}
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class CheckpointCoreTests
+    {
+        private Olca.Core.Logic.Dungeon.CheckpointDefinitions definitions;
+        private DungeonConfig map;
+        private Card standard, fallback;
+        private CheckpointDto departure;
+        private sealed class CountingRandom : Olca.Core.Interfaces.IRandomProvider
+        {
+            public int Calls;
+            public int Range(int min, int max) { Calls++; return min; }
+            public float Range(float min, float max) { Calls++; return min; }
+            public float Value { get { Calls++; return 0; } }
+        }
+        [SetUp]
+        public void SetUp()
+        {
+            map = DungeonConfig.CreateTestDungeon(10, 30, 3);
+            definitions = new CheckpointDefinitions("fixture-v1", map);
+            standard = new Card("sword", "同名", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Sword, 30, "通常");
+            fallback = new Card("sword", "同名", 2, CardRarity.Normal, CardCategory.Attack, ElementType.Fire, CardSeries.Sword, 45, "別定義");
+            definitions.RegisterCard("standard/v1/sword", standard);
+            definitions.RegisterCard("fallback/v1/sword", fallback);
+            // 現行フォールバック抽選が実際に生成する値を登録。製品プールは作らない。
+            foreach (string id in new[] { "sword", "heal", "shield", "fire", "ice" })
+                definitions.RegisterCard("reward/v1/" + id, new Card(id, id + "_card", 1, CardRarity.Normal,
+                    CardCategory.Attack, ElementType.None, CardSeries.Sword, 30, "Fallback card"));
+            departure = new CheckpointDto {
+                DefinitionsRevision = definitions.Revision, DungeonId = definitions.DungeonId, MapHash = definitions.MapHash,
+                RunId = "run", Sequence = 1, Boundary = CheckpointBoundary.Departure,
+                Player = new CheckpointPlayerDto { Hp = 93, MaxHp = 100, AttackPower = 10, Poise = 30, CustomSpeed = 1, GridX = 0, GridY = 0 },
+                Cards = new[] { definitions.CaptureCard("a", "standard/v1/sword", standard), definitions.CaptureCard("b", "standard/v1/sword", standard.Clone()),
+                    definitions.CaptureCard("c", "fallback/v1/sword", fallback), definitions.CaptureCard("discarded", "fallback/v1/sword", fallback) },
+                DeckOrder = new[] { "c", "b", "a" }, ObtainedOrder = new[] { "discarded", "c" },
+                Enemies = new[] { new CheckpointEnemyDto { CellIndex = 3, EnemyId = "enemy_3", Hp = 50, GridX = 4 },
+                    new CheckpointEnemyDto { CellIndex = 9, EnemyId = "boss", Hp = 200, GridX = 5 } }
+            };
+        }
+        private CheckpointBattleDto Encounter() => new CheckpointBattleDto {
+            ContactCell = 3, ParticipantCells = new[] { 3 }, HandLimit = 2, GridOriginX = -1,
+            DashContact = true, DashEffect = (int)ActionSystem.DashContactEffect.InitialDamage };
+
+        private CheckpointBattlePlan FindPlan(bool offered)
+        {
+            for (int seed = 0; seed < 100; seed++)
+            {
+                Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure, Encounter(), definitions, seed, null,
+                    c => "reward/v1/" + c.Id, out var plan, out var error), error);
+                if (plan.Snapshot.Battle.RewardOffered == offered) return plan;
+            }
+            Assert.Fail("fixture内で必要な抽選結果が得られませんでした"); return null;
+        }
+
+        [TestCase(CheckpointBoundary.Departure)]
+        [TestCase(CheckpointBoundary.RewardCompleted)]
+        public void 境界の往復で個体と定義と順序HP敵配置を維持する(CheckpointBoundary boundary)
+        {
+            departure.Boundary = boundary;
+            if (boundary == CheckpointBoundary.RewardCompleted) departure.Enemies[0].Hp = 0;
+            var store = new MemoryCheckpointStore(definitions);
+            Assert.IsTrue(store.TryWrite(departure, out var error), error);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), definitions, out var restored, out error), error);
+            Assert.AreEqual(93, restored.Player.CurrentHp);
+            Assert.AreEqual(100, restored.Player.MaxHp);
+            Assert.AreEqual(45, restored.Deck.GetAllCards()[0].Power);
+            Assert.AreEqual(ElementType.Fire, restored.Deck.GetAllCards()[0].Element);
+            Assert.AreNotSame(restored.Cards["a"], restored.Cards["b"]);
+            Assert.AreSame(restored.Cards["c"], restored.Obtained[1]);
+            Assert.IsFalse(restored.Deck.GetAllCards().Contains(restored.Cards["discarded"]));
+            Assert.AreEqual(departure.Enemies[0].Hp, restored.Enemies[3].CurrentHp);
+            Assert.AreEqual(10, restored.Map.TotalCellCount);
+            if (boundary == CheckpointBoundary.RewardCompleted) Assert.IsNull(restored.Map.MapCells[3].Enemy);
+            else Assert.AreSame(restored.Enemies[3], restored.Map.MapCells[3].Enemy);
+            Assert.AreEqual(new Vector2Int(4, 0), restored.Enemies[3].GridPosition);
+            CollectionAssert.AreEqual(departure.DeckOrder, restored.Snapshot.DeckOrder);
+            CollectionAssert.AreEqual(departure.ObtainedOrder, restored.Snapshot.ObtainedOrder);
+            // 保存前・読出後・復元後の編集はいずれも保存先に漏れない。
+            departure.Player.Hp = 1; store.Read().Cards[0].GrantKeys = null;
+            restored.Cards["a"].Modifier.BonusDamage = 999;
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), definitions, out var again, out error), error);
+            Assert.AreEqual(93, again.Player.CurrentHp); Assert.AreEqual(30, again.Cards["a"].GetFinalPower());
+        }
+
+        [Test]
+        public void 開始計画の抽選は一回で保存再試行と復元では乱数を使わない()
+        {
+            var plan = FindPlan(true);
+            string error;
+            int calls = plan.RandomCalls; Assert.Greater(calls, 0);
+            var store = new MemoryCheckpointStore(definitions);
+            Assert.IsTrue(store.TryWrite(plan.Snapshot, out error), error);
+            Assert.IsFalse(store.TryWrite(plan.Snapshot, out error)); // 同一世代の二重確定
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), definitions, out var restored, out error), error);
+            Assert.AreEqual(2, restored.FirstHand.Count); Assert.AreEqual(1, restored.Deck.RemainingCount);
+            Assert.AreEqual(3, restored.RewardCandidates.Count);
+            Assert.AreNotSame(restored.RewardCandidates[0], restored.RewardCandidates[1]);
+            var remaining = restored.Deck.DrawCards(3, new MockRandomProvider());
+            Assert.IsFalse(remaining.Exists(c => restored.FirstHand.Contains(c)));
+            Assert.AreEqual(calls, plan.RandomCalls);
+            Assert.IsTrue(restored.Snapshot.Battle.DashContact);
+            Assert.AreEqual(-1, restored.Snapshot.Battle.GridOriginX);
+            Assert.AreEqual(CheckpointBoundary.Departure, departure.Boundary);
+            CollectionAssert.AreEqual(new[] { "c", "b", "a" }, departure.DeckOrder);
+            var edited = plan.Snapshot; edited.Battle.FirstHand[0] = "bad";
+            Assert.AreNotEqual("bad", plan.Snapshot.Battle.FirstHand[0]);
+        }
+
+        [Test]
+        public void 報酬なしも確定結果として保存する()
+        {
+            var plan = FindPlan(false);
+            string error;
+            Assert.IsFalse(plan.Snapshot.Battle.RewardOffered);
+            Assert.IsEmpty(plan.Snapshot.Battle.RewardCandidates);
+            Assert.IsTrue(CheckpointCodec.TryRestore(plan.Snapshot, definitions, out _, out error), error);
+        }
+
+        [TestCase("schema")][TestCase("revision")][TestCase("map")][TestCase("definition")]
+        [TestCase("hash")][TestCase("history")][TestCase("duplicate")][TestCase("missing")]
+        [TestCase("hp")][TestCase("enemy")][TestCase("boundary")][TestCase("null")]
+        public void 不正データの保存と復元は既存世代と入力を変更しない(string fault)
+        {
+            var store = new MemoryCheckpointStore(definitions); Assert.IsTrue(store.TryWrite(departure, out _));
+            var bad = departure.Copy(); bad.Sequence = 2;
+            switch (fault) {
+                case "schema": bad.SchemaVersion++; break;
+                case "revision": bad.DefinitionsRevision = "old"; break;
+                case "map": bad.MapHash = "old"; break;
+                case "definition": bad.Cards[0].DefinitionKey = "unknown"; break;
+                case "hash": bad.Cards[0].ValueHash = "wrong"; break;
+                case "history": bad.Cards[0].TuningCount = 1; break;
+                case "duplicate": bad.Cards[1].InstanceId = "a"; break;
+                case "missing": bad.DeckOrder[0] = "unknown"; break;
+                case "hp": bad.Player.Hp = 101; break;
+                case "enemy": bad.Enemies = new[] { bad.Enemies[0] }; break;
+                case "boundary": bad.Boundary = CheckpointBoundary.BattleStart; break;
+                case "null": bad.Cards = null; break;
+            }
+            Assert.IsFalse(store.TryWrite(bad, out _));
+            Assert.IsFalse(CheckpointCodec.TryRestore(bad, definitions, out var restored, out _));
+            Assert.IsNull(restored); Assert.AreEqual(1, store.Read().Sequence); Assert.AreEqual(2, bad.Sequence);
+            Assert.AreEqual(93, store.Read().Player.Hp);
+        }
+
+        [Test]
+        public void 調律履歴を往復し旧履歴と定義改変を推測で補わない()
+        {
+            var grant = new TuningGrantDefinition("bonus", new[] { new TuningEffectDefinition("bonus", 1,
+                new System.Collections.Generic.Dictionary<int, CardModifier> { { 1, new CardModifier { BonusDamage = 3 } } }) });
+            definitions.RegisterGrant("grant/v1/bonus", grant);
+            var tuned = TuningEvaluator.Evaluate(standard, grant).ResultCard;
+            departure.Cards[0] = definitions.CaptureCard("a", "standard/v1/sword", tuned, "grant/v1/bonus");
+            Assert.IsTrue(CheckpointCodec.TryRestore(departure, definitions, out var restored, out var error), error);
+            Assert.AreEqual(33, restored.Cards["a"].GetFinalPower()); Assert.AreEqual(1, restored.Cards["a"].TuningHistory.Count);
+            Assert.Throws<System.ArgumentException>(() => definitions.CaptureCard("legacy", "standard/v1/sword", standard.ApplyTuning(fallback)));
+            var changed = new CheckpointDefinitions("fixture-v1", map);
+            changed.RegisterCard("standard/v1/sword", fallback);
+            Assert.IsFalse(CheckpointCodec.TryRestore(departure, changed, out _, out _));
+        }
+
+        [TestCase("hand")][TestCase("reward")][TestCase("participant")][TestCase("grid")][TestCase("dash")]
+        public void 戦闘計画の不整合は復元も上書きも拒否する(string fault)
+        {
+            var plan = FindPlan(true);
+            var store = new MemoryCheckpointStore(definitions); Assert.IsTrue(store.TryWrite(plan.Snapshot, out _));
+            var bad = plan.Snapshot; bad.Sequence++;
+            switch (fault) {
+                case "hand": bad.Battle.FirstHand[0] = bad.Battle.FirstHand[1]; break;
+                case "reward": bad.Battle.RewardOffered = false; break;
+                case "participant": bad.Enemies[0].Hp = 0; break;
+                case "grid": bad.Enemies[0].GridX = 6; break;
+                case "dash": bad.Battle.DashEffect = 99; break;
+            }
+            Assert.IsFalse(store.TryWrite(bad, out _)); Assert.AreEqual(plan.Snapshot.Sequence, store.Read().Sequence);
+        }
+
+        [Test]
+        public void 空デッキとボス確定報酬も復元できる()
+        {
+            departure.DeckOrder = new string[0]; departure.ObtainedOrder = new string[0]; departure.Cards = new CheckpointCardDto[0];
+            foreach (string id in new[] { "sword", "heal", "shield", "fire", "ice" })
+                definitions.RegisterCard("boss/v1/" + id, new Card(id, id + "_card", 1, CardRarity.Limited,
+                    CardCategory.Attack, ElementType.None, CardSeries.Sword, 30, "Fallback card"));
+            var encounter = Encounter(); encounter.ContactCell = 9; encounter.ParticipantCells = new[] { 9 };
+            Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure, encounter, definitions, 0, null,
+                c => "boss/v1/" + c.Id, out var plan, out var error), error);
+            Assert.IsTrue(CheckpointCodec.TryRestore(plan.Snapshot, definitions, out var restored, out error), error);
+            Assert.IsEmpty(restored.FirstHand); Assert.AreEqual(0, restored.Deck.TotalCount);
+            Assert.IsTrue(restored.Snapshot.Battle.RewardOffered); Assert.AreEqual(1, restored.RewardCandidates.Count);
+        }
+
+        [Test]
+        public void 計画生成後の定義不足は入力と既存保存を変更しない()
+        {
+            var store = new MemoryCheckpointStore(definitions); Assert.IsTrue(store.TryWrite(departure, out _));
+            var encounter = Encounter(); encounter.ContactCell = 9; encounter.ParticipantCells = new[] { 9 };
+            Assert.IsFalse(CheckpointBattlePlan.TryCreate(departure, encounter, definitions, 0, null,
+                c => "unknown", out var plan, out _));
+            Assert.IsNull(plan); Assert.AreEqual(1, store.Read().Sequence); Assert.AreEqual(1, departure.Sequence);
+            CollectionAssert.AreEqual(new[] { "c", "b", "a" }, departure.DeckOrder);
+        }
+
+        [Test]
+        public void 同じ計画Seedで別候補を作っても結果が一致し失敗試行は乱数を共有しない()
+        {
+            CheckpointBattlePlan.TryCreate(departure, Encounter(), definitions, 3, null,
+                c => "reward/v1/" + c.Id, out var first, out var error);
+            Assert.NotNull(first, error);
+            CheckpointBattlePlan.TryCreate(departure, Encounter(), definitions, 3, null, c => "unknown", out _, out _);
+            Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure, Encounter(), definitions, 3, null,
+                c => "reward/v1/" + c.Id, out var second, out error), error);
+            CollectionAssert.AreEqual(first.Snapshot.DeckOrder, second.Snapshot.DeckOrder);
+            CollectionAssert.AreEqual(first.Snapshot.Battle.FirstHand, second.Snapshot.Battle.FirstHand);
+            CollectionAssert.AreEqual(first.Snapshot.Cards.Select(c => c.ValueHash), second.Snapshot.Cards.Select(c => c.ValueHash));
+            Assert.AreEqual(first.RandomCalls, second.RandomCalls);
+        }
+
+        [Test]
+        public void 不正接敵は抽選前に失敗し旧保存を維持する()
+        {
+            var encounter = Encounter(); encounter.ParticipantCells = new[] { 9 };
+            Assert.IsFalse(CheckpointBattlePlan.TryCreate(departure, encounter, definitions, 0, null,
+                c => "reward/v1/" + c.Id, out var plan, out _));
+            Assert.IsNull(plan); Assert.AreEqual(1, departure.Sequence);
         }
     }
 }

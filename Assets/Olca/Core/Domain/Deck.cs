@@ -124,8 +124,18 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>
-        /// ドロー履歴をリセット（再度すべてのカードをドロー可能にする）
+        /// 検証済みチェックポイントの初回手札をドロー済みとして復元する
         /// </summary>
+        internal void RestoreCheckpointDrawn(IEnumerable<Card> firstHand)
+        {
+            var restored = firstHand.ToList();
+            if (restored.Distinct().Count() != restored.Count || restored.Any(card => !cards.Contains(card)))
+                throw new ArgumentException("初回手札とデッキ個体が一致しません");
+            drawnCards.Clear();
+            drawnCards.AddRange(restored);
+        }
+
+        /// <summary>ドロー履歴をリセット（再度すべてのカードをドロー可能にする）</summary>
         public void ResetDrawHistory()
         {
             drawnCards.Clear();
