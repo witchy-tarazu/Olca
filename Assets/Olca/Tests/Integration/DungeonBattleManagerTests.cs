@@ -17,7 +17,7 @@ namespace Olca.Tests.Integration
         [SetUp]
         public void SetUp()
         {
-            mockRandom = new MockRandomProvider(0);
+            mockRandom = new MockRandomProvider(0, 0f); // 報酬ありの遷移を検証するfixture
             mockLogger = new MockLogger();
         }
 
@@ -481,7 +481,7 @@ namespace Olca.Tests.Integration
             var deck = CreateTestDeck();
             var manager = new DungeonBattleManager(config, player, deck, mockRandom, mockLogger);
 
-            // カードドロップなし（通常敵は0.7f >= 0.6f でドロップしない）
+            // カードドロップなし（0.7f >= 0.5f）
             mockRandom.SetFixedValue(0.7f);
 
             // 敵まで進める
@@ -506,9 +506,7 @@ namespace Olca.Tests.Integration
             // Tick を進めてバトル終了を処理
             manager.Tick(deltaTimeMs: 100);
 
-            // 通常敵も報酬を提示するため、選択を完了してから復帰を確認する
-            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase, "報酬選択を待つ");
-            manager.SelectCardReward(null);
+            // 無報酬なので選択待ちを挟まず復帰する。
 
             // Assert
             Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase, "ダンジョンフェーズに戻る");

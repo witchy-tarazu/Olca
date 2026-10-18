@@ -17,7 +17,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly List<Card> obtainedCards;  // 入手したカード（クリア報酬用）
 
         private const int REWARD_CHOICE_COUNT = 3;  // 選択肢の枚数
-        private const float NORMAL_ENEMY_DROP_RATE = 1.0f;  // 通常敵のドロップ率（100%）
+        private const float NORMAL_ENEMY_DROP_RATE = 0.5f;  // 雑魚戦の基本ドロップ率（50%）
 
         /// <summary>
         /// コンストラクタ
@@ -47,7 +47,7 @@ namespace Olca.Core.Logic.Dungeon
                 return true;
             }
 
-            // 通常敵は60%の確率でドロップ
+            // 雑魚戦は戦闘ごとに1回、基本50%の確率でドロップ
             float roll = random.Range(0f, 1f);
             return roll < NORMAL_ENEMY_DROP_RATE;
         }

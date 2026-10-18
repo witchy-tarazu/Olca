@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using Olca.Core.Interfaces;
+using Olca.Core.Logic.Dungeon;
 using Olca.Core.Logic.Integration;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
@@ -16,7 +18,7 @@ namespace Olca.Tests.Dungeon
         [SetUp]
         public void SetUp()
         {
-            mockRandom = new MockRandomProvider(0);  // 通常敵もカードをドロップする
+            mockRandom = new MockRandomProvider(0, 0f);  // 報酬ありを明示するfixture
             mockLogger = new MockLogger();
         }
 
@@ -112,9 +114,9 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
-        public void バトル勝利_乱数が高くても報酬を提示し_選択完了後Dungeonフェーズに戻る()
+        public void バトル勝利_乱数が高いと報酬なしでDungeonフェーズに戻る()
         {
-            // Arrange: 現在の通常敵ドロップ率は100%のため、0.9でも報酬が出る
+            // Arrange: 0.9は基本率50%の範囲外
             mockRandom.SetFixedValue(0.9f);
             var manager = CreateManager();
             var battle = AdvanceToBattle(manager);
@@ -127,11 +129,8 @@ namespace Olca.Tests.Dungeon
             manager.Tick(deltaTimeMs: 100);
 
             // Assert
-            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase,
-                "通常敵も報酬選択を待つ");
-            manager.SelectCardReward(null);
             Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase,
-                "報酬をスキップするとDungeonフェーズに戻る");
+                "無報酬なら選択待ちを挟まず探索へ戻る");
         }
 
         [Test]
@@ -253,6 +252,71 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase, "フェーズが変わらない");
             Assert.AreEqual(initialDeckCount, manager.Dungeon.GetCurrentDeck().TotalCount,
                 "デッキ枚数が変わらない");
+        }
+
+        private sealed class CountingRewardRandom : IRandomProvider
+        {
+            public float Roll;
+            public int FloatCalls;
+            public int Range(int min, int max) => min;
+            public float Range(float min, float max) { FloatCalls++; return Roll; }
+            public float Value => Roll;
+        }
+
+        [TestCase(0f, true)]
+        [TestCase(0.4999f, true)]
+        [TestCase(0.5f, false)]
+        [TestCase(0.5001f, false)]
+        [TestCase(1f, false)]
+        public void 雑魚報酬は半分未満だけ当選し一回だけ抽選する(float roll, bool expected)
+        {
+            var random = new CountingRewardRandom { Roll = roll };
+            var rewards = new CardRewardSystem(CreateTestDeck(), random);
+            Assert.AreEqual(expected, rewards.ShouldDropCard(new Enemy("slime", "敵", 10, ElementType.None, new Vector2Int(3, 0))));
+            Assert.AreEqual(1, random.FloatCalls);
+        }
+
+        [TestCase("boss")]
+        [TestCase("final_boss")]
+        public void ボス保証は高い乱数でも抽選を消費せず報酬を出す(string id)
+        {
+            var random = new CountingRewardRandom { Roll = 1f };
+            var rewards = new CardRewardSystem(CreateTestDeck(), random);
+            Assert.IsTrue(rewards.ShouldDropCard(new Enemy(id, "ボス", 100, ElementType.None, new Vector2Int(9, 0))));
+            Assert.AreEqual(0, random.FloatCalls);
+        }
+
+        [TestCase(0.4999f, true)]
+        [TestCase(0.5f, false)]
+        public void 複数敵の勝利でも抽選は一回で無報酬なら探索へ復帰する(float roll, bool drops)
+        {
+            var random = new CountingRewardRandom { Roll = roll };
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 30; i++) cells.Add(new MapCell(i));
+            cells[3] = new MapCell(3, new Enemy("a", "敵A", 50, ElementType.None, new Vector2Int(3, 0)));
+            cells[4] = new MapCell(4, new Enemy("b", "敵B", 50, ElementType.None, new Vector2Int(4, 0)));
+            cells[29] = new MapCell(29, new Enemy("boss", "ボス", 100, ElementType.None, new Vector2Int(29, 0)));
+            var manager = new DungeonBattleManager(new DungeonConfig("multi", "複数敵", 30, cells),
+                new PlayerCharacter(100), CreateTestDeck(), random, mockLogger);
+            int offers = 0, ends = 0;
+            manager.OnCardRewardPresented += _ => offers++;
+            manager.OnBattleEnded += () => ends++;
+            var battle = AdvanceToBattle(manager);
+            Assert.AreEqual(2, battle.Enemies.Count);
+            random.FloatCalls = 0;
+            battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            Assert.AreEqual(0, random.FloatCalls);
+            battle.Enemies[1].TakeDamage(1000, ElementType.None);
+            manager.Tick(0);
+            Assert.AreEqual(1, random.FloatCalls);
+            Assert.AreEqual(drops ? 1 : 0, offers);
+            Assert.AreEqual(drops ? GamePhase.CardReward : GamePhase.Dungeon, manager.CurrentPhase);
+            if (drops) manager.SelectCardReward(null);
+            Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase);
+            Assert.IsNull(manager.CurrentBattle);
+            Assert.AreEqual(1, ends);
+            manager.Tick(0);
+            Assert.AreEqual(1, random.FloatCalls);
         }
     }
 }

@@ -834,9 +834,7 @@ namespace Olca.Tests.Dungeon
             // Act: バトル勝利
             dungeon.OnBattleCompleted(victory: true);
 
-            // 報酬選択が完了するまでバトル参照を保持する
-            Assert.IsNotNull(dungeon.CurrentBattle, "報酬選択中はバトル参照を保持する");
-            dungeon.OnCardSelectionCompleted(null);
+            // 無報酬のため選択待ちを挟まない。
 
             // Assert
             Assert.IsNull(dungeon.CurrentBattle, "バトル終了後はCurrentBattleがnull");
@@ -890,9 +888,6 @@ namespace Olca.Tests.Dungeon
 
             // Act: バトル勝利
             dungeon.OnBattleCompleted(victory: true);
-
-            Assert.IsFalse(returnEventFired, "報酬選択中はまだ復帰しない");
-            dungeon.OnCardSelectionCompleted(null);
 
             // Assert
             Assert.IsTrue(returnEventFired, "OnReturnToDungeonが発火した");
@@ -981,9 +976,7 @@ namespace Olca.Tests.Dungeon
 
             // バトル勝利
             dungeon.OnBattleCompleted(victory: true);
-            Assert.IsFalse(dungeon.IsDungeonCleared, "報酬選択完了まではクリアを待つ");
-            dungeon.OnCardSelectionCompleted(null);
-            Assert.IsTrue(dungeon.IsDungeonCleared, "クリア済み");
+            Assert.IsTrue(dungeon.IsDungeonCleared, "最後の敵が無報酬なら選択待ちなしでクリアする");
 
             float posAfterClear = dungeon.PlayerPosition;
 
