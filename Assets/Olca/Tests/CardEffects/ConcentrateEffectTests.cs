@@ -1,4 +1,8 @@
 using NUnit.Framework;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Logic.CardEffects;
@@ -131,6 +135,112 @@ namespace Olca.Tests.CardEffects
             Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());
 
             Assert.AreEqual(1.5f, player.NextCardMultiplier);
+        }
+
+        private Card CreateMovingAttack(float moveTime, float attackTime)
+        {
+            return new Card("moving_attack", "一時移動攻撃", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 10, "一時移動攻撃",
+                modifier: CardModifier.CreateAttackBonus(10), moveDirection: "Right", moveDistance: 1,
+                moveMotionTime: moveTime, attackMotionTime: attackTime,
+                penetrationMode: MovePenetrationMode.Invincible);
+        }
+
+        private async Task<bool> AwaitCardUse(Task<bool> pending)
+        {
+            var completed = await Task.WhenAny(pending, Task.Delay(5000));
+            if (completed != pending) battle.CardUsage.InterruptCurrentCard();
+            Assert.AreSame(pending, completed, "実際の待機処理が5秒以内に完了すること");
+            return await pending;
+        }
+
+        [Test]
+        public async Task 集中した一時移動攻撃は実待機後に一度だけ強化される()
+        {
+            var card = CreateMovingAttack(0.05f, 0.05f);
+            player.SetConcentrateBuff(1.5f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card, card });
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+
+            Assert.IsFalse(pending.IsCompleted, "移動モーションを実際に待機する");
+            Assert.IsTrue(player.IsInTemporaryMove);
+            Assert.IsFalse(player.IsConcentrating, "使用開始時点で消費");
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            Assert.IsTrue(await AwaitCardUse(pending));
+            Assert.AreEqual(70, battle.Enemies[0].CurrentHp);
+            Assert.IsFalse(player.IsInTemporaryMove);
+            Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
+            Assert.AreEqual(20, card.GetFinalPower());
+
+            Assert.IsTrue(await AwaitCardUse(battle.CardUsage.TryUseCurrentCardAsync().AsTask()));
+            Assert.AreEqual(50, battle.Enemies[0].CurrentHp, "次の使用へ集中が漏れない");
+        }
+
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public async Task 集中攻撃の実待機中断で元カードと次使用へ強化が漏れない(bool externalCancel, bool afterHit)
+        {
+            var card = CreateMovingAttack(afterHit ? 0.01f : 0.05f, afterHit ? 1f : 0.05f);
+            player.SetConcentrateBuff(1.5f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            using (var cts = new CancellationTokenSource())
+            {
+                var pending = battle.CardUsage.TryUseCurrentCardAsync(cts.Token).AsTask();
+                Assert.IsFalse(pending.IsCompleted);
+                Assert.IsFalse(player.IsConcentrating);
+                if (afterHit)
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(3);
+                    while (battle.Enemies[0].CurrentHp == 100 && DateTime.UtcNow < deadline)
+                        await Task.Delay(10);
+                    Assert.AreEqual(70, battle.Enemies[0].CurrentHp, "攻撃後の待機へ進む");
+                    Assert.IsFalse(pending.IsCompleted);
+                }
+                if (externalCancel) cts.Cancel();
+                else battle.CardUsage.InterruptCurrentCard();
+
+                Assert.IsFalse(await AwaitCardUse(pending), "キャンセルは使用システムへ伝わる");
+                Assert.IsFalse(player.IsInTemporaryMove);
+                Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
+                Assert.AreEqual(afterHit ? 70 : 100, battle.Enemies[0].CurrentHp);
+                Assert.AreEqual(20, card.GetFinalPower());
+                Assert.AreEqual(10, card.Modifier.BonusDamage);
+                Assert.IsFalse(player.IsConcentrating);
+                Assert.AreEqual(1, battle.CardUsage.RemainingCount);
+                Assert.IsTrue(await AwaitCardUse(battle.CardUsage.TryUseCurrentCardAsync().AsTask()));
+                Assert.AreEqual(afterHit ? 50 : 80, battle.Enemies[0].CurrentHp);
+            }
+        }
+
+        [Test]
+        public void 集中した遅延着弾は使用時コピーを保持し新しい集中を消費しない()
+        {
+            var modifier = CardModifier.CreateAttackBonus(10);
+            modifier.AdditionalEffects.Add(new AdditionalEffect
+            {
+                EffectType = AdditionalEffectType.DelayedProjectile,
+                DelayTime = 1f, TargetOffset = new Vector2Int(1, 0),
+                Trigger = DerivativeTrigger.Immediate
+            });
+            var card = new Card("projectile", "投擲", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 10, "遅延着弾", modifier: modifier);
+            player.SetConcentrateBuff(1.5f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            battle.CardUsage.TryUseCurrentCard();
+            Assert.IsFalse(player.IsConcentrating);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            player.SetConcentrateBuff(2f);
+
+            battle.DelayedEffects.Update(999);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            battle.DelayedEffects.Update(1);
+
+            Assert.AreEqual(70, battle.Enemies[0].CurrentHp, "使用時の30ダメージを保持");
+            Assert.AreEqual(2f, player.NextCardMultiplier, "新しい集中は着弾で消費しない");
+            Assert.AreEqual(20, card.GetFinalPower());
+            Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
         }
 
         [Test]

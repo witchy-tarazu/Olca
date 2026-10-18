@@ -111,10 +111,6 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         cancellationToken: ct);
                 }
             }
-            catch (OperationCanceledException)
-            {
-                // 中断された場合（のけぞりなど）
-            }
             finally
             {
                 // 7. 元の位置に戻る（必ず実行）
