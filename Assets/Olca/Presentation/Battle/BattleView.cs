@@ -30,6 +30,7 @@ namespace Olca.Presentation.Battle
         // ========== 内部状態 ==========
         private BattleSystem battleSystem;
         private bool isCustomScreenOpen = false;
+        private Image customScreenBackdrop;
         private CancellationTokenSource animationCts;
 
         // ========== 定数 ==========
@@ -40,6 +41,8 @@ namespace Olca.Presentation.Battle
         public void Initialize(BattleSystem battleSystem)
         {
             this.battleSystem = battleSystem;
+            EnsureCustomScreenBackdrop();
+            customScreenBackdrop.gameObject.SetActive(false);
 
             // イベント購読
             battleSystem.CustomGauge.OnGaugeChanged += OnGaugeChanged;
@@ -57,6 +60,23 @@ namespace Olca.Presentation.Battle
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
 
             Refresh();
+        }
+
+        // カスタム画面の表示だけを暗くし、フィールドや入力処理は変更しない。
+        private void EnsureCustomScreenBackdrop()
+        {
+            if (customScreenBackdrop != null) return;
+            var backdrop = new GameObject("CustomScreenBackdrop", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rect = (RectTransform)backdrop.transform;
+            rect.SetParent(transform, false);
+            rect.SetAsFirstSibling();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            customScreenBackdrop = backdrop.GetComponent<Image>();
+            customScreenBackdrop.color = new Color(0f, 0f, 0f, 0.7f);
+            customScreenBackdrop.raycastTarget = false;
         }
 
         // ========== 更新 ==========
@@ -88,6 +108,8 @@ namespace Olca.Presentation.Battle
         {
             if (isCustomScreenOpen) return;
             isCustomScreenOpen = true;
+            EnsureCustomScreenBackdrop();
+            customScreenBackdrop.gameObject.SetActive(true);
 
             // 前回のアニメーションをキャンセル
             animationCts?.Cancel();
@@ -106,6 +128,7 @@ namespace Olca.Presentation.Battle
         {
             if (!isCustomScreenOpen) return;
             isCustomScreenOpen = false;
+            if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(false);
 
             // 前回のアニメーションをキャンセル
             animationCts?.Cancel();
