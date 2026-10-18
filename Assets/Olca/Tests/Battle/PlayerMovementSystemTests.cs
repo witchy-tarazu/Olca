@@ -9,6 +9,34 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class PlayerMovementSystemTests
     {
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 再開後の入力遮断中も移動時間と氷滑りは進み能動移動は起きない(bool ice)
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(0, 0));
+            var enemy = new Enemy("e", "敵", 50, ElementType.None, new Vector2Int(5, 0));
+            var battle = new BattleSystem(p, new List<Enemy> { enemy }, new Deck());
+            if (ice) battle.Field.ChangePanelType(new Vector2Int(1, 0), PanelType.Ice);
+            Assert.IsTrue(battle.PlayerMovement.TryMove(new Vector2Int(1, 0), new List<Enemy> { enemy }));
+            battle.Pause(BattlePauseReason.User); battle.Tick(1000, null);
+            Assert.AreEqual(1, p.GridPosition.X); Assert.AreEqual(150, battle.PlayerMovement.CurrentCooldownMs);
+            battle.Resume(BattlePauseReason.User); battle.Tick(150, null);
+            Assert.AreEqual(ice ? 2 : 1, p.GridPosition.X);
+            battle.Tick(150, null);
+            Assert.AreEqual(0, battle.PlayerMovement.CurrentCooldownMs);
+            Assert.AreEqual(ice ? 2 : 1, p.GridPosition.X);
+            Assert.AreEqual(50, enemy.CurrentHp); Assert.IsFalse(battle.CustomScreen.IsOpen);
+        }
+
+        [Test]
+        public void 入力遮断解除後は通常入力で再び移動できる()
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(0, 0));
+            var battle = new BattleSystem(p, new List<Enemy> { new Enemy("e", "敵", 50, ElementType.None, new Vector2Int(5, 0)) }, new Deck());
+            battle.Tick(150, null); Assert.AreEqual(0, p.GridPosition.X);
+            battle.Tick(1, new MockInputProvider { Horizontal = 1 }); Assert.AreEqual(1, p.GridPosition.X);
+        }
+
         private PlayerCharacter player;
         private BattleField field;
         private PlayerMovementSystem movement;

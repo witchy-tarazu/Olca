@@ -68,7 +68,7 @@ namespace Olca.Core.Logic.Battle
                 return;
             }
 
-            if (!CanMove) return;
+            if (!CanMove || input == null) return;
 
             // 入力から移動方向を決定（現在は横移動のみ）
             // Horizontalを使用して押しっぱなし移動に対応

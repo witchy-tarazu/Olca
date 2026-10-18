@@ -171,12 +171,9 @@ namespace Olca.Core.Logic.Battle
                 // カスタムゲージを更新
                 customGauge.Update(deltaTimeMs);
 
-                // プレイヤー移動とパネル効果を更新
-                if (input != null)
-                {
-                    playerMovement.Tick(deltaTimeMs, input, enemies);
-                    panelEffects.Tick(deltaTimeMs, player);
-                }
+                // 入力遮断中も自動滑り・移動待機時間は進める。能動入力だけを分離する。
+                playerMovement.Tick(deltaTimeMs, input, enemies);
+                panelEffects.Tick(deltaTimeMs, player);
 
                 // 遅延効果を更新（投擲物の着弾など）
                 delayedEffects.Update(deltaTimeMs);
