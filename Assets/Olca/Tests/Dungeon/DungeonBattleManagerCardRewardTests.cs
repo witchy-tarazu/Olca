@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using System.Linq;
+using Olca.Application.Battle;
 using Olca.Core.Interfaces;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Logic.Integration;
@@ -317,6 +319,50 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(1, ends);
             manager.Tick(0);
             Assert.AreEqual(1, random.FloatCalls);
+        }
+
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void 注入プールはManagerから報酬へ届き取得とスキップの履歴を保つ(bool skip, bool boss)
+        {
+            var factory = new SimpleCardFactory();
+            var definitions = new List<Card> { factory.CreateById("heal"), factory.CreateById("tuning"), factory.CreateById("sword") };
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 30; i++) cells.Add(new MapCell(i));
+            cells[3] = new MapCell(3, new Enemy(boss ? "boss" : "slime", "敵", 50, ElementType.None, new Vector2Int(3, 0)));
+            if (!boss) cells[29] = new MapCell(29, new Enemy("boss", "ボス", 100, ElementType.None, new Vector2Int(29, 0)));
+            var manager = new DungeonBattleManager(new DungeonConfig("pool", "注入検証", 30, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger,
+                rewardPool: new SimpleCardPool(definitions));
+            IReadOnlyList<Card> offered = null;
+            manager.OnCardRewardPresented += cards => offered = cards;
+            var battle = AdvanceToBattle(manager);
+            battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            manager.Tick(0);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            CollectionAssert.AreEqual(definitions.Select(c => c.Id), offered.Select(c => c.Id));
+            int before = manager.Dungeon.GetCurrentDeck().TotalCount;
+            var chosen = offered[0];
+            manager.SelectCardReward(skip ? null : chosen);
+            Assert.AreEqual(boss ? GamePhase.DungeonCleared : GamePhase.Dungeon, manager.CurrentPhase);
+            Assert.AreEqual(before + (skip ? 0 : 1), manager.Dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(skip ? 0 : 1, manager.Dungeon.GetObtainedCards().Count);
+            if (!skip)
+            {
+                Assert.AreSame(chosen, manager.Dungeon.GetObtainedCards()[0]);
+                Assert.AreEqual(CardCategory.Defense, chosen.Category);
+                Assert.AreEqual(definitions[0].Power, chosen.Power);
+                var recipient = new PlayerCharacter(100);
+                recipient.TakeDamage(40);
+                var nextBattle = new BattleSystem(recipient, new List<Enemy> {
+                    new Enemy("next", "次戦", 100, ElementType.None, new Vector2Int(3, 0)) }, new Deck());
+                nextBattle.CardUsage.EnqueueCards(new List<Card> { chosen });
+                Assert.IsTrue(nextBattle.CardUsage.TryUseCurrentCard());
+                Assert.AreEqual(80, recipient.CurrentHp, "報酬Healは攻撃の仮カードでなく回復として機能する");
+            }
+            Assert.AreEqual(3, definitions.Count);
         }
     }
 }

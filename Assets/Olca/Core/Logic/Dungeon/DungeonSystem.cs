@@ -66,7 +66,8 @@ namespace Olca.Core.Logic.Dungeon
             IGameLogger logger,
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
-            FusionSystem fusionSystem = null)
+            FusionSystem fusionSystem = null,
+            ICardPool rewardPool = null)
         {
             // 依存関係の初期化
             map = new DungeonMap(config);
@@ -84,7 +85,7 @@ namespace Olca.Core.Logic.Dungeon
             playerMovement = new PlayerMovement(initialPosition: 0f);
             actionSystem = new ActionSystem();
             contactSystem = new ContactSystem(map, actionSystem);
-            cardRewardSystem = new CardRewardSystem(initialDeck, random);
+            cardRewardSystem = new CardRewardSystem(initialDeck, random, rewardPool);
             obstacleSystem = new ObstacleSystem(logger);
             playerCharacter = player;
             randomProvider = random;

@@ -1,4 +1,7 @@
 using NUnit.Framework;
+using System;
+using System.Linq;
+using Olca.Application.Battle;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Domain;
 using Olca.Tests.Mocks;
@@ -134,7 +137,7 @@ namespace Olca.Tests.Dungeon
         // ========== ICardPool 注入テスト ==========
 
         [Test]
-        public void GenerateCardChoices_CardPoolを注入するとプールからカードが取得される()
+        public void GenerateCardChoices_通常候補不足は代替生成せず失敗する()
         {
             // Arrange: 特定カードだけのプールを注入
             var poolCard = new Card("pool_sword", "プールソード", 1, CardRarity.Normal,
@@ -144,15 +147,9 @@ namespace Olca.Tests.Dungeon
             var rewardSystem = new CardRewardSystem(CreateTestDeck(), mockRandom, cardPool);
             var enemy = new Enemy("slime", "スライム", 50, ElementType.None, new Vector2Int(5, 0));
 
-            // Act
-            var choices = rewardSystem.GenerateCardChoices(enemy);
-
-            // Assert
-            Assert.AreEqual(3, choices.Count, "通常敵は3枚の選択肢");
-            foreach (var card in choices)
-            {
-                Assert.AreEqual("pool_sword", card.Id, "プールからカードが取得されている");
-            }
+            Assert.IsFalse(rewardSystem.TryGenerateConfiguredChoices(enemy, out var choices));
+            Assert.IsEmpty(choices);
+            Assert.Throws<InvalidOperationException>(() => rewardSystem.GenerateCardChoices(enemy));
         }
 
         [Test]
@@ -185,6 +182,87 @@ namespace Olca.Tests.Dungeon
             // Assert: Limitedがないので全カードからフォールバック
             Assert.AreEqual(1, choices.Count, "ボスは1枚");
             Assert.AreEqual("normal_card", choices[0].Id, "フォールバックでNormalカードが返る");
+        }
+
+        private sealed class FixedCountingRandom : IRandomProvider
+        {
+            public int Calls;
+            public int Range(int min, int max) { Calls++; return min; }
+            public float Range(float min, float max) => min;
+            public float Value => 0f;
+        }
+
+        [Test]
+        public void 固定乱数でも同一ID段階を除外して三回で異なる実定義を抽選する()
+        {
+            var factory = new SimpleCardFactory();
+            var heal = factory.CreateById(SimpleCardFactory.Heal);
+            var tuning = factory.CreateById(SimpleCardFactory.Tuning);
+            var sword = factory.CreateById(SimpleCardFactory.Sword);
+            tuning.Modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison, Power = 7 });
+            var definitions = new List<Card> { heal, heal, heal.Clone(), tuning, tuning.Clone(), sword };
+            var random = new FixedCountingRandom();
+            var rewards = new CardRewardSystem(CreateTestDeck(), random, new SimpleCardPool(definitions));
+            var enemy = new Enemy("normal", "敵", 10, ElementType.None, new Vector2Int(3, 0));
+            Assert.IsTrue(rewards.TryGenerateConfiguredChoices(enemy, out var choices));
+            Assert.AreEqual(3, random.Calls);
+            CollectionAssert.AreEqual(new[] { heal.Id, tuning.Id, sword.Id }, choices.Select(c => c.Id));
+            Assert.AreEqual(CardCategory.Defense, choices[0].Category);
+            Assert.AreEqual(CardCategory.Tuning, choices[1].Category);
+            Assert.AreEqual(heal.Power, choices[0].Power);
+            Assert.AreEqual(heal.Description, choices[0].Description);
+            choices[1].Modifier.AdditionalEffects[0].Power = 99;
+            Assert.AreEqual(7, tuning.Modifier.AdditionalEffects[0].Power);
+            Assert.AreEqual(6, definitions.Count);
+            var next = rewards.GenerateCardChoices(enemy);
+            Assert.AreEqual(7, next[1].Modifier.AdditionalEffects[0].Power);
+        }
+
+        [Test]
+        public void 同じIDでも異段階は別候補で同時に選ばれる()
+        {
+            var factory = new SimpleCardFactory();
+            var normal = factory.CreateById(SimpleCardFactory.Sword);
+            var lv1 = factory.CreateExceeded(normal, ExceedLevel.Lv1);
+            var lv2 = factory.CreateExceeded(normal, ExceedLevel.Lv2);
+            var rewards = new CardRewardSystem(CreateTestDeck(), mockRandom,
+                new SimpleCardPool(new List<Card> { normal, lv1, lv1.Clone(), lv2 }));
+            var choices = rewards.GenerateCardChoices(new Enemy("normal", "敵", 10, ElementType.None, new Vector2Int(3, 0)));
+            CollectionAssert.AreEqual(new[] { ExceedLevel.Normal, ExceedLevel.Lv1, ExceedLevel.Lv2 }, choices.Select(c => c.ExceedLevel));
+            Assert.IsTrue(choices.All(c => c.Id == normal.Id));
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void 通常候補不足は乱数を消費せず空の失敗結果にする(int count)
+        {
+            var factory = new SimpleCardFactory();
+            var definitions = new[] { factory.CreateById("sword"), factory.CreateById("heal") }.Take(count).ToList();
+            definitions.Add(null);
+            if (count > 0) definitions.Add(definitions[0].Clone());
+            var random = new FixedCountingRandom();
+            var rewards = new CardRewardSystem(CreateTestDeck(), random, new SimpleCardPool(definitions));
+            Assert.IsFalse(rewards.TryGenerateConfiguredChoices(new Enemy("normal", "敵", 10, ElementType.None, new Vector2Int(3, 0)), out var choices));
+            Assert.IsEmpty(choices);
+            Assert.AreEqual(0, random.Calls);
+        }
+
+        [TestCase(0, 0)]
+        [TestCase(1, 1)]
+        [TestCase(2, 2)]
+        [TestCase(4, 3)]
+        public void 設定済みボス候補は一から最大三択で重複しない(int count, int expected)
+        {
+            var factory = new SimpleCardFactory();
+            var definitions = new[] { "sword", "heal", "shield", "tuning" }.Take(count).Select(factory.CreateById).ToList();
+            if (count > 0) definitions.Add(definitions[0].Clone());
+            var random = new FixedCountingRandom();
+            var rewards = new CardRewardSystem(CreateTestDeck(), random, new SimpleCardPool(definitions));
+            Assert.AreEqual(count > 0, rewards.TryGenerateConfiguredChoices(new Enemy("boss", "ボス", 100, ElementType.None, new Vector2Int(9, 0)), out var choices));
+            Assert.AreEqual(expected, choices.Count);
+            Assert.AreEqual(expected, random.Calls);
+            Assert.AreEqual(expected, choices.Select(c => (c.Id, c.ExceedLevel)).Distinct().Count());
         }
     }
 }

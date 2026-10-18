@@ -24,13 +24,17 @@ namespace Olca.Tests.Mocks
         /// </summary>
         public Card GetRandomCard(CardRarity rarity, IRandomProvider random)
         {
-            var filtered = cards.Where(c => c.Rarity == rarity).ToList();
-            var pool = filtered.Count > 0 ? filtered : cards;
+            var pool = GetCandidates(rarity);
 
             if (pool.Count == 0) return null;
 
             int index = random.Range(0, pool.Count);
             return pool[index];
+        }
+        public IReadOnlyList<Card> GetCandidates(CardRarity rarity)
+        {
+            var filtered = cards.Where(c => c != null && c.Rarity == rarity).ToList();
+            return filtered.Count > 0 ? filtered : cards;
         }
     }
 }

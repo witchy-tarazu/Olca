@@ -57,6 +57,11 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public List<Card> GenerateCardChoices(Enemy defeatedEnemy)
         {
+            if (cardPool != null)
+            {
+                if (TryGenerateConfiguredChoices(defeatedEnemy, out var configured)) return configured;
+                throw new InvalidOperationException("報酬プールの有効候補が不足しています。通常は異なる3候補、ボスは1候補以上が必要です。");
+            }
             var choices = new List<Card>();
 
             // ボスの場合は1枚のみ（高レアリティ）
@@ -79,17 +84,42 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
+        /// 設定済み候補から重複なしで抽選する。候補不足時は乱数を消費せず失敗する。
+        /// 現行の均等抽選基盤。製品プールの重み付き抽選は別途設定が必要。
+        /// </summary>
+        public bool TryGenerateConfiguredChoices(Enemy defeatedEnemy, out List<Card> choices)
+        {
+            choices = new List<Card>();
+            if (cardPool == null || defeatedEnemy == null) return false;
+            bool boss = defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss");
+            var definitions = cardPool.GetCandidates(boss ? CardRarity.Limited : CardRarity.Normal);
+            var candidates = new List<Card>();
+            var seen = new HashSet<(string, ExceedLevel)>();
+            if (definitions != null)
+            {
+                foreach (var card in definitions)
+                {
+                    if (card != null && !string.IsNullOrEmpty(card.Id) && seen.Add((card.Id, card.ExceedLevel)))
+                        candidates.Add(card);
+                }
+            }
+            if (candidates.Count < (boss ? 1 : REWARD_CHOICE_COUNT)) return false;
+            int count = boss ? Math.Min(REWARD_CHOICE_COUNT, candidates.Count) : REWARD_CHOICE_COUNT;
+            for (int i = 0; i < count; i++)
+            {
+                int index = random.Range(0, candidates.Count);
+                choices.Add(candidates[index].Clone());
+                candidates.RemoveAt(index);
+            }
+            return true;
+        }
+
+        /// <summary>
         /// カードを生成する
         /// カードプールが設定されている場合はそこから取得し、なければフォールバックカードを生成する
         /// </summary>
         private Card GenerateCard(CardRarity targetRarity)
         {
-            // カードプールが設定されている場合はそこから取得
-            if (cardPool != null)
-            {
-                return cardPool.GetRandomCard(targetRarity, random);
-            }
-
             // フォールバック: カードプール未設定時はダミーカードを生成
             string[] cardIds = { "sword", "heal", "shield", "fire", "ice" };
             int randomIndex = random.Range(0, cardIds.Length);

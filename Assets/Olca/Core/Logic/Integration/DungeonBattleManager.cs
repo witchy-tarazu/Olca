@@ -41,7 +41,8 @@ namespace Olca.Core.Logic.Integration
             IGameLogger logger,
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
-            FusionSystem fusionSystem = null)
+            FusionSystem fusionSystem = null,
+            ICardPool rewardPool = null)
         {
             this.player = player;
             this.randomProvider = randomProvider;
@@ -56,7 +57,8 @@ namespace Olca.Core.Logic.Integration
                 logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem);
+                fusionSystem: fusionSystem,
+                rewardPool: rewardPool);
 
             // イベント購読
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
