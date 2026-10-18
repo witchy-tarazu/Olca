@@ -23,13 +23,19 @@ namespace Olca.Presentation.Effects
         private Queue<WorldDamageNumberView> pool = new Queue<WorldDamageNumberView>();
         private HashSet<WorldDamageNumberView> activeInstances = new HashSet<WorldDamageNumberView>();
 
+        private CancellationTokenSource clearCts = new CancellationTokenSource();
+        private bool isDestroyed;
+
         private void Awake()
         {
             if (poolParent == null)
                 poolParent = transform;
 
             for (int i = 0; i < initialPoolSize; i++)
-                CreateNewInstance();
+            {
+                var instance = CreateNewInstance();
+                if (instance != null) pool.Enqueue(instance);
+            }
         }
 
         /// <summary>
@@ -42,12 +48,14 @@ namespace Olca.Presentation.Effects
 
         private async UniTask ShowDamageAsync(int damage, Vector3 worldPosition, CancellationToken ct)
         {
+            if (isDestroyed) return;
             var instance = Get();
             if (instance == null) return;
 
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, clearCts.Token);
             try
             {
-                await instance.ShowAsync(damage, worldPosition, ct);
+                await instance.ShowAsync(damage, worldPosition, linkedCts.Token);
             }
             finally
             {
@@ -57,14 +65,15 @@ namespace Olca.Presentation.Effects
 
         private WorldDamageNumberView Get()
         {
-            WorldDamageNumberView instance;
-
-            if (pool.Count > 0)
-            {
+            if (isDestroyed) return null;
+            WorldDamageNumberView instance = null;
+            // 外部で破棄された待機Viewは再貸出しない。
+            while (pool.Count > 0 && instance == null)
                 instance = pool.Dequeue();
-            }
-            else
+
+            if (instance == null)
             {
+                activeInstances.RemoveWhere(view => view == null);
                 if (activeInstances.Count >= maxPoolSize)
                 {
                     Debug.LogWarning($"[WorldDamageNumberPool] 最大プールサイズ({maxPoolSize})に達しています。");
@@ -73,14 +82,15 @@ namespace Olca.Presentation.Effects
                 instance = CreateNewInstance();
             }
 
-            activeInstances.Add(instance);
+            if (instance != null) activeInstances.Add(instance);
             return instance;
         }
 
         private void Return(WorldDamageNumberView instance)
         {
-            if (instance == null) return;
-            activeInstances.Remove(instance);
+            // 完了済みの貸出だけを一度返却する。破棄済みViewも管理対象から除く。
+            if (ReferenceEquals(instance, null) || !activeInstances.Remove(instance)) return;
+            if (instance == null || isDestroyed) return;
             instance.gameObject.SetActive(false);
             pool.Enqueue(instance);
         }
@@ -94,26 +104,42 @@ namespace Olca.Presentation.Effects
             }
             var instance = Instantiate(prefab, poolParent);
             instance.gameObject.SetActive(false);
-            pool.Enqueue(instance);
             return instance;
         }
 
         public void ClearAll()
         {
+            if (isDestroyed) return;
             foreach (var instance in activeInstances)
             {
-                if (instance != null)
-                {
-                    instance.gameObject.SetActive(false);
-                    pool.Enqueue(instance);
-                }
+                if (instance != null) instance.gameObject.SetActive(false);
             }
-            activeInstances.Clear();
+            // キャンセル完了前に再貸出すると、古い表示のfinallyが新しい表示を消してしまう。
+            // 待機キューへの返却はShowDamageAsyncのfinallyに任せる。
+            var previous = clearCts;
+            clearCts = new CancellationTokenSource();
+            previous.Cancel();
+            previous.Dispose();
         }
 
         private void OnDestroy()
         {
-            ClearAll();
+            if (isDestroyed) return;
+            isDestroyed = true;
+            clearCts.Cancel();
+            clearCts.Dispose();
+            // poolParentが外部Transformの場合も所有するViewを残さない。
+            foreach (var instance in activeInstances) DestroyInstance(instance);
+            foreach (var instance in pool) DestroyInstance(instance);
+            activeInstances.Clear();
+            pool.Clear();
+        }
+
+        private static void DestroyInstance(WorldDamageNumberView instance)
+        {
+            if (instance == null) return;
+            if (UnityEngine.Application.isPlaying) Destroy(instance.gameObject);
+            else DestroyImmediate(instance.gameObject);
         }
     }
 }

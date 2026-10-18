@@ -6,6 +6,7 @@
         "UnityEditor.TestRunner",
         "Olca.Core",
         "Olca.Application",
+        "Olca.Presentation",
         "UniTask"
     ],
     "includePlatforms": [

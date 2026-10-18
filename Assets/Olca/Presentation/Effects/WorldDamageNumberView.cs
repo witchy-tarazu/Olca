@@ -72,8 +72,12 @@ namespace Olca.Presentation.Effects
             catch (System.OperationCanceledException) { }
             finally
             {
-                gameObject.SetActive(false);
-                textMesh.color = originalColor;
+                // 破棄によるキャンセルではUnityオブジェクトにアクセスしない。
+                if (this != null)
+                {
+                    gameObject.SetActive(false);
+                    if (textMesh != null) textMesh.color = originalColor;
+                }
             }
         }
 
