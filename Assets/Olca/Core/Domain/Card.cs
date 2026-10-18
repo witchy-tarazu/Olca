@@ -20,6 +20,9 @@ namespace Olca.Core.Domain
         /// <summary>コスト</summary>
         public int Cost { get; }
 
+        /// <summary>調律を反映した現在コスト。Costには元の定義値を保持する。</summary>
+        public int GetFinalCost() => Modifier.ZeroCost ? 0 : Cost;
+
         /// <summary>レアリティ</summary>
         public CardRarity Rarity { get; }
 

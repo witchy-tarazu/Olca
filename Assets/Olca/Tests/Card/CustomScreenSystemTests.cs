@@ -14,6 +14,81 @@ namespace Olca.Tests.CardTests
     [TestFixture]
     public class CustomScreenSystemTests
     {
+        private static Card ZeroCostCard(string id, int cost = 2, bool dedicated = false, bool material = false)
+            => new Card(id, id, cost, CardRarity.Normal, material ? CardCategory.Tuning : CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 10, "試験", modifier: new CardModifier { ZeroCost = dedicated });
+
+        [TestCase(false, 3)]
+        [TestCase(true, 2)]
+        public void 専用0化だけが同系統割引の最低1より優先し元から0のカードと区別される(bool dedicated, int expected)
+        {
+            var prefix = ZeroCostCard("prefix");
+            var zero = ZeroCostCard("zero", 0, dedicated);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { prefix, zero }));
+            cs.Open(new Card[0], random);
+            Assert.IsTrue(cs.TrySelectCard(prefix));
+            Assert.IsTrue(cs.TrySelectCard(zero));
+            Assert.AreEqual(expected, cs.GetTotalUsedCost());
+            Assert.AreEqual(0, zero.Cost);
+            Assert.AreEqual(dedicated, zero.Modifier.ZeroCost);
+        }
+
+        [Test]
+        public void 専用0化カードを先頭に選んでも次の同系統割引に数え末尾解除と再選択で再計算する()
+        {
+            var zero = ZeroCostCard("zero", 7, true); var next = ZeroCostCard("next");
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { zero, next }), maxCost: 1);
+            cs.Open(new Card[0], random);
+            Assert.IsTrue(cs.TrySelectCard(zero)); Assert.AreEqual(0, cs.GetTotalUsedCost());
+            Assert.IsTrue(cs.TrySelectCard(next)); Assert.AreEqual(1, cs.GetTotalUsedCost());
+            Assert.IsFalse(cs.TryDeselectCard(zero));
+            Assert.IsTrue(cs.TryDeselectCard(next)); Assert.AreEqual(0, cs.GetTotalUsedCost());
+            Assert.IsTrue(cs.TryDeselectCard(zero));
+            Assert.IsFalse(cs.TrySelectCard(next), "0化カードを外せば先頭の通常コスト2は上限1を超える");
+            Assert.IsTrue(cs.TrySelectCard(zero)); Assert.IsTrue(cs.TrySelectCard(next));
+            Assert.AreEqual(1, cs.GetTotalUsedCost()); Assert.AreEqual(7, zero.Cost);
+        }
+
+        [Test]
+        public void 専用0化調律のUndoで素材と基礎コストを戻し選択済み結果以降を解除する()
+        {
+            var target = ZeroCostCard("target", 4); var material = ZeroCostCard("material", 1, true, true);
+            var prefix = ZeroCostCard("prefix"); var suffix = ZeroCostCard("suffix");
+            var cs = UndoScreen(target, material, prefix, suffix);
+            cs.TrySelectCard(prefix);
+            var tuned = cs.ExecuteTuning(target, material).ResultCard;
+            Assert.NotNull(tuned); Assert.AreEqual(0, tuned.GetFinalCost()); Assert.AreEqual(4, tuned.Cost);
+            Assert.IsFalse(target.Modifier.ZeroCost);
+            cs.TrySelectCard(tuned); cs.TrySelectCard(suffix);
+            Assert.AreEqual(3, cs.GetTotalUsedCost());
+            Assert.IsTrue(cs.TryUndoCustomization());
+            CollectionAssert.AreEqual(new[] { prefix }, cs.SelectedCards);
+            var restored = cs.CurrentHand.Single(c => c.Id == "target");
+            Assert.IsFalse(restored.Modifier.ZeroCost); Assert.AreEqual(4, restored.GetFinalCost());
+            Assert.IsTrue(cs.CurrentHand.Single(c => c.Id == "material").Modifier.ZeroCost);
+            Assert.AreEqual(2, cs.GetTotalUsedCost());
+        }
+
+        [Test]
+        public void 専用0化調律は重ねがけや複製で維持され元素材へ漏れず確定キューへ渡る()
+        {
+            var target = ZeroCostCard("target", 4); var material = ZeroCostCard("material", 1, true, true);
+            var next = ZeroCostCard("next");
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy>(),
+                new Deck(new List<Card> { target, material, next }), tuningSystem: new TuningSystem());
+            battle.SetFirstStrike(); battle.OpenCustomScreen(random);
+            var cs = battle.CustomScreen;
+            var tuned = cs.ExecuteTuning(target, material).ResultCard;
+            var copy = tuned.Clone(); copy.Modifier.ZeroCost = false;
+            Assert.IsTrue(tuned.Modifier.ZeroCost); Assert.AreEqual(4, copy.GetFinalCost());
+            Assert.AreEqual(0, tuned.ApplyTuning(ZeroCostCard("ordinary")).GetFinalCost());
+            cs.TrySelectCard(tuned); cs.TrySelectCard(next); cs.Confirm();
+            CollectionAssert.AreEqual(new[] { tuned, next }, battle.CardUsage.GetRemainingCards());
+            Assert.AreEqual(0, battle.CardUsage.CurrentCard.GetFinalCost());
+            Assert.AreEqual(4, target.GetFinalCost());
+            Assert.IsFalse(cs.TryUndoCustomization());
+        }
+
         private MockRandomProvider random;
         private Deck deck;
         private CustomScreenSystem customScreen;

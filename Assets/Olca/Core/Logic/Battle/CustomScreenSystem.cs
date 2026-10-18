@@ -309,12 +309,15 @@ namespace Olca.Core.Logic.Battle
 
         private static int CalculateCardCost(Card card, Card previous, bool hasNone)
         {
+            // 専用効果による0だけを優先する。選択順には通常どおり含める。
+            if (card.Modifier.ZeroCost) return 0;
             // Noneの系統扱いは仕様未確定のため、既存の「選択済みにNoneがあれば割引」を維持する。
             bool discounted = card.Series == CardSeries.None
                 ? hasNone
                 : previous != null && previous.Series == card.Series;
             // 最新のゲーム全体仕様第5節: 連続選択の割引は最低1。
-            return discounted ? Math.Max(1, card.Cost - 1) : card.Cost;
+            int cost = card.GetFinalCost();
+            return discounted ? Math.Max(1, cost - 1) : cost;
         }
 
         /// <summary>

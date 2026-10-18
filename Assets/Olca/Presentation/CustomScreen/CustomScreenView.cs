@@ -1055,7 +1055,7 @@ namespace Olca.Presentation.CustomScreen
                 {
                     // コスト、威力、説明を表示
                     selectedCardDescription.text =
-                        $"コスト: {cursorCard.Cost}\n" +
+                        $"コスト: {cursorCard.GetFinalCost()}\n" +
                         $"威力: {cursorCard.Power}\n\n" +
                         $"{cursorCard.Description}";
                 }

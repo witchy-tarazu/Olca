@@ -8,6 +8,9 @@ namespace Olca.Core.Domain
     /// </summary>
     public class CardModifier
     {
+        /// <summary>専用のコスト0化効果。基礎コストが0のカードとは区別する。</summary>
+        public bool ZeroCost { get; set; }
+
         /// <summary>追加ダメージ</summary>
         public int BonusDamage { get; set; }
 
@@ -36,6 +39,7 @@ namespace Olca.Core.Domain
             var merged = Clone();
             if (other == null) return merged;
             merged.BonusDamage += other.BonusDamage;
+            merged.ZeroCost |= other.ZeroCost;
             merged.DamageMultiplier *= other.DamageMultiplier;
             merged.ElementOverride = other.ElementOverride ?? ElementOverride;
             merged.AdditionalEffects.AddRange(other.AdditionalEffects.ConvertAll(effect => effect?.Clone()));

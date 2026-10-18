@@ -72,7 +72,7 @@ namespace Olca.Presentation.CustomScreen
             this.parentView = parent;
 
             // カード情報表示（コストのみ）
-            costText.text = $"{card.Cost}";
+            costText.text = $"{card.GetFinalCost()}";
 
             // クリックイベント
             cardButton.onClick.AddListener(() => parentView.OnCardClicked(card));
