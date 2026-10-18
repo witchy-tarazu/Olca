@@ -133,11 +133,13 @@ namespace Olca.Application.Dungeon
             var tuningSystem = new TuningSystem();
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
 
+            var initialDeck = CreateInitialDeck();
+            memoryCheckpoints = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck);
             manager = new DungeonBattleManager(
-                dungeonConfig, playerCharacter, CreateInitialDeck(), randomProvider, logger,
+                dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem);
+                fusionSystem: fusionSystem, checkpoints: memoryCheckpoints);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -472,6 +474,42 @@ namespace Olca.Application.Dungeon
                 f.CreateById(SimpleCardFactory.Heal),
                 f.CreateById(SimpleCardFactory.Shield),
             });
+        }
+
+        private DungeonCheckpointSession memoryCheckpoints;
+        public bool RetryMemoryCheckpoint()
+        {
+            bool saved = manager != null && manager.RetryCheckpoint();
+            if (saved && manager.CurrentPhase == GamePhase.Dungeon) manager.ResumeAfterBattle();
+            return saved;
+        }
+        // UI/実ファイル保存は別単位。呼出時に候補を検証してから旧モデルを破棄する。
+        public bool TryRestoreMemoryCheckpoint(out string error)
+        {
+            error = null;
+            if (manager == null || memoryCheckpoints == null || manager.Dungeon.IsCheckpointBlocked)
+            { error = "保存が未完了です"; return false; }
+            var factory = new SimpleCardFactory();
+            if (!DungeonBattleManager.TryRestoreCheckpoint(memoryCheckpoints, randomProvider, logger,
+                out var restored, out error, new ExceedSystem(factory), new TuningSystem(),
+                new FusionSystem(new SimpleFusionRecipeProvider(), factory))) return false;
+            if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }
+            if (IsUserPaused) SetUserPaused(false);
+            transitionCts?.Cancel(); battleSession?.Detach();
+            manager.OnBattleStarted -= OnBattleStarted; manager.OnBattleEnded -= OnBattleEnded;
+            manager.OnCardRewardPresented -= OnCardRewardPresented; manager.OnGameOver -= OnGameOver;
+            manager.OnDungeonClearCompleted -= OnDungeonCleared;
+            pendingCardChoices = null; cardSelectionView?.Hide();
+            gameFieldView?.OnBattleEnded(); battleFieldReady = false;
+            battleView?.gameObject.SetActive(false);
+            manager = restored;
+            manager.OnBattleStarted += OnBattleStarted; manager.OnBattleEnded += OnBattleEnded;
+            manager.OnCardRewardPresented += OnCardRewardPresented; manager.OnGameOver += OnGameOver;
+            manager.OnDungeonClearCompleted += OnDungeonCleared;
+            gameFieldView?.Initialize(manager.Dungeon);
+            manager.ActivateCheckpoint();
+            if (manager.CurrentPhase == GamePhase.Dungeon) gameFieldView?.ShowHUDAsync(0).Forget();
+            return true;
         }
 
         private void OnDestroy()

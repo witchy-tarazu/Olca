@@ -99,6 +99,13 @@ namespace Olca.Core.Logic.Battle
         /// カスタム画面を開く（バトルシステムから未使用カードを受け取る）
         /// </summary>
         /// <param name="remainingCards">バトル中に未使用だったカード</param>
+        private bool checkpointFirstOpen;
+        internal void RestoreCheckpointHand(IReadOnlyList<Card> cards)
+        {
+            if (IsOpen || currentHand.Count > 0) throw new InvalidOperationException("初回手札は開始前だけ復元できます");
+            currentHand.AddRange(cards); checkpointFirstOpen = true;
+        }
+
         public void Open(IEnumerable<Card> remainingCards, IRandomProvider random)
         {
             if (IsOpen) return;
@@ -115,12 +122,13 @@ namespace Olca.Core.Logic.Battle
             // 仕様: 選択しなかったカードは次のターンも手札に残る
             // 手札が上限になるまでドロー（既存の手札枚数を考慮）
             int drawCount = maxHandSize - currentHand.Count;
-            if (drawCount > 0)
+            if (drawCount > 0 && !checkpointFirstOpen)
             {
                 var drawnCards = deck.DrawCards(drawCount, random);
                 currentHand.AddRange(drawnCards);
             }
 
+            checkpointFirstOpen = false;
             OnScreenOpened?.Invoke(currentHand);
         }
 

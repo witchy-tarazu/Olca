@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Linq;
 using Olca.Core.Logic.Integration;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Logic.Battle;
@@ -683,6 +684,199 @@ namespace Olca.Tests.Integration
 
             // バトル中にジャンプしても何も起こらない（エラーにならない）
             manager.Jump();
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class CheckpointFlowTests
+    {
+        private sealed class SeedRandom : Olca.Core.Interfaces.IRandomProvider
+        {
+            public int Seed, Calls;
+            public int Range(int min, int max) { Calls++; return System.Math.Max(min, System.Math.Min(Seed, max - 1)); }
+            public float Range(float min, float max) { Calls++; return min; }
+            public float Value => 0;
+        }
+        private sealed class FailingStore : ICheckpointStore
+        {
+            private readonly MemoryCheckpointStore memory;
+            public bool Fail;
+            public FailingStore(CheckpointDefinitions definitions) { memory = new MemoryCheckpointStore(definitions); }
+            public bool TryWrite(CheckpointDto dto, out string error)
+            { if (Fail) { error = "fixture保存失敗"; return false; } return memory.TryWrite(dto, out error); }
+            public CheckpointDto Read() => memory.Read();
+        }
+        private DungeonBattleManager manager;
+        private DungeonCheckpointSession session;
+        private FailingStore store;
+        private SeedRandom random;
+        private void Create(bool failDeparture = false)
+        {
+            var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var deck = new Deck(new List<Card> { factory.CreateById("sword"), factory.CreateById("sword"), factory.CreateById("heal") });
+            var defaults = DungeonCheckpointSession.CreateDefault(map, deck);
+            store = new FailingStore(defaults.Definitions) { Fail = failDeparture };
+            session = new DungeonCheckpointSession(defaults.Definitions, store); random = new SeedRandom();
+            manager = new DungeonBattleManager(map, new PlayerCharacter(100), deck, random, new MockLogger(), checkpoints: session);
+            if (!failDeparture)
+            {
+                // 製品値に触れず、既存抽選で報酬ありとなるfixtureのSeedを探す。
+                for (int seed = 0; seed < 100; seed++)
+                {
+                    var dto = store.Read(); dto.Enemies[0].GridX = 4;
+                    var e = new CheckpointBattleDto { ContactCell = 3, ParticipantCells = new[] { 3 }, HandLimit = 10 };
+                    Assert.IsTrue(CheckpointBattlePlan.TryCreate(dto, e, defaults.Definitions, seed, null,
+                        c => defaults.Definitions.CaptureKnownCard("reward", c).DefinitionKey, out var plan, out var error), error);
+                    if (plan.Snapshot.Battle.RewardOffered) { random.Seed = seed; break; }
+                }
+            }
+        }
+        private void Contact(bool dash = false)
+        {
+            if (dash) manager.StartDash();
+            for (int i = 0; i < 10 && manager.CurrentBattle == null && !manager.Dungeon.IsCheckpointBlocked; i++) manager.Tick(50);
+        }
+        private void Open()
+        {
+            manager.CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            manager.CurrentBattle.OpenCustomScreen(random);
+        }
+        private void Win()
+        {
+            foreach (var enemy in manager.CurrentBattle.Enemies.ToArray())
+                if (!enemy.IsDead && !enemy.IsSummoned) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
+        }
+        private void Restore()
+        {
+            Assert.IsTrue(manager.SuspendForCheckpoint());
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session, random, new MockLogger(), out var restored, out var error), error);
+            manager = restored; manager.ActivateCheckpoint();
+        }
+
+        [Test]
+        public void 出撃保存失敗は進行せず再試行で初めて探索開始する()
+        {
+            Create(true); manager.Tick(1000); Assert.AreEqual(0, manager.Dungeon.PlayerPosition); Assert.IsNull(store.Read());
+            store.Fail = false; Assert.IsTrue(manager.RetryCheckpoint());
+            Assert.AreEqual(CheckpointBoundary.Departure, store.Read().Boundary);
+            manager.Tick(50); Assert.Greater(manager.Dungeon.PlayerPosition, 0);
+        }
+
+        [Test]
+        public void 開始保存失敗では通知と初撃を行わず再試行でも再抽選しない()
+        {
+            Create(); int starts = 0;
+            manager.OnBattleStarted += (b, c) => {
+                starts++; Assert.AreEqual(CheckpointBoundary.BattleStart, store.Read().Boundary);
+                Assert.AreEqual(50, b.Enemies[0].CurrentHp);
+            };
+            store.Fail = true; Contact(true);
+            Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.IsNull(manager.CurrentBattle);
+            Assert.AreEqual(0, starts); Assert.AreEqual(50, manager.Dungeon.Map.GetCell(3).Enemy.CurrentHp);
+            int calls = random.Calls; Assert.IsFalse(manager.RetryCheckpoint()); Assert.AreEqual(calls, random.Calls);
+            store.Fail = false; Assert.IsTrue(manager.RetryCheckpoint());
+            Assert.AreEqual(1, starts); Assert.AreEqual(35, manager.CurrentBattle.Enemies[0].CurrentHp);
+            Assert.IsFalse(manager.RetryCheckpoint()); Assert.AreEqual(35, manager.CurrentBattle.Enemies[0].CurrentHp);
+            Open(); Assert.AreEqual(calls, random.Calls); Assert.AreEqual(3, manager.CurrentBattle.CustomScreen.CurrentHand.Count);
+        }
+
+        [Test]
+        public void 戦闘モデル破棄から同じ初回手札と初撃一回を復元し旧個体を拒否する()
+        {
+            Create(); Contact(true); Open();
+            var old = manager; var oldCard = manager.CurrentBattle.CustomScreen.CurrentHand[0];
+            var before = manager.CurrentBattle.CustomScreen.CurrentHand.Select(c => c.Id).ToArray();
+            Restore(); Open();
+            CollectionAssert.AreEqual(before, manager.CurrentBattle.CustomScreen.CurrentHand.Select(c => c.Id));
+            Assert.IsFalse(manager.CurrentBattle.CustomScreen.TrySelectCard(oldCard));
+            Assert.AreEqual(35, manager.CurrentBattle.Enemies[0].CurrentHp);
+            manager.ActivateCheckpoint(); Assert.AreEqual(35, manager.CurrentBattle.Enemies[0].CurrentHp);
+            old.Tick(1000); Assert.AreEqual(35, manager.CurrentBattle.Enemies[0].CurrentHp);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 報酬復元と保存再試行で二重取得せず撃破敵を再出現させない(bool skip)
+        {
+            Create(); Contact(); List<Card> oldChoices = null;
+            manager.OnCardRewardPresented += choices => oldChoices = choices.ToList(); Win();
+            Assert.NotNull(oldChoices); var expected = oldChoices.Select(c => c.Id).ToArray();
+            Restore(); List<Card> choicesNow = null;
+            manager.OnCardRewardPresented += choices => choicesNow = choices.ToList(); Win();
+            CollectionAssert.AreEqual(expected, choicesNow.Select(c => c.Id));
+            manager.SelectCardReward(oldChoices[0]); Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            int count = manager.Dungeon.GetCurrentDeck().TotalCount;
+            store.Fail = true; manager.SelectCardReward(skip ? null : choicesNow[0]);
+            manager.SelectCardReward(choicesNow[0]); Assert.AreEqual(count, manager.Dungeon.GetCurrentDeck().TotalCount);
+            Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);
+            store.Fail = false; Assert.IsTrue(manager.RetryCheckpoint());
+            manager.SelectCardReward(choicesNow[0]); manager.Dungeon.OnCardSelectionCompleted(null);
+            Assert.AreEqual(count + (skip ? 0 : 1), manager.Dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(skip ? 0 : 1, manager.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(CheckpointBoundary.RewardCompleted, store.Read().Boundary);
+            Restore(); Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase);
+            Assert.IsNull(manager.Dungeon.Map.GetCell(3).Enemy);
+            Assert.AreEqual(count + (skip ? 0 : 1), manager.Dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 終端を保存してから通知し終端保存からの再開を拒否する(bool victory)
+        {
+            Create();
+            manager.Dungeon.StartBattle(new ContactInfo { Enemy = manager.Dungeon.Map.GetCell(19).Enemy, EnemyCellIndex = 19 });
+            bool terminal = false;
+            manager.OnGameOver += () => { terminal = true; Assert.AreEqual(CheckpointBoundary.Terminal, store.Read().Boundary); };
+            manager.OnDungeonClearCompleted += _ => { terminal = true; Assert.AreEqual(CheckpointBoundary.Terminal, store.Read().Boundary); };
+            if (victory) { Win(); manager.SelectCardReward(null); }
+            else manager.CurrentBattle.Player.TakeDamage(1000);
+            Assert.IsTrue(terminal);
+            Assert.IsFalse(DungeonBattleManager.TryRestoreCheckpoint(session, random, new MockLogger(), out var restored, out _));
+            Assert.IsNull(restored);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), session.Definitions, out var terminalState, out var error), error);
+            Assert.Throws<System.ArgumentException>(() => new DungeonBattleManager(terminalState.Map, terminalState.Player,
+                terminalState.Deck, random, new MockLogger(), checkpoints: session, restoration: terminalState));
+        }
+
+        [Test]
+        public void ボスなし固定マップの既存クリア条件も終端として保存する()
+        {
+            var config = new DungeonConfig("no-boss", "fixture", 2, new List<MapCell> {
+                new MapCell(0), new MapCell(1, new Enemy("normal", "敵", 50, ElementType.None, new Vector2Int(1, 0))) });
+            var deck = new Deck(); var checkpoints = DungeonCheckpointSession.CreateDefault(config, deck);
+            manager = new DungeonBattleManager(config, new PlayerCharacter(100), deck, new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            manager.Tick(10); Win();
+            if (manager.CurrentPhase == GamePhase.CardReward) manager.SelectCardReward(null);
+            Assert.AreEqual(GamePhase.DungeonCleared, manager.CurrentPhase);
+            Assert.AreEqual(CheckpointBoundary.Terminal, checkpoints.Store.Read().Boundary);
+            Assert.IsFalse(checkpoints.TryRead(out _, out _));
+        }
+
+        [Test]
+        public void 敗北の保存失敗中は旧戦闘へ戻れず再試行後も終端を維持する()
+        {
+            Create(); Contact(); int notifications = 0; manager.OnGameOver += () => notifications++;
+            store.Fail = true; manager.CurrentBattle.Player.TakeDamage(1000);
+            Assert.AreEqual(0, notifications); Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);
+            Assert.IsFalse(DungeonBattleManager.TryRestoreCheckpoint(session, random, new MockLogger(), out _, out _));
+            store.Fail = false; Assert.IsTrue(manager.RetryCheckpoint());
+            Assert.AreEqual(1, notifications); Assert.AreEqual(CheckpointBoundary.Terminal, store.Read().Boundary);
+            Assert.IsFalse(DungeonBattleManager.TryRestoreCheckpoint(session, random, new MockLogger(), out _, out _));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 未登録カードと未対応敵状態を黙って保存から落とさない(bool status)
+        {
+            Create();
+            if (status) manager.Dungeon.Map.GetCell(3).Enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000));
+            else manager.Dungeon.GetCurrentDeck().AddCard(new Card("unknown", "不明", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 1, ""));
+            Contact(); Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.IsNull(manager.CurrentBattle);
+            Assert.AreEqual(CheckpointBoundary.Departure, store.Read().Boundary);
         }
     }
 }

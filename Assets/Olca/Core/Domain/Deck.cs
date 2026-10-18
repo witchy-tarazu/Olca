@@ -126,6 +126,16 @@ namespace Olca.Core.Domain
         /// <summary>
         /// 検証済みチェックポイントの初回手札をドロー済みとして復元する
         /// </summary>
+        internal void RestoreCheckpointOrder(IEnumerable<Card> order, IEnumerable<Card> firstHand)
+        {
+            var restored = order.ToList();
+            var hand = firstHand.ToList();
+            if (restored.Any(c => c == null) || restored.Distinct().Count() != restored.Count || hand.Any(c => !restored.Contains(c)))
+                throw new ArgumentException("保存デッキの個体参照が不正です");
+            cards.Clear(); cards.AddRange(restored);
+            RestoreCheckpointDrawn(hand);
+        }
+
         internal void RestoreCheckpointDrawn(IEnumerable<Card> firstHand)
         {
             var restored = firstHand.ToList();

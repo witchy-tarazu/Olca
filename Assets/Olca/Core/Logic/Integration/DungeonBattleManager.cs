@@ -52,7 +52,8 @@ namespace Olca.Core.Logic.Integration
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
-            ICardPool rewardPool = null)
+            ICardPool rewardPool = null,
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null)
         {
             this.player = player;
             this.randomProvider = randomProvider;
@@ -68,7 +69,7 @@ namespace Olca.Core.Logic.Integration
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem,
-                rewardPool: rewardPool);
+                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration);
 
             // イベント購読
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
@@ -88,7 +89,8 @@ namespace Olca.Core.Logic.Integration
         /// <param name="input">入力プロバイダー（オプショナル）</param>
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
-            if (IsUserPaused) return;
+            if (IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
             switch (currentPhase)
             {
                 case GamePhase.Dungeon:
@@ -187,7 +189,7 @@ namespace Olca.Core.Logic.Integration
         /// <param name="selectedCard">選択したカード（null でスキップ）</param>
         public void SelectCardReward(Card selectedCard)
         {
-            if (IsUserPaused) return;
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
             if (currentPhase != GamePhase.CardReward)
             {
                 logger?.LogWarning("[DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効");
@@ -203,7 +205,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void ResumeAfterBattle()
         {
-            if (IsUserPaused) return;
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
             dungeonSystem.ResumePlayerMovement();
         }
 
@@ -232,7 +234,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void Jump()
         {
-            if (IsUserPaused) return;
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
             if (currentPhase == GamePhase.Dungeon)
             {
                 dungeonSystem.Jump();
@@ -244,7 +246,7 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void StartDash()
         {
-            if (IsUserPaused) return;
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
             if (currentPhase == GamePhase.Dungeon)
             {
                 dungeonSystem.StartDash();
@@ -256,11 +258,29 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         public void StopDash()
         {
-            if (IsUserPaused) return;
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
             if (currentPhase == GamePhase.Dungeon)
             {
                 dungeonSystem.StopDash();
             }
+        }
+
+        public bool IsSuspended { get; private set; }
+        public bool SuspendForCheckpoint()
+        {
+            if (dungeonSystem.IsCheckpointBlocked || currentPhase == GamePhase.GameOver || currentPhase == GamePhase.DungeonCleared) return false;
+            IsSuspended = true; dungeonSystem.SuspendForCheckpoint(); return true;
+        }
+        public void ActivateCheckpoint() { if (!IsSuspended) dungeonSystem.ActivateCheckpoint(); }
+        public bool RetryCheckpoint() => !IsSuspended && dungeonSystem.RetryCheckpoint();
+        public static bool TryRestoreCheckpoint(DungeonCheckpointSession session, IRandomProvider random, IGameLogger logger,
+            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null)
+        {
+            manager = null;
+            if (!session.TryRead(out var restored, out error)) return false;
+            manager = new DungeonBattleManager(restored.Map, restored.Player, restored.Deck, random, logger,
+                exceed, tuning, fusion, checkpoints: session, restoration: restored);
+            return true;
         }
 
         // ========== イベント ==========

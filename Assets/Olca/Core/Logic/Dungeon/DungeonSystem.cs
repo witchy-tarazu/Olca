@@ -69,8 +69,11 @@ namespace Olca.Core.Logic.Dungeon
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
-            ICardPool rewardPool = null)
+            ICardPool rewardPool = null,
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null)
         {
+            if (restoration?.Snapshot.Boundary == CheckpointBoundary.Terminal)
+                throw new ArgumentException("終端チェックポイントからゲームモデルは再開できません");
             // 依存関係の初期化
             map = new DungeonMap(config);
             // 現行マップのボス種別を使い、最奥のボスをクリア対象として保持する。
@@ -95,6 +98,7 @@ namespace Olca.Core.Logic.Dungeon
             this.exceedSystem = exceedSystem;
             this.tuningSystem = tuningSystem;
             this.fusionSystem = fusionSystem;
+            rewardPoolForCheckpoint = rewardPool;
 
             // イベント購読
             contactSystem.OnEnemyContact += OnEnemyContact;
@@ -103,6 +107,21 @@ namespace Olca.Core.Logic.Dungeon
             IsDungeonCleared = false;
 
             logger.LogInfo($"[DungeonSystem] ダンジョン初期化: {config.DungeonName}");
+            checkpointSession = checkpoints;
+            if (checkpoints != null)
+            {
+                if (restoration != null)
+                {
+                    checkpoints.Adopt(restoration); restoredBoundary = restoration.Snapshot;
+                    playerMovement.SetPositionMilli(restoredBoundary.PositionMilli);
+                    cardRewardSystem.RestoreObtained(restoration.Obtained);
+                }
+                else
+                {
+                    try { StageCheckpoint(checkpoints.Capture(this, CheckpointBoundary.Departure), () => playerMovement.Resume()); }
+                    catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
+                }
+            }
         }
 
         /// <summary>
@@ -111,7 +130,7 @@ namespace Olca.Core.Logic.Dungeon
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         public void Tick(int deltaTimeMs)
         {
-            if (IsInBattle || IsDungeonCleared) return;
+            if (IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended) return;
 
             // プレイヤー移動更新
             playerMovement.Update(deltaTimeMs);
@@ -130,7 +149,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void Jump()
         {
-            if (IsInBattle) return;
+            if (IsInBattle || IsCheckpointBlocked || checkpointSuspended) return;
             playerMovement.Jump();
             logger.LogInfo("[Dungeon] ジャンプ！");
         }
@@ -140,7 +159,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
-            if (IsInBattle) return;
+            if (IsInBattle || IsCheckpointBlocked || checkpointSuspended) return;
             playerMovement.StartDash();
         }
 
@@ -177,6 +196,8 @@ namespace Olca.Core.Logic.Dungeon
         /// <param name="contactInfo">接敵情報</param>
         public void StartBattle(ContactInfo contactInfo)
         {
+            if (IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended) return;
+            if (checkpointSession != null) { PlanCheckpointBattle(contactInfo); return; }
             IsInBattle = true;
             pendingRewardChoices = null;
             currentContactInfo = contactInfo;
@@ -359,6 +380,8 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void OnBattleCompleted(bool victory)
         {
+            if (checkpointSuspended) return;
+            if (checkpointSession != null) { CompleteCheckpointBattle(victory); return; }
             // 通知先が同期再入しても、同じ戦闘の抽選・終了を繰り返さない。
             if (!IsInBattle) return;
             IsInBattle = false;
@@ -430,6 +453,12 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void OnCardSelectionCompleted(Card selectedCard)
         {
+            if (checkpointSuspended || IsCheckpointBlocked) return;
+            if (checkpointSession != null)
+            {
+                if (pendingRewardChoices == null || (selectedCard != null && !pendingRewardChoices.Contains(selectedCard))) return;
+                SaveCheckpointReward(selectedCard); return;
+            }
             if (IsDungeonCleared || pendingRewardChoices == null) return;
             if (selectedCard != null && !pendingRewardChoices.Contains(selectedCard)) return;
 
@@ -490,6 +519,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void ResumePlayerMovement()
         {
+            if (checkpointSuspended || IsCheckpointBlocked) return;
             if (IsInBattle || IsDungeonCleared) return;
             playerMovement.StopDash();  // バトル前のダッシュ状態を引き継がないようリセット
             playerMovement.Resume();
@@ -573,6 +603,141 @@ namespace Olca.Core.Logic.Dungeon
             }
         }
 
+        private readonly DungeonCheckpointSession checkpointSession;
+        private CheckpointDto pendingCheckpoint, restoredBoundary, activeCheckpoint;
+        private Action pendingCheckpointCommit;
+        private bool checkpointSuspended;
+        private List<Card> plannedRewards;
+        public bool IsCheckpointBlocked { get; private set; }
+        public string CheckpointError { get; private set; }
+        internal long CheckpointPositionMilli => playerMovement.CurrentPositionMilli;
+        private void BlockCheckpoint(string error) { IsCheckpointBlocked = true; checkpointSession.HasUncommittedBoundary = true; CheckpointError = error; playerMovement.Pause(); }
+        private void StageCheckpoint(CheckpointDto dto, Action commit)
+        {
+            pendingCheckpoint = dto.Copy(); pendingCheckpointCommit = commit;
+            checkpointSession.HasUncommittedBoundary = true;
+            IsCheckpointBlocked = true;
+            RetryCheckpoint();
+        }
+        public bool RetryCheckpoint()
+        {
+            if (checkpointSuspended || pendingCheckpoint == null) return false;
+            if (!checkpointSession.Store.TryWrite(pendingCheckpoint, out var error)) { BlockCheckpoint(error); return false; }
+            checkpointSession.Accept(pendingCheckpoint);
+            var commit = pendingCheckpointCommit;
+            pendingCheckpoint = null; pendingCheckpointCommit = null; IsCheckpointBlocked = false; CheckpointError = null;
+            commit();
+            return true;
+        }
+        private void PlanCheckpointBattle(ContactInfo contact)
+        {
+            try
+            {
+                if (contact == null || !ReferenceEquals(map.GetCell(contact.EnemyCellIndex)?.Enemy, contact.Enemy))
+                    throw new ArgumentException("接敵個体が現行マップにありません");
+                var participants = GatherEnemiesForBattle(contact);
+                var cells = map.GetAllEnemies().ToDictionary(pair => pair.enemy, pair => pair.cellIndex);
+                var dto = checkpointSession.Capture(this, CheckpointBoundary.RewardCompleted);
+                dto.Sequence = checkpointSession.Last.Sequence;
+                dto.Player.GridX = 1; dto.Player.GridY = 0;
+                for (int i = 0; i < participants.Count; i++)
+                {
+                    var state = dto.Enemies.Single(e => e.CellIndex == cells[participants[i]]);
+                    state.GridX = i == 0 ? 4 : 3; state.GridY = 0;
+                }
+                var encounter = new CheckpointBattleDto { ContactCell = contact.EnemyCellIndex,
+                    ParticipantCells = participants.Select(e => cells[e]).ToArray(), DashContact = contact.IsDashContact,
+                    DashEffect = contact.DashEffect.HasValue ? (int?)contact.DashEffect.Value : null,
+                    GridOriginX = contact.EnemyCellIndex - 4, HandLimit = new CustomScreenSystem(new Deck()).MaxHandSize };
+                int seed = randomProvider.Range(0, int.MaxValue);
+                if (!CheckpointBattlePlan.TryCreate(dto, encounter, checkpointSession.Definitions, seed, rewardPoolForCheckpoint,
+                    card => checkpointSession.Definitions.CaptureKnownCard("candidate", card).DefinitionKey, out var plan, out var error))
+                    throw new ArgumentException(error);
+                var snapshot = plan.Snapshot;
+                playerMovement.Pause();
+                StageCheckpoint(snapshot, () => StartSavedBattle(snapshot));
+            }
+            catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
+        }
+        private readonly ICardPool rewardPoolForCheckpoint;
+        private void StartSavedBattle(CheckpointDto snapshot)
+        {
+            if (IsInBattle || checkpointSuspended) return;
+            if (!CheckpointCodec.TryRestore(snapshot, checkpointSession.Definitions, out var restored, out var error))
+            { BlockCheckpoint(error); return; }
+            var plan = snapshot.Battle;
+            checkpointSession.Adopt(restored);
+            cardRewardSystem.GetCurrentDeck().RestoreCheckpointOrder(restored.Deck.GetAllCards(), restored.FirstHand);
+            cardRewardSystem.RestoreObtained(restored.Obtained);
+            var participants = plan.ParticipantCells.Select(i => map.GetCell(i).Enemy).ToList();
+            foreach (var e in snapshot.Enemies.Where(e => plan.ParticipantCells.Contains(e.CellIndex)))
+                map.GetCell(e.CellIndex).Enemy.MoveTo(new Vector2Int(e.GridX, e.GridY));
+            playerCharacter.MoveTo(new Vector2Int(snapshot.Player.GridX, snapshot.Player.GridY));
+            currentContactInfo = new ContactInfo { Enemy = map.GetCell(plan.ContactCell).Enemy, EnemyCellIndex = plan.ContactCell,
+                ContactPositionX = plan.GridOriginX, IsDashContact = plan.DashContact,
+                DashEffect = plan.DashEffect.HasValue ? (ActionSystem.DashContactEffect?)plan.DashEffect.Value : null };
+            plannedRewards = restored.RewardCandidates.ToList(); activeCheckpoint = snapshot.Copy(); pendingRewardChoices = null;
+            IsInBattle = true; playerMovement.Pause();
+            currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
+                randomProvider, logger, exceedSystem, tuningSystem, fusionSystem);
+            currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
+            currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
+            var started = currentBattle;
+            OnBattleStart?.Invoke(currentContactInfo);
+            if (IsInBattle && ReferenceEquals(currentBattle, started) && !started.IsGameOver && plan.DashContact && currentContactInfo.DashEffect.HasValue)
+                ApplyDashEffect(currentContactInfo.DashEffect.Value, participants);
+        }
+        public void ActivateCheckpoint()
+        {
+            if (restoredBoundary == null || checkpointSuspended) return;
+            var snapshot = restoredBoundary; restoredBoundary = null;
+            if (snapshot.Boundary == CheckpointBoundary.BattleStart) StartSavedBattle(snapshot);
+            else playerMovement.Resume();
+        }
+        public void SuspendForCheckpoint()
+        {
+            checkpointSuspended = true; playerMovement.Pause();
+            currentBattle?.AbandonForCheckpoint();
+            contactSystem.OnEnemyContact -= OnEnemyContact;
+        }
+        private void CompleteCheckpointBattle(bool victory)
+        {
+            if (!IsInBattle) return;
+            IsInBattle = false;
+            if (!victory)
+            {
+                try { StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), () => {
+                    OnBattleEnd?.Invoke(BattleResult.Defeat); OnDungeonFailed?.Invoke(); }); }
+                catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
+                return;
+            }
+            finalBossDefeated = finalBoss != null && finalBoss.IsDead;
+            OnBattleEnd?.Invoke(BattleResult.Victory);
+            if (activeCheckpoint.Battle.RewardOffered)
+            {
+                pendingRewardChoices = new List<Card>(plannedRewards);
+                OnCardRewardOffered?.Invoke(new List<Card>(pendingRewardChoices));
+            }
+            else SaveCheckpointReward(null);
+        }
+        private void SaveCheckpointReward(Card selected)
+        {
+            if (IsCheckpointBlocked || checkpointSuspended) return;
+            try
+            {
+                bool cleared = finalBoss != null ? finalBossDefeated : !map.GetAllEnemies().Any(pair => !pair.enemy.IsDead);
+                var boundary = cleared ? CheckpointBoundary.Terminal : CheckpointBoundary.RewardCompleted;
+                var snapshot = checkpointSession.Capture(this, boundary, selected);
+                StageCheckpoint(snapshot, () => {
+                    pendingRewardChoices = null;
+                    if (selected != null) cardRewardSystem.SelectCard(selected);
+                    foreach (var pair in map.GetAllEnemies().Where(pair => pair.enemy.IsDead).ToArray()) map.RemoveEnemy(pair.enemy);
+                    ReturnToDungeon();
+                });
+            }
+            catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
+        }
+
         // ========== イベント ==========
         public event Action<ContactInfo> OnBattleStart;
         public event Action<BattleResult> OnBattleEnd;        // バトル終了（勝敗通知）
@@ -631,6 +796,22 @@ namespace Olca.Core.Logic.Dungeon
             });
         }
 
+        internal void ValidateCurrentMap(DungeonMap map)
+        {
+            if (map.TotalCellCount != CellCount) throw new ArgumentException("マップサイズが定義と一致しません");
+            for (int i = 0; i < CellCount; i++)
+            {
+                var cell = map.GetCell(i);
+                if (cell == null || cell.Index != i || cell.Obstacle != null ||
+                    (cell.Type != CellType.Empty && cell.Type != CellType.Enemy && cell.Type != CellType.Boss))
+                    throw new ArgumentException("未対応セルを保存できません");
+                if (cell.Enemy == null) continue;
+                if (!enemies.TryGetValue(i, out var template) || cell.Enemy.EnemyId != template.EnemyId ||
+                    cell.Enemy.Name != template.Name || cell.Enemy.MaxHp != template.MaxHp || cell.Enemy.Element != template.Element || cell.Height != heights[i])
+                    throw new ArgumentException("敵個体・配置の定義が一致しません");
+            }
+        }
+
         internal DungeonConfig RestoreMap(IReadOnlyDictionary<int, Enemy> restoredEnemies)
         {
             var cells = new List<MapCell>();
@@ -667,6 +848,17 @@ namespace Olca.Core.Logic.Dungeon
             }
             if (CheckpointValues.CardHash(result) != value.ValueHash) throw new ArgumentException("カード値と定義・履歴が一致しません");
             return result;
+        }
+        public CheckpointCardDto CaptureKnownCard(string instanceId, Card card)
+        {
+            var historyKeys = card.TuningHistory.Select(grant => grants.FirstOrDefault(pair =>
+                CheckpointValues.GrantHash(pair.Value) == CheckpointValues.GrantHash(grant)).Key).ToArray();
+            foreach (var key in cards.Keys)
+            {
+                try { return CaptureCard(instanceId, key, card, historyKeys); }
+                catch (ArgumentException) { }
+            }
+            throw new ArgumentException("未登録のカード定義または調律履歴です: " + card.Id);
         }
         public CheckpointCardDto CaptureCard(string instanceId, string definitionKey, Card card, params string[] grantKeys)
         {
@@ -721,6 +913,7 @@ namespace Olca.Core.Logic.Dungeon
                 }
             }
         }
+        internal static string GrantHash(TuningGrantDefinition g) => Hash(w => Grant(w, g));
         internal static string CardHash(Card c) => Hash(w => {
             Text(w, c.Id); Text(w, c.Name); Text(w, c.Description);
             w.Write(c.Cost); w.Write((int)c.Rarity); w.Write((int)c.Category); w.Write((int)c.Element); Text(w, c.Series?.Name);
@@ -777,7 +970,7 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointValues.Require(!string.IsNullOrWhiteSpace(d.RunId) && d.Sequence > 0 && Enum.IsDefined(typeof(CheckpointBoundary), d.Boundary), "保存境界が不正です");
                 CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
                 var p = d.Player;
-                CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp > 0 && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 &&
+                CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
                 CheckpointValues.Require(d.Cards != null && d.DeckOrder != null && d.ObtainedOrder != null && d.Enemies != null, "必須配列が欠落しています");
                 var cards = new Dictionary<string, Card>();
@@ -916,6 +1109,81 @@ namespace Olca.Core.Logic.Dungeon
             catch (ArgumentException ex) { error = ex.Message; return false; }
             catch (InvalidOperationException ex) { error = ex.Message; return false; }
             catch (OverflowException ex) { error = ex.Message; return false; }
+        }
+    }
+}
+
+namespace Olca.Core.Logic.Dungeon
+{
+    /// <summary>一攻略の保存状態。通常フローの参照と保存DTOを混在させない。</summary>
+    public sealed class DungeonCheckpointSession
+    {
+        public CheckpointDefinitions Definitions { get; }
+        public ICheckpointStore Store { get; }
+        public string RunId { get; private set; }
+        public CheckpointDto Last { get; private set; }
+        internal bool HasUncommittedBoundary { get; set; }
+        private readonly Dictionary<Card, string> identities = new Dictionary<Card, string>();
+        public DungeonCheckpointSession(CheckpointDefinitions definitions, ICheckpointStore store)
+        { Definitions = definitions; Store = store; RunId = Guid.NewGuid().ToString("N"); }
+        public static DungeonCheckpointSession CreateDefault(DungeonConfig map, Deck deck)
+        {
+            var definitions = new CheckpointDefinitions("fixed-runtime-v1", map);
+            foreach (var group in deck.GetAllCards().GroupBy(c => CheckpointValues.CardHash(c)))
+                definitions.RegisterCard("initial/v1/" + group.Key, group.First());
+            foreach (var rarity in new[] { CardRarity.Normal, CardRarity.Limited })
+                foreach (var id in new[] { "sword", "heal", "shield", "fire", "ice" })
+                    definitions.RegisterCard("fallback/v1/" + rarity + "/" + id, CardRewardSystem.CreateFallbackCard(id, rarity));
+            return new DungeonCheckpointSession(definitions, new MemoryCheckpointStore(definitions));
+        }
+        internal string Identify(Card card)
+        {
+            if (!identities.TryGetValue(card, out var id)) { id = RunId + ":card:" + Guid.NewGuid().ToString("N"); identities.Add(card, id); }
+            return id;
+        }
+        internal void Accept(CheckpointDto dto) { Last = dto.Copy(); RunId = dto.RunId; HasUncommittedBoundary = false; }
+        internal void Adopt(RestoredCheckpoint restored)
+        {
+            identities.Clear(); foreach (var pair in restored.Cards) identities.Add(pair.Value, pair.Key);
+            Accept(restored.Snapshot);
+        }
+        public bool TryRead(out RestoredCheckpoint restored, out string error)
+        {
+            restored = null;
+            if (HasUncommittedBoundary) { error = "未保存の境界があります。先に同じ保存を再試行してください"; return false; }
+            var dto = Store.Read();
+            if (dto?.Boundary == CheckpointBoundary.Terminal) { error = "終了済みの攻略は再開できません"; return false; }
+            return CheckpointCodec.TryRestore(dto, Definitions, out restored, out error);
+        }
+        internal CheckpointDto Capture(DungeonSystem dungeon, CheckpointBoundary boundary, Card extra = null)
+        {
+            var player = dungeon.Player;
+            Definitions.ValidateCurrentMap(dungeon.Map);
+            if (player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.IsConcentrating)
+                throw new ArgumentException("未対応の一時状態を保存できません");
+            var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
+            var obtained = dungeon.GetObtainedCards().ToList();
+            if (extra != null) { deck.Add(extra); obtained.Add(extra); }
+            var all = deck.Concat(obtained).Distinct().ToArray();
+            var mapped = dungeon.Map.GetAllEnemies().ToDictionary(pair => pair.cellIndex, pair => pair.enemy);
+            var enemyStates = new List<CheckpointEnemyDto>();
+            foreach (var pair in Definitions.Enemies)
+            {
+                var e = mapped.TryGetValue(pair.Key, out var live) ? live : null;
+                if (e != null && (e.IsSummoned || (!e.IsDead && (e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating))))
+                    throw new ArgumentException("未対応の敵状態を保存できません");
+                enemyStates.Add(new CheckpointEnemyDto { CellIndex = pair.Key, EnemyId = pair.Value.EnemyId,
+                    Hp = e?.CurrentHp ?? 0, GridX = e?.GridPosition.X ?? pair.Value.GridPosition.X, GridY = e?.GridPosition.Y ?? pair.Value.GridPosition.Y });
+            }
+            if (mapped.Keys.Any(i => !Definitions.Enemies.ContainsKey(i))) throw new ArgumentException("未登録の敵配置です");
+            return new CheckpointDto {
+                DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
+                RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
+                Player = new CheckpointPlayerDto { Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
+                    Poise = player.Poise, CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
+                Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
+                DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
+            };
         }
     }
 }

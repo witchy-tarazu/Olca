@@ -414,6 +414,15 @@ namespace Olca.Core.Logic.Battle
             OnBattleEnd?.Invoke(result);
         }
 
+        internal void AbandonForCheckpoint()
+        {
+            if (IsGameOver) return;
+            state = BattleState.Defeat;
+            cardUsage.Clear();
+            ReleaseBattleParticipants();
+            OnBattleEnd = null;
+        }
+
         private void ReleaseBattleParticipants()
         {
             foreach (var entry in enemyDeathHandlers)

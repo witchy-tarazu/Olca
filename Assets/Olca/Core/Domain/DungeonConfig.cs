@@ -71,7 +71,7 @@ namespace Olca.Core.Domain
 namespace Olca.Core.Domain
 {
     // 保存形式の値だけを持つDTO。戦闘中の参照・非同期処理・Undo操作は含めない。
-    public enum CheckpointBoundary { Departure, BattleStart, RewardCompleted }
+    public enum CheckpointBoundary { Departure, BattleStart, RewardCompleted, Terminal }
 
     public sealed class CheckpointCardDto
     {

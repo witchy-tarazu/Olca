@@ -125,6 +125,11 @@ namespace Olca.Core.Logic.Dungeon
             int randomIndex = random.Range(0, cardIds.Length);
             string cardId = cardIds[randomIndex];
 
+            return CreateFallbackCard(cardId, targetRarity);
+        }
+
+        public static Card CreateFallbackCard(string cardId, CardRarity targetRarity)
+        {
             return new Card(
                 id: cardId,
                 name: $"{cardId}_card",
@@ -141,6 +146,11 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>
         /// カードを選択してデッキに追加
         /// </summary>
+        internal void RestoreObtained(IEnumerable<Card> history)
+        {
+            obtainedCards.Clear(); obtainedCards.AddRange(history);
+        }
+
         public void SelectCard(Card selectedCard)
         {
             if (selectedCard == null)
