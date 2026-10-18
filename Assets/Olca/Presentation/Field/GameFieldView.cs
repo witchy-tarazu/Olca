@@ -89,6 +89,13 @@ namespace Olca.Presentation.Field
             return null;
         }
 
+        private PlayerCharacter damageTrackedPlayer;
+        private int previousPlayerHp;
+        private CancellationTokenSource playerDamageCts;
+        private Vector3 playerNormalScale;
+        private Color playerNormalColor;
+        private float playerHitElapsed = -1f;
+
         private DungeonSystem dungeonSystem;
         private BattleSystem currentBattle; // バトル中のプレイヤー座標更新用
         private readonly List<WorldEnemyView> enemyViews = new List<WorldEnemyView>();
@@ -96,12 +103,91 @@ namespace Olca.Presentation.Field
         private float? battleCameraTargetX = null;  // バトル開始時のカメラ移動先（スムーズlerp用）
         private bool playerPositionUpdateEnabled = true;  // 復帰ジャンプ中はfalseにしてY座標の上書きを防ぐ
 
+        // HPの通知ごとに差分を取り、同フレームの連続被弾も個別に表示する。
+        private void BindPlayerDamage(PlayerCharacter player)
+        {
+            UnbindPlayerDamage();
+            damageTrackedPlayer = player;
+            if (player == null || !isActiveAndEnabled) return;
+            previousPlayerHp = player.CurrentHp;
+            if (playerSprite != null)
+            {
+                playerNormalScale = playerSprite.transform.localScale;
+                playerNormalColor = playerSprite.color;
+            }
+            player.OnHpChanged += OnPlayerHpChanged;
+        }
+
+        private void OnPlayerHpChanged(int currentHp, int maxHp)
+        {
+            int damage = previousPlayerHp - currentHp;
+            previousPlayerHp = currentHp;
+            if (damage <= 0 || !isActiveAndEnabled || playerSprite == null) return;
+
+            playerDamageCts ??= new CancellationTokenSource();
+            var bounds = playerSprite.bounds;
+            var position = new Vector3(bounds.center.x, bounds.max.y + 0.2f, bounds.center.z - 0.5f);
+            worldDamageNumberPool?.ShowDamage(damage, position, playerDamageCts.Token);
+            // 連続被弾でも倍率を累積させず、同じ基準サイズから再生する。
+            playerHitElapsed = 0f;
+            UpdatePlayerHitEffect(0f);
+        }
+
+        private void UpdatePlayerHitEffect(float deltaTime)
+        {
+            if (playerHitElapsed < 0f || playerSprite == null) return;
+            playerHitElapsed += deltaTime;
+            // 既存の敵演出と同じ1.25倍・往復0.16秒のスケールパルス。
+            float pulse = Mathf.Clamp01(1f - Mathf.Abs(playerHitElapsed - 0.08f) / 0.08f);
+            playerSprite.transform.localScale = playerNormalScale * (1f + 0.25f * pulse);
+            // 通常被弾仕様の白・赤、50ms×3フレームの短い点滅。
+            playerSprite.color = playerHitElapsed < 0.15f
+                ? ((int)(playerHitElapsed / 0.05f) % 2 == 0 ? new Color(1f, 0.4f, 0.4f, playerNormalColor.a) : Color.white)
+                : playerNormalColor;
+            if (playerHitElapsed >= 0.16f)
+            {
+                playerSprite.transform.localScale = playerNormalScale;
+                playerSprite.color = playerNormalColor;
+                playerHitElapsed = -1f;
+            }
+        }
+
+        private void StopPlayerDamageFeedback()
+        {
+            playerDamageCts?.Cancel();
+            playerDamageCts?.Dispose();
+            playerDamageCts = null;
+            if (playerHitElapsed >= 0f && playerSprite != null)
+            {
+                playerSprite.transform.localScale = playerNormalScale;
+                playerSprite.color = playerNormalColor;
+            }
+            playerHitElapsed = -1f;
+        }
+
+        private void UnbindPlayerDamage()
+        {
+            if (damageTrackedPlayer != null)
+                damageTrackedPlayer.OnHpChanged -= OnPlayerHpChanged;
+            damageTrackedPlayer = null;
+            StopPlayerDamageFeedback();
+        }
+
+        private void OnEnable()
+        {
+            if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
+        }
+
+        private void OnDisable() => UnbindPlayerDamage();
+        private void OnDestroy() => UnbindPlayerDamage();
+
         // ==================== 初期化 ====================
 
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
             dungeonSystem = dungeon;
+            BindPlayerDamage(dungeon?.Player);
             ResetMovementAnimation();
             cameraFollowEnabled = true;
             currentFollowSpeed = cameraFollowSpeed;  // 初期値は通常速度
@@ -133,6 +219,7 @@ namespace Olca.Presentation.Field
             // 移動差分は1フレームに一度、Controllerの位置反映後に判定する。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
+            UpdatePlayerHitEffect(Time.deltaTime);
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -224,6 +311,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleEnded()
         {
+            StopPlayerDamageFeedback();
             currentBattle = null;
             ResetMovementAnimation();
             battleGridView?.Hide();
