@@ -13,6 +13,7 @@ namespace Olca.Core.Domain
         private Vector2Int gridPosition;
         private int stunDurationMs;
         private StatusEffect activeStatusEffect;
+        private long poisonDamageRemainder; // ダメージ×ミリ秒の1000未満の端数
 
         // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
         internal event Action OnDamageProcessingStarted;
@@ -139,28 +140,34 @@ namespace Olca.Core.Domain
             if (status == null) throw new ArgumentNullException(nameof(status));
             if (IsDead) return;
             activeStatusEffect = status;
+            poisonDamageRemainder = 0;
         }
 
         /// <summary>
         /// 状態異常の時間をカウントダウンする（毎ティック呼び出す）
         /// </summary>
         /// <param name="elapsedMs">経過時間（ミリ秒）</param>
-        /// <returns>毒ダメージ量（毒以外・消滅時は0）</returns>
+        /// <returns>有効な残時間に対する毒ダメージ量（毒以外は0）</returns>
         public int TickStatus(int elapsedMs)
         {
-            if (activeStatusEffect == null) return 0;
+            if (activeStatusEffect == null || elapsedMs <= 0) return 0;
+
+            int activeMs = Math.Min(elapsedMs, Math.Max(0, activeStatusEffect.RemainingMs));
 
             int poisonDamage = 0;
             if (activeStatusEffect.Type == StatusEffectType.Poison)
             {
-                // 毒: 1ティックあたりのダメージ × 経過時間
-                poisonDamage = activeStatusEffect.DamagePerTick * elapsedMs / 1000;
+                // 既存の1秒あたりの量を維持し、フレームごとの整数切捨てを避ける。
+                long accumulated = poisonDamageRemainder + (long)activeStatusEffect.DamagePerTick * activeMs;
+                poisonDamage = (int)(accumulated / 1000);
+                poisonDamageRemainder = accumulated % 1000;
             }
 
-            bool expired = activeStatusEffect.Tick(elapsedMs);
+            bool expired = activeStatusEffect.Tick(activeMs);
             if (expired)
             {
                 activeStatusEffect = null;
+                poisonDamageRemainder = 0;
             }
 
             return poisonDamage;

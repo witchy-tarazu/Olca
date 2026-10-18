@@ -128,13 +128,14 @@ namespace Olca.Tests.CardEffects
         }
 
         [Test]
-        public void TickStatusで毒ダメージが消滅時は返らない()
+        public void TickStatusは失効するフレームでも有効時間分だけ返す()
         {
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 500, 10));
 
             int damage = enemy.TickStatus(1000); // 消滅
 
             Assert.IsNull(enemy.ActiveStatus, "消滅しているはず");
+            Assert.AreEqual(5, damage);
         }
 
         // ==================== BattleSystem.Tick()との統合 ====================
@@ -207,6 +208,130 @@ namespace Olca.Tests.CardEffects
 
             Assert.IsTrue(enemy.IsParalyzed, "ダメージを与えたので麻痺が付与されるはず");
             Assert.AreEqual(3000, enemy.ActiveStatus.RemainingMs);
+        }
+
+        private static IEnumerable<int> SplitSecond(int split)
+        {
+            if (split == 0) { yield return 1000; yield break; }
+            if (split == 1)
+            {
+                for (int i = 0; i < 62; i++) yield return 16;
+                yield return 8; yield break;
+            }
+            foreach (int step in new[] { 7, 123, 400, 470 }) yield return step;
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void 同じ一秒の毒ダメージは時間分割に依存しない(int split)
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 10));
+            int total = 0;
+            foreach (int step in SplitSecond(split)) total += enemy.TickStatus(step);
+            Assert.AreEqual(10, total);
+            Assert.IsNull(enemy.ActiveStatus);
+            Assert.AreEqual(0, enemy.TickStatus(1000));
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void 有効時間を超えるTickも分割によらず残時間まで適用する(int split)
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 500, 10));
+            int total = 0;
+            foreach (int step in SplitSecond(split)) total += enemy.TickStatus(step);
+            Assert.AreEqual(5, total);
+            Assert.IsNull(enemy.ActiveStatus);
+        }
+
+        [Test]
+        public void 失効後の再付与へ前の端数を持ち越さない()
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 500, 3));
+            Assert.AreEqual(1, enemy.TickStatus(500));
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 3));
+            Assert.AreEqual(0, enemy.TickStatus(167));
+            Assert.AreEqual(3, enemy.TickStatus(833));
+        }
+
+        [TestCase(StatusEffectType.Poison)]
+        [TestCase(StatusEffectType.Paralyze)]
+        [TestCase(StatusEffectType.None)]
+        public void 上書きは古い端数と効果を残さず新しい状態だけ進める(StatusEffectType replacement)
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 3));
+            Assert.AreEqual(0, enemy.TickStatus(333));
+            enemy.ApplyStatus(new StatusEffect(replacement, 1000, 3));
+            Assert.AreEqual(0, enemy.TickStatus(1));
+            Assert.AreEqual(replacement == StatusEffectType.Poison ? 3 : 0, enemy.TickStatus(999));
+            Assert.IsNull(enemy.ActiveStatus);
+        }
+
+        [Test]
+        public void 敵ごとの端数は独立する()
+        {
+            var other = new Enemy("other", "別敵", 100, ElementType.None, new Vector2Int(4, 0));
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 3));
+            other.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 3));
+            Assert.AreEqual(0, enemy.TickStatus(333));
+            Assert.AreEqual(0, other.TickStatus(1));
+            Assert.AreEqual(1, enemy.TickStatus(1));
+        }
+
+        [TestCase(0)]
+        [TestCase(-1)]
+        public void 非正の経過時間は毒の時間と端数を変更しない(int elapsed)
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 3));
+            enemy.TickStatus(333);
+            Assert.AreEqual(0, enemy.TickStatus(elapsed));
+            Assert.AreEqual(667, enemy.ActiveStatus.RemainingMs);
+            Assert.AreEqual(1, enemy.TickStatus(1));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void pauseとcustomは毒の時間と端数を停止する(bool custom)
+        {
+            enemy.ApplyStun(60000);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 3));
+            battle.Tick(333);
+            if (custom)
+            {
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+                battle.OpenCustomScreen(new MockRandomProvider(0));
+            }
+            else battle.Pause();
+            battle.Tick(10000);
+            Assert.AreEqual(100, enemy.CurrentHp);
+            Assert.AreEqual(667, enemy.ActiveStatus.RemainingMs);
+            if (custom) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            else battle.Resume();
+            battle.Tick(1);
+            Assert.AreEqual(99, enemy.CurrentHp);
+            Assert.AreEqual(100, player.CurrentHp);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void 毒でHPがゼロになると死亡と勝利は一度だけ通知される(int split)
+        {
+            enemy.ApplyStun(60000);
+            enemy.TakeDamage(95, ElementType.None);
+            int deaths = 0, endings = 0;
+            enemy.OnDeath += () => deaths++;
+            battle.OnBattleEnd += _ => endings++;
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 10));
+            foreach (int step in SplitSecond(split)) battle.Tick(step);
+            battle.Tick(1000);
+            Assert.AreEqual(0, enemy.CurrentHp);
+            Assert.AreEqual(1, deaths);
+            Assert.AreEqual(1, endings);
+            Assert.AreEqual(BattleState.Victory, battle.State);
+            Assert.AreEqual(100, player.CurrentHp);
         }
     }
 }
