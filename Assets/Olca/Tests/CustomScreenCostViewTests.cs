@@ -116,9 +116,9 @@ namespace Olca.Tests
         [TestCase(4f / 3f)]
         [TestCase(691f / 327f)]
         [TestCase(9f / 16f)]
-        public void 共通カメラは画面比率にかかわらず横八マスでスケールを変えない(float aspect)
+        public void 共通カメラは画面比率にかかわらず横七マスでスケールを変えない(float aspect)
         {
-            var go = new GameObject("EightCellCamera");
+            var go = new GameObject("SevenCellCamera");
             var viewObject = new GameObject("FieldView");
             try
             {
@@ -131,11 +131,11 @@ namespace Olca.Tests
                 typeof(GameFieldView).GetField("fieldCamera", flags).SetValue(view, camera);
                 var refresh = typeof(GameFieldView).GetMethod("UpdateCameraFraming", flags);
                 refresh.Invoke(view, null);
-                Assert.AreEqual(8f, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
+                Assert.AreEqual(7f, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
                 Assert.AreEqual(Vector3.one, camera.transform.localScale);
                 camera.aspect = 2f;
                 refresh.Invoke(view, null);
-                Assert.AreEqual(2f, camera.orthographicSize, 0.0001f);
+                Assert.AreEqual(1.75f, camera.orthographicSize, 0.0001f);
             }
             finally
             {
@@ -311,7 +311,7 @@ namespace Olca.Tests
         [TestCase(1f)]
         [TestCase(1.92f)]
         [TestCase(2.56f)]
-        public void 表示単位を変えても論理マス距離と共通カメラの八マス幅を保つ(float units)
+        public void 表示単位を変えても論理マス距離と共通カメラの七マス幅を保つ(float units)
         {
             var gridObject = new GameObject("GridUnits");
             var viewObject = new GameObject("FieldUnits");
@@ -331,7 +331,7 @@ namespace Olca.Tests
                 typeof(GameFieldView).GetField("fieldCamera", flags).SetValue(view, camera);
                 typeof(GameFieldView).GetField("battleGridView", flags).SetValue(view, grid);
                 typeof(GameFieldView).GetMethod("UpdateCameraFraming", flags).Invoke(view, null);
-                Assert.AreEqual(8f * units, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
+                Assert.AreEqual(7f * units, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
                 Assert.AreEqual(7.5f * units, view.LogicalToWorld(7.5f), 0.0001f);
                 Assert.AreEqual(Vector3.one, view.transform.localScale);
             }

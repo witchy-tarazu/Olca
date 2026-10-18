@@ -237,9 +237,9 @@ namespace Olca.Presentation.Field
         private void UpdateCameraFraming()
         {
             if (fieldCamera == null || !fieldCamera.orthographic || fieldCamera.aspect <= 0f) return;
-            // 探索・バトル共通で横8マス。縦方向は実際の画面比率から求める。
+            // 探索・バトル共通で横7マス。縦方向は実際の画面比率から求める。
             float cellWidth = CellSize;
-            fieldCamera.orthographicSize = 8f * cellWidth / (2f * fieldCamera.aspect);
+            fieldCamera.orthographicSize = 7f * cellWidth / (2f * fieldCamera.aspect);
             // 地面を下寄りに置き、拡大後も頭部・敵名の表示領域を確保する。
             float groundY = battleGridView != null ? battleGridView.GroundY : -0.25f;
             var position = fieldCamera.transform.position;

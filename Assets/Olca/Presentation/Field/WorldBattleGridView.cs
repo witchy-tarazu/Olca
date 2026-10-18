@@ -31,7 +31,7 @@ namespace Olca.Presentation.Field
 
         private Sprite floorSprite;
         private SpriteRenderer[] surroundingPanels;
-        private const int SURROUNDING_COUNT = 12; // 横8マスとカメラ移動の余白
+        private const int SURROUNDING_COUNT = 12; // 横7マスとカメラ移動の余白
 
         private void Awake()
         {
