@@ -398,6 +398,9 @@ namespace Olca.Core.Logic.Battle
                 state = BattleState.Victory;
             }
 
+            // 戦闘限定バフは勝敗通知より前に解除し、同じプレイヤーを使う次戦へ残さない。
+            player.SetConcentrateBuff(1f);
+            player.SetBarrier(0);
             player.TerrainState.Clear();
             foreach (var enemy in enemies)
             {

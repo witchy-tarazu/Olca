@@ -27,6 +27,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="effect">登録する遅延効果</param>
         public void RegisterDelayedEffect(DelayedEffect effect)
         {
+            if (battleSystem.IsGameOver) return;
             activeEffects.Add(effect);
 
 #if UNITY_EDITOR || DEBUG
@@ -40,6 +41,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         public void Update(int deltaTimeMs)
         {
+            if (battleSystem.IsGameOver) return;
             for (int i = activeEffects.Count - 1; i >= 0; i--)
             {
                 var effect = activeEffects[i];
@@ -47,6 +49,8 @@ namespace Olca.Core.Logic.Battle
 
                 if (effect.RemainingTimeMs <= 0)
                 {
+                    // コールバック内の戦闘終了でClearされるため、実行前に取り除く。
+                    activeEffects.RemoveAt(i);
                     // 投擲物タイプの場合のみ穴パネルチェック
                     if (effect.EffectType == DelayedEffectType.Projectile &&
                         effect.CancelOnHole &&
@@ -70,7 +74,7 @@ namespace Olca.Core.Logic.Battle
                         effect.Execute();
                     }
 
-                    activeEffects.RemoveAt(i);
+                    if (battleSystem.IsGameOver) return;
                 }
             }
         }

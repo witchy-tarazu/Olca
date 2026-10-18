@@ -21,6 +21,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
         public void Execute(BattleContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
+            // 旧戦闘の遅延処理が次戦のプレイヤーへ再付与することを防ぐ。
+            if (context.Battle.IsGameOver) return;
             context.Player.SetConcentrateBuff(multiplier);
         }
     }

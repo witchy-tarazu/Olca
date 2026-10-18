@@ -38,6 +38,82 @@ namespace Olca.Tests.CardEffects
             battle = new BattleSystem(player, enemies, deck, logger: new MockLogger());
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 戦闘終了通知前に集中とバリアだけを解除しHPと能力を維持する(bool victory)
+        {
+            player.TakeDamage(7);
+            player.SetConcentrateBuff(1.5f);
+            player.SetBarrier(20);
+            int attack = player.AttackPower;
+            int poise = player.Poise;
+            bool notified = false;
+            battle.OnBattleEnd += result =>
+            {
+                notified = true;
+                Assert.AreEqual(victory ? BattleResult.Victory : BattleResult.Defeat, result);
+                Assert.AreEqual(1f, player.NextCardMultiplier);
+                Assert.AreEqual(0, player.BarrierHp);
+                Assert.AreEqual(victory ? 93 : 0, player.CurrentHp);
+                Assert.AreEqual(100, player.MaxHp);
+                Assert.AreEqual(attack, player.AttackPower);
+                Assert.AreEqual(poise, player.Poise);
+                Assert.AreEqual(1f, player.CustomSpeed);
+            };
+            if (victory) battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            else player.TakeDamage(1000);
+            Assert.IsTrue(notified);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 遅延終了と同時刻のバフを破棄し終了済みContextからも再付与しない(bool victory)
+        {
+            var context = new BattleContext(battle, deck.GetAllCards()[0]);
+            int applied = 0;
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1)
+            {
+                ExecuteAction = () => { applied++; new ConcentrateEffect().Execute(context); new BarrierEffect(20).Execute(context); }
+            });
+            // 現行の逆順実行で終了が先に解決される。
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1)
+            {
+                ExecuteAction = () =>
+                {
+                    if (victory) battle.Enemies[0].TakeDamage(1000, ElementType.None);
+                    else player.TakeDamage(1000);
+                }
+            });
+            Assert.DoesNotThrow(() => battle.DelayedEffects.Update(1));
+            Assert.AreEqual(0, applied);
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = () => applied++ });
+            battle.DelayedEffects.Update(1000);
+            new ConcentrateEffect().Execute(context);
+            new BarrierEffect(20).Execute(context);
+            Assert.AreEqual(0, applied);
+            Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
+            Assert.AreEqual(1f, player.NextCardMultiplier);
+            Assert.AreEqual(0, player.BarrierHp);
+        }
+
+        [Test]
+        public void 同一プレイヤーの次戦にバフを持ち越さず旧Contextが新しいバフを上書きしない()
+        {
+            player.SetConcentrateBuff(1.5f);
+            player.SetBarrier(20);
+            var oldContext = new BattleContext(battle, deck.GetAllCards()[0]);
+            battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            var next = new BattleSystem(player, new List<Enemy> { new Enemy("next", "次戦", 100, ElementType.None, new Vector2Int(3, 0)) }, new Deck());
+            Assert.AreEqual(1f, next.Player.NextCardMultiplier);
+            Assert.AreEqual(0, next.Player.BarrierHp);
+            new ConcentrateEffect(2f).Execute(new BattleContext(next, deck.GetAllCards()[0]));
+            new BarrierEffect(30).Execute(new BattleContext(next, deck.GetAllCards()[0]));
+            new ConcentrateEffect(1.5f).Execute(oldContext);
+            new BarrierEffect(20).Execute(oldContext);
+            Assert.AreEqual(2f, next.Player.NextCardMultiplier);
+            Assert.AreEqual(30, next.Player.BarrierHp);
+        }
+
         [Test]
         public void ConcentrateEffectでNextCardMultiplierが設定される()
         {
