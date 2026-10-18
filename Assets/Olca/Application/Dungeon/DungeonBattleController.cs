@@ -158,15 +158,9 @@ namespace Olca.Application.Dungeon
                     if (Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt))
                         battleSession?.TryOpenCustomScreen();
 
-                    // Spaceキーでキューの次のカードを使用
-                    var battle = manager.CurrentBattle;
-                    if (Input.GetKeyDown(KeyCode.Space)
-                        && battle != null
-                        && !battle.CustomScreen.IsOpen
-                        && !battle.CardUsage.IsEmpty)
-                    {
-                        battle.UseCurrentCard();
-                    }
+                    // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
+                    if (Input.GetKeyDown(KeyCode.Space))
+                        battleSession?.UseCardFromInput();
                     break;
 
                 case GamePhase.CardReward:

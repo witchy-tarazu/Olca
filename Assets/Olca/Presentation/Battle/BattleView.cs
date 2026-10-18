@@ -215,18 +215,28 @@ namespace Olca.Presentation.Battle
 
             // 前回のアニメーションをキャンセル
             animationCts?.Cancel();
-            animationCts = new CancellationTokenSource();
+            var closingCts = new CancellationTokenSource();
+            animationCts = closingCts;
 
             // アニメーション実行（完了まで待つ）
             gaugeResetting = true;
             ResetGaugeVisual();
             try
             {
-                await AnimateCustomScreenCloseAsync(animationCts.Token);
+                await AnimateCustomScreenCloseAsync(closingCts.Token);
+            }
+            catch
+            {
+                if (ReferenceEquals(animationCts, closingCts))
+                {
+                    isCustomScreenOpen = true;
+                    if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(true);
+                }
+                throw;
             }
             finally
             {
-                gaugeResetting = false;
+                if (ReferenceEquals(animationCts, closingCts)) gaugeResetting = false;
             }
         }
 

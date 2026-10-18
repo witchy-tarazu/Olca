@@ -1,3 +1,4 @@
+using System;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Interfaces;
 using Olca.Core.Logic.Battle;
@@ -24,6 +25,7 @@ namespace Olca.Application.Battle
 
         private BattleSystem currentBattle;
         private int sessionVersion;
+        private bool isClosing;
 
         public BattleSessionController(
             IBattleView battleView,
@@ -57,6 +59,7 @@ namespace Olca.Application.Battle
         public void Detach()
         {
             sessionVersion++;
+            isClosing = false;
             if (currentBattle != null)
             {
                 currentBattle.CustomGauge.OnGaugeFull -= OnGaugeFull;
@@ -77,12 +80,38 @@ namespace Olca.Application.Battle
         /// </summary>
         public void TryOpenCustomScreen()
         {
-            if (currentBattle == null) return;
+            if (currentBattle == null || currentBattle.IsGameOver) return;
             if (!currentBattle.CustomGauge.IsFull) return;
             if (currentBattle.CustomScreen.IsOpen) return;
 
             currentBattle.OpenCustomScreen(randomProvider);
             battleView.OpenCustomScreen();
+        }
+
+        /// <summary>Unityの入力イベント用。非同期処理の例外はTryUseCardAsync内で処理する。</summary>
+        public void UseCardFromInput() => TryUseCardAsync().Forget();
+
+        /// <summary>現在のセッションでカードを一枚使用する。受付拒否・中断・失敗はfalse。</summary>
+        public async UniTask<bool> TryUseCardAsync()
+        {
+            var battle = currentBattle;
+            int version = sessionVersion;
+            if (battle == null || battle.IsGameOver || battle.IsPaused || battle.CustomScreen.IsOpen
+                || battle.CardUsage.IsEmpty || battle.CardUsage.InFlightCard != null) return false;
+            try
+            {
+                bool consumed = await battle.CardUsage.TryUseCurrentCardAsync();
+                return consumed && version == sessionVersion && ReferenceEquals(currentBattle, battle);
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"[BattleSession] カード使用に失敗: {ex}");
+                return false;
+            }
         }
 
         // ==================== 内部ハンドラー ====================
@@ -97,16 +126,34 @@ namespace Olca.Application.Battle
         {
             // 意図: アニメーションを待ってから CustomScreen.Close() を呼ぶことで
             // バトルの Resume() が正しいタイミングで呼ばれる
+            if (currentBattle == null || isClosing) return;
+            isClosing = true;
             CloseCustomScreenAsync().Forget();
         }
 
-        private async UniTaskVoid CloseCustomScreenAsync()
+        private async UniTask CloseCustomScreenAsync()
         {
             var closingBattle = currentBattle;
             int version = sessionVersion;
-            await battleView.CloseCustomScreenAsync();
-            if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
-                closingBattle?.CustomScreen.Close();
+            try
+            {
+                await battleView.CloseCustomScreenAsync();
+                if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
+                    closingBattle?.CustomScreen.Close();
+            }
+            catch (OperationCanceledException)
+            {
+                if (version == sessionVersion) closingBattle?.CustomScreen.CancelConfirmation();
+            }
+            catch (Exception ex)
+            {
+                if (version == sessionVersion) closingBattle?.CustomScreen.CancelConfirmation();
+                logger?.LogError($"[BattleSession] カスタム画面の終了に失敗: {ex}");
+            }
+            finally
+            {
+                if (version == sessionVersion) isClosing = false;
+            }
         }
     }
 }

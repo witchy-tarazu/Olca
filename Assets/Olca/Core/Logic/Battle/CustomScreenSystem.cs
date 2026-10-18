@@ -49,6 +49,9 @@ namespace Olca.Core.Logic.Battle
         /// <summary>カスタム画面が開いているか</summary>
         public bool IsOpen { get; private set; }
 
+        /// <summary>確定後、close演出の完了待ちか</summary>
+        public bool IsConfirming { get; private set; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -80,6 +83,7 @@ namespace Olca.Core.Logic.Battle
             if (remainingCards == null) throw new ArgumentNullException(nameof(remainingCards));
 
             IsOpen = true;
+            IsConfirming = false;
 
             // バトルシステムから受け取った未使用カードを保持
             availableCards.Clear();
@@ -103,7 +107,7 @@ namespace Olca.Core.Logic.Battle
         public bool TrySelectCard(Card card)
         {
             if (card == null) throw new ArgumentNullException(nameof(card));
-            if (!currentHand.Contains(card)) return false;
+            if (IsConfirming || !currentHand.Contains(card)) return false;
 
             // 選択枚数制限チェック
             if (selectedCards.Count >= maxSelectionCount)
@@ -136,7 +140,7 @@ namespace Olca.Core.Logic.Battle
         public bool TryDeselectCard(Card card)
         {
             if (card == null) throw new ArgumentNullException(nameof(card));
-            if (selectedCards.Count == 0 || !ReferenceEquals(selectedCards[selectedCards.Count - 1], card))
+            if (IsConfirming || selectedCards.Count == 0 || !ReferenceEquals(selectedCards[selectedCards.Count - 1], card))
                 return false;
 
             selectedCards.RemoveAt(selectedCards.Count - 1);
@@ -152,7 +156,7 @@ namespace Olca.Core.Logic.Battle
         public bool CanConfirm()
         {
             // カスタム画面が開いていれば、0枚選択でも確定可能
-            return IsOpen && GetTotalUsedCost() <= maxCost;
+            return IsOpen && !IsConfirming && GetTotalUsedCost() <= maxCost;
         }
 
         /// <summary>
@@ -162,6 +166,7 @@ namespace Olca.Core.Logic.Battle
         public void Confirm()
         {
             if (!CanConfirm()) return;
+            IsConfirming = true;
 
             // 仕様:
             // - 今回1枚以上選択した場合: availableCardsをクリアし、selectedCardsの内容をavailableCardsに移動
@@ -180,6 +185,12 @@ namespace Olca.Core.Logic.Battle
             OnConfirmed?.Invoke(availableCards);
         }
 
+        /// <summary>close失敗時は停止と確定済みカードを保ち、再試行を許可する。</summary>
+        public void CancelConfirmation()
+        {
+            if (IsOpen) IsConfirming = false;
+        }
+
         /// <summary>
         /// カスタム画面の閉じる処理を完了する
         /// アニメーション完了後に呼ばれ、IsOpenをfalseにする
@@ -188,6 +199,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (!IsOpen) return;
             IsOpen = false;
+            IsConfirming = false;
         }
 
         /// <summary>
@@ -202,6 +214,7 @@ namespace Olca.Core.Logic.Battle
             selectedCards.Clear();
 
             IsOpen = false;
+            IsConfirming = false;
             OnScreenClosed?.Invoke(availableCards);
         }
 
@@ -213,6 +226,7 @@ namespace Olca.Core.Logic.Battle
             if (!IsOpen) return;
 
             IsOpen = false;
+            IsConfirming = false;
             OnScreenClosed?.Invoke(availableCards);
         }
 

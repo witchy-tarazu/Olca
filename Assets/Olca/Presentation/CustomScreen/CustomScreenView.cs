@@ -115,7 +115,7 @@ namespace Olca.Presentation.CustomScreen
         private void Update()
         {
             // 未初期化またはカスタム画面が開いていない場合は入力を受け付けない
-            if (customScreen == null || !customScreen.IsOpen) return;
+            if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
 
             HandleInput();
         }

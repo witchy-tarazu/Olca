@@ -78,7 +78,7 @@ namespace Olca.Application.Battle
 
             // テスト用: スペースキーでキューの次のカードを使用
             if (Input.GetKeyDown(KeyCode.Space) && !battleSystem.CustomScreen.IsOpen)
-                TestUseNextCardInQueue();
+                battleSession?.UseCardFromInput();
         }
 
         // ========== バトル終了 ==========
@@ -93,23 +93,6 @@ namespace Olca.Application.Battle
             battleSession?.Detach();
             if (battleSystem != null)
                 battleSystem.OnBattleEnd -= OnBattleEnd;
-        }
-
-        // ========== テスト用: キューの次のカードを使用 ==========
-        private void TestUseNextCardInQueue()
-        {
-            if (battleSystem == null) return;
-            var cardUsage = battleSystem.CardUsage;
-            if (cardUsage.IsEmpty)
-            {
-                logger.LogInfo("[テスト] 使用可能なカードがありません");
-                return;
-            }
-            var currentCard = cardUsage.CurrentCard;
-            logger.LogInfo($"[テスト] {currentCard.Name}を使用します（残り{cardUsage.RemainingCount}枚）");
-            bool success = cardUsage.TryUseCurrentCard();
-            if (!success) logger.LogWarning($"[テスト] {currentCard.Name}の使用に失敗しました");
-            battleView.Refresh();
         }
 
         // ========== テスト用データ ==========
