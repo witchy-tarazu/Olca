@@ -130,19 +130,47 @@ namespace Olca.Core.Logic.Dungeon
         /// 毎フレーム更新 - 整数ベース版
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        private bool processingTick;
+        private int encounterRevision;
+
         public void Tick(int deltaTimeMs)
         {
-            if (IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended) return;
-
-            // プレイヤー移動更新
-            playerMovement.Update(deltaTimeMs);
-
-            // 障害物判定
-            CheckObstacles();
-            if (IsCheckpointBlocked || (checkpointSession != null && playerCharacter.CurrentHp <= 0)) return;
-
-            // 接敵判定
-            contactSystem.CheckContact(playerMovement);
+            if (processingTick || IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
+                playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
+            processingTick = true;
+            try
+            {
+                var step = playerMovement.PreviewStep(deltaTimeMs);
+                int control = playerMovement.ControlRevision, encounter = encounterRevision;
+                var contacts = new List<ContactSystem.SweptContact>();
+                for (int i = 0; i < map.TotalCellCount; i++)
+                {
+                    var cell = map.GetCell(i);
+                    if (cell == null) continue;
+                    if (cell.Obstacle != null && !processedObstacleCells.Contains(i) &&
+                        step.TryCellRange(i, 0, out var first, out var last))
+                        contacts.Add(new ContactSystem.SweptContact(cell, first, step));
+                    var enemy = contactSystem.FindContact(step, cell);
+                    if (enemy.HasValue) contacts.Add(enemy.Value);
+                }
+                // 同じ位置で接触するときは、従来どおり障害物の効果を先に確定する。
+                contacts.Sort((a, b) => {
+                    int order = a.Fraction.CompareTo(b.Fraction);
+                    return order != 0 ? order : (a.Cell.Obstacle == null ? 1 : 0).CompareTo(b.Cell.Obstacle == null ? 1 : 0);
+                });
+                foreach (var contact in contacts)
+                {
+                    playerMovement.ApplyStep(step, contact.Position);
+                    if (contact.Cell.Obstacle != null) CheckObstacles(contact.Cell);
+                    else if (contactSystem.NotifyContact(contact.Cell, playerMovement)) return;
+                    // 通知先で開始・終了・再開が同期実行されても、残りの移動を持ち越さない。
+                    if (playerCharacter.CurrentHp <= 0 || IsInBattle || IsDungeonCleared || IsCheckpointBlocked ||
+                        checkpointSuspended || playerMovement.IsPaused || control != playerMovement.ControlRevision ||
+                        encounter != encounterRevision) return;
+                }
+                playerMovement.ApplyStep(step, step.End);
+            }
+            finally { processingTick = false; }
         }
 
         // ========== プレイヤーアクション ==========
@@ -199,7 +227,8 @@ namespace Olca.Core.Logic.Dungeon
         /// <param name="contactInfo">接敵情報</param>
         public void StartBattle(ContactInfo contactInfo)
         {
-            if (IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended) return;
+            if (IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended || playerCharacter.CurrentHp <= 0) return;
+            encounterRevision++;
             if (checkpointSession != null) { PlanCheckpointBattle(contactInfo); return; }
             IsInBattle = true;
             pendingRewardChoices = null;
@@ -544,9 +573,8 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>
         /// 障害物判定
         /// </summary>
-        private void CheckObstacles()
+        private void CheckObstacles(MapCell currentCell)
         {
-            MapCell currentCell = map.GetCellAtPosition(playerMovement.CurrentPosition);
             if (currentCell == null) return;
 
             // 既に処理済みの障害物セルはスキップ
@@ -580,9 +608,6 @@ namespace Olca.Core.Logic.Dungeon
         {
             var penaltyInfo = obstacleSystem.CreatePenaltyInfo(obstacle);
 
-            // ペナルティイベント発火（外部で処理）
-            OnObstaclePenalty?.Invoke(penaltyInfo);
-
             if (penaltyInfo.PenaltyType == ObstaclePenaltyType.CardDiscard)
             {
                 // 攻略中デッキのみ変更し、クリア報酬用の獲得履歴は残す。
@@ -597,6 +622,12 @@ namespace Olca.Core.Logic.Dungeon
                 playerCharacter.TakeDamage(penaltyInfo.Damage);
                 logger.LogInfo($"[Dungeon] 障害物ダメージ: {penaltyInfo.Damage}");
 
+            }
+
+            // 外部通知から再入されても、確定済みのHP・デッキが観測されるようにする。
+            OnObstaclePenalty?.Invoke(penaltyInfo);
+            if (penaltyInfo.PenaltyType == ObstaclePenaltyType.ImmediateDamage)
+            {
                 // HP0以下でゲームオーバー
                 if (playerCharacter.CurrentHp <= 0)
                 {

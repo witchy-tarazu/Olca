@@ -192,7 +192,8 @@ namespace Olca.Tests.Dungeon
             bool battleStarted = false;
             dungeon.OnBattleStart += _ => battleStarted = true;
 
-            // Act: 接敵判定が敵セル5を見るタイミングまでジャンプを維持する
+            // Act: 接触範囲の全区間を回避高度で通過する（下降中の接触は別テスト）。
+            dungeon.Tick(deltaTimeMs: 200);
             dungeon.Jump();
             for (int i = 0; i < 5; i++)
             {
@@ -1268,6 +1269,127 @@ namespace Olca.Tests.Dungeon
             Assert.IsFalse(CheckpointBattlePlan.TryCreate(departure, encounter, definitions, 0, null,
                 c => "reward/v1/" + c.Id, out var plan, out _));
             Assert.IsNull(plan); Assert.AreEqual(1, departure.Sequence);
+        }
+    }
+}
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class SweptDungeonContactTests
+    {
+        private static MapCell EnemyCell(int index, float height = 0, bool boss = false) => new MapCell(index,
+            new Enemy(boss ? "boss" : "enemy_" + index, "接触fixture", 50, ElementType.None, new Vector2Int(index, 0)), height);
+        private static MapCell Trap(int index, int damage = 15) => new MapCell(index, new Obstacle("trap_" + index, "接触fixture", damage));
+        private static DungeonConfig Config(params MapCell[] placed)
+        {
+            var cells = new System.Collections.Generic.List<MapCell>(); for (int i = 0; i < 40; i++) cells.Add(new MapCell(i));
+            cells[39] = EnemyCell(39, boss: true); foreach (var cell in placed) cells[cell.Index] = cell;
+            return new DungeonConfig("swept-fixture", "接触fixture", 40, cells);
+        }
+        private static DungeonSystem Create(params MapCell[] placed) => new DungeonSystem(Config(placed), new PlayerCharacter(100), new Deck(), new MockRandomProvider(0, 1), new MockLogger());
+        [TestCase(false, 4f)][TestCase(true, 3.5f)]
+        public void 大きな経過時間でも最初の敵の接触位置で止まり余剰移動を捨てる(bool dash, float expected)
+        {
+            var game = Create(EnemyCell(5), EnemyCell(12)); int starts = 0; game.OnBattleStart += _ => starts++;
+            if (dash) game.StartDash(); game.Tick(1000);
+            Assert.AreEqual(1, starts); Assert.IsTrue(game.IsInBattle); Assert.AreEqual(expected, game.PlayerPosition, .001f);
+            game.Tick(1000); Assert.AreEqual(1, starts); Assert.AreEqual(expected, game.PlayerPosition, .001f);
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 可変フレームでも障害物を通過順に一度ずつ処理して敵で止まる(int schedule)
+        {
+            var game = Create(Trap(2), Trap(4), EnemyCell(8), Trap(10)); var events = new System.Collections.Generic.List<string>();
+            game.OnObstaclePenalty += p => events.Add("trap"); game.OnBattleStart += _ => events.Add("battle");
+            int[][] frames = { new[] { 1000 }, new[] { 16, 333, 7, 500, 900 }, new[] { 100, 40, 260, 1, 1000 } };
+            foreach (int ms in frames[schedule]) game.Tick(ms);
+            CollectionAssert.AreEqual(new[] { "trap", "trap", "battle" }, events); Assert.AreEqual(70, game.Player.CurrentHp);
+            Assert.AreEqual(7f, game.PlayerPosition, .001f);
+        }
+        [TestCase(false, 85)][TestCase(true, 100)]
+        public void 敵と障害物の前後はセル番号ではなく既存接触距離の位置順で決まる(bool dash, int hp)
+        {
+            var game = Create(Trap(4), EnemyCell(5)); if (dash) game.StartDash(); game.Tick(1000);
+            Assert.IsTrue(game.IsInBattle); Assert.AreEqual(hp, game.Player.CurrentHp);
+        }
+        [Test] public void 障害物通知からTickが再入しても移動と同じ罠を二重処理しない()
+        {
+            var game = Create(Trap(2), EnemyCell(5)); int hits = 0, starts = 0;
+            game.OnObstaclePenalty += _ => { hits++; game.Tick(1000); }; game.OnBattleStart += _ => starts++;
+            game.Tick(1000); Assert.AreEqual(1, hits); Assert.AreEqual(1, starts); Assert.AreEqual(85, game.Player.CurrentHp);
+            Assert.AreEqual(4f, game.PlayerPosition, .001f);
+        }
+        [Test] public void 障害物の効果を確定してから通知し再入による戦闘開始にも反映する()
+        {
+            var game = Create(Trap(2), EnemyCell(8)); int notifiedHp = 0;
+            game.OnObstaclePenalty += _ => { notifiedHp = game.Player.CurrentHp; game.StartBattle(new ContactInfo {
+                Enemy = game.Map.GetCell(8).Enemy, EnemyCellIndex = 8, ContactPositionX = game.PlayerPosition }); };
+            game.Tick(1000); Assert.AreEqual(85, notifiedHp); Assert.IsTrue(game.IsInBattle);
+            Assert.AreEqual(2f, game.PlayerPosition, .001f);
+        }
+        [Test] public void 開始通知中に戦闘が完了して再開されても外側Tickの残りを進めない()
+        {
+            var game = Create(EnemyCell(5), EnemyCell(20)); int starts = 0;
+            game.OnBattleStart += _ => { starts++; game.CurrentBattle.Enemies[0].TakeDamage(50, ElementType.None); game.ResumePlayerMovement(); game.Tick(1000); };
+            game.Tick(1000); Assert.AreEqual(1, starts); Assert.AreEqual(4f, game.PlayerPosition, .001f);
+        }
+        [Test] public void 致死障害物以降の敵へ進まず敗北を一度だけ通知する()
+        {
+            var game = Create(Trap(2, 150), EnemyCell(3)); int starts = 0, deaths = 0;
+            game.OnBattleStart += _ => starts++; game.OnDungeonFailed += () => deaths++;
+            game.Tick(1000); game.Tick(1000);
+            Assert.AreEqual(1, deaths); Assert.AreEqual(0, starts); Assert.AreEqual(2f, game.PlayerPosition, .001f);
+        }
+        [Test] public void ジャンプ中に通過した通常敵を終点の着地高度で接触扱いしない()
+        {
+            var game = Create(EnemyCell(3), EnemyCell(8, boss: true)); int contacted = -1;
+            game.OnBattleStart += c => contacted = c.EnemyCellIndex; game.Jump(); game.Tick(1000);
+            Assert.AreEqual(8, contacted); Assert.AreEqual(7f, game.PlayerPosition, .001f);
+        }
+        [Test] public void 空中敵は区間途中の到達高度で接触し着地後の終点高度を使わない()
+        {
+            var game = Create(EnemyCell(3, 1.5f)); int contacted = -1;
+            game.OnBattleStart += c => contacted = c.EnemyCellIndex; game.Jump(); game.Tick(1000);
+            Assert.AreEqual(3, contacted); Assert.AreEqual(2f, game.PlayerPosition, .001f);
+        }
+        [Test] public void 敵の接触範囲内で下降して回避高度を下回った時点を見落とさない()
+        {
+            var game = Create(EnemyCell(5)); game.Jump(); game.Tick(1000);
+            Assert.IsTrue(game.IsInBattle); Assert.Greater(game.PlayerPosition, 4.5f); Assert.Less(game.PlayerPosition, 5f);
+        }
+        [Test] public void 後退区間でも最初に横切る既存前方検出範囲を一度だけ通知する()
+        {
+            var map = new DungeonMap(Config(EnemyCell(5), EnemyCell(15))); var detector = new ContactSystem(map);
+            var movement = new PlayerMovement(20f); int cell = -1, calls = 0;
+            detector.OnEnemyContact += c => { cell = c.EnemyCellIndex; calls++; detector.CheckContact(movement); };
+            movement.Update(-2000); detector.CheckContact(movement); detector.CheckContact(movement);
+            Assert.AreEqual(15, cell); Assert.AreEqual(1, calls); Assert.That(movement.CurrentPosition, Is.InRange(14f, 15f));
+        }
+        [Test] public void 後退で複数障害物を順に処理し方向を戻しても二重被弾しない()
+        {
+            var game = Create(Trap(15), Trap(10));
+            var movement = (PlayerMovement)typeof(DungeonSystem).GetField("playerMovement", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(game);
+            movement.SetPosition(20f);
+            var hp = new System.Collections.Generic.List<int>(); game.OnObstaclePenalty += _ => hp.Add(game.Player.CurrentHp);
+            game.Tick(-1500); game.Tick(1500);
+            CollectionAssert.AreEqual(new[] { 85, 70 }, hp); Assert.AreEqual(20f, game.PlayerPosition);
+        }
+        [Test] public void 最大経過時間でもセル数に応じて処理して最初の敵で停止する()
+        {
+            var game = Create(Trap(2), EnemyCell(8)); game.Tick(int.MaxValue);
+            Assert.IsTrue(game.IsInBattle); Assert.AreEqual(85, game.Player.CurrentHp); Assert.AreEqual(7f, game.PlayerPosition);
+        }
+        [Test] public void ジャンプ回避した障害物を終点の着地高度で再処理しない()
+        {
+            var game = Create(Trap(2), EnemyCell(8)); game.Jump(); game.Tick(1000);
+            Assert.AreEqual(100, game.Player.CurrentHp); Assert.IsTrue(game.IsInBattle);
+        }
+        [TestCase(0)][TestCase(1)]
+        public void 下降中の接触位置はフレーム分割に依存しない(int partition)
+        {
+            var game = Create(EnemyCell(5)); game.Jump();
+            foreach (int ms in partition == 0 ? new[] { 1000 } : new[] { 17, 111, 33, 239, 100, 500 }) game.Tick(ms);
+            Assert.IsTrue(game.IsInBattle); Assert.That(game.PlayerPosition, Is.InRange(4.597f, 4.599f));
         }
     }
 }

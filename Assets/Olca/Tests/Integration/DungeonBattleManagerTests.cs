@@ -1045,6 +1045,21 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(defs, reopened), new MockRandomProvider(), new MockLogger(), out var result, out var error), error);
             result.ActivateCheckpoint(); return result;
         }
+        [Test] public void 大フレーム接敵の保存失敗でも接触位置で止まり旧保存と被弾回数を維持する()
+        {
+            Create(); var before = System.IO.File.ReadAllBytes(store.ActivePath); io.Fail = true;
+            int hits = 0, starts = 0; manager.Dungeon.OnObstaclePenalty += _ => hits++; manager.Dungeon.OnBattleStart += _ => starts++;
+            manager.Tick(3000); Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);
+            Assert.AreEqual(5f, manager.Dungeon.PlayerPosition); Assert.AreEqual(85, manager.Dungeon.Player.CurrentHp);
+            Assert.AreEqual(1, hits); Assert.AreEqual(0, starts); Assert.IsNull(manager.CurrentBattle);
+            CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(store.ActivePath));
+            manager.Tick(3000); Assert.IsFalse(manager.RetryCheckpoint());
+            Assert.AreEqual(1, hits); Assert.AreEqual(5f, manager.Dungeon.PlayerPosition);
+            io.Fail = false; Assert.IsTrue(manager.RetryCheckpoint()); Assert.AreEqual(1, starts);
+            Assert.AreEqual(5000, store.Read().PositionMilli); Assert.AreEqual(85, store.Read().Player.Hp);
+            CollectionAssert.AreEqual(new[] { 2 }, store.Read().ProcessedObstacleCells);
+            manager.Tick(3000); Assert.AreEqual(1, hits); Assert.AreEqual(1, starts);
+        }
         [Test] public void 障害物通過後の戦闘開始を実ファイルから別定義別モデルへ復元する()
         {
             Create(); Contact(); Assert.IsNotNull(manager.CurrentBattle);
