@@ -25,6 +25,8 @@ namespace Olca.Core.Logic.Battle
 
         private bool isPaused; // カスタム画面中はtrue
         private BattleState state;
+        private int resolutionDepth;
+        private bool resolutionRequested;
 
         /// <summary>プレイヤーキャラクター</summary>
         public PlayerCharacter Player => player;
@@ -94,6 +96,8 @@ namespace Olca.Core.Logic.Battle
             this.state = BattleState.InProgress;
 
             // プレイヤー死亡時の処理
+            player.OnDamageProcessingStarted += BeginResolution;
+            player.OnDamageProcessingCompleted += EndResolution;
             player.OnDeath += OnPlayerDeath;
 
             // プレイヤーのけぞり時の処理（カード効果の中断）
@@ -102,6 +106,8 @@ namespace Olca.Core.Logic.Battle
             // 敵死亡時の処理と敵AI登録
             foreach (var enemy in enemies)
             {
+                enemy.OnDamageProcessingStarted += BeginResolution;
+                enemy.OnDamageProcessingCompleted += EndResolution;
                 enemy.OnDeath += () =>
                 {
                     CheckVictoryCondition();
@@ -137,35 +143,40 @@ namespace Olca.Core.Logic.Battle
         {
             if (isPaused || IsGameOver) return;
 
-            // カスタムゲージを更新
-            customGauge.Update(deltaTimeMs);
-
-            // プレイヤー移動とパネル効果を更新
-            if (input != null)
+            BeginResolution();
+            try
             {
-                playerMovement.Tick(deltaTimeMs, input, enemies);
-                panelEffects.Tick(deltaTimeMs, player);
-            }
+                // カスタムゲージを更新
+                customGauge.Update(deltaTimeMs);
 
-            // 遅延効果を更新（投擲物の着弾など）
-            delayedEffects.Update(deltaTimeMs);
-
-            // プレイヤーの無敵時間ティック処理
-            player.TickInvincible(deltaTimeMs);
-
-            // 敵の状態異常ティック処理（毒ダメージ等）
-            foreach (var enemy in enemies)
-            {
-                if (enemy.IsDead) continue;
-                int poisonDamage = enemy.TickStatus(deltaTimeMs);
-                if (poisonDamage > 0)
+                // プレイヤー移動とパネル効果を更新
+                if (input != null)
                 {
-                    enemy.TakeDamage(poisonDamage, ElementType.None);
+                    playerMovement.Tick(deltaTimeMs, input, enemies);
+                    panelEffects.Tick(deltaTimeMs, player);
                 }
-            }
 
-            // 敵のAI更新
-            enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider);
+                // 遅延効果を更新（投擲物の着弾など）
+                delayedEffects.Update(deltaTimeMs);
+
+                // プレイヤーの無敵時間ティック処理
+                player.TickInvincible(deltaTimeMs);
+
+                // 敵の状態異常ティック処理（毒ダメージ等）
+                foreach (var enemy in enemies)
+                {
+                    if (enemy.IsDead) continue;
+                    int poisonDamage = enemy.TickStatus(deltaTimeMs);
+                    if (poisonDamage > 0)
+                    {
+                        enemy.TakeDamage(poisonDamage, ElementType.None);
+                    }
+                }
+
+                // 敵のAI更新
+                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider);
+            }
+            finally { EndResolution(); }
         }
 
         /// <summary>
@@ -204,11 +215,17 @@ namespace Olca.Core.Logic.Battle
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
 
-            int damage = player.AttackPower;
-            target.TakeDamage(damage, ElementType.None);
+            if (IsGameOver) return;
+            BeginResolution();
+            try
+            {
+                int damage = player.AttackPower;
+                target.TakeDamage(damage, ElementType.None);
 
-            logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
-            OnPlayerAttack?.Invoke(target, damage);
+                logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
+                OnPlayerAttack?.Invoke(target, damage);
+            }
+            finally { EndResolution(); }
         }
 
         /// <summary>
@@ -265,9 +282,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnPlayerDeath()
         {
-            state = BattleState.Defeat;
-            logger?.LogInfo("プレイヤー死亡 - 敗北");
-            OnBattleEnd?.Invoke(BattleResult.Defeat);
+            RequestResolution();
         }
 
         /// <summary>
@@ -284,22 +299,44 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void CheckVictoryCondition()
         {
-            bool allEnemiesDead = true;
-            foreach (var enemy in enemies)
+            RequestResolution();
+        }
+
+        // 時間窓は作らず、既存Tickまたは同期ダメージ/反撃の呼出しが戻るまで判定を保留する。
+        private void BeginResolution() => resolutionDepth++;
+
+        private void EndResolution()
+        {
+            resolutionDepth--;
+            ResolveBattleEnd();
+        }
+
+        private void RequestResolution()
+        {
+            if (IsGameOver) return;
+            resolutionRequested = true;
+            ResolveBattleEnd();
+        }
+
+        private void ResolveBattleEnd()
+        {
+            if (resolutionDepth != 0 || !resolutionRequested || IsGameOver) return;
+            resolutionRequested = false;
+
+            // 全体仕様第7節: 同じ処理単位で両者HP0なら敗北が優先。
+            if (player.IsDead)
             {
-                if (!enemy.IsDead)
-                {
-                    allEnemiesDead = false;
-                    break;
-                }
+                state = BattleState.Defeat;
+            }
+            else
+            {
+                if (enemies.Count == 0 || enemies.Exists(enemy => !enemy.IsDead)) return;
+                state = BattleState.Victory;
             }
 
-            if (allEnemiesDead)
-            {
-                state = BattleState.Victory;
-                logger?.LogInfo("全ての敵を撃破 - 勝利");
-                OnBattleEnd?.Invoke(BattleResult.Victory);
-            }
+            var result = state == BattleState.Defeat ? BattleResult.Defeat : BattleResult.Victory;
+            logger?.LogInfo($"バトル終了: {result}");
+            OnBattleEnd?.Invoke(result);
         }
 
         /// <summary>

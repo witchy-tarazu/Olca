@@ -34,6 +34,108 @@ namespace Olca.Tests.Integration
             return new Deck(cards);
         }
 
+        [TestCase(0, false)]
+        [TestCase(0, true)]
+        [TestCase(1, false)]
+        [TestCase(1, true)]
+        [TestCase(2, false)]
+        [TestCase(2, true)]
+        [TestCase(3, false)]
+        [TestCase(4, false)]
+        public void 同じ処理単位の両者死亡_通知順によらず敗北一回で報酬なし(int route, bool reverse)
+        {
+            var config = DungeonConfig.CreateTestDungeon(10);
+            var boss = config.MapCells[9].Enemy;
+            var player = new PlayerCharacter(100, attackPower: 200);
+            // route1/2は反撃イベントをBattleSystemより先/後に購読する。
+            System.Action counter = route == 1
+                ? () => player.TakeDamage(1000)
+                : () => boss.TakeDamage(1000, ElementType.None);
+            if (route == 1 && !reverse) boss.OnDeath += counter;
+            if (route == 2 && !reverse) player.OnDeath += counter;
+            var manager = new DungeonBattleManager(config, player, CreateTestDeck(), mockRandom, mockLogger);
+            int rewards = 0, clears = 0, failures = 0, ends = 0;
+            manager.OnCardRewardPresented += _ => rewards++;
+            manager.OnDungeonClearCompleted += _ => clears++;
+            manager.OnGameOver += () => failures++;
+            manager.OnBattleEnded += () => ends++;
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            var battle = manager.CurrentBattle;
+            var outcomes = new List<BattleResult>();
+            battle.OnBattleEnd += result => outcomes.Add(result);
+            if (route == 1 && reverse) boss.OnDeath += counter;
+            if (route == 2 && reverse) player.OnDeath += counter;
+            if (route == 0)
+            {
+                System.Action first = () => player.TakeDamage(1000);
+                System.Action second = () => boss.TakeDamage(1000, ElementType.None);
+                if (reverse) { var swap = first; first = second; second = swap; }
+                battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = first });
+                battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = second });
+                manager.Tick(1);
+            }
+            else if (route == 1) boss.TakeDamage(1000, ElementType.None);
+            else if (route == 2) player.TakeDamage(1000);
+            else if (route == 4)
+            {
+                battle.OnPlayerAttack += (_, __) => player.TakeDamage(1000);
+                battle.PlayerBasicAttack(boss);
+            }
+            else
+            {
+                // 同じTick内の遅延ダメージと敵の毒更新を最後まで処理する。
+                boss.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 1000));
+                battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1)
+                    { ExecuteAction = () => player.TakeDamage(1000) });
+                manager.Tick(1000);
+            }
+            Assert.IsTrue(player.IsDead);
+            Assert.IsTrue(boss.IsDead);
+            Assert.AreEqual(BattleState.Defeat, battle.State);
+            Assert.AreEqual(GamePhase.GameOver, manager.CurrentPhase);
+            CollectionAssert.AreEqual(new[] { BattleResult.Defeat }, outcomes);
+            Assert.AreEqual(0, rewards);
+            Assert.AreEqual(0, clears);
+            Assert.AreEqual(1, failures);
+            Assert.AreEqual(1, ends);
+            Assert.AreEqual(0, manager.Dungeon.GetObtainedCards().Count);
+            // 既に死亡した相手からの重複通知でも結果とイベント数は不変。
+            if (route == 1) boss.OnDeath -= counter;
+            if (route == 2) player.OnDeath -= counter;
+            player.TakeDamage(1);
+            boss.TakeDamage(1, ElementType.None);
+            battle.Tick(1000);
+            CollectionAssert.AreEqual(new[] { BattleResult.Defeat }, outcomes);
+        }
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void 片方だけ死亡_既存結果を一度確定し後の別処理では上書きしない(bool playerDies, bool tick)
+        {
+            var player = new PlayerCharacter(100);
+            var enemy = new Enemy("enemy", "敵", 100, ElementType.None, new Vector2Int(3, 0));
+            var battle = new BattleSystem(player, new List<Enemy> { enemy }, CreateTestDeck());
+            var results = new List<BattleResult>();
+            battle.OnBattleEnd += result => results.Add(result);
+            System.Action damage = playerDies ? () => player.TakeDamage(1000)
+                : () => enemy.TakeDamage(1000, ElementType.None);
+            if (tick)
+            {
+                battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = damage });
+                battle.Tick(1);
+            }
+            else damage();
+            var expected = playerDies ? BattleResult.Defeat : BattleResult.Victory;
+            CollectionAssert.AreEqual(new[] { expected }, results);
+            player.TakeDamage(1000);
+            enemy.TakeDamage(1000, ElementType.None);
+            battle.Tick(1);
+            CollectionAssert.AreEqual(new[] { expected }, results);
+            Assert.AreEqual(playerDies ? BattleState.Defeat : BattleState.Victory, battle.State);
+        }
+
         [TestCase(1, false, false)]
         [TestCase(2, false, false)]
         [TestCase(1, true, false)]

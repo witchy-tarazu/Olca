@@ -14,6 +14,10 @@ namespace Olca.Core.Domain
         private int stunDurationMs;
         private StatusEffect activeStatusEffect;
 
+        // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
+        internal event Action OnDamageProcessingStarted;
+        internal event Action OnDamageProcessingCompleted;
+
         /// <summary>現在HP</summary>
         public int CurrentHp => currentHp;
 
@@ -75,24 +79,32 @@ namespace Olca.Core.Domain
         /// <param name="attackElement">攻撃属性</param>
         public void TakeDamage(int damage, ElementType attackElement)
         {
-            if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
-
-            // 属性相性によるダメージ補正
-            float multiplier = GetElementMultiplier(attackElement, element);
-            int finalDamage = (int)(damage * multiplier);
-
-            currentHp -= finalDamage;
-            if (currentHp < 0)
+            OnDamageProcessingStarted?.Invoke();
+            try
             {
-                currentHp = 0;
+                if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
+
+                // 属性相性によるダメージ補正
+                float multiplier = GetElementMultiplier(attackElement, element);
+                int finalDamage = (int)(damage * multiplier);
+
+                currentHp -= finalDamage;
+                if (currentHp < 0)
+                {
+                    currentHp = 0;
+                }
+
+                OnHpChanged?.Invoke(currentHp, maxHp);
+                OnDamaged?.Invoke(finalDamage, multiplier);
+
+                if (IsDead)
+                {
+                    OnDeath?.Invoke();
+                }
             }
-
-            OnHpChanged?.Invoke(currentHp, maxHp);
-            OnDamaged?.Invoke(finalDamage, multiplier);
-
-            if (IsDead)
+            finally
             {
-                OnDeath?.Invoke();
+                OnDamageProcessingCompleted?.Invoke();
             }
         }
 

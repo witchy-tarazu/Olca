@@ -19,6 +19,10 @@ namespace Olca.Core.Domain
         private int invincibleDurationMs; // 無敵残り時間（ミリ秒）
         private float nextCardMultiplier = 1.0f; // 次カード威力倍率（集中バフ）
 
+        // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
+        internal event Action OnDamageProcessingStarted;
+        internal event Action OnDamageProcessingCompleted;
+
         /// <summary>現在HP</summary>
         public int CurrentHp => currentHp;
 
@@ -109,43 +113,51 @@ namespace Olca.Core.Domain
         /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
         public void TakeDamage(int damage, bool forceStagger = false)
         {
-            if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
-
-            // 無敵中はダメージ・のけぞりを無効化
-            if (invincibleDurationMs > 0) return;
-
-            // バリアがある場合は先にバリアで吸収
-            if (barrierHp > 0)
+            OnDamageProcessingStarted?.Invoke();
+            try
             {
-                int absorbed = Math.Min(barrierHp, damage);
-                barrierHp -= absorbed;
-                damage -= absorbed;
-                if (damage <= 0) return;
-            }
+                if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
 
-            currentHp -= damage;
-            if (currentHp < 0)
-            {
-                currentHp = 0;
-            }
+                // 無敵中はダメージ・のけぞりを無効化
+                if (invincibleDurationMs > 0) return;
 
-            OnHpChanged?.Invoke(currentHp, maxHp);
-
-            // のけぞり判定（強靭度システム）
-            // 累計ダメージが強靭度を超えると、のけぞりが発生する
-            if (!IsDead)
-            {
-                accumulatedDamage += damage;
-                if (forceStagger || accumulatedDamage >= poise)
+                // バリアがある場合は先にバリアで吸収
+                if (barrierHp > 0)
                 {
-                    accumulatedDamage = 0;  // のけぞり後はリセット
-                    OnStaggered?.Invoke();
+                    int absorbed = Math.Min(barrierHp, damage);
+                    barrierHp -= absorbed;
+                    damage -= absorbed;
+                    if (damage <= 0) return;
+                }
+
+                currentHp -= damage;
+                if (currentHp < 0)
+                {
+                    currentHp = 0;
+                }
+
+                OnHpChanged?.Invoke(currentHp, maxHp);
+
+                // のけぞり判定（強靭度システム）
+                // 累計ダメージが強靭度を超えると、のけぞりが発生する
+                if (!IsDead)
+                {
+                    accumulatedDamage += damage;
+                    if (forceStagger || accumulatedDamage >= poise)
+                    {
+                        accumulatedDamage = 0;  // のけぞり後はリセット
+                        OnStaggered?.Invoke();
+                    }
+                }
+
+                if (IsDead)
+                {
+                    OnDeath?.Invoke();
                 }
             }
-
-            if (IsDead)
+            finally
             {
-                OnDeath?.Invoke();
+                OnDamageProcessingCompleted?.Invoke();
             }
         }
 
