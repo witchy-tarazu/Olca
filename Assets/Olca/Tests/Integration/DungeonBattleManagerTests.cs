@@ -34,6 +34,83 @@ namespace Olca.Tests.Integration
             return new Deck(cards);
         }
 
+        [TestCase(1, false)]
+        [TestCase(2, false)]
+        [TestCase(1, true)]
+        [TestCase(2, true)]
+        public void 勝利復帰_撃破参加敵を除去し再接敵せず生存敵を保持する(int count, bool includeDead)
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 25; i++) cells.Add(new MapCell(i));
+            var avoided = new Enemy("avoided", "回避敵", 20, ElementType.None, new Vector2Int(2, 0));
+            var primary = new Enemy("primary", "主敵", 20, ElementType.None, new Vector2Int(10, 0));
+            var extra = new Enemy("extra", "隣接巻込み敵", 20, ElementType.None, new Vector2Int(11, 0));
+            var unrelated = new Enemy("unrelated", "遠方生存敵", 20, ElementType.None, new Vector2Int(20, 0));
+            var dead = new Enemy("dead", "既に死亡した敵", 20, ElementType.None, new Vector2Int(12, 0));
+            dead.TakeDamage(100, ElementType.None);
+            cells[2] = new MapCell(2, avoided);
+            cells[10] = new MapCell(10, primary);
+            if (count == 2) cells[11] = new MapCell(11, extra);
+            if (includeDead) cells[12] = new MapCell(12, dead);
+            cells[20] = new MapCell(20, unrelated);
+            var manager = new DungeonBattleManager(new DungeonConfig("roundtrip", "勝利復帰", 25, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            int starts = 0, victories = 0, rewards = 0, returns = 0;
+            manager.OnBattleStarted += (_, __) => starts++;
+            manager.Dungeon.OnBattleEnd += result => { if (result == BattleResult.Victory) victories++; };
+            manager.OnCardRewardPresented += _ => rewards++;
+            manager.Dungeon.OnReturnToDungeon += () => returns++;
+            manager.Jump(); // 最初の通常敵を実際に回避して通過する。
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(100);
+            Assert.AreEqual(GamePhase.Battle, manager.CurrentPhase);
+            var participants = new List<Enemy>(manager.CurrentBattle.Enemies);
+            Assert.AreEqual(count, participants.Count);
+            Assert.IsFalse(participants.Contains(dead));
+            foreach (var enemy in participants) enemy.TakeDamage(100, ElementType.None);
+            manager.Tick(100);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            foreach (var enemy in participants)
+                Assert.IsFalse(manager.Dungeon.Map.GetAllEnemies().Exists(entry => ReferenceEquals(entry.enemy, enemy)));
+            manager.SelectCardReward(null);
+            manager.ResumeAfterBattle();
+            for (int i = 0; i < 100 && manager.CurrentPhase == GamePhase.Dungeon && manager.Dungeon.PlayerPosition < 14f; i++)
+                manager.Tick(100);
+            Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase);
+            Assert.GreaterOrEqual(manager.Dungeon.PlayerPosition, 14f);
+            Assert.AreSame(avoided, manager.Dungeon.Map.GetCell(2).Enemy);
+            Assert.AreSame(unrelated, manager.Dungeon.Map.GetCell(20).Enemy);
+            Assert.IsFalse(avoided.IsDead);
+            Assert.IsFalse(unrelated.IsDead);
+            if (includeDead) Assert.AreSame(dead, manager.Dungeon.Map.GetCell(12).Enemy, "無関係の参照は一括削除しない");
+            Assert.AreEqual(1, starts);
+            Assert.AreEqual(1, victories);
+            Assert.AreEqual(1, rewards);
+            Assert.AreEqual(1, returns);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 接触判定_死亡敵を無視して次の生存敵に一度だけ接触する(bool dash)
+        {
+            var dead = new Enemy("dead", "死亡敵", 10, ElementType.None, new Vector2Int(2, 0));
+            dead.TakeDamage(100, ElementType.None);
+            var alive = new Enemy("alive", "生存敵", 10, ElementType.None, new Vector2Int(3, 0));
+            var cells = new List<MapCell> { new MapCell(0), new MapCell(1), new MapCell(2, dead), new MapCell(3, alive), new MapCell(4) };
+            var contact = new ContactSystem(new DungeonMap(new DungeonConfig("contact", "接触", 5, cells)));
+            var movement = new PlayerMovement(1f);
+            if (dash) movement.StartDash();
+            int calls = 0;
+            contact.OnEnemyContact += info => { calls++; Assert.AreSame(alive, info.Enemy); };
+            contact.CheckContact(movement);
+            contact.ResetContact();
+            contact.CheckContact(movement);
+            Assert.AreEqual(0, calls);
+            movement.SetPosition(2f);
+            contact.CheckContact(movement);
+            contact.CheckContact(movement);
+            Assert.AreEqual(1, calls);
+        }
+
         [Test]
         public void 初期化時はダンジョンフェーズ()
         {

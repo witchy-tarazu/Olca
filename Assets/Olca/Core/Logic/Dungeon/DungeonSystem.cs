@@ -239,7 +239,7 @@ namespace Olca.Core.Logic.Dungeon
 
             foreach (var enemy in nearbyEnemies)
             {
-                if (enemy != contactInfo.Enemy && !enemies.Contains(enemy))
+                if (!enemy.IsDead && enemy != contactInfo.Enemy && !enemies.Contains(enemy))
                 {
                     enemies.Add(enemy);
                     logger.LogInfo($"  - 巻き込み: {enemy.Name}");
@@ -347,6 +347,15 @@ namespace Olca.Core.Logic.Dungeon
             if (victory)
             {
                 logger.LogInfo("[Dungeon] バトル勝利");
+
+                // 接敵主敵だけでなく、この戦闘で撃破した巻込み敵も探索マップから除去する。
+                if (currentBattle != null)
+                {
+                    foreach (var enemy in currentBattle.Enemies)
+                    {
+                        if (enemy.IsDead) map.RemoveEnemy(enemy);
+                    }
+                }
 
                 // カードドロップ判定
                 if (currentContactInfo != null && currentContactInfo.Enemy != null)

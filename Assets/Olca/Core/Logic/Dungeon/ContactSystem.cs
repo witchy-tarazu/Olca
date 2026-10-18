@@ -45,7 +45,7 @@ namespace Olca.Core.Logic.Dungeon
             float checkDistance = player.IsDashing ? DASH_CONTACT_DISTANCE : CONTACT_DISTANCE;
             MapCell nextCell = map.GetCellAtPosition(player.CurrentPosition + checkDistance);
 
-            if (nextCell != null && nextCell.Enemy != null)
+            if (nextCell != null && nextCell.Enemy != null && !nextCell.Enemy.IsDead)
             {
                 // 既に接触済みの敵は無視
                 if (nextCell.Enemy == lastContactedEnemy)
