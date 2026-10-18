@@ -244,6 +244,73 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class BattleSummonTests
     {
+        private sealed class CallbackAction : IEnemyAIAction
+        {
+            public int Count;
+            public System.Action Callback;
+            public bool CanExecute(AIContext context) => true;
+            public void Execute(AIContext context) { Count++; Callback?.Invoke(); }
+            public int GetCooldownMs() => 1000;
+            public float GetCooldown() => 1f;
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 毒イベント内の召喚は即時登録して次Tickから更新し終了時に除去する(bool onDeath)
+        {
+            var main = Enemy(); var survivor = Enemy(); var summon = Enemy(true);
+            var battle = Battle(new PlayerCharacter(100), main, survivor);
+            var action = new CallbackAction(); int notifications = 0, ends = 0;
+            var poison = new StatusEffect(StatusEffectType.Poison, 5000, 1);
+            summon.ApplyStatus(poison);
+            battle.OnSummonAdded += _ => notifications++;
+            System.Action add = () => battle.AddSummon(summon, new List<IEnemyAIAction> { action });
+            if (onDeath) main.OnDeath += add;
+            else main.OnDamaged += (_, __) => { if (notifications == 0) add(); };
+            main.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, onDeath ? 50 : 1));
+            Assert.DoesNotThrow(() => battle.Tick(1000));
+            CollectionAssert.AreEqual(new[] { main, survivor, summon }, battle.Enemies);
+            Assert.AreEqual(1, notifications);
+            Assert.AreEqual(1, AI(battle).AIBehaviors.Count(b => b.Enemy == summon));
+            Assert.AreEqual(5000, poison.RemainingMs);
+            Assert.AreEqual(0, action.Count, "追加前から経過したTickの時間を新規召喚へ渡さない");
+            battle.Tick(1000);
+            Assert.AreEqual(4000, poison.RemainingMs);
+            Assert.AreEqual(1, action.Count);
+            battle.OnBattleEnd += _ =>
+            {
+                ends++;
+                Assert.IsFalse(battle.Enemies.Contains(summon));
+                Assert.AreEqual(0, AI(battle).AIBehaviors.Count);
+                NoBattleSubscriptions(summon, battle, "OnDeath", "OnDamageProcessingStarted", "OnDamageProcessingCompleted");
+            };
+            if (!main.IsDead) main.TakeDamage(50, ElementType.None);
+            survivor.TakeDamage(50, ElementType.None);
+            Assert.AreEqual(BattleState.Victory, battle.State);
+            Assert.AreEqual(1, ends);
+            Assert.AreEqual(1, notifications);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 遅延効果やAIからの追加召喚も次Tickまで行動しない(bool fromAI)
+        {
+            var battle = Battle(new PlayerCharacter(100), Enemy());
+            var summon = Enemy(true); var action = new CallbackAction();
+            System.Action add = () => battle.AddSummon(summon, new List<IEnemyAIAction> { action });
+            if (fromAI)
+            {
+                var summoner = new CallbackAction();
+                summoner.Callback = () => { summoner.Callback = null; add(); };
+                battle.AddSummon(Enemy(true), new List<IEnemyAIAction> { summoner });
+            }
+            else battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = add });
+            battle.Tick(1);
+            Assert.AreEqual(0, action.Count);
+            battle.Tick(1);
+            Assert.AreEqual(1, action.Count);
+        }
+
         private static Enemy Enemy(bool summon = false) => new Enemy("fixture", "試験対象", 50, ElementType.None, new Vector2Int(4, 0), isSummoned: summon);
         private static Card Card() => new Card("c", "試験", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "試験");
         private static BattleSystem Battle(PlayerCharacter player, params Enemy[] enemies) => new BattleSystem(player, new List<Enemy>(enemies), new Deck(new List<Card> { Card() }));

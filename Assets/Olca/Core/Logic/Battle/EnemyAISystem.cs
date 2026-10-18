@@ -70,14 +70,18 @@ namespace Olca.Core.Logic.Battle
         /// <param name="player">プレイヤーキャラクター</param>
         /// <param name="field">バトルフィールド</param>
         /// <param name="random">乱数プロバイダー</param>
-        public void Tick(int deltaTimeMs, PlayerCharacter player, BattleField field, IRandomProvider random)
+        public void Tick(int deltaTimeMs, PlayerCharacter player, BattleField field, IRandomProvider random,
+            IList<Enemy> tickParticipants = null)
         {
             if (player == null || field == null) return;
 
-            // 各敵のAIを更新
-            for (int i = aiBehaviors.Count - 1; i >= 0; i--)
+            // 従来の逆登録順を維持し、行動中の追加・死亡による登録解除で走査をずらさない。
+            var behaviors = aiBehaviors.ToArray();
+            for (int i = behaviors.Length - 1; i >= 0; i--)
             {
-                var behavior = aiBehaviors[i];
+                var behavior = behaviors[i];
+                if (!aiBehaviors.Contains(behavior)
+                    || (tickParticipants != null && !tickParticipants.Contains(behavior.Enemy))) continue;
 
                 // 敵ごとのコンテキストを作成
                 var context = new AIContext(behavior.Enemy, player, field, random, logger);

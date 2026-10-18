@@ -161,6 +161,9 @@ namespace Olca.Core.Logic.Battle
         {
             if (isPaused || IsGameOver) return;
 
+            // 追加登録・通知は即時だが、Tick途中の召喚へ過去の経過時間を渡さない。
+            // 状態異常とAIは同じ開始時参加者だけを更新する。
+            var tickParticipants = enemies.ToArray();
             BeginResolution();
             try
             {
@@ -182,7 +185,7 @@ namespace Olca.Core.Logic.Battle
                 player.TickInvincible(deltaTimeMs);
 
                 // 敵の状態異常ティック処理（毒ダメージ等）
-                foreach (var enemy in enemies)
+                foreach (var enemy in tickParticipants)
                 {
                     if (enemy.IsDead) continue;
                     int poisonDamage = enemy.TickStatus(deltaTimeMs);
@@ -193,7 +196,7 @@ namespace Olca.Core.Logic.Battle
                 }
 
                 // 敵のAI更新
-                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider);
+                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider, tickParticipants);
             }
             finally { EndResolution(); }
         }
