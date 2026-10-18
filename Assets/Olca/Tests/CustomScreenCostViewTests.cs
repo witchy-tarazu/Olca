@@ -49,7 +49,7 @@ namespace Olca.Tests
         }
 
         [Test]
-        public void 中間解除と再選択_表示も新しい隣接関係で再計算する()
+        public void 中間解除は表示不変で末尾解除と再選択だけ反映する()
         {
             var cards = new List<Card> { Create("a", CardSeries.Sword), Create("b", CardSeries.Bomb), Create("c", CardSeries.Sword) };
             var model = new CustomScreenSystem(new Deck(cards));
@@ -65,16 +65,19 @@ namespace Olca.Tests
                 foreach (var card in cards) view.OnCardClicked(card);
                 Assert.AreEqual("コスト: 9 / 10", text.text);
                 view.OnCardClicked(cards[1]);
-                Assert.AreEqual("コスト: 5 / 10", text.text);
-                view.OnCardClicked(cards[1]);
-                Assert.AreEqual("コスト: 8 / 10", text.text);
-                CollectionAssert.AreEqual(new[] { cards[0], cards[2], cards[1] }, model.SelectedCards);
+                Assert.AreEqual("コスト: 9 / 10", text.text);
+                CollectionAssert.AreEqual(cards, model.SelectedCards);
+                view.OnCardClicked(cards[2]);
+                Assert.AreEqual("コスト: 6 / 10", text.text);
+                view.OnCardClicked(cards[2]);
+                Assert.AreEqual("コスト: 9 / 10", text.text);
+                CollectionAssert.AreEqual(cards, model.SelectedCards);
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
         }
 
         [Test]
-        public void 中間解除で上限超過_赤表示と確定ボタン無効が一致する()
+        public void 中間解除拒否_上限内表示と確定ボタンを維持する()
         {
             var a = Create("a", CardSeries.Sword);
             var b = new Card("b", "B", 0, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Bomb, 1, "テスト");
@@ -94,9 +97,9 @@ namespace Olca.Tests
                 foreach (var card in new[] { a, b, c }) view.OnCardClicked(card);
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(b);
-                Assert.AreEqual("コスト: 6 / 5", text.text);
-                Assert.AreEqual(new Color(1f, 0.39f, 0.39f), text.color);
-                Assert.IsFalse(button.interactable);
+                Assert.AreEqual("コスト: 5 / 5", text.text);
+                Assert.AreEqual(Color.white, text.color);
+                Assert.IsTrue(button.interactable);
                 view.OnCardClicked(c);
                 Assert.AreEqual("コスト: 3 / 5", text.text);
                 Assert.IsTrue(button.interactable);

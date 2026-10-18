@@ -701,6 +701,13 @@ namespace Olca.Presentation.CustomScreen
             }
             else
             {
+                // 使用予定カードは、通常選択を解除して手札へ戻すまで加工素材にできない。
+                if (!customScreen.CurrentHand.Contains(card))
+                {
+                    customizeModeView.ShowError("使用予定の選択を解除してから素材にしてください");
+                    return;
+                }
+
                 // 1枚以上選択済みの場合は互換性チェック
                 if (customizeSelectedCards.Count > 0 &&
                     !customScreen.IsCompatibleWithCurrentSelection(customizeSelectedCards, card))

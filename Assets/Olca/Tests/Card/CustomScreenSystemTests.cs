@@ -213,10 +213,11 @@ namespace Olca.Tests.CardTests
             Assert.AreEqual(allowed ? 3 : 2, cs.SelectedCards.Count);
         }
 
-        [TestCase(0, 6, 8)]
-        [TestCase(1, 5, 8)]
-        [TestCase(2, 6, 9)]
-        public void 選択解除と再選択_現在の順序で割引を再計算する(int removedIndex, int afterRemoval, int afterReselect)
+        // ゲーム全体仕様第5節: 使用順の変更は末尾からの取り消しで行う。
+        [TestCase(0, false)]
+        [TestCase(1, false)]
+        [TestCase(2, true)]
+        public void 選択解除_末尾だけ成功し拒否時は順序コスト手札イベントを変更しない(int index, bool allowed)
         {
             var cards = new[] {
                 CreateTestCard("a", "A", 3, CardSeries.Sword),
@@ -226,12 +227,50 @@ namespace Olca.Tests.CardTests
             var cs = new CustomScreenSystem(new Deck(cards.ToList()));
             cs.Open(EmptyRemainingCards(), random);
             foreach (var card in cards) Assert.IsTrue(cs.TrySelectCard(card));
-            Assert.IsTrue(cs.TryDeselectCard(cards[removedIndex]));
-            Assert.AreEqual(afterRemoval, cs.GetTotalUsedCost());
-            Assert.IsTrue(cs.TrySelectCard(cards[removedIndex]));
-            Assert.AreEqual(afterReselect, cs.GetTotalUsedCost());
-            Assert.AreEqual(10 - afterReselect, cs.RemainingCost);
-            Assert.AreSame(cards[removedIndex], cs.SelectedCards.Last());
+            var hand = cs.CurrentHand.ToArray();
+            int deselected = 0, selected = 0, failed = 0;
+            cs.OnCardDeselected += _ => deselected++;
+            cs.OnCardSelected += _ => selected++;
+            cs.OnSelectionFailed += _ => failed++;
+            Assert.AreEqual(allowed, cs.TryDeselectCard(cards[index]));
+            Assert.AreEqual(allowed ? 6 : 9, cs.GetTotalUsedCost());
+            Assert.AreEqual(allowed ? 1 : 0, deselected);
+            Assert.AreEqual(0, selected);
+            Assert.AreEqual(0, failed);
+            if (!allowed)
+            {
+                CollectionAssert.AreEqual(cards, cs.SelectedCards);
+                CollectionAssert.AreEqual(hand, cs.CurrentHand);
+            }
+            else
+            {
+                Assert.IsTrue(cs.TrySelectCard(cards[index]));
+                CollectionAssert.AreEqual(cards, cs.SelectedCards);
+                Assert.AreEqual(9, cs.GetTotalUsedCost());
+            }
+        }
+
+        [Test]
+        public void 末尾解除を繰り返すと全解除でき同参照の先頭を取り違えない()
+        {
+            var a = CreateTestCard("a", "A", 3, CardSeries.Sword);
+            var b = CreateTestCard("b", "B", 3, CardSeries.Bomb);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { a, b, a }));
+            cs.Open(EmptyRemainingCards(), random);
+            foreach (var card in new[] { a, b, a }) Assert.IsTrue(cs.TrySelectCard(card));
+            var events = new List<Card>();
+            cs.OnCardDeselected += card => events.Add(card);
+            Assert.IsTrue(cs.TryDeselectCard(a));
+            CollectionAssert.AreEqual(new[] { a, b }, cs.SelectedCards);
+            Assert.AreEqual(6, cs.GetTotalUsedCost());
+            Assert.IsTrue(cs.TryDeselectCard(b));
+            Assert.IsTrue(cs.TryDeselectCard(a));
+            Assert.IsFalse(cs.TryDeselectCard(a));
+            Assert.AreEqual(0, cs.SelectedCards.Count);
+            Assert.AreEqual(0, cs.GetTotalUsedCost());
+            Assert.AreEqual(10, cs.RemainingCost);
+            CollectionAssert.AreEqual(new[] { a, b, a }, events);
+            Assert.AreEqual(3, cs.CurrentHand.Count);
         }
 
         [Test]
@@ -268,7 +307,7 @@ namespace Olca.Tests.CardTests
         }
 
         [Test]
-        public void 中間解除で割引が消えて上限超過_修正するまで確定しない()
+        public void 中間解除を拒否し末尾から選び直した時だけ予算を再判定する()
         {
             var a = CreateTestCard("a", "A", 3, CardSeries.Sword);
             var b = CreateTestCard("b", "B", 0, CardSeries.Bomb);
@@ -276,21 +315,16 @@ namespace Olca.Tests.CardTests
             var cs = new CustomScreenSystem(new Deck(new List<Card> { a, b, c }), maxCost: 5);
             cs.Open(EmptyRemainingCards(), random);
             foreach (var card in new[] { a, b, c }) Assert.IsTrue(cs.TrySelectCard(card));
+            Assert.IsFalse(cs.TryDeselectCard(b));
             Assert.AreEqual(5, cs.GetTotalUsedCost());
-            cs.TryDeselectCard(b);
-            Assert.AreEqual(6, cs.GetTotalUsedCost());
-            Assert.IsFalse(cs.CanConfirm());
-            int confirmed = 0;
-            cs.OnConfirmed += _ => confirmed++;
-            cs.Confirm();
-            Assert.AreEqual(0, confirmed);
-            Assert.AreEqual(2, cs.SelectedCards.Count);
-            Assert.IsTrue(cs.IsOpen);
-            cs.TryDeselectCard(c);
             Assert.IsTrue(cs.CanConfirm());
+            Assert.IsTrue(cs.TryDeselectCard(c));
+            Assert.IsTrue(cs.TryDeselectCard(b));
+            Assert.IsFalse(cs.TrySelectCard(c), "系統割引がなくなり3+3で予算超過");
+            Assert.IsTrue(cs.TrySelectCard(b));
+            Assert.IsTrue(cs.TrySelectCard(c));
             cs.Confirm();
-            Assert.AreEqual(1, confirmed);
-            CollectionAssert.AreEqual(new[] { a }, cs.AvailableCards);
+            CollectionAssert.AreEqual(new[] { a, b, c }, cs.AvailableCards);
         }
 
         [TestCase(false)]

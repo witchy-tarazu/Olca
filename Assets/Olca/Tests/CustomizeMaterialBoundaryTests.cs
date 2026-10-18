@@ -91,6 +91,30 @@ namespace Olca.Tests
             });
         }
 
+        [Test]
+        public void 加工素材は使用予定から除外し素材の解除順は使用順と分離する()
+        {
+            var a = factory.CreateById(SimpleCardFactory.Sword);
+            var b = factory.CreateById(SimpleCardFactory.Bomb);
+            var model = Open(a, b);
+            Assert.IsTrue(model.TrySelectCard(a));
+            WithView(model, (view, mode, button, selected) =>
+            {
+                view.OnCardClicked(a);
+                Assert.AreEqual(0, selected.Count, "使用予定カードは素材にできない");
+                CollectionAssert.AreEqual(new[] { a }, model.SelectedCards);
+                Assert.IsFalse(button.interactable);
+                Assert.IsTrue(model.TryDeselectCard(a));
+                view.OnCardClicked(a);
+                view.OnCardClicked(b);
+                Assert.IsTrue(button.interactable);
+                view.OnCardClicked(a);
+                CollectionAssert.AreEqual(new[] { b }, selected, "順不同レシピの素材解除は自由");
+                Assert.IsFalse(button.interactable);
+                Assert.AreEqual(0, model.SelectedCards.Count);
+            });
+        }
+
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
         private static void WithView(CustomScreenSystem model,
             System.Action<CustomScreenView, CustomizeModeView, Button, List<Card>> check)

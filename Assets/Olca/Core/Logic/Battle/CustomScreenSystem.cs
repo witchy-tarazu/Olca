@@ -131,14 +131,15 @@ namespace Olca.Core.Logic.Battle
 
 
         /// <summary>
-        /// カードの選択を解除
+        /// 使用順を保持するため、最後に選択したカードだけ解除する
         /// </summary>
         public bool TryDeselectCard(Card card)
         {
             if (card == null) throw new ArgumentNullException(nameof(card));
-            if (!selectedCards.Contains(card)) return false;
+            if (selectedCards.Count == 0 || !ReferenceEquals(selectedCards[selectedCards.Count - 1], card))
+                return false;
 
-            selectedCards.Remove(card);
+            selectedCards.RemoveAt(selectedCards.Count - 1);
             currentHand.Add(card);
 
             OnCardDeselected?.Invoke(card);
