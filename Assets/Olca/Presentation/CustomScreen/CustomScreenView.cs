@@ -164,9 +164,12 @@ namespace Olca.Presentation.CustomScreen
 
         private void UpdateUndoButton()
         {
-            if (undoCustomizationButton != null)
-                undoCustomizationButton.interactable = customScreen != null && customScreen.CanUndoCustomization &&
-                    !undoInProgress && lastUndoFrame != Time.frameCount;
+            if (undoCustomizationButton == null) return;
+            // 閉鎖位置ではボタン右端がHUD側へ残るため、操作画面の表示中だけ描画する。
+            bool visible = customScreen != null && customScreen.IsOpen && !customScreen.IsConfirming;
+            undoCustomizationButton.gameObject.SetActive(visible);
+            undoCustomizationButton.interactable = visible && customScreen.CanUndoCustomization &&
+                !undoInProgress && lastUndoFrame != Time.frameCount;
         }
 
         private void OnUndoClicked()

@@ -236,6 +236,39 @@ namespace Olca.Tests
             }
             finally { Object.DestroyImmediate(go); }
         }
+        [Test]
+        public void 加工Undoボタンは閉鎖と確定中に非表示となり再開時に戻る()
+        {
+            var model = new CustomScreenSystem(new Deck(new List<Card>()));
+            var root = new GameObject("UndoVisibility", typeof(RectTransform));
+            var buttonObject = new GameObject("UndoButton", typeof(RectTransform), typeof(Button));
+            buttonObject.transform.SetParent(root.transform);
+            try
+            {
+                var view = root.AddComponent<CustomScreenView>();
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CustomScreenView).GetField("customScreen", flags).SetValue(view, model);
+                typeof(CustomScreenView).GetField("undoCustomizationButton", flags).SetValue(view, buttonObject.GetComponent<Button>());
+                var refresh = typeof(CustomScreenView).GetMethod("UpdateUndoButton", flags);
+                refresh.Invoke(view, null);
+                Assert.IsFalse(buttonObject.activeSelf);
+                model.Open(new Card[0], new MockRandomProvider(0));
+                refresh.Invoke(view, null);
+                Assert.IsTrue(buttonObject.activeSelf);
+                Assert.IsFalse(buttonObject.GetComponent<Button>().interactable);
+                model.Confirm();
+                refresh.Invoke(view, null);
+                Assert.IsFalse(buttonObject.activeSelf);
+                model.Close();
+                refresh.Invoke(view, null);
+                Assert.IsFalse(buttonObject.activeSelf);
+                model.Open(new Card[0], new MockRandomProvider(0));
+                refresh.Invoke(view, null);
+                Assert.IsTrue(buttonObject.activeSelf);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
         [TestCase(1f)]
         [TestCase(2.56f)]
         public void 表示単位を変えても論理マス距離と共通カメラの八マス幅を保つ(float units)
