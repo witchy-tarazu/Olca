@@ -269,7 +269,47 @@ namespace Olca.Tests
             finally { Object.DestroyImmediate(root); }
         }
 
+        [Test]
+        public void 共通床は二対一の切り出しを等比描画し戦闘前後で接地面を保つ()
+        {
+            var go = new GameObject("SharedFloor");
+            var texture = new Texture2D(64, 64);
+            var source = Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 64f);
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                var grid = go.AddComponent<WorldBattleGridView>();
+                typeof(WorldBattleGridView).GetField("panelSprite", flags).SetValue(grid, source);
+                typeof(WorldBattleGridView).GetField("panelScale", flags).SetValue(grid, 1f);
+                typeof(WorldBattleGridView).GetMethod("Awake", flags).Invoke(grid, null);
+                var floor = go.GetComponentsInChildren<SpriteRenderer>();
+                foreach (var renderer in floor)
+                {
+                    Assert.AreEqual(64f, renderer.sprite.rect.width);
+                    Assert.AreEqual(32f, renderer.sprite.rect.height);
+                    Assert.AreEqual(renderer.transform.localScale.x, renderer.transform.localScale.y);
+                    Assert.AreEqual(1.92f, renderer.bounds.size.x, 0.0001f);
+                    Assert.AreEqual(0.96f, renderer.bounds.size.y, 0.0001f);
+                    if (renderer.enabled) Assert.AreEqual(-0.3f, renderer.bounds.max.y, 0.0001f);
+                }
+                grid.Show(new BattleField(), 0f);
+                var occupied = new System.Collections.Generic.HashSet<int>();
+                foreach (var renderer in floor)
+                {
+                    if (!renderer.enabled) continue;
+                    Assert.AreEqual(-0.3f, renderer.bounds.max.y, 0.0001f);
+                    Assert.IsTrue(occupied.Add(Mathf.RoundToInt(renderer.transform.position.x / grid.CellSize)), "床の二重表示");
+                }
+                grid.Hide();
+                Assert.IsTrue(go.activeSelf);
+                Assert.IsTrue(System.Array.Exists(floor, renderer => renderer.enabled));
+                Assert.AreEqual(3 * 1.92f, grid.SnapWorldXToCellCenter(5.5f), 0.0001f);
+            }
+            finally { Object.DestroyImmediate(go); Object.DestroyImmediate(source); Object.DestroyImmediate(texture); }
+        }
+
         [TestCase(1f)]
+        [TestCase(1.92f)]
         [TestCase(2.56f)]
         public void 表示単位を変えても論理マス距離と共通カメラの八マス幅を保つ(float units)
         {

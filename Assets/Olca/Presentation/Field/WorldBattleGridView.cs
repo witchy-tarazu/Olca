@@ -8,13 +8,15 @@ namespace Olca.Presentation.Field
     /// <summary>
     /// World Space上の6x1バトルグリッド
     /// SpriteRendererを使用してダンジョン世界空間に描画する
-    /// バトル開始時に接触位置へ出現し、バトル終了時に非表示になる
+    /// 探索から戦闘まで同じ接地面とタイルを継続描画する
     /// </summary>
+    [DefaultExecutionOrder(110)]
     public class WorldBattleGridView : MonoBehaviour
     {
         [Header("グリッド設定")]
-        [SerializeField] private float panelSize = 2.56f;   // 256px / PPU100 = 1グリッドセル
-        [SerializeField] private float panelY = -0.25f;     // グリッドのY座標（地面付近）
+        [SerializeField] private float panelSize = 1.92f;   // 192px / PPU100 = 1グリッドセル
+        [SerializeField] private float panelHeight = 0.96f; // 幅:高さ = 2:1
+        [SerializeField] private float panelY = -0.3f;      // 探索・戦闘共通の接地面
         [SerializeField] private float panelZ = 0.1f;       // 背景より手前・キャラより奥
         [SerializeField] private float panelScale = 0.95f;  // 隙間を作るスケール
         [SerializeField] private Sprite panelSprite;
@@ -27,57 +29,99 @@ namespace Olca.Presentation.Field
         private SpriteRenderer[] panelRenderers;
         private Sprite whiteSprite;
 
+        private Sprite floorSprite;
+        private SpriteRenderer[] surroundingPanels;
+        private const int SURROUNDING_COUNT = 12; // 横8マスとカメラ移動の余白
+
         private void Awake()
         {
-            if (panelSprite == null) whiteSprite = CreateWhiteSprite();
+            var source = panelSprite;
+            if (source == null) source = whiteSprite = CreateWhiteSprite();
+            // 画像を縦に潰さず、指定比率に中央を切り出して等倍比率で拡大する。
+            var rect = source.rect;
+            float ratio = panelSize / panelHeight;
+            float width = Mathf.Min(rect.width, rect.height * ratio);
+            float height = width / ratio;
+            rect = new Rect(rect.center.x - width * 0.5f, rect.center.y - height * 0.5f, width, height);
+            floorSprite = Sprite.Create(source.texture, rect, new Vector2(0.5f, 0.5f), source.pixelsPerUnit);
+            floorSprite.name = source.name + "_FloorCrop";
             panelRenderers = new SpriteRenderer[GRID_WIDTH];
-
-            for (int x = 0; x < GRID_WIDTH; x++)
-            {
-                var go = new GameObject($"GridPanel_{x}");
-                go.transform.SetParent(transform, false);
-                go.transform.localScale = new Vector3(panelScale * panelSize, panelScale * panelSize, 1f);
-
-                var sr = go.AddComponent<SpriteRenderer>();
-                sr.sprite = panelSprite != null ? panelSprite : whiteSprite;
-                sr.sortingOrder = 1;  // 背景より手前、キャラより奥
-                sr.color = GetPanelColor(PanelType.Normal);
-
-                panelRenderers[x] = sr;
-            }
-
-            gameObject.SetActive(false);
+            for (int x = 0; x < GRID_WIDTH; x++) panelRenderers[x] = CreatePanel("GridPanel_" + x);
+            surroundingPanels = new SpriteRenderer[SURROUNDING_COUNT];
+            for (int x = 0; x < surroundingPanels.Length; x++) surroundingPanels[x] = CreatePanel("FloorPanel_" + x);
+            Refresh();
         }
 
-        /// <summary>バトル開始時にグリッドを接触位置へ配置して表示</summary>
+        private SpriteRenderer CreatePanel(string name)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            float scale = panelScale * panelSize / floorSprite.bounds.size.x;
+            go.transform.localScale = new Vector3(scale, scale, 1f);
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = floorSprite;
+            renderer.sortingOrder = 1;
+            renderer.color = GetPanelColor(PanelType.Normal);
+            return renderer;
+        }
+
+        /// <summary>床の継ぎ目に合わせた戦闘範囲へ地形色を適用する</summary>
         public void Show(BattleField field, float contactPositionX)
         {
             battleField = field;
-            originX = contactPositionX;
-
+            originX = SnapWorldXToCellCenter(contactPositionX);
             UpdatePanelPositions();
             Refresh();
-
-            gameObject.SetActive(true);
         }
 
-        /// <summary>バトル終了時にグリッドを非表示</summary>
+        /// <summary>戦闘の地形色を解除し、共通の探索床を描画し続ける</summary>
         public void Hide()
         {
             battleField = null;
-            gameObject.SetActive(false);
+            Refresh();
         }
 
-        /// <summary>パネル状態を最新に更新（毎フレーム呼ぶ）</summary>
+        public float SnapWorldXToCellCenter(float worldX) => Mathf.Round(worldX / panelSize) * panelSize;
+        public float CellHeight => panelHeight;
+
+        private void LateUpdate() => Refresh();
+
+        /// <summary>画面内の床を描画し、戦闘6マスとの重複は除外する</summary>
         public void Refresh()
         {
-            if (battleField == null) return;
-
+            if (panelRenderers == null) return;
             for (int x = 0; x < GRID_WIDTH; x++)
             {
-                var panelType = battleField.GetPanelType(new Vector2Int(x, 0));
-                panelRenderers[x].color = GetPanelColor(panelType);
+                panelRenderers[x].enabled = battleField != null;
+                if (battleField != null) panelRenderers[x].color = GetPanelColor(battleField.GetPanelType(new Vector2Int(x, 0)));
             }
+            var camera = Camera.main;
+            float center = camera != null ? camera.transform.position.x : originX;
+            int first = Mathf.FloorToInt(center / panelSize) - SURROUNDING_COUNT / 2;
+            int battleFirst = Mathf.RoundToInt(originX / panelSize);
+            for (int i = 0; i < surroundingPanels.Length; i++)
+            {
+                int column = first + i;
+                var renderer = surroundingPanels[i];
+                renderer.enabled = battleField == null || column < battleFirst || column >= battleFirst + GRID_WIDTH;
+                renderer.transform.position = new Vector3(column * panelSize, panelY - panelHeight * panelScale * 0.5f, panelZ);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (floorSprite != null) DestroyOwned(floorSprite);
+            if (whiteSprite != null)
+            {
+                DestroyOwned(whiteSprite.texture);
+                DestroyOwned(whiteSprite);
+            }
+        }
+
+        private static void DestroyOwned(Object value)
+        {
+            if (Application.isPlaying) Destroy(value);
+            else DestroyImmediate(value);
         }
 
         /// <summary>グリッドインデックスから World X 座標を返す</summary>
@@ -116,7 +160,7 @@ namespace Olca.Presentation.Field
             for (int x = 0; x < GRID_WIDTH; x++)
             {
                 panelRenderers[x].transform.position = new Vector3(
-                    originX + x * panelSize, panelY, panelZ);
+                    originX + x * panelSize, panelY - panelHeight * panelScale * 0.5f, panelZ);
             }
         }
 

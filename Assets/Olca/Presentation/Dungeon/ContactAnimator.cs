@@ -36,12 +36,12 @@ namespace Olca.Presentation.Dungeon
         /// <param name="enemySprite">接触した敵のスプライト（ContactAnimatorが生成・管理）</param>
         /// <param name="ct">キャンセルトークン</param>
         public async UniTask PlayAsync(ContactInfo contactInfo, Transform playerTransform,
-            Transform enemyTransform = null, CancellationToken ct = default, float worldUnitsPerCell = 1f)
+            Transform enemyTransform = null, CancellationToken ct = default, float worldUnitsPerCell = 1f, System.Func<float, float> alignWorldX = null)
         {
             if (contactInfo.IsDashContact)
-                await PlayDashContactAsync(playerTransform, enemyTransform, ct, worldUnitsPerCell);
+                await PlayDashContactAsync(playerTransform, enemyTransform, ct, worldUnitsPerCell, alignWorldX);
             else
-                await PlayNormalContactAsync(playerTransform, ct, worldUnitsPerCell);
+                await PlayNormalContactAsync(playerTransform, ct, worldUnitsPerCell, alignWorldX);
         }
 
         // ==================== 通常接敵 ====================
@@ -52,7 +52,7 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. ノックバック後退
         /// </summary>
-        private async UniTask PlayNormalContactAsync(Transform playerTransform, CancellationToken ct, float units)
+        private async UniTask PlayNormalContactAsync(Transform playerTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX)
         {
             if (playerTransform == null) return;
 
@@ -79,6 +79,7 @@ namespace Olca.Presentation.Dungeon
                 bumpPos.x - normalKnockbackDistance * units,
                 normalContactGroundY * units,
                 bumpPos.z);
+            if (alignWorldX != null) knockbackPos.x = alignWorldX(knockbackPos.x);
             elapsed = 0f;
             while (elapsed < normalKnockbackDuration)
             {
@@ -100,7 +101,7 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. 敵が吹き飛び＋プレイヤーが宙返りで戻る（同時）
         /// </summary>
-        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units)
+        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX)
         {
             if (playerTransform == null) return;
 
@@ -127,6 +128,7 @@ namespace Olca.Presentation.Dungeon
 
             Vector3 rollStart = rushEnd;
             Vector3 rollEnd = rushEnd - new Vector3(rollbackDistance * units, 0f, 0f);
+            if (alignWorldX != null) rollEnd.x = alignWorldX(rollEnd.x);
             Vector3 enemyStart = enemyTransform != null ? enemyTransform.position : Vector3.zero;
             Vector3 enemyEnd = enemyStart + new Vector3(dashEnemyKnockback * units, 0f, 0f);
 
