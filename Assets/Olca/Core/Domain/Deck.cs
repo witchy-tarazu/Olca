@@ -51,6 +51,27 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>
+        /// デッキ全体からランダムにカードを破棄する（ドロー済みカードも対象）。
+        /// 要求枚数が総数を超える場合は、存在する枚数まで破棄する。
+        /// </summary>
+        public int DiscardRandomCards(int count, IRandomProvider random)
+        {
+            if (random == null) throw new ArgumentNullException(nameof(random));
+            if (count < 0) throw new ArgumentException("破棄枚数は0以上である必要があります", nameof(count));
+
+            int discardCount = Math.Min(count, cards.Count);
+            for (int i = 0; i < discardCount; i++)
+            {
+                int index = random.Range(0, cards.Count);
+                Card discardedCard = cards[index];
+                cards.RemoveAt(index);
+                drawnCards.Remove(discardedCard);
+            }
+
+            return discardCount;
+        }
+
+        /// <summary>
         /// カードをランダムにドローする
         /// </summary>
         /// <param name="count">ドローする枚数</param>

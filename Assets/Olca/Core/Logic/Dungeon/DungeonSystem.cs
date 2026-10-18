@@ -502,6 +502,14 @@ namespace Olca.Core.Logic.Dungeon
             // ペナルティイベント発火（外部で処理）
             OnObstaclePenalty?.Invoke(penaltyInfo);
 
+            if (penaltyInfo.PenaltyType == ObstaclePenaltyType.CardDiscard)
+            {
+                // 攻略中デッキのみ変更し、クリア報酬用の獲得履歴は残す。
+                int discardedCount = cardRewardSystem.GetCurrentDeck()
+                    .DiscardRandomCards(penaltyInfo.CardDiscardCount, randomProvider);
+                logger.LogInfo($"[Dungeon] 障害物によるカード破棄: {discardedCount}枚");
+            }
+
             // 即時ダメージの場合はプレイヤーHPを減らす
             if (penaltyInfo.PenaltyType == ObstaclePenaltyType.ImmediateDamage)
             {

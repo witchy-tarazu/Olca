@@ -469,6 +469,138 @@ namespace Olca.Tests.Dungeon
             Assert.LessOrEqual(player.CurrentHp, 0);
         }
 
+        private DungeonSystem CreateCardDiscardDungeon(Deck initialDeck, int discardCount)
+        {
+            var cells = new System.Collections.Generic.List<MapCell>
+            {
+                new MapCell(0), new MapCell(1),
+                new MapCell(2, Obstacle.CreateCardDiscardObstacle("trap", "カード破棄罠", discardCount)),
+                new MapCell(3), new MapCell(4),
+                new MapCell(5, new Enemy("slime", "スライム", 100, ElementType.None, new Vector2Int(5, 0)))
+            };
+            var config = new DungeonConfig("discard_test", "カード破棄テスト", 6, cells);
+            return new DungeonSystem(config, new PlayerCharacter(maxHp: 100), initialDeck, mockRandom, mockLogger);
+        }
+
+        [TestCase(0, 2)]
+        [TestCase(1, 1)]
+        [TestCase(5, 0)]
+        public void Tick_カード破棄障害物_要求枚数を残数まで適用する(int requested, int expected)
+        {
+            var initialDeck = CreateTestDeck();
+            var dungeon = CreateCardDiscardDungeon(initialDeck, requested);
+
+            dungeon.Tick(deltaTimeMs: 200);
+
+            Assert.AreEqual(2f, dungeon.PlayerPosition);
+            Assert.AreEqual(expected, dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(expected, dungeon.GetCurrentDeck().RemainingCount);
+            Assert.AreEqual(2, initialDeck.TotalCount, "初期デッキは変更しない");
+            Assert.AreEqual(100, dungeon.Player.CurrentHp, "カード破棄ではHPを変更しない");
+        }
+
+        [Test]
+        public void Tick_カード破棄障害物_空デッキでも処理できる()
+        {
+            var dungeon = CreateCardDiscardDungeon(new Deck(), 5);
+            int penalties = 0;
+            dungeon.OnObstaclePenalty += _ => penalties++;
+
+            dungeon.Tick(deltaTimeMs: 200);
+
+            Assert.AreEqual(1, penalties, "空デッキでも障害物接触を処理する");
+            Assert.AreEqual(0, dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(0, dungeon.GetCurrentDeck().RemainingCount);
+        }
+
+        [Test]
+        public void Tick_固定乱数でカード破棄_初期デッキを保全し次戦の手札に反映する()
+        {
+            var initialDeck = CreateTestDeck();
+            var survivor = initialDeck.GetAllCards()[0];
+            var discarded = initialDeck.GetAllCards()[1];
+            mockRandom.SetFixedValue(1);
+            var dungeon = CreateCardDiscardDungeon(initialDeck, 1);
+
+            dungeon.Tick(deltaTimeMs: 200);
+
+            CollectionAssert.AreEqual(new[] { survivor }, dungeon.GetCurrentDeck().GetAllCards());
+            CollectionAssert.AreEqual(new[] { survivor, discarded }, initialDeck.GetAllCards());
+            for (int i = 0; i < 10 && !dungeon.IsInBattle; i++)
+                dungeon.Tick(deltaTimeMs: 100);
+            Assert.IsTrue(dungeon.IsInBattle);
+            dungeon.CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            dungeon.CurrentBattle.OpenCustomScreen(mockRandom);
+            CollectionAssert.AreEqual(new[] { survivor }, dungeon.CurrentBattle.CustomScreen.CurrentHand);
+        }
+
+        [Test]
+        public void Tick_カード破棄障害物_ドロー済みカードも除去して履歴を整合させる()
+        {
+            var dungeon = CreateCardDiscardDungeon(CreateTestDeck(), 1);
+            var deck = dungeon.GetCurrentDeck();
+            var drawn = deck.DrawCards(1, mockRandom)[0];
+            var survivor = deck.GetAllCards()[1];
+
+            dungeon.Tick(deltaTimeMs: 200);
+
+            CollectionAssert.DoesNotContain(deck.GetAllCards(), drawn);
+            Assert.AreEqual(1, deck.RemainingCount);
+            CollectionAssert.AreEqual(new[] { survivor }, deck.DrawCards(5, mockRandom));
+            deck.ResetDrawHistory();
+            CollectionAssert.AreEqual(new[] { survivor }, deck.DrawCards(5, mockRandom));
+        }
+
+        [Test]
+        public void Tick_カード破棄障害物_同じセルで再処理しない()
+        {
+            var dungeon = CreateCardDiscardDungeon(CreateTestDeck(), 1);
+            int penalties = 0;
+            dungeon.OnObstaclePenalty += _ => penalties++;
+
+            dungeon.Tick(deltaTimeMs: 200);
+            dungeon.Tick(deltaTimeMs: 0);
+            dungeon.Tick(deltaTimeMs: 10);
+
+            Assert.AreEqual(1, penalties);
+            Assert.AreEqual(1, dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        [Test]
+        public void Tick_カード破棄障害物をジャンプ回避_着地後も破棄しない()
+        {
+            var dungeon = CreateCardDiscardDungeon(CreateTestDeck(), 1);
+            int penalties = 0;
+            dungeon.OnObstaclePenalty += _ => penalties++;
+            dungeon.Tick(deltaTimeMs: 100);
+            dungeon.Jump();
+
+            dungeon.Tick(deltaTimeMs: 100);
+            Assert.Greater(dungeon.PlayerHeight, 0f);
+            for (int i = 0; i < 5; i++) dungeon.Tick(deltaTimeMs: 100);
+
+            Assert.AreEqual(0, penalties);
+            Assert.AreEqual(2, dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        [Test]
+        public void Tick_獲得カードを破棄_クリア報酬用の獲得履歴に残る()
+        {
+            var initialDeck = CreateTestDeck();
+            var dungeon = CreateCardDiscardDungeon(initialDeck, 1);
+            var reward = new Card("reward", "獲得カード", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 10, "報酬");
+            dungeon.OnCardSelectionCompleted(reward);
+            dungeon.ResumePlayerMovement();
+            mockRandom.SetFixedValue(2);
+
+            dungeon.Tick(deltaTimeMs: 200);
+
+            CollectionAssert.AreEqual(initialDeck.GetAllCards(), dungeon.GetCurrentDeck().GetAllCards());
+            CollectionAssert.AreEqual(new[] { reward }, dungeon.GetObtainedCards());
+            Assert.AreEqual(2, initialDeck.TotalCount);
+        }
+
         // ========== フェーズ5: バトルシステム統合テスト ==========
 
         [Test]
