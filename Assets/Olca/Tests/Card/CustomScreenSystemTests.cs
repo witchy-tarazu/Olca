@@ -167,6 +167,114 @@ namespace Olca.Tests.CardTests
             Assert.AreEqual(0, customScreen.SelectedCards.Count);
         }
 
+        private static object[][] SeriesCostCases => new[]
+        {
+            new object[] { CardSeries.Sword, CardSeries.Sword, CardSeries.Sword, 7 },
+            new object[] { CardSeries.Sword, CardSeries.Bomb, CardSeries.Sword, 9 },
+            new object[] { CardSeries.None, CardSeries.None, CardSeries.None, 7 },
+            new object[] { CardSeries.None, CardSeries.Bomb, CardSeries.None, 8 }
+        };
+
+        [TestCaseSource(nameof(SeriesCostCases))]
+        public void 選択コスト_連続系列のみ割引しNoneは既存扱いを維持する(
+            CardSeries first, CardSeries second, CardSeries third, int expected)
+        {
+            var cards = new[] {
+                CreateTestCard("a", "A", 3, first), CreateTestCard("b", "B", 3, second),
+                CreateTestCard("c", "C", 3, third)
+            };
+            var cs = new CustomScreenSystem(new Deck(cards.ToList()));
+            cs.Open(EmptyRemainingCards(), random);
+            foreach (var card in cards) Assert.IsTrue(cs.TrySelectCard(card));
+            Assert.AreEqual(expected, cs.GetTotalUsedCost());
+            Assert.AreEqual(cs.MaxCost - expected, cs.RemainingCost);
+            List<Card> confirmed = null;
+            cs.OnConfirmed += result => confirmed = new List<Card>(result);
+            cs.Confirm();
+            cs.Close();
+            CollectionAssert.AreEqual(cards, confirmed);
+            CollectionAssert.AreEqual(cards, cs.AvailableCards);
+        }
+
+        [TestCase(8, false)]
+        [TestCase(9, true)]
+        public void 非連続の選択可否_割引なしの合計と一致する(int limit, bool allowed)
+        {
+            var a = CreateTestCard("a", "A", 3, CardSeries.Sword);
+            var b = CreateTestCard("b", "B", 3, CardSeries.Bomb);
+            var c = CreateTestCard("c", "C", 3, CardSeries.Sword);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { a, b, c }), maxCost: limit);
+            cs.Open(EmptyRemainingCards(), random);
+            Assert.IsTrue(cs.TrySelectCard(a));
+            Assert.IsTrue(cs.TrySelectCard(b));
+            Assert.AreEqual(allowed, cs.TrySelectCard(c));
+            Assert.AreEqual(allowed ? 9 : 6, cs.GetTotalUsedCost());
+            Assert.AreEqual(!allowed, cs.CurrentHand.Contains(c));
+            Assert.AreEqual(allowed ? 3 : 2, cs.SelectedCards.Count);
+        }
+
+        [TestCase(0, 6, 8)]
+        [TestCase(1, 5, 8)]
+        [TestCase(2, 6, 9)]
+        public void 選択解除と再選択_現在の順序で割引を再計算する(int removedIndex, int afterRemoval, int afterReselect)
+        {
+            var cards = new[] {
+                CreateTestCard("a", "A", 3, CardSeries.Sword),
+                CreateTestCard("b", "B", 3, CardSeries.Bomb),
+                CreateTestCard("c", "C", 3, CardSeries.Sword)
+            };
+            var cs = new CustomScreenSystem(new Deck(cards.ToList()));
+            cs.Open(EmptyRemainingCards(), random);
+            foreach (var card in cards) Assert.IsTrue(cs.TrySelectCard(card));
+            Assert.IsTrue(cs.TryDeselectCard(cards[removedIndex]));
+            Assert.AreEqual(afterRemoval, cs.GetTotalUsedCost());
+            Assert.IsTrue(cs.TrySelectCard(cards[removedIndex]));
+            Assert.AreEqual(afterReselect, cs.GetTotalUsedCost());
+            Assert.AreEqual(10 - afterReselect, cs.RemainingCost);
+            Assert.AreSame(cards[removedIndex], cs.SelectedCards.Last());
+        }
+
+        [Test]
+        public void 連続選択_割引で上限まで選択でき負のコストにしない()
+        {
+            var cards = new[] {
+                CreateTestCard("a", "A", 3, CardSeries.Sword),
+                CreateTestCard("b", "B", 3, CardSeries.Sword),
+                CreateTestCard("c", "C", 0, CardSeries.Sword)
+            };
+            var cs = new CustomScreenSystem(new Deck(cards.ToList()), maxCost: 5);
+            cs.Open(EmptyRemainingCards(), random);
+            foreach (var card in cards) Assert.IsTrue(cs.TrySelectCard(card));
+            Assert.AreEqual(5, cs.GetTotalUsedCost());
+            Assert.AreEqual(0, cs.RemainingCost);
+        }
+
+        [Test]
+        public void 中間解除で割引が消えて上限超過_修正するまで確定しない()
+        {
+            var a = CreateTestCard("a", "A", 3, CardSeries.Sword);
+            var b = CreateTestCard("b", "B", 0, CardSeries.Bomb);
+            var c = CreateTestCard("c", "C", 3, CardSeries.Bomb);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { a, b, c }), maxCost: 5);
+            cs.Open(EmptyRemainingCards(), random);
+            foreach (var card in new[] { a, b, c }) Assert.IsTrue(cs.TrySelectCard(card));
+            Assert.AreEqual(5, cs.GetTotalUsedCost());
+            cs.TryDeselectCard(b);
+            Assert.AreEqual(6, cs.GetTotalUsedCost());
+            Assert.IsFalse(cs.CanConfirm());
+            int confirmed = 0;
+            cs.OnConfirmed += _ => confirmed++;
+            cs.Confirm();
+            Assert.AreEqual(0, confirmed);
+            Assert.AreEqual(2, cs.SelectedCards.Count);
+            Assert.IsTrue(cs.IsOpen);
+            cs.TryDeselectCard(c);
+            Assert.IsTrue(cs.CanConfirm());
+            cs.Confirm();
+            Assert.AreEqual(1, confirmed);
+            CollectionAssert.AreEqual(new[] { a }, cs.AvailableCards);
+        }
+
         // ===== カスタマイズ操作（超越・調律・融合）=====
 
         private CustomScreenSystem CreateCustomScreenWithSystems()

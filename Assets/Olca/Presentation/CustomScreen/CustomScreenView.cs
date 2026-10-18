@@ -934,7 +934,7 @@ namespace Olca.Presentation.CustomScreen
         {
             if (costDisplay != null)
             {
-                int totalCost = customScreen.SelectedCards.Sum(c => c.Cost);
+                int totalCost = customScreen.GetTotalUsedCost();
                 int costLimit = customScreen.MaxCost;
                 costDisplay.text = $"コスト: {totalCost} / {costLimit}";
 

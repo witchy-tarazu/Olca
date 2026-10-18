@@ -151,7 +151,7 @@ namespace Olca.Core.Logic.Battle
         public bool CanConfirm()
         {
             // カスタム画面が開いていれば、0枚選択でも確定可能
-            return IsOpen;
+            return IsOpen && GetTotalUsedCost() <= maxCost;
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void Confirm()
         {
-            if (!IsOpen) return;
+            if (!CanConfirm()) return;
 
             // 仕様:
             // - 今回1枚以上選択した場合: availableCardsをクリアし、selectedCardsの内容をavailableCardsに移動
@@ -255,15 +255,17 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private int CalculateCardCost(Card card)
         {
-            int baseCost = card.Cost;
+            var previous = selectedCards.Count > 0 ? selectedCards[selectedCards.Count - 1] : null;
+            return CalculateCardCost(card, previous, selectedCards.Any(c => c.Series == CardSeries.None));
+        }
 
-            // 同シリーズボーナス: すでに選択されているカードと同じシリーズなら-1
-            if (selectedCards.Any(c => c.Series == card.Series))
-            {
-                baseCost = Math.Max(0, baseCost - 1);
-            }
-
-            return baseCost;
+        private static int CalculateCardCost(Card card, Card previous, bool hasNone)
+        {
+            // Noneの系統扱いは仕様未確定のため、既存の「選択済みにNoneがあれば割引」を維持する。
+            bool discounted = card.Series == CardSeries.None
+                ? hasNone
+                : previous != null && previous.Series == card.Series;
+            return discounted ? Math.Max(0, card.Cost - 1) : card.Cost;
         }
 
         /// <summary>
@@ -271,24 +273,15 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public int GetTotalUsedCost()
         {
-            // 選択順にコストを計算（シリーズボーナスを考慮）
             int totalCost = 0;
-            var processedCards = new List<Card>();
-
+            Card previous = null;
+            bool hasNone = false;
             foreach (var card in selectedCards)
             {
-                int cardCost = card.Cost;
-
-                // すでに選択されているカードと同じシリーズなら-1
-                if (processedCards.Any(c => c.Series == card.Series))
-                {
-                    cardCost = Math.Max(0, cardCost - 1);
-                }
-
-                totalCost += cardCost;
-                processedCards.Add(card);
+                totalCost += CalculateCardCost(card, previous, hasNone);
+                previous = card;
+                hasNone |= card.Series == CardSeries.None;
             }
-
             return totalCost;
         }
 
