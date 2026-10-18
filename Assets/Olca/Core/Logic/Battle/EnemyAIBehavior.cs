@@ -18,8 +18,8 @@ namespace Olca.Core.Logic.Battle
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
 
-        /// <summary>行動可能か（クールダウンが終了していて、敵が生存している）</summary>
-        public bool CanAct => currentCooldownMs <= 0 && !enemy.IsDead;
+        /// <summary>行動可能か（クールダウン終了・生存中・麻痺していない）</summary>
+        public bool CanAct => currentCooldownMs <= 0 && !enemy.IsDead && !enemy.IsParalyzed;
 
         /// <summary>現在のクールダウン時間（ミリ秒）</summary>
         public int CurrentCooldownMs => currentCooldownMs;

@@ -14,6 +14,70 @@ namespace Olca.Tests.CardEffects
     [TestFixture]
     public class StatusEffectTests
     {
+        [Test]
+        public void 隣接敵は麻痺の残時間中に攻撃せず解除した後に基本攻撃を再開する()
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+            battle.Tick(999);
+            Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(1, enemy.ActiveStatus.RemainingMs);
+            battle.Tick(1);
+            Assert.IsFalse(enemy.IsParalyzed); Assert.AreEqual(90, player.CurrentHp);
+        }
+
+        [TestCase(BattlePauseReason.CustomScreen)]
+        [TestCase(BattlePauseReason.User)]
+        public void 麻痺残時間と攻撃はカスタムまたはユーザーポーズ中には進まない(BattlePauseReason reason)
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+            battle.Pause(reason); battle.Tick(2000);
+            Assert.AreEqual(1000, enemy.ActiveStatus.RemainingMs); Assert.AreEqual(100, player.CurrentHp);
+            battle.Resume(reason); battle.Tick(999);
+            Assert.AreEqual(100, player.CurrentHp); battle.Tick(1); Assert.AreEqual(90, player.CurrentHp);
+        }
+
+        [Test]
+        public void 麻痺中の被ダメージは解除せず再付与は新しい残時間で上書きする()
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000)); battle.Tick(100);
+            enemy.TakeDamage(1, ElementType.None);
+            Assert.IsTrue(enemy.IsParalyzed); Assert.AreEqual(900, enemy.ActiveStatus.RemainingMs); Assert.AreEqual(99, enemy.CurrentHp);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 500));
+            Assert.AreEqual(500, enemy.ActiveStatus.RemainingMs);
+            battle.Tick(499); Assert.AreEqual(100, player.CurrentHp);
+            battle.Tick(1); Assert.AreEqual(90, player.CurrentHp);
+        }
+
+        [Test]
+        public void 麻痺は既存AIの攻撃受付だけを止めクールダウン値を変更しない()
+        {
+            var ai = new EnemyAIBehavior(enemy, new List<IEnemyAIAction> { new BasicAttackAction(10, 2000) });
+            var context = new AIContext(enemy, player, battle.Field, new MockRandomProvider(), logger);
+            ai.Update(0, context); Assert.AreEqual(2000, ai.CurrentCooldownMs);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 3000));
+            ai.Update(2000, context); Assert.AreEqual(0, ai.CurrentCooldownMs); Assert.IsFalse(ai.CanAct);
+            player.TickInvincible(3000); enemy.TickStatus(3000); ai.Update(0, context);
+            Assert.AreEqual(80, player.CurrentHp);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 勝敗通知前に敵と召喚物の麻痺だけを解除する(bool defeat)
+        {
+            var summon = new Enemy("summon", "召喚", 100, ElementType.None, new Vector2Int(4, 0), isSummoned: true);
+            var poisoned = new Enemy("poisoned", "毒の召喚", 100, ElementType.None, new Vector2Int(5, 0), isSummoned: true);
+            battle.AddSummon(summon, new List<IEnemyAIAction> { new BasicAttackAction() });
+            battle.AddSummon(poisoned, new List<IEnemyAIAction> { new BasicAttackAction() });
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000)); summon.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+            var poison = new StatusEffect(StatusEffectType.Poison, 2000, 1); poisoned.ApplyStatus(poison);
+            int notified = 0; battle.OnBattleEnd += _ =>
+            {
+                notified++; Assert.IsNull(enemy.ActiveStatus); Assert.IsNull(summon.ActiveStatus);
+                Assert.AreSame(poison, poisoned.ActiveStatus, "毒などの持越し規則を麻痺と一律にしない");
+            };
+            if (defeat) player.TakeDamage(100); else enemy.TakeDamage(100, ElementType.None);
+            Assert.AreEqual(1, notified); Assert.IsFalse(enemy.IsParalyzed); Assert.IsFalse(summon.IsParalyzed);
+        }
+
         private BattleSystem battle;
         private PlayerCharacter player;
         private Enemy enemy;

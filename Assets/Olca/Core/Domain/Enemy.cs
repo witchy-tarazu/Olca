@@ -150,6 +150,14 @@ namespace Olca.Core.Domain
             poisonDamageRemainder = 0;
         }
 
+        /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。他の状態の持越し規則は変更しない。</summary>
+        internal void ClearBattleParalysis()
+        {
+            if (activeStatusEffect?.Type != StatusEffectType.Paralyze) return;
+            activeStatusEffect = null;
+            poisonDamageRemainder = 0;
+        }
+
         /// <summary>
         /// 状態異常の時間をカウントダウンする（毎ティック呼び出す）
         /// </summary>
