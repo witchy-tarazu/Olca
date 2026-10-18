@@ -14,6 +14,94 @@ namespace Olca.Tests.CardTests
     [TestFixture]
     public class CustomScreenSystemTests
     {
+        [TestCase(4, 2, false, 6)]
+        [TestCase(4, -2, false, 2)]
+        [TestCase(4, -8, false, 1)]
+        [TestCase(4, 0, false, 4)]
+        [TestCase(0, 0, false, 0)]
+        [TestCase(0, 2, false, 2)]
+        [TestCase(0, -2, false, 1)]
+        [TestCase(4, 2, true, 0)]
+        [TestCase(4, -8, true, 0)]
+        [TestCase(0, 2, true, 0)]
+        public void 調律コストは定義値と増減を分け通常最低1と専用0優先を適用する(int baseCost, int adjustment, bool zero, int expected)
+        {
+            var card = ZeroCostCard("c", baseCost, zero);
+            card.Modifier.CostAdjustment = adjustment;
+            Assert.AreEqual(expected, card.GetFinalCost());
+            Assert.AreEqual(baseCost, card.Cost);
+        }
+
+        [Test]
+        public void 複数調律は定義増減量を合算してから最低値を適用し複製や元カードを共有しない()
+        {
+            var target = ZeroCostCard("target", 4);
+            var down = ZeroCostCard("down", material: true); down.Modifier.CostAdjustment = -8;
+            var up = ZeroCostCard("up", material: true); up.Modifier.CostAdjustment = 7;
+            var first = target.ApplyTuning(down);
+            var second = first.ApplyTuning(up);
+            Assert.AreEqual(1, first.GetFinalCost()); Assert.AreEqual(-8, first.Modifier.CostAdjustment);
+            Assert.AreEqual(3, second.GetFinalCost()); Assert.AreEqual(-1, second.Modifier.CostAdjustment);
+            Assert.AreEqual(3, target.ApplyTuning(up).ApplyTuning(down).GetFinalCost());
+            Assert.AreEqual(0, target.Modifier.CostAdjustment); Assert.AreEqual(4, target.GetFinalCost());
+            var clone = second.Clone(); clone.Modifier.CostAdjustment = 10;
+            Assert.AreEqual(-1, second.Modifier.CostAdjustment);
+            Assert.AreEqual(0, second.ApplyTuning(ZeroCostCard("zero", dedicated: true)).GetFinalCost());
+            Assert.AreEqual(0, target.ApplyTuning(down).ApplyTuning(up).ApplyTuning(ZeroCostCard("zero", dedicated: true)).ApplyTuning(up).GetFinalCost());
+        }
+
+        [Test]
+        public void 増減合計0は元の定義コストへ戻り基礎0と専用0の区別を維持する()
+        {
+            var target = ZeroCostCard("base-zero", 0);
+            var up = ZeroCostCard("up", material: true); up.Modifier.CostAdjustment = 2;
+            var down = ZeroCostCard("down", material: true); down.Modifier.CostAdjustment = -2;
+            var result = target.ApplyTuning(up).ApplyTuning(down);
+            Assert.AreEqual(0, result.Modifier.CostAdjustment);
+            Assert.AreEqual(0, result.GetFinalCost()); Assert.IsFalse(result.Modifier.ZeroCost);
+        }
+
+        [Test]
+        public void 調律コストの選択と末尾解除と複数加工Undoで各段階の増減量を復元する()
+        {
+            var target = ZeroCostCard("target", 4);
+            var up = ZeroCostCard("up", material: true); up.Modifier.CostAdjustment = 2;
+            var down = ZeroCostCard("down", material: true); down.Modifier.CostAdjustment = -8;
+            var next = ZeroCostCard("next", 2);
+            var cs = UndoScreen(target, up, down, next);
+            var first = cs.ExecuteTuning(target, up).ResultCard;
+            var second = cs.ExecuteTuning(first, down).ResultCard;
+            cs.TrySelectCard(second); cs.TrySelectCard(next);
+            Assert.AreEqual(2, cs.GetTotalUsedCost());
+            Assert.IsFalse(cs.TryDeselectCard(second));
+            Assert.IsTrue(cs.TryDeselectCard(next)); Assert.AreEqual(1, cs.GetTotalUsedCost());
+            Assert.IsTrue(cs.TrySelectCard(next));
+            Assert.IsTrue(cs.TryUndoCustomization()); Assert.AreEqual(0, cs.GetTotalUsedCost());
+            var restored = cs.CurrentHand.Single(c => c.Id == "target");
+            Assert.AreEqual(2, restored.Modifier.CostAdjustment); Assert.AreEqual(6, restored.GetFinalCost());
+            Assert.IsTrue(cs.TryUndoCustomization());
+            restored = cs.CurrentHand.Single(c => c.Id == "target");
+            Assert.AreEqual(0, restored.Modifier.CostAdjustment); Assert.AreEqual(4, restored.GetFinalCost());
+        }
+
+        [Test]
+        public void 調律コストを選択上限と確定キューへ反映し確定後Undoしない()
+        {
+            var target = ZeroCostCard("target", 2);
+            var up = ZeroCostCard("up", material: true); up.Modifier.CostAdjustment = 3;
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy>(),
+                new Deck(new List<Card> { target, up }), tuningSystem: new TuningSystem());
+            battle.SetFirstStrike(); battle.OpenCustomScreen(random);
+            var cs = battle.CustomScreen; cs.SetMaxCost(4);
+            var tuned = cs.ExecuteTuning(target, up).ResultCard;
+            Assert.IsFalse(cs.TrySelectCard(tuned)); Assert.AreEqual(0, cs.GetTotalUsedCost());
+            cs.SetMaxCost(5); Assert.IsTrue(cs.TrySelectCard(tuned)); Assert.AreEqual(5, cs.GetTotalUsedCost());
+            cs.Confirm(); Assert.AreSame(tuned, battle.CardUsage.CurrentCard);
+            Assert.AreEqual(5, battle.CardUsage.CurrentCard.GetFinalCost());
+            Assert.AreEqual(3, battle.CardUsage.CurrentCard.Modifier.CostAdjustment);
+            Assert.IsFalse(cs.TryUndoCustomization()); Assert.AreEqual(2, target.GetFinalCost());
+        }
+
         private static Card ZeroCostCard(string id, int cost = 2, bool dedicated = false, bool material = false)
             => new Card(id, id, cost, CardRarity.Normal, material ? CardCategory.Tuning : CardCategory.Attack,
                 ElementType.None, CardSeries.Sword, 10, "試験", modifier: new CardModifier { ZeroCost = dedicated });

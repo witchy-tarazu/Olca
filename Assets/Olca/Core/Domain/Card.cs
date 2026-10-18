@@ -21,7 +21,13 @@ namespace Olca.Core.Domain
         public int Cost { get; }
 
         /// <summary>調律を反映した現在コスト。Costには元の定義値を保持する。</summary>
-        public int GetFinalCost() => Modifier.ZeroCost ? 0 : Cost;
+        public int GetFinalCost()
+        {
+            if (Modifier.ZeroCost) return 0;
+            // 増減なしなら元から0の定義も保持する。通常調律による変更は最低1。
+            if (Modifier.CostAdjustment == 0) return Cost;
+            return System.Math.Max(1, checked(Cost + Modifier.CostAdjustment));
+        }
 
         /// <summary>レアリティ</summary>
         public CardRarity Rarity { get; }

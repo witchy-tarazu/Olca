@@ -11,6 +11,9 @@ namespace Olca.Core.Domain
         /// <summary>専用のコスト0化効果。基礎コストが0のカードとは区別する。</summary>
         public bool ZeroCost { get; set; }
 
+        /// <summary>定義された調律効果のコスト増減合計。正は増加、負は減少。</summary>
+        public int CostAdjustment { get; set; }
+
         /// <summary>追加ダメージ</summary>
         public int BonusDamage { get; set; }
 
@@ -40,6 +43,7 @@ namespace Olca.Core.Domain
             if (other == null) return merged;
             merged.BonusDamage += other.BonusDamage;
             merged.ZeroCost |= other.ZeroCost;
+            merged.CostAdjustment = checked(merged.CostAdjustment + other.CostAdjustment);
             merged.DamageMultiplier *= other.DamageMultiplier;
             merged.ElementOverride = other.ElementOverride ?? ElementOverride;
             merged.AdditionalEffects.AddRange(other.AdditionalEffects.ConvertAll(effect => effect?.Clone()));
