@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using System.Reflection;
 using Olca.Application.Battle;
 using Olca.Core.Domain;
@@ -599,5 +601,90 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(3, material.Modifier.AdditionalEffects[0].Power);
         }
 
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public void 自己チェインコピーは威力とModifier以外の全定義を保持する(ExceedLevel level)
+        {
+            var source = DetailedCard(level);
+            var snapshot = source.Clone();
+            foreach (int percent in new[] { -1, 0, 50, 100, 150 })
+            {
+                var copy = source.CreateSelfChainCopy(percent);
+                foreach (var property in typeof(Card).GetProperties())
+                {
+                    if (property.Name == nameof(Card.Modifier) || property.Name == nameof(Card.Power)) continue;
+                    Assert.AreEqual(property.GetValue(source), property.GetValue(copy), property.Name);
+                }
+                Assert.AreEqual(percent > 0 ? source.Power * percent / 100 : source.Power, copy.Power);
+                Assert.AreEqual(0, copy.Modifier.BonusDamage);
+                Assert.AreEqual(1f, copy.Modifier.DamageMultiplier);
+                Assert.IsNull(copy.Modifier.ElementOverride);
+                Assert.IsEmpty(copy.Modifier.AdditionalEffects);
+                Assert.AreNotSame(source.Modifier, copy.Modifier);
+            }
+            Assert.AreEqual(snapshot.Power, source.Power);
+            Assert.AreEqual(snapshot.ExceedLevel, source.ExceedLevel);
+            Assert.AreEqual(snapshot.Modifier.AdditionalEffects[0].Power, source.Modifier.AdditionalEffects[0].Power);
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public void 自己チェイン生成物の可変効果は元と別コピーへ漏れない(ExceedLevel level)
+        {
+            var source = DetailedCard(level);
+            var first = source.CreateSelfChainCopy(100);
+            var second = source.CreateSelfChainCopy(100);
+            first.Modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison, Power = 7 });
+            var clone = first.Clone();
+            clone.Modifier.AdditionalEffects[0].Power = 99;
+            first.Modifier.BonusDamage = 80;
+            Assert.AreEqual(7, first.Modifier.AdditionalEffects[0].Power);
+            Assert.AreEqual(19, source.Modifier.AdditionalEffects[0].Power);
+            Assert.IsEmpty(second.Modifier.AdditionalEffects);
+            Assert.AreEqual(0, second.Modifier.BonusDamage);
+            Assert.AreEqual(level, clone.ExceedLevel);
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public async Task Factoryから調律して自己チェインしても一枚だけ消費し元定義を変更しない(ExceedLevel level)
+        {
+            var factory = new SimpleCardFactory();
+            var normal = factory.CreateById(SimpleCardFactory.Sword);
+            var source = level == ExceedLevel.Normal ? normal : factory.CreateExceeded(normal, level);
+            var material = new Card("chain_tune", "チェイン調律", 1, CardRarity.Normal, CardCategory.Tuning,
+                ElementType.None, CardSeries.None, 0, "検証素材");
+            material.Modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                Trigger = DerivativeTrigger.OnHit, ChainCardId = "", Power = 50, HitCount = 1,
+                EffectOrigin = ChainEffectOrigin.PlayerPosition });
+            var tuned = source.ApplyTuning(material);
+            var target = new Enemy("target", "検証敵", 1000, ElementType.None, new Vector2Int(3, 0));
+            var local = new BattleSystem(new PlayerCharacter(100, new Vector2Int(2, 0)),
+                new List<Enemy> { target }, new Deck());
+            var next = normal.Clone();
+            local.CardUsage.EnqueueCards(new List<Card> { tuned, next });
+            int used = 0, hits = 0; Card consumed = null;
+            local.CardUsage.OnCardUsed += card => { used++; consumed = card; };
+            target.OnDamaged += (_, __) => hits++;
+            Assert.IsTrue(await local.CardUsage.TryUseCurrentCardAsync());
+            Assert.AreEqual(1000 - source.Power - source.Power * 50 / 100, target.CurrentHp);
+            Assert.AreEqual(2, hits);
+            Assert.AreEqual(1, used);
+            Assert.AreSame(tuned, consumed);
+            Assert.AreEqual(level, consumed.ExceedLevel);
+            Assert.AreEqual(source.Cost, consumed.Cost);
+            Assert.AreEqual(level, tuned.CreateSelfChainCopy(50).ExceedLevel);
+            CollectionAssert.AreEqual(new[] { next }, local.CardUsage.GetRemainingCards());
+            Assert.IsEmpty(source.Modifier.AdditionalEffects);
+            Assert.AreEqual(50, material.Modifier.AdditionalEffects[0].Power);
+            Assert.AreNotSame(material.Modifier.AdditionalEffects[0], tuned.Modifier.AdditionalEffects[0]);
+        }
     }
 }

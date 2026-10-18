@@ -33,7 +33,7 @@ namespace Olca.Core.Domain
         public CardSeries Series { get; }
 
         /// <summary>威力（攻撃カードの場合）</summary>
-        public int Power { get; }
+        public int Power { get; private set; }
 
         /// <summary>説明文</summary>
         public string Description { get; }
@@ -171,6 +171,18 @@ namespace Olca.Core.Domain
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
                 ExceedLevel
             );
+        }
+
+        /// <summary>
+        /// 自己チェイン用の定義コピー。調律を再適用せず、再帰チェインを防ぐ。
+        /// </summary>
+        public Card CreateSelfChainCopy(int powerPercent)
+        {
+            var copy = Clone();
+            if (powerPercent > 0 && powerPercent != 100)
+                copy.Power = (Power * powerPercent) / 100;
+            copy.Modifier = new CardModifier();
+            return copy;
         }
 
         /// <summary>

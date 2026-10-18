@@ -663,28 +663,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
             if (isSelfChain)
             {
-                // 自分自身を再発動
-                // 威力倍率を適用（effect.Powerが威力倍率%）
-                int chainPower = context.UsedCard.Power;
-                if (effect.Power > 0 && effect.Power != 100)
-                {
-                    chainPower = (context.UsedCard.Power * effect.Power) / 100;
-                }
-
-                // 無限ループを防ぐため、Modifierを空にしたカードを作成
-                chainCard = new Domain.Card(
-                    context.UsedCard.Id, context.UsedCard.Name, context.UsedCard.Cost, context.UsedCard.Rarity,
-                    context.UsedCard.Category, context.UsedCard.Element, context.UsedCard.Series,
-                    chainPower, // 威力（必要に応じて調整）
-                    context.UsedCard.Description,
-                    context.UsedCard.TargetType, context.UsedCard.PanelChangeType,
-                    context.UsedCard.MoveDirection, context.UsedCard.MoveDistance,
-                    modifier: null, // Modifierを空にして無限ループを防ぐ
-                    context.UsedCard.MoveMotionTime,
-                    context.UsedCard.AttackMotionTime, context.UsedCard.PenetrationMode,
-                    context.UsedCard.StartupTime, context.UsedCard.RecoveryTime,
-                    context.UsedCard.ExtendRecoveryDuringDerivative, context.UsedCard.IsInstantEffect
-                );
+                // 段階などの定義を保持し、Modifier除去と基本威力倍率の既存動作を維持する。
+                chainCard = context.UsedCard.CreateSelfChainCopy(effect.Power);
             }
             else
             {
