@@ -31,6 +31,9 @@ namespace Olca.Presentation.Field
         [SerializeField] private Animator playerAnimator;
 
         private static readonly int IsRunningParameter = Animator.StringToHash("isRunning");
+        private static readonly int IsMovingParameter = Animator.StringToHash("isMoving");
+        private float? previousAnimationPosition;
+        private bool isMoving;
 
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
@@ -99,6 +102,7 @@ namespace Olca.Presentation.Field
         public void Initialize(DungeonSystem dungeon)
         {
             dungeonSystem = dungeon;
+            ResetMovementAnimation();
             cameraFollowEnabled = true;
             currentFollowSpeed = cameraFollowSpeed;  // 初期値は通常速度
 
@@ -126,7 +130,8 @@ namespace Olca.Presentation.Field
 
         private void LateUpdate()
         {
-            // Controllerの更新タイミングに依存せず、最新のダンジョン状態から表示を決定する。
+            // 移動差分は1フレームに一度、Controllerの位置反映後に判定する。
+            UpdateMovementAnimation();
             UpdatePlayerSprite();
         }
 
@@ -189,6 +194,7 @@ namespace Olca.Presentation.Field
         public void OnBattleStarted(BattleSystem battle, float contactPositionX)
         {
             currentBattle = battle;
+            ResetMovementAnimation();
 
             // グリッド原点をプレイヤーの現在位置から逆算
             // → プレイヤーをワープさせず、グリッドをプレイヤーに合わせて出現させる
@@ -219,6 +225,7 @@ namespace Olca.Presentation.Field
         public void OnBattleEnded()
         {
             currentBattle = null;
+            ResetMovementAnimation();
             battleGridView?.Hide();
             battleCameraTargetX = null;
             // cameraFollowEnabled はここで再開しない
@@ -235,6 +242,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void SnapCameraToPlayerAndResumeFollow()
         {
+            ResetMovementAnimation();
             if (playerTransform != null && fieldCamera != null)
             {
                 // カメラをプレイヤー位置に即スナップ（Lerpなし）
@@ -308,6 +316,7 @@ namespace Olca.Presentation.Field
         public void SetCameraFollowEnabled(bool enabled)
         {
             cameraFollowEnabled = enabled;
+            ResetMovementAnimation();
         }
 
         // ==================== 内部処理 ====================
@@ -316,6 +325,7 @@ namespace Olca.Presentation.Field
         public void SetPlayerPositionUpdateEnabled(bool enabled)
         {
             playerPositionUpdateEnabled = enabled;
+            ResetMovementAnimation();
         }
 
         private void UpdatePlayerPosition()
@@ -343,10 +353,42 @@ namespace Olca.Presentation.Field
             if (playerAnimator != null && playerAnimator.runtimeAnimatorController != null)
             {
                 playerAnimator.SetBool(IsRunningParameter, isDashing);
+                playerAnimator.SetBool(IsMovingParameter, isMoving && !isDashing);
                 return;
             }
 
             SetPlayerSprite(isDashing ? dashPlayerSprite : idlePlayerSprite);
+        }
+
+        private void ResetMovementAnimation()
+        {
+            previousAnimationPosition = null;
+            isMoving = false;
+            if (playerAnimator != null && playerAnimator.runtimeAnimatorController != null)
+                playerAnimator.SetBool(IsMovingParameter, false);
+        }
+
+        private void UpdateMovementAnimation()
+        {
+            isMoving = false;
+            bool canMove = dungeonSystem != null && playerTransform != null
+                && !dungeonSystem.IsInBattle && !dungeonSystem.IsDungeonCleared
+                && playerPositionUpdateEnabled && cameraFollowEnabled
+                && dungeonSystem.PlayerHeight <= 0.001f && Time.deltaTime > 0f;
+            if (!canMove)
+            {
+                previousAnimationPosition = null;
+                return;
+            }
+
+            float position = playerTransform.position.x;
+            if (previousAnimationPosition.HasValue)
+            {
+                float delta = position - previousAnimationPosition.Value;
+                // 通常10・Dash20単位/秒を超える変位はワープとして除外する。
+                isMoving = delta > 0.0001f && delta <= 25f * Time.deltaTime;
+            }
+            previousAnimationPosition = position;
         }
 
         private void SetPlayerSprite(Sprite sprite)
