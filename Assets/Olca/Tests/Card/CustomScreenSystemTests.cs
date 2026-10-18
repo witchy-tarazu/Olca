@@ -235,18 +235,36 @@ namespace Olca.Tests.CardTests
         }
 
         [Test]
-        public void 連続選択_割引で上限まで選択でき負のコストにしない()
+        public void 連続選択_割引で上限まで選択でき割引後も最低一とする()
         {
             var cards = new[] {
                 CreateTestCard("a", "A", 3, CardSeries.Sword),
                 CreateTestCard("b", "B", 3, CardSeries.Sword),
                 CreateTestCard("c", "C", 0, CardSeries.Sword)
             };
-            var cs = new CustomScreenSystem(new Deck(cards.ToList()), maxCost: 5);
+            var cs = new CustomScreenSystem(new Deck(cards.ToList()), maxCost: 6);
             cs.Open(EmptyRemainingCards(), random);
             foreach (var card in cards) Assert.IsTrue(cs.TrySelectCard(card));
-            Assert.AreEqual(5, cs.GetTotalUsedCost());
+            Assert.AreEqual(6, cs.GetTotalUsedCost());
             Assert.AreEqual(0, cs.RemainingCost);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void 連続割引_候補と合計は最低一で予算超過を拒否する(int baseCost)
+        {
+            var a = CreateTestCard("a", "A", 1, CardSeries.Sword);
+            var b = CreateTestCard("b", "B", baseCost, CardSeries.Sword);
+            var c = CreateTestCard("c", "C", baseCost, CardSeries.Sword);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { a, b, c }), maxCost: 2);
+            cs.Open(EmptyRemainingCards(), random);
+            Assert.IsTrue(cs.TrySelectCard(a));
+            Assert.IsTrue(cs.TrySelectCard(b));
+            Assert.AreEqual(2, cs.GetTotalUsedCost());
+            Assert.AreEqual(0, cs.RemainingCost);
+            Assert.IsFalse(cs.TrySelectCard(c));
+            CollectionAssert.AreEqual(new[] { a, b }, cs.SelectedCards);
         }
 
         [Test]

@@ -265,7 +265,8 @@ namespace Olca.Core.Logic.Battle
             bool discounted = card.Series == CardSeries.None
                 ? hasNone
                 : previous != null && previous.Series == card.Series;
-            return discounted ? Math.Max(0, card.Cost - 1) : card.Cost;
+            // 最新のゲーム全体仕様第5節: 連続選択の割引は最低1。
+            return discounted ? Math.Max(1, card.Cost - 1) : card.Cost;
         }
 
         /// <summary>
