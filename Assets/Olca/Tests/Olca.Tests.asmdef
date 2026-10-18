@@ -5,6 +5,7 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Olca.Core",
+        "Olca.Unity",
         "Olca.Application",
         "Olca.Presentation",
         "UnityEngine.UI",

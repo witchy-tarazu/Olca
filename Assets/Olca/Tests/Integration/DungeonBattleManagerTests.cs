@@ -880,3 +880,123 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class FileCheckpointTests
+    {
+        private string directory;
+        private DungeonCheckpointSession session;
+        private Olca.Unity.FileCheckpointStore store;
+        private DungeonBattleManager manager;
+        private sealed class FaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public string Fault;
+            public override void WriteAndFlush(string path, byte[] bytes)
+            {
+                if (Fault == "disk") throw new System.IO.IOException("容量不足fixture");
+                if (Fault == "permission") throw new System.UnauthorizedAccessException("権限fixture");
+                base.WriteAndFlush(path, bytes);
+                if (Fault == "corrupt") System.IO.File.WriteAllText(path, "broken");
+            }
+            public override void Replace(string temp, string dest, string backup)
+            {
+                if (Fault == "replace") throw new System.IO.IOException("置換失敗fixture");
+                base.Replace(temp, dest, backup);
+                if (Fault == "after") throw new System.IO.IOException("置換応答喪失fixture");
+            }
+        }
+        private FaultIo io;
+        [SetUp] public void Setup()
+        {
+            directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-checkpoint-test-" + System.Guid.NewGuid().ToString("N"));
+            var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var deck = new Deck(new List<Card> { factory.CreateById("sword"), factory.CreateById("heal") });
+            var definitions = DungeonCheckpointSession.CreateDefault(map, deck).Definitions;
+            io = new FaultIo(); store = new Olca.Unity.FileCheckpointStore(definitions, directory, io);
+            session = new DungeonCheckpointSession(definitions, store);
+            manager = new DungeonBattleManager(map, new PlayerCharacter(100), deck, new MockRandomProvider(), new MockLogger(), checkpoints: session);
+            Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked, manager.Dungeon.CheckpointError);
+        }
+        [TearDown] public void Cleanup() { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        private CheckpointDto Next() { var dto = store.Read(); dto.Sequence++; return dto; }
+        [Test] public void 新規ストアで実ファイルを読めて旧世代バックアップを保持する()
+        {
+            var before = store.Read(); var next = Next();
+            Assert.IsTrue(store.TryWrite(next, out var error), error);
+            var reopened = new Olca.Unity.FileCheckpointStore(session.Definitions, directory);
+            Assert.AreEqual(next.Sequence, reopened.Read().Sequence);
+            Assert.IsTrue(reopened.TryReadBackup(out var backup, out error), error);
+            Assert.AreEqual(before.Sequence, backup.Sequence);
+            Assert.IsTrue(reopened.TryWrite(next, out error), error);
+            Assert.IsFalse(reopened.TryWrite(before, out error));
+            next.RunId = "another"; next.Sequence++;
+            Assert.IsFalse(reopened.TryWrite(next, out error));
+        }
+        [TestCase("disk")][TestCase("permission")][TestCase("corrupt")][TestCase("replace")]
+        public void 書込失敗は本体とバックアップを保持し同一計画で再試行できる(string fault)
+        {
+            Assert.IsTrue(store.TryWrite(Next(), out _));
+            var active = System.IO.File.ReadAllBytes(store.ActivePath); var backup = System.IO.File.ReadAllBytes(store.BackupPath);
+            var dto = Next(); io.Fault = fault;
+            Assert.IsFalse(store.TryWrite(dto, out var error)); Assert.IsNotEmpty(error);
+            CollectionAssert.AreEqual(active, System.IO.File.ReadAllBytes(store.ActivePath));
+            CollectionAssert.AreEqual(backup, System.IO.File.ReadAllBytes(store.BackupPath));
+            Assert.AreEqual(0, System.IO.Directory.GetFiles(directory, "*.tmp").Length);
+            io.Fault = null; Assert.IsTrue(store.TryWrite(dto, out error), error);
+            Assert.AreEqual(dto.Sequence, store.Read().Sequence);
+        }
+        [Test] public void 置換完了後の例外は実体照合で確定しバックアップを二重更新しない()
+        {
+            var old = store.Read(); var dto = Next(); io.Fault = "after";
+            Assert.IsTrue(store.TryWrite(dto, out var error), error);
+            Assert.IsTrue(store.TryWrite(dto, out error), error);
+            Assert.IsTrue(store.TryReadBackup(out var backup, out error), error);
+            Assert.AreEqual(old.Sequence, backup.Sequence);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 破損と未知版は再開も書込も拒否し旧バックアップを保持する(bool unknown)
+        {
+            Assert.IsTrue(store.TryWrite(Next(), out _)); var valid = store.Read(); valid.Sequence++;
+            var backup = System.IO.File.ReadAllBytes(store.BackupPath);
+            var text = System.IO.File.ReadAllText(store.ActivePath);
+            System.IO.File.WriteAllText(store.ActivePath, unknown ? text.Replace("\"Version\":1", "\"Version\":99") : "broken");
+            var invalid = System.IO.File.ReadAllBytes(store.ActivePath);
+            Assert.IsFalse(session.TryRead(out _, out var error)); Assert.IsNotEmpty(error);
+            Assert.IsFalse(store.TryWrite(valid, out error));
+            CollectionAssert.AreEqual(invalid, System.IO.File.ReadAllBytes(store.ActivePath));
+            CollectionAssert.AreEqual(backup, System.IO.File.ReadAllBytes(store.BackupPath));
+            Assert.IsFalse(manager.IsSuspended);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 新規ストアと新規モデルで同じ戦闘開始の手札報酬と初撃へ復帰する(bool dash)
+        {
+            if (dash) manager.StartDash();
+            for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.Tick(50);
+            Assert.IsNotNull(manager.CurrentBattle, manager.Dungeon.CheckpointError);
+            var before = store.Read(); Assert.AreEqual(CheckpointBoundary.BattleStart, before.Boundary);
+            Assert.AreEqual(dash, before.Battle.DashContact);
+            var reopened = new Olca.Unity.FileCheckpointStore(session.Definitions, directory);
+            var newSession = new DungeonCheckpointSession(session.Definitions, reopened);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(newSession, new MockRandomProvider(), new MockLogger(), out var restored, out var error), error);
+            Assert.IsTrue(manager.SuspendForCheckpoint()); restored.ActivateCheckpoint();
+            CollectionAssert.AreEqual(before.Battle.FirstHand, newSession.Last.Battle.FirstHand);
+            CollectionAssert.AreEqual(before.Battle.RewardCandidates, newSession.Last.Battle.RewardCandidates);
+            Assert.AreEqual(manager.CurrentBattle.Enemies[0].CurrentHp, restored.CurrentBattle.Enemies[0].CurrentHp);
+            Assert.AreNotSame(manager, restored); Assert.AreNotSame(store, reopened);
+        }
+        [Test] public void 戦闘開始保存失敗は旧出撃ファイルを保持し進行停止後に同じ計画を保存する()
+        {
+            var before = System.IO.File.ReadAllBytes(store.ActivePath); io.Fault = "disk";
+            manager.StartDash(); for (int i = 0; i < 20 && !manager.Dungeon.IsCheckpointBlocked; i++) manager.Tick(50);
+            Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.IsNull(manager.CurrentBattle);
+            CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(store.ActivePath));
+            float position = manager.Dungeon.PlayerPosition; manager.Tick(1000); Assert.AreEqual(position, manager.Dungeon.PlayerPosition);
+            Assert.IsFalse(manager.RetryCheckpoint()); io.Fault = null; Assert.IsTrue(manager.RetryCheckpoint());
+            Assert.AreEqual(CheckpointBoundary.BattleStart, store.Read().Boundary);
+            Assert.AreEqual(35, manager.CurrentBattle.Enemies[0].CurrentHp);
+        }
+    }
+}

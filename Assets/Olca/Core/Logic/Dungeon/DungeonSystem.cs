@@ -1025,6 +1025,12 @@ namespace Olca.Core.Logic.Dungeon
         }
     }
 
+    public interface ICheckpointReadStatus
+    {
+        string ReadError { get; }
+        bool HasExistingData { get; }
+    }
+
     public interface ICheckpointStore
     {
         bool TryWrite(CheckpointDto data, out string error);
@@ -1152,6 +1158,8 @@ namespace Olca.Core.Logic.Dungeon
             restored = null;
             if (HasUncommittedBoundary) { error = "未保存の境界があります。先に同じ保存を再試行してください"; return false; }
             var dto = Store.Read();
+            if (dto == null && Store is ICheckpointReadStatus status && status.ReadError != null)
+            { error = status.ReadError; return false; }
             if (dto?.Boundary == CheckpointBoundary.Terminal) { error = "終了済みの攻略は再開できません"; return false; }
             return CheckpointCodec.TryRestore(dto, Definitions, out restored, out error);
         }

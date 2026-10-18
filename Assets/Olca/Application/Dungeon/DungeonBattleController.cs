@@ -70,6 +70,38 @@ namespace Olca.Application.Dungeon
         private GameObject pauseCanvas;
         private GameObject pauseOverlay;
         private float timeScaleBeforePause;
+        [SerializeField, HideInInspector] private string checkpointDirectoryOverride;
+        private bool awaitingCheckpointChoice;
+        private GameObject checkpointOverlay;
+        private Text checkpointMessage;
+        private Button continueCheckpointButton, retryCheckpointButton;
+        public string CheckpointDirectory => string.IsNullOrEmpty(checkpointDirectoryOverride)
+            ? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath, "Olca", "checkpoints") : checkpointDirectoryOverride;
+
+        // 起動前に独立した検証先を注入できる。稼働中の保存先変更は禁止。
+        public void ConfigureCheckpointDirectory(string directory)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後は保存先を変更できません");
+            checkpointDirectoryOverride = System.IO.Path.GetFullPath(directory);
+        }
+        private void ShowCheckpointStatus(string message = null)
+        {
+            bool blocked = manager != null && manager.Dungeon.IsCheckpointBlocked;
+            checkpointOverlay.SetActive(blocked || awaitingCheckpointChoice);
+            retryCheckpointButton.gameObject.SetActive(blocked);
+            continueCheckpointButton.gameObject.SetActive(!blocked);
+            checkpointMessage.text = message ?? (blocked
+                ? "保存できないため進行を停止しています。\n保存済みデータは保持しています。\n原因を解消して同じ内容の保存を再試行してください。\n" + manager.Dungeon.CheckpointError
+                : "保存されたチェックポイントがあります。\n続きから再開します。\n対応外の形式・データは上書きせず停止します。");
+        }
+        private void ContinueCheckpointFromUi()
+        {
+            if (!TryRestoreMemoryCheckpoint(out var error))
+            {
+                awaitingCheckpointChoice = true;
+                ShowCheckpointStatus("再開できないため進行を停止しています。\n保存データと現在の状態は保持しています。\n" + error);
+            }
+        }
 
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
         public void SetUserPaused(bool paused)
@@ -110,7 +142,26 @@ namespace Olca.Application.Dungeon
             var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
             pauseOverlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
             MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
+            MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
             pauseOverlay.SetActive(false);
+            checkpointOverlay = new GameObject("CheckpointOverlay", typeof(RectTransform), typeof(Image));
+            checkpointOverlay.transform.SetParent(pauseCanvas.transform, false);
+            var cr = (RectTransform)checkpointOverlay.transform;
+            cr.anchorMin = Vector2.zero; cr.anchorMax = Vector2.one; cr.offsetMin = cr.offsetMax = Vector2.zero;
+            checkpointOverlay.GetComponent<Image>().color = new Color(0.02f, 0.04f, 0.08f, 0.94f);
+            var message = new GameObject("CheckpointMessage", typeof(RectTransform), typeof(Text));
+            message.transform.SetParent(checkpointOverlay.transform, false);
+            checkpointMessage = message.GetComponent<Text>(); checkpointMessage.font = font;
+            checkpointMessage.fontSize = 30; checkpointMessage.alignment = TextAnchor.MiddleCenter;
+            checkpointMessage.horizontalOverflow = HorizontalWrapMode.Wrap;
+            checkpointMessage.rectTransform.sizeDelta = new Vector2(1360, 560);
+            checkpointMessage.rectTransform.anchoredPosition = new Vector2(0, 90);
+            continueCheckpointButton = MakeButton("ContinueCheckpointButton", "続きから", checkpointOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -270));
+            continueCheckpointButton.onClick.AddListener(ContinueCheckpointFromUi);
+            retryCheckpointButton = MakeButton("RetryCheckpointButton", "保存を再試行", checkpointOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -270));
+            ((RectTransform)retryCheckpointButton.transform).sizeDelta = new Vector2(320, 70);
+            retryCheckpointButton.onClick.AddListener(() => { RetryMemoryCheckpoint(); ShowCheckpointStatus(); });
+            ShowCheckpointStatus();
         }
         private CancellationTokenSource transitionCts;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
@@ -134,12 +185,15 @@ namespace Olca.Application.Dungeon
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
 
             var initialDeck = CreateInitialDeck();
-            memoryCheckpoints = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck);
+            var definitions = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck).Definitions;
+            var store = new FileCheckpointStore(definitions, CheckpointDirectory);
+            memoryCheckpoints = new DungeonCheckpointSession(definitions, store);
+            awaitingCheckpointChoice = store.HasExistingData;
             manager = new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: memoryCheckpoints);
+                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice ? null : memoryCheckpoints);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -166,7 +220,8 @@ namespace Olca.Application.Dungeon
         {
             if (manager == null) return;
             GameplayPause.UpdateInputBarrier();
-            if (IsUserPaused) return;
+            if (manager.Dungeon.IsCheckpointBlocked) { ShowCheckpointStatus(); return; }
+            if (awaitingCheckpointChoice || IsUserPaused) return;
             inputProvider.Update();
             if (!GameplayPause.InputBlocked) HandleInput();
             int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
@@ -483,14 +538,17 @@ namespace Olca.Application.Dungeon
             if (saved && manager.CurrentPhase == GamePhase.Dungeon) manager.ResumeAfterBattle();
             return saved;
         }
-        // UI/実ファイル保存は別単位。呼出時に候補を検証してから旧モデルを破棄する。
+        // 候補と保存形式を検証した後でのみ旧モデルを破棄する。
         public bool TryRestoreMemoryCheckpoint(out string error)
         {
             error = null;
             if (manager == null || memoryCheckpoints == null || manager.Dungeon.IsCheckpointBlocked)
             { error = "保存が未完了です"; return false; }
             var factory = new SimpleCardFactory();
-            if (!DungeonBattleManager.TryRestoreCheckpoint(memoryCheckpoints, randomProvider, logger,
+            var candidate = memoryCheckpoints.Store is FileCheckpointStore file
+                ? new DungeonCheckpointSession(memoryCheckpoints.Definitions, new FileCheckpointStore(memoryCheckpoints.Definitions, file.DirectoryPath))
+                : memoryCheckpoints;
+            if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
                 out var restored, out error, new ExceedSystem(factory), new TuningSystem(),
                 new FusionSystem(new SimpleFusionRecipeProvider(), factory))) return false;
             if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }
@@ -503,6 +561,9 @@ namespace Olca.Application.Dungeon
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
             manager = restored;
+            memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
+            dashStartPosition = -1f; dashCooldownRemaining = 0f;
+            ShowCheckpointStatus();
             manager.OnBattleStarted += OnBattleStarted; manager.OnBattleEnded += OnBattleEnded;
             manager.OnCardRewardPresented += OnCardRewardPresented; manager.OnGameOver += OnGameOver;
             manager.OnDungeonClearCompleted += OnDungeonCleared;
