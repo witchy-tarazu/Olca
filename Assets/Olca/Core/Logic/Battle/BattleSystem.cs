@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
 
@@ -25,6 +27,7 @@ namespace Olca.Core.Logic.Battle
 
         private bool isPaused; // カスタム画面中はtrue
         private BattleState state;
+        private long actionTimeMs;
         private int resolutionDepth;
         private bool resolutionRequested;
 
@@ -146,6 +149,7 @@ namespace Olca.Core.Logic.Battle
             BeginResolution();
             try
             {
+                actionTimeMs += deltaTimeMs;
                 // カスタムゲージを更新
                 customGauge.Update(deltaTimeMs);
 
@@ -228,12 +232,22 @@ namespace Olca.Core.Logic.Battle
             finally { EndResolution(); }
         }
 
+        // Coreの時間は既存Tickのみで進める。Pause中の前隙/後隙は残り時間を維持する。
+        internal async UniTask WaitForActionAsync(float seconds, CancellationToken ct)
+        {
+            long deadline = actionTimeMs + (long)Math.Ceiling(seconds * 1000d);
+            await UniTask.WaitUntil(() => (!IsPaused && actionTimeMs >= deadline) || IsGameOver,
+                cancellationToken: ct, cancelImmediately: true);
+            ct.ThrowIfCancellationRequested();
+            if (IsGameOver) throw new OperationCanceledException();
+        }
+
         /// <summary>
         /// カスタム画面を開く
         /// </summary>
         public void OpenCustomScreen(IRandomProvider random)
         {
-            if (!customGauge.IsFull)
+            if (IsGameOver || !customGauge.IsFull)
             {
                 logger?.LogWarning("カスタムゲージが満タンではありません");
                 return;
@@ -250,8 +264,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnCustomScreenConfirmed(List<Card> selectedCards)
         {
-            // 選択されたカードをキューに追加
-            if (selectedCards.Count > 0)
+            // 実行中カードはCardUsageが保護し、ここでは待機分だけを置き換える。
+            if (!IsGameOver)
             {
                 cardUsage.EnqueueCards(selectedCards);
             }
@@ -334,6 +348,7 @@ namespace Olca.Core.Logic.Battle
                 state = BattleState.Victory;
             }
 
+            cardUsage.Clear(); // 終了した戦闘の遅延完了が次のキューやUIを更新しない。
             var result = state == BattleState.Defeat ? BattleResult.Defeat : BattleResult.Victory;
             logger?.LogInfo($"バトル終了: {result}");
             OnBattleEnd?.Invoke(result);

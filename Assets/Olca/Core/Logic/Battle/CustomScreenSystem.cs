@@ -216,6 +216,13 @@ namespace Olca.Core.Logic.Battle
             OnScreenClosed?.Invoke(availableCards);
         }
 
+        // 外部キャンセルで未消費に戻ったカードを、開いている画面の保持分にも反映する。
+        // 実行動作は終了済みなので、以降の新選択では通常の待機カードとして扱う。
+        internal void RestoreUnusedCard(Card card)
+        {
+            if (IsOpen) availableCards.Insert(0, card);
+        }
+
         /// <summary>
         /// 使用可能カードをクリア（バトル終了時など）
         /// </summary>

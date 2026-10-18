@@ -148,9 +148,14 @@ namespace Olca.Tests.CardEffects
 
         private async Task<bool> AwaitCardUse(Task<bool> pending)
         {
-            var completed = await Task.WhenAny(pending, Task.Delay(5000));
-            if (completed != pending) battle.CardUsage.InterruptCurrentCard();
-            Assert.AreSame(pending, completed, "実際の待機処理が5秒以内に完了すること");
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!pending.IsCompleted && DateTime.UtcNow < deadline)
+            {
+                battle.Tick(10);
+                await Task.Delay(10);
+            }
+            if (!pending.IsCompleted) battle.CardUsage.InterruptCurrentCard();
+            Assert.IsTrue(pending.IsCompleted, "実際の待機処理が5秒以内に完了すること");
             return await pending;
         }
 
@@ -198,7 +203,7 @@ namespace Olca.Tests.CardEffects
                 {
                     var deadline = DateTime.UtcNow.AddSeconds(3);
                     while (battle.Enemies[0].CurrentHp == 100 && DateTime.UtcNow < deadline)
-                        await Task.Delay(10);
+                    { battle.Tick(10); await Task.Delay(10); }
                     Assert.AreEqual(70, battle.Enemies[0].CurrentHp, "攻撃後の待機へ進む");
                     Assert.IsFalse(pending.IsCompleted);
                 }
@@ -273,6 +278,214 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(replace ? 1 : 0, battle.CardUsage.RemainingCount);
             Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
             Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
+        }
+
+        [Test]
+        public async Task 実行中カードはゼロ選択の通常往復で再使用可能にならない()
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            var next = new Card("next", "次", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 5, "次");
+            battle.CardUsage.EnqueueCards(new List<Card> { active, next });
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            Assert.IsFalse(pending.IsCompleted);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            battle.CustomScreen.Confirm();
+            battle.CustomScreen.Close();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            CollectionAssert.AreEqual(new[] { next }, battle.CardUsage.GetRemainingCards());
+            Assert.AreEqual(80, battle.Enemies[0].CurrentHp);
+        }
+
+        [Test]
+        public async Task カスタム画面中は実行中カードの時間と効果が停止する()
+        {
+            var active = CreateMovingAttack(0.05f, 0.05f);
+            battle.CardUsage.EnqueueCards(new List<Card> { active });
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            await Task.Delay(250);
+            bool stopped = !pending.IsCompleted && battle.Enemies[0].CurrentHp == 100;
+            battle.CustomScreen.Confirm();
+            battle.CustomScreen.Close();
+            await AwaitCardUse(pending);
+            Assert.IsTrue(stopped, "custom表示中は残り時間・HPを変えない");
+        }
+
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public async Task 実行中の選び直しと中断でも待機分だけを保持する(bool selectNew, bool stagger)
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            var next = new Card("next", "次", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 5, "次");
+            battle.CardUsage.EnqueueCards(new List<Card> { active, next });
+            int used = 0;
+            battle.CardUsage.OnCardUsed += _ => used++;
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            Assert.AreSame(active, battle.CardUsage.InFlightCard);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            CollectionAssert.AreEqual(new[] { next }, battle.CustomScreen.AvailableCards);
+            var chosen = selectNew ? battle.CustomScreen.CurrentHand[0] : next;
+            if (selectNew) Assert.IsTrue(battle.CustomScreen.TrySelectCard(chosen));
+            Assert.IsFalse(battle.CustomScreen.TrySelectCard(active));
+            battle.Tick(1000);
+            await Task.Delay(50);
+            Assert.IsFalse(pending.IsCompleted);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            if (stagger) player.TakeDamage(player.Poise);
+            battle.CustomScreen.Confirm();
+            battle.CustomScreen.Close();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            Assert.AreEqual(1, used);
+            Assert.IsNull(battle.CardUsage.InFlightCard);
+            CollectionAssert.AreEqual(new[] { chosen }, battle.CardUsage.GetRemainingCards());
+            Assert.AreEqual(stagger ? 100 : 80, battle.Enemies[0].CurrentHp);
+        }
+
+        [Test]
+        public async Task 前隙と後隙の残り時間はcustomの停止中に減らない()
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            battle.CardUsage.EnqueueCards(new List<Card> { active });
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            battle.Tick(40);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            battle.Tick(1000);
+            await Task.Delay(50);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            battle.Tick(59); await Task.Delay(30);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            battle.Tick(2); await Task.Delay(30);
+            Assert.AreEqual(80, battle.Enemies[0].CurrentHp);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            battle.Tick(1000); await Task.Delay(50);
+            Assert.IsFalse(pending.IsCompleted);
+            Assert.IsTrue(player.IsInTemporaryMove);
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            Assert.IsTrue(battle.CardUsage.IsEmpty);
+            Assert.IsFalse(player.IsInTemporaryMove);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task custom中の戦闘終了は古い非同期処理を止め次戦へ漏らさない(bool victory)
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            battle.CardUsage.EnqueueCards(new List<Card> { active });
+            int used = 0; battle.CardUsage.OnCardUsed += _ => used++;
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            if (victory) battle.Enemies[0].TakeDamage(1000, ElementType.None);
+            else player.TakeDamage(1000);
+            Assert.IsFalse(await AwaitCardUse(pending));
+            var nextBattle = new BattleSystem(new PlayerCharacter(100), new List<Enemy>
+                { new Enemy("new", "次戦", 100, ElementType.None, new Vector2Int(3, 0)) }, new Deck());
+            nextBattle.CardUsage.EnqueueCards(new List<Card> { active });
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            battle.Tick(1000); await Task.Delay(50);
+            Assert.AreEqual(0, used);
+            Assert.IsTrue(battle.CardUsage.IsEmpty);
+            Assert.IsNull(battle.CardUsage.InFlightCard);
+            Assert.IsFalse(player.IsInTemporaryMove);
+            Assert.AreEqual(victory ? 0 : 100, battle.Enemies[0].CurrentHp);
+            CollectionAssert.AreEqual(new[] { active }, nextBattle.CardUsage.GetRemainingCards());
+        }
+
+        [Test]
+        public async Task 実行中カードは三サービスの加工素材にならない()
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            var spare = CreateMovingAttack(0.1f, 0.1f);
+            var factory = new MockCardFactory();
+            battle = new BattleSystem(player, new List<Enemy> { battle.Enemies[0] },
+                new Deck(new List<Card> { active, spare }), exceedSystem: new ExceedSystem(factory),
+                tuningSystem: new TuningSystem(), fusionSystem: new FusionSystem(new MockFusionRecipeProvider(), factory));
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            battle.CustomScreen.TrySelectCard(active);
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            Assert.IsFalse(battle.CustomScreen.ExecuteExceed(active, spare).IsSuccess);
+            Assert.IsFalse(battle.CustomScreen.ExecuteTuning(active, spare).IsSuccess);
+            Assert.IsFalse(battle.CustomScreen.ExecuteFusion(new[] { active, spare }).IsSuccess);
+            CollectionAssert.AreEqual(new[] { spare }, battle.CustomScreen.CurrentHand);
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            Assert.IsTrue(battle.CardUsage.IsEmpty);
+        }
+
+        [Test]
+        public async Task 同じ参照の複数枚でも実行中の一枚だけを取り出す()
+        {
+            var card = CreateMovingAttack(0.05f, 0.05f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card, card });
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            Assert.AreEqual(1, battle.CustomScreen.AvailableCards.Count);
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            Assert.AreEqual(1, battle.CardUsage.RemainingCount);
+            Assert.IsTrue(await AwaitCardUse(battle.CardUsage.TryUseCurrentCardAsync().AsTask()));
+            Assert.IsTrue(battle.CardUsage.IsEmpty);
+            Assert.AreEqual(60, battle.Enemies[0].CurrentHp);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task custom中の外部キャンセルは未消費カードを保持分へ戻す(bool selectNew)
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            battle.CardUsage.EnqueueCards(new List<Card> { active });
+            using (var cts = new CancellationTokenSource())
+            {
+                var pending = battle.CardUsage.TryUseCurrentCardAsync(cts.Token).AsTask();
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+                battle.OpenCustomScreen(new MockRandomProvider(0));
+                cts.Cancel();
+                Assert.IsFalse(await AwaitCardUse(pending));
+                Assert.IsNull(battle.CardUsage.InFlightCard);
+                CollectionAssert.AreEqual(new[] { active }, battle.CustomScreen.AvailableCards);
+                var chosen = selectNew ? battle.CustomScreen.CurrentHand[0] : active;
+                if (selectNew) battle.CustomScreen.TrySelectCard(chosen);
+                battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+                CollectionAssert.AreEqual(new[] { chosen }, battle.CardUsage.GetRemainingCards());
+                Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task 待機期限と同時にcustomを開いても継続処理は閉じるまで進まない(bool recovery)
+        {
+            var active = CreateMovingAttack(0.1f, 0.1f);
+            battle.CardUsage.EnqueueCards(new List<Card> { active });
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            if (recovery)
+            {
+                battle.Tick(101); await Task.Delay(30);
+                Assert.AreEqual(80, battle.Enemies[0].CurrentHp);
+            }
+            battle.Tick(101);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider(0));
+            await Task.Delay(50);
+            bool stopped = !pending.IsCompleted && player.IsInTemporaryMove;
+            Assert.AreEqual(recovery ? 80 : 100, battle.Enemies[0].CurrentHp);
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            Assert.IsTrue(stopped);
         }
 
         [Test]

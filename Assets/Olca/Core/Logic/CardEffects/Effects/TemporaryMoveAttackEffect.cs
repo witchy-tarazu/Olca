@@ -87,9 +87,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 // 4. 移動モーション待機
                 if (moveMotionTime > 0)
                 {
-                    await UniTask.Delay(
-                        TimeSpan.FromSeconds(moveMotionTime),
-                        cancellationToken: ct);
+                    await context.Battle.WaitForActionAsync(moveMotionTime, ct);
                 }
 
                 // 5. 攻撃実行（移動先の位置で）
@@ -109,9 +107,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 // 6. 攻撃モーション待機
                 if (attackMotionTime > 0)
                 {
-                    await UniTask.Delay(
-                        TimeSpan.FromSeconds(attackMotionTime),
-                        cancellationToken: ct);
+                    await context.Battle.WaitForActionAsync(attackMotionTime, ct);
                 }
             }
             catch (OperationCanceledException) when (attackResolved)

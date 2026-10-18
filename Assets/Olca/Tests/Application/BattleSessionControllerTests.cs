@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Cysharp.Threading.Tasks;
 using Olca.Application.Battle;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
@@ -21,6 +22,7 @@ namespace Olca.Tests.Application
         /// <summary>IBattleView のテスト用モック</summary>
         private class MockBattleView : IBattleView
         {
+            public Task CloseTask { get; set; } = Task.CompletedTask;
             public int OpenCustomScreenCallCount { get; private set; }
             public int CloseCustomScreenCallCount { get; private set; }
 
@@ -28,7 +30,7 @@ namespace Olca.Tests.Application
             public Task CloseCustomScreenAsync()
             {
                 CloseCustomScreenCallCount++;
-                return Task.CompletedTask;
+                return CloseTask;
             }
         }
 
@@ -215,5 +217,55 @@ namespace Olca.Tests.Application
             Assert.AreEqual(1, battleView.CloseCustomScreenCallCount,
                 "確定後にCloseCustomScreenAsyncが1回呼ばれること");
         }
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task 再初期化後に旧closeが完了しても新しいcustomは閉じない(bool sameBattle)
+        {
+            var (session, view, custom, _) = CreateSession();
+            var oldBattle = CreateBattleSystem();
+            session.Attach(oldBattle);
+            oldBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            session.TryOpenCustomScreen();
+            var delayedClose = new TaskCompletionSource<bool>();
+            view.CloseTask = delayedClose.Task;
+            custom.FireConfirmed();
+            var nextBattle = sameBattle ? oldBattle : CreateBattleSystem();
+            session.Attach(nextBattle);
+            nextBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            session.TryOpenCustomScreen();
+            delayedClose.SetResult(true);
+            await Task.Delay(50);
+            Assert.IsTrue(nextBattle.CustomScreen.IsOpen);
+            Assert.IsTrue(nextBattle.IsPaused);
+            session.Detach();
+        }
+
+        [Test]
+        public async Task 再初期化は旧カード動作を中止し新キューを消費しない()
+        {
+            var (session, _, _, _) = CreateSession();
+            var oldBattle = CreateBattleSystem();
+            session.Attach(oldBattle);
+            var active = new Card("moving", "一時移動", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 10, "待機", moveDirection: "Right", moveDistance: 1,
+                moveMotionTime: 1f, attackMotionTime: 1f, penetrationMode: MovePenetrationMode.Invincible);
+            oldBattle.CardUsage.EnqueueCards(new List<Card> { active });
+            int used = 0; oldBattle.CardUsage.OnCardUsed += _ => used++;
+            var pending = oldBattle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            Assert.IsFalse(pending.IsCompleted);
+            var nextBattle = CreateBattleSystem();
+            nextBattle.CardUsage.EnqueueCards(new List<Card> { active });
+            session.Attach(nextBattle);
+            var completed = await Task.WhenAny(pending, Task.Delay(1000));
+            Assert.AreSame(pending, completed);
+            Assert.IsFalse(await pending);
+            oldBattle.Tick(2000); await Task.Delay(50);
+            Assert.AreEqual(0, used);
+            Assert.IsFalse(oldBattle.Player.IsInTemporaryMove);
+            Assert.IsNull(oldBattle.CardUsage.InFlightCard);
+            CollectionAssert.AreEqual(new[] { active }, nextBattle.CardUsage.GetRemainingCards());
+            session.Detach();
+        }
+
     }
 }

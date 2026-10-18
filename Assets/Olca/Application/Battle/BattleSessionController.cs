@@ -23,6 +23,7 @@ namespace Olca.Application.Battle
         private readonly IGameLogger logger;
 
         private BattleSystem currentBattle;
+        private int sessionVersion;
 
         public BattleSessionController(
             IBattleView battleView,
@@ -55,9 +56,11 @@ namespace Olca.Application.Battle
         /// </summary>
         public void Detach()
         {
+            sessionVersion++;
             if (currentBattle != null)
             {
                 currentBattle.CustomGauge.OnGaugeFull -= OnGaugeFull;
+                currentBattle.CardUsage.Clear();
                 // バトル終了時にカスタム画面が開きっぱなしの場合は強制クローズ
                 // （確定アニメーション中にバトルが終了した際、Close()が呼ばれないケースへの対処）
                 if (currentBattle.CustomScreen.IsOpen)
@@ -99,8 +102,11 @@ namespace Olca.Application.Battle
 
         private async UniTaskVoid CloseCustomScreenAsync()
         {
+            var closingBattle = currentBattle;
+            int version = sessionVersion;
             await battleView.CloseCustomScreenAsync();
-            currentBattle?.CustomScreen.Close();
+            if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
+                closingBattle?.CustomScreen.Close();
         }
     }
 }
