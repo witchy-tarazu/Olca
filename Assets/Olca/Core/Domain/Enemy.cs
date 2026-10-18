@@ -63,12 +63,16 @@ namespace Olca.Core.Domain
         /// <summary>敵の名前</summary>
         public string Name { get; }
 
+        /// <summary>戦闘限定の召喚物。勝利条件・通貨報酬の対象外。</summary>
+        public bool IsSummoned { get; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition)
+        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false)
         {
             EnemyId = enemyId;
+            IsSummoned = isSummoned;
             Name = name;
             this.maxHp = maxHp;
             this.currentHp = maxHp;

@@ -14,6 +14,7 @@ namespace Olca.Core.Logic.Battle
     {
         private readonly PlayerCharacter player;
         private readonly List<Enemy> enemies;
+        private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
         private readonly BattleField battleField;
         private readonly CustomGaugeSystem customGauge;
         private readonly CustomScreenSystem customScreen;
@@ -107,36 +108,49 @@ namespace Olca.Core.Logic.Battle
             // プレイヤーのけぞり時の処理（カード効果の中断）
             player.OnStaggered += OnPlayerStaggered;
 
-            // 敵死亡時の処理と敵AI登録
-            foreach (var enemy in enemies)
-            {
-                enemy.OnDamageProcessingStarted += BeginResolution;
-                enemy.OnDamageProcessingCompleted += EndResolution;
-                enemy.OnDeath += () =>
-                {
-                    CheckVictoryCondition();
-                    enemyAI.UnregisterEnemy(enemy);
-                };
-
-                // 敵をAI管理に登録（基本攻撃のみ）
-                var actions = new List<IEnemyAIAction>
-                {
-                    new BasicAttackAction(attackDamage: 10, cooldown: 2.0f)
-                };
-                enemyAI.RegisterEnemy(enemy, actions);
-            }
+            // 初期参加者のAIは既存設定を維持する。
+            foreach (var enemy in this.enemies)
+                RegisterEnemy(enemy, new List<IEnemyAIAction> { new BasicAttackAction(attackDamage: 10, cooldown: 2.0f) });
 
             // カスタム画面イベントの購読
             customScreen.OnConfirmed += OnCustomScreenConfirmed;
             customScreen.OnScreenClosed += OnCustomScreenClosed;
 
             // プレイヤー移動時にパネル効果を適用
-            playerMovement.OnMoved += (newPos, oldPos) =>
-            {
-                panelEffects.ApplyOnLeaveEffect(player, oldPos);
-                panelEffects.ApplyOnEnterEffect(player, newPos);
-            };
+            playerMovement.OnMoved += OnPlayerMoved;
         }
+
+        private void OnPlayerMoved(Vector2Int newPos, Vector2Int oldPos)
+        {
+            panelEffects.ApplyOnLeaveEffect(player, oldPos);
+            panelEffects.ApplyOnEnterEffect(player, newPos);
+        }
+
+        private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
+        {
+            enemyAI.RegisterEnemy(enemy, actions);
+            enemy.OnDamageProcessingStarted += BeginResolution;
+            enemy.OnDamageProcessingCompleted += EndResolution;
+            Action handler = () => { CheckVictoryCondition(); enemyAI.UnregisterEnemy(enemy); };
+            enemyDeathHandlers.Add(enemy, handler);
+            enemy.OnDeath += handler;
+        }
+
+        /// <summary>呼び出し側が定義した召喚物とAIを、配置順の末尾に登録する。</summary>
+        public void AddSummon(Enemy summon, List<IEnemyAIAction> actions)
+        {
+            if (summon == null) throw new ArgumentNullException(nameof(summon));
+            if (IsGameOver) throw new InvalidOperationException("終了した戦闘には召喚できません");
+            if (!summon.IsSummoned || summon.IsDead || !battleField.IsInBounds(summon.GridPosition) || enemies.Contains(summon))
+                throw new ArgumentException("生存中で未登録の召喚物をフィールド内に指定してください", nameof(summon));
+            // AI登録の検証に失敗した場合は参加者リストへ追加しない。
+            RegisterEnemy(summon, actions);
+            enemies.Add(summon);
+            OnSummonAdded?.Invoke(summon);
+        }
+
+        /// <summary>表示層へ戦闘中の追加を通知する。</summary>
+        public event Action<Enemy> OnSummonAdded;
 
         /// <summary>
         /// バトルを更新（毎フレーム呼び出す）- 整数ベース版
@@ -345,16 +359,40 @@ namespace Olca.Core.Logic.Battle
             }
             else
             {
-                if (enemies.Count == 0 || enemies.Exists(enemy => !enemy.IsDead)) return;
+                if (!enemies.Exists(enemy => !enemy.IsSummoned) || enemies.Exists(enemy => !enemy.IsSummoned && !enemy.IsDead)) return;
                 state = BattleState.Victory;
             }
 
             player.TerrainState.Clear();
             foreach (var enemy in enemies) enemy.TerrainState.Clear();
             cardUsage.Clear(); // 終了した戦闘の遅延完了が次のキューやUIを更新しない。
+            ReleaseBattleParticipants();
             var result = state == BattleState.Defeat ? BattleResult.Defeat : BattleResult.Victory;
             logger?.LogInfo($"バトル終了: {result}");
             OnBattleEnd?.Invoke(result);
+        }
+
+        private void ReleaseBattleParticipants()
+        {
+            foreach (var entry in enemyDeathHandlers)
+            {
+                entry.Key.OnDamageProcessingStarted -= BeginResolution;
+                entry.Key.OnDamageProcessingCompleted -= EndResolution;
+                entry.Key.OnDeath -= entry.Value;
+                enemyAI.UnregisterEnemy(entry.Key);
+            }
+            enemyDeathHandlers.Clear();
+            player.OnDamageProcessingStarted -= BeginResolution;
+            player.OnDamageProcessingCompleted -= EndResolution;
+            player.OnDeath -= OnPlayerDeath;
+            player.OnStaggered -= OnPlayerStaggered;
+            playerMovement.OnMoved -= OnPlayerMoved;
+            customScreen.OnConfirmed -= OnCustomScreenConfirmed;
+            customScreen.OnScreenClosed -= OnCustomScreenClosed;
+            enemies.RemoveAll(enemy => enemy.IsSummoned);
+            battleField.ClearObstacles();
+            delayedEffects.Clear();
+            OnSummonAdded = null;
         }
 
         /// <summary>

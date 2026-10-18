@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Linq;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Tests.Mocks;
@@ -234,6 +235,140 @@ namespace Olca.Tests.Battle
             // Assert
             Assert.Greater(battle.CustomGauge.CurrentGauge, initialGauge, "カスタムゲージが更新されるべき");
             Assert.AreEqual(new Vector2Int(3, 0), player.GridPosition, "移動も成功するべき");
+        }
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class BattleSummonTests
+    {
+        private static Enemy Enemy(bool summon = false) => new Enemy("fixture", "試験対象", 50, ElementType.None, new Vector2Int(4, 0), isSummoned: summon);
+        private static Card Card() => new Card("c", "試験", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "試験");
+        private static BattleSystem Battle(PlayerCharacter player, params Enemy[] enemies) => new BattleSystem(player, new List<Enemy>(enemies), new Deck(new List<Card> { Card() }));
+        private static List<IEnemyAIAction> Actions() => new List<IEnemyAIAction> { new BasicAttackAction(1, 1f) };
+        private static EnemyAISystem AI(BattleSystem battle) => (EnemyAISystem)typeof(BattleSystem).GetField("enemyAI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(battle);
+        private static void NoBattleSubscriptions(object owner, BattleSystem battle, params string[] fields)
+        {
+            foreach (var name in fields)
+            {
+                var value = (System.Delegate)owner.GetType().GetField(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(owner);
+                if (value == null) continue;
+                foreach (var action in value.GetInvocationList()) Assert.AreNotSame(battle, action.Target, name);
+            }
+        }
+
+        [Test]
+        public void 召喚物だけ撃破しても継続し本体全滅なら生存召喚物を残さず勝利する()
+        {
+            var main = Enemy(); var deadSummon = Enemy(true); var liveSummon = Enemy(true);
+            var battle = Battle(new PlayerCharacter(100), main, deadSummon, liveSummon);
+            int ends = 0; battle.OnBattleEnd += _ => ends++;
+            deadSummon.TakeDamage(50, ElementType.None);
+            Assert.IsFalse(battle.IsGameOver);
+            Assert.AreEqual(2, AI(battle).AIBehaviors.Count);
+            int summonDeaths = 0; liveSummon.OnDeath += () => summonDeaths++;
+            main.TakeDamage(50, ElementType.None);
+            Assert.AreEqual(BattleState.Victory, battle.State);
+            Assert.AreEqual(1, ends);
+            Assert.AreEqual(0, summonDeaths, "終了時破棄を撃破扱いにしない");
+            Assert.AreEqual(50, liveSummon.CurrentHp);
+            Assert.IsFalse(battle.Enemies.Contains(liveSummon));
+            Assert.IsFalse(battle.Enemies.Contains(deadSummon));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 同マスの単体攻撃は本体と召喚物を区別せず配置順を使う(bool summonFirst)
+        {
+            var main = Enemy(); var summon = Enemy(true);
+            var battle = summonFirst ? Battle(new PlayerCharacter(100), summon, main) : Battle(new PlayerCharacter(100), main, summon);
+            new Olca.Core.Logic.CardEffects.Effects.DamageEffect(10).Execute(new Olca.Core.Logic.CardEffects.BattleContext(battle, Card()));
+            Assert.AreEqual(summonFirst ? 50 : 40, main.CurrentHp);
+            Assert.AreEqual(summonFirst ? 40 : 50, summon.CurrentHp);
+        }
+
+        [Test]
+        public void 戦闘中の召喚を配置順末尾に登録しAIと通知を一回だけ追加する()
+        {
+            var main = Enemy(); var summon = Enemy(true);
+            var battle = Battle(new PlayerCharacter(100), main);
+            Enemy notified = null; int count = 0;
+            battle.OnSummonAdded += e => { notified = e; count++; };
+            battle.AddSummon(summon, Actions());
+            CollectionAssert.AreEqual(new[] { main, summon }, battle.Enemies);
+            Assert.AreSame(summon, notified); Assert.AreEqual(1, count);
+            Assert.AreEqual(2, AI(battle).AIBehaviors.Count);
+            Assert.Throws<System.ArgumentException>(() => battle.AddSummon(summon, Actions()));
+            Assert.AreEqual(2, AI(battle).AIBehaviors.Count);
+        }
+
+        [Test]
+        public void 不正な召喚指定やAI登録失敗は参加者と購読を増やさない()
+        {
+            var main = Enemy(); var summon = Enemy(true);
+            var battle = Battle(new PlayerCharacter(100), main);
+            Assert.Throws<System.ArgumentException>(() => battle.AddSummon(Enemy(), Actions()));
+            Assert.Throws<System.ArgumentException>(() => battle.AddSummon(summon, null));
+            Assert.AreEqual(1, battle.Enemies.Count);
+            Assert.AreEqual(1, AI(battle).AIBehaviors.Count);
+            NoBattleSubscriptions(summon, battle, "OnDamageProcessingStarted", "OnDamageProcessingCompleted", "OnDeath");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 勝敗通知より前に召喚物と障害物とAIと購読を片付ける(bool defeat)
+        {
+            var main = Enemy(); var summon = Enemy(true); var player = new PlayerCharacter(100);
+            var battle = Battle(player, main);
+            battle.AddSummon(summon, Actions());
+            var pos = new Vector2Int(2, 0); var obstacle = new FieldObstacle("fixture", 10);
+            battle.Field.PlaceObstacle(pos, obstacle);
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 10000) { ExecuteAction = () => Assert.Fail("終了後の遅延実行") });
+            int ends = 0, externalDeaths = 0;
+            System.Action external = () => externalDeaths++;
+            summon.OnDeath += external;
+            battle.OnBattleEnd += result =>
+            {
+                ends++;
+                Assert.AreEqual(defeat ? BattleResult.Defeat : BattleResult.Victory, result);
+                Assert.AreEqual(1, battle.Enemies.Count);
+                Assert.AreEqual(0, AI(battle).AIBehaviors.Count);
+                Assert.IsFalse(battle.Field.HasObstacle(pos));
+                Assert.AreEqual(10, obstacle.Hp);
+                Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
+                NoBattleSubscriptions(player, battle, "OnDamageProcessingStarted", "OnDamageProcessingCompleted", "OnDeath", "OnStaggered");
+                NoBattleSubscriptions(main, battle, "OnDamageProcessingStarted", "OnDamageProcessingCompleted", "OnDeath");
+                NoBattleSubscriptions(summon, battle, "OnDamageProcessingStarted", "OnDamageProcessingCompleted", "OnDeath");
+            };
+            if (defeat) player.TakeDamage(100); else main.TakeDamage(50, ElementType.None);
+            Assert.AreEqual(1, ends);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            Assert.IsNull(typeof(Enemy).GetField("OnDeath", flags).GetValue(main));
+            var remaining = (System.Delegate)typeof(Enemy).GetField("OnDeath", flags).GetValue(summon);
+            CollectionAssert.AreEqual(new System.Delegate[] { external }, remaining.GetInvocationList());
+            Assert.AreEqual(0, ((System.Collections.IDictionary)typeof(BattleSystem).GetField("enemyDeathHandlers", flags).GetValue(battle)).Count);
+            Assert.Throws<System.InvalidOperationException>(() => battle.AddSummon(Enemy(true), Actions()));
+            summon.TakeDamage(50, ElementType.None); battle.Tick(10000);
+            Assert.AreEqual(1, externalDeaths, "外部の購読は削除しない");
+            Assert.AreEqual(1, ends);
+            Assert.AreEqual(0, (int)typeof(BattleSystem).GetField("resolutionDepth", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(battle));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 召喚物が残っていても同じTick内の本体とプレイヤーHP0は敗北一回(bool reverse)
+        {
+            var main = Enemy(); var summon = Enemy(true); var player = new PlayerCharacter(100);
+            var battle = Battle(player, main, summon); int ends = 0;
+            battle.OnBattleEnd += result => { ends++; Assert.AreEqual(BattleResult.Defeat, result); };
+            System.Action a = () => main.TakeDamage(50, ElementType.None), b = () => player.TakeDamage(100);
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = reverse ? a : b });
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1) { ExecuteAction = reverse ? b : a });
+            battle.Tick(1);
+            Assert.AreEqual(BattleState.Defeat, battle.State); Assert.AreEqual(1, ends);
+            Assert.IsFalse(battle.Enemies.Contains(summon));
         }
     }
 }

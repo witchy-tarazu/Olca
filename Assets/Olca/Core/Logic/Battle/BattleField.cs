@@ -222,6 +222,9 @@ namespace Olca.Core.Logic.Battle
             return obstacles.ContainsKey(ObstacleKey(position));
         }
 
+        /// <summary>戦闘終了時に設置物を破棄する。破壊ダメージや撃破通知は発生させない。</summary>
+        public void ClearObstacles() => obstacles.Clear();
+
         private static string ObstacleKey(Vector2Int position) => $"{position.X},{position.Y}";
 
         /// <summary>

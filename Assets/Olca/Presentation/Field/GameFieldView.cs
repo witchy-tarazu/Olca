@@ -197,7 +197,15 @@ namespace Olca.Presentation.Field
         }
 
         private void OnDisable() => UnbindPlayerDamage();
-        private void OnDestroy() => UnbindPlayerDamage();
+        private void OnDestroy()
+        {
+            UnbindPlayerDamage();
+            if (currentBattle != null)
+            {
+                currentBattle.OnSummonAdded -= OnSummonAdded;
+                currentBattle.OnBattleEnd -= OnSummonBattleEnd;
+            }
+        }
 
         // ==================== 初期化 ====================
 
@@ -314,7 +322,14 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleStarted(BattleSystem battle, float contactPositionX)
         {
+            if (currentBattle != null)
+            {
+                currentBattle.OnSummonAdded -= OnSummonAdded;
+                currentBattle.OnBattleEnd -= OnSummonBattleEnd;
+            }
             currentBattle = battle;
+            currentBattle.OnSummonAdded += OnSummonAdded;
+            currentBattle.OnBattleEnd += OnSummonBattleEnd;
             ResetMovementAnimation();
 
             // グリッド原点をプレイヤーの現在位置から逆算
@@ -332,6 +347,9 @@ namespace Olca.Presentation.Field
             if (battleGridView != null)
                 battleCameraTargetX = battleGridView.GridCenterWorldX;
 
+            foreach (var enemy in battle.Enemies)
+                if (enemy.IsSummoned && GetEnemyView(enemy) == null) OnSummonAdded(enemy);
+
             // 全敵スプライトをバトルグリッド座標に切り替え
             foreach (var view in enemyViews)
                 view?.OnBattleStarted(battleGridView);
@@ -346,7 +364,13 @@ namespace Olca.Presentation.Field
         public void OnBattleEnded()
         {
             StopPlayerDamageFeedback();
+            if (currentBattle != null)
+            {
+                currentBattle.OnSummonAdded -= OnSummonAdded;
+                currentBattle.OnBattleEnd -= OnSummonBattleEnd;
+            }
             currentBattle = null;
+            ClearSummonViews();
             ResetMovementAnimation();
             battleGridView?.Hide();
             battleCameraTargetX = null;
@@ -556,6 +580,38 @@ namespace Olca.Presentation.Field
             // 定期ログ（60フレームに1回）
             if (Time.frameCount % 60 == 0)
                 Debug.Log($"[Camera] camX={fieldCamera.transform.position.x:F2}, playerX={playerTransform.position.x:F2}, targetX={targetPos.x:F2}, offset={CameraOffsetX:F2}, distX={distX:F2}");
+        }
+
+        private void OnSummonBattleEnd(BattleResult result)
+        {
+            // 敗北ではダンジョン復帰処理を通らないため、勝敗通知で確実に破棄する。
+            if (currentBattle != null)
+            {
+                currentBattle.OnSummonAdded -= OnSummonAdded;
+                currentBattle.OnBattleEnd -= OnSummonBattleEnd;
+            }
+            ClearSummonViews();
+        }
+
+        private void ClearSummonViews()
+        {
+            for (int i = enemyViews.Count - 1; i >= 0; i--)
+            {
+                var view = enemyViews[i];
+                if (view != null && view.TrackedEnemy.IsSummoned)
+                {
+                    view.gameObject.SetActive(false);
+                    Destroy(view.gameObject);
+                    enemyViews.RemoveAt(i);
+                }
+            }
+        }
+
+        private void OnSummonAdded(Enemy summon)
+        {
+            var view = CreateEnemyView(summon, 0f);
+            enemyViews.Add(view);
+            view.OnBattleStarted(battleGridView);
         }
 
         private void UpdateEnemyViews()
