@@ -521,5 +521,211 @@ namespace Olca.Tests.CardTests
             Assert.AreEqual(handBefore - 1, cs.CurrentHand.Count);
             Assert.IsTrue(cs.CurrentHand.Contains(result.ResultCard));
         }
+        private Card UndoCard(string id, bool tuning = false, ExceedLevel level = ExceedLevel.Normal) =>
+            new Card(id, id, 2, CardRarity.Normal, tuning ? CardCategory.Tuning : CardCategory.Attack,
+                ElementType.Fire, CardSeries.Sword, 10, "Undo素材", modifier: new CardModifier { BonusDamage = tuning ? 5 : 2 }, exceedLevel: level);
+
+        private CustomScreenSystem UndoScreen(params Card[] cards)
+        {
+            var factory = new MockCardFactory();
+            factory.Register("f", UndoCard("f"));
+            var recipes = new MockFusionRecipeProvider();
+            recipes.Register("f", "a", "b");
+            var screen = new CustomScreenSystem(new Deck(cards.ToList()), maxHandSize: 20, maxCost: 100,
+                exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(),
+                fusionSystem: new FusionSystem(recipes, factory));
+            screen.Open(EmptyRemainingCards(), random);
+            return screen;
+        }
+
+        [TestCase("tuning")]
+        [TestCase("fusion")]
+        [TestCase("exceed")]
+        public void Undo_加工ごとに素材の状態と順序を復元する(string operation)
+        {
+            var first = UndoCard("a", level: ExceedLevel.Lv1);
+            var second = UndoCard(operation == "exceed" ? "a" : operation == "fusion" ? "b" : "t", operation == "tuning", operation == "exceed" ? ExceedLevel.Lv1 : ExceedLevel.Normal);
+            var other = UndoCard("other");
+            var cs = UndoScreen(first, other, second);
+            Card result = operation == "tuning" ? cs.ExecuteTuning(first, second).ResultCard :
+                operation == "fusion" ? cs.ExecuteFusion(new[] { first, second }).ResultCard : cs.ExecuteExceed(first, second).ResultCard;
+            Assert.NotNull(result);
+            Assert.AreEqual(2, cs.CurrentHand.Count);
+            Assert.AreEqual(1, cs.CustomizationUndoCount);
+            int events = 0;
+            cs.OnCustomizationUndone += () => events++;
+            Assert.IsTrue(cs.TryUndoCustomization());
+            CollectionAssert.AreEqual(new[] { first.Id, "other", second.Id }, cs.CurrentHand.Select(c => c.Id));
+            Assert.AreEqual(first.ExceedLevel, cs.CurrentHand[0].ExceedLevel);
+            Assert.AreEqual(first.Power, cs.CurrentHand[0].Power);
+            Assert.AreEqual(first.Modifier.BonusDamage, cs.CurrentHand[0].Modifier.BonusDamage);
+            Assert.AreSame(other, cs.CurrentHand[1]);
+            Assert.AreNotSame(first, cs.CurrentHand[0]);
+            Assert.AreEqual(1, events);
+            Assert.IsFalse(cs.TryUndoCustomization());
+            Assert.AreEqual(1, events);
+        }
+
+        [Test]
+        public void Undo_選択済み生成物から後ろだけを末尾順に解除する()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true);
+            var prefix = UndoCard("prefix"); var suffix1 = UndoCard("suffix1"); var suffix2 = UndoCard("suffix2");
+            var cs = UndoScreen(a, t, prefix, suffix1, suffix2);
+            Assert.IsTrue(cs.TrySelectCard(prefix));
+            var result = cs.ExecuteTuning(a, t).ResultCard;
+            Assert.IsTrue(cs.TrySelectCard(result));
+            Assert.IsTrue(cs.TrySelectCard(suffix1));
+            Assert.IsTrue(cs.TrySelectCard(suffix2));
+            var deselected = new List<Card>();
+            cs.OnCardDeselected += deselected.Add;
+            Assert.IsTrue(cs.TryUndoCustomization());
+            CollectionAssert.AreEqual(new[] { suffix2, suffix1, result }, deselected);
+            CollectionAssert.AreEqual(new[] { prefix }, cs.SelectedCards);
+            CollectionAssert.AreEquivalent(new[] { "a", "t", "suffix1", "suffix2" }, cs.CurrentHand.Select(c => c.Id));
+            Assert.AreEqual(prefix.Cost, cs.GetTotalUsedCost());
+        }
+
+        [Test]
+        public void Undo_調律融合超越の連続加工を逆順に全て復元する()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var b = UndoCard("b"); var f = UndoCard("f");
+            var cs = UndoScreen(a, t, b, f);
+            var tuned = cs.ExecuteTuning(a, t).ResultCard;
+            var fused = cs.ExecuteFusion(new[] { tuned, b }).ResultCard;
+            Assert.IsTrue(cs.ExecuteExceed(fused, f).IsSuccess);
+            Assert.AreEqual(3, cs.CustomizationUndoCount);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(2, cs.CurrentHand.Count);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(3, cs.CurrentHand.Count);
+            Assert.AreEqual(7, cs.CurrentHand.Single(c => c.Id == "a").Modifier.BonusDamage);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            CollectionAssert.AreEqual(new[] { "a", "t", "b", "f" }, cs.CurrentHand.Select(c => c.Id));
+            Assert.AreEqual(2, cs.CurrentHand[0].Modifier.BonusDamage);
+            Assert.AreEqual(0, cs.CustomizationUndoCount);
+        }
+
+        [Test]
+        public void Undo_同じカードへの連続調律を一段ずつ戻す()
+        {
+            var a = UndoCard("a"); var t1 = UndoCard("t1", true); var t2 = UndoCard("t2", true);
+            var cs = UndoScreen(a, t1, t2);
+            var first = cs.ExecuteTuning(a, t1).ResultCard;
+            cs.ExecuteTuning(first, t2);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            var restoredFirst = cs.CurrentHand.Single(c => c.Id == "a");
+            Assert.AreEqual(7, restoredFirst.Modifier.BonusDamage);
+            Assert.IsTrue(cs.TrySelectCard(restoredFirst));
+            Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.IsEmpty(cs.SelectedCards);
+            Assert.AreEqual(2, cs.CurrentHand.Single(c => c.Id == "a").Modifier.BonusDamage);
+        }
+
+        [Test]
+        public void Undo_加工失敗は履歴を増やさず選択済み素材を消費しない()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var b = UndoCard("b");
+            var cs = UndoScreen(a, t, b);
+            cs.TrySelectCard(a);
+            Assert.IsFalse(cs.ExecuteTuning(a, t).IsSuccess);
+            Assert.IsFalse(cs.ExecuteFusion(new[] { a, b }).IsSuccess);
+            Assert.IsFalse(cs.ExecuteExceed(a, b).IsSuccess);
+            Assert.AreEqual(0, cs.CustomizationUndoCount);
+            Assert.IsFalse(cs.TryUndoCustomization());
+            Assert.AreSame(a, cs.SelectedCards[0]);
+            Assert.IsTrue(cs.TryDeselectCard(a));
+            Assert.IsFalse(cs.ExecuteExceed(a, b).IsSuccess);
+            Assert.AreEqual(0, cs.CustomizationUndoCount);
+        }
+
+        [TestCase("close")]
+        [TestCase("cancel")]
+        [TestCase("complete")]
+        public void Undo_閉じる方法にかかわらず履歴を破棄する(string close)
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var cs = UndoScreen(a, t);
+            cs.ExecuteTuning(a, t);
+            if (close == "close") cs.Close();
+            else if (close == "cancel") cs.Cancel();
+            else { cs.Confirm(); cs.CompleteClose(); }
+            Assert.AreEqual(0, cs.CustomizationUndoCount);
+            Assert.IsFalse(cs.TryUndoCustomization());
+            cs.Open(EmptyRemainingCards(), random);
+            Assert.IsFalse(cs.TryUndoCustomization());
+            Assert.AreEqual(7, cs.CurrentHand[0].Modifier.BonusDamage);
+        }
+
+        [Test]
+        public void Undo_確定処理中は履歴とカードを変更しない()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var cs = UndoScreen(a, t);
+            var result = cs.ExecuteTuning(a, t).ResultCard;
+            cs.Confirm();
+            Assert.IsFalse(cs.TryUndoCustomization());
+            Assert.AreEqual(1, cs.CustomizationUndoCount);
+            Assert.IsFalse(cs.ExecuteTuning(result, t).IsSuccess);
+            cs.CancelConfirmation();
+            Assert.IsTrue(cs.TryUndoCustomization());
+        }
+
+        [Test]
+        public void Undo_確定済み使用キューへ移った生成物を変更しない()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var cs = UndoScreen(a, t);
+            var result = cs.ExecuteTuning(a, t).ResultCard;
+            cs.TrySelectCard(result); cs.Confirm(); cs.CancelConfirmation();
+            Assert.IsFalse(cs.TryUndoCustomization());
+            Assert.AreSame(result, cs.AvailableCards[0]);
+            Assert.AreEqual(1, cs.CustomizationUndoCount);
+        }
+
+        [Test]
+        public void Undo_元素材と結果への変更から復元状態を隔離する()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var cs = UndoScreen(a, t);
+            var result = cs.ExecuteTuning(a, t).ResultCard;
+            a.Modifier.BonusDamage = 900; t.Modifier.BonusDamage = 800; result.Modifier.BonusDamage = 700;
+            Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(2, cs.CurrentHand[0].Modifier.BonusDamage);
+            Assert.AreEqual(5, cs.CurrentHand[1].Modifier.BonusDamage);
+            cs.CurrentHand[0].Modifier.BonusDamage = 600;
+            Assert.AreEqual(900, a.Modifier.BonusDamage);
+        }
+
+        [Test]
+        public void Undo_加工後に無関係な選択を解除してもカードを失わない()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true); var other = UndoCard("other");
+            var cs = UndoScreen(a, t, other);
+            cs.TrySelectCard(other); cs.ExecuteTuning(a, t); cs.TryDeselectCard(other);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            CollectionAssert.AreEquivalent(new[] { "a", "t", "other" }, cs.CurrentHand.Select(c => c.Id));
+        }
+
+        [Test]
+        public void Undo_同じ参照の素材二枠も二枚へ復元する()
+        {
+            var a = UndoCard("a"); var cs = UndoScreen(a, a);
+            Assert.IsTrue(cs.ExecuteExceed(a, a).IsSuccess);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(2, cs.CurrentHand.Count);
+            Assert.AreNotSame(cs.CurrentHand[0], cs.CurrentHand[1]);
+        }
+
+        [Test]
+        public void Undo_加工と復元は追加ドローやデッキ構成変更をしない()
+        {
+            var a = UndoCard("a"); var t = UndoCard("t", true);
+            var source = new Deck(new List<Card> { a, t, UndoCard("remaining") });
+            var cs = new CustomScreenSystem(source, maxHandSize: 2, tuningSystem: new TuningSystem());
+            cs.Open(EmptyRemainingCards(), random);
+            cs.ExecuteTuning(a, t);
+            Assert.AreEqual(1, source.RemainingCount);
+            Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(1, source.RemainingCount);
+            Assert.AreEqual(3, source.TotalCount);
+            Assert.AreEqual(2, a.Modifier.BonusDamage);
+        }
     }
 }

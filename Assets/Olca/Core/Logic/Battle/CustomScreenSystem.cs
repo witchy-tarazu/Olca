@@ -16,6 +16,28 @@ namespace Olca.Core.Logic.Battle
         private readonly List<Card> currentHand; // 現在表示されているカード
         private readonly List<Card> selectedCards; // カスタム画面で今回選択中のカード（確定前）
         private readonly List<Card> availableCards; // バトル中に使用可能なカード（確定済み）
+        private readonly List<CustomizationHistory> customizationHistory = new List<CustomizationHistory>();
+
+        private sealed class HandSlot
+        {
+            public Card Original;
+            public Card MaterialSnapshot;
+        }
+
+        private sealed class CustomizationHistory
+        {
+            public Card Result;
+            public List<HandSlot> HandBefore;
+        }
+
+        /// <summary>画面を閉じるまで保持する、成功した加工の履歴数</summary>
+        public int CustomizationUndoCount => customizationHistory.Count;
+
+        /// <summary>確定済み使用キューへ移していない最新の加工を取り消せるか</summary>
+        public bool CanUndoCustomization => IsOpen && !IsConfirming && customizationHistory.Count > 0 &&
+            (currentHand.Contains(customizationHistory[customizationHistory.Count - 1].Result) ||
+             selectedCards.Contains(customizationHistory[customizationHistory.Count - 1].Result));
+
         private int maxHandSize;
         private int maxSelectionCount; // 最大選択枚数
         private int maxCost; // 最大コスト
@@ -82,6 +104,7 @@ namespace Olca.Core.Logic.Battle
             if (IsOpen) return;
             if (remainingCards == null) throw new ArgumentNullException(nameof(remainingCards));
 
+            customizationHistory.Clear();
             IsOpen = true;
             IsConfirming = false;
 
@@ -200,6 +223,7 @@ namespace Olca.Core.Logic.Battle
             if (!IsOpen) return;
             IsOpen = false;
             IsConfirming = false;
+            customizationHistory.Clear();
         }
 
         /// <summary>
@@ -215,6 +239,7 @@ namespace Olca.Core.Logic.Battle
 
             IsOpen = false;
             IsConfirming = false;
+            customizationHistory.Clear();
             OnScreenClosed?.Invoke(availableCards);
         }
 
@@ -227,6 +252,7 @@ namespace Olca.Core.Logic.Battle
 
             IsOpen = false;
             IsConfirming = false;
+            customizationHistory.Clear();
             OnScreenClosed?.Invoke(availableCards);
         }
 
@@ -358,6 +384,71 @@ namespace Olca.Core.Logic.Battle
             return true;
         }
 
+        private CustomizationHistory CaptureCustomization(IEnumerable<Card> materials)
+        {
+            var remaining = new List<Card>(materials);
+            var slots = new List<HandSlot>();
+            foreach (var card in currentHand)
+            {
+                bool consumed = remaining.Remove(card);
+                slots.Add(new HandSlot { Original = card, MaterialSnapshot = consumed ? card.Clone() : null });
+            }
+            return new CustomizationHistory { HandBefore = slots };
+        }
+
+        private void RecordCustomization(CustomizationHistory history, Card result)
+        {
+            history.Result = result;
+            customizationHistory.Add(history);
+        }
+
+        /// <summary>最新の加工だけを取り消す。無関係な選択や確定済みカードは維持する。</summary>
+        public bool TryUndoCustomization()
+        {
+            if (!CanUndoCustomization) return false;
+            var history = customizationHistory[customizationHistory.Count - 1];
+            int selectedIndex = selectedCards.IndexOf(history.Result);
+            if (selectedIndex >= 0)
+            {
+                // 既存の選択解除と同じ順序で、結果カード以降を末尾から戻す。
+                for (int i = selectedCards.Count - 1; i >= selectedIndex; i--)
+                    TryDeselectCard(selectedCards[i]);
+            }
+            currentHand.Remove(history.Result);
+            customizationHistory.RemoveAt(customizationHistory.Count - 1);
+
+            var remaining = new List<Card>(currentHand);
+            var restoredHand = new List<Card>();
+            foreach (var slot in history.HandBefore)
+            {
+                if (slot.MaterialSnapshot != null)
+                {
+                    var restored = slot.MaterialSnapshot.Clone();
+                    restoredHand.Add(restored);
+                    // 再加工前の生成物を復元した場合、さらに前のUndo対象も差し替える。
+                    foreach (var earlier in customizationHistory)
+                    {
+                        if (ReferenceEquals(earlier.Result, slot.Original)) earlier.Result = restored;
+                        foreach (var earlierSlot in earlier.HandBefore)
+                            if (ReferenceEquals(earlierSlot.Original, slot.Original)) earlierSlot.Original = restored;
+                    }
+                }
+                else if (remaining.Remove(slot.Original))
+                {
+                    restoredHand.Add(slot.Original);
+                }
+            }
+            // 加工時は選択中で、後から手札へ戻った無関係なカードも失わない。
+            restoredHand.AddRange(remaining);
+            currentHand.Clear();
+            currentHand.AddRange(restoredHand);
+            OnCustomizationUndone?.Invoke();
+            return true;
+        }
+
+        /// <summary>加工の取り消し後、手札と選択表示を再同期するための通知</summary>
+        public event Action OnCustomizationUndone;
+
         /// <summary>融合レシピの完全一致を確認し、部分選択中の実行を防ぐ</summary>
         public bool CanFuse(IReadOnlyList<Card> materials)
         {
@@ -377,11 +468,13 @@ namespace Olca.Core.Logic.Battle
         /// <param name="cardB">超越素材カード2（同名・手札にあること）</param>
         public ExceedResult ExecuteExceed(Card cardA, Card cardB)
         {
+            if (!IsOpen || IsConfirming) return ExceedResult.Fail("加工できる画面状態ではありません");
             if (exceedSystem == null)
                 return ExceedResult.Fail("超越システムが設定されていません");
             if (!HasMaterialCopies(new[] { cardA, cardB }))
                 return ExceedResult.Fail("指定カードが手札にありません");
 
+            var history = CaptureCustomization(new[] { cardA, cardB });
             var result = exceedSystem.Execute(cardA, cardB);
             if (result.IsSuccess)
             {
@@ -393,6 +486,7 @@ namespace Olca.Core.Logic.Battle
                     currentHand.Insert(insertIdx, result.ResultCard);
                 else
                     currentHand.Add(result.ResultCard);
+                RecordCustomization(history, result.ResultCard);
                 OnExceeded?.Invoke(result.ResultCard);
             }
             return result;
@@ -405,11 +499,13 @@ namespace Olca.Core.Logic.Battle
         /// <param name="tuningCard">調律素材カード（手札にあること・CategoryがTuning）</param>
         public TuningResult ExecuteTuning(Card targetCard, Card tuningCard)
         {
+            if (!IsOpen || IsConfirming) return TuningResult.Fail("加工できる画面状態ではありません");
             if (tuningSystem == null)
                 return TuningResult.Fail("調律システムが設定されていません");
             if (!currentHand.Contains(targetCard) || !currentHand.Contains(tuningCard))
                 return TuningResult.Fail("指定カードが手札にありません");
 
+            var history = CaptureCustomization(new[] { targetCard, tuningCard });
             var result = tuningSystem.Execute(targetCard, tuningCard);
             if (result.IsSuccess)
             {
@@ -417,6 +513,7 @@ namespace Olca.Core.Logic.Battle
                 int idx = currentHand.IndexOf(targetCard);
                 if (idx >= 0)
                     currentHand[idx] = result.ResultCard;
+                RecordCustomization(history, result.ResultCard);
                 OnTuned?.Invoke(result.ResultCard);
             }
             return result;
@@ -428,6 +525,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="materials">融合素材カードリスト（すべて手札にあること）</param>
         public FusionResult ExecuteFusion(IReadOnlyList<Card> materials)
         {
+            if (!IsOpen || IsConfirming) return FusionResult.Fail("加工できる画面状態ではありません");
             if (fusionSystem == null)
                 return FusionResult.Fail("融合システムが設定されていません");
             if (materials == null || materials.Count < 2)
@@ -435,6 +533,7 @@ namespace Olca.Core.Logic.Battle
             if (!HasMaterialCopies(materials))
                 return FusionResult.Fail("指定カードが手札にありません");
 
+            var history = CaptureCustomization(materials);
             var result = fusionSystem.Execute(materials);
             if (result.IsSuccess)
             {
@@ -446,6 +545,7 @@ namespace Olca.Core.Logic.Battle
                     currentHand.Insert(insertIdx, result.ResultCard);
                 else
                     currentHand.Add(result.ResultCard);
+                RecordCustomization(history, result.ResultCard);
                 OnFused?.Invoke(result.ResultCard);
             }
             return result;
