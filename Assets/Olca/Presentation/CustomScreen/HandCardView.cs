@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using Olca.Core.Domain;
 using Olca.Presentation.Effects;
 using Cysharp.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>
     /// 手札1枚のカードView
     /// </summary>
-    public class HandCardView : MonoBehaviour
+    public class HandCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Text costText;
         [SerializeField] private Image cardImage;
@@ -204,6 +205,9 @@ namespace Olca.Presentation.CustomScreen
                 await cardEffectView.PlayConfirmFlashAsync(destroyCts.Token);
             }
         }
+
+        public void OnPointerEnter(PointerEventData eventData) => parentView?.OnCardPointerEntered(this);
+        public void OnPointerExit(PointerEventData eventData) => parentView?.OnCardPointerExited(this);
 
         private void OnDestroy()
         {

@@ -23,4 +23,9 @@ namespace Olca.Core.Interfaces
         /// <returns>生成された超越カード。生成不可の場合はnull</returns>
         Card CreateExceeded(Card baseCard, ExceedLevel nextLevel);
     }
+    /// <summary>計算による仮性能ではなく、登録済みの上位カード定義が存在するか。</summary>
+    public interface IExceededCardDefinitionProvider
+    {
+        bool HasExceededDefinition(Card baseCard, ExceedLevel nextLevel);
+    }
 }

@@ -194,6 +194,13 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>
         /// カーソルを確定ボタンに直接移動
         /// </summary>
+        public void MoveToCard(int index)
+        {
+            if (index < 0 || index >= totalCards) return;
+            currentCardIndex = index;
+            OnCursorMoved?.Invoke(currentCardIndex);
+        }
+
         public void MoveToConfirmButton()
         {
             currentCardIndex = -1;

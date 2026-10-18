@@ -12,17 +12,6 @@ using Olca.Presentation.CustomScreen.CustomizeMode;
 namespace Olca.Presentation.CustomScreen
 {
     /// <summary>
-    /// カスタマイズ操作の種別（カードの組み合わせから自動判定）
-    /// </summary>
-    internal enum CustomizeOperationType
-    {
-        None,
-        Exceed,
-        Tuning,
-        Fusion,
-    }
-
-    /// <summary>
     /// カスタム画面（カード選択UI）
     /// </summary>
     public class CustomScreenView : MonoBehaviour, ICustomScreenView
@@ -89,6 +78,17 @@ namespace Olca.Presentation.CustomScreen
 
             if (cursor != null) cursor.OnCursorMoved -= OnCursorMoved;
             this.customScreen = customScreen;
+            customizeSelectedCards.Clear();
+            if (customizeModeView != null) customizeModeView.Exit();
+            if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
+            if (selectedCardDescription != null)
+            {
+                selectedCardDescription.resizeTextForBestFit = true;
+                selectedCardDescription.resizeTextMinSize = 14;
+                selectedCardDescription.resizeTextMaxSize = selectedCardDescription.fontSize;
+                selectedCardDescription.horizontalOverflow = HorizontalWrapMode.Wrap;
+                selectedCardDescription.verticalOverflow = VerticalWrapMode.Truncate;
+            }
             EnsureUndoButton();
             UpdateUndoButton();
 
@@ -348,6 +348,19 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>
         /// カーソル位置が変更された
         /// </summary>
+        public void OnCardPointerEntered(HandCardView view)
+        {
+            if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
+            int index = handCardViews.IndexOf(view);
+            if (index >= 0) cursor.MoveToCard(index);
+        }
+
+        public void OnCardPointerExited(HandCardView view)
+        {
+            if (cursor != null && handCardViews.IndexOf(view) == cursor.CurrentIndex)
+                cursor.MoveToConfirmButton();
+        }
+
         private void OnCursorMoved(int index)
         {
             UpdateCursorIndicator(index);
@@ -406,6 +419,10 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnScreenOpened(List<Card> hand)
         {
+            customizeSelectedCards.Clear();
+            if (customizeModeView != null) customizeModeView.Exit();
+            if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
+            if (selectedCardDescription != null) selectedCardDescription.text = "カードを選択してください";
             // 前回のアニメーションをキャンセル
             animationCts?.Cancel();
             animationCts = new CancellationTokenSource();
@@ -754,6 +771,7 @@ namespace Olca.Presentation.CustomScreen
             customizeModeView.Enter();
             if (customizeModeOverlay != null)
                 customizeModeOverlay.gameObject.SetActive(true);
+            UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
         }
 
         /// <summary>
@@ -782,7 +800,9 @@ namespace Olca.Presentation.CustomScreen
                 if (customizeSelectedCards.Count > 0 &&
                     !customScreen.IsCompatibleWithCurrentSelection(customizeSelectedCards, card))
                 {
-                    customizeModeView.ShowError("このカードは現在の選択と組み合わせできません");
+                    var invalid = customScreen.PreviewCustomization(customizeSelectedCards.Concat(new[] { card }).ToArray());
+                    customizeModeView.ShowError(invalid.Reason ?? "このカードは現在の選択と組み合わせできません");
+                    UpdateCursorCardDisplay(handCardViews.FindIndex(v => v.Card == card));
                     return;
                 }
                 customizeSelectedCards.Add(card);
@@ -791,50 +811,30 @@ namespace Olca.Presentation.CustomScreen
 
             // 操作種別を判定してUIに反映
             var opType = DetectCustomizeOperation();
-            bool canExecute = opType != CustomizeOperationType.None;
+            bool canExecute = customScreen.PreviewCustomization(customizeSelectedCards).CanExecute;
             customizeModeView.UpdateExecuteButton(canExecute);
             customizeModeView.UpdateOperationHint(GetOperationHint(opType));
 
             RefreshCustomizeHighlights(opType);
+            UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
         }
 
         /// <summary>
         /// 選択中のカードから操作種別を自動判定する
         /// </summary>
-        private CustomizeOperationType DetectCustomizeOperation()
-        {
-            int count = customizeSelectedCards.Count;
-            if (count < 2) return CustomizeOperationType.None;
-
-            if (count == 2)
-            {
-                var a = customizeSelectedCards[0];
-                var b = customizeSelectedCards[1];
-
-                // 実行・候補表示と同じ条件で操作種別を判定する。
-                if (customScreen.CanExceed(a, b))
-                    return CustomizeOperationType.Exceed;
-
-                // 調律: 片方が調律カード
-                if (a.Category == CardCategory.Tuning || b.Category == CardCategory.Tuning)
-                    return CustomizeOperationType.Tuning;
-            }
-
-            // 部分一致は候補選択だけに使い、実行は完全一致のレシピに限定する。
-            return customScreen.CanFuse(customizeSelectedCards)
-                ? CustomizeOperationType.Fusion : CustomizeOperationType.None;
-        }
+        private CustomizationOperation DetectCustomizeOperation()
+            => customScreen.PreviewCustomization(customizeSelectedCards).Operation;
 
         /// <summary>操作種別に応じたガイドテキストを返す</summary>
-        private string GetOperationHint(CustomizeOperationType opType)
+        private string GetOperationHint(CustomizationOperation opType)
         {
             switch (opType)
             {
-                case CustomizeOperationType.Exceed:
+                case CustomizationOperation.Exceed:
                     return $"超越: {customizeSelectedCards[0].Name} × 2 → Enterで実行";
-                case CustomizeOperationType.Tuning:
+                case CustomizationOperation.Tuning:
                     return $"調律: Enterで実行";
-                case CustomizeOperationType.Fusion:
+                case CustomizationOperation.Fusion:
                     return $"融合: {customizeSelectedCards.Count}枚選択中 → Enterで実行";
                 default:
                     return "カスタマイズ: カードを選んでください（ESC でキャンセル）";
@@ -846,33 +846,11 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void OnCustomizeExecuteRequested()
         {
-            var opType = DetectCustomizeOperation();
-            switch (opType)
+            var result = customScreen.ExecuteCustomization(customizeSelectedCards);
+            if (!result.CanExecute)
             {
-                case CustomizeOperationType.Exceed:
-                    var exceedResult = customScreen.ExecuteExceed(
-                        customizeSelectedCards[0], customizeSelectedCards[1]);
-                    if (!exceedResult.IsSuccess)
-                        customizeModeView.ShowError(exceedResult.ErrorMessage);
-                    break;
-
-                case CustomizeOperationType.Tuning:
-                    var target = customizeSelectedCards.First(c => c.Category != CardCategory.Tuning);
-                    var tuning = customizeSelectedCards.First(c => c.Category == CardCategory.Tuning);
-                    var tuningResult = customScreen.ExecuteTuning(target, tuning);
-                    if (!tuningResult.IsSuccess)
-                        customizeModeView.ShowError(tuningResult.ErrorMessage);
-                    break;
-
-                case CustomizeOperationType.Fusion:
-                    var fusionResult = customScreen.ExecuteFusion(customizeSelectedCards);
-                    if (!fusionResult.IsSuccess)
-                        customizeModeView.ShowError(fusionResult.ErrorMessage);
-                    break;
-
-                default:
-                    customizeModeView.ShowError("カードを2枚以上選んでください");
-                    break;
+                UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
+                customizeModeView.ShowError(result.Reason);
             }
         }
 
@@ -908,6 +886,7 @@ namespace Olca.Presentation.CustomScreen
             if (customizeModeOverlay != null)
                 customizeModeOverlay.gameObject.SetActive(false);
             RefreshAllHighlights();
+            UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
         }
 
         /// <summary>
@@ -944,7 +923,7 @@ namespace Olca.Presentation.CustomScreen
         /// 操作種別に応じたカードハイライトを全View に適用する。
         /// 1枚以上選択済みの場合、互換性のないカードは暗転表示する。
         /// </summary>
-        private void RefreshCustomizeHighlights(CustomizeOperationType opType)
+        private void RefreshCustomizeHighlights(CustomizationOperation opType)
         {
             bool hasSelection = customizeSelectedCards.Count > 0;
 
@@ -958,10 +937,10 @@ namespace Olca.Presentation.CustomScreen
                 {
                     switch (opType)
                     {
-                        case CustomizeOperationType.Exceed:
+                        case CustomizationOperation.Exceed:
                             highlightType = CardHighlightType.ExceedMaterial;
                             break;
-                        case CustomizeOperationType.Tuning:
+                        case CustomizationOperation.Tuning:
                             highlightType = card.Category == CardCategory.Tuning
                                 ? CardHighlightType.TuningMaterial
                                 : CardHighlightType.TuningTarget;
@@ -1046,6 +1025,11 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void UpdateCursorCardDisplay(int cursorIndex)
         {
+            if (customizeModeView != null && customizeModeView.IsActive)
+            {
+                UpdateCustomizationPreview(cursorIndex);
+                return;
+            }
             if (cursorIndex >= 0 && cursorIndex < handCardViews.Count)
             {
                 // カーソルが置かれているカードの情報を表示
@@ -1056,7 +1040,7 @@ namespace Olca.Presentation.CustomScreen
                     // コスト、威力、説明を表示
                     selectedCardDescription.text =
                         $"コスト: {cursorCard.GetFinalCost()}\n" +
-                        $"威力: {cursorCard.Power}\n\n" +
+                        $"威力: {cursorCard.GetFinalPower()}\n\n" +
                         $"{cursorCard.Description}";
                 }
 
@@ -1101,6 +1085,45 @@ namespace Olca.Presentation.CustomScreen
             }
         }
 
+        private void UpdateCustomizationPreview(int cursorIndex)
+        {
+            var materials = new List<Card>(customizeSelectedCards);
+            if (materials.Count == 1 && cursorIndex >= 0 && cursorIndex < handCardViews.Count)
+            {
+                var candidate = handCardViews[cursorIndex].Card;
+                if (!materials.Contains(candidate)) materials.Add(candidate);
+            }
+            customizeModeView.ClearError();
+            customizeModeView.UpdateExecuteButton(customScreen.PreviewCustomization(customizeSelectedCards).CanExecute);
+            if (materials.Count < 2)
+            {
+                string guide = materials.Count == 0 ? "最初の素材を選んでください" : "2枚目にカーソルを合わせてください";
+                customizeModeView.UpdateOperationHint(guide);
+                if (selectedCardDescription != null) selectedCardDescription.text = guide;
+                return;
+            }
+            var preview = customScreen.PreviewCustomization(materials);
+            string operation = preview.Operation == CustomizationOperation.Exceed ? "超越" :
+                preview.Operation == CustomizationOperation.Tuning ? "調律" : "融合";
+            if (!preview.CanExecute)
+            {
+                string status = preview.Status == CustomizationPreviewStatus.Undefined ? "未定義" : "実行不可";
+                customizeModeView.UpdateOperationHint($"{operation}: {status}");
+                if (selectedCardDescription != null)
+                    selectedCardDescription.text = $"{operation} / {status}\n{preview.Reason}";
+                return;
+            }
+            var result = preview.ResultCard;
+            string effects = string.Join("\n", result.Modifier.AdditionalEffects.Where(e => e != null)
+                .Select(e => $"{e.EffectType}: 威力{e.Power} / {e.Duration:0.##}秒"));
+            customizeModeView.UpdateOperationHint(customizeSelectedCards.Count >= 2 ?
+                $"{operation}: Enterで実行" : $"{operation}: 2枚目を選択して確定");
+            if (selectedCardDescription != null)
+                selectedCardDescription.text = $"{operation} 結果プレビュー\n{result.Name}\n" +
+                    $"コスト: {result.GetFinalCost()} / 威力: {result.GetFinalPower()}\n" +
+                    $"{result.Description}" + (effects.Length > 0 ? "\n" + effects : "");
+        }
+
         private void OnConfirmClicked()
         {
             // 選択確定
@@ -1109,6 +1132,10 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnConfirmed(List<Card> selectedCards)
         {
+            customizeSelectedCards.Clear();
+            if (customizeModeView != null) customizeModeView.Exit();
+            if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
+            if (selectedCardDescription != null) selectedCardDescription.text = "選択したカードを確定しました";
             UpdateUndoButton();
             // 購読者（BattleController・DungeonBattleControllerなど）に通知
             OnCustomScreenConfirmed?.Invoke();

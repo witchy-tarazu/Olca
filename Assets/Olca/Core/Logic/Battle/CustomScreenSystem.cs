@@ -374,6 +374,82 @@ namespace Olca.Core.Logic.Battle
             return false;
         }
 
+        /// <summary>確定と共通の判定。素材・デッキ・履歴には触れず、独立した結果を返す。</summary>
+        public CustomizationPreview PreviewCustomization(IReadOnlyList<Card> materials)
+        {
+            if (!IsOpen || IsConfirming)
+                return CustomizationPreview.Invalid("加工できる画面状態ではありません");
+            if (materials == null || materials.Count < 2)
+                return CustomizationPreview.Invalid("素材を2枚選んでください");
+            if (!HasMaterialCopies(materials))
+                return CustomizationPreview.Invalid("使用予定の選択を解除し、手札の別々の素材を選んでください");
+
+            // 現在の確定経路と同じ優先順。プレビューから素材の可変情報を共有しない。
+            var copies = materials.Select(c => c.Clone()).ToArray();
+            var a = copies[0]; var b = copies[1];
+            if (copies.Length == 2 && exceedSystem != null && exceedSystem.Validate(a, b).IsValid)
+            {
+                if (!exceedSystem.HasResultDefinition(a))
+                    return CustomizationPreview.Undefined(CustomizationOperation.Exceed, "上位カードの性能が未定義です");
+                var result = exceedSystem.Execute(a, b);
+                return result.IsSuccess ? CustomizationPreview.Ready(CustomizationOperation.Exceed, result.ResultCard) :
+                    CustomizationPreview.Undefined(CustomizationOperation.Exceed, result.ErrorMessage);
+            }
+            if (copies.Length == 2 && (a.Category == CardCategory.Tuning) != (b.Category == CardCategory.Tuning))
+            {
+                if (tuningSystem == null) return CustomizationPreview.Invalid("調律システムが設定されていません");
+                var target = a.Category == CardCategory.Tuning ? b : a;
+                var source = a.Category == CardCategory.Tuning ? a : b;
+                var validation = tuningSystem.Validate(target, source);
+                if (!validation.IsValid) return CustomizationPreview.Invalid(validation.ErrorMessage, CustomizationOperation.Tuning);
+                if (target.TuningCount > 0)
+                    return CustomizationPreview.Undefined(CustomizationOperation.Tuning, "総調律回数に対応する段階表が未定義です");
+                var m = source.Modifier;
+                if (m.BonusDamage == 0 && m.DamageMultiplier == 1f && m.CostAdjustment == 0 && !m.ZeroCost &&
+                    !m.ElementOverride.HasValue && m.AdditionalEffects.Count == 0)
+                    return CustomizationPreview.Undefined(CustomizationOperation.Tuning, "調律の付与効果が未定義です");
+                var result = tuningSystem.Execute(target, source);
+                return result.IsSuccess ? CustomizationPreview.Ready(CustomizationOperation.Tuning, result.ResultCard) :
+                    CustomizationPreview.Invalid(result.ErrorMessage, CustomizationOperation.Tuning);
+            }
+            if (fusionSystem == null) return CustomizationPreview.Invalid("融合システムが設定されていません");
+            var fusionValidation = fusionSystem.Validate(copies);
+            if (!fusionValidation.IsValid)
+            {
+                if (copies.Length == 2 && a.Id == b.Id && exceedSystem != null)
+                    return CustomizationPreview.Invalid(exceedSystem.Validate(a, b).ErrorMessage, CustomizationOperation.Exceed);
+                return CustomizationPreview.Invalid(fusionValidation.ErrorMessage, CustomizationOperation.Fusion);
+            }
+            var fusion = fusionSystem.Execute(copies);
+            return fusion.IsSuccess ? CustomizationPreview.Ready(CustomizationOperation.Fusion, fusion.ResultCard) :
+                CustomizationPreview.Undefined(CustomizationOperation.Fusion, "融合先カードの性能が未定義です");
+        }
+
+        /// <summary>表示時の結果を使い回さず、最新の素材で再検証して確定する。</summary>
+        public CustomizationPreview ExecuteCustomization(IReadOnlyList<Card> materials)
+        {
+            var preview = PreviewCustomization(materials);
+            if (!preview.CanExecute) return preview;
+            // 成功通知でView側の選択リストが消えるため、先に素材を確定する。
+            var selected = materials.ToArray();
+            switch (preview.Operation)
+            {
+                case CustomizationOperation.Exceed:
+                    var exceeded = ExecuteExceed(selected[0], selected[1]);
+                    return exceeded.IsSuccess ? CustomizationPreview.Ready(preview.Operation, exceeded.ResultCard) :
+                        CustomizationPreview.Invalid(exceeded.ErrorMessage, preview.Operation);
+                case CustomizationOperation.Tuning:
+                    var tuned = ExecuteTuning(selected.First(c => c.Category != CardCategory.Tuning),
+                        selected.First(c => c.Category == CardCategory.Tuning));
+                    return tuned.IsSuccess ? CustomizationPreview.Ready(preview.Operation, tuned.ResultCard) :
+                        CustomizationPreview.Invalid(tuned.ErrorMessage, preview.Operation);
+                default:
+                    var fused = ExecuteFusion(selected);
+                    return fused.IsSuccess ? CustomizationPreview.Ready(preview.Operation, fused.ResultCard) :
+                        CustomizationPreview.Invalid(fused.ErrorMessage, preview.Operation);
+            }
+        }
+
         // ========== カスタマイズ操作 ==========
 
         // 同じ参照が複数枠に入る場合も、要求された枚数だけ手札に存在することを確認する。
@@ -598,5 +674,25 @@ namespace Olca.Core.Logic.Battle
         /// 選択失敗時のイベント
         /// </summary>
         public event Action<string> OnSelectionFailed;
+    }
+    public enum CustomizationOperation { None, Exceed, Tuning, Fusion }
+    public enum CustomizationPreviewStatus { Invalid, Undefined, Ready }
+
+    /// <summary>未成立・定義不足と、表示可能な確定性能を区別する。</summary>
+    public sealed class CustomizationPreview
+    {
+        public CustomizationOperation Operation { get; }
+        public CustomizationPreviewStatus Status { get; }
+        public Card ResultCard { get; }
+        public string Reason { get; }
+        public bool CanExecute => Status == CustomizationPreviewStatus.Ready;
+        private CustomizationPreview(CustomizationOperation operation, CustomizationPreviewStatus status, Card result, string reason)
+        { Operation = operation; Status = status; ResultCard = result?.Clone(); Reason = reason; }
+        public static CustomizationPreview Ready(CustomizationOperation operation, Card result)
+            => new CustomizationPreview(operation, CustomizationPreviewStatus.Ready, result, null);
+        public static CustomizationPreview Invalid(string reason, CustomizationOperation operation = CustomizationOperation.None)
+            => new CustomizationPreview(operation, CustomizationPreviewStatus.Invalid, null, reason);
+        public static CustomizationPreview Undefined(CustomizationOperation operation, string reason)
+            => new CustomizationPreview(operation, CustomizationPreviewStatus.Undefined, null, reason);
     }
 }

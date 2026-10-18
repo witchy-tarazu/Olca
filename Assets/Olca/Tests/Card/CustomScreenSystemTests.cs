@@ -14,6 +14,139 @@ namespace Olca.Tests.CardTests
     [TestFixture]
     public class CustomScreenSystemTests
     {
+        private CustomScreenSystem PreviewScreen(out Deck deck, out Card[] cards, out MockCardFactory factory,
+            out MockFusionRecipeProvider recipes)
+        {
+            var attack = ZeroCostCard("sword", 4);
+            var same = attack.Clone();
+            var material = ZeroCostCard("tune", material: true);
+            material.Modifier.CostAdjustment = -2;
+            material.Modifier.BonusDamage = 7;
+            material.Modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison, Power = 2, Duration = 4 });
+            cards = new[] { attack, same, material, ZeroCostCard("bomb", 3), ZeroCostCard("other", 2) };
+            deck = new Deck(cards.ToList());
+            factory = new MockCardFactory(); recipes = new MockFusionRecipeProvider();
+            factory.Register("sword_lv1", new Card("sword_lv1", "定義済み上位", 5, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.Sword, 70, "テスト定義", exceedLevel: ExceedLevel.Lv1));
+            factory.Register("fusion", ZeroCostCard("fusion", 6));
+            recipes.Register("fusion", "sword", "bomb");
+            var cs = new CustomScreenSystem(deck, exceedSystem: new ExceedSystem(factory),
+                tuningSystem: new TuningSystem(), fusionSystem: new FusionSystem(recipes, factory));
+            cs.Open(new Card[0], new MockRandomProvider(0));
+            return cs;
+        }
+
+        [TestCase(CustomizationOperation.Exceed, 1)]
+        [TestCase(CustomizationOperation.Tuning, 2)]
+        [TestCase(CustomizationOperation.Fusion, 3)]
+        public void 加工プレビューを繰り返しても素材デッキ選択履歴通知を変えず確定結果と一致する(CustomizationOperation operation, int second)
+        {
+            var cs = PreviewScreen(out var deck, out var cards, out var factory, out var recipes);
+            cs.TrySelectCard(cards[4]);
+            var hand = cs.CurrentHand.ToArray(); var drawn = deck.RemainingCount;
+            int notices = 0; cs.OnExceeded += _ => notices++; cs.OnTuned += _ => notices++; cs.OnFused += _ => notices++;
+            CustomizationPreview preview = null;
+            for (int i = 0; i < 4; i++) preview = cs.PreviewCustomization(new[] { cards[0], cards[second] });
+            Assert.IsTrue(preview.CanExecute); Assert.AreEqual(operation, preview.Operation);
+            CollectionAssert.AreEqual(hand, cs.CurrentHand); CollectionAssert.AreEqual(new[] { cards[4] }, cs.SelectedCards);
+            Assert.AreEqual(5, deck.TotalCount); Assert.AreEqual(drawn, deck.RemainingCount);
+            Assert.AreEqual(0, cs.CustomizationUndoCount); Assert.AreEqual(0, notices); Assert.IsEmpty(cs.AvailableCards);
+            Assert.AreEqual(0, cards[0].TuningCount); Assert.AreEqual(0, cards[0].Modifier.BonusDamage);
+            Assert.AreEqual(-2, cards[2].Modifier.CostAdjustment); Assert.AreEqual(4, cards[2].Modifier.AdditionalEffects[0].Duration);
+            var confirmed = cs.ExecuteCustomization(new[] { cards[0], cards[second] });
+            Assert.IsTrue(confirmed.CanExecute); Assert.AreEqual(1, notices); Assert.AreEqual(1, cs.CustomizationUndoCount);
+            Assert.AreEqual(preview.ResultCard.Id, confirmed.ResultCard.Id);
+            Assert.AreEqual(preview.ResultCard.Name, confirmed.ResultCard.Name);
+            Assert.AreEqual(preview.ResultCard.GetFinalCost(), confirmed.ResultCard.GetFinalCost());
+            Assert.AreEqual(preview.ResultCard.GetFinalPower(), confirmed.ResultCard.GetFinalPower());
+            Assert.AreEqual(preview.ResultCard.TuningCount, confirmed.ResultCard.TuningCount);
+            Assert.AreEqual(preview.ResultCard.ExceedLevel, confirmed.ResultCard.ExceedLevel);
+            Assert.AreEqual(preview.ResultCard.Modifier.AdditionalEffects.Count, confirmed.ResultCard.Modifier.AdditionalEffects.Count);
+            if (operation == CustomizationOperation.Tuning)
+            {
+                var e = confirmed.ResultCard.Modifier.AdditionalEffects.Single();
+                Assert.AreEqual(AdditionalEffectType.Poison, e.EffectType); Assert.AreEqual(2, e.Power); Assert.AreEqual(4, e.Duration);
+            }
+        }
+
+        [Test]
+        public void プレビュー結果の編集は素材登録定義と次回結果へ漏れない()
+        {
+            var cs = PreviewScreen(out _, out var cards, out var factory, out _);
+            var tuned = cs.PreviewCustomization(new[] { cards[2], cards[0] });
+            tuned.ResultCard.Modifier.AdditionalEffects[0].Duration = 99;
+            tuned.ResultCard.Modifier.CostAdjustment = 99;
+            var next = cs.PreviewCustomization(new[] { cards[0], cards[2] });
+            Assert.AreEqual(4, next.ResultCard.Modifier.AdditionalEffects[0].Duration);
+            Assert.AreEqual(2, next.ResultCard.GetFinalCost()); Assert.AreEqual(4, cards[0].GetFinalCost());
+            var fused = cs.PreviewCustomization(new[] { cards[0], cards[3] }); fused.ResultCard.Modifier.BonusDamage = 999;
+            Assert.AreEqual(0, factory.CreateById("fusion").Modifier.BonusDamage);
+        }
+
+        [Test]
+        public void 未登録上位は既存ファクトリの仮性能をプレビューせず確定も素材を消費しない()
+        {
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var a = factory.CreateById("sword"); var b = a.Clone(); var deck = new Deck(new List<Card> { a, b });
+            var cs = new CustomScreenSystem(deck, exceedSystem: new ExceedSystem(factory)); cs.Open(new Card[0], random);
+            var preview = cs.PreviewCustomization(new[] { a, b });
+            Assert.AreEqual(CustomizationOperation.Exceed, preview.Operation);
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined, preview.Status); Assert.IsNull(preview.ResultCard);
+            Assert.IsFalse(cs.ExecuteCustomization(new[] { a, b }).CanExecute); Assert.AreEqual(2, cs.CurrentHand.Count);
+            Assert.AreEqual(0, cs.CustomizationUndoCount);
+        }
+
+        [Test]
+        public void 再調律は未定義段階として分け既存Undoを変更せず元に戻せる()
+        {
+            var cs = PreviewScreen(out _, out var cards, out _, out _);
+            var result = cs.ExecuteTuning(cards[0], cards[2]).ResultCard;
+            Assert.AreEqual(1, result.TuningCount); Assert.AreEqual(1, result.Clone().TuningCount);
+            var source = ZeroCostCard("second-tune", material: true); source.Modifier.BonusDamage = 4;
+            // 別カードは手札にないため先に所有権で拒否する。
+            Assert.AreEqual(CustomizationPreviewStatus.Invalid, cs.PreviewCustomization(new[] { result, source }).Status);
+            var nextScreen = UndoScreen(result, source);
+            var preview = nextScreen.PreviewCustomization(new[] { result, source });
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined, preview.Status); Assert.IsNull(preview.ResultCard);
+            Assert.IsTrue(preview.Reason.Contains("段階表")); Assert.AreEqual(1, cs.CustomizationUndoCount);
+            Assert.IsTrue(cs.TryUndoCustomization()); Assert.AreEqual(0, cs.CurrentHand.First(c => c.Id == cards[0].Id && c.TuningCount == 0).TuningCount);
+        }
+
+        [Test]
+        public void 空の付与効果と融合先不足は実行不可レシピとは区別する()
+        {
+            var cs = PreviewScreen(out _, out var cards, out _, out var recipes);
+            cards[2].Modifier.CostAdjustment = 0; cards[2].Modifier.BonusDamage = 0; cards[2].Modifier.AdditionalEffects.Clear();
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined, cs.PreviewCustomization(new[] { cards[0], cards[2] }).Status);
+            recipes.Register("missing", "sword", "other");
+            var missing = cs.PreviewCustomization(new[] { cards[0], cards[4] });
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined, missing.Status); Assert.IsNull(missing.ResultCard);
+            var invalid = cs.PreviewCustomization(new[] { cards[3], cards[4] });
+            Assert.AreEqual(CustomizationPreviewStatus.Invalid, invalid.Status); Assert.IsNotEmpty(invalid.Reason);
+        }
+
+        [Test]
+        public void 同一素材の二重指定と使用予定カードと画面確定後はプレビュー不可()
+        {
+            var cs = PreviewScreen(out _, out var cards, out _, out _);
+            Assert.IsFalse(cs.PreviewCustomization(new[] { cards[0], cards[0] }).CanExecute);
+            Assert.IsFalse(cs.PreviewCustomization(new[] { cards[0] }).CanExecute);
+            Assert.IsFalse(cs.PreviewCustomization(null).CanExecute);
+            cs.TrySelectCard(cards[0]);
+            Assert.IsFalse(cs.PreviewCustomization(new[] { cards[0], cards[1] }).CanExecute);
+            cs.Confirm(); Assert.IsFalse(cs.PreviewCustomization(new[] { cards[3], cards[4] }).CanExecute);
+        }
+
+        [Test]
+        public void 表示後に素材が使用予定へ移った場合は再検証し古い結果を確定しない()
+        {
+            var cs = PreviewScreen(out _, out var cards, out _, out _);
+            Assert.IsTrue(cs.PreviewCustomization(new[] { cards[0], cards[3] }).CanExecute);
+            cs.TrySelectCard(cards[3]);
+            Assert.IsFalse(cs.ExecuteCustomization(new[] { cards[0], cards[3] }).CanExecute);
+            Assert.AreEqual(0, cs.CustomizationUndoCount); Assert.Contains(cards[0], cs.CurrentHand.ToList());
+        }
+
         [TestCase(4, 2, false, 6)]
         [TestCase(4, -2, false, 2)]
         [TestCase(4, -8, false, 1)]

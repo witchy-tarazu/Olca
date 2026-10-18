@@ -41,6 +41,10 @@ namespace Olca.Core.Logic.Battle
         /// <param name="cardA">素材カード1</param>
         /// <param name="cardB">素材カード2（cardAと同名）</param>
         /// <returns>超越結果</returns>
+        public bool HasResultDefinition(Card card)
+            => card != null && cardFactory is IExceededCardDefinitionProvider definitions &&
+               definitions.HasExceededDefinition(card, (ExceedLevel)((int)card.ExceedLevel + 1));
+
         public ExceedResult Execute(Card cardA, Card cardB)
         {
             var validation = Validate(cardA, cardB);

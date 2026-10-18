@@ -7,7 +7,7 @@ namespace Olca.Tests.Mocks
     /// <summary>
     /// テスト用カードファクトリのモック
     /// </summary>
-    public class MockCardFactory : ICardFactory
+    public class MockCardFactory : ICardFactory, IExceededCardDefinitionProvider
     {
         private readonly Dictionary<string, Card> cards = new Dictionary<string, Card>();
 
@@ -24,6 +24,9 @@ namespace Olca.Tests.Mocks
             cards.TryGetValue(cardId, out var card);
             return card;
         }
+
+        public bool HasExceededDefinition(Card baseCard, ExceedLevel nextLevel)
+            => cards.ContainsKey($"{baseCard.Id}_lv{(int)nextLevel}");
 
         public Card CreateExceeded(Card baseCard, ExceedLevel nextLevel)
         {

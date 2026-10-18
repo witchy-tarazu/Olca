@@ -90,6 +90,9 @@ namespace Olca.Core.Domain
         /// <summary>超越グレード</summary>
         public ExceedLevel ExceedLevel { get; }
 
+        /// <summary>再調律時に未定義の段階表を必要とすることを識別する。Clone/Undoにも保持する。</summary>
+        public int TuningCount { get; private set; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -160,7 +163,7 @@ namespace Olca.Core.Domain
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
                 ExceedLevel
-            );
+            ) { TuningCount = TuningCount + 1 };
         }
 
         /// <summary>
