@@ -42,7 +42,7 @@ namespace Olca.Presentation.Battle
         private float gaugePulseTime;
 
         // ========== 定数 ==========
-        private const float CUSTOM_SCREEN_HIDDEN_X = -960f;  // カスタム画面非表示時のX座標（画面外）
+        private const float CUSTOM_SCREEN_HIDDEN_X = -900f;  // 左端接続を保ち、縦ゲージ枠を画面内に残す閉じ位置
         private const float CUSTOM_SCREEN_VISIBLE_X = 0f;    // カスタム画面表示時のX座標（画面内）
 
         // ========== 初期化 ==========
