@@ -13,6 +13,8 @@ namespace Olca.Presentation.Battle
         [SerializeField] private SpriteRenderer enemyImage;
         [SerializeField] private TextMesh enemyNameText;
         [SerializeField] private TextMesh hpText;
+        [SerializeField] private Sprite gruntSprite;
+        [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
 
@@ -22,6 +24,7 @@ namespace Olca.Presentation.Battle
         public void Initialize(Enemy enemy)
         {
             this.enemy = enemy;
+            ApplyAppearance();
 
             if (enemyNameText != null)
                 enemyNameText.text = enemy.Name;
@@ -32,6 +35,24 @@ namespace Olca.Presentation.Battle
 
             HideHp(); // ダンジョン探索中は名前・HP非表示
             Refresh();
+        }
+
+        /// <summary>既存の敵IDに対応する仮素材を表示する。戦闘データは変更しない。</summary>
+        private void ApplyAppearance()
+        {
+            var sprite = enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
+            if (enemyImage == null || sprite == null) return;
+
+            enemyImage.sprite = sprite;
+            enemyImage.color = Color.white;
+            enemyImage.flipX = true; // 右向きの原画を、左側のプレイヤーへ向ける
+
+            // 大型ボスでも名前とHPが絵に重ならないよう、スプライトの上に配置する。
+            float top = sprite.bounds.max.y;
+            if (enemyNameText != null)
+                enemyNameText.transform.localPosition = new Vector3(0f, top + 0.65f, -0.1f);
+            if (hpText != null)
+                hpText.transform.localPosition = new Vector3(0f, top + 0.25f, -0.1f);
         }
 
         private static void SetTextSortingOrder(TextMesh tm, int order)
