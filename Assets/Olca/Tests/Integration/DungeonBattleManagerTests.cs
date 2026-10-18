@@ -34,6 +34,80 @@ namespace Olca.Tests.Integration
             return new Deck(cards);
         }
 
+        [TestCase(1, false, false)]
+        [TestCase(2, false, false)]
+        [TestCase(1, true, false)]
+        [TestCase(2, true, false)]
+        [TestCase(1, true, true)]
+        [TestCase(2, true, true)]
+        public void ダッシュ初撃全滅_開始後に勝利と報酬を一度だけ通知する(int count, bool boss, bool select)
+        {
+            var cells = new List<MapCell>();
+            for (int i = 0; i < 12; i++) cells.Add(new MapCell(i));
+            for (int i = 0; i < count; i++) cells[2 + i] = new MapCell(2 + i,
+                new Enemy(boss && i == 0 ? "boss" : "slime", "初撃対象", 15, ElementType.None, new Vector2Int(2 + i, 0)));
+            if (!boss) cells[11] = new MapCell(11, new Enemy("boss", "遠方ボス", 200, ElementType.None, new Vector2Int(11, 0)));
+            var manager = new DungeonBattleManager(new DungeonConfig("dash", "初撃全滅", 12, cells),
+                new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger);
+            var events = new List<string>();
+            IReadOnlyList<Card> choices = null;
+            manager.OnBattleStarted += (battle, info) => { events.Add("start"); Assert.AreEqual(GamePhase.Battle, manager.CurrentPhase); };
+            manager.Dungeon.OnBattleEnd += result => { Assert.AreEqual(BattleResult.Victory, result); events.Add("victory"); };
+            manager.OnCardRewardPresented += cards => { choices = cards; events.Add("reward"); };
+            manager.OnBattleEnded += () => events.Add("end");
+            manager.OnDungeonClearCompleted += _ => events.Add("clear");
+            manager.Dungeon.OnReturnToDungeon += () => events.Add("return");
+            manager.StartDash();
+            for (int i = 0; i < 20 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(50);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            CollectionAssert.AreEqual(new[] { "start", "victory", "reward", "end" }, events);
+            Assert.IsNull(manager.CurrentBattle);
+            manager.SelectCardReward(select ? choices[0] : null);
+            manager.Tick(0);
+            Assert.AreEqual(boss ? GamePhase.DungeonCleared : GamePhase.Dungeon, manager.CurrentPhase);
+            CollectionAssert.AreEqual(new[] { "start", "victory", "reward", "end", boss ? "clear" : "return" }, events);
+            Assert.AreEqual(select ? 1 : 0, manager.Dungeon.GetObtainedCards().Count);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ダッシュ初撃_一部生存は戦闘継続し開始時敗北は上書きしない(bool dieAtStart)
+        {
+            var weak = new Enemy("weak", "弱敵", 10, ElementType.None, new Vector2Int(2, 0));
+            var strong = new Enemy("strong", "強敵", 100, ElementType.None, new Vector2Int(3, 0));
+            var cells = new List<MapCell> { new MapCell(0), new MapCell(1), new MapCell(2, weak), new MapCell(3, strong) };
+            var player = new PlayerCharacter(100);
+            var manager = new DungeonBattleManager(new DungeonConfig("dash", "初撃境界", 4, cells),
+                player, CreateTestDeck(), mockRandom, mockLogger);
+            int rewards = 0, ends = 0, failures = 0;
+            manager.OnCardRewardPresented += _ => rewards++;
+            manager.OnBattleEnded += () => ends++;
+            manager.OnGameOver += () => failures++;
+            if (dieAtStart) manager.OnBattleStarted += (_, __) => player.TakeDamage(1000);
+            manager.StartDash();
+            for (int i = 0; i < 20 && manager.CurrentPhase == GamePhase.Dungeon; i++) manager.Tick(50);
+            Assert.AreEqual(0, rewards);
+            if (dieAtStart)
+            {
+                Assert.AreEqual(GamePhase.GameOver, manager.CurrentPhase);
+                Assert.AreEqual(1, failures);
+                Assert.AreEqual(1, ends);
+                Assert.IsFalse(weak.IsDead, "開始通知中の敗北後には初撃を適用しない");
+                Assert.AreEqual(100, strong.CurrentHp);
+            }
+            else
+            {
+                Assert.AreEqual(GamePhase.Battle, manager.CurrentPhase);
+                Assert.IsTrue(weak.IsDead);
+                Assert.AreEqual(85, strong.CurrentHp);
+                Assert.AreEqual(0, ends);
+                strong.TakeDamage(1000, ElementType.None);
+                Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+                Assert.AreEqual(1, ends);
+                Assert.AreEqual(1, rewards);
+            }
+        }
+
         [TestCase(false, false)]
         [TestCase(true, false)]
         [TestCase(false, true)]

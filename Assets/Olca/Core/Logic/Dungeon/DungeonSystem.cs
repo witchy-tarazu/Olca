@@ -214,12 +214,6 @@ namespace Olca.Core.Logic.Dungeon
                 fusionSystem: fusionSystem
             );
 
-            // ダッシュ接敵の効果を適用
-            if (contactInfo.IsDashContact && contactInfo.DashEffect.HasValue)
-            {
-                ApplyDashEffect(contactInfo.DashEffect.Value, enemies);
-            }
-
             // バトル終了イベントを購読
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
 
@@ -227,8 +221,16 @@ namespace Olca.Core.Logic.Dungeon
             logger.LogInfo($"  - 参加敵数: {enemies.Count}");
             logger.LogInfo($"  - デッキ枚数: {cardRewardSystem.GetCurrentDeck().TotalCount}");
 
-            // バトル開始イベント発火
+            // 終了購読とManager/Viewの開始処理を、即死し得る初撃より先に完了する。
+            var startedBattle = currentBattle;
             OnBattleStart?.Invoke(contactInfo);
+
+            // 開始通知中に敗北・終了した場合は初撃で結果を上書きしない。
+            if (IsInBattle && ReferenceEquals(currentBattle, startedBattle) && !startedBattle.IsGameOver
+                && contactInfo.IsDashContact && contactInfo.DashEffect.HasValue)
+            {
+                ApplyDashEffect(contactInfo.DashEffect.Value, enemies);
+            }
         }
 
         /// <summary>

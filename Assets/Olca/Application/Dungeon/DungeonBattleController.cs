@@ -254,6 +254,10 @@ namespace Olca.Application.Dungeon
                         ct);
                 }
 
+                // 初撃などで戦闘終了した古い開始遷移は、UIやセッションを再開しない。
+                ct.ThrowIfCancellationRequested();
+                if (battle.IsGameOver || !ReferenceEquals(manager.CurrentBattle, battle)) return;
+
                 // 2. バトルグリッドを接触位置に出現
                 gameFieldView?.OnBattleStarted(battle, contactInfo.ContactPositionX);
 
@@ -269,6 +273,9 @@ namespace Olca.Application.Dungeon
                 battleSession?.Attach(battle);
 
                 await hudHideTask;
+
+                ct.ThrowIfCancellationRequested();
+                if (battle.IsGameOver || !ReferenceEquals(manager.CurrentBattle, battle)) return;
 
                 // 4. ゲージ満タン → カスタム画面オープン
                 battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
