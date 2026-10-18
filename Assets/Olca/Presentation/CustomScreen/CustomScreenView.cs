@@ -65,6 +65,9 @@ namespace Olca.Presentation.CustomScreen
         private CancellationTokenSource animationCts;
         private CustomScreenCursor cursor;
         private bool isScreenVisible = true;
+        private Button undoCustomizationButton;
+        private bool undoInProgress;
+        private int lastUndoFrame = -1;
 
         // カスタマイズ選択中のカード（統合リスト）
         private readonly List<Card> customizeSelectedCards = new List<Card>();
@@ -77,9 +80,17 @@ namespace Olca.Presentation.CustomScreen
                 this.customScreen.OnScreenOpened -= OnScreenOpened;
                 this.customScreen.OnConfirmed -= OnConfirmed;
                 confirmButton.onClick.RemoveListener(OnConfirmClicked);
+                this.customScreen.OnExceeded -= OnCustomizeOperationCompleted;
+                this.customScreen.OnTuned -= OnCustomizeOperationCompleted;
+                this.customScreen.OnFused -= OnCustomizeOperationCompleted;
+                this.customScreen.OnSelectionFailed -= OnCustomizeSelectionFailed;
+                this.customScreen.OnCustomizationUndone -= OnCustomizationUndone;
             }
 
+            if (cursor != null) cursor.OnCursorMoved -= OnCursorMoved;
             this.customScreen = customScreen;
+            EnsureUndoButton();
+            UpdateUndoButton();
 
             // 確定ボタン
             confirmButton.onClick.AddListener(OnConfirmClicked);
@@ -102,11 +113,14 @@ namespace Olca.Presentation.CustomScreen
             customScreen.OnExceeded += OnCustomizeOperationCompleted;
             customScreen.OnTuned += OnCustomizeOperationCompleted;
             customScreen.OnFused += OnCustomizeOperationCompleted;
+            customScreen.OnCustomizationUndone += OnCustomizationUndone;
             customScreen.OnSelectionFailed += OnCustomizeSelectionFailed;
 
             // CustomizeModeView のイベント購読
             if (customizeModeView != null)
             {
+                customizeModeView.OnExecuteRequested -= OnCustomizeExecuteRequested;
+                customizeModeView.OnCancelled -= OnCustomizeModeCancelled;
                 customizeModeView.OnExecuteRequested += OnCustomizeExecuteRequested;
                 customizeModeView.OnCancelled += OnCustomizeModeCancelled;
             }
@@ -114,10 +128,63 @@ namespace Olca.Presentation.CustomScreen
 
         private void Update()
         {
+            UpdateUndoButton();
             // 未初期化またはカスタム画面が開いていない場合は入力を受け付けない
             if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
 
             HandleInput();
+        }
+
+        private void EnsureUndoButton()
+        {
+            if (undoCustomizationButton != null || confirmButton == null) return;
+            // 既存の確定ボタンの見た目を使い、選択順表示を避けて確定ボタンの右隣へ置く。
+            var obj = Instantiate(confirmButton.gameObject, confirmButton.transform.parent);
+            obj.name = "UndoCustomizationButton";
+            undoCustomizationButton = obj.GetComponent<Button>();
+            undoCustomizationButton.onClick = new Button.ButtonClickedEvent();
+            undoCustomizationButton.onClick.AddListener(OnUndoClicked);
+            undoCustomizationButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            var rect = (RectTransform)obj.transform;
+            var confirmRect = (RectTransform)confirmButton.transform;
+            rect.sizeDelta = new Vector2(280f, confirmRect.sizeDelta.y);
+            rect.anchoredPosition = confirmRect.anchoredPosition + new Vector2(320f, 0f);
+            var label = obj.GetComponentInChildren<Text>();
+            if (label != null)
+            {
+                label.text = "加工を戻す";
+                label.fontSize = 36;
+                label.resizeTextForBestFit = false;
+                var textRect = label.rectTransform;
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = textRect.offsetMax = Vector2.zero;
+            }
+        }
+
+        private void UpdateUndoButton()
+        {
+            if (undoCustomizationButton != null)
+                undoCustomizationButton.interactable = customScreen != null && customScreen.CanUndoCustomization &&
+                    !undoInProgress && lastUndoFrame != Time.frameCount;
+        }
+
+        private void OnUndoClicked()
+        {
+            if (customScreen == null || !customScreen.CanUndoCustomization || undoInProgress || lastUndoFrame == Time.frameCount) return;
+            undoInProgress = true;
+            lastUndoFrame = Time.frameCount;
+            try { customScreen.TryUndoCustomization(); }
+            finally { undoInProgress = false; UpdateUndoButton(); }
+        }
+
+        private void OnCustomizationUndone()
+        {
+            customizeSelectedCards.Clear();
+            if (customizeModeView != null) customizeModeView.Exit();
+            if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
+            RefreshHandCardViews();
+            UpdateUndoButton();
         }
 
         /// <summary>
@@ -812,10 +879,11 @@ namespace Olca.Presentation.CustomScreen
         private void OnCustomizeOperationCompleted(Card resultCard)
         {
             customizeSelectedCards.Clear();
-            customizeModeView.Exit();
+            if (customizeModeView != null) customizeModeView.Exit();
             if (customizeModeOverlay != null)
                 customizeModeOverlay.gameObject.SetActive(false);
             RefreshHandCardViews();
+            UpdateUndoButton();
         }
 
         /// <summary>
@@ -844,11 +912,12 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void RefreshHandCardViews()
         {
+            animationCts?.Cancel();
             foreach (var view in handCardViews)
                 Destroy(view.gameObject);
             handCardViews.Clear();
 
-            var hand = customScreen.CurrentHand;
+            var hand = customScreen.CurrentHand.Concat(customScreen.SelectedCards).ToList();
             for (int i = 0; i < hand.Count; i++)
             {
                 var card = hand[i];
@@ -863,6 +932,7 @@ namespace Olca.Presentation.CustomScreen
             }
 
             cursor.Initialize(handCardViews.Count);
+            RefreshAllHighlights();
             UpdateConfirmButton();
             UpdateCostDisplay();
         }
@@ -1036,12 +1106,14 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnConfirmed(List<Card> selectedCards)
         {
+            UpdateUndoButton();
             // 購読者（BattleController・DungeonBattleControllerなど）に通知
             OnCustomScreenConfirmed?.Invoke();
         }
 
         private void OnDestroy()
         {
+            if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
             // アニメーション用CancellationTokenをキャンセル
             animationCts?.Cancel();
             animationCts?.Dispose();
@@ -1053,6 +1125,7 @@ namespace Olca.Presentation.CustomScreen
                 customScreen.OnExceeded -= OnCustomizeOperationCompleted;
                 customScreen.OnTuned -= OnCustomizeOperationCompleted;
                 customScreen.OnFused -= OnCustomizeOperationCompleted;
+                customScreen.OnCustomizationUndone -= OnCustomizationUndone;
                 customScreen.OnSelectionFailed -= OnCustomizeSelectionFailed;
             }
 

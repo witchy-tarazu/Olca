@@ -176,5 +176,65 @@ namespace Olca.Tests
             }
             finally { Object.DestroyImmediate(root); }
         }
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 加工Undoボタンは二重入力と確定競合で余分に戻さない(bool confirmFirst)
+        {
+            var a = Create("a", CardSeries.Sword);
+            var t1 = new Card("t1", "調律", 1, CardRarity.Normal, CardCategory.Tuning, ElementType.None, CardSeries.None, 0, "", modifier: new CardModifier { BonusDamage = 1 });
+            var t2 = t1.Clone();
+            var model = new CustomScreenSystem(new Deck(new List<Card> { a, t1, t2 }), tuningSystem: new TuningSystem());
+            model.Open(new Card[0], new MockRandomProvider(0));
+            var first = model.ExecuteTuning(a, t1).ResultCard;
+            model.ExecuteTuning(first, t2);
+            var root = new GameObject("UndoButtonTest", typeof(RectTransform));
+            try
+            {
+                var confirmObject = new GameObject("Confirm", typeof(RectTransform), typeof(Image), typeof(Button));
+                confirmObject.transform.SetParent(root.transform, false);
+                var labelObject = new GameObject("Label", typeof(RectTransform), typeof(Text));
+                labelObject.transform.SetParent(confirmObject.transform, false);
+                var view = root.AddComponent<CustomScreenView>();
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CustomScreenView).GetField("confirmButton", flags).SetValue(view, confirmObject.GetComponent<Button>());
+                typeof(CustomScreenView).GetField("customScreen", flags).SetValue(view, model);
+                typeof(CustomScreenView).GetMethod("EnsureUndoButton", flags).Invoke(view, null);
+                var button = (Button)typeof(CustomScreenView).GetField("undoCustomizationButton", flags).GetValue(view);
+                Assert.AreEqual("加工を戻す", button.GetComponentInChildren<Text>().text);
+                Assert.AreEqual(Navigation.Mode.None, button.navigation.mode);
+                if (confirmFirst) model.Confirm();
+                typeof(CustomScreenView).GetMethod("UpdateUndoButton", flags).Invoke(view, null);
+                button.onClick.Invoke();
+                button.onClick.Invoke();
+                Assert.AreEqual(confirmFirst ? 2 : 1, model.CustomizationUndoCount);
+                Assert.IsFalse(button.interactable);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [TestCase("empty")]
+        [TestCase("closed")]
+        [TestCase("confirming")]
+        public void 加工Undoボタンは操作できない状態で無効(string state)
+        {
+            var a = Create("a", CardSeries.Sword);
+            var t = new Card("t", "調律", 1, CardRarity.Normal, CardCategory.Tuning, ElementType.None, CardSeries.None, 0, "");
+            var model = new CustomScreenSystem(new Deck(new List<Card> { a, t }), tuningSystem: new TuningSystem());
+            model.Open(new Card[0], new MockRandomProvider(0));
+            if (state != "empty") model.ExecuteTuning(a, t);
+            if (state == "closed") { model.Close(); model.Open(new Card[0], new MockRandomProvider(0)); }
+            if (state == "confirming") model.Confirm();
+            var go = new GameObject("UndoState", typeof(RectTransform), typeof(Button));
+            try
+            {
+                var view = go.AddComponent<CustomScreenView>();
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CustomScreenView).GetField("customScreen", flags).SetValue(view, model);
+                typeof(CustomScreenView).GetField("undoCustomizationButton", flags).SetValue(view, go.GetComponent<Button>());
+                typeof(CustomScreenView).GetMethod("UpdateUndoButton", flags).Invoke(view, null);
+                Assert.IsFalse(go.GetComponent<Button>().interactable);
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
     }
 }
