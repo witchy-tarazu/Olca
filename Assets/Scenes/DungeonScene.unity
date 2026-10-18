@@ -5360,7 +5360,8 @@ MonoBehaviour:
   foregroundSprite: {fileID: 21300000, guid: 1a1d955c737ef7b4e9af77d61f34cd44, type: 3}
   foregroundGrid: {fileID: 1701501774}
   foregroundScrollFactor: 1.12
-  foregroundOpaqueTop: 0.2265625
+  foregroundOpaqueTop: 0.3515625
+  foregroundOverlapRatio: 0.15
 --- !u!1 &1754153820
 GameObject:
   m_ObjectHideFlags: 0
