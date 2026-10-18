@@ -131,6 +131,8 @@ namespace Olca.Core.Domain
         // 取得後に破棄されたカードも履歴に残るため、DeckOrderとは独立した参照列。
         public string[] ObtainedOrder = new string[0];
         public CheckpointEnemyDto[] Enemies = new CheckpointEnemyDto[0];
+        // 版2のみ。版1の既存保存では欠落/nullを維持する。
+        public int[] ProcessedObstacleCells;
         public CheckpointBattleDto Battle;
         public CheckpointDto Copy() => new CheckpointDto {
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
@@ -138,6 +140,7 @@ namespace Olca.Core.Domain
             Player = Player?.Copy(), Cards = Cards == null ? null : System.Array.ConvertAll(Cards, c => c?.Copy()),
             DeckOrder = DeckOrder == null ? null : (string[])DeckOrder.Clone(),
             ObtainedOrder = ObtainedOrder == null ? null : (string[])ObtainedOrder.Clone(),
-            Enemies = Enemies == null ? null : System.Array.ConvertAll(Enemies, e => e?.Copy()), Battle = Battle?.Copy() };
+            Enemies = Enemies == null ? null : System.Array.ConvertAll(Enemies, e => e?.Copy()),
+            ProcessedObstacleCells = ProcessedObstacleCells == null ? null : (int[])ProcessedObstacleCells.Clone(), Battle = Battle?.Copy() };
     }
 }

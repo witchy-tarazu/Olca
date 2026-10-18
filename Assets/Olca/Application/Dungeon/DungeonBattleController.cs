@@ -72,6 +72,12 @@ namespace Olca.Application.Dungeon
         private float timeScaleBeforePause;
         [SerializeField, HideInInspector] private string checkpointDirectoryOverride;
         private bool awaitingCheckpointChoice;
+        private DungeonConfig configuredDungeon;
+        public void ConfigureDungeon(DungeonConfig config)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後はマップを変更できません");
+            configuredDungeon = config ?? throw new System.ArgumentNullException(nameof(config));
+        }
         private GameObject checkpointOverlay;
         private Text checkpointMessage;
         private Button continueCheckpointButton, retryCheckpointButton;
@@ -172,7 +178,7 @@ namespace Olca.Application.Dungeon
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
 
-            var dungeonConfig = DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
+            var dungeonConfig = configuredDungeon ?? DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
             var playerCharacter = new PlayerCharacter(
                 maxHp: playerMaxHp,
                 initialPosition: new Vector2Int(0, 0),
