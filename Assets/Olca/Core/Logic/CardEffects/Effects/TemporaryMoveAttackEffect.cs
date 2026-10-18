@@ -57,7 +57,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             Vector2Int targetPosition = CalculateTargetPosition(
                 originalPosition,
                 field,
-                enemies);
+                enemies,
+                player.TerrainState);
 
             // 移動先が元の位置と同じ場合（移動失敗）
             if (targetPosition == originalPosition)
@@ -134,7 +135,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private Vector2Int CalculateTargetPosition(
             Vector2Int start,
             BattleField field,
-            IReadOnlyList<Enemy> enemies)
+            IReadOnlyList<Enemy> enemies,
+            BattleTerrainState terrain)
         {
             Vector2Int currentPos = start;
 
@@ -151,7 +153,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 }
 
                 // 移動可能パネルかチェック
-                if (!field.CanMoveTo(nextPos))
+                if (!field.CanMoveTo(nextPos, terrain))
                 {
                     return currentPos;
                 }

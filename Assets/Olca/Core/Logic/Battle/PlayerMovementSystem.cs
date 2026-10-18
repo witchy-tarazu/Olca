@@ -23,10 +23,10 @@ namespace Olca.Core.Logic.Battle
         private const int NORMAL_MOVE_DELAY_MS = 150; // 通常移動時のクールダウン（ミリ秒、押しっぱなし対応）
 
         /// <summary>移動可能か（クールダウンと滑り状態をチェック）</summary>
-        public bool CanMove => moveCooldownMs <= 0 && !pendingSlideDirection.HasValue;
+        public bool CanMove => moveCooldownMs <= 0 && !IsSliding;
 
         /// <summary>Ice滑り中か</summary>
-        public bool IsSliding => pendingSlideDirection.HasValue;
+        public bool IsSliding => player.TerrainState.ReceivesPanelEffects && pendingSlideDirection.HasValue;
 
         /// <summary>現在のクールダウン時間（ミリ秒）</summary>
         public int CurrentCooldownMs => moveCooldownMs;
@@ -49,6 +49,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void Tick(int deltaTimeMs, IInputProvider input, List<Enemy> enemies)
         {
+            CancelSlideWhileFloating();
+
             // クールダウン更新
             if (moveCooldownMs > 0)
             {
@@ -87,6 +89,8 @@ namespace Olca.Core.Logic.Battle
         /// <returns>移動成功したらtrue</returns>
         public bool TryMove(Vector2Int direction, List<Enemy> enemies)
         {
+            CancelSlideWhileFloating();
+
             // クールダウン中は移動不可（Ice滑り中も含む）
             if (moveCooldownMs > 0)
             {
@@ -124,7 +128,7 @@ namespace Olca.Core.Logic.Battle
             }
 
             // 移動可能性チェック（Holeパネル等）
-            if (!field.CanMoveTo(newPosition))
+            if (!field.CanMoveTo(newPosition, player.TerrainState))
             {
                 logger?.LogInfo($"移動不可パネルへの移動をブロック: {newPosition}");
                 OnMoveBlocked?.Invoke(newPosition);
@@ -141,7 +145,7 @@ namespace Olca.Core.Logic.Battle
 
             // Grassパネルからの移動は長めのクールダウン、それ以外は通常のクールダウン
             PanelType currentPanel = field.GetPanelType(player.GridPosition);
-            if (currentPanel == PanelType.Grass)
+            if (currentPanel == PanelType.Grass && player.TerrainState.ReceivesPanelEffects)
             {
                 moveCooldownMs = GRASS_MOVE_DELAY_MS;
                 logger?.LogInfo("Grassパネルから移動: 長めのクールダウン追加");
@@ -159,7 +163,7 @@ namespace Olca.Core.Logic.Battle
 
             // Iceパネルなら滑り開始
             PanelType newPanel = field.GetPanelType(newPosition);
-            if (newPanel == PanelType.Ice)
+            if (newPanel == PanelType.Ice && player.TerrainState.ReceivesPanelEffects)
             {
                 pendingSlideDirection = direction;
                 logger?.LogInfo("Iceパネル: 滑り開始");
@@ -168,9 +172,13 @@ namespace Olca.Core.Logic.Battle
             return true;
         }
 
-        /// <summary>
-        /// Ice滑り処理（同方向に追加移動）
-        /// </summary>
+        private void CancelSlideWhileFloating()
+        {
+            // 滑り中に付与された場合も次の移動判定から地形の強制移動を止める。
+            if (player.TerrainState.IsFloating) pendingSlideDirection = null;
+        }
+
+        /// <summary>Ice滑り処理（同方向に追加移動）</summary>
         private void ProcessIceSlide(List<Enemy> enemies)
         {
             if (!pendingSlideDirection.HasValue) return;

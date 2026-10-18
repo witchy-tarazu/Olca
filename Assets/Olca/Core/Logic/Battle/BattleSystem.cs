@@ -348,6 +348,8 @@ namespace Olca.Core.Logic.Battle
                 state = BattleState.Victory;
             }
 
+            player.TerrainState.Clear();
+            foreach (var enemy in enemies) enemy.TerrainState.Clear();
             cardUsage.Clear(); // 終了した戦闘の遅延完了が次のキューやUIを更新しない。
             var result = state == BattleState.Defeat ? BattleResult.Defeat : BattleResult.Victory;
             logger?.LogInfo($"バトル終了: {result}");

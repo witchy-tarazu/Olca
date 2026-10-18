@@ -1,6 +1,17 @@
 namespace Olca.Core.Domain
 {
     /// <summary>
+    /// プレイヤー・敵で共用する戦闘中の地形判定。付与時間や付与手段は扱わない。
+    /// </summary>
+    public sealed class BattleTerrainState
+    {
+        public bool IsFloating { get; set; }
+        public bool ReceivesPanelEffects => !IsFloating;
+        public bool CanEnter(PanelType panel) => panel != PanelType.Hole || IsFloating;
+        public void Clear() => IsFloating = false;
+    }
+
+    /// <summary>
     /// バトルフィールドのパネルタイプ
     /// </summary>
     public enum PanelType

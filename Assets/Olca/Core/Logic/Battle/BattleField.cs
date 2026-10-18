@@ -63,14 +63,14 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 指定位置に移動可能か
         /// </summary>
-        public bool CanMoveTo(Vector2Int position)
+        public bool CanMoveTo(Vector2Int position, BattleTerrainState terrain = null)
         {
             // グリッド範囲外
             if (!IsInBounds(position)) return false;
 
-            // 穴パネルは移動不可（将来的にフロート能力を考慮）
+            // 浮遊は穴だけを許可し、範囲・障害物の制限は維持する。
             PanelType panelType = GetPanelType(position);
-            if (panelType == PanelType.Hole) return false;
+            if (terrain != null ? !terrain.CanEnter(panelType) : panelType == PanelType.Hole) return false;
 
             // 障害物があるマスも移動不可
             if (HasObstacle(position)) return false;

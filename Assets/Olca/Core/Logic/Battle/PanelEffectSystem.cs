@@ -63,7 +63,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void ApplyOnLeaveEffect(PlayerCharacter player, Vector2Int fromPosition)
         {
-            if (player == null) return;
+            if (player == null || !player.TerrainState.ReceivesPanelEffects) return;
 
             PanelType panelType = field.GetPanelType(fromPosition);
 
@@ -93,9 +93,11 @@ namespace Olca.Core.Logic.Battle
         {
             if (player.IsDead) return;
 
-            player.TakeDamage(MAGMA_DAMAGE);
+            // 消費条件は既存のまま、浮遊者をダメージ対象から除外する。
+            int hpBefore = player.CurrentHp;
+            if (player.TerrainState.ReceivesPanelEffects) player.TakeDamage(MAGMA_DAMAGE);
             field.ChangePanelType(position, PanelType.Normal);
-            logger?.LogInfo($"Magmaパネルで{MAGMA_DAMAGE}ダメージ、通常パネルに変化: {position}");
+            logger?.LogInfo($"Magmaパネルで{hpBefore - player.CurrentHp}ダメージ、通常パネルに変化: {position}");
             OnPanelEffectApplied?.Invoke(position, PanelType.Magma);
         }
 

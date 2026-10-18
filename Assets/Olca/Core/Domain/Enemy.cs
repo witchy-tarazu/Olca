@@ -7,6 +7,9 @@ namespace Olca.Core.Domain
     /// </summary>
     public class Enemy
     {
+        /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
+        public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
+
         private int currentHp;
         private readonly int maxHp;
         private readonly ElementType element;
