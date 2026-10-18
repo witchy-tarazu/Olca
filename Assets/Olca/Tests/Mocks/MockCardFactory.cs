@@ -4,6 +4,21 @@ using Olca.Core.Interfaces;
 
 namespace Olca.Tests.Mocks
 {
+    // 既存テスト値を明示的な第1段階へ移すfixture。製品定義や後続段階を補完しない。
+    public static class MockTuningDefinitions
+    {
+        public static TuningGrantDefinition FromModifier(Card card)
+        {
+            var value = card.Modifier.Clone();
+            if (!value.HasStageDependentValues) return null;
+            int cost = value.CostAdjustment; bool zero = value.ZeroCost;
+            value.CostAdjustment = 0; value.ZeroCost = false;
+            return new TuningGrantDefinition(card.Id, new[] {
+                new TuningEffectDefinition(card.Id + ":test", 4, new Dictionary<int, CardModifier> { { 1, value } })
+            }, cost, zero);
+        }
+    }
+
     /// <summary>
     /// テスト用カードファクトリのモック
     /// </summary>

@@ -2,6 +2,42 @@ using System.Collections.Generic;
 
 namespace Olca.Core.Domain
 {
+    /// <summary>効果ごとの不変な段階定義。欠落段階を上限と推測しない。</summary>
+    public sealed class TuningEffectDefinition
+    {
+        public string Id { get; }
+        public int MaxStage { get; }
+        private readonly Dictionary<int, CardModifier> stages;
+        public TuningEffectDefinition(string id, int maxStage, IDictionary<int, CardModifier> stages)
+        {
+            Id = id; MaxStage = maxStage;
+            this.stages = new Dictionary<int, CardModifier>();
+            if (stages != null) foreach (var pair in stages) this.stages[pair.Key] = pair.Value?.Clone();
+        }
+        public bool TryGetStage(int stage, out CardModifier value)
+        {
+            bool found = stages.TryGetValue(stage, out var stored);
+            value = stored?.Clone();
+            return found && value != null;
+        }
+    }
+
+    /// <summary>調律1回分の付与。効果数にかかわらず総回数へは1回と数える。</summary>
+    public sealed class TuningGrantDefinition
+    {
+        public string Id { get; }
+        public int FixedCostAdjustment { get; }
+        public bool ZeroCost { get; }
+        private readonly List<TuningEffectDefinition> effects;
+        public IReadOnlyList<TuningEffectDefinition> Effects => effects.AsReadOnly();
+        public TuningGrantDefinition(string id, IEnumerable<TuningEffectDefinition> effects = null,
+            int fixedCostAdjustment = 0, bool zeroCost = false)
+        {
+            Id = id; FixedCostAdjustment = fixedCostAdjustment; ZeroCost = zeroCost;
+            this.effects = effects == null ? new List<TuningEffectDefinition>() : new List<TuningEffectDefinition>(effects);
+        }
+    }
+
     /// <summary>
     /// カード調律による追加効果
     /// アタック+10やファイア+20などの効果を表現

@@ -29,7 +29,7 @@ namespace Olca.Tests
         private CustomScreenSystem Open(params Card[] cards)
         {
             var model = new CustomScreenSystem(new Deck(cards.ToList()),
-                exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(),
+                exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier),
                 fusionSystem: new FusionSystem(recipes, factory));
             model.Open(new Card[0], new MockRandomProvider(0));
             return model;

@@ -408,7 +408,7 @@ namespace Olca.Tests.CardEffects
             var factory = new MockCardFactory();
             battle = new BattleSystem(player, new List<Enemy> { battle.Enemies[0] },
                 new Deck(new List<Card> { active, spare }), exceedSystem: new ExceedSystem(factory),
-                tuningSystem: new TuningSystem(), fusionSystem: new FusionSystem(new MockFusionRecipeProvider(), factory));
+                tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier), fusionSystem: new FusionSystem(new MockFusionRecipeProvider(), factory));
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             battle.OpenCustomScreen(new MockRandomProvider(0));
             battle.CustomScreen.TrySelectCard(active);

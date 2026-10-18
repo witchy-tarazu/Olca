@@ -14,6 +14,50 @@ namespace Olca.Tests.CardTests
     [TestFixture]
     public class CustomScreenSystemTests
     {
+        private static Card StageMaterial(string id, bool missingSecond = false)
+        {
+            var stages = new Dictionary<int, CardModifier> { { 1, new CardModifier { BonusDamage = 3 } } };
+            if (!missingSecond) stages.Add(2, new CardModifier { BonusDamage = 8 });
+            return ZeroCostCard(id, material: true).WithTuningDefinition(new TuningGrantDefinition(id,
+                new[] { new TuningEffectDefinition(id + ":bonus", 2, stages) }, fixedCostAdjustment: 1));
+        }
+        private static CustomScreenSystem StageScreen(params Card[] cards)
+        {
+            var cs = new CustomScreenSystem(new Deck(cards.ToList()), maxHandSize:20,maxCost:100,tuningSystem:new TuningSystem());
+            cs.Open(new Card[0],new MockRandomProvider(0));return cs;
+        }
+
+        [Test]
+        public void 段階プレビューと確定は一致し二回Undoで回数履歴効果を段階ごと戻す()
+        {
+            var target=ZeroCostCard("target",4);var a=StageMaterial("a");var b=StageMaterial("b");var cs=StageScreen(target,a,b);
+            var initial=cs.ExecuteCustomization(new[]{target,a});Assert.IsTrue(initial.CanExecute, initial.Reason);
+            var first=cs.CurrentHand.Single(c=>c.Id=="target");var hand=cs.CurrentHand.ToArray();
+            var preview=cs.PreviewCustomization(new[]{first,b});Assert.IsTrue(preview.CanExecute, preview.Reason);
+            Assert.AreEqual(target.GetFinalPower()+16,preview.ResultCard.GetFinalPower());CollectionAssert.AreEqual(hand,cs.CurrentHand);
+            var second=cs.ExecuteCustomization(new[]{first,b}).ResultCard;Assert.AreEqual(preview.ResultCard.GetFinalPower(),second.GetFinalPower());
+            Assert.AreEqual(2,second.TuningHistory.Count);Assert.AreEqual(6,second.GetFinalCost());
+            Assert.IsTrue(cs.TryUndoCustomization());var restored=cs.CurrentHand.Single(c=>c.Id=="target");
+            Assert.AreEqual(1,restored.TuningCount);Assert.AreEqual(1,restored.TuningHistory.Count);Assert.AreEqual(target.GetFinalPower()+3,restored.GetFinalPower());
+            Assert.IsTrue(cs.TryUndoCustomization());restored=cs.CurrentHand.Single(c=>c.Id=="target");
+            Assert.AreEqual(0,restored.TuningCount);Assert.IsEmpty(restored.TuningHistory);Assert.AreEqual(target.GetFinalPower(),restored.GetFinalPower());
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 必要段階未定義はプレビュー通常確定直接確定の全経路で無消費(bool oldHistory)
+        {
+            var target=ZeroCostCard("target",4);var first=StageMaterial("first",true);var next=StageMaterial("next");
+            target=oldHistory?target.ApplyTuning(first):new TuningSystem().Execute(target,first).ResultCard;
+            var other=ZeroCostCard("other",1);var cs=StageScreen(target,next,other);cs.TrySelectCard(other);
+            var hand=cs.CurrentHand.ToArray();var selection=cs.SelectedCards.ToArray();int notices=0;cs.OnTuned+=_=>notices++;
+            var preview=cs.PreviewCustomization(new[]{target,next});Assert.AreEqual(CustomizationPreviewStatus.Undefined,preview.Status);Assert.IsNull(preview.ResultCard);
+            Assert.AreEqual(CustomizationPreviewStatus.Undefined,cs.ExecuteCustomization(new[]{target,next}).Status);
+            var direct=cs.ExecuteTuning(target,next);Assert.IsTrue(direct.IsUndefined);Assert.IsNull(direct.ResultCard);
+            CollectionAssert.AreEqual(hand,cs.CurrentHand);CollectionAssert.AreEqual(selection,cs.SelectedCards);
+            Assert.AreEqual(1,target.TuningCount);Assert.AreEqual(0,cs.CustomizationUndoCount);Assert.AreEqual(0,notices);
+        }
+
         [TestCase(2, -8, false, 1)]
         [TestCase(2, 3, false, 9)]
         [TestCase(2, -2, false, 4)]
@@ -27,7 +71,7 @@ namespace Olca.Tests.CardTests
             Assert.IsTrue(cs.ExecuteCustomization(new[] { target, a }).CanExecute);
             var once = cs.CurrentHand.Single(c => c.Id == "target"); var hand = cs.CurrentHand.ToArray();
             var preview = cs.PreviewCustomization(new[] { once, b });
-            Assert.IsTrue(preview.CanExecute); Assert.AreEqual(expected, preview.ResultCard.GetFinalCost());
+            Assert.IsTrue(preview.CanExecute, preview.Reason); Assert.AreEqual(expected, preview.ResultCard.GetFinalCost());
             CollectionAssert.AreEqual(hand, cs.CurrentHand); Assert.AreEqual(1, cs.CustomizationUndoCount);
             Assert.AreEqual(1, once.TuningCount); Assert.IsFalse(once.HasStageDependentTuning);
             var confirmed = cs.ExecuteCustomization(new[] { b, once }); Assert.IsTrue(confirmed.CanExecute);
@@ -75,7 +119,7 @@ namespace Olca.Tests.CardTests
             var b = ZeroCostCard("b", material: true); b.Modifier.CostAdjustment = 1;
             var cs = UndoScreen(target, a, b); var once = cs.ExecuteTuning(target, a).ResultCard;
             var preview = cs.PreviewCustomization(new[] { once, b });
-            Assert.IsTrue(preview.CanExecute); Assert.AreEqual(6, preview.ResultCard.GetFinalCost());
+            Assert.IsTrue(preview.CanExecute, preview.Reason); Assert.AreEqual(6, preview.ResultCard.GetFinalCost());
             Assert.AreEqual(4, preview.ResultCard.Modifier.AdditionalEffects.Single().Duration);
             Assert.IsFalse(preview.ResultCard.HasStageDependentTuning);
         }
@@ -97,7 +141,7 @@ namespace Olca.Tests.CardTests
             factory.Register("fusion", ZeroCostCard("fusion", 6));
             recipes.Register("fusion", "sword", "bomb");
             var cs = new CustomScreenSystem(deck, exceedSystem: new ExceedSystem(factory),
-                tuningSystem: new TuningSystem(), fusionSystem: new FusionSystem(recipes, factory));
+                tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier), fusionSystem: new FusionSystem(recipes, factory));
             cs.Open(new Card[0], new MockRandomProvider(0));
             return cs;
         }
@@ -113,7 +157,7 @@ namespace Olca.Tests.CardTests
             int notices = 0; cs.OnExceeded += _ => notices++; cs.OnTuned += _ => notices++; cs.OnFused += _ => notices++;
             CustomizationPreview preview = null;
             for (int i = 0; i < 4; i++) preview = cs.PreviewCustomization(new[] { cards[0], cards[second] });
-            Assert.IsTrue(preview.CanExecute); Assert.AreEqual(operation, preview.Operation);
+            Assert.IsTrue(preview.CanExecute, preview.Reason); Assert.AreEqual(operation, preview.Operation);
             CollectionAssert.AreEqual(hand, cs.CurrentHand); CollectionAssert.AreEqual(new[] { cards[4] }, cs.SelectedCards);
             Assert.AreEqual(5, deck.TotalCount); Assert.AreEqual(drawn, deck.RemainingCount);
             Assert.AreEqual(0, cs.CustomizationUndoCount); Assert.AreEqual(0, notices); Assert.IsEmpty(cs.AvailableCards);
@@ -289,7 +333,7 @@ namespace Olca.Tests.CardTests
             var target = ZeroCostCard("target", 2);
             var up = ZeroCostCard("up", material: true); up.Modifier.CostAdjustment = 3;
             var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy>(),
-                new Deck(new List<Card> { target, up }), tuningSystem: new TuningSystem());
+                new Deck(new List<Card> { target, up }), tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier));
             battle.SetFirstStrike(); battle.OpenCustomScreen(random);
             var cs = battle.CustomScreen; cs.SetMaxCost(4);
             var tuned = cs.ExecuteTuning(target, up).ResultCard;
@@ -362,7 +406,7 @@ namespace Olca.Tests.CardTests
             var target = ZeroCostCard("target", 4); var material = ZeroCostCard("material", 1, true, true);
             var next = ZeroCostCard("next");
             var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy>(),
-                new Deck(new List<Card> { target, material, next }), tuningSystem: new TuningSystem());
+                new Deck(new List<Card> { target, material, next }), tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier));
             battle.SetFirstStrike(); battle.OpenCustomScreen(random);
             var cs = battle.CustomScreen;
             var tuned = cs.ExecuteTuning(target, material).ResultCard;
@@ -748,7 +792,7 @@ namespace Olca.Tests.CardTests
             var mockFactory = new MockCardFactory();
             var mockRecipe = new MockFusionRecipeProvider();
             var exceed = new ExceedSystem(mockFactory);
-            var tuning = new TuningSystem();
+            var tuning = new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier);
             var fusion = new FusionSystem(mockRecipe, mockFactory);
             return new CustomScreenSystem(deck, maxHandSize: 5, maxCost: 10,
                 exceedSystem: exceed, tuningSystem: tuning, fusionSystem: fusion);
@@ -832,7 +876,7 @@ namespace Olca.Tests.CardTests
             var testCards = new List<Card> { attackCard, tuningCard };
             var testDeck = new Deck(testCards);
             var cs = new CustomScreenSystem(testDeck, maxHandSize: 5, maxCost: 10,
-                tuningSystem: new TuningSystem());
+                tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier));
             cs.Open(EmptyRemainingCards(), random);
 
             var handBefore = cs.CurrentHand.Count;
@@ -894,7 +938,7 @@ namespace Olca.Tests.CardTests
             var recipes = new MockFusionRecipeProvider();
             recipes.Register("f", "a", "b");
             var screen = new CustomScreenSystem(new Deck(cards.ToList()), maxHandSize: 20, maxCost: 100,
-                exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(),
+                exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier),
                 fusionSystem: new FusionSystem(recipes, factory));
             screen.Open(EmptyRemainingCards(), random);
             return screen;
@@ -971,7 +1015,8 @@ namespace Olca.Tests.CardTests
         [Test]
         public void Undo_同じカードへの連続調律を一段ずつ戻す()
         {
-            var a = UndoCard("a"); var t1 = UndoCard("t1", true); var t2 = UndoCard("t2", true);
+            var a = UndoCard("a"); var t1 = UndoCard("t1", true).WithTuningDefinition(new TuningGrantDefinition("undo",
+                new[] { new TuningEffectDefinition("bonus", 1, new Dictionary<int, CardModifier> { { 1, new CardModifier { BonusDamage = 5 } } }) })); var t2 = t1.Clone();
             var cs = UndoScreen(a, t1, t2);
             var first = cs.ExecuteTuning(a, t1).ResultCard;
             cs.ExecuteTuning(first, t2);
@@ -1080,7 +1125,7 @@ namespace Olca.Tests.CardTests
         {
             var a = UndoCard("a"); var t = UndoCard("t", true);
             var source = new Deck(new List<Card> { a, t, UndoCard("remaining") });
-            var cs = new CustomScreenSystem(source, maxHandSize: 2, tuningSystem: new TuningSystem());
+            var cs = new CustomScreenSystem(source, maxHandSize: 2, tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier));
             cs.Open(EmptyRemainingCards(), random);
             cs.ExecuteTuning(a, t);
             Assert.AreEqual(1, source.RemainingCount);

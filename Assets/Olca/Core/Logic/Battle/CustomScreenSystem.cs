@@ -402,15 +402,9 @@ namespace Olca.Core.Logic.Battle
                 var source = a.Category == CardCategory.Tuning ? a : b;
                 var validation = tuningSystem.Validate(target, source);
                 if (!validation.IsValid) return CustomizationPreview.Invalid(validation.ErrorMessage, CustomizationOperation.Tuning);
-                // 固定コストだけの履歴・追加なら段階表は不要。既存の段階対象効果は再評価が必要。
-                if (target.TuningCount > 0 && (target.HasStageDependentTuning || source.Modifier.HasStageDependentValues))
-                    return CustomizationPreview.Undefined(CustomizationOperation.Tuning, "総調律回数に対応する段階表が未定義です");
-                var m = source.Modifier;
-                if (m.BonusDamage == 0 && m.DamageMultiplier == 1f && m.CostAdjustment == 0 && !m.ZeroCost &&
-                    !m.ElementOverride.HasValue && m.AdditionalEffects.Count == 0)
-                    return CustomizationPreview.Undefined(CustomizationOperation.Tuning, "調律の付与効果が未定義です");
                 var result = tuningSystem.Execute(target, source);
                 return result.IsSuccess ? CustomizationPreview.Ready(CustomizationOperation.Tuning, result.ResultCard) :
+                    result.IsUndefined ? CustomizationPreview.Undefined(CustomizationOperation.Tuning, result.ErrorMessage) :
                     CustomizationPreview.Invalid(result.ErrorMessage, CustomizationOperation.Tuning);
             }
             if (fusionSystem == null) return CustomizationPreview.Invalid("融合システムが設定されていません");
@@ -443,6 +437,7 @@ namespace Olca.Core.Logic.Battle
                     var tuned = ExecuteTuning(selected.First(c => c.Category != CardCategory.Tuning),
                         selected.First(c => c.Category == CardCategory.Tuning));
                     return tuned.IsSuccess ? CustomizationPreview.Ready(preview.Operation, tuned.ResultCard) :
+                        tuned.IsUndefined ? CustomizationPreview.Undefined(preview.Operation, tuned.ErrorMessage) :
                         CustomizationPreview.Invalid(tuned.ErrorMessage, preview.Operation);
                 default:
                     var fused = ExecuteFusion(selected);

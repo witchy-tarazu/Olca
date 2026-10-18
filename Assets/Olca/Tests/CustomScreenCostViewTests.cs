@@ -183,8 +183,10 @@ namespace Olca.Tests
         {
             var a = Create("a", CardSeries.Sword);
             var t1 = new Card("t1", "調律", 1, CardRarity.Normal, CardCategory.Tuning, ElementType.None, CardSeries.None, 0, "", modifier: new CardModifier { BonusDamage = 1 });
+            t1 = t1.WithTuningDefinition(new TuningGrantDefinition("undo", new[] { new TuningEffectDefinition("bonus", 1,
+                new Dictionary<int, CardModifier> { { 1, new CardModifier { BonusDamage = 1 } } }) }));
             var t2 = t1.Clone();
-            var model = new CustomScreenSystem(new Deck(new List<Card> { a, t1, t2 }), tuningSystem: new TuningSystem());
+            var model = new CustomScreenSystem(new Deck(new List<Card> { a, t1, t2 }), tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier));
             model.Open(new Card[0], new MockRandomProvider(0));
             var first = model.ExecuteTuning(a, t1).ResultCard;
             model.ExecuteTuning(first, t2);
@@ -220,7 +222,7 @@ namespace Olca.Tests
         {
             var a = Create("a", CardSeries.Sword);
             var t = new Card("t", "調律", 1, CardRarity.Normal, CardCategory.Tuning, ElementType.None, CardSeries.None, 0, "");
-            var model = new CustomScreenSystem(new Deck(new List<Card> { a, t }), tuningSystem: new TuningSystem());
+            var model = new CustomScreenSystem(new Deck(new List<Card> { a, t }), tuningSystem: new TuningSystem(Olca.Tests.Mocks.MockTuningDefinitions.FromModifier));
             model.Open(new Card[0], new MockRandomProvider(0));
             if (state != "empty") model.ExecuteTuning(a, t);
             if (state == "closed") { model.Close(); model.Open(new Card[0], new MockRandomProvider(0)); }

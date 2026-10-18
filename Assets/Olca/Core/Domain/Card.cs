@@ -95,6 +95,29 @@ namespace Olca.Core.Domain
 
         /// <summary>付与履歴の判定。合算値が相殺されても段階評価が必要な事実を保持する。</summary>
         public bool HasStageDependentTuning { get; private set; }
+        public TuningGrantDefinition TuningDefinition { get; private set; }
+        private CardModifier tuningBaseModifier;
+        private System.Collections.Generic.List<TuningGrantDefinition> tuningHistory = new System.Collections.Generic.List<TuningGrantDefinition>();
+        public System.Collections.Generic.IReadOnlyList<TuningGrantDefinition> TuningHistory => tuningHistory.AsReadOnly();
+        internal bool IsEffectCopy { get; private set; }
+        internal CardModifier GetTuningBaseModifier() => (tuningBaseModifier ?? Modifier).Clone();
+
+        public Card WithTuningDefinition(TuningGrantDefinition definition)
+        {
+            var copy = Clone(); copy.TuningDefinition = definition; return copy;
+        }
+
+        internal Card WithEvaluatedTuning(CardModifier baseModifier,
+            System.Collections.Generic.List<TuningGrantDefinition> history, CardModifier evaluated)
+        {
+            var copy = Clone();
+            copy.tuningBaseModifier = baseModifier.Clone();
+            copy.tuningHistory = new System.Collections.Generic.List<TuningGrantDefinition>(history);
+            copy.TuningCount = history.Count;
+            copy.HasStageDependentTuning = history.Exists(grant => grant.Effects.Count > 0);
+            copy.Modifier = evaluated.Clone();
+            return copy;
+        }
 
         /// <summary>
         /// コンストラクタ
@@ -189,7 +212,7 @@ namespace Olca.Core.Domain
                 modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
                 ExceedLevel
-            );
+            ) { IsEffectCopy = true };
         }
 
         /// <summary>
@@ -201,6 +224,7 @@ namespace Olca.Core.Domain
             if (powerPercent > 0 && powerPercent != 100)
                 copy.Power = (Power * powerPercent) / 100;
             copy.Modifier = new CardModifier();
+            copy.IsEffectCopy = true;
             return copy;
         }
 
@@ -348,6 +372,8 @@ namespace Olca.Core.Domain
             // 定義値（ID・段階・各種時間など）はそのまま保持し、可変の調律情報だけ深く複製する。
             var copy = (Card)MemberwiseClone();
             copy.Modifier = Modifier.Clone();
+            copy.tuningBaseModifier = tuningBaseModifier?.Clone();
+            copy.tuningHistory = new System.Collections.Generic.List<TuningGrantDefinition>(tuningHistory);
             return copy;
         }
 
