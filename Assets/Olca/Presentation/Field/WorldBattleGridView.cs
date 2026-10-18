@@ -13,7 +13,7 @@ namespace Olca.Presentation.Field
     public class WorldBattleGridView : MonoBehaviour
     {
         [Header("グリッド設定")]
-        [SerializeField] private float panelSize = 1f;      // 1 Unity単位 = 1グリッドセル
+        [SerializeField] private float panelSize = 2.56f;   // 256px / PPU100 = 1グリッドセル
         [SerializeField] private float panelY = -0.25f;     // グリッドのY座標（地面付近）
         [SerializeField] private float panelZ = 0.1f;       // 背景より手前・キャラより奥
         [SerializeField] private float panelScale = 0.95f;  // 隙間を作るスケール
@@ -36,7 +36,7 @@ namespace Olca.Presentation.Field
             {
                 var go = new GameObject($"GridPanel_{x}");
                 go.transform.SetParent(transform, false);
-                go.transform.localScale = new Vector3(panelScale, panelScale, 1f);
+                go.transform.localScale = new Vector3(panelScale * panelSize, panelScale * panelSize, 1f);
 
                 var sr = go.AddComponent<SpriteRenderer>();
                 sr.sprite = panelSprite != null ? panelSprite : whiteSprite;
@@ -81,7 +81,13 @@ namespace Olca.Presentation.Field
         }
 
         /// <summary>グリッドインデックスから World X 座標を返す</summary>
-        public float GridIndexToWorldX(int gridX) => originX + gridX * panelSize;
+        public float GridIndexToWorldX(int gridX) => originX + LogicalToWorld(gridX);
+
+        /// <summary>論理マス単位の距離をワールド単位へ変換する</summary>
+        public float LogicalToWorld(float logicalDistance) => logicalDistance * panelSize;
+
+        /// <summary>ワールド単位の距離を論理マス単位へ変換する</summary>
+        public float WorldToLogical(float worldDistance) => worldDistance / panelSize;
 
         /// <summary>1マスの幅（Unity単位）</summary>
         public float CellSize => panelSize;

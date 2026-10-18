@@ -247,7 +247,7 @@ namespace Olca.Application.Dungeon
                         contactInfo,
                         gameFieldView.PlayerTransform,
                         enemyView?.transform,
-                        ct);
+                        ct, gameFieldView.CellSize);
                 }
 
                 // 初撃などで戦闘終了した古い開始遷移は、UIやセッションを再開しない。
@@ -350,11 +350,11 @@ namespace Olca.Application.Dungeon
                     // 初撃全滅ではグリッドが未初期化。探索座標へ戻し画面外への移動を防ぐ。
                     float targetX = useBattleGrid && gameFieldView.BattleGrid != null
                         ? gameFieldView.BattleGrid.GridIndexToWorldX(1)
-                        : manager.Dungeon.PlayerPosition;
-                    float targetY = useBattleGrid ? gameFieldView.PlayerTransform.position.y : manager.Dungeon.PlayerHeight;
+                        : gameFieldView.LogicalToWorld(manager.Dungeon.PlayerPosition);
+                    float targetY = useBattleGrid ? gameFieldView.PlayerTransform.position.y : gameFieldView.LogicalToWorld(manager.Dungeon.PlayerHeight);
                     var targetPos = new UnityEngine.Vector3(targetX, targetY, 0f);
                     await contactAnimator.PlayReturnJumpAsync(
-                        gameFieldView.PlayerTransform, targetPos, ct);
+                        gameFieldView.PlayerTransform, targetPos, ct, gameFieldView.CellSize);
                     gameFieldView.SetPlayerPositionUpdateEnabled(true);
                 }
 

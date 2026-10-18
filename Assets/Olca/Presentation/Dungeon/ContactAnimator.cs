@@ -36,12 +36,12 @@ namespace Olca.Presentation.Dungeon
         /// <param name="enemySprite">接触した敵のスプライト（ContactAnimatorが生成・管理）</param>
         /// <param name="ct">キャンセルトークン</param>
         public async UniTask PlayAsync(ContactInfo contactInfo, Transform playerTransform,
-            Transform enemyTransform = null, CancellationToken ct = default)
+            Transform enemyTransform = null, CancellationToken ct = default, float worldUnitsPerCell = 1f)
         {
             if (contactInfo.IsDashContact)
-                await PlayDashContactAsync(playerTransform, enemyTransform, ct);
+                await PlayDashContactAsync(playerTransform, enemyTransform, ct, worldUnitsPerCell);
             else
-                await PlayNormalContactAsync(playerTransform, ct);
+                await PlayNormalContactAsync(playerTransform, ct, worldUnitsPerCell);
         }
 
         // ==================== 通常接敵 ====================
@@ -52,14 +52,14 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. ノックバック後退
         /// </summary>
-        private async UniTask PlayNormalContactAsync(Transform playerTransform, CancellationToken ct)
+        private async UniTask PlayNormalContactAsync(Transform playerTransform, CancellationToken ct, float units)
         {
             if (playerTransform == null) return;
 
             Vector3 startPos = playerTransform.position;
 
             // フェーズ1: わずかに前進（衝突感）
-            Vector3 bumpPos = startPos + new Vector3(normalBumpDistance, 0f, 0f);
+            Vector3 bumpPos = startPos + new Vector3(normalBumpDistance * units, 0f, 0f);
             float elapsed = 0f;
             float bumpDuration = normalContactDuration * 0.25f;
             while (elapsed < bumpDuration)
@@ -76,8 +76,8 @@ namespace Olca.Presentation.Dungeon
 
             // フェーズ3: ノックバック後退
             Vector3 knockbackPos = new Vector3(
-                bumpPos.x - normalKnockbackDistance,
-                normalContactGroundY,
+                bumpPos.x - normalKnockbackDistance * units,
+                normalContactGroundY * units,
                 bumpPos.z);
             elapsed = 0f;
             while (elapsed < normalKnockbackDuration)
@@ -85,7 +85,7 @@ namespace Olca.Presentation.Dungeon
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / normalKnockbackDuration);
                 float x = Mathf.Lerp(bumpPos.x, knockbackPos.x, EaseOutQuad(t));
-                float y = Mathf.Lerp(bumpPos.y, normalContactGroundY, EaseInQuad(t));
+                float y = Mathf.Lerp(bumpPos.y, normalContactGroundY * units, EaseInQuad(t));
                 playerTransform.position = new Vector3(x, y, bumpPos.z);
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
@@ -100,12 +100,12 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. 敵が吹き飛び＋プレイヤーが宙返りで戻る（同時）
         /// </summary>
-        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct)
+        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units)
         {
             if (playerTransform == null) return;
 
             Vector3 rushStart = playerTransform.position;
-            Vector3 rushEnd = rushStart + new Vector3(dashRushDistance + 0.5f, 0f, 0f);
+            Vector3 rushEnd = rushStart + new Vector3((dashRushDistance + 0.5f) * units, 0f, 0f);
 
             // フェーズ1: 突進（EaseInQuad で加速感）
             float elapsed = 0f;
@@ -126,9 +126,9 @@ namespace Olca.Presentation.Dungeon
             enemyTransform?.GetComponent<WorldEnemyView>()?.TriggerPendingDamageEffect();
 
             Vector3 rollStart = rushEnd;
-            Vector3 rollEnd = rushEnd - new Vector3(rollbackDistance, 0f, 0f);
+            Vector3 rollEnd = rushEnd - new Vector3(rollbackDistance * units, 0f, 0f);
             Vector3 enemyStart = enemyTransform != null ? enemyTransform.position : Vector3.zero;
-            Vector3 enemyEnd = enemyStart + new Vector3(dashEnemyKnockback, 0f, 0f);
+            Vector3 enemyEnd = enemyStart + new Vector3(dashEnemyKnockback * units, 0f, 0f);
 
             elapsed = 0f;
             while (elapsed < dashRollbackDuration)
@@ -138,7 +138,7 @@ namespace Olca.Presentation.Dungeon
 
                 // プレイヤー: 放物線移動（X: 線形、Y: 放物線）
                 float x = Mathf.Lerp(rollStart.x, rollEnd.x, t);
-                float y = rollStart.y + jumpHeight * Mathf.Sin(t * Mathf.PI);
+                float y = rollStart.y + jumpHeight * units * Mathf.Sin(t * Mathf.PI);
                 playerTransform.position = new Vector3(x, y, rollStart.z);
 
                 // 敵: 吹き飛び（EaseOutExpo: 初速が非常に速く、終速がゆっくり止まる）
@@ -158,7 +158,7 @@ namespace Olca.Presentation.Dungeon
         /// バトル後の定位置復帰ジャンプ
         /// 現在位置から指定位置へ放物線を描いて移動する（ダッシュ宙返りと同じ弧）
         /// </summary>
-        public async UniTask PlayReturnJumpAsync(Transform playerTransform, Vector3 targetPosition, CancellationToken ct = default)
+        public async UniTask PlayReturnJumpAsync(Transform playerTransform, Vector3 targetPosition, CancellationToken ct = default, float units = 1f)
         {
             if (playerTransform == null) return;
 
@@ -174,7 +174,7 @@ namespace Olca.Presentation.Dungeon
 
                 // X: 線形補間、Y: 放物線（ダッシュ宙返りと同じ）
                 float x = Mathf.Lerp(jumpStart.x, jumpEnd.x, t);
-                float y = jumpStart.y + jumpHeight * Mathf.Sin(t * Mathf.PI);
+                float y = jumpStart.y + jumpHeight * units * Mathf.Sin(t * Mathf.PI);
                 playerTransform.position = new Vector3(x, y, jumpStart.z);
 
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);

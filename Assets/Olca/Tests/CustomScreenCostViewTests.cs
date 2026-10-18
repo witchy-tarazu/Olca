@@ -236,5 +236,33 @@ namespace Olca.Tests
             }
             finally { Object.DestroyImmediate(go); }
         }
+        [TestCase(1f)]
+        [TestCase(2.56f)]
+        public void 表示単位を変えても論理マス距離と共通カメラの八マス幅を保つ(float units)
+        {
+            var gridObject = new GameObject("GridUnits");
+            var viewObject = new GameObject("FieldUnits");
+            var cameraObject = new GameObject("CameraUnits");
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                var grid = gridObject.AddComponent<WorldBattleGridView>();
+                typeof(WorldBattleGridView).GetField("panelSize", flags).SetValue(grid, units);
+                typeof(WorldBattleGridView).GetField("originX", flags).SetValue(grid, 12.5f);
+                Assert.AreEqual(units, grid.GridIndexToWorldX(4) - grid.GridIndexToWorldX(3), 0.0001f);
+                Assert.AreEqual(3.75f, grid.WorldToLogical(grid.LogicalToWorld(3.75f)), 0.0001f);
+                Assert.AreEqual(12.5f + 2.5f * units, grid.GridCenterWorldX, 0.0001f);
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.orthographic = true; camera.aspect = 16f / 9f;
+                var view = viewObject.AddComponent<GameFieldView>();
+                typeof(GameFieldView).GetField("fieldCamera", flags).SetValue(view, camera);
+                typeof(GameFieldView).GetField("battleGridView", flags).SetValue(view, grid);
+                typeof(GameFieldView).GetMethod("UpdateCameraFraming", flags).Invoke(view, null);
+                Assert.AreEqual(8f * units, camera.orthographicSize * 2f * camera.aspect, 0.0001f);
+                Assert.AreEqual(7.5f * units, view.LogicalToWorld(7.5f), 0.0001f);
+                Assert.AreEqual(Vector3.one, view.transform.localScale);
+            }
+            finally { Object.DestroyImmediate(gridObject); Object.DestroyImmediate(viewObject); Object.DestroyImmediate(cameraObject); }
+        }
     }
 }

@@ -80,6 +80,10 @@ namespace Olca.Presentation.Field
         public SpriteRenderer PlayerSprite => playerSprite;
         public WorldBattleGridView BattleGrid => battleGridView;
 
+        /// <summary>探索・戦闘で共通の、論理1マスあたりの表示単位</summary>
+        public float CellSize => battleGridView != null ? battleGridView.CellSize : 1f;
+        public float LogicalToWorld(float logicalDistance) => logicalDistance * CellSize;
+
         /// <summary>Enemy に対応する WorldEnemyView を返す（見つからなければ null）</summary>
         public WorldEnemyView GetEnemyView(Olca.Core.Domain.Enemy enemy)
         {
@@ -197,7 +201,7 @@ namespace Olca.Presentation.Field
             if (fieldCamera != null)
             {
                 Vector3 camPos = fieldCamera.transform.position;
-                camPos.x = dungeon.PlayerPosition + CameraOffsetX;
+                camPos.x = LogicalToWorld(dungeon.PlayerPosition) + CameraOffsetX;
                 fieldCamera.transform.position = camPos;
             }
 
@@ -219,7 +223,7 @@ namespace Olca.Presentation.Field
         {
             if (fieldCamera == null || !fieldCamera.orthographic || fieldCamera.aspect <= 0f) return;
             // 探索・バトル共通で横8マス。縦方向は実際の画面比率から求める。
-            float cellWidth = battleGridView != null ? battleGridView.CellSize : 1f;
+            float cellWidth = CellSize;
             fieldCamera.orthographicSize = 8f * cellWidth / (2f * fieldCamera.aspect);
             // 地面を下寄りに置き、拡大後も頭部・敵名の表示領域を確保する。
             float groundY = battleGridView != null ? battleGridView.GroundY : -0.25f;
@@ -276,11 +280,11 @@ namespace Olca.Presentation.Field
                 go.AddComponent<WorldEnemyView>();
             }
 
-            go.transform.position = new Vector3(dungeonX, enemyY, enemyZ);
+            go.transform.position = new Vector3(LogicalToWorld(dungeonX), enemyY, enemyZ);
             go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
 
             var view = go.GetComponent<WorldEnemyView>();
-            view.Initialize(enemy, dungeonX);
+            view.Initialize(enemy, LogicalToWorld(dungeonX));
             view.SetDamageNumberPool(worldDamageNumberPool);
             return view;
         }
@@ -300,9 +304,9 @@ namespace Olca.Presentation.Field
 
             // グリッド原点をプレイヤーの現在位置から逆算
             // → プレイヤーをワープさせず、グリッドをプレイヤーに合わせて出現させる
-            float originX = contactPositionX;
+            float originX = LogicalToWorld(contactPositionX);
             if (playerTransform != null)
-                originX = playerTransform.position.x - battle.Player.GridPosition.X;
+                originX = playerTransform.position.x - LogicalToWorld(battle.Player.GridPosition.X);
 
             battleGridView?.Show(battle.Field, originX);
 
@@ -436,7 +440,7 @@ namespace Olca.Presentation.Field
             if (!playerPositionUpdateEnabled) return;
             if (playerTransform == null) return;
             playerTransform.position = new Vector3(
-                dungeonSystem.PlayerPosition, dungeonSystem.PlayerHeight, 0f);
+                LogicalToWorld(dungeonSystem.PlayerPosition), LogicalToWorld(dungeonSystem.PlayerHeight), 0f);
         }
 
         /// <summary>
@@ -484,11 +488,11 @@ namespace Olca.Presentation.Field
                 return;
             }
 
-            float position = playerTransform.position.x;
+            float position = playerTransform.position.x / CellSize;
             if (previousAnimationPosition.HasValue)
             {
                 float delta = position - previousAnimationPosition.Value;
-                // 通常10・Dash20単位/秒を超える変位はワープとして除外する。
+                // 論理マス単位で通常10・Dash20/秒を超える変位はワープとして除外する。
                 isMoving = delta > 0.0001f && delta <= 25f * Time.deltaTime;
             }
             previousAnimationPosition = position;

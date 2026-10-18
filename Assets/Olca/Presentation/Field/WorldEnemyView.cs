@@ -19,7 +19,7 @@ namespace Olca.Presentation.Field
         [SerializeField] private EnemyView enemyView;  // 視覚表現コンポーネント
 
         private Enemy enemy;
-        private float dungeonPositionX;       // ダンジョン上の配置X座標
+        private float dungeonWorldX;       // 換算済みのダンジョン配置World X
         private WorldBattleGridView gridView;  // バトル中のみセットされる
         private int previousHp;
         private int pendingContactDamage;     // バトル開始前に適用されたダッシュダメージ（フェーズ3で発動）
@@ -51,7 +51,7 @@ namespace Olca.Presentation.Field
         public void Initialize(Enemy enemy, float dungeonX)
         {
             this.enemy = enemy;
-            this.dungeonPositionX = dungeonX;
+            this.dungeonWorldX = dungeonX;
             this.gridView = null;
             this.previousHp = enemy.CurrentHp;
 
@@ -218,7 +218,7 @@ namespace Olca.Presentation.Field
         {
             float worldX = (gridView != null && enemy != null)
                 ? gridView.GridIndexToWorldX(enemy.GridPosition.X)
-                : dungeonPositionX;
+                : dungeonWorldX;
 
             transform.position = new Vector3(worldX, transform.position.y, transform.position.z);
         }
