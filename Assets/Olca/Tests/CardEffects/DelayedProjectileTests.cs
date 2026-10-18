@@ -182,8 +182,11 @@ namespace Olca.Tests.CardEffects
             // Act: カード使用
             effect.Execute(context);
 
-            // 着弾前に着弾地点を穴パネルにする
+            // 占有中の直接穴化はヒビになる。最後の敵が離れてから着弾する。
             battle.Field.ChangePanelType(new Vector2Int(3, 0), PanelType.Hole);
+            Assert.AreEqual(PanelType.Cracked, battle.Field.GetPanelType(new Vector2Int(3, 0)));
+            enemies[0].MoveTo(new Vector2Int(5, 0));
+            Assert.AreEqual(PanelType.Hole, battle.Field.GetPanelType(new Vector2Int(3, 0)));
 
             // 1000ms経過で着弾
             battle.DelayedEffects.Update(deltaTimeMs: 1000);

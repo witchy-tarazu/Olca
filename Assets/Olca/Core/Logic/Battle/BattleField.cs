@@ -45,6 +45,7 @@ namespace Olca.Core.Logic.Battle
         private readonly PanelType[,] panels;
         private readonly bool[,] permanentHoles = new bool[GRID_WIDTH, GRID_HEIGHT];
         private Vector2Int? protectedPosition;
+        private Func<Vector2Int, bool> occupancyQuery;
         private readonly Dictionary<string, FieldObstacle> obstacles = new Dictionary<string, FieldObstacle>();
 
         public BattleField(IEnumerable<Vector2Int> initialPermanentHoles = null)
@@ -104,7 +105,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>
         /// パネルタイプを変更
-        /// パネル保護機能: 保護位置が穴パネルに変更されようとした場合、ヒビパネルにする
+        /// 占有位置または一時移動元が穴に変更されようとした場合、ヒビにする
         /// </summary>
         public void ChangePanelType(Vector2Int position, PanelType type)
         {
@@ -116,8 +117,8 @@ namespace Olca.Core.Logic.Battle
             // 後発の地形効果や復元処理では、初期配置の永続穴を上書きしない。
             if (IsPermanentHole(position)) return;
 
-            // パネル保護: 保護位置が穴パネルに変更されようとした場合、ヒビパネルにする
-            if (protectedPosition.HasValue && position == protectedPosition.Value)
+            // キャラクター占有中は直接穴にせずヒビにする。浮遊者も占有に数える。
+            if (IsOccupied(position))
             {
                 PanelType currentType = panels[position.X, position.Y];
 
@@ -226,6 +227,14 @@ namespace Olca.Core.Logic.Battle
         public void ClearObstacles() => obstacles.Clear();
 
         private static string ObstacleKey(Vector2Int position) => $"{position.X},{position.Y}";
+
+        /// <summary>生存参加者と一時移動元を共通の占有判定に含める。</summary>
+        public bool IsOccupied(Vector2Int position)
+            => IsInBounds(position) && ((protectedPosition.HasValue && position == protectedPosition.Value)
+                || (occupancyQuery?.Invoke(position) ?? false));
+
+        // 戦闘終了時はnullに戻し、参加者への参照を残さない。
+        internal void SetOccupancyQuery(Func<Vector2Int, bool> query) => occupancyQuery = query;
 
         /// <summary>
         /// パネル保護を設定（一時移動の移動元を保護）

@@ -10,6 +10,119 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class BattleSystemMovementTests
     {
+        private static Enemy Occupant(string id, int x, bool summon = false)
+            => new Enemy(id, id, 50, ElementType.None, new Vector2Int(x, 0), isSummoned: summon);
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 敵占有中の直接穴化は浮遊の有無にかかわらずヒビになる(bool floating)
+        {
+            var enemy = Occupant("target", 3); enemy.TerrainState.IsFloating = floating;
+            var b = new BattleSystem(new PlayerCharacter(100, new Vector2Int(0, 0)), new List<Enemy> { enemy }, new Deck());
+            b.Field.ChangePanelType(enemy.GridPosition, PanelType.Hole);
+            Assert.IsTrue(b.Field.IsOccupied(enemy.GridPosition));
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(enemy.GridPosition));
+            enemy.MoveTo(new Vector2Int(4, 0));
+            Assert.AreEqual(floating ? PanelType.Cracked : PanelType.Hole, b.Field.GetPanelType(new Vector2Int(3, 0)));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 同マスの最後の対象が移動または死亡した時だけヒビが壊れる(bool die)
+        {
+            var a = Occupant("a", 3); var b = Occupant("b", 3); var keeper = Occupant("keeper", 5);
+            var battle = new BattleSystem(new PlayerCharacter(100, new Vector2Int(0, 0)), new List<Enemy> { a, b, keeper }, new Deck());
+            var from = a.GridPosition; battle.Field.ChangePanelType(from, PanelType.Hole);
+            int breaks = 0; battle.PanelEffects.OnPanelEffectApplied += (_, type) => { if (type == PanelType.Cracked) breaks++; };
+            a.MoveTo(from); Assert.AreEqual(0, breaks, "同位置通知は離脱ではない");
+            if (die) a.TakeDamage(50, ElementType.None); else a.MoveTo(new Vector2Int(4, 0));
+            Assert.AreEqual(PanelType.Cracked, battle.Field.GetPanelType(from)); Assert.IsTrue(battle.Field.IsOccupied(from));
+            if (die) b.TakeDamage(50, ElementType.None); else b.MoveTo(new Vector2Int(4, 0));
+            Assert.AreEqual(PanelType.Hole, battle.Field.GetPanelType(from)); Assert.IsFalse(battle.Field.IsOccupied(from)); Assert.AreEqual(1, breaks);
+            Assert.IsFalse(battle.IsGameOver);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 同マスの浮遊者も占有に数えるが最後の浮遊者自身はヒビを壊さない(bool floatLeavesFirst)
+        {
+            var ground = Occupant("ground", 3); var floating = Occupant("float", 3); floating.TerrainState.IsFloating = true;
+            var b = new BattleSystem(new PlayerCharacter(100, new Vector2Int(0, 0)), new List<Enemy> { ground, floating }, new Deck());
+            var from = ground.GridPosition; b.Field.ChangePanelType(from, PanelType.Cracked);
+            (floatLeavesFirst ? floating : ground).MoveTo(new Vector2Int(4, 0));
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(from));
+            (floatLeavesFirst ? ground : floating).MoveTo(new Vector2Int(4, 0));
+            Assert.AreEqual(floatLeavesFirst ? PanelType.Hole : PanelType.Cracked, b.Field.GetPanelType(from));
+        }
+
+        [Test]
+        public void 召喚登録の通知前に占有が反映され死亡後は再通知で地形を変更しない()
+        {
+            var b = new BattleSystem(new PlayerCharacter(100, new Vector2Int(0, 0)), new List<Enemy> { Occupant("keeper", 5) }, new Deck());
+            var summon = Occupant("summon", 3, true); var from = summon.GridPosition;
+            b.OnSummonAdded += e => { Assert.IsTrue(b.Field.IsOccupied(e.GridPosition)); b.Field.ChangePanelType(e.GridPosition, PanelType.Hole); };
+            b.AddSummon(summon, new List<IEnemyAIAction> { new BasicAttackAction(10, 2f) });
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(from));
+            summon.TakeDamage(50, ElementType.None); Assert.AreEqual(PanelType.Hole, b.Field.GetPanelType(from));
+            b.Field.ChangePanelType(from, PanelType.Cracked); summon.MoveTo(new Vector2Int(4, 0)); summon.TakeDamage(1, ElementType.None);
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(from)); Assert.IsFalse(b.Field.IsOccupied(summon.GridPosition));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 勝敗通知前に占有と位置購読を解除して後続の移動でヒビを破壊しない(bool defeat)
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(0, 0)); var e = Occupant("body", 5); var summon = Occupant("summon", 3, true);
+            var b = new BattleSystem(p, new List<Enemy> { e }, new Deck());
+            b.AddSummon(summon, new List<IEnemyAIAction> { new BasicAttackAction(10, 2f) });
+            b.Field.SetProtectedPosition(new Vector2Int(2, 0));
+            int externalMoves = 0; summon.OnPositionChanged += _ => externalMoves++;
+            b.OnBattleEnd += result =>
+            {
+                for (int x = 0; x < 6; x++) Assert.IsFalse(b.Field.IsOccupied(new Vector2Int(x, 0)));
+                Assert.IsFalse(b.Enemies.Contains(summon));
+            };
+            if (defeat) p.TakeDamage(100); else e.TakeDamage(50, ElementType.None);
+            Assert.IsTrue(b.IsGameOver);
+            b.Field.ChangePanelType(new Vector2Int(3, 0), PanelType.Cracked);
+            b.Field.ChangePanelType(new Vector2Int(0, 0), PanelType.Cracked);
+            summon.MoveTo(new Vector2Int(4, 0)); p.MoveTo(new Vector2Int(1, 0));
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(new Vector2Int(3, 0)));
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(new Vector2Int(0, 0))); Assert.AreEqual(1, externalMoves);
+        }
+
+        [Test]
+        public void 永続穴の占有中も移動後も地形変更で上書きできない()
+        {
+            var hole = new Vector2Int(3, 0); var enemy = Occupant("float", 3); enemy.TerrainState.IsFloating = true;
+            var b = new BattleSystem(new PlayerCharacter(100, new Vector2Int(0, 0)), new List<Enemy> { enemy }, new Deck(), initialPermanentHoles: new[] { hole });
+            b.Field.ChangePanelType(hole, PanelType.Cracked); Assert.AreEqual(PanelType.Hole, b.Field.GetPanelType(hole));
+            enemy.MoveTo(new Vector2Int(4, 0)); b.Field.ChangePanelType(hole, PanelType.Normal);
+            Assert.IsTrue(b.Field.IsPermanentHole(hole)); Assert.AreEqual(PanelType.Hole, b.Field.GetPanelType(hole));
+        }
+
+        [Test]
+        public void プレイヤーの直接位置変更も敵と共通の占有と離脱判定を使う()
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(3, 0)); var e = Occupant("e", 3);
+            var b = new BattleSystem(p, new List<Enemy> { e }, new Deck()); var from = p.GridPosition;
+            b.Field.ChangePanelType(from, PanelType.Hole); p.MoveTo(new Vector2Int(2, 0));
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(from));
+            e.MoveTo(new Vector2Int(4, 0)); Assert.AreEqual(PanelType.Hole, b.Field.GetPanelType(from));
+        }
+
+        [Test]
+        public void 一時移動元の保護は共通占有判定でも維持する()
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(0, 0)); var b = new BattleSystem(p, new List<Enemy> { Occupant("e", 5) }, new Deck());
+            var origin = p.GridPosition; b.Field.SetProtectedPosition(origin); p.MoveTemporarily(new Vector2Int(2, 0));
+            b.Field.ChangePanelType(origin, PanelType.Hole); b.Field.ChangePanelType(p.GridPosition, PanelType.Hole);
+            Assert.IsTrue(b.Field.IsOccupied(origin)); Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(origin));
+            p.ReturnToOriginalPosition(); b.Field.SetProtectedPosition(null);
+            Assert.AreEqual(PanelType.Cracked, b.Field.GetPanelType(origin));
+            Assert.AreEqual(PanelType.Hole, b.Field.GetPanelType(new Vector2Int(2, 0)));
+        }
+
         private BattleSystem battle;
         private PlayerCharacter player;
         private List<Enemy> enemies;

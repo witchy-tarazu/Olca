@@ -63,17 +63,19 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void ApplyOnLeaveEffect(PlayerCharacter player, Vector2Int fromPosition)
         {
-            if (player == null || !player.TerrainState.ReceivesPanelEffects) return;
+            if (player != null) ApplyOnLeaveEffect(player.TerrainState, fromPosition);
+        }
 
-            PanelType panelType = field.GetPanelType(fromPosition);
+        /// <summary>占有更新後に呼ぶ。最後の非フロート対象の離脱だけがヒビを破壊する。</summary>
+        public void ApplyOnLeaveEffect(BattleTerrainState terrain, Vector2Int fromPosition)
+        {
+            if (terrain == null || !terrain.ReceivesPanelEffects || !field.IsInBounds(fromPosition)
+                || field.IsOccupied(fromPosition)) return;
 
-            switch (panelType)
+            if (field.GetPanelType(fromPosition) == PanelType.Cracked)
             {
-                case PanelType.Cracked:
-                    // Crackedパネルから離れるとHoleに変化
-                    CrackPanel(fromPosition);
-                    logger?.LogInfo($"Crackedパネルから離れて破壊: {fromPosition}");
-                    break;
+                CrackPanel(fromPosition);
+                logger?.LogInfo($"最後の対象がCrackedパネルから離れて破壊: {fromPosition}");
             }
         }
 

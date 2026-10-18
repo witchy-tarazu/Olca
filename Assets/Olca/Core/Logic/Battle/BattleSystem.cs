@@ -15,6 +15,8 @@ namespace Olca.Core.Logic.Battle
         private readonly PlayerCharacter player;
         private readonly List<Enemy> enemies;
         private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
+        private readonly Dictionary<Enemy, Action<Vector2Int>> enemyPositionHandlers = new Dictionary<Enemy, Action<Vector2Int>>();
+        private Vector2Int previousPlayerPosition;
         private readonly BattleField battleField;
         private readonly CustomGaugeSystem customGauge;
         private readonly CustomScreenSystem customScreen;
@@ -100,6 +102,12 @@ namespace Olca.Core.Logic.Battle
             this.logger = logger;
             this.state = BattleState.InProgress;
 
+            battleField.SetOccupancyQuery(position =>
+                (!player.IsDead && player.GridPosition == position) ||
+                this.enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == position));
+            previousPlayerPosition = player.GridPosition;
+            player.OnPositionChanged += OnPlayerPositionChanged;
+
             // プレイヤー死亡時の処理
             player.OnDamageProcessingStarted += BeginResolution;
             player.OnDamageProcessingCompleted += EndResolution;
@@ -122,8 +130,15 @@ namespace Olca.Core.Logic.Battle
 
         private void OnPlayerMoved(Vector2Int newPos, Vector2Int oldPos)
         {
-            panelEffects.ApplyOnLeaveEffect(player, oldPos);
             panelEffects.ApplyOnEnterEffect(player, newPos);
+        }
+
+        private void OnPlayerPositionChanged(Vector2Int position)
+        {
+            var previous = previousPlayerPosition;
+            previousPlayerPosition = position;
+            if (!IsGameOver && !player.IsDead && previous != position)
+                panelEffects.ApplyOnLeaveEffect(player.TerrainState, previous);
         }
 
         private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
@@ -131,7 +146,26 @@ namespace Olca.Core.Logic.Battle
             enemyAI.RegisterEnemy(enemy, actions);
             enemy.OnDamageProcessingStarted += BeginResolution;
             enemy.OnDamageProcessingCompleted += EndResolution;
-            Action handler = () => { CheckVictoryCondition(); enemyAI.UnregisterEnemy(enemy); };
+            var previous = enemy.GridPosition;
+            Action<Vector2Int> moved = position =>
+            {
+                var from = previous;
+                previous = position;
+                if (!IsGameOver && !enemy.IsDead && from != position)
+                    panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
+            };
+            enemyPositionHandlers.Add(enemy, moved);
+            enemy.OnPositionChanged += moved;
+            Action handler = null;
+            handler = () =>
+            {
+                // HP0は占有から既に除外されている。再通知で破壊を繰り返さない。
+                enemy.OnPositionChanged -= moved;
+                enemy.OnDeath -= handler;
+                panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, enemy.GridPosition);
+                enemyAI.UnregisterEnemy(enemy);
+                CheckVictoryCondition();
+            };
             enemyDeathHandlers.Add(enemy, handler);
             enemy.OnDeath += handler;
         }
@@ -311,6 +345,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnPlayerDeath()
         {
+            panelEffects.ApplyOnLeaveEffect(player.TerrainState, player.GridPosition);
             RequestResolution();
         }
 
@@ -382,6 +417,12 @@ namespace Olca.Core.Logic.Battle
                 enemyAI.UnregisterEnemy(entry.Key);
             }
             enemyDeathHandlers.Clear();
+            foreach (var entry in enemyPositionHandlers)
+                entry.Key.OnPositionChanged -= entry.Value;
+            enemyPositionHandlers.Clear();
+            player.OnPositionChanged -= OnPlayerPositionChanged;
+            battleField.SetOccupancyQuery(null);
+            battleField.SetProtectedPosition(null);
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
             player.OnDeath -= OnPlayerDeath;
