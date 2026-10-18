@@ -23,6 +23,12 @@ namespace Olca.Core.Logic.Battle
         /// <summary>使用待ちカードのリスト</summary>
         public IReadOnlyList<Card> QueuedCards => queuedCards.AsReadOnly();
 
+        /// <summary>未使用範囲を使用順のまま複製して取得する</summary>
+        public IReadOnlyList<Card> GetRemainingCards()
+        {
+            return queuedCards.GetRange(currentCardIndex, RemainingCount).AsReadOnly();
+        }
+
         /// <summary>現在使用可能なカード（先頭のカード）</summary>
         public Card CurrentCard => currentCardIndex < queuedCards.Count ? queuedCards[currentCardIndex] : null;
 

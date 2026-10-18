@@ -223,7 +223,7 @@ namespace Olca.Core.Logic.Battle
             }
 
             // 未使用カードを取得してカスタム画面に渡す
-            var remainingCards = cardUsage.QueuedCards;
+            var remainingCards = cardUsage.GetRemainingCards();
             customScreen.Open(remainingCards, random);
             Pause();
         }

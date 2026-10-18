@@ -207,6 +207,84 @@ namespace Olca.Tests.CardTests
             Assert.AreEqual(70, enemies[1].CurrentHp, "2体目に30ダメージ入っていない（100-30=70）");
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void カスタム再確定_使用またはスキップ済みカードを戻さず未使用順を保持する(bool skip)
+        {
+            var a = CreateCard("a", "A", 1, CardSeries.None, 1);
+            var b = CreateCard("b", "B", 1, CardSeries.None, 2);
+            var c = CreateCard("c", "C", 1, CardSeries.None, 3);
+            battleSystem.CardUsage.EnqueueCards(new List<Card> { a, b, c });
+            if (skip) battleSystem.CardUsage.SkipCurrentCard();
+            else Assert.IsTrue(battleSystem.UseCurrentCard());
+            CollectionAssert.AreEqual(new[] { a, b, c }, battleSystem.CardUsage.QueuedCards);
+
+            ConfirmWithoutSelection();
+            CollectionAssert.AreEqual(new[] { b, c }, battleSystem.CardUsage.GetRemainingCards());
+            Assert.AreSame(b, battleSystem.CardUsage.CurrentCard);
+            Assert.AreEqual(2, battleSystem.CardUsage.RemainingCount);
+            Assert.IsTrue(battleSystem.UseCurrentCard());
+            ConfirmWithoutSelection();
+            Assert.AreSame(c, battleSystem.CardUsage.CurrentCard);
+            Assert.AreEqual(1, battleSystem.CardUsage.RemainingCount);
+        }
+
+        [Test]
+        public void カスタム再確定_全使用済みなら空のまま()
+        {
+            var a = CreateCard("a", "A", 1, CardSeries.None, 1);
+            battleSystem.CardUsage.EnqueueCards(new List<Card> { a });
+            Assert.IsTrue(battleSystem.UseCurrentCard());
+            ConfirmWithoutSelection();
+            Assert.IsTrue(battleSystem.CardUsage.IsEmpty);
+            Assert.AreEqual(0, battleSystem.CardUsage.RemainingCount);
+            Assert.IsNull(battleSystem.CardUsage.CurrentCard);
+            Assert.IsFalse(battleSystem.UseCurrentCard());
+        }
+
+        [Test]
+        public void カスタム再確定_新規選択で以前の未使用カードを破棄する()
+        {
+            var oldCard = CreateCard("old", "旧カード", 1, CardSeries.None, 1);
+            battleSystem.CardUsage.EnqueueCards(new List<Card> { oldCard });
+            battleSystem.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battleSystem.OpenCustomScreen(random);
+            var selected = battleSystem.CustomScreen.CurrentHand[0];
+            Assert.IsTrue(battleSystem.CustomScreen.TrySelectCard(selected));
+            battleSystem.CustomScreen.Confirm();
+            battleSystem.CustomScreen.Close();
+            Assert.IsFalse(battleSystem.IsPaused);
+            CollectionAssert.AreEqual(new[] { selected }, battleSystem.CardUsage.GetRemainingCards());
+            Assert.AreSame(selected, battleSystem.CardUsage.CurrentCard);
+        }
+
+        [Test]
+        public void 未使用スナップショット_取得後の使用やキュー置換で変化しない()
+        {
+            var a = CreateCard("a", "A", 1, CardSeries.None, 1);
+            var b = CreateCard("b", "B", 1, CardSeries.None, 2);
+            battleSystem.CardUsage.EnqueueCards(new List<Card> { a, b });
+            battleSystem.UseCurrentCard();
+            var snapshot = battleSystem.CardUsage.GetRemainingCards();
+            battleSystem.UseCurrentCard();
+            battleSystem.CardUsage.EnqueueCards(new List<Card> { a });
+            CollectionAssert.AreEqual(new[] { b }, snapshot);
+            Assert.AreSame(a, battleSystem.CardUsage.CurrentCard);
+        }
+
+        private void ConfirmWithoutSelection()
+        {
+            battleSystem.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battleSystem.OpenCustomScreen(random);
+            Assert.IsTrue(battleSystem.IsPaused);
+            Assert.IsTrue(battleSystem.CustomScreen.IsOpen);
+            Assert.AreEqual(0, battleSystem.CustomScreen.SelectedCards.Count);
+            battleSystem.CustomScreen.Confirm();
+            battleSystem.CustomScreen.Close();
+            Assert.IsFalse(battleSystem.CustomScreen.IsOpen);
+            Assert.IsFalse(battleSystem.IsPaused);
+        }
+
         private Card FindCardByName(IReadOnlyList<Card> cards, string name)
         {
             foreach (var card in cards)
