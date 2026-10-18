@@ -18,6 +18,9 @@ namespace Olca.Core.Logic.Battle
         private readonly List<Card> queuedCards; // 使用待ちカードのキュー
         private readonly IGameLogger logger;
         private int currentCardIndex; // 現在使用中のカードのインデックス
+        private bool isUsingCard;
+        private bool interruptedByStagger;
+        private int queueVersion;
         private CancellationTokenSource currentCardCts; // 現在実行中のカード効果のCancellationTokenSource
 
         /// <summary>使用待ちカードのリスト</summary>
@@ -57,6 +60,7 @@ namespace Olca.Core.Logic.Battle
             if (selectedCards == null) throw new ArgumentNullException(nameof(selectedCards));
 
             // 既存のキューをクリアして新しいカードを追加
+            queueVersion++;
             queuedCards.Clear();
             queuedCards.AddRange(selectedCards);
             currentCardIndex = 0;
@@ -70,7 +74,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool TryUseCurrentCard()
         {
-            if (IsEmpty)
+            if (IsEmpty || isUsingCard)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -158,7 +162,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public async UniTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
         {
-            if (IsEmpty)
+            if (IsEmpty || isUsingCard)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -166,9 +170,10 @@ namespace Olca.Core.Logic.Battle
 
             var card = CurrentCard;
 
-            // 新しいCTSを作成
-            currentCardCts?.Cancel();
-            currentCardCts?.Dispose();
+            int version = queueVersion;
+            int index = currentCardIndex;
+            isUsingCard = true;
+            interruptedByStagger = false;
             currentCardCts = new CancellationTokenSource();
 
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -180,24 +185,35 @@ namespace Olca.Core.Logic.Battle
                 // カード効果を実行
                 await ExecuteCardEffectAsync(card, linkedCts.Token);
 
-                // 次のカードに進む
-                currentCardIndex++;
-
-                logger?.LogInfo($"カード使用: {card.Name} (残り{RemainingCount}枚)");
-                OnCardUsed?.Invoke(card);
-
-                return true;
+                return ConsumeAsyncCard(card, version, index);
             }
             catch (OperationCanceledException)
             {
-                // カード効果が中断された
+                // 全体仕様第5節: 強靭度による中断は発動前でも消費する。
+                // 外部トークンのキャンセルは意味が未定義のため、従来の未消費を維持する。
                 logger?.LogWarning($"カード効果が中断されました: {card.Name}");
-                return false;
+                return interruptedByStagger && !ct.IsCancellationRequested
+                    && ConsumeAsyncCard(card, version, index);
             }
             finally
             {
-                linkedCts?.Dispose();
+                linkedCts.Dispose();
+                currentCardCts.Dispose();
+                currentCardCts = null;
+                isUsingCard = false;
+                interruptedByStagger = false;
             }
+        }
+
+        private bool ConsumeAsyncCard(Card card, int version, int index)
+        {
+            // 待機中に破棄・置換されたキューの次カードを誤消費しない。
+            if (version != queueVersion || index != currentCardIndex || !ReferenceEquals(CurrentCard, card))
+                return false;
+            currentCardIndex++;
+            logger?.LogInfo($"カード使用: {card.Name} (残り{RemainingCount}枚)");
+            OnCardUsed?.Invoke(card);
+            return true;
         }
 
         /// <summary>
@@ -205,6 +221,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void InterruptCurrentCard()
         {
+            if (!isUsingCard) return;
+            interruptedByStagger = true;
             currentCardCts?.Cancel();
         }
 
@@ -213,6 +231,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void Clear()
         {
+            queueVersion++;
             queuedCards.Clear();
             currentCardIndex = 0;
             OnQueueCleared?.Invoke();
@@ -223,7 +242,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool SkipCurrentCard()
         {
-            if (IsEmpty) return false;
+            if (IsEmpty || isUsingCard) return false;
 
             var skippedCard = CurrentCard;
             currentCardIndex++;

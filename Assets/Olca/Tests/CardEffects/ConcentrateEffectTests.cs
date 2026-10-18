@@ -187,6 +187,8 @@ namespace Olca.Tests.CardEffects
             var nextCard = new Card("next_attack", "次の攻撃", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.None, CardSeries.Canon, 5, "威力5");
             battle.CardUsage.EnqueueCards(new List<Card> { card, nextCard });
+            int used = 0;
+            battle.CardUsage.OnCardUsed += _ => used++;
             using (var cts = new CancellationTokenSource())
             {
                 var pending = battle.CardUsage.TryUseCurrentCardAsync(cts.Token).AsTask();
@@ -201,27 +203,76 @@ namespace Olca.Tests.CardEffects
                     Assert.IsFalse(pending.IsCompleted);
                 }
                 if (externalCancel) cts.Cancel();
-                else battle.CardUsage.InterruptCurrentCard();
+                else player.TakeDamage(player.Poise); // 実際の強靭度到達イベントから中断する。
 
-                Assert.AreEqual(afterHit, await AwaitCardUse(pending), "命中後は使用済み、命中前は中断失敗");
+                // 全体仕様第5節: 内部のけぞりは命中前でも消費。外部キャンセルは従来どおり。
+                bool consumed = afterHit || !externalCancel;
+                Assert.AreEqual(consumed, await AwaitCardUse(pending));
+                Assert.AreEqual(consumed ? 1 : 0, used);
                 Assert.IsFalse(player.IsInTemporaryMove);
                 Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
                 Assert.AreEqual(afterHit ? 70 : 100, battle.Enemies[0].CurrentHp);
                 Assert.AreEqual(20, card.GetFinalPower());
                 Assert.AreEqual(10, card.Modifier.BonusDamage);
                 Assert.IsFalse(player.IsConcentrating);
-                Assert.AreEqual(afterHit ? 1 : 2, battle.CardUsage.RemainingCount);
-                Assert.AreSame(afterHit ? nextCard : card, battle.CardUsage.CurrentCard,
+                Assert.AreEqual(consumed ? 1 : 2, battle.CardUsage.RemainingCount);
+                Assert.AreSame(consumed ? nextCard : card, battle.CardUsage.CurrentCard,
                     "命中済みカードを再使用可能にしない");
                 Assert.IsTrue(await AwaitCardUse(battle.CardUsage.TryUseCurrentCardAsync().AsTask()));
-                Assert.AreEqual(afterHit ? 65 : 80, battle.Enemies[0].CurrentHp);
-                if (afterHit)
+                Assert.AreEqual(afterHit ? 65 : consumed ? 95 : 80, battle.Enemies[0].CurrentHp);
+                Assert.AreEqual(consumed ? 2 : 1, used);
+                Assert.AreEqual(5, nextCard.GetFinalPower());
+                if (consumed)
                 {
                     Assert.IsTrue(battle.CardUsage.IsEmpty);
                     Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());
-                    Assert.AreEqual(65, battle.Enemies[0].CurrentHp);
+                    Assert.AreEqual(afterHit ? 65 : 95, battle.Enemies[0].CurrentHp);
                 }
             }
+        }
+
+        [Test]
+        public async Task 実行中の重複使用とスキップは拒否し中断を繰り返しても一枚だけ消費する()
+        {
+            var card = CreateMovingAttack(1f, 0.01f);
+            var next = new Card("next", "次", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 5, "次");
+            battle.CardUsage.EnqueueCards(new List<Card> { card, next });
+            int used = 0;
+            battle.CardUsage.OnCardUsed += _ => used++;
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());
+            Assert.IsFalse(await battle.CardUsage.TryUseCurrentCardAsync().AsTask());
+            Assert.IsFalse(battle.CardUsage.SkipCurrentCard());
+            player.TakeDamage(player.Poise);
+            battle.CardUsage.InterruptCurrentCard();
+            Assert.IsTrue(await AwaitCardUse(pending));
+            battle.CardUsage.InterruptCurrentCard();
+            Assert.AreEqual(1, used);
+            Assert.AreSame(next, battle.CardUsage.CurrentCard);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+            Assert.AreEqual(2, used);
+            Assert.AreEqual(95, battle.Enemies[0].CurrentHp);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task 待機中のキュー破棄や置換は新しいカードを誤消費しない(bool replace)
+        {
+            var card = CreateMovingAttack(1f, 0.01f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            int used = 0;
+            battle.CardUsage.OnCardUsed += _ => used++;
+            var pending = battle.CardUsage.TryUseCurrentCardAsync().AsTask();
+            battle.CardUsage.Clear();
+            if (replace) battle.CardUsage.EnqueueCards(new List<Card> { card });
+            battle.CardUsage.InterruptCurrentCard();
+            Assert.IsFalse(await AwaitCardUse(pending));
+            Assert.AreEqual(0, used);
+            Assert.AreEqual(replace ? 1 : 0, battle.CardUsage.RemainingCount);
+            Assert.AreEqual(100, battle.Enemies[0].CurrentHp);
+            Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
         }
 
         [Test]
