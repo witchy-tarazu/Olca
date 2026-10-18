@@ -275,6 +275,58 @@ namespace Olca.Tests.CardTests
             CollectionAssert.AreEqual(new[] { a }, cs.AvailableCards);
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 異段階超越_両順序で手札と選択を変更せず候補にしない(bool reverse)
+        {
+            var a = new Card("sword", "ソード", 2, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 10, "", exceedLevel: ExceedLevel.Normal);
+            var b = new Card("sword", "ソード★", 2, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 20, "", exceedLevel: ExceedLevel.Lv1);
+            var selected = CreateTestCard("other", "選択済み", 1, CardSeries.Bomb);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { a, b, selected }), exceedSystem: new ExceedSystem(new MockCardFactory()));
+            cs.Open(EmptyRemainingCards(), random);
+            cs.TrySelectCard(selected);
+            var hand = cs.CurrentHand.ToArray();
+            var selection = cs.SelectedCards.ToArray();
+            var first = reverse ? b : a;
+            var second = reverse ? a : b;
+            int events = 0;
+            cs.OnExceeded += _ => events++;
+            Assert.IsFalse(cs.CanExceed(first, second));
+            Assert.IsFalse(cs.IsCompatibleWithCurrentSelection(new[] { first }, second));
+            var result = cs.ExecuteExceed(first, second);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.AreEqual("同じ超越段階のカード2枚が必要です", result.ErrorMessage);
+            CollectionAssert.AreEqual(hand, cs.CurrentHand);
+            CollectionAssert.AreEqual(selection, cs.SelectedCards);
+            Assert.AreEqual(0, events);
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public void 同段階同参照の2枚_上限以外は候補と実行が一致する(ExceedLevel level)
+        {
+            var card = new Card("sword", "ソード", 2, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 10, "", exceedLevel: level);
+            var cs = new CustomScreenSystem(new Deck(new List<Card> { card, card }), exceedSystem: new ExceedSystem(new MockCardFactory()));
+            cs.Open(EmptyRemainingCards(), random);
+            Assert.AreEqual(2, cs.CurrentHand.Count);
+            bool allowed = level < ExceedLevel.Lv3;
+            Assert.AreEqual(allowed, cs.CanExceed(card, card));
+            Assert.AreEqual(allowed, cs.IsCompatibleWithCurrentSelection(new[] { card }, card));
+            var result = cs.ExecuteExceed(card, card);
+            Assert.AreEqual(allowed, result.IsSuccess);
+            Assert.AreEqual(allowed ? 1 : 2, cs.CurrentHand.Count);
+            if (allowed) Assert.AreEqual((ExceedLevel)((int)level + 1), cs.CurrentHand[0].ExceedLevel);
+            else StringAssert.Contains("最上位", result.ErrorMessage);
+            Assert.IsFalse(cs.CanExceed(null, card));
+            Assert.IsFalse(cs.CanExceed(card, null));
+            Assert.IsFalse(cs.IsCompatibleWithCurrentSelection(new[] { card }, null));
+        }
+
         // ===== カスタマイズ操作（超越・調律・融合）=====
 
         private CustomScreenSystem CreateCustomScreenWithSystems()

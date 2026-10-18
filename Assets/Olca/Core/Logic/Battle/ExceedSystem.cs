@@ -27,6 +27,8 @@ namespace Olca.Core.Logic.Battle
                 return ExceedValidationResult.Fail("カードがnullです");
             if (cardA.Id != cardB.Id)
                 return ExceedValidationResult.Fail("同名カード2枚が必要です");
+            if (cardA.ExceedLevel != cardB.ExceedLevel)
+                return ExceedValidationResult.Fail("同じ超越段階のカード2枚が必要です");
             if (cardA.ExceedLevel >= ExceedLevel.Lv3)
                 return ExceedValidationResult.Fail("最上位カードはこれ以上超越できません");
 

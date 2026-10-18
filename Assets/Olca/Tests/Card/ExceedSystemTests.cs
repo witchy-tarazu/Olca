@@ -84,6 +84,59 @@ namespace Olca.Tests.CardTests
             Assert.IsTrue(result.IsValid);
         }
 
+        [TestCase(ExceedLevel.Normal, ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Normal, ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Normal, ExceedLevel.Lv3)]
+        [TestCase(ExceedLevel.Lv1, ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv1, ExceedLevel.Lv3)]
+        [TestCase(ExceedLevel.Lv2, ExceedLevel.Lv3)]
+        public void 異段階_両順序とも同じエラーで拒否する(ExceedLevel first, ExceedLevel second)
+        {
+            var a = MakeCard("sword", first);
+            var b = MakeCard("sword", second);
+            foreach (var pair in new[] { new[] { a, b }, new[] { b, a } })
+            {
+                var validation = exceedSystem.Validate(pair[0], pair[1]);
+                var result = exceedSystem.Execute(pair[0], pair[1]);
+                Assert.IsFalse(validation.IsValid);
+                Assert.IsFalse(result.IsSuccess);
+                Assert.IsNull(result.ResultCard);
+                Assert.AreEqual("同じ超越段階のカード2枚が必要です", validation.ErrorMessage);
+                Assert.AreEqual(validation.ErrorMessage, result.ErrorMessage);
+            }
+            Assert.AreEqual(first, a.ExceedLevel);
+            Assert.AreEqual(second, b.ExceedLevel);
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        public void 同段階_素材順で生成段階とIDが変わらない(ExceedLevel level)
+        {
+            var a = MakeCard("sword", level);
+            var b = MakeCard("sword", level);
+            var ab = exceedSystem.Execute(a, b);
+            var ba = exceedSystem.Execute(b, a);
+            Assert.IsTrue(ab.IsSuccess);
+            Assert.IsTrue(ba.IsSuccess);
+            Assert.AreEqual((ExceedLevel)((int)level + 1), ab.ResultCard.ExceedLevel);
+            Assert.AreEqual(ab.ResultCard.ExceedLevel, ba.ResultCard.ExceedLevel);
+            Assert.AreEqual(ab.ResultCard.Id, ba.ResultCard.Id);
+        }
+
+        [Test]
+        public void null素材_どちらの順序でも同じエラーを返す()
+        {
+            var card = MakeCard("sword");
+            foreach (var pair in new[] { new[] { card, null }, new[] { null, card }, new Card[] { null, null } })
+            {
+                var result = exceedSystem.Execute(pair[0], pair[1]);
+                Assert.IsFalse(result.IsSuccess);
+                Assert.AreEqual("カードがnullです", result.ErrorMessage);
+                Assert.IsNull(result.ResultCard);
+            }
+        }
+
         // ===== Execute =====
 
         [Test]

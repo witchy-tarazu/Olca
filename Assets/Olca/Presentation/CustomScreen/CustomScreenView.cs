@@ -734,8 +734,8 @@ namespace Olca.Presentation.CustomScreen
                 var a = customizeSelectedCards[0];
                 var b = customizeSelectedCards[1];
 
-                // 超越: 同名カード2枚
-                if (a.Id == b.Id)
+                // 実行・候補表示と同じ条件で操作種別を判定する。
+                if (customScreen.CanExceed(a, b))
                     return CustomizeOperationType.Exceed;
 
                 // 調律: 片方が調律カード

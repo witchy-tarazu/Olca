@@ -300,8 +300,8 @@ namespace Olca.Core.Logic.Battle
 
             var first = currentSelection[0];
 
-            // 超越: 同名カード（Lv3未満）
-            if (exceedSystem != null && candidate.Id == first.Id && first.ExceedLevel < ExceedLevel.Lv3)
+            // 超越の実行と候補表示で同じ検証を使用する。
+            if (CanExceed(first, candidate))
                 return true;
 
             // 調律: TuningカードとTuning以外のカードの組み合わせ
@@ -323,6 +323,12 @@ namespace Olca.Core.Logic.Battle
         }
 
         // ========== カスタマイズ操作 ==========
+
+        /// <summary>同名・同段階の素材で超越できるかを検証する</summary>
+        public bool CanExceed(Card cardA, Card cardB)
+        {
+            return exceedSystem != null && exceedSystem.Validate(cardA, cardB).IsValid;
+        }
 
         /// <summary>
         /// 超越を実行する（同名カード2枚 → 上位グレードカード1枚）
