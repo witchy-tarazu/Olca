@@ -114,7 +114,8 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">ダメージ量</param>
         /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
-        public void TakeDamage(int damage, bool forceStagger = false)
+        /// <param name="affectsPoise">強靭度を削るか。地形などのHPダメージとは独立する。</param>
+        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -143,7 +144,7 @@ namespace Olca.Core.Domain
 
                 // のけぞり判定（強靭度システム）
                 // 累計ダメージが強靭度を超えると、のけぞりが発生する
-                if (!IsDead)
+                if (!IsDead && affectsPoise)
                 {
                     accumulatedDamage += damage;
                     if (forceStagger || accumulatedDamage >= poise)

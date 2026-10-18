@@ -95,7 +95,7 @@ namespace Olca.Core.Logic.Battle
 
             // 消費条件は既存のまま、浮遊者をダメージ対象から除外する。
             int hpBefore = player.CurrentHp;
-            if (player.TerrainState.ReceivesPanelEffects) player.TakeDamage(MAGMA_DAMAGE);
+            if (player.TerrainState.ReceivesPanelEffects) player.TakeDamage(MAGMA_DAMAGE, affectsPoise: false);
             field.ChangePanelType(position, PanelType.Normal);
             logger?.LogInfo($"Magmaパネルで{hpBefore - player.CurrentHp}ダメージ、通常パネルに変化: {position}");
             OnPanelEffectApplied?.Invoke(position, PanelType.Magma);

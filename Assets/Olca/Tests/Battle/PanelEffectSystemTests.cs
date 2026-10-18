@@ -8,6 +8,90 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class PanelEffectSystemTests
     {
+        [TestCase(0, false, false, 5, 0)]
+        [TestCase(3, false, false, 2, 0)]
+        [TestCase(8, false, false, 0, 3)]
+        [TestCase(3, true, false, 0, 3)]
+        [TestCase(3, false, true, 0, 3)]
+        public void マグマはHP処理と地形消費を保ち強靭度だけ削らない(int barrier, bool invincible, bool floating, int hpLoss, int barrierLeft)
+        {
+            player.SetPoise(10);
+            player.TakeDamage(8);
+            player.SetBarrier(barrier);
+            if (invincible) player.SetInvincible(1000);
+            player.TerrainState.IsFloating = floating;
+            int staggered = 0, effects = 0;
+            player.OnStaggered += () => staggered++;
+            panelEffects.OnPanelEffectApplied += (_, __) => effects++;
+            field.ChangePanelType(player.GridPosition, PanelType.Magma);
+
+            panelEffects.ApplyOnEnterEffect(player, player.GridPosition);
+
+            Assert.AreEqual(92 - hpLoss, player.CurrentHp);
+            Assert.AreEqual(barrierLeft, player.BarrierHp);
+            Assert.AreEqual(8, player.AccumulatedDamage);
+            Assert.AreEqual(0, staggered);
+            Assert.AreEqual(PanelType.Normal, field.GetPanelType(player.GridPosition));
+            Assert.AreEqual(1, effects);
+            player.SetBarrier(0);
+            player.TickInvincible(1000);
+            player.TakeDamage(2);
+            Assert.AreEqual(1, staggered, "通常攻撃は従来どおり蓄積してのけぞる");
+            Assert.AreEqual(0, player.AccumulatedDamage);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 通常移動のマグマで死亡した場合は同時敵全滅でも敗北を一回通知する(bool killEnemy)
+        {
+            var p = new PlayerCharacter(5, new Vector2Int(1, 0));
+            var enemy = new Enemy("e", "敵", 50, ElementType.None, new Vector2Int(5, 0));
+            var battle = CreateMagmaBattle(p, enemy);
+            int deaths = 0, ends = 0;
+            p.OnDeath += () => deaths++;
+            p.OnHpChanged += (hp, _) => { if (killEnemy && hp == 0) enemy.TakeDamage(50, ElementType.None); };
+            battle.OnBattleEnd += result => { ends++; Assert.AreEqual(BattleResult.Defeat, result); };
+            battle.Tick(200, new MockInputProvider { Horizontal = 1 });
+            Assert.AreEqual(0, p.CurrentHp);
+            Assert.AreEqual(1, deaths);
+            Assert.AreEqual(1, ends);
+            Assert.AreEqual(BattleState.Defeat, battle.State);
+            Assert.AreEqual(PanelType.Normal, battle.Field.GetPanelType(new Vector2Int(2, 0)));
+        }
+
+        [Test]
+        public void カスタム中はマグマへの移動もダメージも停止し閉じてから強靭度を保って再開する()
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(1, 0));
+            p.SetPoise(10); p.TakeDamage(8);
+            var battle = CreateMagmaBattle(p, new Enemy("e", "敵", 50, ElementType.None, new Vector2Int(5, 0)));
+            battle.SetFirstStrike();
+            battle.OpenCustomScreen(new MockRandomProvider());
+            Assert.IsTrue(battle.IsPaused);
+            var input = new MockInputProvider { Horizontal = 1 };
+            battle.Tick(200, input);
+            Assert.AreEqual(new Vector2Int(1, 0), p.GridPosition);
+            Assert.AreEqual(92, p.CurrentHp);
+            Assert.AreEqual(PanelType.Magma, battle.Field.GetPanelType(new Vector2Int(2, 0)));
+            battle.CustomScreen.Confirm();
+            battle.Tick(200, input);
+            Assert.AreEqual(new Vector2Int(1, 0), p.GridPosition, "確定後も閉じる演出完了までは停止する");
+            battle.CustomScreen.Close();
+            battle.Tick(200, input);
+            Assert.AreEqual(new Vector2Int(2, 0), p.GridPosition);
+            Assert.AreEqual(87, p.CurrentHp);
+            Assert.AreEqual(8, p.AccumulatedDamage);
+        }
+
+        private static BattleSystem CreateMagmaBattle(PlayerCharacter p, Enemy enemy)
+        {
+            var card = new Card("c", "試験", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "試験");
+            var battle = new BattleSystem(p, new System.Collections.Generic.List<Enemy> { enemy }, new Deck(new System.Collections.Generic.List<Card> { card }));
+            battle.Field.ChangePanelType(new Vector2Int(2, 0), PanelType.Magma);
+            enemy.ApplyStun(60000);
+            return battle;
+        }
+
         private PlayerCharacter player;
         private BattleField field;
         private PanelEffectSystem panelEffects;
