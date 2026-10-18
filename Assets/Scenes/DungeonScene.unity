@@ -1080,7 +1080,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Dungeon Phase
+  m_Text: Phase
 --- !u!222 &361196067
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6586,6 +6586,7 @@ MonoBehaviour:
   enemyZ: 0
   dungeonHudCanvasGroup: {fileID: 2068626422}
   debugText: {fileID: 867199335}
+  debugPhaseText: {fileID: 361196066}
 --- !u!1 &2068626417
 GameObject:
   m_ObjectHideFlags: 0

@@ -171,6 +171,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
+            gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
             switch (manager.CurrentPhase)
             {
                 case GamePhase.Dungeon:

@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Logic.Battle;
+using Olca.Core.Logic.Integration;
 
 namespace Olca.Presentation.Field
 {
@@ -74,6 +75,7 @@ namespace Olca.Presentation.Field
 
         [Header("デバッグ")]
         [SerializeField] private UnityEngine.UI.Text debugText;
+        [SerializeField] private UnityEngine.UI.Text debugPhaseText;
 
         // 外部アクセス（ContactAnimator・Controller用）
         public Transform PlayerTransform => playerTransform;
@@ -409,7 +411,6 @@ namespace Olca.Presentation.Field
             UpdatePlayerSprite();
             if (cameraFollowEnabled) UpdateCamera();
             UpdateEnemyViews();
-            UpdateDebugUI();
         }
 
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>
@@ -620,8 +621,10 @@ namespace Olca.Presentation.Field
                 view?.Refresh();
         }
 
-        private void UpdateDebugUI()
+        /// <summary>探索・戦闘・報酬・終了を問わず、同じ更新で実状態を表示する。</summary>
+        public void RefreshDebugUI(GamePhase phase)
         {
+            if (debugPhaseText != null) debugPhaseText.text = $"{phase} Phase";
             if (debugText == null || dungeonSystem == null) return;
             debugText.text = $"Position: {dungeonSystem.PlayerPosition:F2}\n" +
                              $"Height: {dungeonSystem.PlayerHeight:F2}\n" +
