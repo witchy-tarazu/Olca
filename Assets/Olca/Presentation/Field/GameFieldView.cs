@@ -84,6 +84,20 @@ namespace Olca.Presentation.Field
         public float CellSize => battleGridView != null ? battleGridView.CellSize : 1f;
         public float LogicalToWorld(float logicalDistance) => logicalDistance * CellSize;
 
+        /// <summary>足元をパネル中央より少し上へ置く、探索・戦闘共通の表示差分。</summary>
+        public float CharacterDisplayOffsetY => battleGridView != null ? -battleGridView.CellHeight * 0.45f : 0f;
+        private Vector3? playerSpriteBaseLocalPosition;
+
+        private void ApplyCharacterDisplayOffset()
+        {
+            // 論理位置・接敵演出が使う親Transformは動かさず、描画用の子だけを下げる。
+            if (playerSprite == null || playerTransform == null || playerSprite.transform == playerTransform) return;
+            if (!playerSpriteBaseLocalPosition.HasValue)
+                playerSpriteBaseLocalPosition = playerSprite.transform.localPosition;
+            playerSprite.transform.localPosition = playerSpriteBaseLocalPosition.Value
+                + playerSprite.transform.parent.InverseTransformVector(Vector3.up * CharacterDisplayOffsetY);
+        }
+
         /// <summary>Enemy に対応する WorldEnemyView を返す（見つからなければ null）</summary>
         public WorldEnemyView GetEnemyView(Olca.Core.Domain.Enemy enemy)
         {
@@ -190,6 +204,7 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
+            ApplyCharacterDisplayOffset();
             dungeonSystem = dungeon;
             BindPlayerDamage(dungeon?.Player);
             ResetMovementAnimation();
@@ -280,7 +295,7 @@ namespace Olca.Presentation.Field
                 go.AddComponent<WorldEnemyView>();
             }
 
-            go.transform.position = new Vector3(LogicalToWorld(dungeonX), enemyY, enemyZ);
+            go.transform.position = new Vector3(LogicalToWorld(dungeonX), enemyY + CharacterDisplayOffsetY, enemyZ);
             go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
 
             var view = go.GetComponent<WorldEnemyView>();

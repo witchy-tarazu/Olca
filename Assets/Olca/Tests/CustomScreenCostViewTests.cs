@@ -337,5 +337,34 @@ namespace Olca.Tests
             }
             finally { Object.DestroyImmediate(gridObject); Object.DestroyImmediate(viewObject); Object.DestroyImmediate(cameraObject); }
         }
+        [Test]
+        public void 足元表示差分は親座標を変えず再適用でも累積しない()
+        {
+            var go = new GameObject("FootlineView");
+            var root = new GameObject("LogicalPlayer");
+            var spriteObject = new GameObject("PlayerSprite");
+            try
+            {
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                var grid = go.AddComponent<WorldBattleGridView>();
+                var view = go.AddComponent<GameFieldView>();
+                root.transform.position = new Vector3(12f, 3f, 0f);
+                spriteObject.transform.SetParent(root.transform, false);
+                spriteObject.transform.localPosition = new Vector3(0f, -0.3f, 0f);
+                var sprite = spriteObject.AddComponent<SpriteRenderer>();
+                typeof(GameFieldView).GetField("playerTransform", flags).SetValue(view, root.transform);
+                typeof(GameFieldView).GetField("playerSprite", flags).SetValue(view, sprite);
+                typeof(GameFieldView).GetField("battleGridView", flags).SetValue(view, grid);
+                var apply = typeof(GameFieldView).GetMethod("ApplyCharacterDisplayOffset", flags);
+                apply.Invoke(view, null);
+                apply.Invoke(view, null);
+                Assert.AreEqual(-0.432f, view.CharacterDisplayOffsetY, 0.0001f);
+                Assert.AreEqual(-0.732f, sprite.transform.localPosition.y, 0.0001f);
+                Assert.AreEqual(new Vector3(12f, 3f, 0f), root.transform.position);
+                Assert.AreEqual(Vector3.one, sprite.transform.localScale);
+                Assert.AreEqual(1.92f, view.LogicalToWorld(1f), 0.0001f);
+            }
+            finally { Object.DestroyImmediate(go); Object.DestroyImmediate(root); }
+        }
     }
 }
