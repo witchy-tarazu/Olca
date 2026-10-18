@@ -43,10 +43,11 @@ namespace Olca.Core.Logic.Battle
         public const int GRID_HEIGHT = 1;
 
         private readonly PanelType[,] panels;
+        private readonly bool[,] permanentHoles = new bool[GRID_WIDTH, GRID_HEIGHT];
         private Vector2Int? protectedPosition;
         private readonly Dictionary<string, FieldObstacle> obstacles = new Dictionary<string, FieldObstacle>();
 
-        public BattleField()
+        public BattleField(IEnumerable<Vector2Int> initialPermanentHoles = null)
         {
             panels = new PanelType[GRID_WIDTH, GRID_HEIGHT];
 
@@ -58,7 +59,21 @@ namespace Olca.Core.Logic.Battle
                     panels[x, y] = PanelType.Normal;
                 }
             }
+
+            // 永続穴は初期配置でのみ指定でき、通常の地形変更からは作らない。
+            if (initialPermanentHoles == null) return;
+            foreach (var position in initialPermanentHoles)
+            {
+                if (!IsInBounds(position))
+                    throw new ArgumentOutOfRangeException(nameof(initialPermanentHoles), "永続穴の位置がグリッド範囲外です");
+                permanentHoles[position.X, position.Y] = true;
+                panels[position.X, position.Y] = PanelType.Hole;
+            }
         }
+
+        /// <summary>初期配置された上書き不可の穴か。範囲外は初期配置ではない。</summary>
+        public bool IsPermanentHole(Vector2Int position)
+            => IsInBounds(position) && permanentHoles[position.X, position.Y];
 
         /// <summary>
         /// 指定位置に移動可能か
@@ -97,6 +112,9 @@ namespace Olca.Core.Logic.Battle
             {
                 throw new ArgumentOutOfRangeException(nameof(position), "位置がグリッド範囲外です");
             }
+
+            // 後発の地形効果や復元処理では、初期配置の永続穴を上書きしない。
+            if (IsPermanentHole(position)) return;
 
             // パネル保護: 保護位置が穴パネルに変更されようとした場合、ヒビパネルにする
             if (protectedPosition.HasValue && position == protectedPosition.Value)
@@ -144,7 +162,7 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// すべてのパネルを通常に戻す
+        /// 永続穴を残し、変更可能なパネルを通常に戻す
         /// </summary>
         public void ResetAllPanels()
         {
@@ -152,7 +170,7 @@ namespace Olca.Core.Logic.Battle
             {
                 for (int y = 0; y < GRID_HEIGHT; y++)
                 {
-                    panels[x, y] = PanelType.Normal;
+                    panels[x, y] = permanentHoles[x, y] ? PanelType.Hole : PanelType.Normal;
                 }
             }
         }

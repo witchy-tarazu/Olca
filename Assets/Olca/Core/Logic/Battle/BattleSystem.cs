@@ -79,11 +79,12 @@ namespace Olca.Core.Logic.Battle
             IGameLogger logger = null,
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
-            FusionSystem fusionSystem = null)
+            FusionSystem fusionSystem = null,
+            IEnumerable<Vector2Int> initialPermanentHoles = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
-            this.battleField = new BattleField();
+            this.battleField = new BattleField(initialPermanentHoles);
             this.customGauge = new CustomGaugeSystem(customGaugeSpeed);
             this.customScreen = new CustomScreenSystem(deck,
                 exceedSystem: exceedSystem,

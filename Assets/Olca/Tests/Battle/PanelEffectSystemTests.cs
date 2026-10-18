@@ -235,11 +235,14 @@ namespace Olca.Tests.Battle
             input = new MockInputProvider();
         }
 
-        [Test]
-        public void 穴上で解除しても滞在と退出ができ再進入はできない()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 穴上で解除しても滞在と退出ができ再進入はできない(bool permanent)
         {
             var hole = new Vector2Int(2, 0);
-            field.ChangePanelType(hole, PanelType.Hole);
+            field = new BattleField(permanent ? new[] { hole } : null);
+            movement = new PlayerMovementSystem(player, field);
+            if (!permanent) field.ChangePanelType(hole, PanelType.Hole);
             Assert.IsFalse(movement.TryMove(new Vector2Int(1, 0), enemies));
             player.TerrainState.IsFloating = true;
             Assert.IsTrue(movement.TryMove(new Vector2Int(1, 0), enemies));
@@ -382,6 +385,104 @@ namespace Olca.Tests.Battle
             Assert.AreEqual(new Vector2Int(2, 0), player.GridPosition);
             Assert.AreEqual(floating ? 100 : 95, player.CurrentHp);
             Assert.AreEqual(floating ? PanelType.Cracked : PanelType.Hole, battle.Field.GetPanelType(new Vector2Int(1, 0)));
+        }
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class PermanentHoleTests
+    {
+        private static readonly Vector2Int Hole = new Vector2Int(2, 0);
+
+        [TestCase(PanelType.Normal)]
+        [TestCase(PanelType.Ice)]
+        [TestCase(PanelType.Grass)]
+        [TestCase(PanelType.Magma)]
+        [TestCase(PanelType.Cracked)]
+        [TestCase(PanelType.Hole)]
+        public void 永続穴は後発の地形変更を受けず変更通知もしない(PanelType replacement)
+        {
+            var field = new BattleField(new[] { Hole });
+            int changed = 0;
+            field.OnPanelChanged += (_, __) => changed++;
+            field.SetProtectedPosition(Hole);
+            field.ChangePanelType(Hole, replacement);
+            Assert.AreEqual(PanelType.Hole, field.GetPanelType(Hole));
+            Assert.IsTrue(field.IsPermanentHole(Hole));
+            Assert.IsTrue(field.IsHole(Hole));
+            Assert.AreEqual(0, changed);
+        }
+
+        [Test]
+        public void 初期配置をコピーし重複指定や呼出側の配列変更に影響されない()
+        {
+            var positions = new[] { Hole, Hole };
+            var field = new BattleField(positions);
+            positions[0] = new Vector2Int(3, 0);
+            Assert.IsTrue(field.IsPermanentHole(Hole));
+            Assert.IsFalse(field.IsPermanentHole(positions[0]));
+            Assert.IsFalse(field.IsPermanentHole(new Vector2Int(-1, 0)));
+        }
+
+        [TestCase(-1, 0)]
+        [TestCase(6, 0)]
+        [TestCase(2, 1)]
+        public void 範囲外への永続穴配置は拒否する(int x, int y)
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new BattleField(new[] { new Vector2Int(x, y) }));
+        }
+
+        [Test]
+        public void 通常穴とヒビ由来の穴は上書きでき永続穴だけ全体リセット後も残る()
+        {
+            var field = new BattleField(new[] { Hole });
+            var ordinary = new Vector2Int(3, 0);
+            var cracked = new Vector2Int(4, 0);
+            field.ChangePanelType(ordinary, PanelType.Hole);
+            field.ChangePanelType(ordinary, PanelType.Ice);
+            Assert.AreEqual(PanelType.Ice, field.GetPanelType(ordinary));
+            field.ChangePanelType(cracked, PanelType.Cracked);
+            new PanelEffectSystem(field).ApplyOnLeaveEffect(new PlayerCharacter(100, cracked), cracked);
+            Assert.AreEqual(PanelType.Hole, field.GetPanelType(cracked));
+            Assert.IsFalse(field.IsPermanentHole(cracked));
+            field.ChangePanelType(cracked, PanelType.Grass);
+            Assert.AreEqual(PanelType.Grass, field.GetPanelType(cracked));
+            field.ResetAllPanels();
+            Assert.AreEqual(PanelType.Hole, field.GetPanelType(Hole));
+            Assert.AreEqual(PanelType.Normal, field.GetPanelType(ordinary));
+            Assert.AreEqual(PanelType.Normal, field.GetPanelType(cracked));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 初期地形を渡したBattleの通常入力で永続穴への通行を判定する(bool floating)
+        {
+            var player = new PlayerCharacter(100, new Vector2Int(1, 0));
+            player.TerrainState.IsFloating = floating;
+            var deck = new Deck(new System.Collections.Generic.List<Card> { new Card("c", "テスト", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 10, "テスト") });
+            var battle = new BattleSystem(player, new System.Collections.Generic.List<Enemy>(), deck, initialPermanentHoles: new[] { Hole });
+            var input = new MockInputProvider { Horizontal = 1 };
+            battle.Tick(200, input);
+            Assert.AreEqual(floating ? Hole : new Vector2Int(1, 0), player.GridPosition);
+            Assert.AreEqual(100, player.CurrentHp);
+            battle.PanelEffects.Tick(600000, player);
+            Assert.IsTrue(battle.Field.IsPermanentHole(Hole));
+            Assert.AreEqual(PanelType.Hole, battle.Field.GetPanelType(Hole));
+        }
+
+        [Test]
+        public void 永続穴でも敵の浮遊と障害物は個別判定する()
+        {
+            var field = new BattleField(new[] { Hole });
+            var enemy = new Enemy("e", "敵", 20, ElementType.None, new Vector2Int(5, 0));
+            Assert.IsFalse(field.CanMoveTo(Hole));
+            Assert.IsFalse(field.CanMoveTo(Hole, enemy.TerrainState));
+            enemy.TerrainState.IsFloating = true;
+            Assert.IsTrue(field.CanMoveTo(Hole, enemy.TerrainState));
+            field.PlaceObstacle(Hole, new FieldObstacle("rock", 10));
+            Assert.IsFalse(field.CanMoveTo(Hole, enemy.TerrainState));
         }
     }
 }
