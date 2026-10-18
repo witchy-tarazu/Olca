@@ -65,6 +65,7 @@ namespace Olca.Application.Dungeon
         private float dashStartPosition = -1f;    // ダッシュ開始位置（-1=非ダッシュ中）
         private float dashCooldownRemaining = 0f; // クールタイム残り時間
 
+        private bool battleFieldReady;
         private CancellationTokenSource transitionCts;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
@@ -215,6 +216,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleStarted(BattleSystem battle, ContactInfo contactInfo)
         {
+            battleFieldReady = false;
             TransitionToBattleAsync(battle, contactInfo).Forget();
         }
 
@@ -260,6 +262,7 @@ namespace Olca.Application.Dungeon
 
                 // 2. バトルグリッドを接触位置に出現
                 gameFieldView?.OnBattleStarted(battle, contactInfo.ContactPositionX);
+                battleFieldReady = true;
 
                 // 3. ダンジョンHUD フェードアウトと CardUI 初期化を並行実行
                 var hudHideTask = gameFieldView?.HideHUDAsync(hudFadeDuration, ct)
@@ -310,6 +313,7 @@ namespace Olca.Application.Dungeon
         /// </summary>
         private async UniTaskVoid HandleBattleEndAsync()
         {
+            bool useBattleGrid = battleFieldReady;
             // バトルセッション終了（購読解除）
             battleSession?.Detach();
 
@@ -347,12 +351,14 @@ namespace Olca.Application.Dungeon
 
                 // 定位置（グリッド列1）へ復帰ジャンプ（ダッシュ宙返りと同じ放物線）
                 if (contactAnimator != null
-                    && gameFieldView?.PlayerTransform != null
-                    && gameFieldView?.BattleGrid != null)
+                    && gameFieldView?.PlayerTransform != null)
                 {
-                    float targetX = gameFieldView.BattleGrid.GridIndexToWorldX(1);
-                    var targetPos = new UnityEngine.Vector3(
-                        targetX, gameFieldView.PlayerTransform.position.y, 0f);
+                    // 初撃全滅ではグリッドが未初期化。探索座標へ戻し画面外への移動を防ぐ。
+                    float targetX = useBattleGrid && gameFieldView.BattleGrid != null
+                        ? gameFieldView.BattleGrid.GridIndexToWorldX(1)
+                        : manager.Dungeon.PlayerPosition;
+                    float targetY = useBattleGrid ? gameFieldView.PlayerTransform.position.y : manager.Dungeon.PlayerHeight;
+                    var targetPos = new UnityEngine.Vector3(targetX, targetY, 0f);
                     await contactAnimator.PlayReturnJumpAsync(
                         gameFieldView.PlayerTransform, targetPos, ct);
                     gameFieldView.SetPlayerPositionUpdateEnabled(true);
