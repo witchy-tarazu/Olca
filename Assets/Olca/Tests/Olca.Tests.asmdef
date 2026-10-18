@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Olca.Core",
-        "Olca.Application"
+        "Olca.Application",
+        "UniTask"
     ],
     "includePlatforms": [
         "Editor"

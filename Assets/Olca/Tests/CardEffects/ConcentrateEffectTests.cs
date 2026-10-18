@@ -67,6 +67,72 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(1.0f, val, 0.001f);
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void カード使用で次の攻撃だけ強化し元カードを保持する(bool asyncUse)
+        {
+            var attack = new Card("attack", "攻撃", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 10, "攻撃", modifier: CardModifier.CreateAttackBonus(10));
+            player.SetConcentrateBuff(1.5f);
+            battle.CardUsage.EnqueueCards(new List<Card> { attack, attack });
+
+            if (asyncUse) Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());
+            else Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+
+            Assert.AreEqual(70, battle.Enemies[0].CurrentHp, "調律込み20の1.5倍");
+            Assert.IsFalse(player.IsConcentrating);
+            Assert.AreEqual(20, attack.GetFinalPower(), "元カードの威力は不変");
+            Assert.AreEqual(10, attack.Modifier.BonusDamage);
+            battle.CardUsage.TryUseCurrentCard();
+            Assert.AreEqual(50, battle.Enemies[0].CurrentHp, "2枚目は通常威力");
+        }
+
+        [TestCase(CardCategory.Defense)]
+        [TestCase(CardCategory.Support)]
+        [TestCase(CardCategory.Field)]
+        public void 攻撃以外のカードでは集中を消費しない(CardCategory category)
+        {
+            player.SetConcentrateBuff(1.5f);
+            var card = new Card("non_attack", "補助", 1, CardRarity.Normal, category,
+                ElementType.None, CardSeries.None, 0, "補助");
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+
+            Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+
+            Assert.AreEqual(1.5f, player.NextCardMultiplier);
+        }
+
+        [Test]
+        public void 集中カードから次の攻撃まで使用経路で適用される()
+        {
+            var concentrate = new Card("concentrate", "集中", 1, CardRarity.Normal, CardCategory.Support,
+                ElementType.None, CardSeries.None, 50, "次の攻撃を1.5倍");
+            var attack = new Card("attack", "攻撃", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 10, "攻撃");
+            battle.CardUsage.EnqueueCards(new List<Card> { concentrate, attack });
+
+            battle.CardUsage.TryUseCurrentCard();
+            Assert.IsTrue(player.IsConcentrating);
+            battle.CardUsage.TryUseCurrentCard();
+
+            Assert.AreEqual(85, battle.Enemies[0].CurrentHp);
+            Assert.IsFalse(player.IsConcentrating);
+        }
+
+        [Test]
+        public void スキップと空キューでは集中を消費しない()
+        {
+            player.SetConcentrateBuff(1.5f);
+            var card = new Card("attack", "攻撃", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 10, "攻撃");
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+
+            Assert.IsTrue(battle.CardUsage.SkipCurrentCard());
+            Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());
+
+            Assert.AreEqual(1.5f, player.NextCardMultiplier);
+        }
+
         [Test]
         public void ConcentrateEffectの倍率が1_0以下は例外をスローする()
         {

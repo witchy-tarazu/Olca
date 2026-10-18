@@ -155,6 +155,25 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>
+        /// 使用時だけ威力を強化したカードを作成する。元カードと調律効果は変更しない。
+        /// </summary>
+        public Card WithPowerMultiplier(float multiplier)
+        {
+            var modifier = Modifier.Merge(new CardModifier());
+            // 調律を含む最終威力を一度だけ強化し、再計算での二重加算を防ぐ。
+            int power = (int)(GetFinalPower() * multiplier);
+            modifier.BonusDamage = 0;
+            modifier.DamageMultiplier = 1.0f;
+            return new Card(
+                Id, Name, Cost, Rarity, Category, Element, Series, power, Description,
+                TargetType, PanelChangeType, MoveDirection, MoveDistance,
+                modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
+                StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
+                ExceedLevel
+            );
+        }
+
+        /// <summary>
         /// 最終的な威力を計算（調律効果を含む）
         /// </summary>
         public int GetFinalPower()

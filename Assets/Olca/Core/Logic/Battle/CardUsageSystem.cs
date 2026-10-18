@@ -89,6 +89,9 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void ExecuteCardEffect(Card card)
         {
+            // 攻撃カードの使用時にだけ集中を消費し、今回の効果用コピーへ適用する。
+            card = ApplyConcentrate(card);
+
             // BattleContextを作成
             var context = new BattleContext(battleSystem, card);
 
@@ -105,11 +108,22 @@ namespace Olca.Core.Logic.Battle
             }
         }
 
+        private Card ApplyConcentrate(Card card)
+        {
+            if (card.Category != CardCategory.Attack || !battleSystem.Player.IsConcentrating)
+                return card;
+
+            return card.WithPowerMultiplier(battleSystem.Player.ConsumeConcentrateBuff());
+        }
+
         /// <summary>
         /// カード効果を非同期で実行
         /// </summary>
         private async UniTask ExecuteCardEffectAsync(Card card, CancellationToken ct)
         {
+            // 攻撃カードの使用時にだけ集中を消費し、今回の効果用コピーへ適用する。
+            card = ApplyConcentrate(card);
+
             // BattleContextを作成
             var context = new BattleContext(battleSystem, card);
 
