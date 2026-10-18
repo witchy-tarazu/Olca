@@ -324,6 +324,17 @@ namespace Olca.Core.Logic.Battle
 
         // ========== カスタマイズ操作 ==========
 
+        // 同じ参照が複数枠に入る場合も、要求された枚数だけ手札に存在することを確認する。
+        private bool HasMaterialCopies(IEnumerable<Card> materials)
+        {
+            var remaining = new List<Card>(currentHand);
+            foreach (var card in materials)
+            {
+                if (card == null || !remaining.Remove(card)) return false;
+            }
+            return true;
+        }
+
         /// <summary>同名・同段階の素材で超越できるかを検証する</summary>
         public bool CanExceed(Card cardA, Card cardB)
         {
@@ -339,7 +350,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (exceedSystem == null)
                 return ExceedResult.Fail("超越システムが設定されていません");
-            if (!currentHand.Contains(cardA) || !currentHand.Contains(cardB))
+            if (!HasMaterialCopies(new[] { cardA, cardB }))
                 return ExceedResult.Fail("指定カードが手札にありません");
 
             var result = exceedSystem.Execute(cardA, cardB);
@@ -392,11 +403,8 @@ namespace Olca.Core.Logic.Battle
                 return FusionResult.Fail("融合システムが設定されていません");
             if (materials == null || materials.Count < 2)
                 return FusionResult.Fail("2枚以上の素材が必要です");
-            foreach (var card in materials)
-            {
-                if (card == null || !currentHand.Contains(card))
-                    return FusionResult.Fail("指定カードが手札にありません");
-            }
+            if (!HasMaterialCopies(materials))
+                return FusionResult.Fail("指定カードが手札にありません");
 
             var result = fusionSystem.Execute(materials);
             if (result.IsSuccess)

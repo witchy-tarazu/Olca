@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Olca.Core.Interfaces;
 
 namespace Olca.Application.Battle
@@ -10,15 +9,15 @@ namespace Olca.Application.Battle
     /// </summary>
     public class SimpleFusionRecipeProvider : IFusionRecipeProvider
     {
-        // レシピ: 素材IDセット（順序不問） → 結果カードID
-        private readonly List<(HashSet<string> materials, string resultId)> recipes;
+        // レシピ: 素材ID一覧（順序不問） → 結果カードID
+        private readonly List<(List<string> materials, string resultId)> recipes;
 
         public SimpleFusionRecipeProvider()
         {
-            recipes = new List<(HashSet<string>, string)>
+            recipes = new List<(List<string>, string)>
             {
                 // ソード + ボム → ファイアソード
-                (new HashSet<string> { SimpleCardFactory.Sword, SimpleCardFactory.Bomb },
+                (new List<string> { SimpleCardFactory.Sword, SimpleCardFactory.Bomb },
                  SimpleCardFactory.FireSword),
             };
         }
@@ -30,11 +29,9 @@ namespace Olca.Application.Battle
         {
             if (materialCardIds == null || materialCardIds.Count < 2) return null;
 
-            var inputSet = new HashSet<string>(materialCardIds);
-
             foreach (var (materials, resultId) in recipes)
             {
-                if (materials.SetEquals(inputSet))
+                if (materials.Count == materialCardIds.Count && ContainsMaterials(materials, materialCardIds))
                     return resultId;
             }
 
@@ -50,11 +47,21 @@ namespace Olca.Application.Battle
 
             foreach (var (materials, _) in recipes)
             {
-                if (partialMaterialIds.All(id => materials.Contains(id)))
+                if (ContainsMaterials(materials, partialMaterialIds))
                     return true;
             }
 
             return false;
+        }
+        // 順序は問わないが、各IDの必要枚数を超えた素材は受け付けない。
+        private static bool ContainsMaterials(IReadOnlyList<string> recipe, IReadOnlyList<string> requested)
+        {
+            var remaining = new List<string>(recipe);
+            foreach (var id in requested)
+            {
+                if (!remaining.Remove(id)) return false;
+            }
+            return true;
         }
     }
 }
