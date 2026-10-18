@@ -40,6 +40,40 @@ namespace Olca.Tests.Dungeon
             return new DungeonBattleManager(config, player, deck, mockRandom, mockLogger);
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 最後の敵の報酬確定_クリアイベントで最終獲得数とデッキ数を参照できる(bool skip)
+        {
+            var manager = CreateManager();
+            var battle = AdvanceToBattle(manager);
+            foreach (var entry in manager.Dungeon.Map.GetAllEnemies())
+            {
+                if (!ReferenceEquals(entry.enemy, battle.Enemies[0]))
+                    manager.Dungeon.Map.RemoveEnemy(entry.enemy);
+            }
+            List<Card> choices = null;
+            manager.OnCardRewardPresented += cards => choices = new List<Card>(cards);
+            battle.Enemies[0].TakeDamage(100, ElementType.None);
+            manager.Tick(100);
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
+            Assert.IsNotNull(choices);
+            int initialDeckCount = manager.Dungeon.GetCurrentDeck().TotalCount;
+            int clearCount = 0;
+            manager.OnDungeonClearCompleted += cards =>
+            {
+                clearCount++;
+                Assert.AreEqual(GamePhase.DungeonCleared, manager.CurrentPhase);
+                Assert.AreEqual(skip ? 0 : 1, cards.Count);
+                Assert.AreEqual(skip ? 0 : 1, manager.Dungeon.GetObtainedCards().Count);
+                Assert.AreEqual(initialDeckCount + (skip ? 0 : 1), manager.Dungeon.GetCurrentDeck().TotalCount);
+            };
+
+            manager.SelectCardReward(skip ? null : choices[0]);
+
+            Assert.AreEqual(1, clearCount);
+            Assert.AreEqual(GamePhase.DungeonCleared, manager.CurrentPhase);
+        }
+
         private Deck CreateTestDeck()
         {
             var cards = new List<Card>

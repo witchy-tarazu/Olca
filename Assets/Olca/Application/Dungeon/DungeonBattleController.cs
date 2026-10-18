@@ -180,20 +180,7 @@ namespace Olca.Application.Dungeon
             {
                 case GamePhase.Dungeon:
                     gameFieldView?.UpdateView();
-                    if (dungeonHudView != null && manager?.Dungeon != null)
-                    {
-                        var data = new DungeonHudData(
-                            currentHp: manager.Dungeon.Player.CurrentHp,
-                            maxHp: manager.Dungeon.Player.MaxHp,
-                            playerPosition: manager.Dungeon.PlayerPosition,
-                            dungeonLength: dungeonCellCount,
-                            isDashing: manager.Dungeon.IsDashing,
-                            isDashCooldown: dashCooldownRemaining > 0f,
-                            deckCount: manager.Dungeon.GetCurrentDeck().TotalCount,
-                            obtainedCardCount: manager.Dungeon.GetObtainedCards().Count
-                        );
-                        dungeonHudView.Refresh(data);
-                    }
+                    RefreshDungeonHud();
                     break;
 
                 case GamePhase.Battle:
@@ -203,6 +190,24 @@ namespace Olca.Application.Dungeon
 
                 case GamePhase.CardReward:
                     break;
+            }
+        }
+
+        private void RefreshDungeonHud()
+        {
+            if (dungeonHudView != null && manager?.Dungeon != null)
+            {
+                var data = new DungeonHudData(
+                    currentHp: manager.Dungeon.Player.CurrentHp,
+                    maxHp: manager.Dungeon.Player.MaxHp,
+                    playerPosition: manager.Dungeon.PlayerPosition,
+                    dungeonLength: dungeonCellCount,
+                    isDashing: manager.Dungeon.IsDashing,
+                    isDashCooldown: dashCooldownRemaining > 0f,
+                    deckCount: manager.Dungeon.GetCurrentDeck().TotalCount,
+                    obtainedCardCount: manager.Dungeon.GetObtainedCards().Count
+                );
+                dungeonHudView.Refresh(data);
             }
         }
 
@@ -379,6 +384,8 @@ namespace Olca.Application.Dungeon
 
         private void OnDungeonCleared(IReadOnlyList<Card> obtainedCards)
         {
+            // 最終報酬の選択後はDungeonフェーズを経由しないため、ここで最新値を反映する。
+            RefreshDungeonHud();
             logger.LogInfo($"[Controller] ダンジョンクリア！ 獲得カード: {obtainedCards.Count}枚");
         }
 
