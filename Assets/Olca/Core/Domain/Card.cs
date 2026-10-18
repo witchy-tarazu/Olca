@@ -314,10 +314,10 @@ namespace Olca.Core.Domain
         /// </summary>
         public Card Clone()
         {
-            return new Card(Id, Name, Cost, Rarity, Category, Element, Series, Power, Description,
-                TargetType, PanelChangeType, MoveDirection, MoveDistance,
-                Modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
-                StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect);
+            // 定義値（ID・段階・各種時間など）はそのまま保持し、可変の調律情報だけ深く複製する。
+            var copy = (Card)MemberwiseClone();
+            copy.Modifier = Modifier.Clone();
+            return copy;
         }
 
         public override string ToString()

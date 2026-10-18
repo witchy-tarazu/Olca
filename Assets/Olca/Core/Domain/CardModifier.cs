@@ -33,18 +33,22 @@ namespace Olca.Core.Domain
         /// </summary>
         public CardModifier Merge(CardModifier other)
         {
-            if (other == null) return this;
+            var merged = Clone();
+            if (other == null) return merged;
+            merged.BonusDamage += other.BonusDamage;
+            merged.DamageMultiplier *= other.DamageMultiplier;
+            merged.ElementOverride = other.ElementOverride ?? ElementOverride;
+            merged.AdditionalEffects.AddRange(other.AdditionalEffects.ConvertAll(effect => effect?.Clone()));
 
-            var merged = new CardModifier
-            {
-                BonusDamage = this.BonusDamage + other.BonusDamage,
-                DamageMultiplier = this.DamageMultiplier * other.DamageMultiplier,
-                ElementOverride = other.ElementOverride ?? this.ElementOverride,
-                AdditionalEffects = new List<AdditionalEffect>(this.AdditionalEffects)
-            };
-
-            merged.AdditionalEffects.AddRange(other.AdditionalEffects);
             return merged;
+        }
+
+        /// <summary>調律情報と各追加効果を、元カードと共有せず複製する。</summary>
+        public CardModifier Clone()
+        {
+            var copy = (CardModifier)MemberwiseClone();
+            copy.AdditionalEffects = AdditionalEffects?.ConvertAll(effect => effect?.Clone());
+            return copy;
         }
 
         /// <summary>
@@ -165,6 +169,9 @@ namespace Olca.Core.Domain
     /// </summary>
     public class AdditionalEffect
     {
+        // 各項目は値型または不変の文字列。オブジェクトを分ければ効果の編集が元へ漏れない。
+        public AdditionalEffect Clone() => (AdditionalEffect)MemberwiseClone();
+
         /// <summary>効果の種類</summary>
         public AdditionalEffectType EffectType { get; set; }
 

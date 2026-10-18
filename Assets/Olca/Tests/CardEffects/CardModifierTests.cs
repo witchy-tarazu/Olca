@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using System.Reflection;
+using Olca.Application.Battle;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Logic.CardEffects;
@@ -506,5 +508,96 @@ namespace Olca.Tests.CardEffects
             }
             return null;
         }
+        private Card DetailedCard(ExceedLevel level)
+        {
+            var modifier = new CardModifier { BonusDamage = 7, DamageMultiplier = 1.5f, ElementOverride = ElementType.Water };
+            modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType = AdditionalEffectType.DelayedProjectile, Power = 19, Duration = 2.5f,
+                HitCount = 3, Trigger = DerivativeTrigger.OnDamage, ChainCardId = "linked_card",
+                EffectOrigin = ChainEffectOrigin.HitPosition, DelayTime = 0.75f,
+                TargetOffset = new Vector2Int(2, 0), CancelOnHole = true });
+            return new Card("grade_" + level, "段階" + level, 3, CardRarity.Limited, CardCategory.Attack,
+                ElementType.Fire, CardSeries.Sword, 37, "定義保持", DamageTargetType.Single,
+                "Ice", "Right", 2, modifier, 0.2f, 0.3f, MovePenetrationMode.Invincible,
+                0.4f, 0.5f, true, true, level);
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public void Cloneは全定義と段階を保持し可変効果を独立させる(ExceedLevel level)
+        {
+            var original = DetailedCard(level);
+            var clone = original.Clone();
+            Assert.AreNotSame(original, clone);
+            foreach (var property in typeof(Card).GetProperties())
+            {
+                if (property.Name == nameof(Card.Modifier)) continue;
+                Assert.AreEqual(property.GetValue(original), property.GetValue(clone), property.Name);
+            }
+            Assert.AreEqual(original.GetFinalPower(), clone.GetFinalPower());
+            Assert.AreEqual(original.GetFinalElement(), clone.GetFinalElement());
+            Assert.AreNotSame(original.Modifier, clone.Modifier);
+            Assert.AreNotSame(original.Modifier.AdditionalEffects, clone.Modifier.AdditionalEffects);
+            var sourceEffect = original.Modifier.AdditionalEffects[0];
+            var copyEffect = clone.Modifier.AdditionalEffects[0];
+            Assert.AreNotSame(sourceEffect, copyEffect);
+            foreach (var property in typeof(AdditionalEffect).GetProperties())
+                Assert.AreEqual(property.GetValue(sourceEffect), property.GetValue(copyEffect), property.Name);
+            clone.Modifier.BonusDamage = 99;clone.Modifier.DamageMultiplier = 3;
+            clone.Modifier.ElementOverride = ElementType.Fire;
+            copyEffect.Power = 999;copyEffect.TargetOffset = new Vector2Int(5, 0);copyEffect.ChainCardId = "changed";
+            clone.Modifier.AdditionalEffects.Add(new AdditionalEffect());
+            Assert.AreEqual(7, original.Modifier.BonusDamage);Assert.AreEqual(1.5f, original.Modifier.DamageMultiplier);
+            Assert.AreEqual(ElementType.Water, original.Modifier.ElementOverride);
+            Assert.AreEqual(19, sourceEffect.Power);Assert.AreEqual(new Vector2Int(2, 0), sourceEffect.TargetOffset);
+            Assert.AreEqual("linked_card", sourceEffect.ChainCardId);Assert.AreEqual(1, original.Modifier.AdditionalEffects.Count);
+            sourceEffect.Duration = 8;Assert.AreEqual(2.5f, copyEffect.Duration);
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public void Factory生成とデッキ手札の別個体がカタログや他カードを変更しない(ExceedLevel level)
+        {
+            var factory = new SimpleCardFactory();var definition = DetailedCard(level);
+            var catalog = (Dictionary<string, Card>)typeof(SimpleCardFactory).GetField("catalog", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(factory);
+            catalog[definition.Id] = definition; // 段階定義を持つfixture。上位定義生成仕様は変更しない。
+            var a = factory.CreateById(definition.Id);var b = factory.CreateById(definition.Id);
+            var copyDeck = new Deck(new List<Card> { a, b });
+            var hand = copyDeck.DrawCards(2, new MockRandomProvider(0));
+            hand[0].Modifier.AdditionalEffects[0].Power = 200;
+            Assert.AreEqual(level, a.ExceedLevel);Assert.AreEqual(level, b.ExceedLevel);
+            Assert.AreEqual(19, hand[1].Modifier.AdditionalEffects[0].Power);
+            Assert.AreEqual(19, definition.Modifier.AdditionalEffects[0].Power);
+            Assert.AreEqual(19, factory.CreateById(definition.Id).Modifier.AdditionalEffects[0].Power);
+            Assert.AreSame(a, copyDeck.GetAllCards()[0], "Deck自体は参照を保持する既存契約");
+        }
+
+        [TestCase(ExceedLevel.Normal)]
+        [TestCase(ExceedLevel.Lv1)]
+        [TestCase(ExceedLevel.Lv2)]
+        [TestCase(ExceedLevel.Lv3)]
+        public void 調律結果と戦闘使用コピーの効果は両素材や元カードと共有しない(ExceedLevel level)
+        {
+            var original = DetailedCard(level);
+            var material = new Card("tune", "調律", 1, CardRarity.Normal, CardCategory.Tuning,
+                ElementType.None, CardSeries.None, 0, "素材", modifier: CardModifier.CreateAdditionalEffect(AdditionalEffectType.Poison, 3));
+            var tuned = original.ApplyTuning(material);
+            var used = tuned.WithPowerMultiplier(2);
+            Assert.AreEqual(level, tuned.ExceedLevel);Assert.AreEqual(level, used.ExceedLevel);
+            Assert.AreEqual(tuned.Id, used.Id);Assert.AreEqual(tuned.GetFinalPower() * 2, used.GetFinalPower());
+            Assert.AreNotSame(original.Modifier.AdditionalEffects[0], tuned.Modifier.AdditionalEffects[0]);
+            Assert.AreNotSame(material.Modifier.AdditionalEffects[0], tuned.Modifier.AdditionalEffects[1]);
+            used.Modifier.AdditionalEffects[0].Power = 400;
+            used.Modifier.AdditionalEffects[1].Power = 500;
+            Assert.AreEqual(19, tuned.Modifier.AdditionalEffects[0].Power);
+            Assert.AreEqual(3, tuned.Modifier.AdditionalEffects[1].Power);
+            Assert.AreEqual(19, original.Modifier.AdditionalEffects[0].Power);
+            Assert.AreEqual(3, material.Modifier.AdditionalEffects[0].Power);
+        }
+
     }
 }
