@@ -1743,14 +1743,14 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
-        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power)
+        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None)
         {
             var modifier = new CardModifier();
             modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison,
                 Trigger = DerivativeTrigger.OnHit, Duration = 10f, Power = 1 });
             var card = new Card("resistance", "検証", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.Fire, CardSeries.None, power, "検証",
-                Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile, modifier: modifier, startupTime: .05f);
+                Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile, modifier: modifier, startupTime: .05f, properties: properties);
             var deck = new Deck(new List<Card> { card });
             var map = DungeonConfig.CreateTestDungeon(30, 1, 5);
             for (int i = 0; i < map.MapCells.Count; i++) {
@@ -1771,6 +1771,7 @@ namespace Olca.Tests.Application
                 Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
                 card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
             }
+            Assert.AreEqual(properties, card.Properties);
             var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
             if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
             battle.Player.MoveTo(new Vector2Int(2, 0));
@@ -1812,12 +1813,13 @@ namespace Olca.Tests.Application
         [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
         public void 耐性の下限最低ダメージ完全無効と状態専用を通常使用と保存復帰で区別する(int fps, bool stall, bool restore)
         {
+            foreach (var properties in new[] { AttackProperty.None, AttackProperty.Sword | AttackProperty.Break })
             foreach (var value in new[] { (r: 99, p: 1), (r: 100, p: 1), (r: 100, p: 0), (r: -200, p: 1) })
-                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, value.r, value.p),
-                    ResistanceCardTrace(fps, stall, restore, value.r, value.p));
+                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, value.r, value.p, properties),
+                    ResistanceCardTrace(fps, stall, restore, value.r, value.p, properties));
         }
 
-        private List<string> TransformationImmunityTrace(int fps, bool stall, bool restore, int resistance, bool invincible)
+        private List<string> TransformationImmunityTrace(int fps, bool stall, bool restore, int resistance, bool invincible, AttackProperty weakness = AttackProperty.None)
         {
             var map = DungeonConfig.CreateTestDungeon(8);
             var deck = new Deck();
@@ -1839,7 +1841,8 @@ namespace Olca.Tests.Application
             var session = CreateSession().session; session.Attach(battle);
             // 保存済み戦闘開始からも、通常の変身選択・確定をやり直す。変身中セーブは追加しない。
             battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("immune-fixture",
-                new ElementResistances(fire: resistance), ElementType.Fire) });
+                new ElementResistances(fire: resistance), weakness == AttackProperty.None
+                    ? new TransformationWeakness(ElementType.Fire) : new TransformationWeakness(weakness)) });
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             session.TryOpenCustomScreen();
             Assert.IsTrue(battle.Transformations.TryPreview("immune-fixture"));
@@ -1851,7 +1854,7 @@ namespace Olca.Tests.Application
             // 同フレーム2発が、完全無効の変身を解除して後段へ基礎耐性を漏らさないことも確認。
             for (int i = 0; i < 2; i++) battle.AddSummon(
                 new Enemy("fire-fixture-" + i, "検証", 10, ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),
-                new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, ElementType.Fire) });
+                new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, ElementType.Fire, AttackProperty.Sword | AttackProperty.Break) });
             int ended = 0; player.OnTransformationDefenseEnded += () => ended++;
             if (invincible) player.SetInvincible(120000);
             var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
@@ -1900,10 +1903,11 @@ namespace Olca.Tests.Application
         [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
         public void 変身弱点の完全無効は通常敵AIと保存復帰で維持され論理フレームも一致する(int fps, bool stall, bool restore)
         {
+            foreach (var weakness in new[] { AttackProperty.None, AttackProperty.Sword, AttackProperty.Break })
             foreach (var value in new[] { (resistance: 99, invincible: false), (resistance: 100, invincible: false),
                 (resistance: 150, invincible: false), (resistance: 50, invincible: true) })
-                CollectionAssert.AreEqual(TransformationImmunityTrace(60, false, false, value.resistance, value.invincible),
-                    TransformationImmunityTrace(fps, stall, restore, value.resistance, value.invincible));
+                CollectionAssert.AreEqual(TransformationImmunityTrace(60, false, false, value.resistance, value.invincible, weakness),
+                    TransformationImmunityTrace(fps, stall, restore, value.resistance, value.invincible, weakness));
         }
 
         [Test]

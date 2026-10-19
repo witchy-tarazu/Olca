@@ -39,6 +39,7 @@ namespace Olca.Core.Domain
 
         /// <summary>属性</summary>
         public ElementType Element { get; }
+        public AttackProperty Properties { get; }
 
         /// <summary>系統（ソード系、ボム系など）</summary>
         public CardSeries Series { get; }
@@ -147,8 +148,10 @@ namespace Olca.Core.Domain
             bool extendRecoveryDuringDerivative = false,
             bool isInstantEffect = false,
             ExceedLevel exceedLevel = ExceedLevel.Normal,
-            CardSubCategory subCategory = CardSubCategory.None)
+            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None)
         {
+            AttackPropertyRules.Validate(properties);
+            Properties = properties;
             Id = id;
             Name = name;
             Cost = cost;
@@ -192,7 +195,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory
+                ExceedLevel, SubCategory, Properties
             )
             {
                 TuningCount = TuningCount + 1,
@@ -215,7 +218,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory
+                ExceedLevel, SubCategory, Properties
             ) { IsEffectCopy = true };
         }
 
@@ -283,7 +286,7 @@ namespace Olca.Core.Domain
                 master.RecoveryTime,
                 master.ExtendRecoveryDuringDerivative,
                 master.IsInstantEffect,
-                subCategory: master.SubCategory
+                subCategory: master.SubCategory, properties: master.Properties
             );
         }
 

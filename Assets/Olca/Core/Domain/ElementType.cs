@@ -20,6 +20,40 @@ namespace Olca.Core.Domain
         /// <summary>土属性</summary>
         Earth
     }
+    /// <summary>属性・カード系統とは独立した攻撃性質。明示した定義だけで使用する。</summary>
+    [System.Flags]
+    public enum AttackProperty { None = 0, Sword = 1, Break = 2 }
+
+    internal static class AttackPropertyRules
+    {
+        internal static void Validate(AttackProperty value)
+        {
+            if ((value & ~(AttackProperty.Sword | AttackProperty.Break)) != 0)
+                throw new System.ArgumentOutOfRangeException(nameof(value), "未定義の攻撃性質です");
+        }
+    }
+
+    /// <summary>解除用弱点は属性か単一性質のどちらか一つ。耐性・倍率とは独立する。</summary>
+    public sealed class TransformationWeakness
+    {
+        public ElementType Element { get; }
+        public AttackProperty Property { get; }
+        public TransformationWeakness(ElementType element)
+        {
+            if (element == ElementType.None || !System.Enum.IsDefined(typeof(ElementType), element))
+                throw new System.ArgumentOutOfRangeException(nameof(element));
+            Element = element;
+        }
+        public TransformationWeakness(AttackProperty property)
+        {
+            if (property != AttackProperty.Sword && property != AttackProperty.Break)
+                throw new System.ArgumentOutOfRangeException(nameof(property), "解除用性質は一つだけ指定します");
+            Property = property;
+        }
+        public bool Matches(ElementType element, AttackProperty properties)
+            => Element != ElementType.None ? Element == element : (properties & Property) != 0;
+    }
+
     /// <summary>本人属性と独立した耐性。負側のゲーム上の下限は設けない。</summary>
     public sealed class ElementResistances
     {
@@ -66,15 +100,18 @@ namespace Olca.Core.Domain
     {
         public string Id { get; }
         public ElementResistances Resistances { get; }
-        public ElementType BreakElement { get; }
+        public TransformationWeakness Weakness { get; }
+        public ElementType BreakElement => Weakness.Element;
         public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement)
+            : this(id, resistances, new TransformationWeakness(breakElement)) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty)
+            : this(id, resistances, new TransformationWeakness(breakProperty)) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness)
         {
             if (string.IsNullOrWhiteSpace(id)) throw new System.ArgumentException("変身IDが必要です", nameof(id));
-            if (breakElement == ElementType.None || !System.Enum.IsDefined(typeof(ElementType), breakElement))
-                throw new System.ArgumentOutOfRangeException(nameof(breakElement));
             Id = id;
             Resistances = resistances ?? throw new System.ArgumentNullException(nameof(resistances));
-            BreakElement = breakElement;
+            Weakness = weakness ?? throw new System.ArgumentNullException(nameof(weakness));
         }
     }
 }

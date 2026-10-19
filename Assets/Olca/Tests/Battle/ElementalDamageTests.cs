@@ -303,6 +303,92 @@ namespace Olca.Tests.Battle
             Assert.AreEqual(95,player.CurrentHp);Assert.IsTrue(player.HasTransformationDefense);
         }
 
+        [TestCase(AttackProperty.Sword, AttackProperty.Sword | AttackProperty.Break, true)]
+        [TestCase(AttackProperty.Break, AttackProperty.Sword | AttackProperty.Break, true)]
+        [TestCase(AttackProperty.Sword, AttackProperty.Break, false)]
+        [TestCase(AttackProperty.Break, AttackProperty.None, false)]
+        public void 単一の性質弱点は複合攻撃と一致し属性倍率を追加しない(AttackProperty weakness, AttackProperty attack, bool matches)
+        {
+            player.BeginTransformationDefense(new ElementResistances(fire: 50), new TransformationWeakness(weakness));
+            int ended = 0; player.OnTransformationDefenseEnded += () => ended++;
+            player.TakeDamage(10, attackElement: ElementType.Fire, attackProperties: attack);
+            Assert.AreEqual(95, player.CurrentHp);
+            Assert.AreEqual(5, player.AccumulatedDamage);
+            Assert.AreEqual(!matches, player.HasTransformationDefense);
+            Assert.AreEqual(matches ? 1 : 0, ended);
+        }
+
+        [TestCase(AttackProperty.Sword)] [TestCase(AttackProperty.Break)]
+        public void 性質弱点のダメージと強靭度を変身中耐性で処理してから解除する(AttackProperty weakness)
+        {
+            var target = new PlayerCharacter(100, poise: 4);
+            target.SetElementResistances(new ElementResistances(fire: -100));
+            target.BeginTransformationDefense(new ElementResistances(fire: 50), new TransformationWeakness(weakness));
+            var order = new List<string>();
+            target.OnHpChanged += (hp, max) => order.Add("hp:" + hp + ":" + target.HasTransformationDefense);
+            target.OnStaggered += () => order.Add("stagger:" + target.HasTransformationDefense);
+            target.OnTransformationDefenseEnded += () => order.Add("end:" + target.CurrentHp);
+            target.TakeDamage(10, attackElement: ElementType.Fire, attackProperties: AttackProperty.Sword | AttackProperty.Break);
+            CollectionAssert.AreEqual(new[] { "hp:95:True", "stagger:True", "end:95" }, order);
+            Assert.AreEqual(0, target.AccumulatedDamage);
+            Assert.AreEqual(-100, target.ActiveResistances.Fire);
+        }
+
+        [Test]
+        public void 性質一致だけでは別の属性弱点を解除せず無属性の性質弱点は解除する()
+        {
+            player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Water);
+            player.TakeDamage(1, attackElement: ElementType.Fire, attackProperties: AttackProperty.Sword | AttackProperty.Break);
+            Assert.IsTrue(player.HasTransformationDefense);
+            player.BeginTransformationDefense(ElementResistances.Neutral, new TransformationWeakness(AttackProperty.Sword));
+            player.TakeDamage(1, attackProperties: AttackProperty.Sword);
+            Assert.IsFalse(player.HasTransformationDefense); Assert.AreEqual(98, player.CurrentHp);
+        }
+
+        [Test]
+        public void ブレイク性質もバリアのHP吸収と強靭度保護を迂回しない()
+        {
+            player.SetBarrier(20);
+            player.TakeDamage(10, attackProperties: AttackProperty.Break);
+            Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(10, player.BarrierHp);
+            Assert.AreEqual(0, player.AccumulatedDamage);
+            player.TakeDamage(15, attackProperties: AttackProperty.Sword | AttackProperty.Break);
+            Assert.AreEqual(95, player.CurrentHp); Assert.AreEqual(0, player.BarrierHp);
+            Assert.AreEqual(5, player.AccumulatedDamage);
+        }
+
+        [Test]
+        public void 不正な複数弱点と未知性質を副作用前に拒否する()
+        {
+            foreach (var invalid in new[] { AttackProperty.None, AttackProperty.Sword | AttackProperty.Break, (AttackProperty)4 })
+                Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness(invalid));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness(ElementType.None));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness((ElementType)99));
+            int changed = 0; player.OnHpChanged += (hp, max) => changed++;
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.TakeDamage(10, attackProperties: (AttackProperty)4));
+            Assert.AreEqual(0, changed); Assert.AreEqual(100, player.CurrentHp);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new BasicAttackAction(10, 100, attackProperties: (AttackProperty)4));
+            var enemy = new Enemy("e", "検証", 100, ElementType.None, Vector2Int.Zero);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => enemy.TakeDamage(10, ElementType.None, (AttackProperty)4));
+            Assert.AreEqual(100, enemy.CurrentHp);
+        }
+
+        [Test]
+        public void 一時移動攻撃も最終属性と複合性質を使用して完全無効を維持する()
+        {
+            var enemy = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(1, 0),
+                resistances: new ElementResistances(water: 100));
+            var battle = CreateBattle(enemy);
+            var card = new Card("move", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.None, 10, "検証", modifier: new CardModifier { ElementOverride = ElementType.Water },
+                properties: AttackProperty.Sword | AttackProperty.Break);
+            int hits = 0; enemy.OnDamaged += (damage, multiplier) => hits++;
+            var effect = new TemporaryMoveAttackEffect(new Vector2Int(1, 0), 1, 0, 0, MovePenetrationMode.Invincible);
+            effect.ExecuteAsync(new BattleContext(battle, card), System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+            Assert.AreEqual(100, enemy.CurrentHp); Assert.AreEqual(0, hits);
+            Assert.AreEqual(Vector2Int.Zero, player.GridPosition); Assert.IsFalse(player.IsInTemporaryMove);
+        }
+
         // ==================== Enemy.TakeDamage の属性相性テスト ====================
 
         [Test]

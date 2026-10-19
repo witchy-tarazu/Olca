@@ -99,8 +99,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 if (targetEnemy != null && !targetEnemy.IsDead)
                 {
                     int damage = context.UsedCard.GetFinalPower();
-                    ElementType attackElement = context.UsedCard.Element;
-                    targetEnemy.TakeDamage(damage, attackElement);
+                    ElementType attackElement = context.UsedCard.GetFinalElement();
+                    targetEnemy.TakeDamage(damage, attackElement, context.UsedCard.Properties);
                 }
 
                 attackResolved = true;

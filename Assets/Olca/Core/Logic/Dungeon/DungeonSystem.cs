@@ -1069,6 +1069,8 @@ namespace Olca.Core.Logic.Dungeon
             w.Write(c.TuningCount); foreach (var grant in c.TuningHistory) Grant(w, grant);
             // 未指定の既存定義hashは維持し、明示された効果種別の不一致を検出する。
             if (c.SubCategory != CardSubCategory.None) { w.Write("subcategory"); w.Write((int)c.SubCategory); }
+            // 性質未指定の旧定義は同じbytes/hash。明示した性質だけ追加照合する。
+            if (c.Properties != AttackProperty.None) { w.Write("attack-properties"); w.Write((int)c.Properties); }
         });
         internal static void Require(bool valid, string message) { if (!valid) throw new ArgumentException(message); }
         internal static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

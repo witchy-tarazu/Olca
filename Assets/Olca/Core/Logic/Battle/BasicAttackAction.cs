@@ -10,6 +10,7 @@ namespace Olca.Core.Logic.Battle
     {
         private readonly int attackDamage;
         private readonly ElementType attackElement;
+        private readonly AttackProperty attackProperties;
         private readonly int cooldownMs;
 
         /// <summary>
@@ -17,8 +18,10 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldownMs">攻撃後のクールダウン時間（ミリ秒）</param>
-        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None)
+        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None)
         {
+            AttackPropertyRules.Validate(attackProperties);
+            this.attackProperties = attackProperties;
             this.attackElement = attackElement;
             this.attackDamage = attackDamage;
             this.cooldownMs = cooldownMs;
@@ -29,8 +32,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldown">攻撃後のクールダウン時間（秒）</param>
-        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None)
-            : this(attackDamage, (int)(cooldown * 1000f), attackElement)
+        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None)
+            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties)
         {
         }
 
@@ -53,7 +56,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (context.Player == null) return;
 
-            context.Player.TakeDamage(attackDamage, attackElement: attackElement);
+            context.Player.TakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties);
             context.Logger?.LogInfo($"{context.Self.Name}が{attackDamage}ダメージを与えた");
         }
 

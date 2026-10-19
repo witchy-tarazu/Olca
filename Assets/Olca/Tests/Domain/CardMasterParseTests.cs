@@ -9,6 +9,29 @@ namespace Olca.Tests.Domain
     public class CardMasterParseTests
     {
         [Test]
+        public void 複合性質はマスターから複製調律倍率自己派生超越へ維持し未指定は無しになる()
+        {
+            var master = new CardMaster { Id = "property", Name = "検証", Category = CardCategory.Attack,
+                Element = ElementType.Fire, Series = SeriesType.Sword, Power = 10 };
+            Assert.AreEqual(AttackProperty.None, Card.FromMaster(master).Properties, "系統から性質を推測しない");
+            master.Properties = AttackProperty.Sword | AttackProperty.Break;
+            var card = Card.FromMaster(master);
+            var material = new Card("t", "検証", 1, CardRarity.Normal, CardCategory.Tuning,
+                ElementType.None, CardSeries.None, 0, "検証", properties: AttackProperty.Break);
+            foreach (var copy in new[] { card, card.Clone(), card.WithPowerMultiplier(2), card.CreateSelfChainCopy(50),
+                card.ApplyTuning(material), new Olca.Application.Battle.SimpleCardFactory().CreateExceeded(card, ExceedLevel.Lv1) })
+            {
+                Assert.AreEqual(AttackProperty.Sword | AttackProperty.Break, copy.Properties);
+                Assert.AreEqual(ElementType.Fire, copy.Element);
+            }
+            var plain = new Card("p", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 10, "検証");
+            Assert.AreEqual(AttackProperty.None, plain.ApplyTuning(material).Properties, "素材の性質は追加仕様なしで付与しない");
+            master.Properties = (AttackProperty)4;
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => Card.FromMaster(master));
+        }
+
+        [Test]
         public void CardMasterから追加効果を正しくパースできる()
         {
             // Arrange

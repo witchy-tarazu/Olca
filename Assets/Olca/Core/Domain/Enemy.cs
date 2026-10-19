@@ -139,7 +139,11 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement) => ApplyDamage(damage, attackElement, false);
+        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None)
+        {
+            AttackPropertyRules.Validate(attackProperties);
+            ApplyDamage(damage, attackElement, false);
+        }
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 

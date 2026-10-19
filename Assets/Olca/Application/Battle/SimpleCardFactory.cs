@@ -95,7 +95,7 @@ namespace Olca.Application.Battle
                 series: baseCard.Series,
                 power: exceededPower,
                 description: $"{baseCard.Description}（超越{levelSuffix}）",
-                exceedLevel: nextLevel, subCategory: baseCard.SubCategory);
+                exceedLevel: nextLevel, subCategory: baseCard.SubCategory, properties: baseCard.Properties);
         }
     }
 }

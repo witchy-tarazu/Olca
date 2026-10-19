@@ -783,7 +783,7 @@ namespace Olca.Core.Logic.Battle
             var definition = pending;
             DiscardPending();
             if (definition == null) return;
-            player.BeginTransformationDefense(definition.Resistances, definition.BreakElement);
+            player.BeginTransformationDefense(definition.Resistances, definition.Weakness);
             ActiveId = definition.Id;
             used.Add(definition.Id);
         }

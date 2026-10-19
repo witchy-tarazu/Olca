@@ -19,18 +19,19 @@ namespace Olca.Core.Domain
         /// <summary>確定後に残る戦闘フェーズ数。フレーム数ではない。</summary>
         public int RemainingTransformationPhases { get; private set; }
         private ElementResistances transformationResistances;
-        private ElementType transformationBreakElement;
+        private TransformationWeakness transformationWeakness;
         internal Func<bool> IsOnGrass;
         public event Action OnTransformationDefenseEnded;
         public void SetElementResistances(ElementResistances value)
             => Resistances = value ?? throw new ArgumentNullException(nameof(value));
         // 確定済み変身の被弾状態を開始する。仮選択・取り消しには使用しない。
         public void BeginTransformationDefense(ElementResistances value, ElementType breakElement)
+            => BeginTransformationDefense(value, new TransformationWeakness(breakElement));
+        public void BeginTransformationDefense(ElementResistances value, TransformationWeakness weakness)
         {
-            if (breakElement == ElementType.None || !Enum.IsDefined(typeof(ElementType), breakElement))
-                throw new ArgumentOutOfRangeException(nameof(breakElement));
+            if (weakness == null) throw new ArgumentNullException(nameof(weakness));
             transformationResistances = value ?? throw new ArgumentNullException(nameof(value));
-            transformationBreakElement = breakElement;
+            transformationWeakness = weakness;
             RemainingTransformationPhases = 3;
         }
         internal void AdvanceTransformationPhase()
@@ -184,8 +185,9 @@ namespace Olca.Core.Domain
         /// <param name="damage">ダメージ量</param>
         /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
         /// <param name="affectsPoise">強靭度を削るか。地形などのHPダメージとは独立する。</param>
-        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None)
+        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None)
         {
+            AttackPropertyRules.Validate(attackProperties);
             bool breakTransformation = false;
             OnDamageProcessingStarted?.Invoke();
             try
@@ -200,7 +202,7 @@ namespace Olca.Core.Domain
                 damage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 if (originalDamage > 0 && damage == 0) return; // 耐性無効は強靭度・付随効果へ進めない。
                 // 属性で完全無効になった攻撃は、解除用弱点と一致しても変身を維持する。
-                breakTransformation = HasTransformationDefense && attackElement == transformationBreakElement;
+                breakTransformation = HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
 
                 // バリアがある場合は先にバリアで吸収
                 if (barrierHp > 0)

@@ -11,6 +11,32 @@ namespace Olca.Tests.CardEffects
     [TestFixture]
     public class ChainEffectDebugTests
     {
+        [TestCase(99, true)] [TestCase(100, true)]
+        [TestCase(99, false)] [TestCase(100, false)]
+        public void 複合性質の親が完全無効なら派生せず最低ダメージなら子固有の属性で派生する(int resistance, bool selfChain)
+        {
+            var player = new PlayerCharacter(100);
+            var enemy = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(1, 0),
+                resistances: new ElementResistances(fire: resistance));
+            var battle = new BattleSystem(player, new List<Enemy> { enemy }, new Deck());
+            var child = new Card("child", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Water, CardSeries.None, 7, "検証", DamageTargetType.Single, properties: AttackProperty.Break);
+            var database = new MockCardDatabase(); database.AddCard(child);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                ChainCardId = selfChain ? "" : child.Id, Power = 100, HitCount = 1,
+                Trigger = DerivativeTrigger.OnHit, EffectOrigin = ChainEffectOrigin.PlayerPosition });
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.None, 1, "検証", DamageTargetType.Single, modifier: modifier,
+                properties: AttackProperty.Sword | AttackProperty.Break);
+            var damages = new List<int>(); enemy.OnDamaged += (damage, multiplier) => damages.Add(damage);
+            new ModifiableCardEffect(DamageTargetType.Single).Execute(new BattleContext(battle, parent) { CardDatabase = database });
+            CollectionAssert.AreEqual(resistance == 100 ? new int[0] : selfChain ? new[] { 1, 1 } : new[] { 1, 7 }, damages);
+            Assert.AreEqual(resistance == 100 ? 100 : selfChain ? 98 : 92, enemy.CurrentHp);
+            Assert.AreEqual(AttackProperty.Break, child.Properties, "親の性質を別カード定義へ書き戻さない");
+            Assert.AreEqual(ElementType.Water, child.Element);
+        }
+
         [Test]
         public void ChainCard効果のトリガーを確認()
         {

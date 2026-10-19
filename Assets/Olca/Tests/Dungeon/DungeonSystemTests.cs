@@ -1083,6 +1083,53 @@ namespace Olca.Tests.Dungeon
                     new CheckpointEnemyDto { CellIndex = 9, EnemyId = "boss", Hp = 200, GridX = 5 } }
             };
         }
+        [TestCase(AttackProperty.None)]
+        [TestCase(AttackProperty.Sword)]
+        [TestCase(AttackProperty.Sword | AttackProperty.Break)]
+        public void 攻撃性質の保存復帰は個体順序と獲得参照を維持し別性質定義を拒否する(AttackProperty properties)
+        {
+            Card Make(AttackProperty value) => new Card("sword", "同名", 2, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.Sword, 45, "別定義", properties: value);
+            var card = Make(properties);
+            definitions.RegisterCard("property/v1", card);
+            departure.Cards[2] = definitions.CaptureCard("c", "property/v1", card);
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-properties-" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var store = new Olca.Unity.FileCheckpointStore(definitions, directory);
+                Assert.IsTrue(store.TryWrite(departure, out var error), error);
+                var bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+                var readStore = new Olca.Unity.FileCheckpointStore(definitions, directory);
+                var roundtrip = readStore.Read(); Assert.IsNotNull(roundtrip, readStore.ReadError);
+                Assert.IsTrue(CheckpointCodec.TryRestore(roundtrip, definitions, out var restored, out error), error);
+                Assert.AreEqual(properties, restored.Deck.GetAllCards()[0].Properties);
+                Assert.AreEqual(ElementType.Fire, restored.Deck.GetAllCards()[0].Element);
+                Assert.AreSame(restored.Cards["c"], restored.Obtained[1]);
+                Assert.AreSame(restored.Cards["c"], restored.Deck.GetAllCards()[0]);
+                CollectionAssert.AreEqual(departure.DeckOrder, roundtrip.DeckOrder);
+                CollectionAssert.AreEqual(departure.ObtainedOrder, roundtrip.ObtainedOrder);
+                Assert.AreEqual(93, restored.Player.CurrentHp);
+                var changed = new CheckpointDefinitions("fixture-v1", map);
+                changed.RegisterCard("standard/v1/sword", standard);
+                changed.RegisterCard("fallback/v1/sword", fallback);
+                changed.RegisterCard("property/v1", Make(properties == AttackProperty.None ? AttackProperty.Break : AttackProperty.None));
+                Assert.IsFalse(CheckpointCodec.TryRestore(roundtrip, changed, out _, out _));
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath), "復帰や定義不一致でも保存原本を書き換えない");
+            }
+            finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [Test]
+        public void 性質未指定のソードは導入前保存の定義ハッシュと一致する()
+        {
+            // a5caaed の実行時保存から取得した旧値。性質追加で既存保存を無効化しない。
+            var sword = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            definitions.RegisterCard("legacy-sword", sword);
+            Assert.AreEqual(AttackProperty.None, sword.Properties);
+            Assert.AreEqual("6FF05396427C959B85CF868B3F3B186894D17E8DD4CBF04214C0F6A85B236A72",
+                definitions.CaptureKnownCard("legacy", sword).ValueHash);
+        }
+
         [Test]
         public void 属性耐性の保存復帰と上限検証()
         {

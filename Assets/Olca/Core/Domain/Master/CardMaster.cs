@@ -26,6 +26,8 @@ namespace Olca.Core.Domain.Master
 
         public ElementType Element { get; set; }
 
+        public AttackProperty Properties { get; set; }
+
         public SeriesType Series { get; set; }
 
         public int Power { get; set; }
