@@ -34,6 +34,70 @@ namespace Olca.Tests.CardEffects
             battle = new BattleSystem(player, enemies, deck, logger: new MockLogger());
         }
 
+        [TestCase(9, 10)][TestCase(10, 0)][TestCase(11, 0)]
+        public void オーラは基準未満を維持し同値以上の一発も全防御する(int damage, int remaining)
+        {
+            player.SetAura(10); int effects = 0;
+            var ai = new BasicAttackAction(damage, 0, attackProperties: AttackProperty.Break, poiseDamage: 999,
+                onHit: _ => effects++, hitInvincibilityMs: 100);
+            ai.Execute(new AIContext(battle.Enemies[0], player, battle.Field, new MockRandomProvider(), new MockLogger()));
+            Assert.AreEqual(remaining, player.AuraThreshold); Assert.AreEqual(100, player.CurrentHp);
+            Assert.AreEqual(0, effects); Assert.AreEqual(0, player.AccumulatedDamage); Assert.IsFalse(player.IsInvincible);
+        }
+
+        [TestCase(-100, false, 15)][TestCase(50, false, 15)][TestCase(100, false, 15)]
+        [TestCase(-100, true, 0)][TestCase(50, true, 0)][TestCase(100, true, 0)]
+        public void オーラは本体耐性を無視し地形補正で消滅を決める(int resistance, bool grass, int remaining)
+        {
+            player.SetElementResistances(new ElementResistances(fire: resistance)); player.SetAura(15);
+            if (grass) battle.Field.ChangePanelType(player.GridPosition, PanelType.Grass);
+            Assert.IsFalse(player.TryTakeDamage(10, attackElement: ElementType.Fire));
+            Assert.AreEqual(remaining, player.AuraThreshold); Assert.AreEqual(100, player.CurrentHp);
+        }
+
+        [Test]
+        public void オーラは威力ゼロと毒を通し既存無敵で防いだ攻撃では消滅しない()
+        {
+            player.SetAura(10);
+            Assert.IsTrue(player.TryTakeDamage(0, poiseDamage: 0));
+            player.SetInvincible(100); Assert.IsFalse(player.TryTakeDamage(100));
+            player.TakePoisonDamage(200);
+            Assert.AreEqual(1, player.CurrentHp); Assert.AreEqual(10, player.AuraThreshold);
+            Assert.AreEqual(0, player.AccumulatedDamage);
+        }
+
+        [Test]
+        public void オーラの未規定な共存再付与と変身は副作用前に拒否する()
+        {
+            player.SetAura(10);
+            Assert.Throws<System.InvalidOperationException>(() => player.SetAura(20));
+            Assert.Throws<System.InvalidOperationException>(() => player.SetBarrier(20));
+            Assert.Throws<System.InvalidOperationException>(() => player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Fire));
+            Assert.AreEqual(10, player.AuraThreshold); Assert.AreEqual(0, player.BarrierHp); Assert.IsFalse(player.HasTransformationDefense);
+            player.SetAura(0); player.SetBarrier(20);
+            Assert.Throws<System.InvalidOperationException>(() => player.SetAura(10));
+            Assert.AreEqual(20, player.BarrierHp); Assert.IsFalse(player.HasAura);
+            player.SetBarrier(0); player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Fire);
+            Assert.Throws<System.InvalidOperationException>(() => player.SetAura(10));
+            Assert.IsTrue(player.HasTransformationDefense); Assert.IsFalse(player.HasAura);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.SetAura(-1));
+        }
+
+        [Test]
+        public void オーラは戦闘終了通知前に解除され保存未対応状態を黙って落とさない()
+        {
+            player.SetAura(10); bool ended = false;
+            battle.OnBattleEnd += _ => { ended = true; Assert.IsFalse(player.HasAura); };
+            battle.Enemies[0].TakeDamage(1000, ElementType.None); Assert.IsTrue(ended);
+            var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var empty = new Deck();
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, empty);
+            var pending = new PlayerCharacter(100); pending.SetAura(10);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, pending, empty,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.IsNull(checkpoints.Store.Read());
+            Assert.AreEqual(10, pending.AuraThreshold);
+        }
+
         [TestCase(-100, false, 30)][TestCase(50, false, 30)][TestCase(100, false, 30)]
         [TestCase(-100, true, 20)][TestCase(50, true, 20)][TestCase(100, true, 20)]
         public void バリアは本体耐性を無視して草地補正だけを計上する(int resistance, bool grass, int remaining)

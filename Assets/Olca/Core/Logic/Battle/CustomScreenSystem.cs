@@ -749,7 +749,7 @@ namespace Olca.Core.Logic.Battle
         }
         public bool TryPreview(string id)
         {
-            if (disposed || !screen.IsOpen || screen.IsConfirming || confirmedThisOpening || id == null ||
+            if (player.HasAura || disposed || !screen.IsOpen || screen.IsConfirming || confirmedThisOpening || id == null ||
                 used.Contains(id) || !available.TryGetValue(id, out var definition)) return false;
             if (pending?.Id == id) return true;
             while (screen.SelectedCards.Count > 0)

@@ -14,7 +14,11 @@ namespace Olca.Core.Domain
         public ElementResistances ActiveResistances => previewTransformationResistances ?? transformationResistances ?? Resistances;
         public bool HasTransformationPreview => previewTransformationResistances != null;
         private ElementResistances previewTransformationResistances;
-        internal void SetTransformationPreview(ElementResistances value) => previewTransformationResistances = value;
+        internal void SetTransformationPreview(ElementResistances value)
+        {
+            if (value != null && HasAura) throw new InvalidOperationException("オーラと変身の優先順は未対応です");
+            previewTransformationResistances = value;
+        }
         public bool HasTransformationDefense => transformationResistances != null;
         /// <summary>確定後に残る戦闘フェーズ数。フレーム数ではない。</summary>
         public int RemainingTransformationPhases { get; private set; }
@@ -30,6 +34,7 @@ namespace Olca.Core.Domain
         public void BeginTransformationDefense(ElementResistances value, TransformationWeakness weakness)
         {
             if (weakness == null) throw new ArgumentNullException(nameof(weakness));
+            if (HasAura) throw new InvalidOperationException("オーラと変身の優先順は未対応です");
             transformationResistances = value ?? throw new ArgumentNullException(nameof(value));
             transformationWeakness = weakness;
             RemainingTransformationPhases = 3;
@@ -139,6 +144,17 @@ namespace Olca.Core.Domain
 
         /// <summary>バリアを持っているか</summary>
         public bool HasBarrier => barrierHp > 0;
+        public int AuraThreshold { get; private set; }
+        public bool HasAura => AuraThreshold > 0;
+
+        /// <summary>外部指定の単独オーラ。共存・再付与の未規定状態は変更前に拒否する。0は解除。</summary>
+        public void SetAura(int threshold)
+        {
+            if (threshold < 0) throw new ArgumentOutOfRangeException(nameof(threshold));
+            if (threshold > 0 && (HasAura || HasBarrier || HasTransformationDefense || HasTransformationPreview))
+                throw new InvalidOperationException("オーラの共存・再付与・変身優先順は未対応です");
+            AuraThreshold = threshold;
+        }
 
         /// <summary>無敵中か</summary>
         public bool IsInvincible => frameHp.Active ? frameInvincible : invincibilityTimer.IsActive;
@@ -214,6 +230,13 @@ namespace Olca.Core.Domain
                 if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return false;
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
+                // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
+                if (HasAura && damage > 0)
+                {
+                    int auraDamage = ElementResistances.Neutral.CalculateDamage(damage, attackElement, grass);
+                    if (auraDamage >= AuraThreshold) AuraThreshold = 0;
+                    return false;
+                }
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 // 変身解除は既存の弱点規則を維持し、バリアの耐久計算とは分ける。
@@ -315,6 +338,7 @@ namespace Olca.Core.Domain
         /// <param name="hp">バリアHP</param>
         public void SetBarrier(int hp)
         {
+            if (hp > 0 && HasAura) throw new InvalidOperationException("バリアとオーラの共存は未対応です");
             barrierHp = Math.Max(0, hp);
         }
 

@@ -2636,6 +2636,64 @@ namespace Olca.Tests.Application
             } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
         }
 
+        private List<string> AuraTrace(int fps, bool stall, bool restore, int threshold)
+        {
+            var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());
+            var player = new PlayerCharacter(100); player.SetElementResistances(new ElementResistances(fire: 50));
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle); var saved = checkpoints.Store.Read();
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle; player = battle.Player; var session = CreateSession().session; session.Attach(battle);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); player.MoveTo(new Vector2Int(2, 0));
+            foreach (var enemy in battle.Enemies) { enemy.ApplyStun(60000); enemy.MoveTo(new Vector2Int(5, 0)); }
+            Assert.IsFalse(player.HasAura); player.SetAura(threshold);
+            // 通常AIから同フレーム2発。基準10以下なら一発目で消滅し、二発目だけ通る。
+            for (int i = 0; i < 2; i++) battle.AddSummon(new Enemy("poise-fixture-" + i, "検証", 10,
+                ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),
+                new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, ElementType.Fire, poiseDamage: 7) });
+            int staggered = 0, hpNotices = 0; player.OnStaggered += () => staggered++; player.OnHpChanged += (_, __) => hpNotices++;
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1) battle.Pause(BattlePauseReason.User);
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                manager.TickFrame(ms);
+                if (frame <= 5) { Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, staggered); }
+                trace.Add(frame + ":" + player.CurrentHp + ":" + player.AccumulatedDamage + ":" + staggered + ":" + hpNotices + ":" + player.AuraThreshold);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * total / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(threshold <= 10 ? 95 : 100, player.CurrentHp); Assert.AreEqual(threshold <= 10 ? 1 : 0, hpNotices);
+            Assert.AreEqual(threshold <= 10 ? 0 : threshold, player.AuraThreshold);
+            Assert.AreEqual(0, staggered);
+            Assert.AreEqual(threshold <= 10 ? 7 : 0, player.AccumulatedDamage);
+            var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
+            Assert.AreEqual(saved.Sequence, after.Sequence); Assert.AreEqual(saved.MapHash, after.MapHash);
+            Assert.AreEqual(saved.Player.FireResistance, after.Player.FireResistance);
+            CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder); CollectionAssert.AreEqual(saved.ObtainedOrder, after.ObtainedOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void 単独オーラの通常AI被弾は保存復帰と描画頻度で一致する(int fps, bool restore)
+        {
+            foreach (int threshold in new[] { 9, 10, 11 })
+                CollectionAssert.AreEqual(AuraTrace(60, false, false, threshold), AuraTrace(fps, true, restore, threshold));
+        }
+
         private List<string> IndependentPoiseTrace(int fps, bool stall, bool restore, int impact)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());

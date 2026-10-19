@@ -530,6 +530,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
             player.ClearStagger();
+            player.SetAura(0);
             player.EndTransformationDefense();
             Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;

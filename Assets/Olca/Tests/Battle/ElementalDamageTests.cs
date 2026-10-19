@@ -48,6 +48,17 @@ namespace Olca.Tests.Battle
             battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
             return battle;
         }
+        [Test]
+        public void オーラとの未規定競合で変身仮選択や使用済み状態を変更しない()
+        {
+            var battle = CreateTransformationBattle(); player.SetAura(10);
+            Assert.IsFalse(battle.Transformations.TryPreview("fixture-a"));
+            Assert.IsFalse(player.HasTransformationPreview); Assert.AreEqual(10, player.AuraThreshold);
+            player.SetAura(0); Assert.IsTrue(battle.Transformations.TryPreview("fixture-a"));
+            Assert.Throws<System.InvalidOperationException>(() => player.SetAura(10));
+            Assert.IsTrue(player.HasTransformationPreview); Assert.IsFalse(player.HasAura);
+        }
+
         private void ReopenTransformationScreen(BattleSystem battle)
         {
             battle.CustomScreen.Close();
