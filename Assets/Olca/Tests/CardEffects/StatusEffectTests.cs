@@ -381,7 +381,7 @@ namespace Olca.Tests.CardEffects
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(2)]
-        public void 毒でHPがゼロになると死亡と勝利は一度だけ通知される(int split)
+        public void 毒単独はHP1で止まり後続の通常攻撃で死亡と勝利を通知する(int split)
         {
             enemy.ApplyStun(60000);
             enemy.TakeDamage(95, ElementType.None);
@@ -391,11 +391,56 @@ namespace Olca.Tests.CardEffects
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 10));
             foreach (int step in SplitSecond(split)) battle.Tick(step);
             battle.Tick(1000);
+            Assert.AreEqual(1, enemy.CurrentHp);
+            Assert.AreEqual(0, deaths);
+            Assert.AreEqual(0, endings);
+            Assert.IsFalse(battle.IsGameOver);
+            enemy.TakeDamage(1, ElementType.None);
             Assert.AreEqual(0, enemy.CurrentHp);
             Assert.AreEqual(1, deaths);
             Assert.AreEqual(1, endings);
             Assert.AreEqual(BattleState.Victory, battle.State);
             Assert.AreEqual(100, player.CurrentHp);
+        }
+        [TestCase(0)]
+        [TestCase(16)]
+        [TestCase(1000)]
+        public void 毒のHP1下限は互換msではなく論理フレームで進行する(int compatibleMs)
+        {
+            enemy.ApplyStun(60000);
+            enemy.TakeDamage(95, ElementType.None);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 60));
+            for (int frame = 0; frame < 60; frame++)
+            {
+                battle.TickFrame(compatibleMs);
+                Assert.AreEqual(System.Math.Max(1, 4 - frame), enemy.CurrentHp);
+                Assert.IsFalse(battle.IsGameOver);
+            }
+            Assert.IsNull(enemy.ActiveStatus);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, int.MaxValue));
+            battle.TickFrame(compatibleMs);
+            Assert.AreEqual(1, enemy.CurrentHp, "HP1で大きな毒を受けても倒れない");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 毒と通常攻撃が同じ更新内に重なれば通常攻撃で倒れる(bool attackFirst)
+        {
+            enemy.ApplyStun(60000);
+            enemy.TakeDamage(98, ElementType.None);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 60));
+            int deaths = 0;
+            enemy.OnDeath += () => deaths++;
+            if (attackFirst) enemy.TakeDamage(2, ElementType.None);
+            else enemy.OnDamaged += (_, __) => {
+                if (enemy.CurrentHp == 1) enemy.TakeDamage(1, ElementType.None);
+            };
+            battle.TickFrame(17);
+            Assert.AreEqual(0, enemy.CurrentHp);
+            Assert.AreEqual(1, deaths);
+            Assert.AreEqual(BattleState.Victory, battle.State);
+            enemy.TakeDamage(1, ElementType.None);
+            Assert.AreEqual(1, deaths, "死亡済みへの追加攻撃で通知を繰り返さない");
         }
     }
 }

@@ -238,9 +238,11 @@ namespace Olca.Core.Logic.Battle
                 {
                     if (enemy.IsDead) continue;
                     int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
-                    if (poisonDamage > 0)
+                    // 毒だけでは倒さない。通常攻撃のダメージ処理にはこの下限を持ち込まない。
+                    int appliedPoisonDamage = Math.Min(poisonDamage, Math.Max(0, enemy.CurrentHp - 1));
+                    if (appliedPoisonDamage > 0)
                     {
-                        enemy.TakeDamage(poisonDamage, ElementType.None);
+                        enemy.TakeDamage(appliedPoisonDamage, ElementType.None);
                     }
                 }
 

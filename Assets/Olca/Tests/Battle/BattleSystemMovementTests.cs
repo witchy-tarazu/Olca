@@ -378,7 +378,12 @@ namespace Olca.Tests.Battle
             summon.ApplyStatus(poison);
             battle.OnSummonAdded += _ => notifications++;
             System.Action add = () => battle.AddSummon(summon, new List<IEnemyAIAction> { action });
-            if (onDeath) main.OnDeath += add;
+            if (onDeath)
+            {
+                main.OnDeath += add;
+                // 毒単独では死亡しないため、毒通知内で通常攻撃が重なった経路を検証する。
+                main.OnDamaged += (_, __) => { if (main.CurrentHp == 1) main.TakeDamage(1, ElementType.None); };
+            }
             else main.OnDamaged += (_, __) => { if (notifications == 0) add(); };
             main.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, onDeath ? 50 : 1));
             Assert.DoesNotThrow(() => battle.Tick(1000));

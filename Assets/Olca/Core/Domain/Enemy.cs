@@ -102,6 +102,7 @@ namespace Olca.Core.Domain
             try
             {
                 if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
+                if (IsDead) return;
 
                 // 属性相性によるダメージ補正
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
@@ -114,10 +115,12 @@ namespace Olca.Core.Domain
                     currentHp = 0;
                 }
 
+                // 通知中の別攻撃で死亡しても、この非致死攻撃から二重通知しない。
+                bool killedByThisHit = IsDead;
                 OnHpChanged?.Invoke(currentHp, maxHp);
                 OnDamaged?.Invoke(finalDamage, multiplier);
 
-                if (IsDead)
+                if (killedByThisHit)
                 {
                     OnDeath?.Invoke();
                 }

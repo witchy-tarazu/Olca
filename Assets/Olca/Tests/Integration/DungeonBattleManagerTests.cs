@@ -167,7 +167,10 @@ namespace Olca.Tests.Integration
             }
             else
             {
-                // 同じTick内の遅延ダメージと敵の毒更新を最後まで処理する。
+                // 同じTick内の遅延ダメージと、毒通知に重なる通常攻撃を最後まで処理する。
+                boss.OnDamaged += (_, __) => {
+                    if (boss.CurrentHp == 1) boss.TakeDamage(1, ElementType.None);
+                };
                 boss.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 1000));
                 battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 1)
                     { ExecuteAction = () => player.TakeDamage(1000) });
