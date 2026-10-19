@@ -1277,5 +1277,95 @@ namespace Olca.Tests.Application
                         ConditionalDerivativeTrace(fps, stall, restore, trigger, scenario), trigger + ":" + scenario);
         }
 
+        private List<string> ShieldCardTrace(int fps, bool stall, bool restore)
+        {
+            var database = new SimpleCardFactory();
+            var card = database.CreateById(SimpleCardFactory.Shield);
+            var heal = database.CreateById(SimpleCardFactory.Heal);
+            var deck = new Deck(new List<Card> { card, heal });
+            var map = DungeonConfig.CreateTestDungeon(30, 1, 5);
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints, cardDatabase: database);
+            for (int f = 0; f < 1000 && manager.CurrentBattle == null; f++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error, cardDatabase: database), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+                card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
+                heal = manager.Dungeon.GetCurrentDeck().GetAllCards()[1];
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            Assert.AreEqual(CardSubCategory.Barrier, card.SubCategory);
+            Assert.AreEqual(CardSubCategory.Heal, heal.SubCategory);
+            foreach (var e in battle.Enemies) { e.ApplyStun(60000); e.MoveTo(new Vector2Int(5, 0)); }
+            battle.Player.TakeDamage(100, affectsPoise: false);
+            int used = 0; battle.CardUsage.OnCardUsed += _ => used++;
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1) battle.CardUsage.EnqueueCards(new List<Card> { card, heal });
+                if (frame == 2) battle.Pause(BattlePauseReason.User);
+                if (frame == 3) session.UseCardFromInput();
+                if (frame == 5) { Assert.AreEqual(0, used); Assert.AreEqual(0, battle.Player.BarrierHp); }
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                if (frame == 7) {
+                    session.UseCardFromInput();
+                    Assert.AreEqual(900, battle.Player.CurrentHp, "シールドは回復しない");
+                    Assert.AreEqual(15, battle.Player.BarrierHp);
+                    Assert.AreEqual(1, used);
+                }
+                if (frame == 10) {
+                    battle.Player.TakeDamage(10, affectsPoise: false);
+                    Assert.AreEqual(900, battle.Player.CurrentHp); Assert.AreEqual(5, battle.Player.BarrierHp);
+                }
+                if (frame == 12) {
+                    battle.Player.TakeDamage(10, affectsPoise: false);
+                    Assert.AreEqual(895, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.BarrierHp);
+                }
+                if (frame == 15) session.UseCardFromInput();
+                battle.TickFrame(ms);
+                trace.Add(frame + ":" + battle.Player.CurrentHp + ":" + battle.Player.BarrierHp + ":" + used);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(915, battle.Player.CurrentHp, "ヒールは20回復する");
+            Assert.AreEqual(0, battle.Player.BarrierHp);
+            Assert.AreEqual(2, used);
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void 実定義のシールドとヒールは通常使用と保存復帰で防御と回復を区別する(int fps, bool stall, bool restore)
+        { CollectionAssert.AreEqual(ShieldCardTrace(60, false, false), ShieldCardTrace(fps, stall, restore)); }
+
+        [Test]
+        public void 小カテゴリはマスターと各コピーへ引き継がれIDより優先される()
+        {
+            var card = Card.FromMaster(new Olca.Core.Domain.Master.CardMaster { Id = "barrier_named_heal", Name = "検証",
+                Category = CardCategory.Defense, SubCategory = CardSubCategory.Heal, Power = 20 });
+            Assert.IsInstanceOf<Olca.Core.Logic.CardEffects.Effects.HealEffect>(Olca.Core.Logic.CardEffects.CardEffectFactory.CreateEffect(card));
+            var factory = new SimpleCardFactory();
+            var shield = factory.CreateById(SimpleCardFactory.Shield);
+            foreach (var copy in new[] { shield.Clone(), shield.WithPowerMultiplier(2), shield.CreateSelfChainCopy(50),
+                shield.ApplyTuning(new Card("t", "検証", 1, CardRarity.Normal, CardCategory.Tuning, ElementType.None, CardSeries.None, 0, "検証")),
+                factory.CreateExceeded(shield, ExceedLevel.Lv1) }) {
+                Assert.AreEqual(CardSubCategory.Barrier, copy.SubCategory);
+                Assert.IsInstanceOf<Olca.Core.Logic.CardEffects.Effects.BarrierEffect>(Olca.Core.Logic.CardEffects.CardEffectFactory.CreateEffect(copy));
+            }
+            var concentrate = new Card("arbitrary", "検証", 1, CardRarity.Normal, CardCategory.Support,
+                ElementType.None, CardSeries.None, 50, "検証", subCategory: CardSubCategory.Concentrate);
+            Assert.IsInstanceOf<Olca.Core.Logic.CardEffects.Effects.ConcentrateEffect>(Olca.Core.Logic.CardEffects.CardEffectFactory.CreateEffect(concentrate));
+        }
+
     }
 }

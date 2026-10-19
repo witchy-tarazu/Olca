@@ -32,10 +32,10 @@ namespace Olca.Application.Battle
                     ElementType.None, CardSeries.Bomb, 40, "範囲攻撃"),
 
                 [Heal] = new Card(Heal, "ヒール", 2, CardRarity.Normal, CardCategory.Defense,
-                    ElementType.None, CardSeries.None, 20, "HP回復"),
+                    ElementType.None, CardSeries.None, 20, "HP回復", subCategory: CardSubCategory.Heal),
 
                 [Shield] = new Card(Shield, "シールド", 1, CardRarity.Normal, CardCategory.Defense,
-                    ElementType.None, CardSeries.None, 15, "防御"),
+                    ElementType.None, CardSeries.None, 15, "防御", subCategory: CardSubCategory.Barrier),
 
                 [Tuning] = new Card(Tuning, "チューニング", 1, CardRarity.Normal, CardCategory.Tuning,
                     ElementType.None, CardSeries.None, 0, "対象カードに強化効果を付与する調律カード"),
@@ -95,7 +95,7 @@ namespace Olca.Application.Battle
                 series: baseCard.Series,
                 power: exceededPower,
                 description: $"{baseCard.Description}（超越{levelSuffix}）",
-                exceedLevel: nextLevel);
+                exceedLevel: nextLevel, subCategory: baseCard.SubCategory);
         }
     }
 }

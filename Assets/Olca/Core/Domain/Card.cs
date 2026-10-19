@@ -35,6 +35,8 @@ namespace Olca.Core.Domain
         /// <summary>カテゴリ</summary>
         public CardCategory Category { get; }
 
+        public CardSubCategory SubCategory { get; }
+
         /// <summary>属性</summary>
         public ElementType Element { get; }
 
@@ -144,13 +146,15 @@ namespace Olca.Core.Domain
             float recoveryTime = 0f,
             bool extendRecoveryDuringDerivative = false,
             bool isInstantEffect = false,
-            ExceedLevel exceedLevel = ExceedLevel.Normal)
+            ExceedLevel exceedLevel = ExceedLevel.Normal,
+            CardSubCategory subCategory = CardSubCategory.None)
         {
             Id = id;
             Name = name;
             Cost = cost;
             Rarity = rarity;
             Category = category;
+            SubCategory = subCategory;
             Element = element;
             Series = series;
             Power = power;
@@ -188,7 +192,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel
+                ExceedLevel, SubCategory
             )
             {
                 TuningCount = TuningCount + 1,
@@ -211,7 +215,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel
+                ExceedLevel, SubCategory
             ) { IsEffectCopy = true };
         }
 
@@ -278,7 +282,8 @@ namespace Olca.Core.Domain
                 master.StartupTime,
                 master.RecoveryTime,
                 master.ExtendRecoveryDuringDerivative,
-                master.IsInstantEffect
+                master.IsInstantEffect,
+                subCategory: master.SubCategory
             );
         }
 

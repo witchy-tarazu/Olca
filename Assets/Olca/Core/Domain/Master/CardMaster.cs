@@ -22,6 +22,8 @@ namespace Olca.Core.Domain.Master
 
         public CardCategory Category { get; set; }
 
+        public CardSubCategory SubCategory { get; set; }
+
         public ElementType Element { get; set; }
 
         public SeriesType Series { get; set; }

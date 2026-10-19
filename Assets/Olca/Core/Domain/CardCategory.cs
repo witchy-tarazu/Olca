@@ -1,5 +1,8 @@
 namespace Olca.Core.Domain
 {
+    /// <summary>カードIDに依存せず効果を選ぶ小カテゴリ。</summary>
+    public enum CardSubCategory { None, Heal, Barrier, Concentrate }
+
     /// <summary>
     /// カードのカテゴリ
     /// </summary>
