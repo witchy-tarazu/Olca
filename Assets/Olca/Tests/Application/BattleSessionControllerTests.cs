@@ -314,6 +314,103 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        private List<string> UnconfirmedCloseTrace(int fps, bool stall, bool restore, bool cancel)
+        {
+            var card = new Card("close-fixture", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All,
+                startupTime: .5f);
+            var map = DungeonConfig.CreateTestDungeon(8, 3, 3);
+            var deck = new Deck(new List<Card> { card, card.Clone() });
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 1000 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            var saved = checkpoints.Store.Read();
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            foreach (var e in battle.Enemies) e.ApplyStun(60000);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+            Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            battle.Player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Water);
+            int used = 0, zeroNotifications = 0;
+            battle.CardUsage.OnCardUsed += _ => used++;
+            battle.CustomGauge.OnGaugeChanged += value => { if (value == 0) zeroNotifications++; };
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1) session.UseCardFromInput();
+                if (frame == 2) {
+                    battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+                    Assert.IsTrue(battle.CustomScreen.IsOpen); Assert.IsNotNull(battle.CardUsage.InFlightCard);
+                    if (cancel) Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
+                }
+                if (frame == 3) battle.Pause(BattlePauseReason.User);
+                if (frame == 6) {
+                    if (cancel) battle.CustomScreen.Cancel(); else battle.CustomScreen.Close();
+                    Assert.AreEqual(0, battle.CustomGauge.CurrentGaugeMs); Assert.AreEqual(1, zeroNotifications);
+                    Assert.IsTrue(battle.IsPaused, "ユーザーポーズは画面終了で解除しない");
+                    Assert.IsNotNull(battle.CardUsage.InFlightCard, "未確定終了でも動作中カードを捨てない");
+                    Assert.AreEqual(1, battle.CustomScreen.CurrentHand.Count);
+                    session.TryOpenCustomScreen(); Assert.IsFalse(battle.CustomScreen.IsOpen);
+                }
+                if (frame == 7) { Assert.AreEqual(0, battle.CustomGauge.CurrentGaugeMs); Assert.AreEqual(0, used); }
+                if (frame == 8) battle.Resume(BattlePauseReason.User);
+                if (frame == 9) { session.TryOpenCustomScreen(); Assert.IsFalse(battle.CustomScreen.IsOpen); }
+                if (frame == 319) {
+                    Assert.IsTrue(battle.CustomGauge.IsFull); Assert.AreEqual(1, used);
+                    Assert.AreEqual(2, battle.Player.RemainingTransformationPhases, "拒否した再オープンはフェーズを消費しない");
+                }
+                if (frame == 320) {
+                    session.TryOpenCustomScreen(); Assert.IsTrue(battle.CustomScreen.IsOpen);
+                    Assert.AreEqual(1, battle.Player.RemainingTransformationPhases);
+                }
+                manager.TickFrame(ms);
+                trace.Add(frame + ":" + battle.CustomGauge.CurrentGaugeMs + ":" + battle.CustomScreen.IsOpen + ":" +
+                    battle.CardUsage.InFlightCard?.Id + ":" + used + ":" + battle.Player.RemainingTransformationPhases);
+            });
+            long total = 6 * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            var after = checkpoints.Store.Read();
+            Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion); Assert.AreEqual(saved.Sequence, after.Sequence);
+            Assert.AreEqual(saved.MapHash, after.MapHash); CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void 未確定終了のゲージ消費と実行中カード再開は通常経路と復帰で一致する(int fps, bool stall, bool restore)
+        {
+            foreach (bool cancel in new[] { false, true })
+                CollectionAssert.AreEqual(UnconfirmedCloseTrace(60, false, false, cancel), UnconfirmedCloseTrace(fps, stall, restore, cancel));
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 確定済み終了ではゲージ0を重複通知せず閉じた画面への再終了も消費しない(bool selected)
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+            if (selected) Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
+            int zero = 0; battle.CustomGauge.OnGaugeChanged += value => { if (value == 0) zero++; };
+            battle.CustomScreen.Confirm(); Assert.AreEqual(0, battle.CustomGauge.CurrentGaugeMs);
+            battle.CustomScreen.Close(); Assert.AreEqual(1, zero);
+            battle.CustomGauge.UpdateFrame(); long gauge = battle.CustomGauge.CurrentGaugeMs;
+            battle.CustomScreen.Close(); battle.CustomScreen.Cancel();
+            Assert.AreEqual(gauge, battle.CustomGauge.CurrentGaugeMs); Assert.AreEqual(1, zero);
+            session.Detach();
+        }
+
         private List<string> CardActionLockTrace(int fps, bool stall, bool restore)
         {
             var card = new Card("action-lock", "検証", 1, CardRarity.Normal, CardCategory.Attack,

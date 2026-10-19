@@ -411,6 +411,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnCustomScreenClosed(List<Card> selectedCards)
         {
+            // 未確定で閉じる場合もゲージを消費する。通常の確定時リセットを重複通知しない。
+            if (customGauge.CurrentGaugeMs != 0) customGauge.Reset();
             // バトル再開
             Resume();
         }
