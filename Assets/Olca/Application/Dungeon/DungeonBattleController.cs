@@ -574,9 +574,21 @@ namespace Olca.Application.Dungeon
         private DungeonCheckpointSession memoryCheckpoints;
         public bool RetryMemoryCheckpoint()
         {
-            bool saved = manager != null && manager.RetryCheckpoint();
-            if (saved && manager.CurrentPhase == GamePhase.Dungeon) manager.ResumeAfterBattle();
-            return saved;
+            // 停止中の待機と同期保存の所要時間を、成功後の最初のUpdateへ持ち込まない。
+            // 既に獲得済みの論理フレームは消さず、観測点だけを区切る。
+            logicalLoop.Observe(manager != null && !IsUserPaused && !awaitingCheckpointChoice &&
+                !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
+            try
+            {
+                bool saved = manager != null && manager.RetryCheckpoint();
+                if (saved && manager.CurrentPhase == GamePhase.Dungeon) manager.ResumeAfterBattle();
+                return saved;
+            }
+            finally
+            {
+                logicalLoop.Observe(false);
+                logicalLoop.ReleaseInput();
+            }
         }
         // 候補と保存形式を検証した後でのみ旧モデルを破棄する。
         public bool TryRestoreMemoryCheckpoint(out string error)

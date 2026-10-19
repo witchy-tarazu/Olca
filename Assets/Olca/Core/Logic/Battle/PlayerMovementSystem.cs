@@ -16,23 +16,23 @@ namespace Olca.Core.Logic.Battle
         private readonly BattleField field;
         private readonly IGameLogger logger;
 
-        private int moveCooldownMs; // 移動クールダウン（ミリ秒）
+        private FrameCountdown moveCooldown; // 移動クールダウン（ミリ秒）
         private Vector2Int? pendingSlideDirection; // Ice滑り中の方向
 
         private const int GRASS_MOVE_DELAY_MS = 200; // Grassパネルから移動時のクールダウン（ミリ秒）
         private const int NORMAL_MOVE_DELAY_MS = 150; // 通常移動時のクールダウン（ミリ秒、押しっぱなし対応）
 
         /// <summary>移動可能か（クールダウンと滑り状態をチェック）</summary>
-        public bool CanMove => moveCooldownMs <= 0 && !IsSliding;
+        public bool CanMove => !moveCooldown.IsActive && !IsSliding;
 
         /// <summary>Ice滑り中か</summary>
         public bool IsSliding => player.TerrainState.ReceivesPanelEffects && pendingSlideDirection.HasValue;
 
         /// <summary>現在のクールダウン時間（ミリ秒）</summary>
-        public int CurrentCooldownMs => moveCooldownMs;
+        public int CurrentCooldownMs => moveCooldown.Milliseconds;
 
         /// <summary>現在のクールダウン時間（秒）- 互換性用</summary>
-        public float CurrentCooldown => moveCooldownMs / 1000f;
+        public float CurrentCooldown => moveCooldown.Milliseconds / 1000f;
 
         /// <summary>
         /// コンストラクタ
@@ -47,19 +47,12 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 移動システムを更新（毎フレーム呼び出す）- 整数ベース版
         /// </summary>
-        public void Tick(int deltaTimeMs, IInputProvider input, List<Enemy> enemies)
+        public void Tick(int deltaTimeMs, IInputProvider input, List<Enemy> enemies, bool logicalFrame = false)
         {
             CancelSlideWhileFloating();
 
             // クールダウン更新
-            if (moveCooldownMs > 0)
-            {
-                moveCooldownMs -= deltaTimeMs;
-                if (moveCooldownMs < 0)
-                {
-                    moveCooldownMs = 0;
-                }
-            }
+            if (logicalFrame) moveCooldown.TickFrame(); else moveCooldown.Tick(deltaTimeMs);
 
             // Ice滑り処理が優先
             if (pendingSlideDirection.HasValue)
@@ -92,7 +85,7 @@ namespace Olca.Core.Logic.Battle
             CancelSlideWhileFloating();
 
             // クールダウン中は移動不可（Ice滑り中も含む）
-            if (moveCooldownMs > 0)
+            if (moveCooldown.IsActive)
             {
                 logger?.LogInfo("クールダウン中のため移動不可");
                 return false;
@@ -147,12 +140,12 @@ namespace Olca.Core.Logic.Battle
             PanelType currentPanel = field.GetPanelType(player.GridPosition);
             if (currentPanel == PanelType.Grass && player.TerrainState.ReceivesPanelEffects)
             {
-                moveCooldownMs = GRASS_MOVE_DELAY_MS;
+                moveCooldown.SetMilliseconds(GRASS_MOVE_DELAY_MS);
                 logger?.LogInfo("Grassパネルから移動: 長めのクールダウン追加");
             }
             else
             {
-                moveCooldownMs = NORMAL_MOVE_DELAY_MS;
+                moveCooldown.SetMilliseconds(NORMAL_MOVE_DELAY_MS);
                 logger?.LogInfo("通常移動: クールダウン追加");
             }
 

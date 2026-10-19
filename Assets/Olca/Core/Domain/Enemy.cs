@@ -14,7 +14,7 @@ namespace Olca.Core.Domain
         private readonly int maxHp;
         private readonly ElementType element;
         private Vector2Int gridPosition;
-        private int stunDurationMs;
+        private FrameCountdown stunTimer;
         private StatusEffect activeStatusEffect;
         private long poisonDamageRemainder; // ダメージ×ミリ秒の1000未満の端数
 
@@ -45,10 +45,10 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>スタン中か</summary>
-        public bool IsStunned => stunDurationMs > 0;
+        public bool IsStunned => stunTimer.IsActive;
 
         /// <summary>残スタン時間（ミリ秒）</summary>
-        public int StunDurationMs => stunDurationMs;
+        public int StunDurationMs => stunTimer.Milliseconds;
 
         /// <summary>現在の状態異常</summary>
         public StatusEffect ActiveStatus => activeStatusEffect;
@@ -131,7 +131,7 @@ namespace Olca.Core.Domain
         public void ApplyStun(int durationMs)
         {
             if (durationMs <= 0) return;
-            stunDurationMs = Math.Max(stunDurationMs, durationMs);
+            stunTimer.ExtendMilliseconds(durationMs);
         }
 
         /// <summary>
@@ -140,10 +140,10 @@ namespace Olca.Core.Domain
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         public void TickStun(int deltaTimeMs)
         {
-            if (stunDurationMs <= 0) return;
-            stunDurationMs -= deltaTimeMs;
-            if (stunDurationMs < 0) stunDurationMs = 0;
+            stunTimer.Tick(deltaTimeMs);
         }
+
+        public void TickStunFrame() => stunTimer.TickFrame();
 
         /// <summary>
         /// 状態異常を付与する（既存の状態異常は上書き）

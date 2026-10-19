@@ -9,6 +9,7 @@ namespace Olca.Core.Logic.Battle
     /// </summary>
     public class CustomGaugeSystem
     {
+        private long gaugeRemainder;
         private long currentGaugeMs; // 0 ~ MAX_GAUGE_MS
         private readonly int gaugeSpeedPerSecond; // 1秒あたりの増加量（ミリ秒単位で計算時に使用）
 
@@ -45,17 +46,24 @@ namespace Olca.Core.Logic.Battle
         /// ゲージを更新（毎フレーム呼び出す）- 整数ベース版
         /// </summary>
         /// <param name="deltaTimeMs">前フレームからの経過時間（ミリ秒）</param>
-        public void Update(int deltaTimeMs)
+        public void Update(int deltaTimeMs) => Advance(deltaTimeMs * 3L);
+
+        /// <summary>60Hzの一フレーム。1/3000秒単位の分子を保持し、msへの丸めを累積しない。</summary>
+        public void UpdateFrame() => Advance(50);
+
+        private void Advance(long timeUnits)
         {
             if (IsFull) return;
 
-            // 整数演算: gaugeSpeedPerSecond は「1000ms あたりの増加量（ms単位）」
-            // deltaTimeMs ミリ秒経過時の増加量 = gaugeSpeedPerSecond * deltaTimeMs / 1000
-            currentGaugeMs += (long)gaugeSpeedPerSecond * deltaTimeMs / 1000;
+            // 旧ms入口と論理フレーム入口を同じ精度で積算する。
+            long numerator = gaugeRemainder + (long)gaugeSpeedPerSecond * timeUnits;
+            currentGaugeMs += numerator / 3000;
+            gaugeRemainder = numerator % 3000;
 
             if (currentGaugeMs >= MAX_GAUGE_MS)
             {
                 currentGaugeMs = MAX_GAUGE_MS;
+                gaugeRemainder = 0;
                 OnGaugeFull?.Invoke();
             }
 
@@ -68,6 +76,7 @@ namespace Olca.Core.Logic.Battle
         public void Reset()
         {
             currentGaugeMs = 0;
+            gaugeRemainder = 0;
             OnGaugeChanged?.Invoke(NormalizedGauge);
         }
 
@@ -78,6 +87,7 @@ namespace Olca.Core.Logic.Battle
         public void SetGaugeMs(long valueMs)
         {
             currentGaugeMs = Math.Max(0, Math.Min(valueMs, MAX_GAUGE_MS));
+            gaugeRemainder = 0;
             OnGaugeChanged?.Invoke(NormalizedGauge);
 
             if (IsFull)

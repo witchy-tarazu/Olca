@@ -102,7 +102,7 @@ namespace Olca.Core.Logic.Integration
             switch (currentPhase)
             {
                 case GamePhase.Dungeon:
-                    dungeonSystem.Tick(deltaTimeMs);
+                    if (logicalFrameTick) dungeonSystem.TickFrame(); else dungeonSystem.Tick(deltaTimeMs);
                     break;
 
                 case GamePhase.Battle:

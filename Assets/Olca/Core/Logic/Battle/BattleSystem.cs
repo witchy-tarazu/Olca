@@ -30,7 +30,9 @@ namespace Olca.Core.Logic.Battle
 
         private BattlePauseReason pauseReasons;
         private BattleState state;
-        private long actionTimeMs;
+        private long actionTimeUnits;
+        private long actionFrame;
+        internal long ActionFrame => actionFrame;
         private int resolutionDepth;
         private bool resolutionRequested;
 
@@ -209,21 +211,22 @@ namespace Olca.Core.Logic.Battle
             BeginResolution();
             try
             {
-                actionTimeMs += deltaTimeMs;
+                actionTimeUnits += logicalFrameTick ? 50 : deltaTimeMs * 3L;
+                if (logicalFrameTick) actionFrame++;
                 AdvanceActionWaits();
                 if (IsGameOver || IsPaused) return;
                 // カスタムゲージを更新
-                customGauge.Update(deltaTimeMs);
+                if (logicalFrameTick) customGauge.UpdateFrame(); else customGauge.Update(deltaTimeMs);
 
                 // 入力遮断中も自動滑り・移動待機時間は進める。能動入力だけを分離する。
-                playerMovement.Tick(deltaTimeMs, input, enemies);
+                playerMovement.Tick(deltaTimeMs, input, enemies, logicalFrameTick);
                 panelEffects.Tick(deltaTimeMs, player);
 
                 // 遅延効果を更新（投擲物の着弾など）
-                delayedEffects.Update(deltaTimeMs);
+                delayedEffects.Update(deltaTimeMs, logicalFrameTick);
 
                 // プレイヤーの無敵時間ティック処理
-                player.TickInvincible(deltaTimeMs);
+                if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
 
                 // 敵の状態異常ティック処理（毒ダメージ等）
                 foreach (var enemy in tickParticipants)
@@ -237,7 +240,7 @@ namespace Olca.Core.Logic.Battle
                 }
 
                 // 敵のAI更新
-                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider, tickParticipants);
+                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider, tickParticipants, logicalFrameTick);
             }
             finally { EndResolution(); }
         }
@@ -305,7 +308,11 @@ namespace Olca.Core.Logic.Battle
             ct.ThrowIfCancellationRequested();
             if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
             if (seconds <= 0) return UniTask.CompletedTask;
-            var wait = new ActionWait { Deadline = actionTimeMs + (long)Math.Ceiling(seconds * 1000d - 1e-4) };
+            // 1フレーム=50単位。float秒の表現誤差のみを除き、入力境界で一度だけ変換する。
+            // 旧ms APIと交互に呼ばれても同じ時計で期限を判定する。
+            var wait = new ActionWait {
+                Deadline = actionTimeUnits + Math.Max(1, (long)Math.Ceiling(seconds * 3000d - 0.0005d))
+            };
             actionWaits.Add(wait);
             if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
             return wait.Completion.Task;
@@ -315,7 +322,7 @@ namespace Olca.Core.Logic.Battle
             // 継続内で追加された次の待機には、このフレームの時間を二重適用しない。
             foreach (var wait in actionWaits.ToArray())
             {
-                if (wait.Completion.Task.Status != UniTaskStatus.Pending || wait.Deadline <= actionTimeMs || IsGameOver)
+                if (wait.Completion.Task.Status != UniTaskStatus.Pending || wait.Deadline <= actionTimeUnits || IsGameOver)
                 {
                     actionWaits.Remove(wait); wait.Registration.Dispose();
                     if (IsGameOver) wait.Completion.TrySetCanceled(); else wait.Completion.TrySetResult();

@@ -13,19 +13,19 @@ namespace Olca.Core.Logic.Battle
     {
         private readonly Enemy enemy;
         private readonly List<IEnemyAIAction> actions;
-        private int currentCooldownMs;
+        private FrameCountdown cooldown;
 
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
 
         /// <summary>行動可能か（クールダウン終了・生存中・麻痺していない）</summary>
-        public bool CanAct => currentCooldownMs <= 0 && !enemy.IsDead && !enemy.IsParalyzed;
+        public bool CanAct => !cooldown.IsActive && !enemy.IsDead && !enemy.IsParalyzed;
 
         /// <summary>現在のクールダウン時間（ミリ秒）</summary>
-        public int CurrentCooldownMs => currentCooldownMs;
+        public int CurrentCooldownMs => cooldown.Milliseconds;
 
         /// <summary>現在のクールダウン時間（秒）- 互換性用</summary>
-        public float CurrentCooldown => currentCooldownMs / 1000f;
+        public float CurrentCooldown => cooldown.Milliseconds / 1000f;
 
         /// <summary>
         /// コンストラクタ
@@ -40,7 +40,7 @@ namespace Olca.Core.Logic.Battle
             if (actions.Count == 0)
                 throw new ArgumentException("AI行動リストは空であってはいけません", nameof(actions));
 
-            this.currentCooldownMs = 0;
+            this.cooldown = new FrameCountdown();
         }
 
         /// <summary>
@@ -48,23 +48,19 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         /// <param name="context">AI判断に必要な情報</param>
-        public void Update(int deltaTimeMs, AIContext context)
+        public void Update(int deltaTimeMs, AIContext context, bool logicalFrame = false)
         {
             if (enemy.IsDead) return;
 
             // スタン中はスタン時間をカウントダウンし、行動をスキップ
             if (enemy.IsStunned)
             {
-                enemy.TickStun(deltaTimeMs);
+                if (logicalFrame) enemy.TickStunFrame(); else enemy.TickStun(deltaTimeMs);
                 return;
             }
 
             // クールダウン減少
-            if (currentCooldownMs > 0)
-            {
-                currentCooldownMs -= deltaTimeMs;
-                if (currentCooldownMs < 0) currentCooldownMs = 0;
-            }
+            if (logicalFrame) cooldown.TickFrame(); else cooldown.Tick(deltaTimeMs);
 
             // 行動可能な場合、行動を決定して実行
             if (CanAct)
@@ -84,7 +80,7 @@ namespace Olca.Core.Logic.Battle
                 if (action.CanExecute(context))
                 {
                     action.Execute(context);
-                    currentCooldownMs = action.GetCooldownMs();
+                    cooldown.SetMilliseconds(action.GetCooldownMs());
                     return;
                 }
             }

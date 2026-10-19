@@ -705,10 +705,36 @@ namespace Olca.Tests.Integration
         {
             private readonly MemoryCheckpointStore memory;
             public bool Fail;
+            public System.Action BeforeWrite;
             public FailingStore(CheckpointDefinitions definitions) { memory = new MemoryCheckpointStore(definitions); }
             public bool TryWrite(CheckpointDto dto, out string error)
-            { if (Fail) { error = "fixture保存失敗"; return false; } return memory.TryWrite(dto, out error); }
+            { BeforeWrite?.Invoke(); if (Fail) { error = "fixture保存失敗"; return false; } return memory.TryWrite(dto, out error); }
             public CheckpointDto Read() => memory.Read();
+        }
+        [Test]
+        public void 保存再試行中の待機と同期保存時間を論理時計へ加算しない()
+        {
+            Create(true);
+            var go = new UnityEngine.GameObject("retry-clock-test"); go.SetActive(false);
+            var controller = go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("manager", flags).SetValue(controller, manager);
+            var loop = (Olca.Unity.UnityLogicalLoop)typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("logicalLoop", flags).GetValue(controller);
+            long now = 0;
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp", flags).SetValue(loop, (System.Func<long>)(() => now));
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("observed", flags).SetValue(loop, 0L);
+            loop.Clock.Accumulate(10000000);
+            try
+            {
+                now += System.Diagnostics.Stopwatch.Frequency * 2;
+                store.BeforeWrite = () => now += System.Diagnostics.Stopwatch.Frequency * 2;
+                Assert.IsFalse(controller.RetryMemoryCheckpoint());
+                now += System.Diagnostics.Stopwatch.Frequency * 2;
+                store.Fail = false; Assert.IsTrue(controller.RetryMemoryCheckpoint());
+                loop.Observe(true);
+                Assert.AreEqual(60, loop.Clock.PendingFrames, "保存待ち・保存処理中の時間は追加せず既存の負債を保持する");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
         }
         private DungeonBattleManager manager;
         private DungeonCheckpointSession session;
@@ -1163,6 +1189,77 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class LogicalFrameClockTests
     {
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 十七msの待機は開始位相によらず二論理フレーム待つ(int phase)
+        {
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> {
+                new Enemy("frame", "fixture", 100, ElementType.None, new Vector2Int(5, 2)) }, new Deck());
+            var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
+            if (phase > 0) clock.Drain((f, ms) => battle.TickFrame(ms), phase);
+            var method = typeof(BattleSystem).GetMethod("WaitForActionAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var wait = (UniTask)method.Invoke(battle, new object[] { .017f, System.Threading.CancellationToken.None });
+            clock.Drain((f, ms) => battle.TickFrame(ms), 1);
+            Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
+            clock.Drain((f, ms) => battle.TickFrame(ms), 1);
+            Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
+        }
+        [Test]
+        public void ゲージ速度小数部を毎フレーム切り捨てず一秒分蓄積する()
+        {
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> {
+                new Enemy("frame", "fixture", 100, ElementType.None, new Vector2Int(5, 2)) }, new Deck(), customGaugeSpeed: 1.1f);
+            var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
+            clock.Drain((f, ms) => battle.TickFrame(ms));
+            Assert.AreEqual(1100, battle.CustomGauge.CurrentGaugeMs);
+        }
+        [Test]
+        public void 探索の毎フレーム位置は六十分の一秒の累積値となる()
+        {
+            var game = new DungeonBattleManager(DungeonConfig.CreateTestDungeon(100, 30, 50),
+                new PlayerCharacter(100), new Deck(), new SeededRandom(), new MockLogger());
+            var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
+            clock.Drain((f, ms) => {
+                game.TickFrame(ms);
+                Assert.AreEqual((f * 10000 / 60) / 1000f, game.Dungeon.PlayerPosition, "frame=" + f);
+            });
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 無敵スタン遅延効果も十七msを二論理フレーム保持する(int phase)
+        {
+            var enemy = new Enemy("frame", "fixture", 100, ElementType.None, new Vector2Int(5, 2));
+            var player = new PlayerCharacter(100);
+            var battle = new BattleSystem(player, new List<Enemy> { enemy }, new Deck());
+            var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
+            if (phase > 0) clock.Drain((f, ms) => battle.TickFrame(ms), phase);
+            player.SetInvincible(17); enemy.ApplyStun(17); int fired = 0;
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Startup, 17) { ExecuteAction = () => fired++ });
+            clock.Drain((f, ms) => battle.TickFrame(ms), 1);
+            Assert.IsTrue(player.IsInvincible); Assert.IsTrue(enemy.IsStunned); Assert.AreEqual(0, fired);
+            clock.Drain((f, ms) => battle.TickFrame(ms), 1);
+            Assert.IsFalse(player.IsInvincible); Assert.IsFalse(enemy.IsStunned); Assert.AreEqual(1, fired);
+        }
+        [Test]
+        public void ジャンプは開始位相によらず三十フレームで着地する()
+        {
+            var game = new DungeonBattleManager(DungeonConfig.CreateTestDungeon(100, 30, 50),
+                new PlayerCharacter(100), new Deck(), new SeededRandom(), new MockLogger());
+            game.Jump(); var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
+            clock.Drain((f, ms) => game.TickFrame(ms), 29);
+            Assert.Greater(game.Dungeon.PlayerHeight, 0);
+            clock.Drain((f, ms) => game.TickFrame(ms), 1);
+            Assert.AreEqual(0, game.Dungeon.PlayerHeight);
+        }
+        [Test]
+        public void 旧ms更新と論理更新を混ぜても待機の経過時間を失わない()
+        {
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> {
+                new Enemy("frame", "fixture", 100, ElementType.None, new Vector2Int(5, 2)) }, new Deck());
+            var method = typeof(BattleSystem).GetMethod("WaitForActionAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var wait = (UniTask)method.Invoke(battle, new object[] { .1f, System.Threading.CancellationToken.None });
+            battle.Tick(50); battle.TickFrame(16); battle.TickFrame(17);
+            Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
+            battle.TickFrame(17); Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
+        }
         private sealed class SeededRandom : Olca.Core.Interfaces.IRandomProvider
         {
             private readonly System.Random random = new System.Random(12345);

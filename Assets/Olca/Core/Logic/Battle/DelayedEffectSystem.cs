@@ -28,6 +28,7 @@ namespace Olca.Core.Logic.Battle
         public void RegisterDelayedEffect(DelayedEffect effect)
         {
             if (battleSystem.IsGameOver) return;
+            effect.RegisteredFrame = battleSystem.ActionFrame;
             activeEffects.Add(effect);
 
 #if UNITY_EDITOR || DEBUG
@@ -39,13 +40,18 @@ namespace Olca.Core.Logic.Battle
         /// 時間経過を更新し、発動タイミングに達した効果を実行 - 整数ベース版
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
-        public void Update(int deltaTimeMs)
+        public void Update(int deltaTimeMs, bool logicalFrame = false)
         {
             if (battleSystem.IsGameOver) return;
             for (int i = activeEffects.Count - 1; i >= 0; i--)
             {
                 var effect = activeEffects[i];
-                effect.RemainingTimeMs -= deltaTimeMs;
+                // 今のフレームの継続処理で登録された効果に、過去の1フレームを渡さない。
+                if (logicalFrame)
+                {
+                    if (effect.RegisteredFrame < battleSystem.ActionFrame) effect.TickFrame();
+                }
+                else effect.Tick(deltaTimeMs);
 
                 if (effect.RemainingTimeMs <= 0)
                 {

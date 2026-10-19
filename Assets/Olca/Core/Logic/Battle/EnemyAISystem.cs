@@ -71,7 +71,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="field">バトルフィールド</param>
         /// <param name="random">乱数プロバイダー</param>
         public void Tick(int deltaTimeMs, PlayerCharacter player, BattleField field, IRandomProvider random,
-            IList<Enemy> tickParticipants = null)
+            IList<Enemy> tickParticipants = null, bool logicalFrame = false)
         {
             if (player == null || field == null) return;
 
@@ -87,7 +87,7 @@ namespace Olca.Core.Logic.Battle
                 var context = new AIContext(behavior.Enemy, player, field, random, logger);
 
                 // AI更新
-                behavior.Update(deltaTimeMs, context);
+                behavior.Update(deltaTimeMs, context, logicalFrame);
             }
         }
 

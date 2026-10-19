@@ -19,7 +19,7 @@ namespace Olca.Core.Domain
         private Vector2Int gridPosition;
         private Vector2Int? temporaryPosition;
         private int barrierHp;          // バリア（ダメージを吸収するHP）
-        private int invincibleDurationMs; // 無敵残り時間（ミリ秒）
+        private FrameCountdown invincibilityTimer; // 無敵残り時間（固定精度）
         private float nextCardMultiplier = 1.0f; // 次カード威力倍率（集中バフ）
 
         // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
@@ -63,10 +63,10 @@ namespace Olca.Core.Domain
         public bool HasBarrier => barrierHp > 0;
 
         /// <summary>無敵中か</summary>
-        public bool IsInvincible => invincibleDurationMs > 0;
+        public bool IsInvincible => invincibilityTimer.IsActive;
 
         /// <summary>残り無敵時間（ミリ秒）</summary>
-        public int InvincibleDurationMs => invincibleDurationMs;
+        public int InvincibleDurationMs => invincibilityTimer.Milliseconds;
 
         /// <summary>次カード威力倍率（集中バフ）</summary>
         public float NextCardMultiplier => nextCardMultiplier;
@@ -123,7 +123,7 @@ namespace Olca.Core.Domain
                 if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
 
                 // 無敵中はダメージ・のけぞりを無効化
-                if (invincibleDurationMs > 0) return;
+                if (invincibilityTimer.IsActive) return;
 
                 // バリアがある場合は先にバリアで吸収
                 if (barrierHp > 0)
@@ -207,7 +207,7 @@ namespace Olca.Core.Domain
         public void SetInvincible(int durationMs)
         {
             if (durationMs <= 0) return;
-            invincibleDurationMs = Math.Max(invincibleDurationMs, durationMs);
+            invincibilityTimer.ExtendMilliseconds(durationMs);
         }
 
         /// <summary>
@@ -216,10 +216,10 @@ namespace Olca.Core.Domain
         /// <param name="elapsedMs">経過時間（ミリ秒）</param>
         public void TickInvincible(int elapsedMs)
         {
-            if (invincibleDurationMs <= 0) return;
-            invincibleDurationMs -= elapsedMs;
-            if (invincibleDurationMs < 0) invincibleDurationMs = 0;
+            invincibilityTimer.Tick(elapsedMs);
         }
+
+        public void TickInvincibleFrame() => invincibilityTimer.TickFrame();
 
         /// <summary>
         /// 集中バフを設定する

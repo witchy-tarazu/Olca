@@ -133,14 +133,16 @@ namespace Olca.Core.Logic.Dungeon
         private bool processingTick;
         private int encounterRevision;
 
-        public void Tick(int deltaTimeMs)
+        public void Tick(int deltaTimeMs) => TickStep(deltaTimeMs, false);
+        public void TickFrame() => TickStep(0, true);
+        private void TickStep(int deltaTimeMs, bool logicalFrame)
         {
             if (processingTick || IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
             processingTick = true;
             try
             {
-                var step = playerMovement.PreviewStep(deltaTimeMs);
+                var step = logicalFrame ? playerMovement.PreviewFrame() : playerMovement.PreviewStep(deltaTimeMs);
                 int control = playerMovement.ControlRevision, encounter = encounterRevision;
                 var contacts = new List<ContactSystem.SweptContact>();
                 for (int i = 0; i < map.TotalCellCount; i++)

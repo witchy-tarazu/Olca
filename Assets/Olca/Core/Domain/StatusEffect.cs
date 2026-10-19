@@ -68,3 +68,21 @@ namespace Olca.Core.Domain
         }
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>
+    /// 旧ms入口と60Hz入口で共用する残り時間。1/3000秒を一単位とし、
+    /// 1フレームは常に50単位減算する。表示用msへの切上げ値を演算へ戻さない。
+    /// </summary>
+    internal struct FrameCountdown
+    {
+        private long remaining;
+        public bool IsActive => remaining > 0;
+        public int Milliseconds => (int)((remaining + 2) / 3);
+        public void SetMilliseconds(int value) => remaining = System.Math.Max(0L, value * 3L);
+        public void ExtendMilliseconds(int value) => remaining = System.Math.Max(remaining, value * 3L);
+        public void Tick(int milliseconds) => remaining = System.Math.Max(0, remaining - milliseconds * 3L);
+        public void TickFrame() => remaining = System.Math.Max(0, remaining - 50);
+    }
+}

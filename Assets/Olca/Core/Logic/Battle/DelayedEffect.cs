@@ -26,7 +26,11 @@ namespace Olca.Core.Logic.Battle
     public class DelayedEffect
     {
         /// <summary>残り時間（ミリ秒）</summary>
-        public int RemainingTimeMs { get; set; }
+        private FrameCountdown remaining;
+        public int RemainingTimeMs { get => remaining.Milliseconds; set => remaining.SetMilliseconds(value); }
+        internal long RegisteredFrame { get; set; }
+        internal void Tick(int milliseconds) => remaining.Tick(milliseconds);
+        internal void TickFrame() => remaining.TickFrame();
 
         /// <summary>効果タイプ</summary>
         public DelayedEffectType EffectType { get; set; }
