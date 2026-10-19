@@ -35,6 +35,25 @@ namespace Olca.Tests.Battle
         }
 
 
+        [TestCase(-50, 1073741823)]
+        [TestCase(int.MinValue, 50)]
+        public void 負耐性の大ダメージを回復して再被弾しても強靭度累計が符号反転しない(int resistance,int damage)
+        {
+            var target = new PlayerCharacter(int.MaxValue, poise: int.MaxValue);
+            target.SetElementResistances(new ElementResistances(fire: resistance));
+            int staggered = 0;
+            target.OnStaggered += () => staggered++;
+            target.TakeDamage(damage, attackElement: ElementType.Fire);
+            Assert.AreEqual(0, staggered);
+            int received = int.MaxValue - target.CurrentHp;
+            Assert.Greater(received, int.MaxValue / 2);
+            target.Heal(received);
+            target.TakeDamage(damage, attackElement: ElementType.Fire);
+            Assert.AreEqual(1, staggered);
+            Assert.AreEqual(0, target.AccumulatedDamage);
+            Assert.Greater(target.CurrentHp, 0);
+        }
+
         [TestCase(0, 7)][TestCase(50, 3)][TestCase(-50, 10)][TestCase(-100, 14)][TestCase(100, 0)][TestCase(-200, 21)]
         public void 属性と独立した耐性で最後に切り捨てる(int resistance, int expected)
         {

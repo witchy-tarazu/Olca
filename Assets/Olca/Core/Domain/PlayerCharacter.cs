@@ -175,11 +175,17 @@ namespace Olca.Core.Domain
                 // 累計ダメージが強靭度を超えると、のけぞりが発生する
                 if (!IsDead && affectsPoise)
                 {
-                    accumulatedDamage += damage;
-                    if (forceStagger || accumulatedDamage >= poise)
+                    // 有効な負耐性で大きなダメージになっても、累計を符号反転させない。
+                    long totalDamage = (long)accumulatedDamage + damage;
+                    if (forceStagger || totalDamage >= poise)
                     {
                         accumulatedDamage = 0;  // のけぞり後はリセット
                         OnStaggered?.Invoke();
+                    }
+                    else
+                    {
+                        // 閾値未満なのでint範囲内。
+                        accumulatedDamage = (int)totalDamage;
                     }
                 }
 
