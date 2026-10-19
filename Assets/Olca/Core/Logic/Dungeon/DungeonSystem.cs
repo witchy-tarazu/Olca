@@ -1091,6 +1091,9 @@ namespace Olca.Core.Logic.Dungeon
                 var p = d.Player;
                 CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
+                // 既存保存形式は上限100を検証する。旧負値は原値のまま復元し戦闘時に制限。
+                CheckpointValues.Require(p.FireResistance <= 100 && p.WaterResistance <= 100 &&
+                    p.WindResistance <= 100 && p.EarthResistance <= 100, "保存された属性耐性が上限を超えています");
                 CheckpointValues.Require(d.Cards != null && d.DeckOrder != null && d.ObtainedOrder != null && d.Enemies != null, "必須配列が欠落しています");
                 var cards = new Dictionary<string, Card>();
                 foreach (var c in d.Cards) { definitions.NormalizeLegacyDefenseCard(c); var card = definitions.RestoreCard(c); cards.Add(c.InstanceId, card); }
@@ -1311,8 +1314,8 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
                 Player = new CheckpointPlayerDto { Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
-                    Poise = player.Poise, FireResistance = player.Resistances.Fire, WaterResistance = player.Resistances.Water,
-                    WindResistance = player.Resistances.Wind, EarthResistance = player.Resistances.Earth, CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
+                    Poise = player.Poise, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
+                    WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
             };

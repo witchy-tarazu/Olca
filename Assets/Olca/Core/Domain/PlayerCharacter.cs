@@ -197,7 +197,9 @@ namespace Olca.Core.Domain
 
                 breakTransformation = HasTransformationDefense && attackElement == transformationBreakElement;
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
+                int originalDamage = damage;
                 damage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
+                if (originalDamage > 0 && damage == 0) return; // 耐性無効は強靭度・付随効果へ進めない。
 
                 // バリアがある場合は先にバリアで吸収
                 if (barrierHp > 0)

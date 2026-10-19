@@ -200,9 +200,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     {
                         if (target.IsDead) continue;
 
-                        hitTargets.Add(target);
+                        long hitsBefore = target.TotalHitsTaken;
                         long damageBefore = target.TotalDamageTaken;
                         target.TakeDamage(finalDamage, finalElement);
+                        if (target.TotalHitsTaken > hitsBefore) hitTargets.Add(target);
 
                         // 実際にダメージが入った場合
                         if (target.TotalDamageTaken > damageBefore)

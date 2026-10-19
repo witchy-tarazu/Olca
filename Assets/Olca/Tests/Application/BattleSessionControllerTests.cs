@@ -1743,5 +1743,99 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power)
+        {
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison,
+                Trigger = DerivativeTrigger.OnHit, Duration = 10f, Power = 1 });
+            var card = new Card("resistance", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.None, power, "検証",
+                Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile, modifier: modifier, startupTime: .05f);
+            var deck = new Deck(new List<Card> { card });
+            var map = DungeonConfig.CreateTestDungeon(30, 1, 5);
+            for (int i = 0; i < map.MapCells.Count; i++) {
+                var cell = map.MapCells[i]; if (cell.Enemy == null) continue;
+                var e = cell.Enemy;
+                map.MapCells[i] = new MapCell(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition,
+                    resistances: new ElementResistances(fire: resistance)), cell.Height);
+            }
+            var player = new PlayerCharacter(1000); player.SetElementResistances(new ElementResistances(fire: -200, water: 150));
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int f = 0; f < 1000 && manager.CurrentBattle == null; f++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+                card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            battle.Player.MoveTo(new Vector2Int(2, 0));
+            foreach (var e in battle.Enemies) { e.ApplyStun(60000); e.MoveTo(new Vector2Int(5, 0)); }
+            var enemy = battle.Enemies[0]; enemy.MoveTo(new Vector2Int(3, 0));
+            int initialHp = enemy.CurrentHp, used = 0;
+            battle.CardUsage.OnCardUsed += _ => used++;
+            Assert.AreEqual(-200, battle.Player.Resistances.Fire, "旧保存の元値を維持");
+            Assert.AreEqual(-100, battle.Player.Resistances.Get(ElementType.Fire));
+            Assert.AreEqual(100, battle.Player.Resistances.Get(ElementType.Water));
+            Assert.AreEqual(100, checkpoints.Store.Read().Player.WaterResistance);
+            Assert.AreEqual(-200, checkpoints.Store.Read().Player.FireResistance);
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1) { battle.CardUsage.EnqueueCards(new List<Card> { card }); session.UseCardFromInput(); }
+                if (frame == 2) battle.Pause(BattlePauseReason.User);
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                battle.TickFrame(ms);
+                if (frame == 5) { Assert.AreEqual(initialHp, enemy.CurrentHp); Assert.IsNull(enemy.ActiveStatus); }
+                trace.Add(frame + ":" + enemy.CurrentHp + ":" + enemy.ActiveStatus?.Type.ToString() + ":" + battle.CardUsage.RemainingCount);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            int damage = power == 0 || resistance >= 100 ? 0 : resistance < 0 ? 2 : 1;
+            Assert.AreEqual(initialHp - damage, enemy.CurrentHp);
+            Assert.AreEqual(power == 0 || resistance < 100, enemy.ActiveStatus != null);
+            Assert.AreEqual(1, used, "空振りでも親を一枚消費し、派生では追加消費しない");
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void 耐性の下限最低ダメージ完全無効と状態専用を通常使用と保存復帰で区別する(int fps, bool stall, bool restore)
+        {
+            foreach (var value in new[] { (r: 99, p: 1), (r: 100, p: 1), (r: 100, p: 0), (r: -200, p: 1) })
+                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, value.r, value.p),
+                    ResistanceCardTrace(fps, stall, restore, value.r, value.p));
+        }
+
+        [Test]
+        public void 耐性補正は全て加算してから制限し無属性は補正しない()
+        {
+            var values = ElementResistances.Combine(new ElementResistances(fire: 80, water: -80, wind: int.MaxValue),
+                new ElementResistances(fire: 80, water: -80, wind: int.MaxValue), new ElementResistances(fire: -70, wind: int.MinValue));
+            Assert.AreEqual(90, values.Get(ElementType.Fire)); Assert.AreEqual(-100, values.Get(ElementType.Water));
+            Assert.AreEqual(100, values.Get(ElementType.Wind)); Assert.AreEqual(1, values.CalculateDamage(1, ElementType.Fire, false));
+            Assert.AreEqual(5, values.CalculateDamage(5, ElementType.None, false));
+            var battle = CreateBattleSystem(); battle.Player.SetElementResistances(values);
+            var session = CreateSession().session; session.Attach(battle);
+            int staggers = 0; battle.Player.OnStaggered += () => staggers++;
+            session.ProcessLogicalFrame(() => {
+                battle.Player.TakeDamage(1, forceStagger: true, attackElement: ElementType.Wind);
+                battle.Player.TakeDamage(1, affectsPoise: false, attackElement: ElementType.Fire);
+            });
+            Assert.AreEqual(99, battle.Player.CurrentHp); Assert.AreEqual(0, staggers);
+            session.Detach();
+        }
+
+
     }
 }

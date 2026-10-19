@@ -30,13 +30,25 @@ namespace Olca.Core.Domain
         public int Earth { get; }
         public ElementResistances(int fire = 0, int water = 0, int wind = 0, int earth = 0)
         {
-            if (fire > 100 || water > 100 || wind > 100 || earth > 100)
-                throw new System.ArgumentOutOfRangeException("resistance", "属性耐性の上限は100です");
+            // 元値は旧保存・定義hashとの照合用に保持し、有効値はGetで制限する。
             Fire = fire; Water = water; Wind = wind; Earth = earth;
         }
-        public int Get(ElementType element) => element == ElementType.Fire ? Fire :
+        private static int Clamp(long value) => (int)System.Math.Max(-100L, System.Math.Min(100L, value));
+        public int Get(ElementType element) => Clamp(element == ElementType.Fire ? Fire :
             element == ElementType.Water ? Water : element == ElementType.Wind ? Wind :
-            element == ElementType.Earth ? Earth : 0;
+            element == ElementType.Earth ? Earth : 0);
+        /// <summary>同属性の全補正を合算してから一度だけ上下限を適用する。</summary>
+        public static ElementResistances Combine(params ElementResistances[] values)
+        {
+            if (values == null) throw new System.ArgumentNullException(nameof(values));
+            long fire = 0, water = 0, wind = 0, earth = 0;
+            foreach (var value in values)
+            {
+                if (value == null) throw new System.ArgumentException("耐性補正がnullです", nameof(values));
+                fire += value.Fire; water += value.Water; wind += value.Wind; earth += value.Earth;
+            }
+            return new ElementResistances(Clamp(fire), Clamp(water), Clamp(wind), Clamp(earth));
+        }
         public double Multiplier(ElementType element) => (100L - Get(element)) / 100d;
         public bool IsNeutral => Fire == 0 && Water == 0 && Wind == 0 && Earth == 0;
         public bool HasSameValues(ElementResistances other) => other != null &&
@@ -46,7 +58,7 @@ namespace Olca.Core.Domain
             if (damage < 0) throw new System.ArgumentOutOfRangeException(nameof(damage));
             // 正の整数ダメージを最後に一度だけ切り捨てる。乗算途中で端数を落とさない。
             decimal result = (decimal)damage * (100L - Get(element)) * (fireOnGrass ? 2 : 1) / 100m;
-            return (int)System.Math.Min(int.MaxValue, result);
+            return result <= 0 ? 0 : (int)System.Math.Max(1m, System.Math.Min(int.MaxValue, result));
         }
     }
     /// <summary>外部定義から受け取るIDと被弾特性。製品ID・解放条件・カード変換は定義しない。</summary>

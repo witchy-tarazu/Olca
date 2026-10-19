@@ -155,6 +155,7 @@ namespace Olca.Core.Domain
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
+                if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。
 
                 if (poison)
                     finalDamage = frameHp.Active ? frameHp.Poison(finalDamage) : Math.Min(finalDamage, Math.Max(0, currentHp - 1));

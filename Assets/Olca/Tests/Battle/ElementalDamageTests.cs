@@ -234,7 +234,7 @@ namespace Olca.Tests.Battle
         }
 
         [TestCase(-50, 1073741823)]
-        [TestCase(int.MinValue, 50)]
+        [TestCase(int.MinValue, 600000000)]
         public void 負耐性の大ダメージを回復して再被弾しても強靭度累計が符号反転しない(int resistance,int damage)
         {
             var target = new PlayerCharacter(int.MaxValue, poise: int.MaxValue);
@@ -252,7 +252,7 @@ namespace Olca.Tests.Battle
             Assert.Greater(target.CurrentHp, 0);
         }
 
-        [TestCase(0, 7)][TestCase(50, 3)][TestCase(-50, 10)][TestCase(-100, 14)][TestCase(100, 0)][TestCase(-200, 21)]
+        [TestCase(0, 7)][TestCase(50, 3)][TestCase(-50, 10)][TestCase(-100, 14)][TestCase(100, 0)][TestCase(-200, 14)]
         public void 属性と独立した耐性で最後に切り捨てる(int resistance, int expected)
         {
             var enemy = new Enemy("e", "敵", 100, ElementType.Fire, Vector2Int.Zero,
@@ -264,11 +264,11 @@ namespace Olca.Tests.Battle
             Assert.AreEqual(100 - expected, player.CurrentHp);
         }
         [Test]
-        public void 自身属性から弱点を推測せず上限超過だけ拒否する()
+        public void 自身属性から弱点を推測せず戦闘値だけ上下限で制限する()
         {
             var enemy = new Enemy("e", "敵", 100, ElementType.Fire, Vector2Int.Zero);
             enemy.TakeDamage(10, ElementType.Water);Assert.AreEqual(90, enemy.CurrentHp);
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => new ElementResistances(fire:101));
+            Assert.AreEqual(100, new ElementResistances(fire:101).Get(ElementType.Fire));
             Assert.DoesNotThrow(() => new ElementResistances(fire:int.MinValue));
             Assert.AreEqual(int.MaxValue,new ElementResistances(fire:int.MinValue).CalculateDamage(int.MaxValue,ElementType.Fire,true));
         }
