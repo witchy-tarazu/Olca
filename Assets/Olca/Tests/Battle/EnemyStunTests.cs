@@ -121,6 +121,68 @@ namespace Olca.Tests.Battle
             Assert.Throws<System.ArgumentException>(()=>Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck()));
         }
 
+        [TestCase(false)][TestCase(true)]
+        public void 強靭度回復待ちは正の受理削りだけで更新し最大値変更と防御では延長しない(bool enemySide)
+        {
+            var target = new Enemy("recovery", "検証", 100, ElementType.None, new Vector2Int(5,0), poiseDefinition:new EnemyPoiseDefinition(30,6));
+            target.ApplyStun(60000); var player=new PlayerCharacter(100);
+            var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());
+            if(enemySide)target.ConfigurePoiseRecovery(6);else player.ConfigurePoiseRecovery(6);
+            System.Action<int> hit=impact=>{if(enemySide)target.TakeDamage(1,ElementType.None,poiseDamage:impact);else player.TakeDamage(1,poiseDamage:impact);};
+            System.Func<int> remaining=()=>enemySide?target.PoiseRecoveryRemainingFrames:player.PoiseRecoveryRemainingFrames;
+            System.Func<int> accumulated=()=>enemySide?target.AccumulatedPoiseDamage:player.AccumulatedDamage;
+            battle.RunLogicalFrame(()=>{hit(7);battle.TickFrame(17);}); Assert.AreEqual(6,remaining());
+            battle.TickFrame(17);battle.TickFrame(17);Assert.AreEqual(4,remaining());
+            if(enemySide)target.SetPoise(100);else player.SetPoise(100);Assert.AreEqual(4,remaining());
+            battle.RunLogicalFrame(()=>{if(enemySide)target.SetBarrier(1);else player.SetBarrier(1);hit(999);battle.TickFrame(17);});
+            Assert.AreEqual(3,remaining());Assert.AreEqual(7,accumulated());
+            battle.RunLogicalFrame(()=>{hit(0);battle.TickFrame(17);});Assert.AreEqual(2,remaining());
+            battle.Pause(BattlePauseReason.User);for(int f=0;f<10;f++)battle.TickFrame(17);Assert.AreEqual(2,remaining());battle.Resume(BattlePauseReason.User);
+            battle.TickFrame(17);Assert.AreEqual(7,accumulated());battle.TickFrame(17);Assert.AreEqual(0,accumulated());Assert.AreEqual(0,remaining());
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 回復期限と同フレームの正の削りは蓄積を維持して待ち時間を更新する(bool enemySide)
+        {
+            var target=new Enemy("recovery","検証",100,ElementType.None,new Vector2Int(5,0),poiseDefinition:new EnemyPoiseDefinition(30,6));target.ApplyStun(60000);
+            var player=new PlayerCharacter(100);var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());
+            if(enemySide)target.ConfigurePoiseRecovery(1);else player.ConfigurePoiseRecovery(1);
+            System.Action hit=()=>{if(enemySide)target.TakeDamage(1,ElementType.None,poiseDamage:7);else player.TakeDamage(1,poiseDamage:7);};
+            battle.RunLogicalFrame(hit);
+            battle.RunLogicalFrame(()=>{battle.TickFrame(17);hit();});
+            Assert.AreEqual(14,enemySide?target.AccumulatedPoiseDamage:player.AccumulatedDamage);
+            Assert.AreEqual(1,enemySide?target.PoiseRecoveryRemainingFrames:player.PoiseRecoveryRemainingFrames);
+            battle.TickFrame(17);Assert.AreEqual(0,enemySide?target.AccumulatedPoiseDamage:player.AccumulatedDamage);
+        }
+
+        [Test]
+        public void 回復待ちの外部設定は不正値と保存混入を拒否し戦闘終了で解除する()
+        {
+            var map=DungeonConfig.CreateTestDungeon(6,30,100);var original=map.MapCells[5].Enemy;
+            var target=new Enemy(original.EnemyId,original.Name,original.MaxHp,original.Element,original.GridPosition,poiseDefinition:new EnemyPoiseDefinition(30,6));
+            map.MapCells[5]=new MapCell(5,target);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>target.ConfigurePoiseRecovery(0));
+            target.ConfigurePoiseRecovery(6);
+            Assert.Throws<System.ArgumentException>(()=>Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck()));
+            var player=new PlayerCharacter(100);Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ConfigurePoiseRecovery(-1));player.ConfigurePoiseRecovery(6);
+            var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());player.TakeDamage(1000);
+            Assert.IsNull(player.PoiseRecoveryDelayFrames);Assert.IsNull(target.PoiseRecoveryDelayFrames);
+        }
+
+        [Test]
+        public void 無敵ガード防御と強靭度は確定した優先順で同フレーム処理する()
+        {
+            var target=new Enemy("priority","検証",100,ElementType.None,new Vector2Int(5,0),poiseDefinition:new EnemyPoiseDefinition(30,6));target.ApplyStun(60000);
+            var battle=new BattleSystem(new PlayerCharacter(100),new List<Enemy>{target},new Deck());
+            target.Guard.Set(true,true);target.SetBarrier(10);target.SetInvincible(1);
+            battle.RunLogicalFrame(()=>{target.TakeDamage(100,ElementType.None,AttackProperty.Break,30);battle.TickFrame(17);});
+            Assert.AreEqual(10,target.BarrierHp);Assert.AreEqual(0,target.AccumulatedPoiseDamage);
+            battle.RunLogicalFrame(()=>{target.TakeDamage(100,ElementType.None,AttackProperty.Sword,30);target.TakeDamage(6,ElementType.None,AttackProperty.Break,30);target.TakeDamage(6,ElementType.None,AttackProperty.Break,30);});
+            Assert.AreEqual(100,target.CurrentHp);Assert.AreEqual(0,target.BarrierHp);Assert.IsTrue(target.Guard.IsActive);Assert.IsFalse(target.IsStaggered);
+            battle.RunLogicalFrame(()=>target.TakeDamage(1,ElementType.None,AttackProperty.Break,30));
+            Assert.AreEqual(99,target.CurrentHp);Assert.IsTrue(target.IsStaggered);Assert.IsFalse(target.Guard.IsActive);
+        }
+
         [Test]
         public void 明示強靭度は独立削りを蓄積し最大値低下で残り1を保ち再成立で期間を戻す()
         {

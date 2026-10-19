@@ -2540,7 +2540,7 @@ namespace Olca.Tests.Application
                 modifier: modifier, startupTime: .05f, poiseDamage: impact, properties: properties);
         }
 
-        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None)
+        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None, bool recovery = false)
         {
             var map = EnemyPoiseMap(resistance: resistance); var card = EnemyPoiseCard(impact, multi, properties); var deck = new Deck(new List<Card> { card });
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
@@ -2563,6 +2563,7 @@ namespace Olca.Tests.Application
             Assert.AreEqual(30, target.Poise); Assert.AreEqual(6, target.PoiseDefinition.StaggerFrames);
             Assert.IsFalse(target.Guard.IsActive); Assert.IsFalse(target.IsStaggered);
             target.Guard.Set(guard, interruptible);
+            if (recovery) target.ConfigurePoiseRecovery(6);
             int initialHp = target.CurrentHp, used = 0, staggered = 0, initialFrames = 0;
             target.OnStaggered += () => { staggered++; initialFrames = target.StaggerRemainingFrames; };
             battle.CardUsage.OnCardUsed += _ => used++;
@@ -2591,7 +2592,7 @@ namespace Olca.Tests.Application
             int hits = blocked ? 0 : multi ? 2 : 1; long sum = (long)impact * hits;
             Assert.AreEqual(initialHp - 5 * hits, target.CurrentHp); Assert.AreEqual(1, used);
             Assert.AreEqual(sum >= 30 ? 1 : 0, staggered); Assert.AreEqual(sum >= 30 ? 6 : 0, initialFrames);
-            Assert.AreEqual(sum >= 30 ? 0 : sum, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
+            Assert.AreEqual(recovery || sum >= 30 ? 0 : sum, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
             Assert.AreEqual(guard && !(interruptible && sum >= 30), target.Guard.IsActive, "期間終了後に中断済みガードを復活させない");
             Assert.Less(battle.Player.CurrentHp, 990, "通常AIは期間終了後も攻撃を継続する");
             var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
@@ -2695,6 +2696,14 @@ namespace Olca.Tests.Application
             } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
         }
 
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void 外部指定の自然回復は通常AIと保存復帰描画頻度で一致する(int fps, bool restore)
+        {
+            CollectionAssert.AreEqual(IndependentPoiseTrace(60,false,false,7,true),IndependentPoiseTrace(fps,true,restore,7,true));
+            CollectionAssert.AreEqual(EnemyPoiseCardTrace(60,false,false,7,true,recovery:true),EnemyPoiseCardTrace(fps,true,restore,7,true,recovery:true));
+        }
+
         private List<string> AuraTrace(int fps, bool stall, bool restore, int threshold)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());
@@ -2753,7 +2762,7 @@ namespace Olca.Tests.Application
                 CollectionAssert.AreEqual(AuraTrace(60, false, false, threshold), AuraTrace(fps, true, restore, threshold));
         }
 
-        private List<string> IndependentPoiseTrace(int fps, bool stall, bool restore, int impact)
+        private List<string> IndependentPoiseTrace(int fps, bool stall, bool restore, int impact, bool recovery = false)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());
             var player = new PlayerCharacter(100); player.SetElementResistances(new ElementResistances(fire: 50));
@@ -2771,6 +2780,7 @@ namespace Olca.Tests.Application
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
             battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); player.MoveTo(new Vector2Int(2, 0));
             foreach (var enemy in battle.Enemies) { enemy.ApplyStun(60000); enemy.MoveTo(new Vector2Int(5, 0)); }
+            if (recovery) player.ConfigurePoiseRecovery(6);
             // 製品値を追加せず、公開登録APIで外部指定の攻撃を通常AI更新へ載せる。
             for (int i = 0; i < 2; i++) battle.AddSummon(new Enemy("poise-fixture-" + i, "検証", 10,
                 ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),
@@ -2793,7 +2803,7 @@ namespace Olca.Tests.Application
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
             Assert.AreEqual(90, player.CurrentHp); Assert.AreEqual(1, hpNotices);
             Assert.AreEqual(impact >= 15 ? 1 : 0, staggered, "同フレームの合算後に一度だけ判定する");
-            Assert.AreEqual(impact >= 15 ? 0 : impact * 2, player.AccumulatedDamage);
+            Assert.AreEqual(recovery || impact >= 15 ? 0 : impact * 2, player.AccumulatedDamage);
             var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
             Assert.AreEqual(saved.Sequence, after.Sequence); Assert.AreEqual(saved.MapHash, after.MapHash);
             Assert.AreEqual(saved.Player.FireResistance, after.Player.FireResistance);

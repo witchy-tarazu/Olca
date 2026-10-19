@@ -2,6 +2,41 @@ using System;
 
 namespace Olca.Core.Domain
 {
+    /// <summary>外部指定の回復待ち。フレーム内の被弾と期限成立を終端で調停する。</summary>
+    internal sealed class PoiseRecoveryState
+    {
+        internal int? DelayFrames { get; private set; }
+        internal int RemainingFrames => timer.Frames;
+        private FrameCountdown timer;
+        private bool frameOpen, hit, expired;
+        internal void Configure(int? frames)
+        {
+            if (frames <= 0) throw new ArgumentOutOfRangeException(nameof(frames));
+            DelayFrames = frames; timer.SetFrames(0); hit = expired = false;
+        }
+        internal void BeginFrame() { frameOpen = true; hit = expired = false; }
+        internal void Hit(int impact)
+        {
+            if (impact <= 0 || !DelayFrames.HasValue) return;
+            if (frameOpen) hit = true; else timer.SetFrames(DelayFrames.Value);
+        }
+        internal bool Tick(int ms, bool logical)
+        {
+            if (hit || !timer.IsActive) return false;
+            if (logical) timer.TickFrame(); else timer.Tick(ms);
+            if (timer.IsActive) return false;
+            if (frameOpen) { expired = true; return false; }
+            return true;
+        }
+        internal bool CommitFrame()
+        {
+            bool recover = expired && !hit;
+            if (hit && DelayFrames.HasValue) timer.SetFrames(DelayFrames.Value);
+            frameOpen = false; hit = expired = false; return recover;
+        }
+        internal void Clear() { Configure(null); frameOpen = false; }
+    }
+
     /// <summary>製品値を持たない外部指定の敵強靭度。期間は被弾した攻撃によらず共通。</summary>
     public sealed class EnemyPoiseDefinition
     {
@@ -53,6 +88,17 @@ namespace Olca.Core.Domain
         public EnemyPoiseDefinition PoiseDefinition { get; }
         public int? Poise { get; private set; }
         public int AccumulatedPoiseDamage { get; private set; }
+        private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
+        public int? PoiseRecoveryDelayFrames => poiseRecovery.DelayFrames;
+        public int PoiseRecoveryRemainingFrames => poiseRecovery.RemainingFrames;
+        public void ConfigurePoiseRecovery(int? delayFrames)
+        {
+            if (PoiseDefinition == null || AccumulatedPoiseDamage != 0 || poiseRecovery.RemainingFrames > 0)
+                throw new InvalidOperationException("回復待ち定義は強靭度を持つ戦闘開始状態で指定してください");
+            poiseRecovery.Configure(delayFrames);
+        }
+        internal void TickPoiseRecovery(int ms, bool logical) { if (poiseRecovery.Tick(ms, logical)) AccumulatedPoiseDamage = 0; }
+        internal void ClearPoiseRecovery() => poiseRecovery.Clear();
         public bool IsStaggered => staggerTimer.IsActive;
         public int StaggerRemainingFrames => staggerTimer.Frames;
         private FrameCountdown staggerTimer;
@@ -86,6 +132,7 @@ namespace Olca.Core.Domain
             Guard.Clear();
             ClearProtection();
             ClearInvincibility();
+            ClearPoiseRecovery();
             staggerTimer.SetFrames(0);
         }
 
@@ -95,13 +142,14 @@ namespace Olca.Core.Domain
         internal long TotalDamageTaken { get; private set; }
         internal long TotalHitsTaken { get; private set; }
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; pendingInvincibilityMs = 0; framePoiseDamage = 0; frameStaggered = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; pendingInvincibilityMs = 0; framePoiseDamage = 0; frameStaggered = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             protection.CommitFrame();
             if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
             pendingInvincibilityMs = 0;
+            if (poiseRecovery.CommitFrame()) AccumulatedPoiseDamage = 0;
             frameStaggered = ApplyPoise(framePoiseDamage);
             if (IsDead) ClearDeathReaction();
             framePoiseDamage = 0;
@@ -277,6 +325,7 @@ namespace Olca.Core.Domain
                 if (!poison && Poise.HasValue && !IsDead)
                 {
                     int impact = poiseDamage ?? finalDamage;
+                    poiseRecovery.Hit(impact);
                     if (frameHp.Active) framePoiseDamage += impact;
                     else staggered = ApplyPoise(impact);
                 }

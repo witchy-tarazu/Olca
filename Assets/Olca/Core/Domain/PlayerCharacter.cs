@@ -62,14 +62,26 @@ namespace Olca.Core.Domain
         internal void TickStagger(int ms, bool logical) { if (logical) staggerTimer.TickFrame(); else staggerTimer.Tick(ms); }
         internal void ClearStagger() { staggerTimer.SetFrames(0); frameWasStaggered = false; }
         private int pendingInvincibilityMs;
+        private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
+        public int? PoiseRecoveryDelayFrames => poiseRecovery.DelayFrames;
+        public int PoiseRecoveryRemainingFrames => poiseRecovery.RemainingFrames;
+        public void ConfigurePoiseRecovery(int? delayFrames)
+        {
+            if (accumulatedDamage != 0 || poiseRecovery.RemainingFrames > 0)
+                throw new InvalidOperationException("回復待ち定義は戦闘開始状態で指定してください");
+            poiseRecovery.Configure(delayFrames);
+        }
+        internal void TickPoiseRecovery(int ms, bool logical) { if (poiseRecovery.Tick(ms, logical)) accumulatedDamage = 0; }
+        internal void ClearPoiseRecovery() => poiseRecovery.Clear();
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             protection.CommitFrame();
+            if (poiseRecovery.CommitFrame()) accumulatedDamage = 0;
             if (framePoiseHit)
             {
                 long total = (long)accumulatedDamage + framePoiseDamage;
@@ -255,6 +267,7 @@ namespace Olca.Core.Domain
                 // 明示0では蓄積も閾値判定も更新しない。既存の強制のけぞり指定は維持する。
                 if (!IsDead && affectsPoise && (poiseDamage != 0 || forceStagger))
                 {
+                    poiseRecovery.Hit(impact);
                     if (frameHp.Active)
                     {
                         // 同フレームの全ヒットを受理後、閾値とリセットを一度だけ判定する。
@@ -316,7 +329,7 @@ namespace Olca.Core.Domain
 
         /// <summary>
         /// 強靭度の累計ダメージをリセットする
-        /// カード使用完了時や行動キャンセル後に呼び出す
+        /// 明示リセット用。通常のカード使用や行動切替では呼び出さない
         /// </summary>
         public void ResetPoiseAccumulation()
         {

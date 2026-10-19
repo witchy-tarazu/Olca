@@ -270,6 +270,7 @@ namespace Olca.Core.Logic.Battle
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
                 player.TickStagger(deltaTimeMs, logicalFrameTick);
                 player.TickProtection(deltaTimeMs, logicalFrameTick);
+                player.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
 
                 // 敵の状態異常ティック処理（毒ダメージ等）
                 foreach (var enemy in tickParticipants)
@@ -277,6 +278,7 @@ namespace Olca.Core.Logic.Battle
                     if (enemy.IsDead) continue;
                     enemy.TickProtection(deltaTimeMs, logicalFrameTick);
                     enemy.TickInvincible(deltaTimeMs, logicalFrameTick);
+                    enemy.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
                     int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
                     if (poisonDamage > 0) enemy.TakePoisonDamage(poisonDamage);
                 }
@@ -520,6 +522,7 @@ namespace Olca.Core.Logic.Battle
                 entry.Key.Guard.Clear();
                 entry.Key.ClearProtection();
                 entry.Key.ClearInvincibility();
+                entry.Key.ClearPoiseRecovery();
                 entry.Key.IsOnGrass = null;
                 entry.Key.OnDamageProcessingStarted -= BeginResolution;
                 entry.Key.OnDamageProcessingCompleted -= EndResolution;
@@ -535,6 +538,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
             player.ClearStagger();
+            player.ClearPoiseRecovery();
             player.SetAura(0);
             player.EndTransformationDefense();
             Transformations.Dispose();
