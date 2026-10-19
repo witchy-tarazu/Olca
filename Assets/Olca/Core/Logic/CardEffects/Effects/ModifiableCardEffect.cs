@@ -233,15 +233,21 @@ namespace Olca.Core.Logic.CardEffects.Effects
             }
 
             // 3. OnHit効果を実行（ヒットした敵に対して）
-            foreach (var effect in onHitEffects)
+            if (hitTargets.Count > 0)
             {
-                ApplyDerivativeEffect(context, effect, hitTargets, finalDamage, finalElement);
+                foreach (var effect in onHitEffects)
+                {
+                    ApplyDerivativeEffect(context, effect, hitTargets, finalDamage, finalElement);
+                }
             }
 
             // 4. OnDamage効果を実行（ダメージを与えた敵に対して）
-            foreach (var effect in onDamageEffects)
+            if (damagedTargets.Count > 0)
             {
-                ApplyDerivativeEffect(context, effect, damagedTargets, finalDamage, finalElement);
+                foreach (var effect in onDamageEffects)
+                {
+                    ApplyDerivativeEffect(context, effect, damagedTargets, finalDamage, finalElement);
+                }
             }
 
             // 5. 行動終了時：ヒット条件を満たしていれば発動
