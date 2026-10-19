@@ -36,7 +36,7 @@ namespace Olca.Tests.Battle
         }
 
 
-        private BattleSystem CreateTransformationBattle()
+        private BattleSystem CreateTransformationBattle(int secondFireResistance = 100)
         {
             var cards = new List<Card> {
                 new Card("fixture-1", "検証1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 1, "検証"),
@@ -44,7 +44,7 @@ namespace Olca.Tests.Battle
             var battle = new BattleSystem(player, new List<Enemy> { new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1,0)) }, new Deck(cards), logger: logger);
             battle.Transformations.Configure(new[] {
                 new TransformationDefenseDefinition("fixture-a", new ElementResistances(fire:50), ElementType.Water),
-                new TransformationDefenseDefinition("fixture-b", new ElementResistances(fire:100), ElementType.Fire) });
+                new TransformationDefenseDefinition("fixture-b", new ElementResistances(fire:secondFireResistance), ElementType.Fire) });
             battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
             return battle;
         }
@@ -126,13 +126,13 @@ namespace Olca.Tests.Battle
         [Test]
         public void 別変身確定は両ID使用済みで強制解除後に前変身へ戻さない()
         {
-            var battle=CreateTransformationBattle();var state=battle.Transformations;
+            var battle=CreateTransformationBattle(50);var state=battle.Transformations;
             state.TryPreview("fixture-a");battle.CustomScreen.Confirm();ReopenTransformationScreen(battle);
             Assert.IsFalse(state.TryPreview("fixture-a"));Assert.IsTrue(state.TryPreview("fixture-b"));
             battle.CustomScreen.Confirm();Assert.AreEqual("fixture-b",state.ActiveId);
             Assert.AreEqual(3,player.RemainingTransformationPhases);Assert.AreEqual(2,state.UsedIds.Count);
             player.TakeDamage(10,attackElement:ElementType.Fire);
-            Assert.AreEqual(100,player.CurrentHp);Assert.IsNull(state.ActiveId);
+            Assert.AreEqual(95,player.CurrentHp);Assert.IsNull(state.ActiveId);
             Assert.IsFalse(player.HasTransformationDefense);Assert.AreSame(player.Resistances,player.ActiveResistances);
             ReopenTransformationScreen(battle);Assert.IsFalse(state.TryPreview("fixture-a"));Assert.IsFalse(state.TryPreview("fixture-b"));
         }
@@ -281,17 +281,19 @@ namespace Olca.Tests.Battle
             player.SetElementResistances(new ElementResistances(fire:resistance));battle.Field.ChangePanelType(player.GridPosition,PanelType.Grass);
             player.TakeDamage(7,attackElement:ElementType.Fire);Assert.AreEqual(100-expected,player.CurrentHp);
         }
-        [TestCase(false, 50, 95)][TestCase(false, 100, 100)][TestCase(true, 50, 100)]
-        public void 変身中の耐性で計算後に解除し無敵なら解除しない(bool invincible,int formResistance,int hp)
+        [TestCase(false, 50, 95)][TestCase(false, 99, 99)][TestCase(false, 100, 100)][TestCase(false, 150, 100)][TestCase(true, 50, 100)]
+        public void 変身中の耐性で計算後に解除し無敵や耐性完全無効なら解除しない(bool invincible,int formResistance,int hp)
         {
             player.SetElementResistances(new ElementResistances(fire:-100));
             player.BeginTransformationDefense(new ElementResistances(fire:formResistance),ElementType.Fire);
             int endedHp=-1;player.OnTransformationDefenseEnded+=()=>endedHp=player.CurrentHp;
             if(invincible)player.SetInvincible(1000);
             player.TakeDamage(10,attackElement:ElementType.Fire);
-            Assert.AreEqual(hp,player.CurrentHp);Assert.AreEqual(invincible,player.HasTransformationDefense);
-            Assert.AreEqual(invincible?-1:hp,endedHp);
-            if(!invincible){player.TakeDamage(10,attackElement:ElementType.Fire);Assert.AreEqual(hp-20,player.CurrentHp);}
+            bool preserved = invincible || formResistance >= 100;
+            Assert.AreEqual(hp,player.CurrentHp);Assert.AreEqual(preserved,player.HasTransformationDefense);
+            Assert.AreEqual(preserved?-1:hp,endedHp);
+            if(!preserved){player.TakeDamage(10,attackElement:ElementType.Fire);Assert.AreEqual(hp-20,player.CurrentHp);}
+            else { player.TakeDamage(10,attackElement:ElementType.Fire); Assert.AreEqual(hp,player.CurrentHp); Assert.AreEqual(3,player.RemainingTransformationPhases); }
         }
         [Test]
         public void 解除用属性以外なら置換耐性を維持する()

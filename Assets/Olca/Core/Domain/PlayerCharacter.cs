@@ -195,11 +195,12 @@ namespace Olca.Core.Domain
                 // 無敵中はダメージ・のけぞりを無効化
                 if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return;
 
-                breakTransformation = HasTransformationDefense && attackElement == transformationBreakElement;
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 int originalDamage = damage;
                 damage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 if (originalDamage > 0 && damage == 0) return; // 耐性無効は強靭度・付随効果へ進めない。
+                // 属性で完全無効になった攻撃は、解除用弱点と一致しても変身を維持する。
+                breakTransformation = HasTransformationDefense && attackElement == transformationBreakElement;
 
                 // バリアがある場合は先にバリアで吸収
                 if (barrierHp > 0)

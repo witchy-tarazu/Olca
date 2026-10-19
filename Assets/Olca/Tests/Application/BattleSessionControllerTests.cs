@@ -1817,6 +1817,95 @@ namespace Olca.Tests.Application
                     ResistanceCardTrace(fps, stall, restore, value.r, value.p));
         }
 
+        private List<string> TransformationImmunityTrace(int fps, bool stall, bool restore, int resistance, bool invincible)
+        {
+            var map = DungeonConfig.CreateTestDungeon(8);
+            var deck = new Deck();
+            var player = new PlayerCharacter(100); player.SetElementResistances(new ElementResistances(fire: -100));
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            var saved = checkpoints.Store.Read(); Assert.AreEqual(1, saved.SchemaVersion);
+            Assert.AreEqual(CheckpointBoundary.BattleStart, saved.Boundary);
+            if (restore)
+            {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle; player = battle.Player;
+            var session = CreateSession().session; session.Attach(battle);
+            // 保存済み戦闘開始からも、通常の変身選択・確定をやり直す。変身中セーブは追加しない。
+            battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("immune-fixture",
+                new ElementResistances(fire: resistance), ElementType.Fire) });
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            session.TryOpenCustomScreen();
+            Assert.IsTrue(battle.Transformations.TryPreview("immune-fixture"));
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); battle.Resume();
+            Assert.AreEqual("immune-fixture", battle.Transformations.ActiveId);
+            player.MoveTo(new Vector2Int(2, 0));
+            foreach (var enemy in battle.Enemies) { enemy.ApplyStun(60000); enemy.MoveTo(new Vector2Int(5, 0)); }
+            // 属性攻撃を持つ検証用召喚物を、既存の登録APIから通常AIへ接続する。
+            // 同フレーム2発が、完全無効の変身を解除して後段へ基礎耐性を漏らさないことも確認。
+            for (int i = 0; i < 2; i++) battle.AddSummon(
+                new Enemy("fire-fixture-" + i, "検証", 10, ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),
+                new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, ElementType.Fire) });
+            int ended = 0; player.OnTransformationDefenseEnded += () => ended++;
+            if (invincible) player.SetInvincible(120000);
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1) battle.Pause(BattlePauseReason.User);
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                manager.TickFrame(ms);
+                if (frame <= 5) { Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, ended); }
+                trace.Add(frame + ":" + player.CurrentHp + ":" + battle.Transformations.ActiveId + ":" +
+                    player.RemainingTransformationPhases + ":" + player.AccumulatedDamage + ":" + ended);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * total / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            bool preserved = resistance >= 100 || invincible;
+            Assert.AreEqual(preserved ? 100 : resistance == 99 ? 79 : 75, player.CurrentHp);
+            Assert.AreEqual(preserved ? 0 : 1, ended);
+            Assert.AreEqual(preserved, player.HasTransformationDefense);
+            Assert.AreEqual(preserved ? 3 : 0, player.RemainingTransformationPhases);
+            Assert.AreEqual(preserved ? "immune-fixture" : null, battle.Transformations.ActiveId);
+            if (preserved) Assert.AreEqual(0, player.AccumulatedDamage);
+            Assert.IsTrue(battle.Transformations.IsUsed("immune-fixture"));
+            // 完全無効でも使用済みや寿命をリセットせず、3回の通常カスタム再開で終了する。
+            for (int i = 0; i < 3; i++) {
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); battle.OpenCustomScreen(new MockRandomProvider());
+                Assert.IsFalse(battle.Transformations.TryPreview("immune-fixture"));
+                battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            }
+            Assert.IsFalse(player.HasTransformationDefense); Assert.AreEqual(1, ended);
+            Assert.AreEqual(-100, player.ActiveResistances.Fire);
+            var after = checkpoints.Store.Read();
+            Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion); Assert.AreEqual(saved.Sequence, after.Sequence);
+            Assert.AreEqual(saved.RunId, after.RunId); Assert.AreEqual(saved.MapHash, after.MapHash);
+            Assert.AreEqual(saved.Player.FireResistance, after.Player.FireResistance);
+            CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void 変身弱点の完全無効は通常敵AIと保存復帰で維持され論理フレームも一致する(int fps, bool stall, bool restore)
+        {
+            foreach (var value in new[] { (resistance: 99, invincible: false), (resistance: 100, invincible: false),
+                (resistance: 150, invincible: false), (resistance: 50, invincible: true) })
+                CollectionAssert.AreEqual(TransformationImmunityTrace(60, false, false, value.resistance, value.invincible),
+                    TransformationImmunityTrace(fps, stall, restore, value.resistance, value.invincible));
+        }
+
         [Test]
         public void 耐性補正は全て加算してから制限し無属性は補正しない()
         {
