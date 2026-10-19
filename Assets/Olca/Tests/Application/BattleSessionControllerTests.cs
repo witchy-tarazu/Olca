@@ -1023,5 +1023,56 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        [TestCase(false, false)] [TestCase(true, false)]
+        [TestCase(false, true)] [TestCase(true, true)]
+        public void 通常セッションの二段派生は元の発動位置を継承し未解決IDでは派生だけを省く(bool delayed, bool missing)
+        {
+            var primary = new Enemy("primary", "検証", 100, ElementType.None, new Vector2Int(3, 0));
+            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            primary.ApplyStun(60000); forward.ApplyStun(60000);
+            var database = new Olca.Tests.CardEffects.MockCardDatabase();
+            var battle = new BattleSystem(new PlayerCharacter(100, new Vector2Int(1, 0)),
+                new List<Enemy> { primary, forward }, new Deck(), cardDatabase: database);
+            var session = CreateSession().session; session.Attach(battle);
+            for (int x = 0; x < BattleField.GRID_WIDTH; x++)
+                battle.Field.ChangePanelType(new Vector2Int(x, 0), PanelType.Grass);
+            var finalModifier = new CardModifier();
+            finalModifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Penetration, Trigger = DerivativeTrigger.Immediate });
+            if (!missing) database.AddCard(new Card("final", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.None, 5, "検証", modifier: finalModifier));
+            var middleModifier = new CardModifier();
+            middleModifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                Trigger = DerivativeTrigger.OnHit, ChainCardId = "final", EffectOrigin = ChainEffectOrigin.PlayerPosition });
+            database.AddCard(new Card("middle", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile,
+                modifier: middleModifier, startupTime: delayed ? .05f : 0));
+            var parentModifier = new CardModifier();
+            parentModifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                Trigger = DerivativeTrigger.OnHit, ChainCardId = "middle", EffectOrigin = ChainEffectOrigin.HitPosition });
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 1, "検証", modifier: parentModifier);
+            int used = 0; battle.CardUsage.OnCardUsed += _ => used++;
+            session.ProcessLogicalFrame(() => UseStatusCard(battle, session, parent));
+            if (delayed)
+            {
+                Assert.AreEqual(100, forward.CurrentHp);
+                battle.Pause(BattlePauseReason.User);
+                for (int f = 0; f < 5; f++) session.ProcessLogicalFrame(() => battle.TickFrame(17));
+                Assert.AreEqual(100, forward.CurrentHp);
+                battle.Resume(BattlePauseReason.User);
+                for (int f = 0; f < 3; f++) session.ProcessLogicalFrame(() => battle.TickFrame(17));
+            }
+            Assert.AreEqual(99, primary.CurrentHp, "親の命中位置より後方へ派生を戻さない");
+            Assert.AreEqual(missing ? 99 : 89, forward.CurrentHp);
+            for (int x = 0; x < BattleField.GRID_WIDTH; x++)
+                Assert.AreEqual(!missing && x > 3 ? PanelType.Normal : PanelType.Grass,
+                    battle.Field.GetPanelType(new Vector2Int(x, 0)), "位置=" + x);
+            Assert.AreEqual(1, used, "派生は追加の手札を消費しない");
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
+            Assert.AreEqual(new Vector2Int(1, 0), battle.Player.GridPosition);
+            session.Detach();
+        }
+
     }
 }

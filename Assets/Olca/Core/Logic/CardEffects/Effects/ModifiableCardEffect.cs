@@ -793,6 +793,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 // 自分自身を再発動する場合はhitTargetsの数だけ実行しない（1回だけ実行）
                 var chainContext = new BattleContext(context.Battle, chainCard);
 
+                // 多段の派生でも、実プレイヤーではなく直前のカードの発動位置を継承する。
+                chainContext.TemporaryPlayerPosition = context.GetEffectivePlayerPosition();
+
                 // チェインカードのデータベースアクセスも引き継ぐ
                 chainContext.CardDatabase = context.CardDatabase;
 
