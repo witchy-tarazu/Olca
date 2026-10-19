@@ -45,6 +45,19 @@ namespace Olca.Core.Logic.CardEffects
             return TemporaryPlayerPosition ?? Player.GridPosition;
         }
 
+        /// <summary>発動位置より前方の最寄り1体。同じマスでは参加順を維持する。</summary>
+        public Enemy GetNearestForwardEnemy()
+        {
+            var origin = GetEffectivePlayerPosition();
+            Enemy nearest = null;
+            foreach (var enemy in Enemies)
+            {
+                if (enemy.IsDead || enemy.GridPosition.Y != origin.Y || enemy.GridPosition.X <= origin.X) continue;
+                if (nearest == null || enemy.GridPosition.X < nearest.GridPosition.X) nearest = enemy;
+            }
+            return nearest;
+        }
+
         public BattleContext(BattleSystem battle, Domain.Card usedCard)
         {
             Battle = battle;

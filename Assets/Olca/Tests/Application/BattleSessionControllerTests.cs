@@ -949,8 +949,8 @@ namespace Olca.Tests.Application
         {
             var player = new PlayerCharacter(100, new Vector2Int(1, 0));
             var primary = new Enemy("hit", "検証", 100, ElementType.None, new Vector2Int(hitX, 0));
-            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(4, 0));
-            var second = new Enemy("second", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(hitX == 5 ? 0 : 4, 0));
+            var second = new Enemy("second", "検証", 100, ElementType.None, new Vector2Int(hitX == 5 ? 0 : 4, 0));
             var database = new Olca.Tests.CardEffects.MockCardDatabase();
             var battle = new BattleSystem(player, new List<Enemy> { primary, forward, second }, new Deck(), cardDatabase: database);
             var session = CreateSession().session; session.Attach(battle);
@@ -964,7 +964,7 @@ namespace Olca.Tests.Application
             var modifier = new CardModifier();
             modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
                 ChainCardId = child.Id, Trigger = DerivativeTrigger.OnHit, EffectOrigin = origin });
-            // 配置順でSingleの対象を確定し、指定位置から実際の派生カードを発動する。
+            // 最寄りを親の命中対象にし、右端ケースでは他の敵を後方へ置く。
             var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
                 CardSeries.None, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single, modifier: modifier);
             battle.CardUsage.EnqueueCards(new List<Card> { parent });
@@ -975,8 +975,8 @@ namespace Olca.Tests.Application
             Assert.AreEqual(0, battle.CardUsage.RemainingCount);
 
             int startX = origin == ChainEffectOrigin.HitPosition ? hitX : 1;
-            Assert.AreEqual(startX < 4 ? 80 : 100, forward.CurrentHp);
-            Assert.AreEqual(startX < 4 ? 80 : 100, second.CurrentHp);
+            Assert.AreEqual(startX < forward.GridPosition.X ? 80 : 100, forward.CurrentHp);
+            Assert.AreEqual(startX < forward.GridPosition.X ? 80 : 100, second.CurrentHp);
             Assert.AreEqual(origin == ChainEffectOrigin.HitPosition ? 99 : 79, primary.CurrentHp);
             for (int x = 0; x < BattleField.GRID_WIDTH; x++)
                 Assert.AreEqual(x > startX ? PanelType.Normal : PanelType.Grass,
@@ -1152,6 +1152,61 @@ namespace Olca.Tests.Application
             Assert.AreEqual(missing ? 100 : 93, enemy.CurrentHp);
             Assert.AreEqual(0, battle.CardUsage.RemainingCount); session.Detach();
         }
+
+        private List<string> NearestShotTrace(int fps, bool stall, bool restore)
+        {
+            var card = new Card("shot", "検証射撃", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 3, "検証", startupTime: .05f);
+            var deck = new Deck(new List<Card> { card });
+            var map = DungeonConfig.CreateTestDungeon(30, 1, 5);
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int f = 0; f < 1000 && manager.CurrentBattle == null; f++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+                card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            Assert.GreaterOrEqual(battle.Enemies.Count, 3);
+            battle.Player.MoveTo(new Vector2Int(2, 0));
+            foreach (var e in battle.Enemies) { e.ApplyStun(60000); e.MoveTo(new Vector2Int(0, 0)); }
+            var far = battle.Enemies[0]; var first = battle.Enemies[1]; var second = battle.Enemies[2];
+            far.MoveTo(new Vector2Int(5, 0)); first.MoveTo(new Vector2Int(4, 0)); second.MoveTo(new Vector2Int(4, 0));
+            int farHp = far.CurrentHp, firstHp = first.CurrentHp, secondHp = second.CurrentHp;
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1 || frame == 10 || frame == 20 || frame == 30) { battle.CardUsage.EnqueueCards(new List<Card> { card }); session.UseCardFromInput(); }
+                // 前隙中の位置変更を発動時に反映。同じマスではfirstが先に配置された敵。
+                if (frame == 2) { far.MoveTo(new Vector2Int(0, 0)); first.MoveTo(new Vector2Int(3, 0)); second.MoveTo(new Vector2Int(3, 0)); battle.Pause(BattlePauseReason.User); }
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                if (frame == 11) first.MoveTo(new Vector2Int(0, 0));
+                if (frame == 21) second.MoveTo(new Vector2Int(0, 0));
+                battle.TickFrame(ms);
+                if (frame == 5) Assert.AreEqual(firstHp, first.CurrentHp);
+                trace.Add(frame + ":" + far.CurrentHp + ":" + first.CurrentHp + ":" + second.CurrentHp + ":" + battle.CardUsage.RemainingCount);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(farHp, far.CurrentHp); Assert.AreEqual(firstHp - 3, first.CurrentHp); Assert.AreEqual(secondHp - 3, second.CurrentHp);
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount, "後方にしか敵がいない空振りも消費");
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void 単体射撃は通常進行と保存復帰で発動時の最寄りを選び同じマスでは配置順を守る(int fps, bool stall, bool restore)
+        { CollectionAssert.AreEqual(NearestShotTrace(60, false, false), NearestShotTrace(fps, stall, restore)); }
 
     }
 }

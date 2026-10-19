@@ -276,7 +276,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             switch (targetType)
             {
                 case DamageTargetType.Single:
-                    targets.Add(aliveEnemies[0]);
+                    var nearest = context.GetNearestForwardEnemy();
+                    if (nearest != null) targets.Add(nearest);
                     break;
 
                 case DamageTargetType.All:

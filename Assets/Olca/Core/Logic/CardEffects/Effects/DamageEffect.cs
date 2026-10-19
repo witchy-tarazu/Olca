@@ -38,8 +38,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
             switch (targetType)
             {
                 case DamageTargetType.Single:
-                    // 単体攻撃: 最前列の敵1体（敵対象）
-                    DealDamageToEnemy(aliveEnemies[0], context);
+                    // 単体射撃は実際の発動位置より前方の最寄り1体。
+                    var nearest = context.GetNearestForwardEnemy();
+                    if (nearest != null) DealDamageToEnemy(nearest, context);
                     break;
 
                 case DamageTargetType.All:

@@ -150,8 +150,8 @@ namespace Olca.Tests.CardEffects
         {
             var player = new PlayerCharacter(100, new Vector2Int(1, 0));
             var primary = new Enemy("hit", "検証", 100, ElementType.None, new Vector2Int(hitX, 0));
-            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(4, 0));
-            var second = new Enemy("second", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(hitX == 5 ? 0 : 4, 0));
+            var second = new Enemy("second", "検証", 100, ElementType.None, new Vector2Int(hitX == 5 ? 0 : 4, 0));
             var battle = new BattleSystem(player, new List<Enemy> { primary, forward, second }, new Deck());
             for (int x = 0; x < BattleField.GRID_WIDTH; x++)
                 battle.Field.ChangePanelType(new Vector2Int(x, 0), PanelType.Grass);
@@ -163,15 +163,15 @@ namespace Olca.Tests.CardEffects
             var modifier = new CardModifier();
             modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
                 ChainCardId = child.Id, Trigger = DerivativeTrigger.OnHit, EffectOrigin = origin });
-            // 配置順でSingleの対象を確定し、指定位置から実際の派生カードを発動する。
+            // 最寄りを親の命中対象にし、右端ケースでは他の敵を後方へ置く。
             var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
                 CardSeries.None, 1, "検証", DamageTargetType.Single, modifier: modifier);
             var context = new BattleContext(battle, parent) { CardDatabase = database };
             new ModifiableCardEffect(DamageTargetType.Single).Execute(context);
 
             int startX = origin == ChainEffectOrigin.HitPosition ? hitX : 1;
-            Assert.AreEqual(startX < 4 ? 80 : 100, forward.CurrentHp);
-            Assert.AreEqual(startX < 4 ? 80 : 100, second.CurrentHp);
+            Assert.AreEqual(startX < forward.GridPosition.X ? 80 : 100, forward.CurrentHp);
+            Assert.AreEqual(startX < forward.GridPosition.X ? 80 : 100, second.CurrentHp);
             Assert.AreEqual(origin == ChainEffectOrigin.HitPosition ? 99 : 79, primary.CurrentHp);
             for (int x = 0; x < BattleField.GRID_WIDTH; x++)
                 Assert.AreEqual(x > startX ? PanelType.Normal : PanelType.Grass,
