@@ -449,7 +449,8 @@ namespace Olca.Application.Dungeon
                         gameFieldView.PlayerTransform,
                         enemyView?.transform,
                         ct, gameFieldView.CellSize,
-                        x => gameFieldView.BattleGrid != null ? gameFieldView.BattleGrid.SnapWorldXToCellCenter(x) : x);
+                        x => gameFieldView.BattleGrid != null ? gameFieldView.BattleGrid.SnapWorldXToCellCenter(x) : x,
+                        gameFieldView.SetContactPose);
                 }
 
                 // 初撃などで戦闘終了した古い開始遷移は、UIやセッションを再開しない。

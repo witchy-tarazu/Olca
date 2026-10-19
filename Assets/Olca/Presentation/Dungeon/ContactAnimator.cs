@@ -10,6 +10,8 @@ namespace Olca.Presentation.Dungeon
     /// 接敵アニメーションを担当するコンポーネント
     /// 通常接敵・ダッシュ接敵それぞれのシーケンスを UniTask で実装する
     /// </summary>
+    public enum ContactVisualPhase { None, Impact, Knockback, DashRush, Somersault }
+
     public class ContactAnimator : MonoBehaviour
     {
         [Header("アニメーション時間設定")]
@@ -36,12 +38,14 @@ namespace Olca.Presentation.Dungeon
         /// <param name="enemySprite">接触した敵のスプライト（ContactAnimatorが生成・管理）</param>
         /// <param name="ct">キャンセルトークン</param>
         public async UniTask PlayAsync(ContactInfo contactInfo, Transform playerTransform,
-            Transform enemyTransform = null, CancellationToken ct = default, float worldUnitsPerCell = 1f, System.Func<float, float> alignWorldX = null)
+            Transform enemyTransform = null, CancellationToken ct = default, float worldUnitsPerCell = 1f, System.Func<float, float> alignWorldX = null, System.Action<ContactVisualPhase, float> pose = null)
         {
-            if (contactInfo.IsDashContact)
-                await PlayDashContactAsync(playerTransform, enemyTransform, ct, worldUnitsPerCell, alignWorldX);
-            else
-                await PlayNormalContactAsync(playerTransform, ct, worldUnitsPerCell, alignWorldX);
+            try {
+                if (contactInfo.IsDashContact)
+                    await PlayDashContactAsync(playerTransform, enemyTransform, ct, worldUnitsPerCell, alignWorldX, pose);
+                else
+                    await PlayNormalContactAsync(playerTransform, ct, worldUnitsPerCell, alignWorldX, pose);
+            } finally { pose?.Invoke(ContactVisualPhase.None, 0f); }
         }
 
         // ==================== 通常接敵 ====================
@@ -52,10 +56,11 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. ノックバック後退
         /// </summary>
-        private async UniTask PlayNormalContactAsync(Transform playerTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX)
+        private async UniTask PlayNormalContactAsync(Transform playerTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX, System.Action<ContactVisualPhase, float> pose)
         {
             if (playerTransform == null) return;
 
+            pose?.Invoke(ContactVisualPhase.Impact, 0f);
             Vector3 startPos = playerTransform.position;
 
             // フェーズ1: わずかに前進（衝突感）
@@ -85,6 +90,7 @@ namespace Olca.Presentation.Dungeon
             {
                 elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / normalKnockbackDuration);
+                pose?.Invoke(ContactVisualPhase.Knockback, t);
                 float x = Mathf.Lerp(bumpPos.x, knockbackPos.x, EaseOutQuad(t));
                 float y = Mathf.Lerp(bumpPos.y, normalContactGroundY * units, EaseInQuad(t));
                 playerTransform.position = new Vector3(x, y, bumpPos.z);
@@ -101,10 +107,11 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. 敵が吹き飛び＋プレイヤーが宙返りで戻る（同時）
         /// </summary>
-        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX)
+        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX, System.Action<ContactVisualPhase, float> pose)
         {
             if (playerTransform == null) return;
 
+            pose?.Invoke(ContactVisualPhase.DashRush, 0f);
             Vector3 rushStart = playerTransform.position;
             Vector3 rushEnd = rushStart + new Vector3((dashRushDistance + 0.5f) * units, 0f, 0f);
 
@@ -137,6 +144,7 @@ namespace Olca.Presentation.Dungeon
             {
                 elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
+                pose?.Invoke(ContactVisualPhase.Somersault, t);
 
                 // プレイヤー: 放物線移動（X: 線形、Y: 放物線）
                 float x = Mathf.Lerp(rollStart.x, rollEnd.x, t);

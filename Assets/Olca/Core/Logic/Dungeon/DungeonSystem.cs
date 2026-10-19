@@ -50,6 +50,9 @@ namespace Olca.Core.Logic.Dungeon
         public bool IsDashJumping => playerMovement.IsDashJumping;
         public float JumpProgress => playerMovement.JumpProgress;
         public bool IsDashing => playerMovement.IsDashing;
+        /// <summary>描画間の座標差によらない自動前進の有効状態。移動量や更新頻度は変更しない。</summary>
+        public bool IsExplorationMoving => !IsInBattle && !IsDungeonCleared && !IsFloorCompleted
+            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead;
         public PlayerCharacter Player => playerCharacter;
         /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
         public DungeonMap Map => map;

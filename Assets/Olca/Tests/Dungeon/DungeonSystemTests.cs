@@ -18,6 +18,29 @@ namespace Olca.Tests.Dungeon
             rewards.SelectCard(card);
         }
 
+        [Test]
+        public void 移動表示の論理状態は未更新の描画フレームで失われず接敵で停止する()
+        {
+            var dungeon = CreateDungeonSystem();
+            float position = dungeon.PlayerPosition;
+            Assert.IsTrue(dungeon.IsExplorationMoving);
+            for (int render = 0; render < 4; render++) {
+                Assert.AreEqual(position, dungeon.PlayerPosition);
+                Assert.IsTrue(dungeon.IsExplorationMoving, "描画のみのフレームでidleへ戻さない");
+            }
+            dungeon.StartDash(); Assert.IsTrue(dungeon.IsExplorationMoving);
+            dungeon.StopDash(); Assert.IsTrue(dungeon.IsExplorationMoving, "ダッシュ解除後も自動歩行を続ける");
+            for (int frame = 0; frame < 1000 && !dungeon.IsInBattle; frame++) dungeon.TickFrame();
+            Assert.IsTrue(dungeon.IsInBattle); Assert.IsFalse(dungeon.IsExplorationMoving);
+        }
+
+        [Test]
+        public void 移動表示は死亡時に止まる()
+        {
+            var dungeon = CreateDungeonSystem(); Assert.IsTrue(dungeon.IsExplorationMoving);
+            dungeon.Player.TakeDamage(1000); Assert.IsFalse(dungeon.IsExplorationMoving);
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 
