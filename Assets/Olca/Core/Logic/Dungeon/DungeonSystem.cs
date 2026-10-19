@@ -834,6 +834,12 @@ namespace Olca.Core.Logic.Dungeon
         private readonly string dungeonName;
         private readonly int initialDeckSize;
         internal IReadOnlyDictionary<int, Enemy> Enemies => enemies;
+        internal string CardCatalogHash => CheckpointValues.Hash(w => {
+            w.Write(cards.Count);
+            foreach (var entry in cards.OrderBy(c => c.Key, StringComparer.Ordinal)) {
+                w.Write(entry.Key); w.Write(CheckpointValues.CardHash(entry.Value));
+            }
+        });
 
         public CheckpointDefinitions(string revision, DungeonConfig map)
         {
@@ -1320,6 +1326,169 @@ namespace Olca.Core.Logic.Dungeon
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
             };
+        }
+    }
+}
+
+namespace Olca.Core.Logic.Dungeon
+{
+    /// <summary>提供された全階層を固定する。階層数・敵・報酬の製品値は生成しない。</summary>
+    public sealed class FloorSequenceDefinitions
+    {
+        private readonly CheckpointDefinitions[] floors;
+        public string RouteId { get; }
+        public string Revision { get; }
+        public string RouteHash { get; }
+        public int FloorCount => floors.Length;
+        public FloorSequenceDefinitions(string routeId, string revision, IEnumerable<DungeonConfig> maps,
+            Deck initialDeck, IEnumerable<KeyValuePair<string, Card>> additionalCards = null)
+        {
+            if (string.IsNullOrWhiteSpace(routeId) || string.IsNullOrWhiteSpace(revision) || maps == null || initialDeck == null)
+                throw new ArgumentException("階層列ID・版・全階層・初期カード定義が必要です");
+            var list = maps.ToArray();
+            if (list.Length == 0 || list.Any(m => m == null)) throw new ArgumentException("空の階層列や未解決の階層は使用できません");
+            list[list.Length - 1].ValidateFinalFloorForDeparture();
+            var extras = additionalCards?.ToArray() ?? new KeyValuePair<string, Card>[0];
+            // 全階層のセル/敵/障害物とカード定義を、現在階層の生成より先に検証・複製する。
+            floors = list.Select(map => DungeonCheckpointSession.CreateDefault(map, initialDeck).Definitions).ToArray();
+            foreach (var floor in floors) foreach (var card in extras) floor.RegisterCard(card.Key, card.Value);
+            RouteId = routeId; Revision = revision;
+            RouteHash = CheckpointValues.Hash(w => {
+                w.Write(RouteId); w.Write(Revision); w.Write(floors.Length);
+                foreach (var floor in floors) {
+                    w.Write(floor.DungeonId); w.Write(floor.MapHash); w.Write(floor.SchemaVersion); w.Write(floor.CardCatalogHash);
+                }
+            });
+        }
+        internal CheckpointDefinitions Floor(int index)
+        {
+            if (index < 0 || index >= floors.Length) throw new ArgumentException("現在階層が範囲外です");
+            return floors[index];
+        }
+        internal FloorSequenceCheckpointDto Wrap(int index, CheckpointDto state) => new FloorSequenceCheckpointDto {
+            RouteId = RouteId, Revision = Revision, RouteHash = RouteHash, FloorIndex = index, State = state?.Copy() };
+        public bool TryRestore(FloorSequenceCheckpointDto input, out RestoredFloorCheckpoint restored, out string error)
+        {
+            restored = null; error = null;
+            try {
+                CheckpointValues.Require(input != null && input.FormatVersion == 1 && input.RouteId == RouteId &&
+                    input.Revision == Revision && input.RouteHash == RouteHash, "階層列の保存版または定義が一致しません");
+                var copy = input.Copy(); var floor = Floor(copy.FloorIndex);
+                if (!CheckpointCodec.TryRestore(copy.State, floor, out var state, out error)) return false;
+                copy.State = state.Snapshot;
+                restored = new RestoredFloorCheckpoint(copy, state); return true;
+            }
+            catch (ArgumentException ex) { error = ex.Message; return false; }
+            catch (OverflowException ex) { error = ex.Message; return false; }
+        }
+        internal CheckpointDto NextStart(int index, CheckpointDto carried)
+        {
+            var floor = Floor(index); var next = carried.Copy();
+            next.SchemaVersion = floor.SchemaVersion; next.DefinitionsRevision = floor.Revision;
+            next.DungeonId = floor.DungeonId; next.MapHash = floor.MapHash;
+            next.Sequence = checked(next.Sequence + 1); next.Boundary = CheckpointBoundary.Departure;
+            next.PositionMilli = 0; next.Player.GridX = next.Player.GridY = 0; next.Battle = null;
+            next.ProcessedObstacleCells = floor.SchemaVersion >= 2 ? new int[0] : null;
+            next.Enemies = floor.Enemies.Select(pair => new CheckpointEnemyDto {
+                CellIndex = pair.Key, EnemyId = pair.Value.EnemyId, Hp = pair.Value.MaxHp,
+                GridX = pair.Value.GridPosition.X, GridY = pair.Value.GridPosition.Y }).ToArray();
+            return next;
+        }
+    }
+
+    /// <summary>検証済みの現在階層。通常Manager/Controllerへの接続は呼出側の責務。</summary>
+    public sealed class RestoredFloorCheckpoint
+    {
+        private readonly FloorSequenceCheckpointDto snapshot;
+        public FloorSequenceCheckpointDto Snapshot => snapshot.Copy();
+        public int FloorIndex => snapshot.FloorIndex;
+        public RestoredCheckpoint State { get; }
+        internal RestoredFloorCheckpoint(FloorSequenceCheckpointDto snapshot, RestoredCheckpoint state)
+        { this.snapshot = snapshot.Copy(); State = state; }
+    }
+
+    public interface IFloorSequenceStore
+    {
+        FloorSequenceCheckpointDto Read();
+        string ReadError { get; }
+        bool TryWrite(FloorSequenceCheckpointDto data, out string error);
+    }
+
+    /// <summary>
+    /// 保存成功後だけ現在階層を交換する基盤。終了条件の判定・自動遷移・View更新は行わない。
+    /// 渡す状態は既存Captureで検証した境界とし、未対応の実行中効果をDTOへ省略して渡さない。
+    /// </summary>
+    public sealed class FloorSequenceSession
+    {
+        private readonly FloorSequenceDefinitions definitions;
+        private readonly IFloorSequenceStore store;
+        private FloorSequenceCheckpointDto pending;
+        private bool writing;
+        public RestoredFloorCheckpoint Current { get; private set; }
+        public bool HasPendingSave => pending != null;
+        public FloorSequenceSession(FloorSequenceDefinitions definitions, IFloorSequenceStore store)
+        { this.definitions = definitions ?? throw new ArgumentNullException(nameof(definitions)); this.store = store ?? throw new ArgumentNullException(nameof(store)); }
+        public bool TryLoad(out string error)
+        {
+            if (writing || pending != null) { error = "未確定の階層保存があります"; return false; }
+            writing = true;
+            try {
+                var data = store.Read();
+                if (data == null && store.ReadError != null) { error = store.ReadError; return false; }
+                if (!definitions.TryRestore(data, out var restored, out error)) return false;
+                Current = restored; return true;
+            }
+            finally { writing = false; }
+        }
+        public bool TryStart(CheckpointDto departure, out string error)
+        {
+            if (writing || pending != null || Current != null || departure?.Boundary != CheckpointBoundary.Departure)
+            { error = "新しい階層列を開始できる状態ではありません"; return false; }
+            return Stage(definitions.Wrap(0, departure), out error);
+        }
+        public bool TrySaveCurrent(int expectedFloorIndex, CheckpointDto state, out string error)
+        {
+            if (!ValidateSource(expectedFloorIndex, state, out error)) return false;
+            if (state.Sequence <= Current.Snapshot.State.Sequence) { error = "保存世代を進める必要があります"; return false; }
+            return Stage(definitions.Wrap(expectedFloorIndex, state), out error);
+        }
+        /// <summary>呼出側で階層終了を判定した後の明示的な引継ぎ。最終階層から先へは進めない。</summary>
+        public bool TryTransferToNextFloor(int expectedFloorIndex, CheckpointDto completed, out string error)
+        {
+            if (!ValidateSource(expectedFloorIndex, completed, out error)) return false;
+            if (expectedFloorIndex + 1 >= definitions.FloorCount || completed.Player.Hp <= 0 ||
+                (completed.Boundary != CheckpointBoundary.RewardCompleted && completed.Boundary != CheckpointBoundary.Terminal))
+            { error = "次階層へ引き継げる完了境界ではありません"; return false; }
+            try { return Stage(definitions.Wrap(expectedFloorIndex + 1, definitions.NextStart(expectedFloorIndex + 1, completed)), out error); }
+            catch (ArgumentException ex) { error = ex.Message; return false; }
+            catch (OverflowException ex) { error = ex.Message; return false; }
+        }
+        private bool ValidateSource(int index, CheckpointDto state, out string error)
+        {
+            error = null;
+            if (writing || pending != null || Current == null || index != Current.FloorIndex || state == null ||
+                state.RunId != Current.Snapshot.State.RunId || state.Sequence < Current.Snapshot.State.Sequence)
+            { error = "現在階層・保存世代が一致しないか、保存処理中です"; return false; }
+            return definitions.TryRestore(definitions.Wrap(index, state), out _, out error);
+        }
+        private bool Stage(FloorSequenceCheckpointDto data, out string error)
+        {
+            if (!definitions.TryRestore(data, out var candidate, out error)) return false;
+            pending = candidate.Snapshot;
+            return Retry(out error);
+        }
+        public bool Retry(out string error)
+        {
+            error = null;
+            if (writing || pending == null) { error = "再試行する保存がありません"; return false; }
+            writing = true;
+            try {
+                // 候補は保存先にもコピーで渡す。失敗時は同じ候補を保持し、現モデルは交換しない。
+                if (!definitions.TryRestore(pending, out var candidate, out error)) return false;
+                if (!store.TryWrite(candidate.Snapshot, out error)) return false;
+                Current = candidate; pending = null; return true;
+            }
+            finally { writing = false; }
         }
     }
 }

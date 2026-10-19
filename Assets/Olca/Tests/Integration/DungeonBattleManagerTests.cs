@@ -2131,3 +2131,185 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class FloorSequenceFoundationTests
+    {
+        private sealed class FaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public string Fault;
+            public System.Action BeforeReplace;
+            public override void Replace(string temporary, string destination, string backup)
+            {
+                BeforeReplace?.Invoke();
+                if (Fault == "before") throw new System.IO.IOException("階層保存失敗fixture");
+                base.Replace(temporary, destination, backup);
+                if (Fault == "after") throw new System.IO.IOException("保存応答喪失fixture");
+            }
+        }
+        private string directory;
+        private DungeonConfig[] maps;
+        private Deck deck;
+        private FloorSequenceDefinitions definitions;
+        private CheckpointDto departure;
+        private FaultIo io;
+        private Olca.Unity.FloorSequenceFileStore store;
+        private FloorSequenceSession run;
+        [SetUp] public void Setup()
+        {
+            directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floors-" + System.Guid.NewGuid().ToString("N"));
+            // 階層数・配置はテスト専用。製品シーンへ注入しない。
+            maps = new[] { DungeonConfig.CreateTestDungeon(4), DungeonConfig.CreateTestDungeon(5), DungeonConfig.CreateTestDungeon(6) };
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            deck = new Deck(new List<Card> { factory.CreateById("sword"), factory.CreateById("heal") });
+            definitions = new FloorSequenceDefinitions("fixture-route", "v1", maps, deck);
+            var legacy = DungeonCheckpointSession.CreateDefault(maps[0], deck);
+            new DungeonBattleManager(maps[0], new PlayerCharacter(100), deck, new MockRandomProvider(), new MockLogger(), checkpoints: legacy);
+            departure = legacy.Store.Read(); io = new FaultIo();
+            store = new Olca.Unity.FloorSequenceFileStore(definitions, directory, io);
+            run = new FloorSequenceSession(definitions, store);
+        }
+        [TearDown] public void Cleanup() { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        private static CheckpointDto Complete(CheckpointDto previous)
+        {
+            var next = previous.Copy(); next.Sequence++; next.Boundary = CheckpointBoundary.Terminal;
+            foreach (var enemy in next.Enemies) enemy.Hp = 0;
+            return next;
+        }
+        [TestCase("empty")] [TestCase("null")] [TestCase("future-cell")] [TestCase("final-boss")]
+        public void 現在階層の保存前に階層列全体を検証する(string fault)
+        {
+            var bad = maps.ToArray();
+            if (fault == "empty") bad = new DungeonConfig[0];
+            if (fault == "null") bad[1] = null;
+            if (fault == "future-cell") bad[1].MapCells[0] = null;
+            if (fault == "final-boss") bad[2] = new DungeonConfig("no-boss", "検証", 1, new List<MapCell> { new MapCell(0) });
+            Assert.Throws<System.ArgumentException>(() => new FloorSequenceDefinitions("fixture-route", "v1", bad, deck));
+            Assert.IsFalse(store.HasExistingData); Assert.IsNull(run.Current);
+        }
+        [TestCase(-1)] [TestCase(3)]
+        public void 範囲外の現在階層を復元も保存もしない(int index)
+        {
+            Assert.IsTrue(run.TryStart(departure, out var error), error); var previous = System.IO.File.ReadAllBytes(store.ActivePath);
+            var bad = run.Current.Snapshot; bad.FloorIndex = index;
+            Assert.IsFalse(definitions.TryRestore(bad, out _, out _)); Assert.IsFalse(store.TryWrite(bad, out _));
+            CollectionAssert.AreEqual(previous, System.IO.File.ReadAllBytes(store.ActivePath));
+        }
+        [TestCase("hash")] [TestCase("card")] [TestCase("version")] [TestCase("wrong-map")]
+        public void 未解決または異なる定義の階層保存を拒否する(string fault)
+        {
+            Assert.IsTrue(run.TryStart(departure, out var error), error); var bad = run.Current.Snapshot;
+            if (fault == "hash") bad.RouteHash = "unknown";
+            if (fault == "card") bad.State.Cards[0].DefinitionKey = "unknown";
+            if (fault == "version") bad.FormatVersion = 99;
+            if (fault == "wrong-map") bad.FloorIndex = 1;
+            Assert.IsFalse(definitions.TryRestore(bad, out _, out _));
+            Assert.IsFalse(store.TryWrite(bad, out _)); Assert.AreEqual(0, run.Current.FloorIndex);
+        }
+        [TestCase("before")] [TestCase("after")] [TestCase(null)]
+        public void 次階層開始保存の成功前に現モデルを交換せず再試行と再入でも二重遷移しない(string fault)
+        {
+            Assert.IsTrue(run.TryStart(departure, out var error), error);
+            var old = run.Current; var bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+            var completed = Complete(old.State.Snapshot); completed.Player.Hp = 37; completed.Player.FireResistance = -200;
+            var acquired = completed.Cards[0].Copy(); acquired.InstanceId = "acquired";
+            var removed = completed.Cards[1].Copy(); removed.InstanceId = "removed";
+            completed.Cards = completed.Cards.Concat(new[] { acquired, removed }).ToArray();
+            completed.DeckOrder = completed.DeckOrder.Concat(new[] { acquired.InstanceId }).ToArray();
+            completed.ObtainedOrder = new[] { acquired.InstanceId, removed.InstanceId };
+            io.Fault = fault; int attempts = 0;
+            io.BeforeReplace = () => {
+                attempts++; Assert.AreSame(old, run.Current);
+                Assert.IsFalse(run.TryTransferToNextFloor(0, completed, out _));
+                Assert.IsFalse(run.Retry(out _)); Assert.IsFalse(run.TryLoad(out _));
+            };
+            bool success = run.TryTransferToNextFloor(0, completed, out error);
+            if (fault == "before") {
+                Assert.IsFalse(success); Assert.IsTrue(run.HasPendingSave); Assert.AreSame(old, run.Current);
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+                completed.Player.Hp = 1; completed.DeckOrder = new string[0]; // 再試行の固定候補を変えない。
+                io.Fault = null; Assert.IsTrue(run.Retry(out error), error);
+            }
+            else Assert.IsTrue(success, error);
+            Assert.AreEqual(fault == "before" ? 2 : 1, attempts);
+            Assert.IsFalse(run.HasPendingSave); Assert.AreEqual(1, run.Current.FloorIndex);
+            Assert.AreEqual(37, run.Current.State.Player.CurrentHp); Assert.AreEqual(-200, run.Current.State.Player.Resistances.Fire);
+            Assert.AreEqual(3, run.Current.State.Deck.TotalCount); Assert.AreEqual(2, run.Current.State.Obtained.Count);
+            Assert.AreSame(run.Current.State.Cards["acquired"], run.Current.State.Obtained[0]);
+            Assert.IsTrue(run.Current.State.Deck.GetAllCards().Contains(run.Current.State.Obtained[0]));
+            Assert.IsFalse(run.Current.State.Deck.GetAllCards().Contains(run.Current.State.Obtained[1]));
+            Assert.AreEqual(0, run.Current.Snapshot.State.PositionMilli); Assert.AreEqual(CheckpointBoundary.Departure, run.Current.State.Snapshot.Boundary);
+            Assert.IsTrue(run.Current.State.Enemies.Values.All(e => e.CurrentHp == e.MaxHp));
+            Assert.IsFalse(run.TryTransferToNextFloor(0, completed, out _)); Assert.IsFalse(run.Retry(out _));
+            io.BeforeReplace = null;
+            var reopened = new FloorSequenceSession(definitions, new Olca.Unity.FloorSequenceFileStore(definitions, directory));
+            Assert.IsTrue(reopened.TryLoad(out error), error); Assert.AreEqual(1, reopened.Current.FloorIndex);
+            Assert.AreEqual(37, reopened.Current.State.Player.CurrentHp);
+            Assert.IsTrue(reopened.TryTransferToNextFloor(1, Complete(reopened.Current.State.Snapshot), out error), error);
+            Assert.AreEqual(2, reopened.Current.FloorIndex);
+            Assert.IsFalse(reopened.TryTransferToNextFloor(1, Complete(reopened.Current.State.Snapshot), out _));
+            Assert.IsFalse(reopened.TryTransferToNextFloor(2, Complete(reopened.Current.State.Snapshot), out _));
+        }
+        [Test]
+        public void 階層列と単階層のファイルは独立し旧保存を変更しない()
+        {
+            var legacyDefinitions = DungeonCheckpointSession.CreateDefault(maps[0], deck).Definitions;
+            var legacy = new Olca.Unity.FileCheckpointStore(legacyDefinitions, directory);
+            Assert.IsTrue(legacy.TryWrite(departure, out var error), error); var bytes = System.IO.File.ReadAllBytes(legacy.ActivePath);
+            Assert.IsTrue(run.TryStart(departure, out error), error);
+            var boundary = departure.Copy(); boundary.Sequence++; boundary.Boundary = CheckpointBoundary.RewardCompleted; boundary.Player.Hp = 61;
+            Assert.IsTrue(run.TrySaveCurrent(0, boundary, out error), error);
+            Assert.IsFalse(run.TrySaveCurrent(0, boundary, out _));
+            Assert.IsTrue(run.TryLoad(out error), error); Assert.AreEqual(61, run.Current.State.Player.CurrentHp);
+            CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(legacy.ActivePath));
+            Assert.IsTrue(CheckpointCodec.TryRestore(legacy.Read(), legacyDefinitions, out var restored, out error), error);
+            Assert.AreEqual(100, restored.Player.CurrentHp);
+        }
+        [Test]
+        public void 単階層列も保存できて最終階層の先へは進まない()
+        {
+            var single = new FloorSequenceDefinitions("single", "v1", new[] { maps[0] }, deck);
+            var singleStore = new Olca.Unity.FloorSequenceFileStore(single, directory);
+            var session = new FloorSequenceSession(single, singleStore);
+            Assert.IsTrue(session.TryStart(departure, out var error), error);
+            Assert.IsFalse(session.TryTransferToNextFloor(0, Complete(departure), out _));
+            Assert.IsTrue(session.TryLoad(out error), error); Assert.AreEqual(0, session.Current.FloorIndex);
+        }
+        [Test]
+        public void ボスなし中間階層の提供を許可するが敗北状態は次階層へ運ばない()
+        {
+            var first = new DungeonConfig("empty-middle", "検証", 2, new List<MapCell> { new MapCell(0), new MapCell(1) });
+            var route = new FloorSequenceDefinitions("route", "v1", new[] { first, maps[2] }, deck);
+            var legacy = DungeonCheckpointSession.CreateDefault(first, deck);
+            new DungeonBattleManager(first, new PlayerCharacter(100), deck, new MockRandomProvider(), new MockLogger(), checkpoints: legacy);
+            var session = new FloorSequenceSession(route, new Olca.Unity.FloorSequenceFileStore(route, directory));
+            Assert.IsTrue(session.TryStart(legacy.Store.Read(), out var error), error);
+            var completed = Complete(legacy.Store.Read()); completed.Player.Hp = 0;
+            Assert.IsFalse(session.TryTransferToNextFloor(0, completed, out _)); Assert.AreEqual(0, session.Current.FloorIndex);
+            completed.Player.Hp = 100;
+            Assert.IsTrue(session.TryTransferToNextFloor(0, completed, out error), error);
+            Assert.AreEqual(1, session.Current.FloorIndex);
+        }
+        [Test]
+        public void 破損した階層保存を読み直しても現モデルを捨てず上書きしない()
+        {
+            Assert.IsTrue(run.TryStart(departure, out var error), error); var current = run.Current;
+            System.IO.File.WriteAllText(store.ActivePath, "broken-fixture");
+            Assert.IsFalse(run.TryLoad(out error)); Assert.IsNotEmpty(error); Assert.AreSame(current, run.Current);
+            Assert.IsFalse(run.TryTransferToNextFloor(0, Complete(departure), out error));
+            Assert.AreSame(current, run.Current); Assert.AreEqual("broken-fixture", System.IO.File.ReadAllText(store.ActivePath));
+        }
+        [Test]
+        public void 定義後の入力マップ変更で階層列を改変できず将来階層の変更もhashへ反映する()
+        {
+            var hash = definitions.RouteHash; maps[1].MapCells[0] = null;
+            Assert.IsTrue(run.TryStart(departure, out var error), error);
+            Assert.IsTrue(run.TryTransferToNextFloor(0, Complete(departure), out error), error);
+            Assert.AreEqual(hash, run.Current.Snapshot.RouteHash); Assert.IsNotNull(run.Current.State.Map.MapCells[0]);
+            var alternate = new FloorSequenceDefinitions("fixture-route", "v1", new[] { maps[0], DungeonConfig.CreateTestDungeon(7), maps[2] }, deck);
+            Assert.AreNotEqual(hash, alternate.RouteHash); Assert.IsFalse(alternate.TryRestore(run.Current.Snapshot, out _, out _));
+        }
+    }
+}

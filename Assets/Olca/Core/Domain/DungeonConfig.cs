@@ -167,3 +167,18 @@ namespace Olca.Core.Domain
             ProcessedObstacleCells = ProcessedObstacleCells == null ? null : (int[])ProcessedObstacleCells.Clone(), Battle = Battle?.Copy() };
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>階層列用の別形式。既存の単階層DTOと保存版は変更しない。</summary>
+    public sealed class FloorSequenceCheckpointDto
+    {
+        public int FormatVersion = 1;
+        public string RouteId, Revision, RouteHash;
+        public int FloorIndex;
+        public CheckpointDto State;
+        public FloorSequenceCheckpointDto Copy() => new FloorSequenceCheckpointDto {
+            FormatVersion = FormatVersion, RouteId = RouteId, Revision = Revision, RouteHash = RouteHash,
+            FloorIndex = FloorIndex, State = State?.Copy() };
+    }
+}
