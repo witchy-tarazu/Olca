@@ -555,8 +555,9 @@ namespace Olca.Tests.Application
                 UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison));
                 Assert.IsNull(enemy.ActiveStatus);
                 battle.TickFrame(17);
-                Assert.AreEqual(999, enemy.CurrentHp);
+                Assert.AreEqual(1000, enemy.CurrentHp, "HPはフレーム中に反映しない");
             });
+            Assert.AreEqual(999, enemy.CurrentHp);
             Assert.AreEqual(60, enemy.ActiveStatus.RemainingFrames);
             session.ProcessLogicalFrame(() => {
                 UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison, 2f));
@@ -1332,8 +1333,9 @@ namespace Olca.Tests.Application
                 }
                 if (frame == 12) {
                     battle.Player.TakeDamage(10, affectsPoise: false);
-                    Assert.AreEqual(895, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.BarrierHp);
+                    Assert.AreEqual(900, battle.Player.CurrentHp, "超過分5は終端で確定"); Assert.AreEqual(0, battle.Player.BarrierHp);
                 }
+                if (frame == 13) Assert.AreEqual(895, battle.Player.CurrentHp);
                 if (frame == 15) session.UseCardFromInput();
                 battle.TickFrame(ms);
                 trace.Add(frame + ":" + battle.Player.CurrentHp + ":" + battle.Player.BarrierHp + ":" + used);
@@ -1505,6 +1507,166 @@ namespace Olca.Tests.Application
                 CollectionAssert.AreEqual(active, System.IO.File.ReadAllBytes(store.ActivePath));
                 CollectionAssert.AreEqual(backup, System.IO.File.ReadAllBytes(store.BackupPath));
             } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [TestCase(100, 30, 20, 90, false)] [TestCase(100, 30, 20, 90, true)]
+        [TestCase(10, 20, 15, 5, false)] [TestCase(10, 20, 15, 5, true)]
+        [TestCase(10, 20, 5, 0, false)] [TestCase(10, 20, 5, 0, true)]
+        [TestCase(95, 20, 50, 100, false)] [TestCase(95, 20, 50, 100, true)]
+        [TestCase(100, 70, 20, 50, false)] [TestCase(100, 70, 20, 50, true)]
+        [TestCase(100, int.MaxValue, int.MaxValue, 100, false)] [TestCase(100, int.MaxValue, int.MaxValue, 100, true)]
+        public void 通常カード回復と被弾はフレーム終端で一度だけ合算する(int hp, int damage, int heal, int expected, bool healFirst)
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            battle.Player.SetHp(hp); int notifications = 0, deaths = 0;
+            battle.Player.OnHpChanged += (_, __) => notifications++;
+            battle.Player.OnDeath += () => deaths++;
+            battle.CardUsage.EnqueueCards(new List<Card> { new Card("heal", "検証", 1, CardRarity.Normal,
+                CardCategory.Defense, ElementType.None, CardSeries.None, heal, "検証") });
+            session.ProcessLogicalFrame(() => {
+                if (healFirst) session.UseCardFromInput();
+                battle.Player.TakeDamage(damage);
+                if (!healFirst) session.UseCardFromInput();
+                Assert.AreEqual(hp, battle.Player.CurrentHp); Assert.AreEqual(0, notifications); Assert.AreEqual(0, deaths);
+            });
+            Assert.AreEqual(expected, battle.Player.CurrentHp); Assert.AreEqual(1, notifications);
+            Assert.AreEqual(expected == 0 ? 1 : 0, deaths); Assert.AreEqual(expected == 0, battle.IsGameOver);
+            session.Detach();
+        }
+
+        [Test]
+        public void バリア吸収後のダメージを合算し新規無敵は次フレームから防ぐ()
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            battle.Player.SetHp(50); battle.Player.SetBarrier(15);
+            session.ProcessLogicalFrame(() => {
+                battle.Player.TakeDamage(10, affectsPoise: false);
+                battle.Player.SetInvincible(100);
+                battle.Player.TakeDamage(10, affectsPoise: false);
+                battle.Player.Heal(7);
+            });
+            Assert.AreEqual(52, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.BarrierHp);
+            session.ProcessLogicalFrame(() => { battle.Player.TakeDamage(1000); battle.Player.Heal(1); });
+            Assert.AreEqual(53, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.AccumulatedDamage);
+            session.Detach();
+        }
+
+        [TestCase(false, false)] [TestCase(false, true)] [TestCase(true, false)] [TestCase(true, true)]
+        public void 毒のHP1下限は同フレーム通常攻撃と分離する(bool attack, bool attackFirst)
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            var enemy = battle.Enemies[0]; enemy.ApplyStun(60000);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 6000));
+            int notifications = 0; enemy.OnHpChanged += (_, __) => notifications++;
+            session.ProcessLogicalFrame(() => {
+                if (attack && attackFirst) enemy.TakeDamage(1, ElementType.None);
+                battle.TickFrame(17);
+                if (attack && !attackFirst) enemy.TakeDamage(1, ElementType.None);
+            });
+            Assert.AreEqual(attack ? 0 : 1, enemy.CurrentHp); Assert.AreEqual(1, notifications);
+            session.Detach();
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 同時致死では両者の確定HPを通知してから敗北を判定する(bool reverse)
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            int playerNotices = 0, enemyNotices = 0, ends = 0;
+            battle.Player.OnHpChanged += (_, __) => { playerNotices++; Assert.AreEqual(0, battle.Enemies[0].CurrentHp); };
+            battle.Enemies[0].OnHpChanged += (_, __) => { enemyNotices++; Assert.AreEqual(0, battle.Player.CurrentHp); };
+            battle.OnBattleEnd += result => { ends++; Assert.AreEqual(BattleResult.Defeat, result); Assert.AreEqual(1, playerNotices); Assert.AreEqual(1, enemyNotices); };
+            session.ProcessLogicalFrame(() => {
+                if (reverse) battle.Enemies[0].TakeDamage(1000, ElementType.None);
+                battle.Player.TakeDamage(1000, affectsPoise: false);
+                if (!reverse) battle.Enemies[0].TakeDamage(1000, ElementType.None);
+                Assert.AreEqual(0, ends);
+            });
+            Assert.AreEqual(1, ends); session.Detach();
+        }
+
+        [Test]
+        public void フレーム外のHP変更は即時反映し大回復も符号反転しない()
+        {
+            var player = new PlayerCharacter(100); int notices = 0; player.OnHpChanged += (_, __) => notices++;
+            player.TakeDamage(20, affectsPoise: false); Assert.AreEqual(80, player.CurrentHp);
+            player.Heal(int.MaxValue); Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(2, notices);
+        }
+
+        private List<string> FrameHpCheckpointTrace(int fps, bool stall, bool restore)
+        {
+            var factory = new SimpleCardFactory(); var card = factory.CreateById("heal");
+            var deck = new Deck(new List<Card> { card }); var map = DungeonConfig.CreateTestDungeon(30, 20, 5);
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(100), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints, cardDatabase: factory);
+            for (int frame = 0; frame < 1000 && manager.CurrentBattle == null; frame++) manager.TickFrame(17);
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error, cardDatabase: factory), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+                card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            foreach (var e in battle.Enemies) e.ApplyStun(60000);
+            battle.Player.SetHp(10); var trace = new List<string>(); int notices = 0, endHp = -1;
+            battle.Player.OnHpChanged += (_, __) => notices++;
+            battle.OnBattleEnd += result => { Assert.AreEqual(BattleResult.Victory, result); endHp = battle.Player.CurrentHp; };
+            manager.OnCardRewardPresented += _ => manager.Dungeon.OnCardSelectionCompleted(null);
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
+            Action<long, int> tick = (frame, ms) => {
+                session.ProcessLogicalFrame(() => {
+                    if (frame == 1) battle.CardUsage.EnqueueCards(new List<Card> { card });
+                    if (frame == 2) battle.Pause(BattlePauseReason.User);
+                    if (frame == 5) battle.Resume(BattlePauseReason.User);
+                    if (frame == 6) {
+                        battle.Player.TakeDamage(25, affectsPoise: false); session.UseCardFromInput();
+                        foreach (var e in battle.Enemies) e.TakeDamage(e.MaxHp, ElementType.None);
+                    }
+                    battle.TickFrame(ms);
+                });
+                trace.Add(frame + ":" + battle.Player.CurrentHp + ":" + notices + ":" + battle.IsGameOver);
+            };
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(5, endHp); Assert.AreEqual(1, notices); Assert.AreEqual(5, checkpoints.Store.Read().Player.Hp);
+            Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked, manager.Dungeon.CheckpointError);
+            Assert.IsTrue(checkpoints.TryRead(out var saved, out var readError), readError); Assert.AreEqual(5, saved.Player.CurrentHp);
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void HP合算は通常使用と保存復帰でフレーム一致し確定HPだけを保存する(int fps, bool stall, bool restore)
+        { CollectionAssert.AreEqual(FrameHpCheckpointTrace(60, false, false), FrameHpCheckpointTrace(fps, stall, restore)); }
+
+        [Test]
+        public void フレーム外のHP通知内反撃で敵が死亡しても死亡通知を重複しない()
+        {
+            var enemy = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(3, 0));
+            bool countered = false; int deaths = 0;
+            enemy.OnHpChanged += (_, __) => { if (!countered) { countered = true; enemy.TakeDamage(100, ElementType.None); } };
+            enemy.OnDeath += () => deaths++;
+            enemy.TakeDamage(1, ElementType.None);
+            Assert.AreEqual(0, enemy.CurrentHp); Assert.AreEqual(1, deaths);
+        }
+
+        [Test]
+        public void HP1で毒だけを受けるフレームには余分な命中通知を出さない()
+        {
+            var battle = CreateBattleSystem(); var enemy = battle.Enemies[0]; enemy.ApplyStun(60000);
+            enemy.TakeDamage(enemy.MaxHp - 1, ElementType.None);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 6000));
+            int hits = 0, notices = 0;
+            enemy.OnDamaged += (_, __) => hits++; enemy.OnHpChanged += (_, __) => notices++;
+            battle.TickFrame(17);
+            Assert.AreEqual(1, enemy.CurrentHp); Assert.AreEqual(0, hits); Assert.AreEqual(0, notices);
         }
 
     }

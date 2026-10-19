@@ -189,7 +189,7 @@ namespace Olca.Core.Logic.Battle
             RegisterEnemy(summon, actions);
             enemies.Add(summon);
             if (statusFrameParticipants != null)
-            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(); }
+            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(); summon.BeginHpFrame(); }
             OnSummonAdded?.Invoke(summon);
         }
 
@@ -206,15 +206,31 @@ namespace Olca.Core.Logic.Battle
         /// <summary>入力による付与も含め、状態異常の有効化・解除境界を一論理フレームにまとめる。</summary>
         public void RunLogicalFrame(Action action)
         {
-            if (statusFrameParticipants != null || IsPaused || IsGameOver) { action(); return; }
+            if (statusFrameParticipants != null || IsGameOver) { action(); return; }
             var participants = new List<Enemy>(enemies);
             statusFrameParticipants = participants;
-            foreach (var enemy in participants) enemy.BeginStatusFrame();
+            BeginResolution();
+            player.BeginHpFrame();
+            foreach (var enemy in participants) { enemy.BeginStatusFrame(); enemy.BeginHpFrame(); }
             try { action(); }
             finally
             {
-                foreach (var enemy in participants) enemy.EndStatusFrame();
+                var committed = participants.ToArray();
                 statusFrameParticipants = null;
+                // 全員のHPを確定してから通知し、勝敗と保存境界はその後に処理する。
+                player.CommitHpFrame();
+                foreach (var enemy in committed) enemy.CommitHpFrame();
+                foreach (var enemy in committed)
+                {
+                    if (player.IsDead) enemy.CancelStatusFrame();
+                    else enemy.EndStatusFrame();
+                }
+                try
+                {
+                    player.PublishHpFrame();
+                    foreach (var enemy in committed) enemy.PublishHpFrame();
+                }
+                finally { EndResolution(); }
             }
         }
         public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
@@ -258,12 +274,7 @@ namespace Olca.Core.Logic.Battle
                 {
                     if (enemy.IsDead) continue;
                     int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
-                    // 毒だけでは倒さない。通常攻撃のダメージ処理にはこの下限を持ち込まない。
-                    int appliedPoisonDamage = Math.Min(poisonDamage, Math.Max(0, enemy.CurrentHp - 1));
-                    if (appliedPoisonDamage > 0)
-                    {
-                        enemy.TakeDamage(appliedPoisonDamage, ElementType.None);
-                    }
+                    if (poisonDamage > 0) enemy.TakePoisonDamage(poisonDamage);
                 }
 
                 // 敵のAI更新

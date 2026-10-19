@@ -13,6 +13,18 @@ namespace Olca.Core.Domain
         public ElementResistances Resistances { get; }
         internal Func<bool> IsOnGrass;
 
+        private readonly FrameHpChanges frameHp = new FrameHpChanges();
+        internal long TotalDamageTaken { get; private set; }
+        internal long TotalHitsTaken { get; private set; }
+        internal bool HasPendingHpFrame => frameHp.Active;
+        internal void BeginHpFrame() => frameHp.Begin(currentHp);
+        internal void CommitHpFrame() { currentHp = frameHp.Commit(currentHp, maxHp); }
+        internal void PublishHpFrame()
+        {
+            bool changed = frameHp.TakeNotification(out bool died);
+            if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
+            if (died) OnDeath?.Invoke();
+        }
         private int currentHp;
         private readonly int maxHp;
         private readonly ElementType element;
@@ -127,7 +139,11 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement)
+        public void TakeDamage(int damage, ElementType attackElement) => ApplyDamage(damage, attackElement, false);
+
+        internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
+
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -140,15 +156,24 @@ namespace Olca.Core.Domain
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
 
-                currentHp -= finalDamage;
-                if (currentHp < 0)
+                if (poison)
+                    finalDamage = frameHp.Active ? frameHp.Poison(finalDamage) : Math.Min(finalDamage, Math.Max(0, currentHp - 1));
+                if (poison && finalDamage == 0) return;
+                bool killedByThisHit = false;
+                if (frameHp.Active)
                 {
-                    currentHp = 0;
+                    if (!poison) frameHp.Damage(finalDamage);
                 }
-
-                // 通知中の別攻撃で死亡しても、この非致死攻撃から二重通知しない。
-                bool killedByThisHit = IsDead;
-                OnHpChanged?.Invoke(currentHp, maxHp);
+                else
+                {
+                    currentHp = Math.Max(0, currentHp - finalDamage);
+                    // 通知内の別攻撃による死亡を、この攻撃から二重通知しない。
+                    killedByThisHit = IsDead;
+                    OnHpChanged?.Invoke(currentHp, maxHp);
+                }
+                TotalDamageTaken += finalDamage;
+                TotalHitsTaken++;
+                // 命中通知は各ヒット、HPと死亡通知は論理フレームの確定後。
                 OnDamaged?.Invoke(finalDamage, multiplier);
 
                 if (killedByThisHit)

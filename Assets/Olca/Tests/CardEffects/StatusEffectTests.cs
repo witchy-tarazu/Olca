@@ -431,11 +431,11 @@ namespace Olca.Tests.CardEffects
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 60));
             int deaths = 0;
             enemy.OnDeath += () => deaths++;
-            if (attackFirst) enemy.TakeDamage(2, ElementType.None);
-            else enemy.OnDamaged += (_, __) => {
-                if (enemy.CurrentHp == 1) enemy.TakeDamage(1, ElementType.None);
-            };
-            battle.TickFrame(17);
+            battle.RunLogicalFrame(() => {
+                if (attackFirst) enemy.TakeDamage(1, ElementType.None);
+                battle.TickFrame(17);
+                if (!attackFirst) enemy.TakeDamage(1, ElementType.None);
+            });
             Assert.AreEqual(0, enemy.CurrentHp);
             Assert.AreEqual(1, deaths);
             Assert.AreEqual(BattleState.Victory, battle.State);

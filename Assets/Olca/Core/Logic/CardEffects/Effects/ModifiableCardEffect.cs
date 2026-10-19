@@ -170,6 +170,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 e.EffectType == AdditionalEffectType.Spread ||
                 e.EffectType == AdditionalEffectType.DelayedProjectile); // 遅延投擲は着弾時にダメージ処理
 
+            var immediateReceipts = context.Battle.Enemies.ToDictionary(e => e,
+                e => (hits: e.TotalHitsTaken, damage: e.TotalDamageTaken));
+
             // 1. Immediate効果を先に実行（パネル変化など）
             foreach (var effect in immediateEffects)
             {
@@ -198,11 +201,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         if (target.IsDead) continue;
 
                         hitTargets.Add(target);
-                        int hpBefore = target.CurrentHp;
+                        long damageBefore = target.TotalDamageTaken;
                         target.TakeDamage(finalDamage, finalElement);
 
                         // 実際にダメージが入った場合
-                        if (target.CurrentHp < hpBefore || target.IsDead)
+                        if (target.TotalDamageTaken > damageBefore)
                         {
                             damagedTargets.Add(target);
                         }
@@ -220,15 +223,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
             }
             else if (needsHitTracking)
             {
-                // ダメージ処理は既に完了しているが、ヒット/ダメージ追跡が必要
-                // Immediate効果で処理された敵をhitTargets/damagedTargetsに追加
-                foreach (var target in targets)
+                // HP反映を待たず、今回の同期効果で受理された命中とダメージを判定する。
+                foreach (var pair in immediateReceipts)
                 {
-                    if (target.IsDead || target.CurrentHp < target.MaxHp)
-                    {
-                        hitTargets.Add(target);
-                        damagedTargets.Add(target);
-                    }
+                    if (pair.Key.TotalHitsTaken > pair.Value.hits) hitTargets.Add(pair.Key);
+                    if (pair.Key.TotalDamageTaken > pair.Value.damage) damagedTargets.Add(pair.Key);
                 }
             }
 

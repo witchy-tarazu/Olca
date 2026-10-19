@@ -46,6 +46,19 @@ namespace Olca.Core.Domain
             OnTransformationDefenseEnded?.Invoke();
         }
 
+        private readonly FrameHpChanges frameHp = new FrameHpChanges();
+        private bool frameInvincible, frameStaggered;
+        internal bool HasPendingHpFrame => frameHp.Active;
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameStaggered = false; }
+        internal void CommitHpFrame() { currentHp = frameHp.Commit(currentHp, maxHp); }
+        internal void PublishHpFrame()
+        {
+            bool changed = frameHp.TakeNotification(out bool died);
+            if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
+            bool staggered = frameStaggered; frameStaggered = false;
+            if (!IsDead && staggered) OnStaggered?.Invoke();
+            if (died) OnDeath?.Invoke();
+        }
         private int currentHp;
         private readonly int maxHp;
         private readonly int attackPower;
@@ -99,7 +112,7 @@ namespace Olca.Core.Domain
         public bool HasBarrier => barrierHp > 0;
 
         /// <summary>無敵中か</summary>
-        public bool IsInvincible => invincibilityTimer.IsActive;
+        public bool IsInvincible => frameHp.Active ? frameInvincible : invincibilityTimer.IsActive;
 
         /// <summary>残り無敵時間（ミリ秒）</summary>
         public int InvincibleDurationMs => invincibilityTimer.Milliseconds;
@@ -160,7 +173,7 @@ namespace Olca.Core.Domain
                 if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
 
                 // 無敵中はダメージ・のけぞりを無効化
-                if (invincibilityTimer.IsActive) return;
+                if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return;
 
                 breakTransformation = HasTransformationDefense && attackElement == transformationBreakElement;
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
@@ -175,13 +188,12 @@ namespace Olca.Core.Domain
                     if (damage <= 0) return;
                 }
 
-                currentHp -= damage;
-                if (currentHp < 0)
+                if (frameHp.Active) frameHp.Damage(damage);
+                else
                 {
-                    currentHp = 0;
+                    currentHp = Math.Max(0, currentHp - damage);
+                    OnHpChanged?.Invoke(currentHp, maxHp);
                 }
-
-                OnHpChanged?.Invoke(currentHp, maxHp);
 
                 // のけぞり判定（強靭度システム）
                 // 累計ダメージが強靭度を超えると、のけぞりが発生する
@@ -192,7 +204,8 @@ namespace Olca.Core.Domain
                     if (forceStagger || totalDamage >= poise)
                     {
                         accumulatedDamage = 0;  // のけぞり後はリセット
-                        OnStaggered?.Invoke();
+                        if (frameHp.Active) frameStaggered = true;
+                        else OnStaggered?.Invoke();
                     }
                     else
                     {
@@ -201,7 +214,7 @@ namespace Olca.Core.Domain
                     }
                 }
 
-                if (IsDead)
+                if (!frameHp.Active && IsDead)
                 {
                     OnDeath?.Invoke();
                 }
@@ -221,12 +234,8 @@ namespace Olca.Core.Domain
         {
             if (amount < 0) throw new ArgumentException("回復量は0以上である必要があります", nameof(amount));
 
-            currentHp += amount;
-            if (currentHp > maxHp)
-            {
-                currentHp = maxHp;
-            }
-
+            if (frameHp.Active) { frameHp.Heal(amount); return; }
+            currentHp = (int)Math.Min(maxHp, (long)currentHp + amount);
             OnHpChanged?.Invoke(currentHp, maxHp);
         }
 
@@ -371,4 +380,36 @@ namespace Olca.Core.Domain
         /// </summary>
         public event Action<Vector2Int> OnPositionChanged;
     }
+    /// <summary>論理フレーム内のHP変化。全参加者の確定と通知を分離する。</summary>
+    internal sealed class FrameHpChanges
+    {
+        public bool Active { get; private set; }
+        private int initialHp;
+        private long damage, healing, poison;
+        private bool touched, notify, died;
+        public void Begin(int hp)
+        {
+            if (Active) throw new InvalidOperationException("HPフレームが既に開始されています");
+            initialHp = hp; damage = healing = poison = 0; touched = notify = died = false; Active = true;
+        }
+        public void Damage(int amount) { damage += amount; touched = true; }
+        public void Heal(int amount) { healing += amount; touched = true; }
+        public int Poison(int amount)
+        {
+            // 現在の毒対象は回復APIを持たない敵。通常攻撃とは独立したHP1下限。
+            int accepted = (int)Math.Min(amount, Math.Max(0L, (long)initialHp - 1 - poison));
+            poison += accepted; touched |= accepted > 0; return accepted;
+        }
+        public int Commit(int hp, int maxHp)
+        {
+            if (!Active) return hp;
+            Active = false; notify = touched;
+            int result = (int)Math.Max(0L, Math.Min(maxHp, (long)initialHp + healing - damage - poison));
+            died = initialHp > 0 && result == 0;
+            return result;
+        }
+        public bool TakeNotification(out bool death)
+        { death = died; bool result = notify; notify = died = false; return result; }
+    }
+
 }

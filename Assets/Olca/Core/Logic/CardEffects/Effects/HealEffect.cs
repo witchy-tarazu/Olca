@@ -26,8 +26,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             // プレイヤーを回復
-            int actualHeal = Math.Min(healAmount, context.Player.MaxHp - context.Player.CurrentHp);
-            context.Player.Heal(actualHeal);
+            // 上限処理はHP反映時に行う。同フレームの未確定ダメージを失わない。
+            context.Player.Heal(healAmount);
         }
     }
 }

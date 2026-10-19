@@ -1284,6 +1284,8 @@ namespace Olca.Core.Logic.Dungeon
         }
         internal CheckpointDto Capture(DungeonSystem dungeon, CheckpointBoundary boundary, Card extra = null)
         {
+            if (dungeon.Player.HasPendingHpFrame || (dungeon.CurrentBattle != null && dungeon.CurrentBattle.Enemies.Any(e => e.HasPendingHpFrame)))
+                throw new ArgumentException("未確定HPを含むフレーム中は保存できません");
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
             if (player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.IsConcentrating)
