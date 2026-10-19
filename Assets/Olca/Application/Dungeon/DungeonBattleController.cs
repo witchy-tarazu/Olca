@@ -298,7 +298,8 @@ namespace Olca.Application.Dungeon
                     if (dashPressed && dashCooldownRemaining <= 0f && dashStartPosition < 0f)
                     {
                         manager.StartDash();
-                        dashStartPosition = manager.Dungeon.PlayerPosition;
+                        // 空中などで開始を拒否された入力から距離・クールタイムを作らない。
+                        if (manager.Dungeon.IsDashing) dashStartPosition = manager.Dungeon.PlayerPosition;
                     }
 
                     if (dashStartPosition >= 0f)

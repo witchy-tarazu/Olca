@@ -149,6 +149,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
+            if (isJumping || isPaused) return;
             isDashing = true; ControlChanged();
         }
 

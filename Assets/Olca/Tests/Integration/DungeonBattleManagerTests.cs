@@ -13,6 +13,74 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class DungeonBattleManagerTests
     {
+        [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
+        [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
+        public void 空中ダッシュ入力と空中接敵を通常探索と保存復帰で区別する(int fps, bool stall)
+        {
+            for (int mode = 0; mode < 3; mode++)
+            {
+                var config = DungeonConfig.CreateTestDungeon(30);
+                config.MapCells[3] = new MapCell(3, new Enemy("boss", "検証", 200, ElementType.None, new Vector2Int(3, 0)));
+                var deck = CreateTestDeck();
+                var checkpoints = DungeonCheckpointSession.CreateDefault(config, deck);
+                var game = new DungeonBattleManager(config, new PlayerCharacter(100), deck,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+                var host = new UnityEngine.GameObject("dash-input-test"); host.SetActive(false);
+                var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                var type = controller.GetType(); type.GetField("manager", flags).SetValue(controller, game);
+                var handle = type.GetMethod("HandleInput", flags);
+                ContactInfo contact = null; game.Dungeon.OnBattleStart += c => contact = c;
+                var clock = new LogicalFrameClock();
+                try
+                {
+                    System.Action<long, int> tick = (frame, ms) => {
+                        // mode0: ジャンプ後にダッシュ要求、mode1: 地上ダッシュ後ジャンプ、mode2: 地上ダッシュ。
+                        var input = new LogicalInput {
+                            JumpButtonDown = mode == 0 ? frame == 1 : mode == 1 && frame == 2,
+                            DashButtonDown = mode == 0 ? frame == 2 : frame == 1 };
+                        handle.Invoke(controller, new object[] { input, ms });
+                        if (mode == 0 && frame == 2) {
+                            Assert.IsFalse(game.Dungeon.IsDashing);
+                            Assert.AreEqual(-1f, type.GetField("dashStartPosition", flags).GetValue(controller));
+                            Assert.AreEqual(0, type.GetField("dashCooldownRemaining", flags).GetValue(controller));
+                        }
+                        game.TickFrame(ms);
+                    };
+                    long total = LogicalFrameClock.WallTicksPerSecond, previous = 0;
+                    if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+                    for (long render = 1; previous < total; render++) {
+                        long now = System.Math.Min(total, (stall ? total / 2 : 0) + render * total / fps);
+                        clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+                    }
+                    while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+                    Assert.IsNotNull(contact); Assert.AreEqual(mode == 2, contact.IsDashContact);
+                    Assert.AreEqual(mode == 2, contact.DashEffect.HasValue);
+                    Assert.AreEqual(mode == 2 ? 185 : 200, game.CurrentBattle.Enemies[0].CurrentHp);
+                    var saved = checkpoints.Store.Read();
+                    Assert.AreEqual(mode == 2, saved.Battle.DashContact);
+                    Assert.AreEqual(mode == 2, saved.Battle.DashEffect.HasValue);
+                    Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(checkpoints, new MockRandomProvider(),
+                        new MockLogger(), out var resumed, out var error), error);
+                    Assert.IsTrue(game.SuspendForCheckpoint()); resumed.ActivateCheckpoint();
+                    Assert.AreEqual(mode == 2 ? 185 : 200, resumed.CurrentBattle.Enemies[0].CurrentHp);
+                    Assert.AreEqual(saved.Battle.GridOriginX, checkpoints.Store.Read().Battle.GridOriginX);
+                }
+                finally { UnityEngine.Object.DestroyImmediate(host); }
+            }
+        }
+
+        [Test]
+        public void 空中で拒否されたダッシュは着地後へ予約せず新しい地上要求を受け付ける()
+        {
+            var movement = new PlayerMovement(); movement.Jump(); movement.StartDash();
+            Assert.IsFalse(movement.IsDashing); movement.Update(500);
+            Assert.IsFalse(movement.IsJumping); Assert.IsFalse(movement.IsDashing);
+            Assert.AreEqual(5f, movement.CurrentPosition);
+            movement.StartDash(); Assert.IsTrue(movement.IsDashing);
+            movement.Update(100); Assert.AreEqual(7f, movement.CurrentPosition);
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 

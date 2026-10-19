@@ -87,7 +87,7 @@ namespace Olca.Core.Logic.Dungeon
             notifying = true;
             try
             {
-                OnEnemyContact?.Invoke(new ContactInfo { Enemy = cell.Enemy, IsDashContact = player.IsDashing,
+                OnEnemyContact?.Invoke(new ContactInfo { Enemy = cell.Enemy, IsDashContact = player.IsDashing && !player.IsJumping,
                     ContactPositionX = player.CurrentPosition, EnemyCellIndex = cell.Index });
             }
             finally { notifying = false; }
