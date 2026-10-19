@@ -2002,13 +2002,28 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(discard,model.Map.MapCells[10].Obstacle.PenaltyValue);
             Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(resumedSession,new MockRandomProvider(),new MockLogger(),out var resumed,out error),error);
             Assert.IsTrue(manager.SuspendForCheckpoint());resumed.ActivateCheckpoint();
-            IReadOnlyList<Card> clear=null;resumed.OnDungeonClearCompleted+=cards=>clear=cards;
+            Assert.IsFalse(resumed.TryValidateCarryHomeSelection(model.Obtained,out _,out _));
+            IReadOnlyList<Card> clear=null;IReadOnlyList<Card> validated=null;
+            resumed.OnDungeonClearCompleted+=cards=>{
+                clear=cards;
+                Assert.IsTrue(resumed.TryValidateCarryHomeSelection(cards,out validated,out var selectionError),selectionError);
+            };
             resumed.OnCardRewardPresented+=_=>resumed.SelectCardReward(null);
             foreach(var enemy in resumed.CurrentBattle.Enemies.ToArray())enemy.TakeDamage(enemy.MaxHp,ElementType.None);
             Assert.IsNotNull(clear);Assert.AreEqual(1,clear.Count);
             CollectionAssert.AreEqual(saved.ObtainedOrder,reopened.Read().ObtainedOrder);
             CollectionAssert.AreEqual(saved.DeckOrder,reopened.Read().DeckOrder);
             Assert.AreEqual(CheckpointBoundary.Terminal,reopened.Read().Boundary);
+            Assert.AreSame(clear[0],validated[0]);
+            var terminalBytes=System.IO.File.ReadAllBytes(reopened.ActivePath);
+            var deckAfter=resumed.Dungeon.GetCurrentDeck().GetAllCards().ToArray();
+            Assert.IsFalse(resumed.TryValidateCarryHomeSelection(new[]{beforeCards.Last()},out _,out _),"復帰前の同じ取得個体は再利用しない");
+            Assert.IsFalse(resumed.TryValidateCarryHomeSelection(new[]{clear[0],clear[0]},out _,out _));
+            resumed.SetUserPaused(true);Assert.IsFalse(resumed.TryValidateCarryHomeSelection(clear,out _,out _));
+            resumed.SetUserPaused(false);Assert.IsTrue(resumed.TryValidateCarryHomeSelection(clear,out _,out error),error);
+            CollectionAssert.AreEqual(deckAfter,resumed.Dungeon.GetCurrentDeck().GetAllCards());
+            CollectionAssert.AreEqual(clear,resumed.Dungeon.GetObtainedCards());
+            CollectionAssert.AreEqual(terminalBytes,System.IO.File.ReadAllBytes(reopened.ActivePath));
         }
         [Test]
         public void 通過済み破棄セル上で再開しても二重破棄せず不正参照と旧版を拒否する()
@@ -2681,6 +2696,54 @@ namespace Olca.Tests.Integration
             var old = Model(restarted);
             Assert.IsFalse(restarted.TryRestoreMemoryCheckpoint(out _)); Assert.AreSame(old, Model(restarted));
             CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(Store(controller).ActivePath));
+        }
+    }
+}
+
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class CarryHomeSelectionRuleTests
+    {
+        private static Card Card(string id, ExceedLevel level=ExceedLevel.Normal)
+            => new Card(id,id,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,10,"fixture",exceedLevel:level);
+
+        [TestCase(0)][TestCase(1)][TestCase(3)][TestCase(4)]
+        public void 選択上限を検証し入力リストや獲得履歴を変更しない(int count)
+        {
+            var obtained=Enumerable.Range(0,4).Select(i=>Card("fixture-"+i)).ToList();
+            var selected=obtained.Take(count).ToList();
+            bool accepted=CarryHomeSelectionRules.TryValidate(obtained,selected,out var result,out var error);
+            Assert.AreEqual(count<=3,accepted);Assert.AreEqual(4,obtained.Count);Assert.AreEqual(count,selected.Count);
+            if(accepted){Assert.IsNull(error);CollectionAssert.AreEqual(selected,result);selected.Clear();Assert.AreEqual(count,result.Count);}
+            else{Assert.IsNull(result);Assert.IsNotEmpty(error);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 同一カードの重複は同じ個体でも別個体でも拒否する(bool sameInstance)
+        {
+            var a=Card("same");var b=sameInstance?a:Card("same");
+            Assert.IsFalse(CarryHomeSelectionRules.TryValidate(new[]{a,b},new[]{a,b},out var result,out _));Assert.IsNull(result);
+        }
+        [Test] public void 同じシリーズの別名とレベル違いは別カードとして選べる()
+        {
+            var cards=new[]{Card("same"),Card("same",ExceedLevel.Lv1),Card("other",ExceedLevel.Lv2)};
+            Assert.IsTrue(CarryHomeSelectionRules.TryValidate(cards,cards,out var result,out var error),error);
+            CollectionAssert.AreEqual(cards,result);
+        }
+        [TestCase(ExceedLevel.Lv3)][TestCase((ExceedLevel)99)]
+        public void 超越専用と未知のレベルを拒否する(ExceedLevel level)
+        {
+            var card=Card("same",level);Assert.IsFalse(CarryHomeSelectionRules.TryValidate(new[]{card},new[]{card},out _,out _));
+        }
+        [Test] public void 履歴にない持込個体とnullを拒否し未選択候補は変更しない()
+        {
+            var obtained=new[]{Card("same"),Card("other")};
+            Assert.IsFalse(CarryHomeSelectionRules.TryValidate(obtained,new[]{Card("same")},out _,out _));
+            Assert.IsFalse(CarryHomeSelectionRules.TryValidate(obtained,new Card[]{null},out _,out _));
+            Assert.IsFalse(CarryHomeSelectionRules.TryValidate(obtained,null,out _,out _));
+            Assert.IsFalse(CarryHomeSelectionRules.TryValidate(null,new Card[0],out _,out _));
+            Assert.IsTrue(CarryHomeSelectionRules.TryValidate(obtained,new[]{obtained[0]},out _,out _));Assert.AreEqual(2,obtained.Length);
         }
     }
 }

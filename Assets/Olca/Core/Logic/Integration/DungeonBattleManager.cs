@@ -243,6 +243,16 @@ namespace Olca.Core.Logic.Integration
             OnDungeonClearCompleted?.Invoke(dungeonSystem.GetObtainedCards());
         }
 
+        /// <summary>クリア時の獲得履歴から持ち帰り候補を検証する。帰還の確定処理ではない。</summary>
+        public bool TryValidateCarryHomeSelection(IReadOnlyList<Card> selected,
+            out IReadOnlyList<Card> validated, out string error)
+        {
+            validated = null; error = null;
+            if (currentPhase != GamePhase.DungeonCleared || IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked)
+            { error = "クリア確定後に選択してください"; return false; }
+            return CarryHomeSelectionRules.TryValidate(dungeonSystem.GetObtainedCards(), selected, out validated, out error);
+        }
+
         /// <summary>
         /// プレイヤーアクション：ジャンプ
         /// </summary>

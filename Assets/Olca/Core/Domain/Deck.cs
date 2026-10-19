@@ -205,3 +205,33 @@ namespace Olca.Core.Domain
         }
     }
 }
+
+
+namespace Olca.Core.Domain
+{
+    /// <summary>攻略中の獲得履歴に対する選択検証。永続所持への付与や換算は行わない。</summary>
+    public static class CarryHomeSelectionRules
+    {
+        public static bool TryValidate(IReadOnlyList<Card> obtained, IReadOnlyList<Card> selected,
+            out IReadOnlyList<Card> validated, out string error)
+        {
+            validated = null; error = null;
+            if (obtained == null || selected == null) { error = "獲得履歴と選択が必要です"; return false; }
+            if (selected.Count > 3) { error = "持ち帰りは最大3枚です"; return false; }
+            var result = selected.ToArray();
+            if (result.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) ||
+                !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.ExceedLevel)))
+            { error = "カード定義が不正です"; return false; }
+            // 同名の持込カードや別攻略・復帰前の個体を混ぜず、現在の履歴の個体だけを受け取る。
+            if (result.Any(c => !obtained.Any(candidate => ReferenceEquals(candidate, c))))
+            { error = "攻略中に獲得したカードだけを選択できます"; return false; }
+            if (result.Any(c => c.ExceedLevel == ExceedLevel.Lv3))
+            { error = "★★★カードは持ち帰れません"; return false; }
+            // 出撃デッキの既存識別と同じく、レベル違いは別カードとして扱う。
+            if (result.GroupBy(c => (c.Id, c.ExceedLevel)).Any(g => g.Count() > 1))
+            { error = "同じカードは1枚までです"; return false; }
+            validated = Array.AsReadOnly(result);
+            return true;
+        }
+    }
+}
