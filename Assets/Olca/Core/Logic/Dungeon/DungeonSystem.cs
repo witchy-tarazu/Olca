@@ -1254,7 +1254,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
-            if (player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.IsConcentrating)
+            if (player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.IsConcentrating)
                 throw new ArgumentException("未対応の一時状態を保存できません");
             var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
             var obtained = dungeon.GetObtainedCards().ToList();

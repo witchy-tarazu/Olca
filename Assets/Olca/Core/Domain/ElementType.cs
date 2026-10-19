@@ -49,4 +49,20 @@ namespace Olca.Core.Domain
             return (int)System.Math.Min(int.MaxValue, result);
         }
     }
+    /// <summary>外部定義から受け取るIDと被弾特性。製品ID・解放条件・カード変換は定義しない。</summary>
+    public sealed class TransformationDefenseDefinition
+    {
+        public string Id { get; }
+        public ElementResistances Resistances { get; }
+        public ElementType BreakElement { get; }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement)
+        {
+            if (string.IsNullOrWhiteSpace(id)) throw new System.ArgumentException("変身IDが必要です", nameof(id));
+            if (breakElement == ElementType.None || !System.Enum.IsDefined(typeof(ElementType), breakElement))
+                throw new System.ArgumentOutOfRangeException(nameof(breakElement));
+            Id = id;
+            Resistances = resistances ?? throw new System.ArgumentNullException(nameof(resistances));
+            BreakElement = breakElement;
+        }
+    }
 }

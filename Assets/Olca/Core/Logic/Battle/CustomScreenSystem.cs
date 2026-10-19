@@ -699,4 +699,105 @@ namespace Olca.Core.Logic.Battle
         public static CustomizationPreview Undefined(CustomizationOperation operation, string reason)
             => new CustomizationPreview(operation, CustomizationPreviewStatus.Undefined, null, reason);
     }
+
+    /// <summary>
+    /// 1戦闘内の耐性変身の仮選択・確定・使用済みID。
+    /// カード変換や手札上限変更を持たない定義だけを扱い、UIは作らない。
+    /// </summary>
+    public sealed class TransformationSelectionState : IDisposable
+    {
+        private readonly PlayerCharacter player;
+        private readonly CustomScreenSystem screen;
+        private Dictionary<string, TransformationDefenseDefinition> available = new Dictionary<string, TransformationDefenseDefinition>(StringComparer.Ordinal);
+        private readonly HashSet<string> used = new HashSet<string>(StringComparer.Ordinal);
+        private TransformationDefenseDefinition pending;
+        private bool configured, confirmedThisOpening, disposed;
+        public string PendingId => pending?.Id;
+        public string ActiveId { get; private set; }
+        public IReadOnlyList<string> UsedIds => used.OrderBy(id => id, StringComparer.Ordinal).ToArray();
+        public bool IsUsed(string id) => id != null && used.Contains(id);
+        public TransformationSelectionState(PlayerCharacter player, CustomScreenSystem screen)
+        {
+            this.player = player ?? throw new ArgumentNullException(nameof(player));
+            this.screen = screen ?? throw new ArgumentNullException(nameof(screen));
+            screen.OnScreenOpened += OnOpened;
+            screen.OnConfirmed += OnConfirmed;
+            screen.OnScreenClosed += OnClosed;
+            player.OnTransformationDefenseEnded += OnDefenseEnded;
+        }
+        // 呼出元が解放済みの定義を渡す。使用後の差替え・ID再定義で再使用を許可しない。
+        public void Configure(IEnumerable<TransformationDefenseDefinition> definitions)
+        {
+            if (disposed || configured) throw new InvalidOperationException("変身定義は戦闘ごとに一度だけ設定できます");
+            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
+            var next = new Dictionary<string, TransformationDefenseDefinition>(StringComparer.Ordinal);
+            foreach (var definition in definitions)
+            {
+                if (definition == null) throw new ArgumentException("変身定義がnullです", nameof(definitions));
+                next.Add(definition.Id, definition);
+            }
+            available = next;
+            configured = true;
+        }
+        public bool TryPreview(string id)
+        {
+            if (disposed || !screen.IsOpen || screen.IsConfirming || confirmedThisOpening || id == null ||
+                used.Contains(id) || !available.TryGetValue(id, out var definition)) return false;
+            if (pending?.Id == id) return true;
+            while (screen.SelectedCards.Count > 0)
+                screen.TryDeselectCard(screen.SelectedCards[screen.SelectedCards.Count - 1]);
+            pending = definition;
+            // 確定済みの変身・残回数には触れず、仮反映だけを置き換える。
+            player.SetTransformationPreview(definition.Resistances);
+            return true;
+        }
+        /// <summary>選択カードを末尾から一枚解除し、空になった次の操作で変身仮選択を取り消す。</summary>
+        public bool TryCancelPending()
+        {
+            if (disposed || !screen.IsOpen || screen.IsConfirming || confirmedThisOpening || pending == null) return false;
+            if (screen.SelectedCards.Count > 0)
+                return screen.TryDeselectCard(screen.SelectedCards[screen.SelectedCards.Count - 1]);
+            DiscardPending();
+            return true;
+        }
+        private void DiscardPending()
+        {
+            pending = null;
+            player.SetTransformationPreview(null);
+        }
+        private void OnOpened(List<Card> hand)
+        {
+            DiscardPending();
+            confirmedThisOpening = false;
+        }
+        private void OnConfirmed(List<Card> cards)
+        {
+            if (disposed || confirmedThisOpening) return;
+            confirmedThisOpening = true;
+            var definition = pending;
+            DiscardPending();
+            if (definition == null) return;
+            player.BeginTransformationDefense(definition.Resistances, definition.BreakElement);
+            ActiveId = definition.Id;
+            used.Add(definition.Id);
+        }
+        private void OnClosed(List<Card> cards) => DiscardPending();
+        private void OnDefenseEnded()
+        {
+            ActiveId = null;
+            DiscardPending();
+            // 強制解除・期間切れで使用済みIDを取り消さない。
+        }
+        public void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            screen.OnScreenOpened -= OnOpened;
+            screen.OnConfirmed -= OnConfirmed;
+            screen.OnScreenClosed -= OnClosed;
+            player.OnTransformationDefenseEnded -= OnDefenseEnded;
+            DiscardPending();
+            ActiveId = null;
+        }
+    }
 }

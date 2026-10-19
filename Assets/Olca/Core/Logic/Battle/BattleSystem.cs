@@ -50,6 +50,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>カスタム画面システム</summary>
         public CustomScreenSystem CustomScreen => customScreen;
+        public TransformationSelectionState Transformations { get; }
 
         /// <summary>カード使用システム</summary>
         public CardUsageSystem CardUsage => cardUsage;
@@ -95,6 +96,7 @@ namespace Olca.Core.Logic.Battle
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
+            Transformations = new TransformationSelectionState(player, customScreen);
             this.cardUsage = new CardUsageSystem(this, logger);
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
@@ -490,6 +492,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
             player.EndTransformationDefense();
+            Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
             player.OnDeath -= OnPlayerDeath;

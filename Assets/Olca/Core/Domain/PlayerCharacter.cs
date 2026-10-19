@@ -11,7 +11,10 @@ namespace Olca.Core.Domain
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
         public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
-        public ElementResistances ActiveResistances => transformationResistances ?? Resistances;
+        public ElementResistances ActiveResistances => previewTransformationResistances ?? transformationResistances ?? Resistances;
+        public bool HasTransformationPreview => previewTransformationResistances != null;
+        private ElementResistances previewTransformationResistances;
+        internal void SetTransformationPreview(ElementResistances value) => previewTransformationResistances = value;
         public bool HasTransformationDefense => transformationResistances != null;
         /// <summary>確定後に残る戦闘フェーズ数。フレーム数ではない。</summary>
         public int RemainingTransformationPhases { get; private set; }

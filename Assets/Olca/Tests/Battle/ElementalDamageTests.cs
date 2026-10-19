@@ -35,6 +35,111 @@ namespace Olca.Tests.Battle
         }
 
 
+        private BattleSystem CreateTransformationBattle()
+        {
+            var cards = new List<Card> {
+                new Card("fixture-1", "検証1", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 1, "検証"),
+                new Card("fixture-2", "検証2", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 1, "検証") };
+            var battle = new BattleSystem(player, new List<Enemy> { new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1,0)) }, new Deck(cards), logger: logger);
+            battle.Transformations.Configure(new[] {
+                new TransformationDefenseDefinition("fixture-a", new ElementResistances(fire:50), ElementType.Water),
+                new TransformationDefenseDefinition("fixture-b", new ElementResistances(fire:100), ElementType.Fire) });
+            battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            return battle;
+        }
+        private void ReopenTransformationScreen(BattleSystem battle)
+        {
+            battle.CustomScreen.Close();
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider());
+        }
+        [Test]
+        public void 仮選択は未消費で確定時だけ消費し確定再試行で二重消費しない()
+        {
+            var battle=CreateTransformationBattle();var state=battle.Transformations;
+            Assert.IsTrue(state.TryPreview("fixture-a"));
+            Assert.AreEqual(50,player.ActiveResistances.Fire);Assert.IsTrue(player.HasTransformationPreview);
+            Assert.IsFalse(player.HasTransformationDefense);Assert.IsEmpty(state.UsedIds);
+            battle.CustomScreen.Confirm();
+            Assert.AreEqual("fixture-a",state.ActiveId);Assert.IsNull(state.PendingId);
+            Assert.IsFalse(player.HasTransformationPreview);Assert.AreEqual(3,player.RemainingTransformationPhases);
+            Assert.AreEqual(1,state.UsedIds.Count);
+            battle.CustomScreen.CancelConfirmation();
+            Assert.IsFalse(state.TryPreview("fixture-b"));Assert.IsFalse(state.TryCancelPending());
+            battle.CustomScreen.Confirm();Assert.AreEqual(1,state.UsedIds.Count);Assert.AreEqual(3,player.RemainingTransformationPhases);
+        }
+        [Test]
+        public void 仮選択取消は末尾カードを先に外し継続変身と開始時残回数へ戻す()
+        {
+            var battle=CreateTransformationBattle();var state=battle.Transformations;
+            state.TryPreview("fixture-a");battle.CustomScreen.Confirm();ReopenTransformationScreen(battle);
+            Assert.AreEqual(2,player.RemainingTransformationPhases);
+            var first=battle.CustomScreen.CurrentHand[0];var last=battle.CustomScreen.CurrentHand[1];
+            battle.CustomScreen.TrySelectCard(first);battle.CustomScreen.TrySelectCard(last);
+            Assert.IsTrue(state.TryPreview("fixture-b"));Assert.IsEmpty(battle.CustomScreen.SelectedCards);
+            battle.CustomScreen.TrySelectCard(first);battle.CustomScreen.TrySelectCard(last);
+            Assert.IsTrue(state.TryCancelPending());Assert.AreSame(first,battle.CustomScreen.SelectedCards[0]);
+            Assert.AreEqual("fixture-b",state.PendingId);Assert.AreEqual(100,player.ActiveResistances.Fire);
+            Assert.IsTrue(state.TryCancelPending());Assert.IsEmpty(battle.CustomScreen.SelectedCards);
+            Assert.AreEqual("fixture-b",state.PendingId);
+            Assert.IsTrue(state.TryCancelPending());Assert.IsNull(state.PendingId);
+            Assert.AreEqual("fixture-a",state.ActiveId);Assert.AreEqual(50,player.ActiveResistances.Fire);
+            Assert.AreEqual(2,player.RemainingTransformationPhases);Assert.IsFalse(state.IsUsed("fixture-b"));
+            Assert.IsFalse(state.TryCancelPending(), "継続中の変身は任意解除できない");
+        }
+        [Test]
+        public void 別変身確定は両ID使用済みで強制解除後に前変身へ戻さない()
+        {
+            var battle=CreateTransformationBattle();var state=battle.Transformations;
+            state.TryPreview("fixture-a");battle.CustomScreen.Confirm();ReopenTransformationScreen(battle);
+            Assert.IsFalse(state.TryPreview("fixture-a"));Assert.IsTrue(state.TryPreview("fixture-b"));
+            battle.CustomScreen.Confirm();Assert.AreEqual("fixture-b",state.ActiveId);
+            Assert.AreEqual(3,player.RemainingTransformationPhases);Assert.AreEqual(2,state.UsedIds.Count);
+            player.TakeDamage(10,attackElement:ElementType.Fire);
+            Assert.AreEqual(100,player.CurrentHp);Assert.IsNull(state.ActiveId);
+            Assert.IsFalse(player.HasTransformationDefense);Assert.AreSame(player.Resistances,player.ActiveResistances);
+            ReopenTransformationScreen(battle);Assert.IsFalse(state.TryPreview("fixture-a"));Assert.IsFalse(state.TryPreview("fixture-b"));
+        }
+        [Test]
+        public void 期間切れも使用済みを維持し次戦は新しい使用集合になる()
+        {
+            var battle=CreateTransformationBattle();var state=battle.Transformations;
+            state.TryPreview("fixture-a");battle.CustomScreen.Confirm();
+            for(int n=0;n<3;n++)ReopenTransformationScreen(battle);
+            Assert.IsNull(state.ActiveId);Assert.IsTrue(state.IsUsed("fixture-a"));Assert.IsFalse(state.TryPreview("fixture-a"));
+            battle.Enemies[0].TakeDamage(100,ElementType.None);
+            Assert.IsFalse(state.TryPreview("fixture-b"));
+            var next=CreateTransformationBattle();Assert.IsEmpty(next.Transformations.UsedIds);
+            Assert.IsTrue(next.Transformations.TryPreview("fixture-a"));
+        }
+        [Test]
+        public void 未確定で画面を閉じても消費せず仮反映だけ解除する()
+        {
+            var battle=CreateTransformationBattle();var state=battle.Transformations;
+            Assert.IsFalse(state.TryPreview("undefined"));Assert.IsFalse(state.TryPreview(null));
+            state.TryPreview("fixture-a");state.TryPreview("fixture-b");
+            Assert.AreEqual("fixture-b",state.PendingId);Assert.IsEmpty(state.UsedIds);
+            battle.CustomScreen.Cancel();Assert.IsNull(state.PendingId);Assert.IsFalse(player.HasTransformationPreview);
+            Assert.IsEmpty(state.UsedIds);Assert.IsFalse(state.TryPreview("fixture-a"));
+            battle.CustomScreen.Open(new Card[0],new MockRandomProvider());Assert.IsTrue(state.TryPreview("fixture-a"));
+        }
+        [Test]
+        public void 空確定後も同じ画面の再試行では新しい変身を選べない()
+        {
+            var battle=CreateTransformationBattle();battle.CustomScreen.Confirm();battle.CustomScreen.CancelConfirmation();
+            Assert.IsFalse(battle.Transformations.TryPreview("fixture-a"));
+            battle.CustomScreen.Confirm();Assert.IsEmpty(battle.Transformations.UsedIds);
+            ReopenTransformationScreen(battle);Assert.IsTrue(battle.Transformations.TryPreview("fixture-a"));
+        }
+        [Test]
+        public void 不正定義と戦闘内の定義差替えを拒否する()
+        {
+            Assert.Throws<System.ArgumentException>(()=>new TransformationDefenseDefinition(" ",ElementResistances.Neutral,ElementType.Fire));
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new TransformationDefenseDefinition("id",ElementResistances.Neutral,ElementType.None));
+            var battle=CreateTransformationBattle();
+            Assert.Throws<System.InvalidOperationException>(()=>battle.Transformations.Configure(new TransformationDefenseDefinition[0]));
+        }
+
         [Test]
         public void 確定した画面を数えず次の三回目開始で耐性置換を解除する()
         {
