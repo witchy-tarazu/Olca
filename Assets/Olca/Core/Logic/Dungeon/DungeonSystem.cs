@@ -918,6 +918,33 @@ namespace Olca.Core.Logic.Dungeon
             if (string.IsNullOrWhiteSpace(key) || grant == null) throw new ArgumentException("調律定義が必要です");
             grants.Add(key, grant);
         }
+        /// <summary>457e1e6の未調律2定義だけを、検証用DTOコピー上で03e6a1bの定義へ解決する。</summary>
+        internal void NormalizeLegacyDefenseCard(CheckpointCardDto value)
+        {
+            if (value == null || value.TuningCount != 0 || value.GrantKeys == null || value.GrantKeys.Length != 0)
+                return;
+            // 当時の全値を固定。IDだけの一致や、小カテゴリを除いた任意定義の一致では許可しない。
+            foreach (bool shield in new[] { false, true })
+            {
+                string id = shield ? "shield" : "heal", name = shield ? "シールド" : "ヒール";
+                int cost = shield ? 1 : 2, power = shield ? 15 : 20;
+                string description = shield ? "防御" : "HP回復";
+                var legacy = new Card(id, name, cost, CardRarity.Normal, CardCategory.Defense,
+                    ElementType.None, CardSeries.None, power, description);
+                string oldHash = CheckpointValues.CardHash(legacy);
+                if (value.DefinitionKey != "initial/v1/" + oldHash || value.ValueHash != oldHash) continue;
+                var current = new Card(id, name, cost, CardRarity.Normal, CardCategory.Defense,
+                    ElementType.None, CardSeries.None, power, description,
+                    subCategory: shield ? CardSubCategory.Barrier : CardSubCategory.Heal);
+                string newHash = CheckpointValues.CardHash(current), newKey = "initial/v1/" + newHash;
+                // 現在の登録定義も既知の新定義と完全一致する場合だけ受け入れる。
+                if (!cards.TryGetValue(newKey, out var registered) || CheckpointValues.CardHash(registered) != newHash)
+                    continue;
+                value.DefinitionKey = newKey; value.ValueHash = newHash;
+                return;
+            }
+        }
+
         internal Card RestoreCard(CheckpointCardDto value)
         {
             if (value == null || string.IsNullOrWhiteSpace(value.InstanceId) || value.DefinitionKey == null ||
@@ -1066,7 +1093,7 @@ namespace Olca.Core.Logic.Dungeon
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
                 CheckpointValues.Require(d.Cards != null && d.DeckOrder != null && d.ObtainedOrder != null && d.Enemies != null, "必須配列が欠落しています");
                 var cards = new Dictionary<string, Card>();
-                foreach (var c in d.Cards) { var card = definitions.RestoreCard(c); cards.Add(c.InstanceId, card); }
+                foreach (var c in d.Cards) { definitions.NormalizeLegacyDefenseCard(c); var card = definitions.RestoreCard(c); cards.Add(c.InstanceId, card); }
                 ValidateReferences(d.DeckOrder, cards); ValidateReferences(d.ObtainedOrder, cards);
                 var enemies = new Dictionary<int, Enemy>();
                 foreach (var e in d.Enemies)

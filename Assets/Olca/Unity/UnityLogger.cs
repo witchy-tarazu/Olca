@@ -97,9 +97,10 @@ namespace Olca.Unity
                 Hash(System.Text.Encoding.UTF8.GetBytes(envelope.Payload)) != envelope.Sha256)
                 throw new System.IO.InvalidDataException("保存形式が未対応、または整合性検証に失敗しました");
             var dto = Deserialize<Olca.Core.Domain.CheckpointDto>(System.Text.Encoding.UTF8.GetBytes(envelope.Payload));
-            if (!Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(dto, definitions, out _, out var error))
+            if (!Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(dto, definitions, out var verified, out var error))
                 throw new System.IO.InvalidDataException(error);
-            return dto;
+            // 読み取りは正規化済みコピーを返すだけで、元ファイルには書き込まない。
+            return verified.Snapshot;
         }
         private static bool StorageFailure(System.Exception ex) => ex is System.IO.IOException || ex is System.IO.InvalidDataException || ex is System.UnauthorizedAccessException ||
             ex is System.Runtime.Serialization.SerializationException || ex is System.ArgumentException || ex is System.Security.SecurityException || ex is System.Xml.XmlException;

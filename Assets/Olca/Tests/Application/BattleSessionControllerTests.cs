@@ -1277,19 +1277,29 @@ namespace Olca.Tests.Application
                         ConditionalDerivativeTrace(fps, stall, restore, trigger, scenario), trigger + ":" + scenario);
         }
 
-        private List<string> ShieldCardTrace(int fps, bool stall, bool restore)
+        private List<string> ShieldCardTrace(int fps, bool stall, bool restore, bool legacy = false)
         {
             var database = new SimpleCardFactory();
             var card = database.CreateById(SimpleCardFactory.Shield);
             var heal = database.CreateById(SimpleCardFactory.Heal);
+            if (legacy) { card = LegacyDefenseCard(true); heal = LegacyDefenseCard(false); }
             var deck = new Deck(new List<Card> { card, heal });
             var map = DungeonConfig.CreateTestDungeon(30, 1, 5);
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            // 敵が移動する前の同じ固定マップから新旧の定義を構築する。
+            var currentDefinitions = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,
+                new Deck(new List<Card> { database.CreateById(SimpleCardFactory.Shield), database.CreateById(SimpleCardFactory.Heal) }));
             var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
                 new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints, cardDatabase: database);
             for (int f = 0; f < 1000 && manager.CurrentBattle == null; f++) manager.TickFrame(17);
             Assert.IsNotNull(manager.CurrentBattle);
             if (restore) {
+                if (legacy) {
+                    var current = currentDefinitions;
+                    Assert.IsTrue(current.Store.TryWrite(checkpoints.Store.Read(), out var migrationError), migrationError);
+                    checkpoints = current;
+                }
+
                 Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
                     new MockRandomProvider(), new MockLogger(), out var resumed, out var error, cardDatabase: database), error);
                 Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
@@ -1365,6 +1375,92 @@ namespace Olca.Tests.Application
             var concentrate = new Card("arbitrary", "検証", 1, CardRarity.Normal, CardCategory.Support,
                 ElementType.None, CardSeries.None, 50, "検証", subCategory: CardSubCategory.Concentrate);
             Assert.IsInstanceOf<Olca.Core.Logic.CardEffects.Effects.ConcentrateEffect>(Olca.Core.Logic.CardEffects.CardEffectFactory.CreateEffect(concentrate));
+        }
+
+        private static Card LegacyDefenseCard(bool shield) => new Card(shield ? "shield" : "heal", shield ? "シールド" : "ヒール",
+            shield ? 1 : 2, CardRarity.Normal, CardCategory.Defense, ElementType.None, CardSeries.None,
+            shield ? 15 : 20, shield ? "防御" : "HP回復");
+
+        [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
+        [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
+        public void 旧シールド保存は新定義で復帰して通常使用と同じ論理フレームになる(int fps, bool stall)
+        { CollectionAssert.AreEqual(ShieldCardTrace(60, false, false), ShieldCardTrace(fps, stall, true, true)); }
+
+        [TestCase(true)] [TestCase(false)]
+        public void 旧新セーブを読み込んでも原本と所持順序獲得履歴HPを変更しない(bool legacy)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-defense-compat-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var factory = new SimpleCardFactory();
+                var map = DungeonConfig.CreateTestDungeon(30, 20, 5);
+                var currentDeck = new Deck(new List<Card> { factory.CreateById("shield"), factory.CreateById("heal"), factory.CreateById("shield") });
+                var oldDeck = new Deck(new List<Card> { LegacyDefenseCard(true), LegacyDefenseCard(false), LegacyDefenseCard(true) });
+                var source = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, legacy ? oldDeck : currentDeck);
+                var originalStore = new Olca.Unity.FileCheckpointStore(source.Definitions, directory);
+                var sourceSession = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(source.Definitions, originalStore);
+                var player = new PlayerCharacter(100); player.TakeDamage(27, affectsPoise: false);
+                var originalManager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, legacy ? oldDeck : currentDeck,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: sourceSession);
+                var dto = originalStore.Read(); Assert.IsNotNull(dto);
+                dto.Sequence++; dto.ObtainedOrder = new[] { dto.DeckOrder[1], dto.DeckOrder[0] };
+                Assert.IsTrue(originalStore.TryWrite(dto, out var error), error);
+                byte[] active = System.IO.File.ReadAllBytes(originalStore.ActivePath), backup = System.IO.File.ReadAllBytes(originalStore.BackupPath);
+                string originalJson = UnityEngine.JsonUtility.ToJson(dto);
+                var current = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, currentDeck);
+                var readStore = new Olca.Unity.FileCheckpointStore(current.Definitions, directory);
+                var normalized = readStore.Read(); Assert.IsNotNull(normalized, readStore.ReadError);
+                var expected = dto.Copy();
+                for (int i = 0; i < expected.DeckOrder.Length; i++) {
+                    var record = System.Array.Find(expected.Cards, c => c.InstanceId == expected.DeckOrder[i]);
+                    var canonical = current.Definitions.CaptureKnownCard(record.InstanceId, currentDeck.GetAllCards()[i]);
+                    record.DefinitionKey = canonical.DefinitionKey; record.ValueHash = canonical.ValueHash;
+                }
+                Assert.AreEqual(UnityEngine.JsonUtility.ToJson(expected), UnityEngine.JsonUtility.ToJson(normalized));
+                Assert.AreEqual(originalJson, UnityEngine.JsonUtility.ToJson(dto), "入力DTOを変更しない");
+                var resumedSession = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(current.Definitions, readStore);
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(resumedSession,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out error, cardDatabase: factory), error);
+                Assert.AreEqual(73, resumed.Dungeon.Player.CurrentHp);
+                CollectionAssert.AreEqual(active, System.IO.File.ReadAllBytes(originalStore.ActivePath));
+                CollectionAssert.AreEqual(backup, System.IO.File.ReadAllBytes(originalStore.BackupPath));
+                Assert.IsTrue(readStore.TryReadBackup(out _, out error), error);
+                CollectionAssert.AreEqual(active, System.IO.File.ReadAllBytes(originalStore.ActivePath));
+                // テスト専用の破損コピー。正常なactive/backupには触れない。
+                string corruptDirectory = System.IO.Path.Combine(directory, "corrupt"); System.IO.Directory.CreateDirectory(corruptDirectory);
+                byte[] corrupt = (byte[])active.Clone(); corrupt[0] = 0;
+                var corruptStore = new Olca.Unity.FileCheckpointStore(current.Definitions, corruptDirectory);
+                System.IO.File.WriteAllBytes(corruptStore.ActivePath, corrupt);
+                Assert.IsNull(corruptStore.Read()); Assert.IsNotEmpty(corruptStore.ReadError);
+                CollectionAssert.AreEqual(corrupt, System.IO.File.ReadAllBytes(corruptStore.ActivePath));
+                CollectionAssert.AreEqual(active, System.IO.File.ReadAllBytes(originalStore.ActivePath));
+                CollectionAssert.AreEqual(backup, System.IO.File.ReadAllBytes(originalStore.BackupPath));
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [TestCase("hash")] [TestCase("key")] [TestCase("grant")] [TestCase("hp")]
+        [TestCase("order")] [TestCase("power")] [TestCase("unknown")]
+        public void 旧カードの改変や未知定義と不正状態を互換処理で許可しない(string kind)
+        {
+            var map = DungeonConfig.CreateTestDungeon(30, 20, 5);
+            var card = kind == "power" ? new Card("shield", "シールド", 1, CardRarity.Normal, CardCategory.Defense,
+                ElementType.None, CardSeries.None, 16, "防御") : kind == "unknown" ? new Card("unknown", "シールド", 1,
+                CardRarity.Normal, CardCategory.Defense, ElementType.None, CardSeries.None, 15, "防御") : LegacyDefenseCard(true);
+            var deck = new Deck(new List<Card> { card });
+            var source = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(100), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: source);
+            var dto = source.Store.Read();
+            if (kind == "hash") dto.Cards[0].ValueHash = "invalid";
+            if (kind == "key") dto.Cards[0].DefinitionKey = "unknown/" + dto.Cards[0].ValueHash;
+            if (kind == "grant") { dto.Cards[0].TuningCount = 1; dto.Cards[0].GrantKeys = new[] { "unknown" }; }
+            if (kind == "hp") dto.Player.Hp = dto.Player.MaxHp + 1;
+            if (kind == "order") dto.DeckOrder = new[] { "missing" };
+            string before = UnityEngine.JsonUtility.ToJson(dto);
+            var current = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,
+                new Deck(new List<Card> { new SimpleCardFactory().CreateById("shield") }));
+            Assert.IsFalse(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(dto, current.Definitions, out var restored, out var error));
+            Assert.IsNull(restored); Assert.IsNotEmpty(error);
+            Assert.AreEqual(before, UnityEngine.JsonUtility.ToJson(dto));
         }
 
     }
