@@ -142,5 +142,43 @@ namespace Olca.Tests.CardEffects
             // 3番目の敵は無傷
             Assert.AreEqual(100, enemies[2].CurrentHp, "3番目の敵はダメージを受けないべき");
         }
+        [TestCase(ChainEffectOrigin.HitPosition, 3)]
+        [TestCase(ChainEffectOrigin.HitPosition, 5)]
+        [TestCase(ChainEffectOrigin.PlayerPosition, 3)]
+        [TestCase(ChainEffectOrigin.PlayerPosition, 5)]
+        public void 派生貫通は指定された発動位置より前だけを攻撃して燃焼する(ChainEffectOrigin origin, int hitX)
+        {
+            var player = new PlayerCharacter(100, new Vector2Int(1, 0));
+            var primary = new Enemy("hit", "検証", 100, ElementType.None, new Vector2Int(hitX, 0));
+            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var second = new Enemy("second", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var battle = new BattleSystem(player, new List<Enemy> { primary, forward, second }, new Deck());
+            for (int x = 0; x < BattleField.GRID_WIDTH; x++)
+                battle.Field.ChangePanelType(new Vector2Int(x, 0), PanelType.Grass);
+            var penetration = new CardModifier();
+            penetration.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Penetration, Trigger = DerivativeTrigger.Immediate });
+            var child = new Card("pierce", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.None, 10, "検証", DamageTargetType.Single, modifier: penetration);
+            var database = new MockCardDatabase(); database.AddCard(child);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                ChainCardId = child.Id, Trigger = DerivativeTrigger.OnHit, EffectOrigin = origin });
+            // 配置順でSingleの対象を確定し、指定位置から実際の派生カードを発動する。
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 1, "検証", DamageTargetType.Single, modifier: modifier);
+            var context = new BattleContext(battle, parent) { CardDatabase = database };
+            new ModifiableCardEffect(DamageTargetType.Single).Execute(context);
+
+            int startX = origin == ChainEffectOrigin.HitPosition ? hitX : 1;
+            Assert.AreEqual(startX < 4 ? 80 : 100, forward.CurrentHp);
+            Assert.AreEqual(startX < 4 ? 80 : 100, second.CurrentHp);
+            Assert.AreEqual(origin == ChainEffectOrigin.HitPosition ? 99 : 79, primary.CurrentHp);
+            for (int x = 0; x < BattleField.GRID_WIDTH; x++)
+                Assert.AreEqual(x > startX ? PanelType.Normal : PanelType.Grass,
+                    battle.Field.GetPanelType(new Vector2Int(x, 0)), "位置=" + x);
+            Assert.AreEqual(new Vector2Int(1, 0), player.GridPosition);
+            Assert.IsNull(context.TemporaryPlayerPosition, "派生の発動位置は親へ漏らさない");
+        }
+
     }
 }

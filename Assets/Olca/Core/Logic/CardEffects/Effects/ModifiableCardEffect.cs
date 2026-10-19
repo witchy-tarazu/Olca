@@ -488,7 +488,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private void ApplyPenetratingDamage(BattleContext context, List<Enemy> targets, int damage, ElementType element)
         {
             var burningPanels = new List<Vector2Int>();
-            var origin = context.Player.GridPosition;
+            var origin = context.GetEffectivePlayerPosition();
             if (element == ElementType.Fire)
             {
                 for (int x = origin.X + 1; x < BattleField.GRID_WIDTH; x++)
@@ -511,7 +511,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private List<Enemy> GetPenetratingTargets(BattleContext context)
         {
             var result = new List<Enemy>();
-            var playerPos = context.Player.GridPosition;
+            var playerPos = context.GetEffectivePlayerPosition();
             var aliveEnemies = context.Battle.GetAliveEnemies();
 
             foreach (var enemy in aliveEnemies)
