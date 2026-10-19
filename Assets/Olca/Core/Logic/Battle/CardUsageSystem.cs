@@ -17,6 +17,7 @@ namespace Olca.Core.Logic.Battle
         private readonly BattleSystem battleSystem;
         private readonly List<Card> queuedCards; // 使用待ちカードのキュー
         private readonly IGameLogger logger;
+        private readonly ICardDatabase cardDatabase;
         private int currentCardIndex; // 次に使用する待機カードのインデックス
         private bool isUsingCard;
         private Card inFlightCard;
@@ -48,11 +49,12 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public CardUsageSystem(BattleSystem battleSystem, IGameLogger logger = null)
+        public CardUsageSystem(BattleSystem battleSystem, IGameLogger logger = null, ICardDatabase cardDatabase = null)
         {
             this.battleSystem = battleSystem ?? throw new ArgumentNullException(nameof(battleSystem));
             this.queuedCards = new List<Card>();
             this.logger = logger;
+            this.cardDatabase = cardDatabase;
             this.currentCardIndex = 0;
         }
 
@@ -108,7 +110,7 @@ namespace Olca.Core.Logic.Battle
             card = ApplyConcentrate(card);
 
             // BattleContextを作成
-            var context = new BattleContext(battleSystem, card);
+            var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase };
 
             // カード効果を取得して実行
             var effect = CardEffectFactory.CreateEffect(card);
@@ -140,7 +142,7 @@ namespace Olca.Core.Logic.Battle
             card = ApplyConcentrate(card);
 
             // BattleContextを作成
-            var context = new BattleContext(battleSystem, card);
+            var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase };
 
             // カード効果を取得して実行
             var effect = CardEffectFactory.CreateEffect(card);

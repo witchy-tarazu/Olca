@@ -1,3 +1,4 @@
+using Olca.Core.Logic.CardEffects;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -62,6 +63,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly ExceedSystem exceedSystem;
         private readonly TuningSystem tuningSystem;
         private readonly FusionSystem fusionSystem;
+        private readonly ICardDatabase cardDatabase;
 
         public DungeonSystem(
             DungeonConfig config,
@@ -73,10 +75,11 @@ namespace Olca.Core.Logic.Dungeon
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null)
         {
             if (restoration?.Snapshot.Boundary == CheckpointBoundary.Terminal)
                 throw new ArgumentException("終端チェックポイントからゲームモデルは再開できません");
+            this.cardDatabase = cardDatabase;
             // 依存関係の初期化
             map = new DungeonMap(config);
             // 現行マップのボス種別を使い、最奥のボスをクリア対象として保持する。
@@ -272,7 +275,7 @@ namespace Olca.Core.Logic.Dungeon
                 logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem
+                fusionSystem: fusionSystem, cardDatabase: cardDatabase
             );
 
             // バトル終了イベントを購読
@@ -722,7 +725,7 @@ namespace Olca.Core.Logic.Dungeon
             plannedRewards = restored.RewardCandidates.ToList(); activeCheckpoint = snapshot.Copy(); pendingRewardChoices = null;
             IsInBattle = true; playerMovement.Pause();
             currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
-                randomProvider, logger, exceedSystem, tuningSystem, fusionSystem);
+                randomProvider, logger, exceedSystem, tuningSystem, fusionSystem, cardDatabase: cardDatabase);
             currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
             var started = currentBattle;

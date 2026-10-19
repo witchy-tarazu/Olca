@@ -50,7 +50,7 @@ namespace Olca.Application.Battle
 
             // ゲージ速度: 2.0/秒 → 5秒で満タン
             battleSystem = new BattleSystem(player, enemies, CreateTestDeck(),
-                customGaugeSpeed: 2.0f, randomProvider, logger);
+                customGaugeSpeed: 2.0f, randomProvider, logger, cardDatabase: new SimpleCardFactory());
 
             battleSystem.OnBattleEnd += OnBattleEnd;
 

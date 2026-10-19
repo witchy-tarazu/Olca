@@ -939,6 +939,89 @@ namespace Olca.Tests.Application
             Assert.AreEqual(100, enemy.CurrentHp, "後方の敵は貫通対象外");
             session.Detach();
         }
+        [TestCase(ChainEffectOrigin.HitPosition, 3, false)]
+        [TestCase(ChainEffectOrigin.HitPosition, 3, true)]
+        [TestCase(ChainEffectOrigin.HitPosition, 5, false)]
+        [TestCase(ChainEffectOrigin.PlayerPosition, 3, false)]
+        [TestCase(ChainEffectOrigin.PlayerPosition, 3, true)]
+        [TestCase(ChainEffectOrigin.PlayerPosition, 5, false)]
+        public void 通常セッションのカード使用へ派生定義を渡して発動位置を守る(ChainEffectOrigin origin, int hitX, bool synchronous)
+        {
+            var player = new PlayerCharacter(100, new Vector2Int(1, 0));
+            var primary = new Enemy("hit", "検証", 100, ElementType.None, new Vector2Int(hitX, 0));
+            var forward = new Enemy("forward", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var second = new Enemy("second", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var database = new Olca.Tests.CardEffects.MockCardDatabase();
+            var battle = new BattleSystem(player, new List<Enemy> { primary, forward, second }, new Deck(), cardDatabase: database);
+            var session = CreateSession().session; session.Attach(battle);
+            for (int x = 0; x < BattleField.GRID_WIDTH; x++)
+                battle.Field.ChangePanelType(new Vector2Int(x, 0), PanelType.Grass);
+            var penetration = new CardModifier();
+            penetration.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Penetration, Trigger = DerivativeTrigger.Immediate });
+            var child = new Card("pierce", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.None, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single, modifier: penetration);
+            database.AddCard(child);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                ChainCardId = child.Id, Trigger = DerivativeTrigger.OnHit, EffectOrigin = origin });
+            // 配置順でSingleの対象を確定し、指定位置から実際の派生カードを発動する。
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single, modifier: modifier);
+            battle.CardUsage.EnqueueCards(new List<Card> { parent });
+            session.ProcessLogicalFrame(() => {
+                if (synchronous) Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+                else session.UseCardFromInput();
+            });
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+
+            int startX = origin == ChainEffectOrigin.HitPosition ? hitX : 1;
+            Assert.AreEqual(startX < 4 ? 80 : 100, forward.CurrentHp);
+            Assert.AreEqual(startX < 4 ? 80 : 100, second.CurrentHp);
+            Assert.AreEqual(origin == ChainEffectOrigin.HitPosition ? 99 : 79, primary.CurrentHp);
+            for (int x = 0; x < BattleField.GRID_WIDTH; x++)
+                Assert.AreEqual(x > startX ? PanelType.Normal : PanelType.Grass,
+                    battle.Field.GetPanelType(new Vector2Int(x, 0)), "位置=" + x);
+            Assert.AreEqual(new Vector2Int(1, 0), player.GridPosition);
+            session.Detach();
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 探索からの戦闘と保存復帰の戦闘が派生定義を通常セッションへ引き継ぐ(bool restore)
+        {
+            var map = DungeonConfig.CreateTestDungeon(30, 20, 5);
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var deck = new Deck(new List<Card> { factory.CreateById("sword") });
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var database = new Olca.Tests.CardEffects.MockCardDatabase();
+            var childModifier = new CardModifier();
+            childModifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Penetration, Trigger = DerivativeTrigger.Immediate });
+            database.AddCard(new Card("child", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.None, 1, "検証", modifier: childModifier));
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(100), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints, cardDatabase: database);
+            for (int frame = 0; frame < 1000 && manager.CurrentBattle == null; frame++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            if (restore)
+            {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error, cardDatabase: database), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle;
+            var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            var enemy = battle.Enemies[0]; int hp = enemy.CurrentHp;
+            battle.Field.ChangePanelType(enemy.GridPosition, PanelType.Grass);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                Trigger = DerivativeTrigger.OnHit, ChainCardId = "child", EffectOrigin = ChainEffectOrigin.PlayerPosition });
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 1, "検証", modifier: modifier);
+            session.ProcessLogicalFrame(() => UseStatusCard(battle, session, parent));
+            Assert.AreEqual(hp - 3, enemy.CurrentHp);
+            Assert.AreEqual(PanelType.Normal, battle.Field.GetPanelType(enemy.GridPosition));
+            session.Detach();
+        }
 
     }
 }

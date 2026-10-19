@@ -238,7 +238,7 @@ namespace Olca.Application.Dungeon
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice ? null : memoryCheckpoints);
+                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice ? null : memoryCheckpoints, cardDatabase: cardFactory);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -657,7 +657,7 @@ namespace Olca.Application.Dungeon
                 : memoryCheckpoints;
             if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
                 out var restored, out error, new ExceedSystem(factory), new TuningSystem(),
-                new FusionSystem(new SimpleFusionRecipeProvider(), factory))) return false;
+                new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
             if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }
             if (IsUserPaused) SetUserPaused(false);
             transitionCts?.Cancel(); battleSession?.Detach();

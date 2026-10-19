@@ -1,3 +1,4 @@
+using Olca.Core.Logic.CardEffects;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -86,7 +87,7 @@ namespace Olca.Core.Logic.Battle
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
-            IEnumerable<Vector2Int> initialPermanentHoles = null)
+            IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
@@ -97,7 +98,7 @@ namespace Olca.Core.Logic.Battle
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
-            this.cardUsage = new CardUsageSystem(this, logger);
+            this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);

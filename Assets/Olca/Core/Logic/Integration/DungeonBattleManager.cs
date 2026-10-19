@@ -1,3 +1,4 @@
+using Olca.Core.Logic.CardEffects;
 using System;
 using System.Collections.Generic;
 using Olca.Core.Domain;
@@ -53,7 +54,7 @@ namespace Olca.Core.Logic.Integration
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null)
         {
             this.player = player;
             this.randomProvider = randomProvider;
@@ -69,7 +70,7 @@ namespace Olca.Core.Logic.Integration
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem,
-                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration);
+                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration, cardDatabase: cardDatabase);
 
             // イベント購読
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
@@ -283,12 +284,12 @@ namespace Olca.Core.Logic.Integration
         public void ActivateCheckpoint() { if (!IsSuspended) dungeonSystem.ActivateCheckpoint(); }
         public bool RetryCheckpoint() => !IsSuspended && dungeonSystem.RetryCheckpoint();
         public static bool TryRestoreCheckpoint(DungeonCheckpointSession session, IRandomProvider random, IGameLogger logger,
-            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null)
+            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null, ICardDatabase cardDatabase = null)
         {
             manager = null;
             if (!session.TryRead(out var restored, out error)) return false;
             manager = new DungeonBattleManager(restored.Map, restored.Player, restored.Deck, random, logger,
-                exceed, tuning, fusion, checkpoints: session, restoration: restored);
+                exceed, tuning, fusion, checkpoints: session, restoration: restored, cardDatabase: cardDatabase);
             return true;
         }
 

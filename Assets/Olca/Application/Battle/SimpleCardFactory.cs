@@ -1,3 +1,4 @@
+using Olca.Core.Logic.CardEffects;
 using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
@@ -8,7 +9,7 @@ namespace Olca.Application.Battle
     /// シンプルなカードファクトリー実装。
     /// コードベースでカードデータを定義する（CSVマスターデータ未整備の間の仮実装）。
     /// </summary>
-    public class SimpleCardFactory : ICardFactory
+    public class SimpleCardFactory : ICardFactory, ICardDatabase
     {
         // カードID定数
         public const string Sword = "sword";
@@ -47,6 +48,8 @@ namespace Olca.Application.Battle
         /// <summary>
         /// カードIDからカードを生成する
         /// </summary>
+        public Card GetCardById(string cardId) => CreateById(cardId);
+
         public Card CreateById(string cardId)
         {
             if (cardId == null) return null;
