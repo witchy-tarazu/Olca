@@ -837,7 +837,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
 #if UNITY_EDITOR || DEBUG
                 System.Diagnostics.Debug.WriteLine($"[ExecuteProjectileLanding] 直接ダメージ: {context.UsedCard.Power}, ターゲット数={landingTargets.Count}");
 #endif
-                DealDamageToTargets(landingTargets, context.UsedCard.Power, context.UsedCard.Element);
+                var element = context.UsedCard.GetFinalElement();
+                bool burnsGrass = element == ElementType.Fire && context.Field.IsInBounds(landingPosition)
+                    && context.Field.GetPanelType(landingPosition) == PanelType.Grass;
+                DealDamageToTargets(landingTargets, context.UsedCard.Power, element);
+                // 着弾時の全対象を判定してから燃焼。直接攻撃は空の着弾マスにも当たる。
+                if (burnsGrass && context.Field.GetPanelType(landingPosition) == PanelType.Grass)
+                    context.Field.ChangePanelType(landingPosition, PanelType.Normal);
             }
 
             // チェイン効果を発動（爆風など）
