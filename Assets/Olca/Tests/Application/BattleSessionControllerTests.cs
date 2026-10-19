@@ -40,6 +40,9 @@ namespace Olca.Tests.Application
         private class MockCustomScreenView : ICustomScreenView
         {
             public int InitializeCallCount { get; private set; }
+            public TransformationSelectionState BoundTransformations { get; private set; }
+            public void BindTransformations(TransformationSelectionState transformations)
+                => BoundTransformations = transformations;
             public event Action OnCustomScreenConfirmed;
 
             public void Initialize(CustomScreenSystem customScreen)
@@ -143,13 +146,15 @@ namespace Olca.Tests.Application
                     new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
                 Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
             }
-            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            var root = new UnityEngine.GameObject("cancel-regression");
+            var actual = root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
+            var battle = manager.CurrentBattle;
+            var session = new BattleSessionController(new MockBattleView(), actual, new MockRandomProvider(), new MockLogger());
+            session.Attach(battle);
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
             battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("pending", ElementResistances.Neutral, ElementType.Water) });
             Assert.IsTrue(battle.Transformations.TryPreview("pending"));
             var screen = battle.CustomScreen; var hand = screen.CurrentHand.ToArray(); Assert.AreEqual(3, hand.Length);
-            var root = new UnityEngine.GameObject("cancel-regression");
-            var actual = root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
             var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
             void Set(object target, string field, object value) => target.GetType().GetField(field, flags).SetValue(target, value);
             UnityEngine.GameObject Child(string name) {
@@ -206,8 +211,12 @@ namespace Olca.Tests.Application
                 actual.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
                 Assert.AreEqual(0, screen.SelectedCards.Count); Assert.AreEqual("コスト: 0 / 10", cost.text);
                 CollectionAssert.AreEqual(hand.Reverse(), screen.CurrentHand);
-                // 変身の追加取消は既存Coreで行い、カード取消と加工Undoを混同しない。
-                Assert.IsTrue(battle.Transformations.TryCancelPending()); Assert.IsNull(battle.Transformations.PendingId);
+                // 最後のカードを外した操作では仮選択を維持し、次の通常取消でのみ外す。
+                Assert.AreEqual("pending", battle.Transformations.PendingId);
+                actual.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
+                Assert.IsNull(battle.Transformations.PendingId); Assert.IsFalse(battle.Transformations.IsUsed("pending"));
+                actual.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
+                Assert.IsTrue(screen.IsOpen); CollectionAssert.AreEqual(hand.Reverse(), screen.CurrentHand);
                 actual.OnCardClicked(hand[0]); screen.Confirm(); var available = screen.AvailableCards.ToArray();
                 actual.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
                 CollectionAssert.AreEqual(available, screen.AvailableCards); Assert.IsTrue(screen.IsConfirming);
@@ -231,12 +240,17 @@ namespace Olca.Tests.Application
             var screen = new CustomScreenSystem(new Deck(new List<Card> { prefix, target, material }),
                 tuningSystem: new Olca.Core.Logic.Battle.TuningSystem(MockTuningDefinitions.FromModifier));
             screen.Open(new Card[0], new MockRandomProvider(0)); var original = screen.CurrentHand.Select(c => c.Id).ToArray();
+            var player = new PlayerCharacter(100);
+            var transformations = new TransformationSelectionState(player, screen);
+            transformations.Configure(new[] { new TransformationDefenseDefinition("pending", ElementResistances.Neutral, ElementType.Water) });
+            Assert.IsTrue(transformations.TryPreview("pending"));
             var result = screen.ExecuteTuning(target, material); Assert.IsTrue(result.IsSuccess);
             var root = new UnityEngine.GameObject("cancel-undo-regression");
             var view = root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
             typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("customScreen",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(view, screen);
             view.ConfigureLogicalConfirmation((time, action) => action(), () => 0);
+            view.BindTransformations(transformations);
             try {
                 Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
                 Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
@@ -244,11 +258,89 @@ namespace Olca.Tests.Application
                 view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
                 CollectionAssert.AreEqual(new[] { prefix }, screen.SelectedCards); Assert.AreEqual(2, screen.GetTotalUsedCost());
                 Assert.AreEqual(1, screen.CustomizationUndoCount); Assert.AreEqual(3, result.ResultCard.GetFinalCost());
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
+                Assert.AreEqual("pending", transformations.PendingId);
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
+                Assert.IsNull(transformations.PendingId); Assert.AreEqual(1, screen.CustomizationUndoCount);
+                Assert.AreEqual(3, result.ResultCard.GetFinalCost());
+                view.OnCardClicked(prefix);
                 Assert.IsTrue(screen.TryUndoCustomization()); Assert.AreEqual(0, screen.CustomizationUndoCount);
                 CollectionAssert.AreEqual(new[] { prefix }, screen.SelectedCards);
                 CollectionAssert.AreEqual(original.Where(id => id != "prefix"), screen.CurrentHand.Select(c => c.Id));
                 Assert.AreEqual(2, screen.CurrentHand.Single(c => c.Id == "target").GetFinalCost());
-            } finally { UnityEngine.Object.DestroyImmediate(root); }
+            } finally { transformations.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 実ESC入力はリマップ後も一フレーム一段階だけ取り消し継続変身を保護する(bool remap)
+        {
+            var root = new UnityEngine.GameObject("pending-cancel-input");
+            var view = root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
+            var battle = CreateBattleSystem(); var session = new BattleSessionController(new MockBattleView(), view, new MockRandomProvider(), new MockLogger());
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("customScreen", flags).SetValue(view, battle.CustomScreen);
+            view.ConfigureLogicalConfirmation((time, action) => action(), () => 0); session.Attach(battle);
+            var keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            var provider = new Olca.Unity.UnityInputProvider(); var queue = new Olca.Core.Logic.Integration.LogicalInputQueue();
+            var original = new ElementResistances(fire: 50); var preview = new ElementResistances(water: 50);
+            battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("old", original, ElementType.Water),
+                new TransformationDefenseDefinition("new", preview, ElementType.Fire) });
+            void Unpause() {
+                Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+            void Press(long frame, int times = 1) {
+                double time = UnityEngine.Time.realtimeSinceStartupAsDouble;
+                for (int n = 0; n < times; n++) {
+                    UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,
+                        new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Escape), time - .02 + n * .002);
+                    UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,
+                        new UnityEngine.InputSystem.LowLevel.KeyboardState(), time - .019 + n * .002);
+                }
+                UnityEngine.InputSystem.InputSystem.Update();
+                foreach (var input in provider.CaptureTimestamped()) queue.Enqueue(frame, input.Input);
+                session.ProcessLogicalFrame(() => view.HandleLogicalConfirmation(queue.Take(frame)));
+            }
+            try {
+                Unpause(); provider.StartEventCapture(); provider.CaptureTimestamped();
+                if (remap) {
+                    var edit = provider.KeyboardProfile.BeginEdit(); Assert.IsTrue(edit.TryAssign(("keyboard", "battle", "AttackPrimary"), "X", out _));
+                    Olca.Unity.GameplayPause.SetPaused(true); Assert.IsTrue(provider.TryApplyKeyboardProfile(edit.Apply(), out var error), error);
+                    provider.CaptureTimestamped(); Unpause();
+                    Assert.AreEqual("X", provider.KeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+                }
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+                Press(1); Assert.IsTrue(battle.CustomScreen.IsOpen); Assert.IsNull(battle.Transformations.PendingId);
+                Assert.IsTrue(battle.Transformations.TryPreview("old")); battle.CustomScreen.Confirm();
+                Press(2); Assert.AreEqual("old", battle.Transformations.ActiveId); Assert.IsTrue(battle.Transformations.IsUsed("old"));
+                battle.CustomScreen.Close(); battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+                int phases = battle.Player.RemainingTransformationPhases;
+                Assert.IsTrue(battle.Transformations.TryPreview("new")); Assert.AreSame(preview, battle.Player.ActiveResistances);
+                Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
+                Press(3, 2); Assert.AreEqual(0, battle.CustomScreen.SelectedCards.Count);
+                Assert.AreEqual("new", battle.Transformations.PendingId, "同フレームの連打でも空選択取消まで進めない");
+                view.HandleLogicalConfirmation(queue.Take(4)); Assert.AreEqual("new", battle.Transformations.PendingId);
+                Olca.Unity.GameplayPause.SetPaused(true); Press(5); Assert.AreEqual("new", battle.Transformations.PendingId);
+                Unpause(); view.HandleLogicalConfirmation(queue.Take(6)); Assert.AreEqual("new", battle.Transformations.PendingId);
+                Press(7); Assert.IsNull(battle.Transformations.PendingId); Assert.AreSame(original, battle.Player.ActiveResistances);
+                Assert.AreEqual(phases, battle.Player.RemainingTransformationPhases); Assert.AreEqual("old", battle.Transformations.ActiveId);
+                Assert.IsFalse(battle.Transformations.IsUsed("new")); Assert.IsTrue(battle.Transformations.IsUsed("old"));
+                Press(8); Assert.AreEqual("old", battle.Transformations.ActiveId); Assert.AreEqual(phases, battle.Player.RemainingTransformationPhases);
+                Assert.AreEqual(CustomGaugeSystem.MAX_GAUGE_MS, battle.CustomGauge.CurrentGaugeMs);
+                Assert.IsTrue(battle.Transformations.TryPreview("new")); battle.CustomScreen.Confirm(); Press(9);
+                Assert.AreEqual("new", battle.Transformations.ActiveId); Assert.IsTrue(battle.Transformations.IsUsed("new"));
+            } finally { session.Detach(); provider.Dispose(); UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
+                UnityEngine.Object.DestroyImmediate(root); Unpause(); }
+        }
+
+        [Test]
+        public void セッションの再接続と解除で変身取消対象を引き継がない()
+        {
+            var (session, _, view, _) = CreateSession(); var first = CreateBattleSystem(); var second = CreateBattleSystem();
+            session.Attach(first); Assert.AreSame(first.Transformations, view.BoundTransformations);
+            session.Attach(second); Assert.AreSame(second.Transformations, view.BoundTransformations);
+            session.Detach(); Assert.IsNull(view.BoundTransformations);
+            session.Detach(); Assert.IsNull(view.BoundTransformations);
         }
 
         // ==================== Attach / Detach ====================

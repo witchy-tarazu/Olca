@@ -50,6 +50,9 @@ namespace Olca.Presentation.CustomScreen
         [SerializeField] private Image customizeModeOverlay;          // モード中に画面全体にかける半透明オーバーレイ
 
         private CustomScreenSystem customScreen;
+        private TransformationSelectionState transformations;
+        public void BindTransformations(TransformationSelectionState transformations)
+            => this.transformations = transformations;
         private System.Action<long, System.Action> queueConfirmation;
         private System.Func<long> pointerClickTimestamp;
         public void ConfigureLogicalConfirmation(System.Action<long, System.Action> queue, System.Func<long> pointerTimestamp)
@@ -61,7 +64,7 @@ namespace Olca.Presentation.CustomScreen
                 Olca.Unity.GameplayPause.InputBlocked || (customizeModeView != null && customizeModeView.IsActive)) return;
             if (input.MenuDecideButtonDown) OnDecidePressed(true);
             if (input.MenuConfirmButtonDown) customScreen.Confirm();
-            if (input.MenuCancelButtonDown) CancelLastCardSelection();
+            if (input.MenuCancelButtonDown) CancelSelection();
         }
         private List<HandCardView> handCardViews = new List<HandCardView>();
         private CancellationTokenSource animationCts;
@@ -296,7 +299,7 @@ namespace Olca.Presentation.CustomScreen
             // TODO: コントローラ対応時にBボタン（Cancel）の処理を追加
             if (queueConfirmation == null && Input.GetKeyDown(KeyCode.Escape))
             {
-                CancelLastCardSelection();
+                CancelSelection();
             }
         }
 
@@ -341,14 +344,18 @@ namespace Olca.Presentation.CustomScreen
         }
 
         /// <summary>
-        /// 最後に選択した1枚だけを取り消し、Coreの結果を表示へ反映する。
+        /// 末尾のカード1枚、選択が空なら未確定の変身を取り消す。
         /// </summary>
-        private void CancelLastCardSelection()
+        private void CancelSelection()
         {
             if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming ||
                 Olca.Unity.GameplayPause.InputBlocked) return;
             var selected = customScreen.SelectedCards;
-            if (selected.Count == 0) return;
+            if (selected.Count == 0)
+            {
+                transformations?.TryCancelPending();
+                return;
+            }
             if (!customScreen.TryDeselectCard(selected[selected.Count - 1])) return;
             foreach (var view in handCardViews)
                 view.UpdateSelection(customScreen.SelectedCards.Contains(view.Card));

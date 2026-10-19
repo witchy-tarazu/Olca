@@ -52,6 +52,7 @@ namespace Olca.Application.Battle
         {
             Detach();
             currentBattle = battle;
+            customScreenView.BindTransformations(battle.Transformations);
             currentBattle.CustomGauge.OnGaugeFull += OnGaugeFull;
             if (scheduleLogical != null) currentBattle.CustomScreen.OnConfirmed += OnLogicalConfirmed;
             customScreenView.OnCustomScreenConfirmed += OnCustomScreenConfirmed;
@@ -77,6 +78,7 @@ namespace Olca.Application.Battle
                 currentBattle = null;
             }
             customScreenView.OnCustomScreenConfirmed -= OnCustomScreenConfirmed;
+            customScreenView.BindTransformations(null);
         }
 
         /// <summary>
