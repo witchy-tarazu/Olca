@@ -197,6 +197,10 @@ namespace Olca.Core.Domain
         /// <param name="affectsPoise">強靭度を削るか。地形などのHPダメージとは独立する。</param>
         /// <param name="poiseDamage">明示した強靭度削り量。nullは旧定義のHPダメージ連動を維持する。</param>
         public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
+            => TryTakeDamage(damage, forceStagger, affectsPoise, attackElement, attackProperties, poiseDamage);
+
+        /// <summary>防御で遮断されなかったヒットだけtrue。付随効果と被弾無敵の判定に使う。</summary>
+        public bool TryTakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
         {
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
@@ -207,23 +211,23 @@ namespace Olca.Core.Domain
                 if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
 
                 // 無敵中はダメージ・のけぞりを無効化
-                if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return;
+                if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return false;
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 int originalDamage = damage;
-                damage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
-                if (originalDamage > 0 && damage == 0) return; // 耐性無効は強靭度・付随効果へ進めない。
-                // 属性で完全無効になった攻撃は、解除用弱点と一致しても変身を維持する。
-                breakTransformation = HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
-
-                // バリアがある場合は先にバリアで吸収
-                if (barrierHp > 0)
+                int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
+                // 変身解除は既存の弱点規則を維持し、バリアの耐久計算とは分ける。
+                breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
+                // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
+                // 元から威力0の状態専用ヒットはバリアを通過する。
+                if (barrierHp > 0 && damage > 0)
                 {
-                    int absorbed = Math.Min(barrierHp, damage);
-                    barrierHp -= absorbed;
-                    damage -= absorbed;
-                    if (damage <= 0) return;
+                    int barrierDamage = ElementResistances.Neutral.CalculateDamage(damage, attackElement, grass);
+                    barrierHp = Math.Max(0, barrierHp - barrierDamage);
+                    return false;
                 }
+                damage = bodyDamage;
+                if (originalDamage > 0 && damage == 0) return false; // 耐性無効は強靭度・付随効果へ進めない。
 
                 if (frameHp.Active) frameHp.Damage(damage);
                 else
@@ -262,12 +266,25 @@ namespace Olca.Core.Domain
                 {
                     OnDeath?.Invoke();
                 }
+                return true;
             }
             finally
             {
                 try { if (breakTransformation) EndTransformationDefense(); }
                 finally { OnDamageProcessingCompleted?.Invoke(); }
             }
+        }
+
+        /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>
+        public void TakePoisonDamage(int damage)
+        {
+            if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
+            if (IsDead) return;
+            if (frameHp.Active) { frameHp.Poison(damage); return; }
+            int accepted = Math.Min(damage, Math.Max(0, currentHp - 1));
+            if (accepted == 0) return;
+            currentHp -= accepted;
+            OnHpChanged?.Invoke(currentHp, maxHp);
         }
 
         /// <summary>
@@ -441,7 +458,7 @@ namespace Olca.Core.Domain
         public void Heal(int amount) { healing += amount; touched = true; }
         public int Poison(int amount)
         {
-            // 現在の毒対象は回復APIを持たない敵。通常攻撃とは独立したHP1下限。
+            // 通常攻撃・同フレーム回復とは独立して、開始時HPを基準に毒をHP1で止める。
             int accepted = (int)Math.Min(amount, Math.Max(0L, (long)initialHp - 1 - poison));
             poison += accepted; touched |= accepted > 0; return accepted;
         }

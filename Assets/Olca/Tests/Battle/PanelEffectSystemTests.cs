@@ -9,7 +9,7 @@ namespace Olca.Tests.Battle
     public class PanelEffectSystemTests
     {
         [TestCase(0, false, false, 5, 0)]
-        [TestCase(3, false, false, 2, 0)]
+        [TestCase(3, false, false, 0, 0)]
         [TestCase(8, false, false, 0, 3)]
         [TestCase(3, true, false, 0, 3)]
         [TestCase(3, false, true, 0, 3)]

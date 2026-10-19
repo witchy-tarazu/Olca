@@ -1819,14 +1819,20 @@ namespace Olca.Tests.Application
                     Assert.AreEqual(1, used);
                 }
                 if (frame == 10) {
-                    battle.Player.TakeDamage(10, affectsPoise: false);
-                    Assert.AreEqual(900, battle.Player.CurrentHp); Assert.AreEqual(5, battle.Player.BarrierHp);
+                    battle.AddSummon(new Enemy("shield-hit-" + frame, "検証", 10, ElementType.None,
+                        new Vector2Int(battle.Player.GridPosition.X + 1, 0), isSummoned: true),
+                        new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, poiseDamage: 999,
+                            onHit: _ => Assert.Fail("バリアで防いだ追加効果"), hitInvincibilityMs: 100) });
+                    Assert.AreEqual(900, battle.Player.CurrentHp); Assert.AreEqual(15, battle.Player.BarrierHp);
                 }
                 if (frame == 12) {
-                    battle.Player.TakeDamage(10, affectsPoise: false);
-                    Assert.AreEqual(900, battle.Player.CurrentHp, "超過分5は終端で確定"); Assert.AreEqual(0, battle.Player.BarrierHp);
+                    battle.AddSummon(new Enemy("shield-hit-" + frame, "検証", 10, ElementType.None,
+                        new Vector2Int(battle.Player.GridPosition.X + 1, 0), isSummoned: true),
+                        new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, poiseDamage: 999,
+                            onHit: _ => Assert.Fail("バリアで防いだ追加効果"), hitInvincibilityMs: 100) });
+                    Assert.AreEqual(900, battle.Player.CurrentHp); Assert.AreEqual(5, battle.Player.BarrierHp);
                 }
-                if (frame == 13) Assert.AreEqual(895, battle.Player.CurrentHp);
+                if (frame == 13) { Assert.AreEqual(900, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.BarrierHp); Assert.AreEqual(0, battle.Player.AccumulatedDamage); Assert.IsFalse(battle.Player.IsInvincible); }
                 if (frame == 15) session.UseCardFromInput();
                 battle.TickFrame(ms);
                 trace.Add(frame + ":" + battle.Player.CurrentHp + ":" + battle.Player.BarrierHp + ":" + used);
@@ -1838,7 +1844,7 @@ namespace Olca.Tests.Application
                 clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
-            Assert.AreEqual(915, battle.Player.CurrentHp, "ヒールは20回復する");
+            Assert.AreEqual(920, battle.Player.CurrentHp, "ヒールは20回復する");
             Assert.AreEqual(0, battle.Player.BarrierHp);
             Assert.AreEqual(2, used);
             Assert.AreEqual(0, battle.CardUsage.RemainingCount);
@@ -2036,9 +2042,9 @@ namespace Olca.Tests.Application
                 battle.Player.TakeDamage(10, affectsPoise: false);
                 battle.Player.Heal(7);
             });
-            Assert.AreEqual(52, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.BarrierHp);
+            Assert.AreEqual(57, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.BarrierHp);
             session.ProcessLogicalFrame(() => { battle.Player.TakeDamage(1000); battle.Player.Heal(1); });
-            Assert.AreEqual(53, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.AccumulatedDamage);
+            Assert.AreEqual(58, battle.Player.CurrentHp); Assert.AreEqual(0, battle.Player.AccumulatedDamage);
             session.Detach();
         }
 

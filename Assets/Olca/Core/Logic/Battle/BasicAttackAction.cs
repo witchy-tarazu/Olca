@@ -13,14 +13,18 @@ namespace Olca.Core.Logic.Battle
         private readonly ElementType attackElement;
         private readonly AttackProperty attackProperties;
         private readonly int cooldownMs;
+        private readonly System.Action<PlayerCharacter> onHit;
+        private readonly int hitInvincibilityMs;
 
         /// <summary>
         /// コンストラクタ - ミリ秒版
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldownMs">攻撃後のクールダウン時間（ミリ秒）</param>
-        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
+        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, System.Action<PlayerCharacter> onHit = null, int hitInvincibilityMs = 0)
         {
+            if (hitInvincibilityMs < 0) throw new System.ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
+            this.onHit = onHit; this.hitInvincibilityMs = hitInvincibilityMs;
             if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
             this.poiseDamage = poiseDamage;
             AttackPropertyRules.Validate(attackProperties);
@@ -35,8 +39,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldown">攻撃後のクールダウン時間（秒）</param>
-        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
-            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties, poiseDamage)
+        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, System.Action<PlayerCharacter> onHit = null, int hitInvincibilityMs = 0)
+            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties, poiseDamage, onHit, hitInvincibilityMs)
         {
         }
 
@@ -59,7 +63,11 @@ namespace Olca.Core.Logic.Battle
         {
             if (context.Player == null) return;
 
-            context.Player.TakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage);
+            if (context.Player.TryTakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage))
+            {
+                onHit?.Invoke(context.Player);
+                if (hitInvincibilityMs > 0) context.Player.SetInvincible(hitInvincibilityMs);
+            }
             context.Logger?.LogInfo($"{context.Self.Name}が{attackDamage}ダメージを与えた");
         }
 

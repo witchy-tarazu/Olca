@@ -61,7 +61,7 @@ namespace Olca.Tests.CardEffects
                 Assert.AreEqual(1f, player.CustomSpeed);
             };
             if (victory) battle.Enemies[0].TakeDamage(1000, ElementType.None);
-            else player.TakeDamage(1000);
+            else { player.TakeDamage(1000); Assert.IsFalse(notified); player.TakeDamage(1000); }
             Assert.IsTrue(notified);
         }
 

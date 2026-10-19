@@ -353,8 +353,8 @@ namespace Olca.Tests.Battle
             Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(10, player.BarrierHp);
             Assert.AreEqual(0, player.AccumulatedDamage);
             player.TakeDamage(15, attackProperties: AttackProperty.Sword | AttackProperty.Break);
-            Assert.AreEqual(95, player.CurrentHp); Assert.AreEqual(0, player.BarrierHp);
-            Assert.AreEqual(5, player.AccumulatedDamage);
+            Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, player.BarrierHp);
+            Assert.AreEqual(0, player.AccumulatedDamage);
         }
 
         [Test]
