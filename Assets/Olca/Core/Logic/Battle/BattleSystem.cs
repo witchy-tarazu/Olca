@@ -269,11 +269,13 @@ namespace Olca.Core.Logic.Battle
                 // プレイヤーの無敵時間ティック処理
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
                 player.TickStagger(deltaTimeMs, logicalFrameTick);
+                player.TickProtection(deltaTimeMs, logicalFrameTick);
 
                 // 敵の状態異常ティック処理（毒ダメージ等）
                 foreach (var enemy in tickParticipants)
                 {
                     if (enemy.IsDead) continue;
+                    enemy.TickProtection(deltaTimeMs, logicalFrameTick);
                     int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
                     if (poisonDamage > 0) enemy.TakePoisonDamage(poisonDamage);
                 }

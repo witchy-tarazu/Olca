@@ -27,13 +27,10 @@ namespace Olca.Core.Domain
     /// <summary>外部指定のガード判定。発生元・期間・入力は所有しない。</summary>
     public sealed class BattleGuardState
     {
-        internal System.Func<bool> CanActivate;
         public bool IsActive { get; private set; }
         public bool InterruptOnStagger { get; private set; }
         public void Set(bool active, bool interruptOnStagger)
         {
-            if (active && CanActivate != null && !CanActivate())
-                throw new System.InvalidOperationException("ガードとバリア・オーラの優先順は未対応です");
             IsActive = active; InterruptOnStagger = active && interruptOnStagger;
         }
         public void Clear() => Set(false, false);
@@ -46,22 +43,49 @@ namespace Olca.Core.Domain
         }
     }
 
-    /// <summary>敵味方共通の単独防御判定。本体耐性・攻撃性質には依存しない。</summary>
-    internal static class BattleProtectionRules
+    /// <summary>敵味方共通。フレーム中は全ヒットを防ぎ、合計で終端の消滅を決める。</summary>
+    internal sealed class BattleProtectionState
     {
-        internal static bool BlockBarrier(int damage, bool grass, ref int hp)
+        internal int BarrierHp { get; private set; }
+        internal int AuraThreshold { get; private set; }
+        private bool frameOpen, appliedThisFrame, expires;
+        private long frameDamage;
+        private FrameCountdown timer;
+        private bool timed;
+        internal void Set(int value, bool aura, int? durationFrames = null)
         {
-            if (hp <= 0 || damage <= 0) return false;
+            if (value < 0 || durationFrames <= 0) throw new System.ArgumentOutOfRangeException();
+            BarrierHp = aura ? 0 : value; AuraThreshold = aura ? value : 0;
+            timed = value > 0 && durationFrames.HasValue;
+            timer.SetFrames(timed ? durationFrames.Value : 0);
+            frameDamage = 0; expires = false; appliedThisFrame = frameOpen;
+        }
+        internal void Clear() => Set(0, false);
+        internal void BeginFrame() { frameOpen = true; appliedThisFrame = expires = false; frameDamage = 0; }
+        internal void CommitFrame()
+        {
+            if (BarrierHp > 0) BarrierHp = (int)System.Math.Max(0L, BarrierHp - frameDamage);
+            if (AuraThreshold > 0 && frameDamage >= AuraThreshold) AuraThreshold = 0;
+            frameOpen = false; frameDamage = 0;
+            if (expires || (BarrierHp == 0 && AuraThreshold == 0)) Clear();
+        }
+        internal bool Block(int damage, bool grass)
+        {
+            if (damage <= 0 || (BarrierHp == 0 && AuraThreshold == 0)) return false;
             int adjusted = ElementResistances.Neutral.CalculateDamage(damage, ElementType.None, grass);
-            hp = System.Math.Max(0, hp - adjusted);
+            if (frameOpen) frameDamage = System.Math.Min(int.MaxValue, frameDamage + adjusted);
+            else
+            {
+                if (BarrierHp > 0) BarrierHp = System.Math.Max(0, BarrierHp - adjusted);
+                if (AuraThreshold > 0 && adjusted >= AuraThreshold) AuraThreshold = 0;
+            }
             return true;
         }
-        internal static bool BlockAura(int damage, bool grass, ref int threshold)
+        internal void Tick(int ms, bool logical)
         {
-            if (threshold <= 0 || damage <= 0) return false;
-            int adjusted = ElementResistances.Neutral.CalculateDamage(damage, ElementType.None, grass);
-            if (adjusted >= threshold) threshold = 0;
-            return true;
+            if (!timed || appliedThisFrame) return;
+            if (logical) timer.TickFrame(); else timer.Tick(ms);
+            if (!timer.IsActive) { if (frameOpen) expires = true; else Clear(); }
         }
     }
 

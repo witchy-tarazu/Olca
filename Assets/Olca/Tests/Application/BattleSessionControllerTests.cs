@@ -2361,8 +2361,8 @@ namespace Olca.Tests.Application
                     ResistanceCardTrace(fps, true, restore, resistance, power, properties, protection: protection, aura: aura));
         }
 
-        [TestCase(false, 15, 100, 0)][TestCase(false, 10, 90, 7)]
-        [TestCase(true, 11, 100, 0)][TestCase(true, 10, 90, 7)]
+        [TestCase(false, 15, 100, 0)][TestCase(false, 10, 100, 0)]
+        [TestCase(true, 11, 100, 0)][TestCase(true, 10, 100, 0)]
         public void 敵防御への通常多段カードは防いだ段の派生と削りを抑止する(bool aura, int protection, int hp, int impact)
         {
             var enemy = new Enemy("protected", "検証", 100, ElementType.None, new Vector2Int(3, 0),
@@ -2701,7 +2701,7 @@ namespace Olca.Tests.Application
             battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); player.MoveTo(new Vector2Int(2, 0));
             foreach (var enemy in battle.Enemies) { enemy.ApplyStun(60000); enemy.MoveTo(new Vector2Int(5, 0)); }
             Assert.IsFalse(player.HasAura); player.SetAura(threshold);
-            // 通常AIから同フレーム2発。基準10以下なら一発目で消滅し、二発目だけ通る。
+            // 通常AIから同フレーム2発。同フレーム合計20で消滅するが両方を防ぐ。
             for (int i = 0; i < 2; i++) battle.AddSummon(new Enemy("poise-fixture-" + i, "検証", 10,
                 ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),
                 new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, ElementType.Fire, poiseDamage: 7) });
@@ -2721,10 +2721,10 @@ namespace Olca.Tests.Application
                 clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
-            Assert.AreEqual(threshold <= 10 ? 95 : 100, player.CurrentHp); Assert.AreEqual(threshold <= 10 ? 1 : 0, hpNotices);
-            Assert.AreEqual(threshold <= 10 ? 0 : threshold, player.AuraThreshold);
+            Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, hpNotices);
+            Assert.AreEqual(0, player.AuraThreshold);
             Assert.AreEqual(0, staggered);
-            Assert.AreEqual(threshold <= 10 ? 7 : 0, player.AccumulatedDamage);
+            Assert.AreEqual(0, player.AccumulatedDamage);
             var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
             Assert.AreEqual(saved.Sequence, after.Sequence); Assert.AreEqual(saved.MapHash, after.MapHash);
             Assert.AreEqual(saved.Player.FireResistance, after.Player.FireResistance);

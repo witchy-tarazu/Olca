@@ -54,17 +54,18 @@ namespace Olca.Tests.Battle
         }
 
         [TestCase(false)][TestCase(true)]
-        public void 敵防御は戦闘終了で解除し未規定共存と標準保存への混入を拒否する(bool aura)
+        public void 敵防御はガード併用と再付与置換に対応し標準保存には混ぜない(bool aura)
         {
             if (aura) enemy.SetAura(10); else enemy.SetBarrier(10);
-            Assert.Throws<System.InvalidOperationException>(() => enemy.Guard.Set(true, false));
-            if (aura) Assert.Throws<System.InvalidOperationException>(() => enemy.SetBarrier(10));
-            else Assert.Throws<System.InvalidOperationException>(() => enemy.SetAura(10));
+            enemy.Guard.Set(true, false);
+            enemy.TakeDamage(100, ElementType.None);
+            Assert.AreEqual(10, aura ? enemy.AuraThreshold : enemy.BarrierHp);
+            enemy.TakeDamage(1, ElementType.None, AttackProperty.Break);
+            Assert.AreEqual(aura ? 10 : 9, aura ? enemy.AuraThreshold : enemy.BarrierHp);
+            enemy.SetBarrier(20); enemy.SetAura(30); Assert.AreEqual(0, enemy.BarrierHp);
+            Assert.AreEqual(30, enemy.AuraThreshold); Assert.IsTrue(enemy.Guard.IsActive);
             var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { enemy }, new Deck());
             battle.Player.TakeDamage(1000); Assert.IsFalse(enemy.HasBarrier); Assert.IsFalse(enemy.HasAura);
-            enemy.Guard.Set(true, false);
-            Assert.Throws<System.InvalidOperationException>(() => enemy.SetBarrier(10));
-            Assert.Throws<System.InvalidOperationException>(() => enemy.SetAura(10));
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
             if (aura) map.MapCells[5].Enemy.SetAura(10); else map.MapCells[5].Enemy.SetBarrier(10);
             Assert.Throws<System.ArgumentException>(() => Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, new Deck()));

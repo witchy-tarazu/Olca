@@ -34,6 +34,39 @@ namespace Olca.Tests.CardEffects
             battle = new BattleSystem(player, enemies, deck, logger: new MockLogger());
         }
 
+        [TestCase(false, false)][TestCase(false, true)][TestCase(true, false)][TestCase(true, true)]
+        public void 防御の消滅フレームは合計判定で全攻撃を防ぎ次フレームから通す(bool enemySide, bool aura)
+        {
+            var enemy = battle.Enemies[0]; int initial = enemySide ? enemy.CurrentHp : player.CurrentHp;
+            if (enemySide) { if (aura) enemy.SetAura(15); else enemy.SetBarrier(15); }
+            else { if (aura) player.SetAura(15); else player.SetBarrier(15); }
+            System.Action<int> hit = damage => { if (enemySide) enemy.TakeDamage(damage, ElementType.None); else player.TakeDamage(damage); };
+            battle.RunLogicalFrame(() => { hit(6); hit(6); hit(6); });
+            Assert.AreEqual(initial, enemySide ? enemy.CurrentHp : player.CurrentHp);
+            Assert.AreEqual(0, enemySide ? enemy.AuraThreshold + enemy.BarrierHp : player.AuraThreshold + player.BarrierHp);
+            battle.RunLogicalFrame(() => hit(1));
+            Assert.AreEqual(initial - 1, enemySide ? enemy.CurrentHp : player.CurrentHp);
+        }
+
+        [TestCase(false, false)][TestCase(false, true)][TestCase(true, false)][TestCase(true, true)]
+        public void 防御の外部指定期間はポーズ中停止し期限フレーム終端で解除する(bool enemySide, bool aura)
+        {
+            var enemy = battle.Enemies[0]; enemy.ApplyStun(60000);
+            if (enemySide) { if (aura) enemy.SetAura(15, 2); else enemy.SetBarrier(15, 2); }
+            else { if (aura) player.SetAura(15, 2); else player.SetBarrier(15, 2); }
+            System.Func<bool> active = () => enemySide ? enemy.HasAura || enemy.HasBarrier : player.HasAura || player.HasBarrier;
+            battle.Pause(BattlePauseReason.User);
+            for (int f = 0; f < 5; f++) battle.TickFrame(17);
+            Assert.IsTrue(active()); battle.Resume(BattlePauseReason.User);
+            battle.TickFrame(17); Assert.IsTrue(active());
+            battle.RunLogicalFrame(() => {
+                battle.TickFrame(17); Assert.IsTrue(active(), "期限フレーム途中は防御を維持");
+                if (enemySide) enemy.TakeDamage(1, ElementType.None); else player.TakeDamage(1);
+            });
+            Assert.IsFalse(active());
+            Assert.AreEqual(enemySide ? 50 : 100, enemySide ? enemy.CurrentHp : player.CurrentHp);
+        }
+
         [TestCase(9, 10)][TestCase(10, 0)][TestCase(11, 0)]
         public void オーラは基準未満を維持し同値以上の一発も全防御する(int damage, int remaining)
         {
@@ -67,17 +100,13 @@ namespace Olca.Tests.CardEffects
         }
 
         [Test]
-        public void オーラの未規定な共存再付与と変身は副作用前に拒否する()
+        public void オーラとバリアの再付与は置換し変身競合だけを拒否する()
         {
-            player.SetAura(10);
-            Assert.Throws<System.InvalidOperationException>(() => player.SetAura(20));
-            Assert.Throws<System.InvalidOperationException>(() => player.SetBarrier(20));
+            player.SetAura(10); player.SetAura(20); Assert.AreEqual(20, player.AuraThreshold);
+            player.SetBarrier(30); Assert.IsFalse(player.HasAura); Assert.AreEqual(30, player.BarrierHp);
+            player.SetAura(10); Assert.IsFalse(player.HasBarrier);
             Assert.Throws<System.InvalidOperationException>(() => player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Fire));
-            Assert.AreEqual(10, player.AuraThreshold); Assert.AreEqual(0, player.BarrierHp); Assert.IsFalse(player.HasTransformationDefense);
-            player.SetAura(0); player.SetBarrier(20);
-            Assert.Throws<System.InvalidOperationException>(() => player.SetAura(10));
-            Assert.AreEqual(20, player.BarrierHp); Assert.IsFalse(player.HasAura);
-            player.SetBarrier(0); player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Fire);
+            player.SetAura(0); player.BeginTransformationDefense(ElementResistances.Neutral, ElementType.Fire);
             Assert.Throws<System.InvalidOperationException>(() => player.SetAura(10));
             Assert.IsTrue(player.HasTransformationDefense); Assert.IsFalse(player.HasAura);
             Assert.Throws<System.ArgumentOutOfRangeException>(() => player.SetAura(-1));
@@ -118,15 +147,15 @@ namespace Olca.Tests.CardEffects
                 onHit: _ => effects++, hitInvincibilityMs: 100);
             var context = new AIContext(battle.Enemies[0], player, battle.Field, new MockRandomProvider(), new MockLogger());
             System.Action hits = () => {
-                ai.Execute(context); Assert.AreEqual(5, player.BarrierHp);
-                ai.Execute(context); Assert.AreEqual(0, player.BarrierHp);
+                ai.Execute(context); Assert.AreEqual(logical ? 15 : 5, player.BarrierHp);
+                ai.Execute(context); Assert.AreEqual(logical ? 15 : 0, player.BarrierHp);
                 Assert.AreEqual(0, effects); Assert.AreEqual(0, player.AccumulatedDamage);
                 Assert.IsFalse(player.IsInvincible);
                 ai.Execute(context);
             };
             if (logical) battle.RunLogicalFrame(hits); else hits();
-            Assert.AreEqual(90, player.CurrentHp); Assert.AreEqual(1, effects);
-            Assert.AreEqual(7, player.AccumulatedDamage); Assert.IsTrue(player.IsInvincible);
+            Assert.AreEqual(logical ? 100 : 90, player.CurrentHp); Assert.AreEqual(logical ? 0 : 1, effects);
+            Assert.AreEqual(logical ? 0 : 7, player.AccumulatedDamage); Assert.AreEqual(!logical, player.IsInvincible);
         }
 
         [TestCase(false)][TestCase(true)]
@@ -148,10 +177,9 @@ namespace Olca.Tests.CardEffects
             player.SetHp(20); player.SetBarrier(1); player.SetInvincible(100);
             player.TakePoisonDamage(5);
             Assert.AreEqual(15, player.CurrentHp); Assert.AreEqual(1, player.BarrierHp);
-            player.TickInvincible(100);
+            player.TickInvincible(100); player.SetBarrier(0);
             battle.RunLogicalFrame(() => {
                 player.TakePoisonDamage(100);
-                player.TakeDamage(100); // バリア破壊の一発は通さない。
                 if (withAttack) player.TakeDamage(1);
             });
             Assert.AreEqual(withAttack ? 0 : 1, player.CurrentHp);

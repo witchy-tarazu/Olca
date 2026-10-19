@@ -26,25 +26,15 @@ namespace Olca.Core.Domain
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
         public BattleGuardState Guard { get; } = new BattleGuardState();
-        private int barrierHp, auraThreshold;
-        public int BarrierHp => barrierHp;
-        public bool HasBarrier => barrierHp > 0;
-        public int AuraThreshold => auraThreshold;
-        public bool HasAura => auraThreshold > 0;
-        public void SetBarrier(int hp)
-        {
-            if (hp > 0 && (HasAura || Guard.IsActive))
-                throw new InvalidOperationException("バリアとオーラ・ガードの共存は未対応です");
-            barrierHp = Math.Max(0, hp);
-        }
-        public void SetAura(int threshold)
-        {
-            if (threshold < 0) throw new ArgumentOutOfRangeException(nameof(threshold));
-            if (threshold > 0 && (HasAura || HasBarrier || Guard.IsActive))
-                throw new InvalidOperationException("オーラの共存・再付与は未対応です");
-            auraThreshold = threshold;
-        }
-        internal void ClearProtection() { barrierHp = auraThreshold = 0; }
+        private readonly BattleProtectionState protection = new BattleProtectionState();
+        public int BarrierHp => protection.BarrierHp;
+        public bool HasBarrier => BarrierHp > 0;
+        public int AuraThreshold => protection.AuraThreshold;
+        public bool HasAura => AuraThreshold > 0;
+        public void SetBarrier(int hp, int? durationFrames = null) => protection.Set(Math.Max(0, hp), false, durationFrames);
+        public void SetAura(int threshold, int? durationFrames = null) => protection.Set(threshold, true, durationFrames);
+        internal void ClearProtection() => protection.Clear();
+        internal void TickProtection(int ms, bool logical) => protection.Tick(ms, logical);
         public ElementResistances Resistances { get; }
         public TimedStatusResistances StatusResistances { get; }
         public EnemyPoiseDefinition PoiseDefinition { get; }
@@ -91,10 +81,11 @@ namespace Olca.Core.Domain
         internal long TotalDamageTaken { get; private set; }
         internal long TotalHitsTaken { get; private set; }
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); framePoiseDamage = 0; frameStaggered = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); framePoiseDamage = 0; frameStaggered = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
+            protection.CommitFrame();
             frameStaggered = ApplyPoise(framePoiseDamage);
             if (IsDead) ClearDeathReaction();
             framePoiseDamage = 0;
@@ -206,7 +197,6 @@ namespace Olca.Core.Domain
         /// </summary>
         public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null)
         {
-            Guard.CanActivate = () => !HasBarrier && !HasAura;
             PoiseDefinition = poiseDefinition; Poise = poiseDefinition?.Maximum;
             Resistances = resistances ?? ElementResistances.Neutral;
             StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
@@ -243,13 +233,12 @@ namespace Olca.Core.Domain
 
                 // 属性相性によるダメージ補正
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
-                if (!poison && (BattleProtectionRules.BlockAura(damage, grass, ref auraThreshold) ||
-                    BattleProtectionRules.BlockBarrier(damage, grass, ref barrierHp))) return;
+                // ガードを先に判定。通過したヒットだけ防御のフレーム合計へ入れる。
+                if (!poison && Guard.Blocks(damage, properties)) return;
+                if (!poison && protection.Block(damage, grass)) return;
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
                 if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。
-                // 防いだ攻撃は命中/実ダメージ派生にも進めない。毒はガード判定の対象外。
-                if (!poison && Guard.Blocks(damage, properties)) return;
 
                 if (poison)
                     finalDamage = frameHp.Active ? frameHp.Poison(finalDamage) : Math.Min(finalDamage, Math.Max(0, currentHp - 1));

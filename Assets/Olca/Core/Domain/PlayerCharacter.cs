@@ -65,10 +65,11 @@ namespace Olca.Core.Domain
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
+            protection.CommitFrame();
             if (framePoiseHit)
             {
                 long total = (long)accumulatedDamage + framePoiseDamage;
@@ -101,7 +102,7 @@ namespace Olca.Core.Domain
         private int accumulatedDamage;  // 現在行動中の累計ダメージ
         private Vector2Int gridPosition;
         private Vector2Int? temporaryPosition;
-        private int barrierHp;          // バリア（ダメージを吸収するHP）
+        private readonly BattleProtectionState protection = new BattleProtectionState();
         private FrameCountdown invincibilityTimer; // 無敵残り時間（固定精度）
         private float nextCardMultiplier = 1.0f; // 次カード威力倍率（集中バフ）
 
@@ -140,22 +141,21 @@ namespace Olca.Core.Domain
         public bool IsInTemporaryMove => temporaryPosition.HasValue;
 
         /// <summary>バリアHP</summary>
-        public int BarrierHp => barrierHp;
+        public int BarrierHp => protection.BarrierHp;
 
         /// <summary>バリアを持っているか</summary>
-        public bool HasBarrier => barrierHp > 0;
-        private int auraThreshold;
-        public int AuraThreshold => auraThreshold;
+        public bool HasBarrier => BarrierHp > 0;
+        public int AuraThreshold => protection.AuraThreshold;
         public bool HasAura => AuraThreshold > 0;
 
-        /// <summary>外部指定の単独オーラ。共存・再付与の未規定状態は変更前に拒否する。0は解除。</summary>
-        public void SetAura(int threshold)
+        /// <summary>外部指定オーラで現在の防御を置換。期間未指定は時間制限なし。</summary>
+        public void SetAura(int threshold, int? durationFrames = null)
         {
-            if (threshold < 0) throw new ArgumentOutOfRangeException(nameof(threshold));
-            if (threshold > 0 && (HasAura || HasBarrier || HasTransformationDefense || HasTransformationPreview))
-                throw new InvalidOperationException("オーラの共存・再付与・変身優先順は未対応です");
-            auraThreshold = threshold;
+            if (threshold > 0 && (HasTransformationDefense || HasTransformationPreview))
+                throw new InvalidOperationException("オーラと変身の優先順は未対応です");
+            protection.Set(threshold, true, durationFrames);
         }
+        internal void TickProtection(int ms, bool logical) => protection.Tick(ms, logical);
 
         /// <summary>無敵中か</summary>
         public bool IsInvincible => frameHp.Active ? frameInvincible : invincibilityTimer.IsActive;
@@ -232,14 +232,14 @@ namespace Olca.Core.Domain
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
-                if (BattleProtectionRules.BlockAura(damage, grass, ref auraThreshold)) return false;
+                if (HasAura && protection.Block(damage, grass)) return false;
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 // 変身解除は既存の弱点規則を維持し、バリアの耐久計算とは分ける。
                 breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
                 // 元から威力0の状態専用ヒットはバリアを通過する。
-                if (BattleProtectionRules.BlockBarrier(damage, grass, ref barrierHp)) return false;
+                if (HasBarrier && protection.Block(damage, grass)) return false;
                 damage = bodyDamage;
                 if (originalDamage > 0 && damage == 0) return false; // 耐性無効は強靭度・付随効果へ進めない。
 
@@ -327,10 +327,9 @@ namespace Olca.Core.Domain
         /// バリアを設定する（上書き）
         /// </summary>
         /// <param name="hp">バリアHP</param>
-        public void SetBarrier(int hp)
+        public void SetBarrier(int hp, int? durationFrames = null)
         {
-            if (hp > 0 && HasAura) throw new InvalidOperationException("バリアとオーラの共存は未対応です");
-            barrierHp = Math.Max(0, hp);
+            protection.Set(Math.Max(0, hp), false, durationFrames);
         }
 
         /// <summary>
