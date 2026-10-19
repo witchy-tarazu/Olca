@@ -234,6 +234,8 @@ namespace Olca.Application.Dungeon
             var store = new FileCheckpointStore(definitions, CheckpointDirectory);
             memoryCheckpoints = new DungeonCheckpointSession(definitions, store);
             awaitingCheckpointChoice = store.HasExistingData;
+            // 現行の出撃は単階層。旧保存の読込へ新規出撃条件を遡及適用しない。
+            if (!awaitingCheckpointChoice) dungeonConfig.ValidateFinalFloorForDeparture();
             manager = new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,

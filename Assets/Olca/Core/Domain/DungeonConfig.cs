@@ -28,6 +28,28 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>
+        /// 新規出撃の最終階層を検証する。旧保存の読込や中間階層の定義には適用しない。
+        /// 現在の単階層出撃では、その1階層が最終階層となる。
+        /// </summary>
+        public void ValidateFinalFloorForDeparture()
+        {
+            if (TotalCellCount <= 0 || MapCells.Count != TotalCellCount)
+                throw new System.ArgumentException("最終階層のマップ定義が不完全です");
+            bool hasBoss = false;
+            for (int i = 0; i < MapCells.Count; i++)
+            {
+                var cell = MapCells[i];
+                if (cell == null || cell.Index != i)
+                    throw new System.ArgumentException("最終階層のセル配置が不整合です");
+                if (cell.Type != CellType.Boss) continue;
+                if (cell.Enemy == null || cell.Enemy.IsDead || cell.Enemy.IsSummoned)
+                    throw new System.ArgumentException("最終階層には生存した本体ボスの定義が必要です");
+                hasBoss = true;
+            }
+            if (!hasBoss) throw new System.ArgumentException("最終階層にはボスが必要です。ボスのいない中間階層を単階層出撃に設定できません");
+        }
+
+        /// <summary>
         /// テスト用の簡易ダンジョン生成
         /// </summary>
         /// <param name="cellCount">総マス数</param>

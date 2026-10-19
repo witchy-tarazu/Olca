@@ -137,6 +137,59 @@ namespace Olca.Tests.Integration
             }
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 単階層の新規出撃ではボス必須だが既存保存の再開条件は変更しない(bool existingSave)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-final-floor-" + System.Guid.NewGuid().ToString("N"));
+            var config = new DungeonConfig("legacy-floor", "検証", 3,
+                new List<MapCell> { new MapCell(0), new MapCell(1), new MapCell(2) });
+            var host = new UnityEngine.GameObject("final-floor-entry-test"); host.SetActive(false);
+            var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var type = controller.GetType(); controller.ConfigureDungeon(config); controller.ConfigureCheckpointDirectory(directory);
+            var deck = (Deck)type.GetMethod("CreateInitialDeck", flags).Invoke(controller, null);
+            var definitions = DungeonCheckpointSession.CreateDefault(config, deck).Definitions;
+            var files = new Olca.Unity.FileCheckpointStore(definitions, directory);
+            Dictionary<string, byte[]> before = null;
+            try
+            {
+                if (existingSave) {
+                    var player = new PlayerCharacter(100); player.TakeDamage(27);
+                    var legacy = new DungeonBattleManager(config, player, deck, new MockRandomProvider(), new MockLogger(),
+                        checkpoints: new DungeonCheckpointSession(definitions, files));
+                    Assert.IsFalse(legacy.Dungeon.IsCheckpointBlocked);
+                    before = System.IO.Directory.GetFiles(directory).ToDictionary(f => f, System.IO.File.ReadAllBytes);
+                    type.GetMethod("Start", flags).Invoke(controller, null);
+                    Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+                    var resumed = (DungeonBattleManager)type.GetField("manager", flags).GetValue(controller);
+                    Assert.AreEqual(73, resumed.Dungeon.Player.CurrentHp); Assert.AreEqual(GamePhase.Dungeon, resumed.CurrentPhase);
+                    foreach (var file in before) CollectionAssert.AreEqual(file.Value, System.IO.File.ReadAllBytes(file.Key));
+                }
+                else {
+                    var exception = Assert.Throws<System.Reflection.TargetInvocationException>(() => type.GetMethod("Start", flags).Invoke(controller, null));
+                    Assert.IsInstanceOf<System.ArgumentException>(exception.InnerException);
+                    StringAssert.Contains("最終階層にはボスが必要", exception.InnerException.Message);
+                    Assert.IsNull(type.GetField("manager", flags).GetValue(controller));
+                    Assert.IsFalse(files.HasExistingData, "不正な出撃から保存を生成しない");
+                }
+            }
+            finally {
+                UnityEngine.Object.DestroyImmediate(host);
+                if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
+            }
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 最終階層のボスは生存本体を必要とし検証で配置を変更しない(bool summoned)
+        {
+            var config = DungeonConfig.CreateTestDungeon(3); config.ValidateFinalFloorForDeparture();
+            var boss = new Enemy("boss", "検証", 50, ElementType.None, new Vector2Int(2, 0), isSummoned: summoned);
+            if (!summoned) boss.TakeDamage(50, ElementType.None);
+            config.MapCells[2] = new MapCell(2, boss);
+            Assert.Throws<System.ArgumentException>(() => config.ValidateFinalFloorForDeparture());
+            Assert.AreSame(boss, config.MapCells[2].Enemy);
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 
@@ -1047,6 +1100,36 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), session.Definitions, out var terminalState, out var error), error);
             Assert.Throws<System.ArgumentException>(() => new DungeonBattleManager(terminalState.Map, terminalState.Player,
                 terminalState.Deck, random, new MockLogger(), checkpoints: session, restoration: terminalState));
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 最終ボス報酬の再開と終了保存の失敗再試行でもクリア通知と獲得は一度だけ(bool skip)
+        {
+            var config = DungeonConfig.CreateTestDungeon(4); config.ValidateFinalFloorForDeparture();
+            var deck = new Deck(); var defaults = DungeonCheckpointSession.CreateDefault(config, deck);
+            store = new FailingStore(defaults.Definitions); session = new DungeonCheckpointSession(defaults.Definitions, store);
+            random = new SeedRandom(); manager = new DungeonBattleManager(config, new PlayerCharacter(100), deck, random, new MockLogger(), checkpoints: session);
+            for (int i = 0; i < 60 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle); List<Card> choices = null;
+            manager.OnCardRewardPresented += cards => choices = cards.ToList(); Win();
+            Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase); Assert.IsNotNull(choices);
+            var ids = choices.Select(c => c.Id).ToArray(); Restore();
+            manager.OnCardRewardPresented += cards => choices = cards.ToList(); Win();
+            CollectionAssert.AreEqual(ids, choices.Select(c => c.Id));
+            int clears = 0; manager.OnDungeonClearCompleted += cards => {
+                clears++; Assert.AreEqual(CheckpointBoundary.Terminal, store.Read().Boundary);
+                manager.SelectCardReward(null); manager.Dungeon.OnCardSelectionCompleted(null);
+                Assert.IsFalse(manager.RetryCheckpoint());
+            };
+            var old = store.Read(); store.Fail = true; manager.SelectCardReward(skip ? null : choices[0]);
+            Assert.AreEqual(0, clears); Assert.AreEqual(0, manager.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(old.Sequence, store.Read().Sequence); Assert.IsFalse(manager.SuspendForCheckpoint());
+            manager.TickFrame(17); manager.SelectCardReward(choices[0]); Assert.AreEqual(0, clears);
+            store.Fail = false; Assert.IsTrue(manager.RetryCheckpoint());
+            Assert.AreEqual(1, clears); Assert.AreEqual(skip ? 0 : 1, manager.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(GamePhase.DungeonCleared, manager.CurrentPhase);
+            manager.TickFrame(17); manager.SelectCardReward(null); Assert.AreEqual(1, clears);
+            Assert.IsFalse(DungeonBattleManager.TryRestoreCheckpoint(session, random, new MockLogger(), out _, out _));
         }
 
         [Test]
