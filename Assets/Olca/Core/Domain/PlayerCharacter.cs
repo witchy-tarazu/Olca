@@ -48,9 +48,16 @@ namespace Olca.Core.Domain
 
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
         private bool frameInvincible, frameStaggered;
+        private int pendingInvincibilityMs;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameStaggered = false; }
-        internal void CommitHpFrame() { currentHp = frameHp.Commit(currentHp, maxHp); }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; }
+        internal void CommitHpFrame()
+        {
+            currentHp = frameHp.Commit(currentHp, maxHp);
+            // 新規付与を当該フレームのTickで消費せず、次フレームへ全期間を渡す。
+            if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
+            pendingInvincibilityMs = 0;
+        }
         internal void PublishHpFrame()
         {
             bool changed = frameHp.TakeNotification(out bool died);
@@ -264,6 +271,7 @@ namespace Olca.Core.Domain
         public void SetInvincible(int durationMs)
         {
             if (durationMs <= 0) return;
+            if (frameHp.Active) { pendingInvincibilityMs = Math.Max(pendingInvincibilityMs, durationMs); return; }
             invincibilityTimer.ExtendMilliseconds(durationMs);
         }
 

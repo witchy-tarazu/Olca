@@ -1669,5 +1669,59 @@ namespace Olca.Tests.Application
             Assert.AreEqual(1, enemy.CurrentHp); Assert.AreEqual(0, hits); Assert.AreEqual(0, notices);
         }
 
+        private List<string> InvincibilityDurationTrace(int fps, bool stall, int durationMs, int durationFrames, bool afterTick)
+        {
+            var (battle, enemy, session) = StatusBattle(); enemy.ApplyStun(60000);
+            var trace = new List<string>(); var clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
+            int hp = battle.Player.CurrentHp;
+            Action<long, int> tick = (frame, ms) => {
+                bool protectedFrame = frame >= 2 && frame <= durationFrames + 1;
+                session.ProcessLogicalFrame(() => {
+                    if (frame == 1 && !afterTick) battle.Player.SetInvincible(durationMs);
+                    Assert.AreEqual(protectedFrame, battle.Player.IsInvincible, "入力段の防御: " + frame);
+                    if (frame <= durationFrames + 3) battle.Player.TakeDamage(1, affectsPoise: false);
+                    battle.TickFrame(ms);
+                    if (frame == 1 && afterTick) battle.Player.SetInvincible(durationMs);
+                    Assert.AreEqual(protectedFrame, battle.Player.IsInvincible, "Tick後も同じ防御: " + frame);
+                    if (frame <= durationFrames + 3) battle.Player.TakeDamage(1, affectsPoise: false);
+                });
+                if (!protectedFrame && frame <= durationFrames + 3) hp -= 2;
+                Assert.AreEqual(hp, battle.Player.CurrentHp, "終端HP: " + frame);
+                Assert.AreEqual(frame <= durationFrames, battle.Player.IsInvincible, "終端残期間: " + frame);
+                trace.Add(frame + ":" + hp + ":" + battle.Player.IsInvincible);
+            };
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
+        [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
+        public void 新規無敵は入力とTickの順序によらず翌フレームから指定期間を守る(int fps, bool stall)
+        {
+            foreach (var duration in new[] { (ms: 16, frames: 1), (ms: 50, frames: 3), (ms: 100, frames: 6) })
+                foreach (bool afterTick in new[] { false, true })
+                    CollectionAssert.AreEqual(InvincibilityDurationTrace(60, false, duration.ms, duration.frames, false),
+                        InvincibilityDurationTrace(fps, stall, duration.ms, duration.frames, afterTick));
+        }
+
+        [Test]
+        public void 通常カードの命中通知から再入した被弾と回復も同じHP確定へ含める()
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            battle.Player.SetHp(10); int notices = 0, deaths = 0;
+            battle.Player.OnHpChanged += (_, __) => notices++; battle.Player.OnDeath += () => deaths++;
+            battle.Enemies[0].OnDamaged += (_, __) => { battle.Player.TakeDamage(20, affectsPoise: false); battle.Player.Heal(15); };
+            battle.CardUsage.EnqueueCards(new List<Card> { new Card("attack", "検証", 1, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.None, 1, "検証") });
+            session.ProcessLogicalFrame(() => { session.UseCardFromInput(); battle.TickFrame(17); Assert.AreEqual(10, battle.Player.CurrentHp); });
+            Assert.AreEqual(5, battle.Player.CurrentHp); Assert.AreEqual(1, notices); Assert.AreEqual(0, deaths);
+            Assert.AreEqual(49, battle.Enemies[0].CurrentHp); session.Detach();
+        }
+
     }
 }
