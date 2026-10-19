@@ -647,5 +647,40 @@ namespace Olca.Tests.Application
         public void 通常BattleSessionの状態境界は描画FPSと処理遅延に依存しない(int fps, bool stall)
         { CollectionAssert.AreEqual(StatusTrace(60, false), StatusTrace(fps, stall)); }
 
+        [Test]
+        public void プレイヤー死亡で終了した場合も生存敵への保留付与を取り消す()
+        {
+            var (battle, enemy, session) = StatusBattle();
+            session.ProcessLogicalFrame(() => {
+                UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison));
+                Assert.IsNull(enemy.ActiveStatus);
+                battle.Player.TakeDamage(1000);
+                battle.TickFrame(17);
+            });
+            Assert.AreEqual(BattleState.Defeat, battle.State);
+            Assert.IsFalse(enemy.IsDead);
+            Assert.IsNull(enemy.ActiveStatus);
+            session.ProcessLogicalFrame(() => battle.TickFrame(17));
+            Assert.IsNull(enemy.ActiveStatus, "終了後に保留が有効化されない");
+            session.Detach();
+        }
+
+        [Test]
+        public void 既存麻痺の明示解除フレームもAIは停止し次フレームに再開する()
+        {
+            var (battle, enemy, session) = StatusBattle();
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+            session.ProcessLogicalFrame(() => {
+                enemy.ClearStatus(StatusEffectType.Paralyze);
+                battle.TickFrame(17);
+                Assert.IsTrue(enemy.IsParalyzed);
+                Assert.AreEqual(1000, battle.Player.CurrentHp);
+            });
+            Assert.IsFalse(enemy.IsParalyzed);
+            session.ProcessLogicalFrame(() => battle.TickFrame(17));
+            Assert.AreEqual(990, battle.Player.CurrentHp, "解除の翌フレームに通常攻撃を再開");
+            session.Detach();
+        }
+
     }
 }
