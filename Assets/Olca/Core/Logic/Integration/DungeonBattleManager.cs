@@ -400,8 +400,10 @@ namespace Olca.Core.Logic.Integration
         public bool BasicAttackButton { get; set; }
         public float BasicAttackButtonHoldTime { get; set; }
         public bool CustomScreenButtonDown { get; set; }
+        public bool MenuConfirmButtonDown { get; set; }
+        public bool MenuDecideButtonDown { get; set; }
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { HorizontalDown = 0; JumpButtonDown = DashButtonDown = CardUseButtonDown = CustomScreenButtonDown = false; }
+        public void ClearEdges() { HorizontalDown = 0; JumpButtonDown = DashButtonDown = CardUseButtonDown = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = false; }
     }
 
     /// <summary>入力を論理フレームに割り当て、描画停止後の追いつき中にも一度だけ消費する。</summary>
@@ -429,6 +431,8 @@ namespace Olca.Core.Logic.Integration
                 next.DashButtonDown |= held.DashButtonDown;
                 next.CardUseButtonDown |= held.CardUseButtonDown;
                 next.CustomScreenButtonDown |= held.CustomScreenButtonDown;
+                next.MenuConfirmButtonDown |= held.MenuConfirmButtonDown;
+                next.MenuDecideButtonDown |= held.MenuDecideButtonDown;
                 if (next.HorizontalDown == 0) next.HorizontalDown = held.HorizontalDown;
                 held = next;
             }

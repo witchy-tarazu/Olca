@@ -50,6 +50,18 @@ namespace Olca.Presentation.CustomScreen
         [SerializeField] private Image customizeModeOverlay;          // モード中に画面全体にかける半透明オーバーレイ
 
         private CustomScreenSystem customScreen;
+        private System.Action<long, System.Action> queueConfirmation;
+        private System.Func<long> pointerClickTimestamp;
+        public void ConfigureLogicalConfirmation(System.Action<long, System.Action> queue, System.Func<long> pointerTimestamp)
+        { queueConfirmation = queue; pointerClickTimestamp = pointerTimestamp; }
+
+        public void HandleLogicalConfirmation(Olca.Core.Logic.Integration.LogicalInput input)
+        {
+            if (queueConfirmation == null || customScreen == null || !customScreen.IsOpen ||
+                Olca.Unity.GameplayPause.InputBlocked || (customizeModeView != null && customizeModeView.IsActive)) return;
+            if (input.MenuDecideButtonDown) OnDecidePressed(true);
+            if (input.MenuConfirmButtonDown) customScreen.Confirm();
+        }
         private List<HandCardView> handCardViews = new List<HandCardView>();
         private CancellationTokenSource animationCts;
         private CustomScreenCursor cursor;
@@ -245,14 +257,14 @@ namespace Olca.Presentation.CustomScreen
 
             // 決定（Space）
             // TODO: コントローラ対応時にAボタン（Fire1）の処理を追加
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (queueConfirmation == null && Input.GetKeyDown(KeyCode.Space))
             {
                 OnDecidePressed();
             }
 
             // ショートカット確定（Enter）
             // TODO: コントローラ対応時にStartボタン（Submit）の処理を追加
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            if (queueConfirmation == null && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
             {
                 if (customScreen.CanConfirm())
                 {
@@ -305,14 +317,14 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>
         /// 決定ボタンが押された
         /// </summary>
-        private void OnDecidePressed()
+        private void OnDecidePressed(bool logical = false)
         {
             if (cursor.IsOnConfirmButton)
             {
                 // 確定ボタンで決定 → 選択確定
                 if (customScreen.CanConfirm())
                 {
-                    OnConfirmClicked();
+                    if (logical) customScreen.Confirm(); else OnConfirmClicked();
                 }
             }
             else
@@ -1134,8 +1146,12 @@ namespace Olca.Presentation.CustomScreen
         private void OnConfirmClicked()
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
-            // 選択確定
-            customScreen.Confirm();
+            if (queueConfirmation == null) { customScreen.Confirm(); return; }
+            var requestedScreen = customScreen;
+            queueConfirmation(pointerClickTimestamp(), () => {
+                if (this == null || !ReferenceEquals(customScreen, requestedScreen) || Olca.Unity.GameplayPause.InputBlocked) return;
+                requestedScreen.Confirm();
+            });
         }
 
         private void OnConfirmed(List<Card> selectedCards)

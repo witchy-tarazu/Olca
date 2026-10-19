@@ -93,6 +93,38 @@ namespace Olca.Tests.Application
             waiting.SetResult(true);session.Detach();loop.Dispose();
         }
 
+        [TestCase(30,false,false)][TestCase(60,false,false)][TestCase(120,false,false)][TestCase(60,true,false)]
+        [TestCase(30,false,true)][TestCase(60,false,true)][TestCase(120,false,true)][TestCase(60,true,true)]
+        public void 同じ確定イベントなら描画頻度とbacklogによらず同じ論理フレームで再開する(int fps,bool backlog,bool keyboard)
+        {
+            var loop=new Olca.Unity.UnityLogicalLoop();long now=0;var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("observed",flags).SetValue(loop,0L);
+            var go=new UnityEngine.GameObject("confirmation-regression");
+            var actualView=go.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
+            var view=new MockBattleView();var battle=CreateBattleSystem();
+            var session=new BattleSessionController(view,actualView,new MockRandomProvider(0),new MockLogger(),(frames,action)=>loop.AfterFrames(frames,action),24);
+            typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("customScreen",flags).SetValue(actualView,battle.CustomScreen);
+            var click=typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetMethod("OnConfirmClicked",flags);
+            session.Attach(battle);battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);session.TryOpenCustomScreen();
+            long resumed=-1;bool sent=false;long eventAt=System.Diagnostics.Stopwatch.Frequency*105/1000;
+            actualView.ConfigureLogicalConfirmation(loop.QueueTimestampedCommand,()=>eventAt);
+            try {
+                Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+                for(int n=1;n<=fps*2;n++){
+                    now=backlog&&n==1?System.Diagnostics.Stopwatch.Frequency:Math.Max(now,System.Diagnostics.Stopwatch.Frequency*n/fps);
+                    var events=new List<Olca.Unity.TimestampedLogicalInput>();
+                    if(!sent&&now>=eventAt){
+                        if(keyboard) events.Add(new Olca.Unity.TimestampedLogicalInput(eventAt,new Olca.Core.Logic.Integration.LogicalInput { MenuConfirmButtonDown=true }));
+                        else click.Invoke(actualView,null);
+                        sent=true;
+                    }
+                    loop.PumpTimestamped(true,events,(frame,ms,input)=>{actualView.HandleLogicalConfirmation(input);battle.TickFrame(ms,input);if(!battle.IsPaused&&resumed<0)resumed=frame;});
+                }
+                Assert.AreEqual(31,resumed,"105ms確定は論理frame7、24frame後に再開");
+            } finally {session.Detach();loop.Dispose();UnityEngine.Object.DestroyImmediate(go);}
+        }
+
         // ==================== Attach / Detach ====================
 
         [Test]
