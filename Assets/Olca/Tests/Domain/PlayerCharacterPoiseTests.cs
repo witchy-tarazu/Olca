@@ -53,6 +53,17 @@ namespace Olca.Tests.Domain
             Assert.AreEqual(90, player.CurrentHp); Assert.AreEqual(7, player.AccumulatedDamage);
         }
 
+        [Test]
+        public void プレイヤー期間未指定は旧通知だけを維持し負の期間は拒否する()
+        {
+            var old = new PlayerCharacter(100); int notices = 0; old.OnStaggered += () => notices++;
+            old.TakeDamage(1, poiseDamage: 30); Assert.AreEqual(1, notices);
+            Assert.IsFalse(old.IsStaggered); Assert.AreEqual(0, old.StaggerRemainingFrames);
+            var configured = new PlayerCharacter(100, staggerDurationFrames: 6);
+            configured.TakeDamage(1, poiseDamage: 30); Assert.IsTrue(configured.IsStaggered); Assert.AreEqual(6, configured.StaggerRemainingFrames);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new PlayerCharacter(100, staggerDurationFrames: -1));
+        }
+
         // ========== 基本動作 ==========
 
         [Test]

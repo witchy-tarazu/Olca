@@ -48,12 +48,19 @@ namespace Olca.Core.Domain
         }
 
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
-        private bool frameInvincible, frameStaggered;
+        private bool frameInvincible, frameStaggered, frameWasStaggered;
+        private FrameCountdown staggerTimer;
+        public int StaggerDurationFrames { get; }
+        public int StaggerRemainingFrames => staggerTimer.Frames;
+        public bool IsStaggered => !IsDead && (frameHp.Active ? frameWasStaggered : staggerTimer.IsActive);
+        private void StartStagger() { if (StaggerDurationFrames > 0) staggerTimer.SetFrames(StaggerDurationFrames); }
+        internal void TickStagger(int ms, bool logical) { if (logical) staggerTimer.TickFrame(); else staggerTimer.Tick(ms); }
+        internal void ClearStagger() { staggerTimer.SetFrames(0); frameWasStaggered = false; }
         private int pendingInvincibilityMs;
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
@@ -64,6 +71,7 @@ namespace Olca.Core.Domain
                 {
                     accumulatedDamage = 0;
                     frameStaggered = !IsDead;
+                    if (frameStaggered) StartStagger();
                 }
                 else accumulatedDamage = (int)total;
             }
@@ -151,8 +159,8 @@ namespace Olca.Core.Domain
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
         /// <param name="poise">強靭度（デフォルト30）</param>
-        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30)
-            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise)
+        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0)
+            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise, staggerDurationFrames)
         {
         }
 
@@ -164,8 +172,10 @@ namespace Olca.Core.Domain
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
         /// <param name="poise">強靭度（デフォルト30）</param>
-        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30)
+        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0)
         {
+            if (staggerDurationFrames < 0) throw new ArgumentOutOfRangeException(nameof(staggerDurationFrames));
+            StaggerDurationFrames = staggerDurationFrames;
             this.maxHp = maxHp;
             this.currentHp = maxHp;
             this.attackPower = attackPower;
@@ -241,6 +251,7 @@ namespace Olca.Core.Domain
                         if (forceStagger || totalDamage >= poise)
                         {
                             accumulatedDamage = 0;
+                            StartStagger();
                             OnStaggered?.Invoke();
                         }
                         else accumulatedDamage = (int)totalDamage;

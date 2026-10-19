@@ -99,7 +99,7 @@ namespace Olca.Core.Logic.Battle
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
-            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => cardUsage.InFlightCard == null);
+            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => cardUsage.InFlightCard == null && !player.IsStaggered);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
             this.delayedEffects = new DelayedEffectSystem(this);
@@ -268,6 +268,7 @@ namespace Olca.Core.Logic.Battle
 
                 // プレイヤーの無敵時間ティック処理
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
+                player.TickStagger(deltaTimeMs, logicalFrameTick);
 
                 // 敵の状態異常ティック処理（毒ダメージ等）
                 foreach (var enemy in tickParticipants)
@@ -319,7 +320,7 @@ namespace Olca.Core.Logic.Battle
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
 
-            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null) return;
+            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null || player.IsStaggered) return;
             BeginResolution();
             try
             {
@@ -527,6 +528,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetOccupancyQuery(null);
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
+            player.ClearStagger();
             player.EndTransformationDefense();
             Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;

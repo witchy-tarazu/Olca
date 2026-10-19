@@ -79,7 +79,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool TryUseCurrentCard()
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused)
+            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsStaggered)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -169,7 +169,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public async UniTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused)
+            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsStaggered)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -258,7 +258,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool SkipCurrentCard()
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused) return false;
+            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsStaggered) return false;
 
             var skippedCard = CurrentCard;
             currentCardIndex++;

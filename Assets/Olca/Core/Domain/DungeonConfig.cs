@@ -110,6 +110,7 @@ namespace Olca.Core.Domain
     public sealed class CheckpointPlayerDto
     {
         public int Hp, MaxHp, AttackPower, Poise;
+        public int StaggerFrames; // 旧保存の省略/0は時間付きのけぞり未設定
         public int FireResistance, WaterResistance, WindResistance, EarthResistance;
         public float CustomSpeed;
         public int GridX, GridY;
