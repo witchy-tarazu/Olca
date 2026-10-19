@@ -331,3 +331,95 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class DepartureDeckRulesTests
+    {
+        private static Card Card(string id, CardRarity rarity = CardRarity.Normal, ExceedLevel level = ExceedLevel.Normal)
+            => new Card(id, id, 1, rarity, CardCategory.Attack, ElementType.None, CardSeries.Sword, 30, "fixture", exceedLevel: level);
+        private static List<Card> ValidCards() => Enumerable.Range(0, 20).Select(i => Card("fixture_" + i)).ToList();
+        private static Dictionary<(string, ExceedLevel), int> Owned(IEnumerable<Card> cards)
+            => cards.GroupBy(c => (c.Id, c.ExceedLevel)).ToDictionary(g => g.Key, g => g.Count());
+
+        [TestCase(19)][TestCase(21)][TestCase(0)]
+        public void 出撃前だけ二十枚以外を拒否し下書き自体を変更しない(int count)
+        {
+            var cards = Enumerable.Range(0,count).Select(i=>Card("fixture_"+i)).ToList();
+            var draft = new Deck(cards);
+            Assert.IsFalse(DepartureDeckRules.TryCreate(cards,Owned(cards),out var result,out var error));
+            Assert.IsNull(result);Assert.IsNotEmpty(error);Assert.AreEqual(count,draft.TotalCount);
+            CollectionAssert.AreEqual(cards,draft.GetAllCards());
+        }
+        [TestCase(CardRarity.Normal,4,4,true)]
+        [TestCase(CardRarity.Normal,5,5,false)]
+        [TestCase(CardRarity.Limited,1,5,true)]
+        [TestCase(CardRarity.Limited,2,5,false)]
+        [TestCase(CardRarity.Limited,1,6,false)]
+        [TestCase(CardRarity.Ultimate,1,1,true)]
+        [TestCase(CardRarity.Ultimate,2,2,false)]
+        [TestCase(CardRarity.Ultimate,1,2,false)]
+        public void 同名上限とレギュレーション合計上限を境界値で検証する(CardRarity rarity,int same,int total,bool valid)
+        {
+            var cards=ValidCards();for(int i=0;i<total;i++)cards[i]=Card(i<same?"same":"special_"+i,rarity);
+            Assert.AreEqual(valid,DepartureDeckRules.TryCreate(cards,Owned(cards),out var deck,out var error),error);
+            if(valid)Assert.AreEqual(20,deck.TotalCount);else Assert.IsNull(deck);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 未所持と所持不足を拒否して所持データを消費しない(bool missing)
+        {
+            var cards=ValidCards();cards[1]=cards[0];var owned=Owned(cards);
+            if(missing)owned.Remove((cards[0].Id,cards[0].ExceedLevel));else owned[(cards[0].Id,cards[0].ExceedLevel)]=1;
+            var before=owned.ToArray();Assert.IsFalse(DepartureDeckRules.TryCreate(cards,owned,out _,out _));CollectionAssert.AreEqual(before,owned.ToArray());
+        }
+        [Test]
+        public void 同一IDの段階違いは別カードとして数え各所持枚数と別個体を維持する()
+        {
+            var templates=new[]{Card("same"),Card("same",level:ExceedLevel.Lv1),Card("same",level:ExceedLevel.Lv2),Card("same",level:ExceedLevel.Lv3),Card("other")};
+            var cards=templates.SelectMany(c=>Enumerable.Repeat(c,4)).ToList();var owned=Owned(cards);var before=owned.ToArray();
+            Assert.IsTrue(DepartureDeckRules.TryCreate(cards,owned,out var a,out var error),error);
+            Assert.IsTrue(DepartureDeckRules.TryCreate(cards,owned,out var b,out error),error);
+            Assert.AreEqual(20,a.GetAllCards().Distinct().Count());Assert.AreEqual(20,b.GetAllCards().Distinct().Count());
+            Assert.IsFalse(a.GetAllCards().Intersect(b.GetAllCards()).Any());Assert.IsFalse(a.GetAllCards().Intersect(cards).Any());
+            a.GetAllCards()[0].Modifier.AdditionalEffects.Add(new AdditionalEffect {EffectType=AdditionalEffectType.Poison,Power=7});
+            Assert.IsEmpty(cards[0].Modifier.AdditionalEffects);Assert.IsEmpty(b.GetAllCards()[0].Modifier.AdditionalEffects);
+            CollectionAssert.AreEqual(before,owned.ToArray());
+            owned[("same",ExceedLevel.Lv1)]=3;Assert.IsFalse(DepartureDeckRules.TryCreate(cards,owned,out _,out _));
+        }
+        [TestCase("null")][TestCase("rarity")][TestCase("level")][TestCase("conflict")]
+        public void 不完全なカード定義を上限回避に利用できない(string kind)
+        {
+            var cards=ValidCards();var owned=Owned(cards);
+            if(kind=="null")cards[0]=null;
+            if(kind=="rarity")cards[0]=Card("fixture_0",(CardRarity)99);
+            if(kind=="level")cards[0]=Card("fixture_0",level:(ExceedLevel)99);
+            if(kind=="conflict"){cards[1]=Card(cards[0].Id,CardRarity.Limited,ExceedLevel.Lv1);owned[(cards[0].Id,ExceedLevel.Lv1)]=1;}
+            Assert.IsFalse(DepartureDeckRules.TryCreate(cards,owned,out _,out _));
+        }
+        [TestCase(0)][TestCase(21)]
+        public void 出撃後の零枚と上限超過は獲得履歴を保持して保存再開できる(int count)
+        {
+            var cards=Enumerable.Range(0,5).SelectMany(i=>Enumerable.Repeat(Card("fixture_"+i),4)).ToList();
+            var owned=Owned(cards);Assert.IsTrue(DepartureDeckRules.TryCreate(cards,owned,out var deck,out var error),error);
+            var map=DungeonConfig.CreateTestDungeon(20,30,3);var definitions=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
+            var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-departure-"+Guid.NewGuid().ToString("N"));
+            try {
+                var store=new Olca.Unity.FileCheckpointStore(definitions,directory);
+                var session=new DungeonCheckpointSession(definitions,store);
+                var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
+                var saved=store.Read();saved.Sequence++;saved.Boundary=CheckpointBoundary.RewardCompleted;saved.PositionMilli=1000;
+                var acquired=saved.Cards[0].Copy();acquired.InstanceId="acquired-fixture";
+                saved.Cards=count==0?new[]{acquired}:saved.Cards.Concat(new[]{acquired}).ToArray();
+                saved.DeckOrder=count==0?new string[0]:saved.DeckOrder.Concat(new[]{acquired.InstanceId}).ToArray();saved.ObtainedOrder=new[]{acquired.InstanceId};
+                Assert.IsTrue(store.TryWrite(saved,out error),error);owned.Clear();
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+                var reopened=new DungeonCheckpointSession(definitions,new Olca.Unity.FileCheckpointStore(definitions,directory));
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(reopened,new MockRandomProvider(),new MockLogger(),out var resumed,out error),error);
+                resumed.ActivateCheckpoint();Assert.AreEqual(count,resumed.Dungeon.GetCurrentDeck().TotalCount);Assert.AreEqual(1,resumed.Dungeon.GetObtainedCards().Count);
+                CollectionAssert.AreEqual(saved.DeckOrder,reopened.Last.DeckOrder);CollectionAssert.AreEqual(saved.ObtainedOrder,reopened.Last.ObtainedOrder);
+                CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+            } finally {if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+    }
+}

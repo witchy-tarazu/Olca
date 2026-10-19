@@ -76,6 +76,18 @@ namespace Olca.Application.Dungeon
         [SerializeField, HideInInspector] private string checkpointDirectoryOverride;
         private bool awaitingCheckpointChoice;
         private DungeonConfig configuredDungeon;
+        private Deck configuredDepartureDeck;
+
+        /// <summary>新規出撃前の編成入力。失敗時は既存設定・保存ファイル・所持枚数を変更しない。</summary>
+        public bool TryConfigureDepartureDeck(IReadOnlyList<Card> cards,
+            IReadOnlyDictionary<(string Id, ExceedLevel Level), int> ownedCounts, out string error)
+        {
+            if (manager != null) { error = "攻略開始後はデッキを切り替えられません"; return false; }
+            if (!DepartureDeckRules.TryCreate(cards, ownedCounts, out var candidate, out error)) return false;
+            configuredDepartureDeck = candidate;
+            return true;
+        }
+
         private int? simulationSeed;
         public void ConfigureSimulationSeed(int seed)
         {
@@ -555,6 +567,13 @@ namespace Olca.Application.Dungeon
 
         private Deck CreateInitialDeck()
         {
+            if (configuredDepartureDeck != null)
+            {
+                var cards = new List<Card>();
+                foreach (var card in configuredDepartureDeck.GetAllCards()) cards.Add(card.Clone());
+                return new Deck(cards);
+            }
+            // 編成入力のない既存シーンは加工・戦闘確認用のfixtureを使用する。
             var f = new SimpleCardFactory();
             return new Deck(new List<Card>
             {

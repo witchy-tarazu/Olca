@@ -168,3 +168,40 @@ namespace Olca.Core.Domain
         }
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>
+    /// 所持カードからの新規出撃だけに適用する共通構築制限。
+    /// 非装備デッキの保存、攻略中の増減、チェックポイント復元では呼び出さない。
+    /// </summary>
+    public static class DepartureDeckRules
+    {
+        public static bool TryCreate(IReadOnlyList<Card> cards,
+            IReadOnlyDictionary<(string Id, ExceedLevel Level), int> ownedCounts,
+            out Deck deck, out string error)
+        {
+            deck = null; error = null;
+            if (cards == null || ownedCounts == null) { error = "デッキと所持枚数が必要です"; return false; }
+            if (cards.Count != 20) { error = "出撃デッキは20枚必要です"; return false; }
+            if (cards.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) ||
+                !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.ExceedLevel)))
+            { error = "カード定義が不正です"; return false; }
+            if (cards.GroupBy(c => c.Id).Any(g => g.Select(c => c.Rarity).Distinct().Count() != 1))
+            { error = "同じカードIDのレギュレーションが一致しません"; return false; }
+            foreach (var group in cards.GroupBy(c => (c.Id, c.ExceedLevel)))
+            {
+                int count = group.Count();
+                if (!ownedCounts.TryGetValue(group.Key, out int owned) || owned < count)
+                { error = "登録枚数に対して所持枚数が不足しています"; return false; }
+                int limit = group.First().Rarity == CardRarity.Normal ? 4 : 1;
+                if (count > limit) { error = "同一カードの構築上限を超えています"; return false; }
+            }
+            if (cards.Count(c => c.Rarity == CardRarity.Limited) > 5 || cards.Count(c => c.Rarity == CardRarity.Ultimate) > 1)
+            { error = "レギュレーションの合計上限を超えています"; return false; }
+            // 所持テンプレートを繰り返し指定しても、攻略中は一枚ずつ別個体にする。
+            deck = new Deck(cards.Select(c => c.Clone()).ToList());
+            return true;
+        }
+    }
+}
