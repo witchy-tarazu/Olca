@@ -11,6 +11,7 @@ namespace Olca.Core.Domain
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
         public ElementResistances Resistances { get; }
+        public TimedStatusResistances StatusResistances { get; }
         internal Func<bool> IsOnGrass;
 
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
@@ -122,9 +123,10 @@ namespace Olca.Core.Domain
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null)
+        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null)
         {
             Resistances = resistances ?? ElementResistances.Neutral;
+            StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
             EnemyId = enemyId;
             IsSummoned = isSummoned;
             Name = name;
@@ -221,6 +223,7 @@ namespace Olca.Core.Domain
         public void ApplyStatus(StatusEffect status)
         {
             if (status == null) throw new ArgumentNullException(nameof(status));
+            status = status.WithTargetResistance(StatusResistances.Get(status.Type));
             // 時間耐性で無効化・0フレームになった付与は、既存状態と毒積算に触れない。
             if (IsDead || status.RemainingFrames <= 0) return;
             if (statusFrameOpen)

@@ -14,6 +14,85 @@ namespace Olca.Tests.CardEffects
     [TestFixture]
     public class StatusEffectTests
     {
+        [TestCase(StatusEffectType.Poison, 0, 60)]
+        [TestCase(StatusEffectType.Poison, 50, 30)]
+        [TestCase(StatusEffectType.Poison, 99, 0)]
+        [TestCase(StatusEffectType.Poison, 100, 0)]
+        [TestCase(StatusEffectType.Poison, 150, 0)]
+        [TestCase(StatusEffectType.Paralyze, 50, 30)]
+        [TestCase(StatusEffectType.Paralyze, 100, 0)]
+        public void 敵定義の時間耐性は付与時にフレームを切り捨て元の効果を変更しない(StatusEffectType type, int resistance, int frames)
+        {
+            var target = new Enemy("resistant", "検証", 100, ElementType.None, new Vector2Int(1, 0),
+                statusResistances: new TimedStatusResistances(poison: resistance, paralyze: resistance));
+            var source = new StatusEffect(type, 1000, 60);
+            target.ApplyStatus(source);
+            Assert.AreEqual(60, source.RemainingFrames);
+            Assert.AreEqual(frames > 0, target.ActiveStatus != null);
+            if (frames == 0) return;
+            Assert.AreEqual(frames, target.ActiveStatus.RemainingFrames);
+            Assert.AreEqual(60, target.ActiveStatus.DamagePerTick, "耐性は毒ダメージ量を変えない");
+            int damage = 0;
+            for (int i = 0; i < frames; i++) damage += target.TickStatusFrame();
+            Assert.AreEqual(type == StatusEffectType.Poison ? frames : 0, damage, "最終フレームも毒ダメージを計上する");
+            Assert.IsNull(target.ActiveStatus);
+            if (resistance > 0) Assert.AreEqual(60, source.RemainingFrames, "短縮した対象の更新を付与元へ返さない");
+        }
+
+        [Test]
+        public void 状態耐性は加算し生成側の軽減とも乗算せず別状態や属性へ漏らさない()
+        {
+            var values = TimedStatusResistances.Combine(new TimedStatusResistances(20, 40), new TimedStatusResistances(30, 60));
+            var target = new Enemy("e", "検証", 100, ElementType.Fire, Vector2Int.Zero,
+                statusResistances: values);
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 7, durationResistancePercent: 20));
+            Assert.AreEqual(18, target.ActiveStatus.RemainingFrames, "20+30+20=70%の軽減");
+            var active = target.ActiveStatus;
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+            Assert.AreSame(active, target.ActiveStatus, "無効付与は既存毒を上書きしない");
+            target.TakeDamage(10, ElementType.Fire);
+            Assert.AreEqual(90, target.CurrentHp, "時間耐性は属性HPダメージへ作用しない");
+            Assert.AreEqual(int.MaxValue, TimedStatusResistances.Combine(new TimedStatusResistances(int.MaxValue),
+                new TimedStatusResistances(int.MaxValue)).Poison);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new TimedStatusResistances(-1));
+        }
+
+        [Test]
+        public void 耐性で短縮した麻痺の終了後に通常AIが攻撃を再開する()
+        {
+            var target = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(1, 0),
+                statusResistances: new TimedStatusResistances(paralyze: 50));
+            var player = new PlayerCharacter(100);
+            var current = new BattleSystem(player, new List<Enemy> { target }, new Deck());
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+            for (int i = 0; i < 30; i++) current.TickFrame(17);
+            Assert.IsFalse(target.IsParalyzed); Assert.AreEqual(100, player.CurrentHp);
+            current.TickFrame(17); Assert.AreEqual(90, player.CurrentHp);
+        }
+
+        [Test]
+        public void 耐性で短縮した毒を再付与してもダメージ積算と後段解除の順序を維持する()
+        {
+            var target = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                statusResistances: new TimedStatusResistances(poison: 50));
+            var current = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { target }, new Deck());
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 3));
+            for (int i = 0; i < 19; i++) current.TickFrame(17);
+            Assert.AreEqual(100, target.CurrentHp);
+            current.RunLogicalFrame(() => {
+                target.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 3));
+                current.TickFrame(17);
+            });
+            Assert.AreEqual(99, target.CurrentHp, "再付与で20フレーム目の毒を遅延しない");
+            Assert.AreEqual(60, target.ActiveStatus.RemainingFrames, "付与フレームで新しい時間を減らさない");
+            current.RunLogicalFrame(() => {
+                target.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+                target.ClearStatus(StatusEffectType.Paralyze);
+                current.TickFrame(17);
+            });
+            Assert.IsFalse(target.IsParalyzed); Assert.IsTrue(target.IsPoisoned);
+        }
+
         [Test]
         public void 隣接敵は麻痺の残時間中に攻撃せず解除した後に基本攻撃を再開する()
         {

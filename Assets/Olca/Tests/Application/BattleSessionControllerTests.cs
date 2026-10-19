@@ -1743,10 +1743,10 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
-        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None)
+        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None, int statusResistance = 0, AdditionalEffectType statusType = AdditionalEffectType.Poison)
         {
             var modifier = new CardModifier();
-            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison,
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = statusType,
                 Trigger = DerivativeTrigger.OnHit, Duration = 10f, Power = 1 });
             var card = new Card("resistance", "検証", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.Fire, CardSeries.None, power, "検証",
@@ -1757,7 +1757,8 @@ namespace Olca.Tests.Application
                 var cell = map.MapCells[i]; if (cell.Enemy == null) continue;
                 var e = cell.Enemy;
                 map.MapCells[i] = new MapCell(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition,
-                    resistances: new ElementResistances(fire: resistance)), cell.Height);
+                    resistances: new ElementResistances(fire: resistance),
+                    statusResistances: new TimedStatusResistances(poison: statusResistance, paralyze: statusResistance)), cell.Height);
             }
             var player = new PlayerCharacter(1000); player.SetElementResistances(new ElementResistances(fire: -200, water: 150));
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
@@ -1777,7 +1778,8 @@ namespace Olca.Tests.Application
             battle.Player.MoveTo(new Vector2Int(2, 0));
             foreach (var e in battle.Enemies) { e.ApplyStun(60000); e.MoveTo(new Vector2Int(5, 0)); }
             var enemy = battle.Enemies[0]; enemy.MoveTo(new Vector2Int(3, 0));
-            int initialHp = enemy.CurrentHp, used = 0;
+            int initialHp = enemy.CurrentHp, used = 0, firstStatusFrames = -1;
+            Assert.AreEqual(statusResistance, enemy.StatusResistances.Poison);
             battle.CardUsage.OnCardUsed += _ => used++;
             Assert.AreEqual(-200, battle.Player.Resistances.Fire, "旧保存の元値を維持");
             Assert.AreEqual(-100, battle.Player.Resistances.Get(ElementType.Fire));
@@ -1789,9 +1791,10 @@ namespace Olca.Tests.Application
                 if (frame == 1) { battle.CardUsage.EnqueueCards(new List<Card> { card }); session.UseCardFromInput(); }
                 if (frame == 2) battle.Pause(BattlePauseReason.User);
                 if (frame == 6) battle.Resume(BattlePauseReason.User);
+                if (firstStatusFrames == -1 && enemy.ActiveStatus != null) firstStatusFrames = enemy.ActiveStatus.RemainingFrames;
                 battle.TickFrame(ms);
                 if (frame == 5) { Assert.AreEqual(initialHp, enemy.CurrentHp); Assert.IsNull(enemy.ActiveStatus); }
-                trace.Add(frame + ":" + enemy.CurrentHp + ":" + enemy.ActiveStatus?.Type.ToString() + ":" + battle.CardUsage.RemainingCount);
+                trace.Add(frame + ":" + enemy.CurrentHp + ":" + enemy.ActiveStatus?.Type.ToString() + ":" + enemy.ActiveStatus?.RemainingFrames + ":" + battle.CardUsage.RemainingCount);
             });
             long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
             if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
@@ -1802,7 +1805,9 @@ namespace Olca.Tests.Application
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
             int damage = power == 0 || resistance >= 100 ? 0 : resistance < 0 ? 2 : 1;
             Assert.AreEqual(initialHp - damage, enemy.CurrentHp);
-            Assert.AreEqual(power == 0 || resistance < 100, enemy.ActiveStatus != null);
+            bool accepted = (power == 0 || resistance < 100) && statusResistance < 100;
+            Assert.AreEqual(accepted, enemy.ActiveStatus != null);
+            Assert.AreEqual(accepted ? 600 * (100 - statusResistance) / 100 : -1, firstStatusFrames);
             Assert.AreEqual(1, used, "空振りでも親を一枚消費し、派生では追加消費しない");
             Assert.AreEqual(0, battle.CardUsage.RemainingCount);
             session.Detach(); return trace;
@@ -1813,10 +1818,12 @@ namespace Olca.Tests.Application
         [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
         public void 耐性の下限最低ダメージ完全無効と状態専用を通常使用と保存復帰で区別する(int fps, bool stall, bool restore)
         {
+            foreach (var statusType in new[] { AdditionalEffectType.Poison, AdditionalEffectType.Paralyze })
+            foreach (int statusResistance in new[] { 0, 50, 100, 150 })
             foreach (var properties in new[] { AttackProperty.None, AttackProperty.Sword | AttackProperty.Break })
             foreach (var value in new[] { (r: 99, p: 1), (r: 100, p: 1), (r: 100, p: 0), (r: -200, p: 1) })
-                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, value.r, value.p, properties),
-                    ResistanceCardTrace(fps, stall, restore, value.r, value.p, properties));
+                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, value.r, value.p, properties, statusResistance, statusType),
+                    ResistanceCardTrace(fps, stall, restore, value.r, value.p, properties, statusResistance, statusType));
         }
 
         private List<string> TransformationImmunityTrace(int fps, bool stall, bool restore, int resistance, bool invincible, AttackProperty weakness = AttackProperty.None)

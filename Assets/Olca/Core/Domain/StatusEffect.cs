@@ -14,6 +14,35 @@ namespace Olca.Core.Domain
         Blind,      // 盲目
     }
 
+    /// <summary>既存の時間制の毒・麻痺に対する軽減率。属性耐性とは独立する。</summary>
+    public sealed class TimedStatusResistances
+    {
+        public static readonly TimedStatusResistances Neutral = new TimedStatusResistances();
+        public int Poison { get; }
+        public int Paralyze { get; }
+        public bool IsNeutral => Poison == 0 && Paralyze == 0;
+        public TimedStatusResistances(int poison = 0, int paralyze = 0)
+        {
+            if (poison < 0 || paralyze < 0) throw new ArgumentOutOfRangeException("状態異常耐性は非負です");
+            Poison = poison; Paralyze = paralyze;
+        }
+        public int Get(StatusEffectType type) => type == StatusEffectType.Poison ? Poison
+            : type == StatusEffectType.Paralyze ? Paralyze : 0;
+        public bool HasSameValues(TimedStatusResistances other)
+            => other != null && Poison == other.Poison && Paralyze == other.Paralyze;
+        public static TimedStatusResistances Combine(params TimedStatusResistances[] values)
+        {
+            if (values == null) throw new ArgumentNullException(nameof(values));
+            long poison = 0, paralyze = 0;
+            foreach (var value in values)
+            {
+                if (value == null) throw new ArgumentNullException(nameof(values));
+                poison += value.Poison; paralyze += value.Paralyze;
+            }
+            return new TimedStatusResistances((int)Math.Min(int.MaxValue, poison), (int)Math.Min(int.MaxValue, paralyze));
+        }
+    }
+
     /// <summary>
     /// 状態異常インスタンス
     /// </summary>
@@ -29,6 +58,20 @@ namespace Olca.Core.Domain
 
         /// <summary>毒の場合の1ティックあたりのダメージ</summary>
         public int DamagePerTick { get; }
+        private int originalFrames, initialReducedFrames, appliedResistance;
+
+        // 生成側の既存軽減率とも加算する。共有された付与元を変更せず、対象ごとに独立させる。
+        internal StatusEffect WithTargetResistance(int resistance)
+        {
+            if (resistance == 0) return this;
+            var copy = (StatusEffect)MemberwiseClone();
+            copy.appliedResistance = (int)Math.Min(100L, (long)appliedResistance + resistance);
+            copy.initialReducedFrames = (int)((long)originalFrames * (100 - copy.appliedResistance) / 100);
+            int elapsedFrames = Math.Max(0, initialReducedFrames - RemainingFrames);
+            copy.RemainingFrames = Math.Max(0, copy.initialReducedFrames - elapsedFrames);
+            copy.RemainingMs = (int)Math.Min(int.MaxValue, ((long)copy.RemainingFrames * 1000 + 59) / 60);
+            return copy;
+        }
 
         /// <summary>
         /// コンストラクタ
@@ -42,7 +85,9 @@ namespace Olca.Core.Domain
             if (durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationResistancePercent));
             Type = type;
             long frames = ((long)durationMs * 60 + 999) / 1000;
-            RemainingFrames = (int)(frames * (100 - Math.Min(100, durationResistancePercent)) / 100);
+            originalFrames = (int)frames;
+            appliedResistance = Math.Min(100, durationResistancePercent);
+            RemainingFrames = initialReducedFrames = (int)(frames * (100 - appliedResistance) / 100);
             // 既存ms APIは耐性なしの場合の値を維持。論理更新では整数フレームを使用する。
             RemainingMs = durationResistancePercent == 0 ? durationMs : (int)Math.Min(int.MaxValue, ((long)RemainingFrames * 1000 + 59) / 60);
             DamagePerTick = damagePerTick;

@@ -1083,6 +1083,48 @@ namespace Olca.Tests.Dungeon
                     new CheckpointEnemyDto { CellIndex = 9, EnemyId = "boss", Hp = 200, GridX = 5 } }
             };
         }
+        [TestCase(0)] [TestCase(50)] [TestCase(150)]
+        public void 敵の時間耐性は通常定義とファイル保存復帰へ伝わり異なる定義を拒否する(int resistance)
+        {
+            var configured = DungeonConfig.CreateTestDungeon(10, 30, 3);
+            for (int i = 0; i < configured.MapCells.Count; i++) {
+                var cell = configured.MapCells[i]; var e = cell.Enemy; if (e == null) continue;
+                configured.MapCells[i] = new MapCell(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition,
+                    statusResistances: new TimedStatusResistances(poison: resistance, paralyze: 50)), cell.Height);
+            }
+            var configuredDefinitions = new CheckpointDefinitions("fixture-v1", configured);
+            configuredDefinitions.RegisterCard("standard/v1/sword", standard);
+            configuredDefinitions.RegisterCard("fallback/v1/sword", fallback);
+            var dto = departure.Copy(); dto.MapHash = configuredDefinitions.MapHash;
+            var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-status-map-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var store = new Olca.Unity.FileCheckpointStore(configuredDefinitions, directory);
+                Assert.IsTrue(store.TryWrite(dto, out var error), error);
+                var bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+                var read = new Olca.Unity.FileCheckpointStore(configuredDefinitions, directory);
+                Assert.IsTrue(CheckpointCodec.TryRestore(read.Read(), configuredDefinitions, out var restored, out error), error);
+                var enemy = restored.Enemies[3];
+                Assert.AreEqual(resistance, enemy.StatusResistances.Poison); Assert.AreEqual(50, enemy.StatusResistances.Paralyze);
+                enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 1000));
+                Assert.AreEqual(30, enemy.ActiveStatus.RemainingFrames);
+                Assert.IsFalse(CheckpointCodec.TryRestore(read.Read(), definitions, out _, out _));
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+                var route = new FloorSequenceDefinitions("status-fixture", "v1", new[] { configured }, new Deck());
+                Assert.AreEqual(resistance, route.CreateInitialMap(0).MapCells[3].Enemy.StatusResistances.Poison);
+            }
+            finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [Test]
+        public void 時間耐性未指定の旧階層マップハッシュを変更しない()
+        {
+            // a5caaed の実行時保存から取得した2階層の旧hash。
+            Assert.AreEqual("6F62727233C3B0E3001BD1A7C522B3431389AF797E7CCEE76717732B6B79E09F",
+                new CheckpointDefinitions("fixed-runtime-v1", DungeonConfig.CreateTestDungeon(6, 30, 100)).MapHash);
+            Assert.AreEqual("7292E95285520F6E55A2856F410B9FB607BB2E24290EA1DBAE118726AB555682",
+                new CheckpointDefinitions("fixed-runtime-v1", DungeonConfig.CreateTestDungeon(20, 7, 5)).MapHash);
+        }
+
         [TestCase(AttackProperty.None)]
         [TestCase(AttackProperty.Sword)]
         [TestCase(AttackProperty.Sword | AttackProperty.Break)]
