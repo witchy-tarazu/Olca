@@ -52,7 +52,21 @@ namespace Olca.Presentation.CustomScreen
         private CustomScreenSystem customScreen;
         private TransformationSelectionState transformations;
         public void BindTransformations(TransformationSelectionState transformations)
-            => this.transformations = transformations;
+        {
+            if (this.transformations != null) this.transformations.OnPreviewChanged -= RefreshSelection;
+            this.transformations = transformations;
+            if (transformations != null) transformations.OnPreviewChanged += RefreshSelection;
+        }
+
+        private void RefreshSelection()
+        {
+            if (customScreen == null) return;
+            foreach (var view in handCardViews)
+                view.UpdateSelection(customScreen.SelectedCards.Contains(view.Card));
+            UpdateConfirmButton();
+            UpdateCostDisplay();
+            UpdateSelectedCardDisplay();
+        }
         private System.Action<long, System.Action> queueConfirmation;
         private System.Func<long> pointerClickTimestamp;
         public void ConfigureLogicalConfirmation(System.Action<long, System.Action> queue, System.Func<long> pointerTimestamp)
@@ -357,11 +371,7 @@ namespace Olca.Presentation.CustomScreen
                 return;
             }
             if (!customScreen.TryDeselectCard(selected[selected.Count - 1])) return;
-            foreach (var view in handCardViews)
-                view.UpdateSelection(customScreen.SelectedCards.Contains(view.Card));
-            UpdateConfirmButton();
-            UpdateCostDisplay();
-            UpdateSelectedCardDisplay();
+            RefreshSelection();
         }
 
         /// <summary>
@@ -1171,6 +1181,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnDestroy()
         {
+            BindTransformations(null);
             if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
             // アニメーション用CancellationTokenをキャンセル
             animationCts?.Cancel();

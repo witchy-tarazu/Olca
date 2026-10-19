@@ -152,7 +152,8 @@ namespace Olca.Tests.Application
             var session = new BattleSessionController(new MockBattleView(), actual, new MockRandomProvider(), new MockLogger());
             session.Attach(battle);
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
-            battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("pending", ElementResistances.Neutral, ElementType.Water) });
+            battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("pending", ElementResistances.Neutral, ElementType.Water),
+                new TransformationDefenseDefinition("other", new ElementResistances(fire: 50), ElementType.Water) });
             Assert.IsTrue(battle.Transformations.TryPreview("pending"));
             var screen = battle.CustomScreen; var hand = screen.CurrentHand.ToArray(); Assert.AreEqual(3, hand.Length);
             var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
@@ -180,6 +181,22 @@ namespace Olca.Tests.Application
                 Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
                 foreach (var card in hand) actual.OnCardClicked(card);
                 Assert.AreEqual(4, screen.GetTotalUsedCost());
+                // 外部定義の別変身への仮選択で、Coreが解除したカードを実Viewへ即時同期する。
+                Assert.IsTrue(battle.Transformations.TryPreview("pending"));
+                Assert.AreEqual(3, screen.SelectedCards.Count, "同じ仮選択の再試行は無作用");
+                Assert.IsFalse(battle.Transformations.TryPreview("undefined")); Assert.AreEqual(3, screen.SelectedCards.Count);
+                Assert.IsTrue(battle.Transformations.TryPreview("other"));
+                Assert.AreEqual(0, screen.SelectedCards.Count); Assert.AreEqual("コスト: 0 / 10", cost.text);
+                Assert.IsTrue(images.All(image => image.color == UnityEngine.Color.white));
+                CollectionAssert.AreEqual(hand.Reverse(), screen.CurrentHand);
+                Assert.AreEqual(0, screen.CustomizationUndoCount); Assert.AreEqual(10, screen.MaxHandSize);
+                CollectionAssert.AreEqual(saved.ObtainedOrder, checkpoints.Store.Read().ObtainedOrder);
+                actual.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
+                Assert.IsNull(battle.Transformations.PendingId); Assert.IsFalse(battle.Transformations.IsUsed("other"));
+                Assert.IsTrue(battle.Transformations.TryPreview("pending"));
+                foreach (var card in hand) actual.OnCardClicked(card);
+                Assert.AreEqual("コスト: 4 / 10", cost.text);
+                Assert.IsTrue(images.All(image => image.color == UnityEngine.Color.yellow));
                 long eventAt = System.Diagnostics.Stopwatch.Frequency * 105 / 1000; bool sent = false; long changedAt = -1;
                 for (int n = 1; n <= fps; n++) {
                     now = backlog && n == 1 ? System.Diagnostics.Stopwatch.Frequency : Math.Max(now, System.Diagnostics.Stopwatch.Frequency * n / fps);
@@ -341,6 +358,38 @@ namespace Olca.Tests.Application
             session.Attach(second); Assert.AreSame(second.Transformations, view.BoundTransformations);
             session.Detach(); Assert.IsNull(view.BoundTransformations);
             session.Detach(); Assert.IsNull(view.BoundTransformations);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 変身プレビュー通知は再接続後の旧モデルと解除済みViewを更新しない(bool destroy)
+        {
+            var first = CreateBattleSystem(); var second = CreateBattleSystem();
+            foreach (var battle in new[] { first, second }) {
+                battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("a", ElementResistances.Neutral, ElementType.Water),
+                    new TransformationDefenseDefinition("b", new ElementResistances(fire: 50), ElementType.Water) });
+                battle.CustomScreen.Open(new Card[0], new MockRandomProvider(0));
+            }
+            var root = new UnityEngine.GameObject("preview-bind-regression");
+            var view = root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
+            var child = new UnityEngine.GameObject("cost", typeof(UnityEngine.RectTransform)); child.transform.SetParent(root.transform);
+            var cost = child.AddComponent<UnityEngine.UI.Text>();
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("customScreen", flags).SetValue(view, second.CustomScreen);
+            typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("costDisplay", flags).SetValue(view, cost);
+            try {
+                view.BindTransformations(first.Transformations); view.BindTransformations(second.Transformations);
+                view.BindTransformations(second.Transformations);
+                cost.text = "旧通知では変わらない";
+                Assert.IsTrue(first.Transformations.TryPreview("a")); Assert.AreEqual("旧通知では変わらない", cost.text);
+                Assert.IsTrue(second.Transformations.TryPreview("a")); Assert.AreEqual("コスト: 0 / 10", cost.text);
+                cost.text = "再試行では変わらない";
+                Assert.IsTrue(second.Transformations.TryPreview("a")); Assert.IsFalse(second.Transformations.TryPreview("missing"));
+                Assert.AreEqual("再試行では変わらない", cost.text);
+                if (destroy) typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetMethod("OnDestroy", flags).Invoke(view, null);
+                else view.BindTransformations(null);
+                Assert.IsTrue(second.Transformations.TryPreview("b")); Assert.AreEqual("再試行では変わらない", cost.text);
+                Assert.IsTrue(second.Transformations.TryCancelPending()); Assert.AreEqual("再試行では変わらない", cost.text);
+            } finally { view.BindTransformations(null); UnityEngine.Object.DestroyImmediate(root); }
         }
 
         // ==================== Attach / Detach ====================

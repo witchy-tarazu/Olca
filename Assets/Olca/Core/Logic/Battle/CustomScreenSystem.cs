@@ -715,6 +715,8 @@ namespace Olca.Core.Logic.Battle
         /// <summary>呼出元が解放済みとして設定した順序の一覧。使用済みも残し、IsUsedで選択可否を確認する。</summary>
         public IReadOnlyList<TransformationDefenseDefinition> AvailableDefinitions { get; private set; }
             = Array.AsReadOnly(new TransformationDefenseDefinition[0]);
+        /// <summary>仮選択の変更が完了し、カード選択とプレビュー能力を表示へ同期できる通知。</summary>
+        public event Action OnPreviewChanged;
         public string PendingId => pending?.Id;
         public string ActiveId { get; private set; }
         public IReadOnlyList<string> UsedIds => used.OrderBy(id => id, StringComparer.Ordinal).ToArray();
@@ -755,6 +757,7 @@ namespace Olca.Core.Logic.Battle
             pending = definition;
             // 確定済みの変身・残回数には触れず、仮反映だけを置き換える。
             player.SetTransformationPreview(definition.Resistances);
+            OnPreviewChanged?.Invoke();
             return true;
         }
         /// <summary>選択カードを末尾から一枚解除し、空になった次の操作で変身仮選択を取り消す。</summary>
@@ -768,8 +771,10 @@ namespace Olca.Core.Logic.Battle
         }
         private void DiscardPending()
         {
+            bool changed = pending != null;
             pending = null;
             player.SetTransformationPreview(null);
+            if (changed) OnPreviewChanged?.Invoke();
         }
         private void OnOpened(List<Card> hand)
         {
