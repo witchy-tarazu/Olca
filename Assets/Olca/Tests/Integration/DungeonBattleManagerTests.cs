@@ -1142,11 +1142,11 @@ namespace Olca.Tests.Integration
             Assert.IsFalse(new DungeonCheckpointSession(Definitions(150), store).TryRead(out _, out _));
             manager.Tick(500); Assert.AreEqual(1, gameOvers);
         }
-        [TestCase("status")][TestCase("discard")][TestCase("air")]
+        [TestCase("status")][TestCase("negative-discard")][TestCase("air")]
         public void 対象外の障害物を黙って省略せず拒否する(string kind)
         {
             var map = Map(); map.MapCells[2] = kind == "status" ? new MapCell(2, new Obstacle("x", "x", "poison")) :
-                kind == "discard" ? new MapCell(2, Obstacle.CreateCardDiscardObstacle("x", "x", 1)) : new MapCell(2, new Obstacle("x", "x", 15), 1);
+                kind == "negative-discard" ? new MapCell(2, Obstacle.CreateCardDiscardObstacle("x", "x", -1)) : new MapCell(2, new Obstacle("x", "x", 15), 1);
             Assert.Throws<System.ArgumentException>(() => DungeonCheckpointSession.CreateDefault(map, Deck()));
         }
         [TestCase("fusion")][TestCase("exceed")]
@@ -1526,6 +1526,116 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(before,input.Take(2,false).BasicAttackButtonHoldTime);
             Assert.AreEqual(before,input.Take(3,false).BasicAttackButtonHoldTime);
             Assert.AreEqual(2f/60,input.Take(4).BasicAttackButtonHoldTime,.000001f);
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class CardDiscardCheckpointTests
+    {
+        private string directory;
+        private sealed class FailIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Fail;
+            public override void WriteAndFlush(string path, byte[] bytes)
+            { if (Fail) throw new System.IO.IOException("fixture保存失敗"); base.WriteAndFlush(path, bytes); }
+        }
+        private DungeonConfig Map(int discard)
+        {
+            var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
+            // 報酬を必ず得る検証用敵。最終ボスのセル種別・製品値は変更しない。
+            map.MapCells[3] = new MapCell(3, new Enemy("boss_fixture", "fixture", 50, ElementType.None, new Vector2Int(3,0)));
+            map.MapCells[10] = new MapCell(10, Obstacle.CreateCardDiscardObstacle("discard-fixture", "fixture", discard));
+            return map;
+        }
+        private Deck Deck()
+        {
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            return new Deck(new List<Card> { factory.CreateById("sword"), factory.CreateById("sword"), factory.CreateById("heal") });
+        }
+        [SetUp] public void Setup() => directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-discard-checkpoint-"+System.Guid.NewGuid().ToString("N"));
+        [TearDown] public void Cleanup() { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory,true); }
+        private static void ReachBattle(DungeonBattleManager manager)
+        {
+            for(int f=0;f<600 && manager.CurrentBattle==null && !manager.Dungeon.IsCheckpointBlocked;f++) manager.TickFrame(17);
+        }
+        [TestCase(1,false)][TestCase(5,false)][TestCase(1,true)]
+        public void 破棄後の保存復帰で個体順序と獲得履歴を保持しクリア候補から消さない(int discard,bool failSave)
+        {
+            var defaults=DungeonCheckpointSession.CreateDefault(Map(discard),Deck());var io=new FailIo();
+            var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory,io);
+            var session=new DungeonCheckpointSession(defaults.Definitions,store);var random=new MockRandomProvider();
+            var manager=new DungeonBattleManager(Map(discard),new PlayerCharacter(100),Deck(),random,new MockLogger(),checkpoints:session);
+            IReadOnlyList<Card> choices=null;manager.OnCardRewardPresented+=value=>choices=value;
+            ReachBattle(manager);Assert.IsNotNull(manager.CurrentBattle);
+            foreach(var enemy in manager.CurrentBattle.Enemies.ToArray())enemy.TakeDamage(enemy.MaxHp,ElementType.None);
+            Assert.IsNotNull(choices);manager.SelectCardReward(choices[0]);
+            var before=store.Read();var originalBytes=System.IO.File.ReadAllBytes(store.ActivePath);
+            Assert.AreEqual(4,before.DeckOrder.Length);Assert.AreEqual(1,before.ObtainedOrder.Length);
+            Assert.AreEqual(4,before.DeckOrder.Distinct().Count());
+            string acquiredId=before.ObtainedOrder.Single();Assert.AreEqual(acquiredId,before.DeckOrder.Last());
+            var beforeCards=manager.Dungeon.GetCurrentDeck().GetAllCards().ToArray();Card[] afterDiscard=null;
+            int hits=0;manager.Dungeon.OnObstaclePenalty+=_=>{hits++;afterDiscard=manager.Dungeon.GetCurrentDeck().GetAllCards().ToArray();};
+            random.SetFixedValue(int.MaxValue);io.Fail=failSave;manager.ResumeAfterBattle();ReachBattle(manager);
+            int expected=System.Math.Max(0,4-discard);Assert.AreEqual(expected,manager.Dungeon.GetCurrentDeck().TotalCount);
+            Assert.AreEqual(1,hits);Assert.AreEqual(1,manager.Dungeon.GetObtainedCards().Count);
+            CollectionAssert.AreEqual(beforeCards.Take(expected),afterDiscard,"破棄自体は残カードの順序を変えない");
+            CheckpointDto pending=null;
+            if(failSave) {
+                Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);CollectionAssert.AreEqual(originalBytes,System.IO.File.ReadAllBytes(store.ActivePath));
+                Assert.IsFalse(manager.RetryCheckpoint());manager.TickFrame(17);Assert.AreEqual(1,hits);
+                pending=((CheckpointDto)typeof(DungeonSystem).GetField("pendingCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(manager.Dungeon)).Copy();
+                io.Fail=false;Assert.IsTrue(manager.RetryCheckpoint());Assert.AreEqual(1,hits);
+            }
+            var saved=store.Read();Assert.AreEqual(3,saved.SchemaVersion);
+            // 次の戦闘開始時の既存シャッフルは維持し、その確定順を保存・復元する。
+            CollectionAssert.AreEquivalent(before.DeckOrder.Take(expected),saved.DeckOrder);
+            if(pending!=null){CollectionAssert.AreEqual(pending.DeckOrder,saved.DeckOrder);CollectionAssert.AreEqual(pending.Battle.FirstHand,saved.Battle.FirstHand);}
+            CollectionAssert.AreEqual(before.ObtainedOrder,saved.ObtainedOrder);
+            Assert.IsFalse(saved.DeckOrder.Contains(acquiredId));Assert.IsTrue(saved.Cards.Any(c=>c.InstanceId==acquiredId));
+            CollectionAssert.AreEqual(new[]{10},saved.ProcessedObstacleCells);
+            var reopened=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory);
+            var resumedSession=new DungeonCheckpointSession(defaults.Definitions,reopened);
+            Assert.IsTrue(resumedSession.TryRead(out var model,out var error),error);
+            Assert.AreSame(model.Cards[acquiredId],model.Obtained.Single());
+            CollectionAssert.AreEqual(saved.DeckOrder.Select(id=>model.Cards[id]),model.Deck.GetAllCards());
+            if(expected>=2){var swords=model.Deck.GetAllCards().Where(c=>c.Id=="sword").ToArray();Assert.AreEqual(2,swords.Length);Assert.AreNotSame(swords[0],swords[1]);}
+            Assert.AreEqual(ObstaclePenaltyType.CardDiscard,model.Map.MapCells[10].Obstacle.PenaltyType);
+            Assert.AreEqual(discard,model.Map.MapCells[10].Obstacle.PenaltyValue);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(resumedSession,new MockRandomProvider(),new MockLogger(),out var resumed,out error),error);
+            Assert.IsTrue(manager.SuspendForCheckpoint());resumed.ActivateCheckpoint();
+            IReadOnlyList<Card> clear=null;resumed.OnDungeonClearCompleted+=cards=>clear=cards;
+            resumed.OnCardRewardPresented+=_=>resumed.SelectCardReward(null);
+            foreach(var enemy in resumed.CurrentBattle.Enemies.ToArray())enemy.TakeDamage(enemy.MaxHp,ElementType.None);
+            Assert.IsNotNull(clear);Assert.AreEqual(1,clear.Count);
+            CollectionAssert.AreEqual(saved.ObtainedOrder,reopened.Read().ObtainedOrder);
+            CollectionAssert.AreEqual(saved.DeckOrder,reopened.Read().DeckOrder);
+            Assert.AreEqual(CheckpointBoundary.Terminal,reopened.Read().Boundary);
+        }
+        [Test]
+        public void 通過済み破棄セル上で再開しても二重破棄せず不正参照と旧版を拒否する()
+        {
+            var defaults=DungeonCheckpointSession.CreateDefault(Map(1),Deck());var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory);
+            var manager=new DungeonBattleManager(Map(1),new PlayerCharacter(100),Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:new DungeonCheckpointSession(defaults.Definitions,store));
+            var dto=store.Read();dto.Sequence++;dto.Boundary=CheckpointBoundary.RewardCompleted;dto.PositionMilli=10000;dto.ProcessedObstacleCells=new[]{10};
+            Assert.IsTrue(store.TryWrite(dto,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+            var session=new DungeonCheckpointSession(defaults.Definitions,store);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var resumed,out error),error);
+            resumed.ActivateCheckpoint();int hits=0;resumed.Dungeon.OnObstaclePenalty+=_=>hits++;
+            resumed.Tick(0);resumed.Tick(0);Assert.AreEqual(0,hits);Assert.AreEqual(3,resumed.Dungeon.GetCurrentDeck().TotalCount);
+            foreach(string corruption in new[]{"version","deck","history","processed"}) {
+                var invalid=dto.Copy();invalid.Sequence++;
+                if(corruption=="version")invalid.SchemaVersion=2;
+                if(corruption=="deck")invalid.DeckOrder=new[]{dto.DeckOrder[0],dto.DeckOrder[0]};
+                if(corruption=="history")invalid.ObtainedOrder=new[]{"missing-instance"};
+                if(corruption=="processed")invalid.ProcessedObstacleCells=new[]{10,10};
+                Assert.IsFalse(store.TryWrite(invalid,out error),corruption);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+            }
+            var changed=DungeonCheckpointSession.CreateDefault(Map(2),Deck()).Definitions;
+            Assert.IsFalse(new DungeonCheckpointSession(changed,new Olca.Unity.FileCheckpointStore(changed,directory)).TryRead(out _,out error));
+            CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
         }
     }
 }

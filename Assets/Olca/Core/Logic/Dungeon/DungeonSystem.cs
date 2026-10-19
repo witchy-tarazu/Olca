@@ -804,7 +804,8 @@ namespace Olca.Core.Logic.Dungeon
         private readonly Dictionary<int, Enemy> enemies = new Dictionary<int, Enemy>();
         private readonly Dictionary<int, float> heights = new Dictionary<int, float>();
         private readonly Dictionary<int, Obstacle> obstacles = new Dictionary<int, Obstacle>();
-        public int SchemaVersion => obstacles.Count == 0 ? 1 : 2;
+        // 既存の障害物なし/即時ダメージ保存は版1/2を維持。破棄型を含む定義だけ版3。
+        public int SchemaVersion => obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
         internal void ValidateProcessedObstacles(CheckpointDto dto)
         {
             if (SchemaVersion == 1)
@@ -818,9 +819,12 @@ namespace Olca.Core.Logic.Dungeon
                 (dto.Boundary != CheckpointBoundary.Departure || processed.Length == 0), "障害物の通過状態が不整合です");
         }
         private static bool SupportedObstacle(MapCell cell) => cell.Type == CellType.Obstacle && cell.Enemy == null &&
-            cell.Height == 0 && cell.Obstacle != null && cell.Obstacle.PenaltyType == ObstaclePenaltyType.ImmediateDamage &&
+            cell.Height == 0 && cell.Obstacle != null &&
+            (cell.Obstacle.PenaltyType == ObstaclePenaltyType.ImmediateDamage || cell.Obstacle.PenaltyType == ObstaclePenaltyType.CardDiscard) &&
             cell.Obstacle.PenaltyValue >= 0 && !string.IsNullOrWhiteSpace(cell.Obstacle.ObstacleId) && cell.Obstacle.StatusEffectId == null;
-        private static Obstacle CopyObstacle(Obstacle value) => new Obstacle(value.ObstacleId, value.Name, value.PenaltyValue);
+        private static Obstacle CopyObstacle(Obstacle value) => value.PenaltyType == ObstaclePenaltyType.CardDiscard
+            ? Obstacle.CreateCardDiscardObstacle(value.ObstacleId, value.Name, value.PenaltyValue)
+            : new Obstacle(value.ObstacleId, value.Name, value.PenaltyValue);
         private readonly string dungeonName;
         private readonly int initialDeckSize;
         internal IReadOnlyDictionary<int, Enemy> Enemies => enemies;
@@ -840,7 +844,7 @@ namespace Olca.Core.Logic.Dungeon
                     if (cell == null || cell.Index != i) throw new ArgumentException("固定セルが不整合です");
                     if (cell.Type == CellType.Obstacle)
                     {
-                        if (!SupportedObstacle(cell)) throw new ArgumentException("保存できる障害物は地上の即時ダメージ型のみです");
+                        if (!SupportedObstacle(cell)) throw new ArgumentException("保存できる障害物は地上の即時ダメージ型またはカード破棄型です");
                         var obstacle = CopyObstacle(cell.Obstacle); obstacles.Add(i, obstacle);
                         w.Write((int)cell.Type); w.Write(cell.Height);
                         CheckpointValues.WriteObstacle(w, obstacle);
@@ -1264,7 +1268,7 @@ namespace Olca.Core.Logic.Dungeon
             if (mapped.Keys.Any(i => !Definitions.Enemies.ContainsKey(i))) throw new ArgumentException("未登録の敵配置です");
             return new CheckpointDto {
                 SchemaVersion = Definitions.SchemaVersion,
-                ProcessedObstacleCells = Definitions.SchemaVersion == 2 ? dungeon.CheckpointProcessedObstacles : null,
+                ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
                 Player = new CheckpointPlayerDto { Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
