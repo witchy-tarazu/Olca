@@ -61,6 +61,50 @@ namespace Olca.Core.Domain
         private void StartStagger() { if (StaggerDurationFrames > 0) staggerTimer.SetFrames(StaggerDurationFrames); }
         internal void TickStagger(int ms, bool logical) { if (logical) staggerTimer.TickFrame(); else staggerTimer.Tick(ms); }
         internal void ClearStagger() { staggerTimer.SetFrames(0); frameWasStaggered = false; }
+        private FrameCountdown paralysisTimer;
+        private int? pendingParalysisFrames;
+        private bool paralysisFrameOpen, frameParalyzed, clearParalysisPending, paralysisInterruptPending;
+        public int ParalysisRemainingFrames => paralysisTimer.Frames;
+        public bool IsParalyzed => !IsDead && (paralysisFrameOpen ? frameParalyzed : paralysisTimer.IsActive);
+        public bool IsActionPrevented => IsStaggered || IsParalyzed;
+        internal bool HasParalysisState => paralysisTimer.IsActive || pendingParalysisFrames.HasValue || clearParalysisPending || frameParalyzed;
+        /// <summary>外部で確定した有効期間を予約する。付与フレームには行動を中断しない。</summary>
+        public void ApplyParalysis(int durationFrames)
+        {
+            if (durationFrames <= 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
+            if (IsDead) return;
+            pendingParalysisFrames = durationFrames;
+            // 既存の敵状態処理と同じく、フレーム内の解除予約を再付与で打ち消さない。
+            if (!paralysisFrameOpen) clearParalysisPending = false;
+        }
+        public void ClearParalysis() { if (!HasParalysisState && !paralysisFrameOpen) return; pendingParalysisFrames = null; clearParalysisPending = true; }
+        private void CommitParalysisChanges()
+        {
+            if (clearParalysisPending) { paralysisTimer.SetFrames(0); paralysisInterruptPending = false; }
+            else if (pendingParalysisFrames.HasValue) { paralysisTimer.SetFrames(pendingParalysisFrames.Value); paralysisInterruptPending = true; }
+            pendingParalysisFrames = null; clearParalysisPending = false;
+        }
+        internal bool BeginParalysisFrame(bool advance)
+        {
+            if (advance) CommitParalysisChanges();
+            paralysisFrameOpen = true; frameParalyzed = paralysisTimer.IsActive;
+            bool interrupt = advance && frameParalyzed && paralysisInterruptPending;
+            if (advance) paralysisInterruptPending = false;
+            return interrupt;
+        }
+        internal void TickParalysis(int ms, bool logical)
+        { if (logical) paralysisTimer.TickFrame(); else paralysisTimer.Tick(ms); }
+        internal void EndParalysisFrame(bool advance)
+        {
+            if (IsDead) { ResetParalysis(); return; }
+            if (advance) CommitParalysisChanges();
+            paralysisFrameOpen = false; frameParalyzed = false;
+        }
+        internal void ResetParalysis()
+        {
+            paralysisTimer.SetFrames(0); pendingParalysisFrames = null;
+            paralysisFrameOpen = frameParalyzed = clearParalysisPending = paralysisInterruptPending = false;
+        }
         private int pendingInvincibilityMs;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
         /// <summary>保存・戦闘をまたいで保持する外部定義。残り待ち時間は含めない。</summary>
@@ -86,6 +130,7 @@ namespace Olca.Core.Domain
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
+            if (IsDead) ResetParalysis();
             protection.CommitFrame();
             if (poiseRecovery.CommitFrame()) accumulatedDamage = 0;
             if (framePoiseHit)
@@ -110,7 +155,7 @@ namespace Olca.Core.Domain
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) OnDeath?.Invoke();
+            if (died) { ResetParalysis(); OnDeath?.Invoke(); }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -267,6 +312,7 @@ namespace Olca.Core.Domain
                 else
                 {
                     currentHp = Math.Max(0, currentHp - damage);
+                    if (IsDead) ResetParalysis();
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
@@ -299,7 +345,7 @@ namespace Olca.Core.Domain
 
                 if (!frameHp.Active && IsDead)
                 {
-                    OnDeath?.Invoke();
+                    ResetParalysis(); OnDeath?.Invoke();
                 }
                 return true;
             }

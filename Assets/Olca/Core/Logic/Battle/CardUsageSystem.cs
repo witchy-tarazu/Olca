@@ -24,7 +24,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>動作中のカード。選び直す待機キューには含めない。</summary>
         public Card InFlightCard => inFlightCard;
-        private bool interruptedByStagger;
+        private bool interruptedByReaction;
         private int queueVersion;
         private CancellationTokenSource currentCardCts; // 現在実行中のカード効果のCancellationTokenSource
 
@@ -79,7 +79,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool TryUseCurrentCard()
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsStaggered)
+            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsActionPrevented)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -169,7 +169,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public async UniTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsStaggered)
+            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsActionPrevented)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -181,7 +181,7 @@ namespace Olca.Core.Logic.Battle
             currentCardIndex++; // 実行中の一枚を待機範囲から取り出す。
             inFlightCard = card;
             isUsingCard = true;
-            interruptedByStagger = false;
+            interruptedByReaction = false;
             var useCts = new CancellationTokenSource();
             currentCardCts = useCts;
 
@@ -198,10 +198,10 @@ namespace Olca.Core.Logic.Battle
             }
             catch (OperationCanceledException)
             {
-                // 全体仕様第5節: 強靭度による中断は発動前でも消費する。
+                // 全体仕様第5節: 動作開始後の強靭度・麻痺による中断は発動前でも消費する。
                 // 外部トークンのキャンセルは意味が未定義のため、従来の未消費を維持する。
                 logger?.LogWarning($"カード効果が中断されました: {card.Name}");
-                if (interruptedByStagger && !ct.IsCancellationRequested)
+                if (interruptedByReaction && !ct.IsCancellationRequested)
                     return ConsumeAsyncCard(card, version);
                 // 外部キャンセルは従来どおり未消費。明示Clear後は復元しない。
                 if (version == queueVersion && !battleSystem.IsGameOver)
@@ -218,7 +218,7 @@ namespace Olca.Core.Logic.Battle
                 currentCardCts = null;
                 isUsingCard = false;
                 inFlightCard = null;
-                interruptedByStagger = false;
+                interruptedByReaction = false;
             }
         }
 
@@ -232,12 +232,12 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>
-        /// 現在実行中のカード効果を中断します（のけぞり時）
+        /// 現在実行中のカード効果を中断します（のけぞり・麻痺時）
         /// </summary>
         public void InterruptCurrentCard()
         {
             if (!isUsingCard) return;
-            interruptedByStagger = true;
+            interruptedByReaction = true;
             currentCardCts?.Cancel();
         }
 
@@ -258,7 +258,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool SkipCurrentCard()
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsStaggered) return false;
+            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.Player.IsActionPrevented) return false;
 
             var skippedCard = CurrentCard;
             currentCardIndex++;

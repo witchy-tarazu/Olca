@@ -121,6 +121,58 @@ namespace Olca.Tests.Battle
             Assert.Throws<System.ArgumentException>(()=>Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck()));
         }
 
+        [Test]
+        public void プレイヤー麻痺は次フレーム開始から最終フレームまで有効で再付与は残り期間を置換する()
+        {
+            var player=new PlayerCharacter(100);var target=new Enemy("p","検証",100,ElementType.None,new Vector2Int(5,0));target.ApplyStun(60000);
+            var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());
+            battle.RunLogicalFrame(()=>{player.ApplyParalysis(2);Assert.IsFalse(player.IsParalyzed);battle.TickFrame(17);});
+            Assert.AreEqual(2,player.ParalysisRemainingFrames);Assert.IsFalse(player.IsInvincible);
+            battle.RunLogicalFrame(()=>{Assert.IsTrue(player.IsParalyzed);player.TakeDamage(1,poiseDamage:0);battle.TickFrame(17);});
+            Assert.AreEqual(1,player.ParalysisRemainingFrames);Assert.IsTrue(player.IsParalyzed);
+            battle.RunLogicalFrame(()=>{battle.TickFrame(17);Assert.IsTrue(player.IsParalyzed);player.ApplyParalysis(3);});
+            Assert.AreEqual(3,player.ParalysisRemainingFrames);
+            battle.RunLogicalFrame(()=>{player.ApplyParalysis(1);battle.TickFrame(17);});Assert.AreEqual(1,player.ParalysisRemainingFrames);
+            battle.RunLogicalFrame(()=>{battle.TickFrame(17);Assert.IsTrue(player.IsParalyzed);});Assert.IsFalse(player.IsParalyzed);
+        }
+
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)][TestCase(true,true)]
+        public void プレイヤー麻痺の解除は付与予約を取り消し有効中ならフレーム末まで維持する(bool active,bool clearFirst)
+        {
+            var player=new PlayerCharacter(100);var target=new Enemy("p","検証",100,ElementType.None,new Vector2Int(5,0));target.ApplyStun(60000);
+            var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());
+            if(active)battle.RunLogicalFrame(()=>player.ApplyParalysis(6));
+            battle.RunLogicalFrame(()=>{if(clearFirst)player.ClearParalysis();player.ApplyParalysis(10);if(!clearFirst)player.ClearParalysis();Assert.AreEqual(active,player.IsParalyzed);battle.TickFrame(17);Assert.AreEqual(active,player.IsParalyzed);});
+            Assert.IsFalse(player.IsParalyzed);Assert.AreEqual(0,player.ParalysisRemainingFrames);
+            battle.TickFrame(17);Assert.IsFalse(player.IsParalyzed);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void プレイヤー麻痺はポーズ中に期間を消費せず死亡と勝利で予約も解除する(bool death)
+        {
+            var player=new PlayerCharacter(100);var target=new Enemy("p","検証",100,ElementType.None,new Vector2Int(5,0));target.ApplyStun(60000);
+            var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());
+            battle.RunLogicalFrame(()=>player.ApplyParalysis(6));battle.Pause(BattlePauseReason.User);
+            for(int f=0;f<10;f++)battle.TickFrame(17);Assert.AreEqual(6,player.ParalysisRemainingFrames);
+            battle.Resume(BattlePauseReason.User);
+            battle.RunLogicalFrame(()=>{player.ApplyParalysis(10);if(death)player.TakeDamage(1000);else target.TakeDamage(1000,ElementType.None);});
+            Assert.IsFalse(player.IsParalyzed);Assert.AreEqual(0,player.ParalysisRemainingFrames);
+        }
+
+        [Test]
+        public void 未確定または有効なプレイヤー麻痺は保存へ混入できず不正期間は拒否する()
+        {
+            foreach(bool active in new[]{false,true}) {
+                var player=new PlayerCharacter(100);Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ApplyParalysis(0));
+                var map=DungeonConfig.CreateTestDungeon(6,30,100);var deck=new Deck();
+                var checkpoints=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);
+                if(active){var battle=new BattleSystem(player,new List<Enemy>{map.MapCells[5].Enemy},deck);battle.RunLogicalFrame(()=>player.ApplyParalysis(6));}
+                else player.ApplyParalysis(6);
+                var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,player,deck,new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger(),checkpoints:checkpoints);
+                Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);Assert.IsNull(checkpoints.Store.Read());
+            }
+        }
+
         [TestCase(false)][TestCase(true)]
         public void 強靭度回復待ちは正の受理削りだけで更新し最大値変更と防御では延長しない(bool enemySide)
         {

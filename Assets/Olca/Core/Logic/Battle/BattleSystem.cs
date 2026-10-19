@@ -99,7 +99,7 @@ namespace Olca.Core.Logic.Battle
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
-            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => cardUsage.InFlightCard == null && !player.IsStaggered);
+            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => cardUsage.InFlightCard == null && !player.IsActionPrevented);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
             this.delayedEffects = new DelayedEffectSystem(this);
@@ -212,13 +212,18 @@ namespace Olca.Core.Logic.Battle
             BeginResolution();
             player.BeginHpFrame();
             foreach (var enemy in participants) { enemy.BeginStatusFrame(); enemy.BeginHpFrame(); }
-            try { action(); }
+            try
+            {
+                if (player.BeginParalysisFrame(!IsPaused)) cardUsage.InterruptCurrentCard();
+                action();
+            }
             finally
             {
                 var committed = participants.ToArray();
                 statusFrameParticipants = null;
                 // 全員のHPを確定してから通知し、勝敗と保存境界はその後に処理する。
                 player.CommitHpFrame();
+                player.EndParalysisFrame(!IsPaused);
                 foreach (var enemy in committed) enemy.CommitHpFrame();
                 foreach (var enemy in committed)
                 {
@@ -245,6 +250,7 @@ namespace Olca.Core.Logic.Battle
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (IsPaused || IsGameOver) return;
+            if (statusFrameParticipants == null && player.HasParalysisState) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
 
             // 追加登録・通知は即時だが、Tick途中の召喚へ過去の経過時間を渡さない。
             // 状態異常とAIは同じ開始時参加者だけを更新する。
@@ -269,6 +275,7 @@ namespace Olca.Core.Logic.Battle
                 // プレイヤーの無敵時間ティック処理
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
                 player.TickStagger(deltaTimeMs, logicalFrameTick);
+                player.TickParalysis(deltaTimeMs, logicalFrameTick);
                 player.TickProtection(deltaTimeMs, logicalFrameTick);
                 player.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
 
@@ -325,7 +332,7 @@ namespace Olca.Core.Logic.Battle
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
 
-            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null || player.IsStaggered) return;
+            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null || player.IsActionPrevented) return;
             BeginResolution();
             try
             {
@@ -538,6 +545,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
             player.ClearStagger();
+            player.ResetParalysis();
             player.ClearPoiseRecovery();
             player.SetAura(0);
             player.EndTransformationDefense();

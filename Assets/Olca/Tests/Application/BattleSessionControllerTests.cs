@@ -2397,6 +2397,101 @@ namespace Olca.Tests.Application
                     ResistanceCardTrace(fps, true, restore, 0, power, property, statusType: status, protection: 1, invincible: true));
         }
 
+        [TestCase(false)][TestCase(true)]
+        public void 麻痺中と付与予約中のチェックポイント離脱は状態を解除し開始保存だけから復帰する(bool active)
+        {
+            var map=DungeonConfig.CreateTestDungeon(6,30,100);var deck=new Deck();
+            var checkpoints=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);
+            var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:checkpoints);
+            for(int f=0;f<100 && manager.CurrentBattle==null;f++)manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);var player=manager.Dungeon.Player;var saved=checkpoints.Store.Read();
+            if(active)manager.CurrentBattle.RunLogicalFrame(()=>player.ApplyParalysis(6));else player.ApplyParalysis(6);
+            Assert.IsTrue(manager.SuspendForCheckpoint());Assert.IsFalse(player.IsParalyzed);Assert.AreEqual(0,player.ParalysisRemainingFrames);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
+            restored.ActivateCheckpoint();Assert.IsFalse(restored.Dungeon.Player.IsParalyzed);
+            Assert.AreEqual(saved.Sequence,checkpoints.Store.Read().Sequence);Assert.AreEqual(saved.SchemaVersion,checkpoints.Store.Read().SchemaVersion);
+        }
+
+        private List<string> PlayerParalysisTrace(int fps, bool stall, bool restore, bool afterHit)
+        {
+            var first = new Card("stagger-first", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All,
+                startupTime: afterHit ? 0 : 1, recoveryTime: afterHit ? 1 : 0);
+            var next = new Card("stagger-next", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 3, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All);
+            var deck = new Deck(new List<Card> { first, next }); var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map,
+                new PlayerCharacter(1000, staggerDurationFrames: 6), deck, new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle); var saved = checkpoints.Store.Read(); Assert.AreEqual(6, saved.Player.StaggerFrames);
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle; var player = battle.Player;
+            Assert.AreEqual(6, player.StaggerDurationFrames); Assert.IsFalse(player.IsParalyzed);
+            var setup = CreateSession(); var session = setup.session; session.Attach(battle);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+            foreach (var id in new[] { first.Id, next.Id })
+                Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand.Single(card => card.Id == id)));
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); player.MoveTo(new Vector2Int(2, 0));
+            foreach (var e in battle.Enemies) { e.ApplyStun(60000); e.MoveTo(new Vector2Int(5, 0)); }
+            var target = battle.Enemies[0]; int initialHp = target.CurrentHp;
+            for (int i = 0; i < 2; i++) battle.AddSummon(new Enemy("stagger-ai-" + i, "検証", 100, ElementType.None,
+                new Vector2Int(3, 0), isSummoned: true), new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, poiseDamage: 0, onHit: p => p.ApplyParalysis(6)) });
+            int used = 0, staggered = 0; battle.CardUsage.OnCardUsed += _ => used++; player.OnStaggered += () => staggered++;
+            var trace = new List<string>(); var clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
+            Action<long, int> tick = (frame, ms) => {
+                session.ProcessLogicalFrame(() => {
+                    if (frame == 1) session.UseCardFromInput();
+                    if (frame == 2) battle.Pause(BattlePauseReason.User);
+                    if (frame == 4) battle.Resume(BattlePauseReason.User);
+                    if (frame == 5) { battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen(); }
+                    if (frame == 7) battle.CustomScreen.Close();
+                    if (frame >= 2 && frame <= 11) {
+                        Assert.IsTrue(player.IsParalyzed); int hp = target.CurrentHp;
+                        Assert.IsFalse(battle.PlayerMovement.TryMove(new Vector2Int(-1, 0), new List<Enemy>(battle.Enemies)));
+                        battle.PlayerBasicAttack(target); Assert.AreEqual(hp, target.CurrentHp);
+                        Assert.IsFalse(session.TryUseCardAsync().GetAwaiter().GetResult());
+                        Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());
+                        Assert.AreEqual(1, battle.CardUsage.RemainingCount, "受付拒否ではカードを取り出さない");
+                    }
+                    if (frame == 12) {
+                        Assert.IsFalse(player.IsParalyzed);
+                        Assert.IsTrue(battle.PlayerMovement.TryMove(new Vector2Int(-1, 0), new List<Enemy>(battle.Enemies)));
+                        session.UseCardFromInput();
+                    }
+                    manager.TickFrame(ms);
+                });
+                if (frame == 1) { Assert.AreEqual(6, player.ParalysisRemainingFrames); Assert.AreEqual(0, used); Assert.AreEqual(0, staggered); }
+                if (frame == 3) Assert.AreEqual(6, player.ParalysisRemainingFrames);
+                if (frame == 6) Assert.AreEqual(5, player.ParalysisRemainingFrames);
+                trace.Add(frame + ":" + player.CurrentHp + ":" + player.ParalysisRemainingFrames + ":" + used + ":" + target.CurrentHp);
+            };
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long n = 1; previous < total; n++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + n * total / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(2, used, "afterHit=" + afterHit + ", errors=" + string.Join(";", setup.logger.ErrorLogs) + ", open=" + battle.CustomScreen.IsOpen + ", paused=" + battle.IsPaused + ", current=" + battle.CardUsage.CurrentCard?.Id + ", inflight=" + battle.CardUsage.InFlightCard?.Id); Assert.AreEqual(0, staggered); Assert.AreEqual(980, player.CurrentHp);
+            Assert.AreEqual(initialHp - (afterHit ? 10 : 0) - 3, target.CurrentHp);
+            Assert.AreEqual(saved.Sequence, checkpoints.Store.Read().Sequence); Assert.AreEqual(saved.MapHash, checkpoints.Store.Read().MapHash);
+            CollectionAssert.AreEqual(saved.DeckOrder, checkpoints.Store.Read().DeckOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void 通常AI麻痺は次フレーム中断と受付禁止を保存復帰固定フレームで維持する(int fps,bool restore)
+        {
+            foreach(bool afterHit in new[]{false,true})
+                CollectionAssert.AreEqual(PlayerParalysisTrace(60,false,false,afterHit),PlayerParalysisTrace(fps,true,restore,afterHit));
+        }
+
         private List<string> PlayerStaggerTrace(int fps, bool stall, bool restore, bool afterHit)
         {
             var first = new Card("stagger-first", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
