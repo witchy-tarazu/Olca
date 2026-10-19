@@ -1083,6 +1083,19 @@ namespace Olca.Tests.Dungeon
                     new CheckpointEnemyDto { CellIndex = 9, EnemyId = "boss", Hp = 200, GridX = 5 } }
             };
         }
+        [Test]
+        public void 属性耐性の保存復帰と上限検証()
+        {
+            departure.Player.FireResistance=-50;departure.Player.WaterResistance=100;
+            departure.Player.WindResistance=50;departure.Player.EarthResistance=-200;
+            var store=new MemoryCheckpointStore(definitions);Assert.IsTrue(store.TryWrite(departure,out var error),error);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),definitions,out var restored,out error),error);
+            Assert.IsTrue(restored.Player.Resistances.HasSameValues(new ElementResistances(-50,100,50,-200)));
+            Assert.AreEqual(93,restored.Player.CurrentHp);
+            departure.Player.FireResistance=101;
+            Assert.IsFalse(CheckpointCodec.TryRestore(departure,definitions,out _,out _));
+        }
+
         private CheckpointBattleDto Encounter() => new CheckpointBattleDto {
             ContactCell = 3, ParticipantCells = new[] { 3 }, HandLimit = 2, GridOriginX = -1,
             DashContact = true, DashEffect = (int)ActionSystem.DashContactEffect.InitialDamage };

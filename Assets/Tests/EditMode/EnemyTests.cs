@@ -22,13 +22,13 @@ namespace Olca.Tests
         }
 
         [Test]
-        public void TakeDamage_属性相性で2倍ダメージ()
+        public void TakeDamage_耐性マイナス100で2倍ダメージ()
         {
             // Arrange
-            var enemy = new Enemy("fire_enemy", "火の敵", maxHp: 100, ElementType.Fire, new Vector2Int(4, 0));
+            var enemy = new Enemy("fire_enemy", "火の敵", maxHp: 100, ElementType.Fire, new Vector2Int(4, 0), resistances: new ElementResistances(water: -100));
 
             // Act
-            enemy.TakeDamage(30, ElementType.Water); // 水→火は2倍
+            enemy.TakeDamage(30, ElementType.Water); // 水耐性-100は2倍
 
             // Assert
             Assert.AreEqual(40, enemy.CurrentHp); // 30 * 2 = 60ダメージ
@@ -38,7 +38,7 @@ namespace Olca.Tests
         public void TakeDamage_属性相性なしは1倍()
         {
             // Arrange
-            var enemy = new Enemy("fire_enemy", "火の敵", maxHp: 100, ElementType.Fire, new Vector2Int(4, 0));
+            var enemy = new Enemy("fire_enemy", "火の敵", maxHp: 100, ElementType.Fire, new Vector2Int(4, 0), resistances: new ElementResistances(water: -100));
 
             // Act
             enemy.TakeDamage(30, ElementType.Earth); // 土→火は相性なし

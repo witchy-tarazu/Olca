@@ -861,9 +861,11 @@ namespace Olca.Core.Logic.Dungeon
                     var e = cell.Enemy;
                     if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating)
                         throw new ArgumentException("敵の標準定義が必要です");
-                    enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition));
+                    enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition, resistances: e.Resistances));
                     heights.Add(i, cell.Height);
                     w.Write(e.EnemyId); w.Write(e.Name); w.Write(e.MaxHp); w.Write((int)e.Element);
+                    // 中立の既存定義hashは維持し、設定済み耐性だけを定義照合に含める。
+                    if (!e.Resistances.IsNeutral) { w.Write("resistances"); w.Write(e.Resistances.Fire); w.Write(e.Resistances.Water); w.Write(e.Resistances.Wind); w.Write(e.Resistances.Earth); }
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
                 }
             });
@@ -886,7 +888,7 @@ namespace Olca.Core.Logic.Dungeon
                     throw new ArgumentException("未対応セルを保存できません");
                 if (cell.Enemy == null) continue;
                 if (!enemies.TryGetValue(i, out var template) || cell.Enemy.EnemyId != template.EnemyId ||
-                    cell.Enemy.Name != template.Name || cell.Enemy.MaxHp != template.MaxHp || cell.Enemy.Element != template.Element || cell.Height != heights[i])
+                    cell.Enemy.Name != template.Name || cell.Enemy.MaxHp != template.MaxHp || cell.Enemy.Element != template.Element || !cell.Enemy.Resistances.HasSameValues(template.Resistances) || cell.Height != heights[i])
                     throw new ArgumentException("敵個体・配置の定義が一致しません");
             }
         }
@@ -1030,6 +1032,7 @@ namespace Olca.Core.Logic.Dungeon
             Map = definitions.RestoreMap(enemies);
             var p = dto.Player;
             Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise);
+            Player.SetElementResistances(new ElementResistances(p.FireResistance, p.WaterResistance, p.WindResistance, p.EarthResistance));
             Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             Deck = new Deck(Array.ConvertAll(dto.DeckOrder, id => cards[id]).ToList());
             Obtained = Array.AsReadOnly(Array.ConvertAll(dto.ObtainedOrder, id => cards[id]));
@@ -1066,7 +1069,7 @@ namespace Olca.Core.Logic.Dungeon
                     CheckpointValues.Require(e != null && definitions.Enemies.TryGetValue(e.CellIndex, out _), "敵配置が未定義です");
                     var template = definitions.Enemies[e.CellIndex];
                     CheckpointValues.Require(e.EnemyId == template.EnemyId && e.Hp >= 0 && e.Hp <= template.MaxHp, "敵の値が不正です");
-                    var enemy = new Enemy(template.EnemyId, template.Name, template.MaxHp, template.Element, new Vector2Int(e.GridX, e.GridY));
+                    var enemy = new Enemy(template.EnemyId, template.Name, template.MaxHp, template.Element, new Vector2Int(e.GridX, e.GridY), resistances: template.Resistances);
                     // ダメージ処理・属性倍率・浮動小数の丸めを経由せず、新規候補のHPを復元する。
                     enemy.RestoreCheckpointHp(e.Hp);
                     CheckpointValues.Require(enemy.CurrentHp == e.Hp, "敵HPを復元できません");
@@ -1251,7 +1254,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
-            if (player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.IsConcentrating)
+            if (player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.IsConcentrating)
                 throw new ArgumentException("未対応の一時状態を保存できません");
             var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
             var obtained = dungeon.GetObtainedCards().ToList();
@@ -1274,7 +1277,8 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
                 Player = new CheckpointPlayerDto { Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
-                    Poise = player.Poise, CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
+                    Poise = player.Poise, FireResistance = player.Resistances.Fire, WaterResistance = player.Resistances.Water,
+                    WindResistance = player.Resistances.Wind, EarthResistance = player.Resistances.Earth, CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
             };

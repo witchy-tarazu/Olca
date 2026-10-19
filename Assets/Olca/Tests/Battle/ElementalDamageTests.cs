@@ -34,39 +34,90 @@ namespace Olca.Tests.Battle
             return new BattleSystem(player, enemies, new Deck(cards), logger: logger);
         }
 
+
+        [TestCase(0, 7)][TestCase(50, 3)][TestCase(-50, 10)][TestCase(-100, 14)][TestCase(100, 0)][TestCase(-200, 21)]
+        public void 属性と独立した耐性で最後に切り捨てる(int resistance, int expected)
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.Fire, Vector2Int.Zero,
+                resistances: new ElementResistances(water: resistance));
+            enemy.TakeDamage(7, ElementType.Water);
+            Assert.AreEqual(100 - expected, enemy.CurrentHp);
+            player.SetElementResistances(new ElementResistances(water: resistance));
+            player.TakeDamage(7, attackElement: ElementType.Water);
+            Assert.AreEqual(100 - expected, player.CurrentHp);
+        }
+        [Test]
+        public void 自身属性から弱点を推測せず上限超過だけ拒否する()
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.Fire, Vector2Int.Zero);
+            enemy.TakeDamage(10, ElementType.Water);Assert.AreEqual(90, enemy.CurrentHp);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new ElementResistances(fire:101));
+            Assert.DoesNotThrow(() => new ElementResistances(fire:int.MinValue));
+            Assert.AreEqual(int.MaxValue,new ElementResistances(fire:int.MinValue).CalculateDamage(int.MaxValue,ElementType.Fire,true));
+        }
+        [TestCase(50, 7)][TestCase(-50, 21)][TestCase(-100, 28)][TestCase(100, 0)]
+        public void 草の火倍率と耐性を途中丸めせず乗算する(int resistance,int expected)
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.Water,new Vector2Int(1,0),resistances:new ElementResistances(fire:resistance));
+            var battle=CreateBattle(enemy);battle.Field.ChangePanelType(enemy.GridPosition,PanelType.Grass);
+            enemy.TakeDamage(7,ElementType.Fire);Assert.AreEqual(100-expected,enemy.CurrentHp);
+            player.SetElementResistances(new ElementResistances(fire:resistance));battle.Field.ChangePanelType(player.GridPosition,PanelType.Grass);
+            player.TakeDamage(7,attackElement:ElementType.Fire);Assert.AreEqual(100-expected,player.CurrentHp);
+        }
+        [TestCase(false, 50, 95)][TestCase(false, 100, 100)][TestCase(true, 50, 100)]
+        public void 変身中の耐性で計算後に解除し無敵なら解除しない(bool invincible,int formResistance,int hp)
+        {
+            player.SetElementResistances(new ElementResistances(fire:-100));
+            player.BeginTransformationDefense(new ElementResistances(fire:formResistance),ElementType.Fire);
+            int endedHp=-1;player.OnTransformationDefenseEnded+=()=>endedHp=player.CurrentHp;
+            if(invincible)player.SetInvincible(1000);
+            player.TakeDamage(10,attackElement:ElementType.Fire);
+            Assert.AreEqual(hp,player.CurrentHp);Assert.AreEqual(invincible,player.HasTransformationDefense);
+            Assert.AreEqual(invincible?-1:hp,endedHp);
+            if(!invincible){player.TakeDamage(10,attackElement:ElementType.Fire);Assert.AreEqual(hp-20,player.CurrentHp);}
+        }
+        [Test]
+        public void 解除用属性以外なら置換耐性を維持する()
+        {
+            player.BeginTransformationDefense(new ElementResistances(water:50),ElementType.Fire);
+            player.TakeDamage(10,attackElement:ElementType.Water);
+            Assert.AreEqual(95,player.CurrentHp);Assert.IsTrue(player.HasTransformationDefense);
+        }
+
         // ==================== Enemy.TakeDamage の属性相性テスト ====================
 
         [Test]
-        public void 水属性で火属性の敵に2倍ダメージになる()
+        public void 水耐性マイナス100で2倍ダメージになる()
         {
-            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0));
+            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0), resistances: new ElementResistances(water: -100));
             enemy.TakeDamage(50, ElementType.Water);
 
             Assert.AreEqual(0, enemy.CurrentHp, "50×2倍=100ダメージでHPが0になるはず");
         }
 
         [Test]
-        public void 火属性で風属性の敵に2倍ダメージになる()
+        public void 火耐性マイナス100で2倍ダメージになる()
         {
-            var enemy = new Enemy("wind_slime", "風スライム", 100, ElementType.Wind, new Vector2Int(1, 0));
+            var enemy = new Enemy("wind_slime", "風スライム", 100, ElementType.Wind, new Vector2Int(1, 0), resistances: new ElementResistances(fire: -100));
             enemy.TakeDamage(50, ElementType.Fire);
 
             Assert.AreEqual(0, enemy.CurrentHp);
         }
 
         [Test]
-        public void 風属性で土属性の敵に2倍ダメージになる()
+        public void 風耐性マイナス100で2倍ダメージになる()
         {
-            var enemy = new Enemy("earth_slime", "土スライム", 100, ElementType.Earth, new Vector2Int(1, 0));
+            var enemy = new Enemy("earth_slime", "土スライム", 100, ElementType.Earth, new Vector2Int(1, 0), resistances: new ElementResistances(wind: -100));
             enemy.TakeDamage(50, ElementType.Wind);
 
             Assert.AreEqual(0, enemy.CurrentHp);
         }
 
         [Test]
-        public void 土属性で水属性の敵に2倍ダメージになる()
+        public void 土耐性マイナス100で2倍ダメージになる()
         {
             var enemy = new Enemy("water_slime", "水スライム", 100, ElementType.Water, new Vector2Int(1, 0));
+            enemy = new Enemy("water", "水", 100, ElementType.Water, new Vector2Int(1, 0), resistances: new ElementResistances(earth: -100));
             enemy.TakeDamage(50, ElementType.Earth);
 
             Assert.AreEqual(0, enemy.CurrentHp);
@@ -84,7 +135,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void 攻撃側がNoneのとき等倍ダメージになる()
         {
-            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0));
+            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0), resistances: new ElementResistances(water: -100));
             enemy.TakeDamage(30, ElementType.None);
 
             Assert.AreEqual(70, enemy.CurrentHp, "None属性は1.0倍のはず");
@@ -102,7 +153,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void OnDamagedイベントで2倍の倍率が通知される()
         {
-            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0));
+            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0), resistances: new ElementResistances(water: -100));
             float receivedMultiplier = 0;
             enemy.OnDamaged += (damage, mult) => receivedMultiplier = mult;
 
@@ -116,7 +167,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void 水属性カードで火属性の敵に2倍ダメージになる()
         {
-            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0));
+            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0), resistances: new ElementResistances(water: -100));
             var battle = CreateBattle(enemy);
 
             var card = new Card(
@@ -136,7 +187,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void ElementOverrideが設定されたカードで上書き属性で相性計算される()
         {
-            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0));
+            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0), resistances: new ElementResistances(water: -100));
             var battle = CreateBattle(enemy);
 
             // 無属性カードに「水属性上書き」のModifierを付与
@@ -160,7 +211,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void DamageEffectでElementOverrideが正しく適用される()
         {
-            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0));
+            var enemy = new Enemy("fire_slime", "炎スライム", 100, ElementType.Fire, new Vector2Int(1, 0), resistances: new ElementResistances(water: -100));
             var battle = CreateBattle(enemy);
 
             // 無属性カードに水属性オーバーライドを付与

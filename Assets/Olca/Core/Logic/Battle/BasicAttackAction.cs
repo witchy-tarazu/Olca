@@ -9,6 +9,7 @@ namespace Olca.Core.Logic.Battle
     public class BasicAttackAction : IEnemyAIAction
     {
         private readonly int attackDamage;
+        private readonly ElementType attackElement;
         private readonly int cooldownMs;
 
         /// <summary>
@@ -16,8 +17,9 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldownMs">攻撃後のクールダウン時間（ミリ秒）</param>
-        public BasicAttackAction(int attackDamage, int cooldownMs)
+        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None)
         {
+            this.attackElement = attackElement;
             this.attackDamage = attackDamage;
             this.cooldownMs = cooldownMs;
         }
@@ -27,8 +29,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldown">攻撃後のクールダウン時間（秒）</param>
-        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f)
-            : this(attackDamage, (int)(cooldown * 1000f))
+        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None)
+            : this(attackDamage, (int)(cooldown * 1000f), attackElement)
         {
         }
 
@@ -51,7 +53,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (context.Player == null) return;
 
-            context.Player.TakeDamage(attackDamage);
+            context.Player.TakeDamage(attackDamage, attackElement: attackElement);
             context.Logger?.LogInfo($"{context.Self.Name}が{attackDamage}ダメージを与えた");
         }
 

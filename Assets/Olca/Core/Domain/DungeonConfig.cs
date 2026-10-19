@@ -88,6 +88,7 @@ namespace Olca.Core.Domain
     public sealed class CheckpointPlayerDto
     {
         public int Hp, MaxHp, AttackPower, Poise;
+        public int FireResistance, WaterResistance, WindResistance, EarthResistance;
         public float CustomSpeed;
         public int GridX, GridY;
         public CheckpointPlayerDto Copy() => (CheckpointPlayerDto)MemberwiseClone();

@@ -10,6 +10,30 @@ namespace Olca.Core.Domain
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
+        public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
+        public ElementResistances ActiveResistances => transformationResistances ?? Resistances;
+        public bool HasTransformationDefense => transformationResistances != null;
+        private ElementResistances transformationResistances;
+        private ElementType transformationBreakElement;
+        internal Func<bool> IsOnGrass;
+        public event Action OnTransformationDefenseEnded;
+        public void SetElementResistances(ElementResistances value)
+            => Resistances = value ?? throw new ArgumentNullException(nameof(value));
+        // 変身選択・使用回数・持続管理とは独立した、被弾計算用の置換状態。
+        public void BeginTransformationDefense(ElementResistances value, ElementType breakElement)
+        {
+            if (breakElement == ElementType.None || !Enum.IsDefined(typeof(ElementType), breakElement))
+                throw new ArgumentOutOfRangeException(nameof(breakElement));
+            transformationResistances = value ?? throw new ArgumentNullException(nameof(value));
+            transformationBreakElement = breakElement;
+        }
+        public void EndTransformationDefense()
+        {
+            if (!HasTransformationDefense) return;
+            transformationResistances = null;
+            OnTransformationDefenseEnded?.Invoke();
+        }
+
         private int currentHp;
         private readonly int maxHp;
         private readonly int attackPower;
@@ -115,8 +139,9 @@ namespace Olca.Core.Domain
         /// <param name="damage">ダメージ量</param>
         /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
         /// <param name="affectsPoise">強靭度を削るか。地形などのHPダメージとは独立する。</param>
-        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true)
+        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None)
         {
+            bool breakTransformation = false;
             OnDamageProcessingStarted?.Invoke();
             try
             {
@@ -124,6 +149,10 @@ namespace Olca.Core.Domain
 
                 // 無敵中はダメージ・のけぞりを無効化
                 if (invincibilityTimer.IsActive) return;
+
+                breakTransformation = HasTransformationDefense && attackElement == transformationBreakElement;
+                bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
+                damage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
 
                 // バリアがある場合は先にバリアで吸収
                 if (barrierHp > 0)
@@ -161,7 +190,8 @@ namespace Olca.Core.Domain
             }
             finally
             {
-                OnDamageProcessingCompleted?.Invoke();
+                try { if (breakTransformation) EndTransformationDefense(); }
+                finally { OnDamageProcessingCompleted?.Invoke(); }
             }
         }
 

@@ -111,6 +111,7 @@ namespace Olca.Core.Logic.Battle
             player.OnPositionChanged += OnPlayerPositionChanged;
 
             // プレイヤー死亡時の処理
+            player.IsOnGrass = () => battleField.GetPanelType(player.GridPosition) == PanelType.Grass;
             player.OnDamageProcessingStarted += BeginResolution;
             player.OnDamageProcessingCompleted += EndResolution;
             player.OnDeath += OnPlayerDeath;
@@ -145,6 +146,7 @@ namespace Olca.Core.Logic.Battle
 
         private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
         {
+            enemy.IsOnGrass = () => battleField.GetPanelType(enemy.GridPosition) == PanelType.Grass;
             enemyAI.RegisterEnemy(enemy, actions);
             enemy.OnDamageProcessingStarted += BeginResolution;
             enemy.OnDamageProcessingCompleted += EndResolution;
@@ -466,6 +468,7 @@ namespace Olca.Core.Logic.Battle
         {
             foreach (var entry in enemyDeathHandlers)
             {
+                entry.Key.IsOnGrass = null;
                 entry.Key.OnDamageProcessingStarted -= BeginResolution;
                 entry.Key.OnDamageProcessingCompleted -= EndResolution;
                 entry.Key.OnDeath -= entry.Value;
@@ -478,6 +481,8 @@ namespace Olca.Core.Logic.Battle
             player.OnPositionChanged -= OnPlayerPositionChanged;
             battleField.SetOccupancyQuery(null);
             battleField.SetProtectedPosition(null);
+            player.IsOnGrass = null;
+            player.EndTransformationDefense();
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
             player.OnDeath -= OnPlayerDeath;

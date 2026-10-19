@@ -10,6 +10,9 @@ namespace Olca.Core.Domain
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
+        public ElementResistances Resistances { get; }
+        internal Func<bool> IsOnGrass;
+
         private int currentHp;
         private readonly int maxHp;
         private readonly ElementType element;
@@ -76,8 +79,9 @@ namespace Olca.Core.Domain
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false)
+        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null)
         {
+            Resistances = resistances ?? ElementResistances.Neutral;
             EnemyId = enemyId;
             IsSummoned = isSummoned;
             Name = name;
@@ -100,8 +104,9 @@ namespace Olca.Core.Domain
                 if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
 
                 // 属性相性によるダメージ補正
-                float multiplier = GetElementMultiplier(attackElement, element);
-                int finalDamage = (int)(damage * multiplier);
+                bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
+                float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
+                int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
 
                 currentHp -= finalDamage;
                 if (currentHp < 0)
@@ -218,26 +223,6 @@ namespace Olca.Core.Domain
         {
             gridPosition = newPosition;
             OnPositionChanged?.Invoke(newPosition);
-        }
-
-        /// <summary>
-        /// 属性相性の倍率を取得
-        /// 水→火、火→風、風→土、土→水で2倍
-        /// </summary>
-        private float GetElementMultiplier(ElementType attackElement, ElementType defenseElement)
-        {
-            if (attackElement == ElementType.None || defenseElement == ElementType.None)
-            {
-                return 1.0f;
-            }
-
-            // 相性チェック
-            if (attackElement == ElementType.Water && defenseElement == ElementType.Fire) return 2.0f;
-            if (attackElement == ElementType.Fire && defenseElement == ElementType.Wind) return 2.0f;
-            if (attackElement == ElementType.Wind && defenseElement == ElementType.Earth) return 2.0f;
-            if (attackElement == ElementType.Earth && defenseElement == ElementType.Water) return 2.0f;
-
-            return 1.0f;
         }
 
         /// <summary>

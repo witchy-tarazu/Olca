@@ -78,7 +78,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
         /// <summary>
         /// 敵にダメージを与える
-        /// 属性相性はEnemy.TakeDamage内で自動的に計算される（水→火=2倍など）
+        /// 属性耐性と地形の補正はEnemy.TakeDamage内で計算される
         /// </summary>
         private void DealDamageToEnemy(Enemy enemy, BattleContext context)
         {
