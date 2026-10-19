@@ -35,6 +35,19 @@ namespace Olca.Core.Domain
         public void SetAura(int threshold, int? durationFrames = null) => protection.Set(threshold, true, durationFrames);
         internal void ClearProtection() => protection.Clear();
         internal void TickProtection(int ms, bool logical) => protection.Tick(ms, logical);
+        private FrameCountdown invincibilityTimer;
+        private bool frameInvincible;
+        private int pendingInvincibilityMs;
+        public bool IsInvincible => frameHp.Active ? frameInvincible : invincibilityTimer.IsActive;
+        public void SetInvincible(int durationMs)
+        {
+            if (durationMs <= 0) return;
+            if (frameHp.Active) { pendingInvincibilityMs = Math.Max(pendingInvincibilityMs, durationMs); return; }
+            invincibilityTimer.ExtendMilliseconds(durationMs);
+        }
+        internal void TickInvincible(int ms, bool logical)
+        { if (logical) invincibilityTimer.TickFrame(); else invincibilityTimer.Tick(ms); }
+        internal void ClearInvincibility() { invincibilityTimer.SetFrames(0); pendingInvincibilityMs = 0; frameInvincible = false; }
         public ElementResistances Resistances { get; }
         public TimedStatusResistances StatusResistances { get; }
         public EnemyPoiseDefinition PoiseDefinition { get; }
@@ -72,6 +85,7 @@ namespace Olca.Core.Domain
         {
             Guard.Clear();
             ClearProtection();
+            ClearInvincibility();
             staggerTimer.SetFrames(0);
         }
 
@@ -81,11 +95,13 @@ namespace Olca.Core.Domain
         internal long TotalDamageTaken { get; private set; }
         internal long TotalHitsTaken { get; private set; }
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); framePoiseDamage = 0; frameStaggered = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; pendingInvincibilityMs = 0; framePoiseDamage = 0; frameStaggered = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             protection.CommitFrame();
+            if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
+            pendingInvincibilityMs = 0;
             frameStaggered = ApplyPoise(framePoiseDamage);
             if (IsDead) ClearDeathReaction();
             framePoiseDamage = 0;
@@ -230,6 +246,7 @@ namespace Olca.Core.Domain
             {
                 if (damage < 0) throw new ArgumentException("ダメージは0以上である必要があります", nameof(damage));
                 if (IsDead) return;
+                if (!poison && IsInvincible) return;
 
                 // 属性相性によるダメージ補正
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);

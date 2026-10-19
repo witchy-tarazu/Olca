@@ -276,6 +276,7 @@ namespace Olca.Core.Logic.Battle
                 {
                     if (enemy.IsDead) continue;
                     enemy.TickProtection(deltaTimeMs, logicalFrameTick);
+                    enemy.TickInvincible(deltaTimeMs, logicalFrameTick);
                     int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
                     if (poisonDamage > 0) enemy.TakePoisonDamage(poisonDamage);
                 }
@@ -518,6 +519,7 @@ namespace Olca.Core.Logic.Battle
                 entry.Key.CancelStatusFrame();
                 entry.Key.Guard.Clear();
                 entry.Key.ClearProtection();
+                entry.Key.ClearInvincibility();
                 entry.Key.IsOnGrass = null;
                 entry.Key.OnDamageProcessingStarted -= BeginResolution;
                 entry.Key.OnDamageProcessingCompleted -= EndResolution;

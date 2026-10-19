@@ -129,3 +129,11 @@ SetBarrier/SetAuraに外部指定の任意durationFramesを追加。未指定は
 当初の1522件成功は旧仕様時点の結果であり、この更新の成功とは区別する。
 
 37fdc00反映後の検証: Unity MCP全EditMode 1530/1530成功（32.52秒）、consoleErrors=0、compilationFailed=false、警告10件。/workspace/.olca-cloud/results/enemy-protection/editmode-tests.json と console-after.json はこの最新結果。
+
+## 敵の外部指定無敵期間
+
+§7の敵味方共通規則に沿い、Enemy.SetInvincible(durationMs)の外部指定入口と通常被弾の遮断を追加する。既存無敵はHP/命中派生/独立強靭度を防ぎ、威力0の状態専用ヒットも防ぐ。毒は例外として通す。新規付与は同フレームの残りヒットを妨げず、終端で次フレームへ反映する。通常BattleSystem更新で期間を消費し、ポーズ中停止、死亡/戦闘終了/放棄で解除する。無敵で防いだ攻撃はガードやバリア/オーラを消耗しない。
+
+製品の時間値、カードごとの被弾無敵発生設定、敵AIの新行動は追加しない。外部指定状態の受理と遮断をこの単位とし、全攻撃の無敵発生設定が接続済みとは扱わない。旧保存schema/hashは変更せず、一時無敵を標準敵定義や保存状態へ混入させると拒否する。通常カード・状態派生・ブレイク・保存復帰/描画頻度・同フレーム・期限・毒・死亡を回帰する。
+
+敵無敵の検証: Unity MCP全EditMode 1540/1540成功（32.85秒）、consoleErrors=0、compilationFailed=false、警告10件。結果 /workspace/.olca-cloud/results/enemy-invincibility/editmode-tests.json、console-after.json。

@@ -86,6 +86,42 @@ namespace Olca.Tests.Battle
         }
 
         [Test]
+        public void 敵の新規無敵は同フレーム全命中後に有効になり期間中は毒だけ通す()
+        {
+            var target = new Enemy("invincible", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { target }, new Deck());
+            battle.RunLogicalFrame(() => {
+                target.TakeDamage(1, ElementType.None, poiseDamage: 7); target.SetInvincible(100);
+                Assert.IsFalse(target.IsInvincible); target.TakeDamage(1, ElementType.None, poiseDamage: 7);
+            });
+            Assert.AreEqual(98, target.CurrentHp); Assert.AreEqual(14, target.AccumulatedPoiseDamage); Assert.IsTrue(target.IsInvincible);
+            target.SetBarrier(15); int hits = 0; target.OnDamaged += (_, __) => hits++;
+            battle.RunLogicalFrame(() => { target.TakeDamage(999, ElementType.Fire, AttackProperty.Break, 999); target.TakeDamage(0, ElementType.None); });
+            Assert.AreEqual(0, hits); Assert.AreEqual(15, target.BarrierHp); Assert.AreEqual(14, target.AccumulatedPoiseDamage);
+            battle.Pause(BattlePauseReason.User); for (int f=0;f<20;f++) battle.TickFrame(17); Assert.IsTrue(target.IsInvincible);
+            battle.Resume(BattlePauseReason.User);
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 100, 60));
+            for (int f=0;f<5;f++) battle.TickFrame(17);
+            Assert.IsTrue(target.IsInvincible); Assert.Less(target.CurrentHp, 98); Assert.AreEqual(15, target.BarrierHp);
+            battle.TickFrame(17); Assert.IsFalse(target.IsInvincible);
+            target.SetBarrier(0); int hp=target.CurrentHp; target.TakeDamage(1, ElementType.None, poiseDamage: 0); Assert.AreEqual(hp-1,target.CurrentHp);
+        }
+
+        [Test]
+        public void 敵の無敵は死亡と戦闘終了で解除し標準保存定義には混ぜない()
+        {
+            var survivor = new Enemy("survivor", "検証", 100, ElementType.None, new Vector2Int(5,0));
+            var battle = new BattleSystem(new PlayerCharacter(100),new List<Enemy>{enemy,survivor},new Deck());
+            enemy.OnDeath += () => Assert.IsFalse(enemy.IsInvincible);
+            battle.RunLogicalFrame(() => {enemy.TakeDamage(1000,ElementType.None);enemy.SetInvincible(100);});
+            Assert.IsTrue(enemy.IsDead); Assert.IsFalse(enemy.IsInvincible);
+            survivor.SetInvincible(100); battle.Player.TakeDamage(1000); Assert.IsFalse(survivor.IsInvincible);
+            var map=DungeonConfig.CreateTestDungeon(6,30,100);map.MapCells[5].Enemy.SetInvincible(100);
+            Assert.Throws<System.ArgumentException>(()=>Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck()));
+        }
+
+        [Test]
         public void 明示強靭度は独立削りを蓄積し最大値低下で残り1を保ち再成立で期間を戻す()
         {
             var target = new Enemy("poise", "検証", 100, ElementType.None, Vector2Int.Zero,

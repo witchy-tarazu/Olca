@@ -2240,7 +2240,7 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
-        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None, int statusResistance = 0, AdditionalEffectType statusType = AdditionalEffectType.Poison, bool guarding = false, int protection = 0, bool aura = false)
+        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None, int statusResistance = 0, AdditionalEffectType statusType = AdditionalEffectType.Poison, bool guarding = false, int protection = 0, bool aura = false, bool invincible = false)
         {
             var modifier = new CardModifier();
             modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = statusType,
@@ -2279,6 +2279,8 @@ namespace Olca.Tests.Application
             enemy.Guard.Set(guarding, false);
             Assert.IsFalse(enemy.HasBarrier); Assert.IsFalse(enemy.HasAura);
             if (aura) enemy.SetAura(protection); else enemy.SetBarrier(protection);
+            Assert.IsFalse(enemy.IsInvincible);
+            if (invincible) enemy.SetInvincible(5000);
             var savedProtectionBoundary = checkpoints.Store.Read();
             int initialHp = enemy.CurrentHp, used = 0, firstStatusFrames = -1;
             Assert.AreEqual(statusResistance, enemy.StatusResistances.Poison);
@@ -2305,7 +2307,7 @@ namespace Olca.Tests.Application
                 clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
-            bool blocked = power > 0 && (protection > 0 || (guarding && (properties & AttackProperty.Break) == 0));
+            bool blocked = invincible || (power > 0 && (protection > 0 || (guarding && (properties & AttackProperty.Break) == 0)));
             int damage = power == 0 || resistance >= 100 || blocked ? 0 : resistance < 0 ? 2 : 1;
             Assert.AreEqual(initialHp - damage, enemy.CurrentHp);
             bool accepted = !blocked && (power == 0 || resistance < 100) && statusResistance < 100;
@@ -2313,8 +2315,8 @@ namespace Olca.Tests.Application
             Assert.AreEqual(accepted ? 600 * (100 - statusResistance) / 100 : -1, firstStatusFrames);
             Assert.AreEqual(1, used, "空振りでも親を一枚消費し、派生では追加消費しない");
             Assert.AreEqual(0, battle.CardUsage.RemainingCount);
-            Assert.AreEqual(aura ? 0 : Math.Max(0, protection - power), enemy.BarrierHp);
-            Assert.AreEqual(aura && power < protection ? protection : 0, enemy.AuraThreshold);
+            Assert.AreEqual(aura ? 0 : Math.Max(0, protection - (invincible ? 0 : power)), enemy.BarrierHp);
+            Assert.AreEqual(aura && (invincible || power < protection) ? protection : 0, enemy.AuraThreshold);
             var afterProtectionBoundary = checkpoints.Store.Read();
             Assert.AreEqual(savedProtectionBoundary.SchemaVersion, afterProtectionBoundary.SchemaVersion);
             Assert.AreEqual(savedProtectionBoundary.MapHash, afterProtectionBoundary.MapHash);
@@ -2382,6 +2384,17 @@ namespace Olca.Tests.Application
             Assert.AreEqual(hp < 100, enemy.ActiveStatus != null);
             Assert.AreEqual(0, battle.CardUsage.RemainingCount);
             session.Detach();
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void 敵の外部指定無敵は通常カードの威力ゼロと派生も保存復帰後に防ぐ(int fps, bool restore)
+        {
+            foreach (int power in new[] { 0, 1 })
+            foreach (var property in new[] { AttackProperty.None, AttackProperty.Sword | AttackProperty.Break })
+            foreach (var status in new[] { AdditionalEffectType.Poison, AdditionalEffectType.Paralyze })
+                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, 0, power, property, statusType: status, protection: 1, invincible: true),
+                    ResistanceCardTrace(fps, true, restore, 0, power, property, statusType: status, protection: 1, invincible: true));
         }
 
         private List<string> PlayerStaggerTrace(int fps, bool stall, bool restore, bool afterHit)

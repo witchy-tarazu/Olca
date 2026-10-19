@@ -19,3 +19,9 @@ Unity MCP全EditMode 1532/1532成功（32.96秒）。前後consoleErrors=0、com
 - RenderTextureは最後に描画された画面を読むため、同じ行のCPU状態と画像には最大1描画更新程度の差がある。実画面0174/0178/0182/0184で01/02/03/idleを確認した。
 
 宙返りの専用素材・演出は未完成のまま。テスト環境の自動URP/lock差分は公開しない。
+
+## 連続接敵の追補
+
+同じ描画用Controllerを継続し、検証用攻撃カードを通常CardUsage/BattleSessionの使用経路へ渡して戦闘を終え、報酬選択Viewの終了経路から探索へ復帰。続く自然接敵を2回観測した。1回目はShift入力によるダッシュ後に歩行へ戻って接敵（Move6/Dash8）、2回目は歩行接敵（Move20/Dash0）。移動中idle混入は両方0件、両接敵でknockback_01/02/03を観測、最後はheroine_idle_03_0/02_0へ復帰。倍率と表示ローカル位置は不変。宙返り新素材は使わない。
+
+証跡 /workspace/.olca-cloud/results/knockback-v2/continuous.csv、continuous-verification.json。実行コード /workspace/.olca-cloud/render-check/ContinuousKnockbackProbe.cs。これは表示の連続遷移検証であり、検証用攻撃力10000や報酬スキップを製品データへ追加したものではない。既存動画normal.mp4と撮影コードのSHA256は再照合済みで変更なし。
