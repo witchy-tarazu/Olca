@@ -1639,3 +1639,94 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class InputBindingEditTests
+    {
+        private static readonly (string,string,string) Confirm=("keyboard","menu","confirm"), Cancel=("keyboard","menu","cancel"), Optional=("keyboard","menu","detail");
+        private static Dictionary<(string,string,string),string> Bindings() => new Dictionary<(string,string,string),string> {
+            [Confirm]="key-a",[Cancel]="key-b",[Optional]=null,
+            [("keyboard","exploration","jump")]="key-a",[("controller","menu","confirm")]="key-a"
+        };
+        private static InputBindingProfile Profile() => new InputBindingProfile(Bindings(),new[]{Confirm,Cancel});
+        [Test]
+        public void 同一場面だけ相互交換し他場面と他デバイスには影響しない()
+        {
+            var profile=Profile();var edit=profile.BeginEdit();
+            Assert.IsTrue(edit.TryAssign(Confirm,"key-b",out var error),error);
+            Assert.AreEqual("key-b",edit.Draft[Confirm]);Assert.AreEqual("key-a",edit.Draft[Cancel]);
+            Assert.AreEqual("key-a",edit.Draft[("keyboard","exploration","jump")]);
+            Assert.AreEqual("key-a",edit.Draft[("controller","menu","confirm")]);
+            Assert.AreEqual("key-a",profile.Bindings[Confirm]);Assert.AreEqual("key-b",profile.Bindings[Cancel]);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 必須操作の直接解除と交換による間接解除を原子的に拒否する(bool indirect)
+        {
+            var edit=Profile().BeginEdit();var before=edit.Draft.ToArray();
+            Assert.IsFalse(edit.TryAssign(indirect?Optional:Confirm,indirect?"key-a":null,out var error));
+            Assert.IsNotEmpty(error);CollectionAssert.AreEquivalent(before,edit.Draft.ToArray());
+        }
+        [Test]
+        public void 任意操作は未割当にでき未割当同士の存在も許可する()
+        {
+            var bindings=Bindings();bindings[("keyboard","menu","help")]=null;
+            var edit=new InputBindingProfile(bindings,new[]{Confirm,Cancel}).BeginEdit();
+            Assert.IsTrue(edit.TryAssign(Optional,"key-c",out _));
+            Assert.IsTrue(edit.TryAssign(("keyboard","menu","help"),"key-c",out _));
+            Assert.IsNull(edit.Draft[Optional]);Assert.AreEqual("key-c",edit.Draft[("keyboard","menu","help")]);
+            Assert.IsTrue(edit.TryAssign(("keyboard","menu","help"),null,out _));
+        }
+        [Test]
+        public void 適用前の破棄と適用後の破棄はそれぞれ確定済み設定へ戻る()
+        {
+            var original=Profile();var edit=original.BeginEdit();
+            Assert.IsTrue(edit.TryAssign(Confirm,"key-b",out _));edit.Discard();
+            Assert.AreEqual("key-a",edit.Draft[Confirm]);
+            Assert.IsTrue(edit.TryAssign(Confirm,"key-b",out _));var applied=edit.Apply();
+            Assert.AreEqual("key-b",applied.Bindings[Confirm]);Assert.AreEqual("key-a",original.Bindings[Confirm]);
+            Assert.IsTrue(edit.TryAssign(Confirm,"key-c",out _));edit.Discard();
+            Assert.AreEqual("key-b",edit.Draft[Confirm]);Assert.AreEqual("key-b",applied.Bindings[Confirm]);
+            Assert.IsTrue(edit.TryAssign(Confirm,"key-b",out _));Assert.AreEqual("key-a",edit.Draft[Cancel]);
+        }
+        [TestCase("unknown")][TestCase("empty")][TestCase("space")]
+        public void 未定義操作と不正な割当文字列を原子的に拒否する(string kind)
+        {
+            var edit=Profile().BeginEdit();var before=edit.Draft.ToArray();
+            Assert.IsFalse(edit.TryAssign(kind=="unknown"?("keyboard","menu","unknown"):Confirm,kind=="empty"?"":kind=="space"?" ":"key-c",out _));
+            CollectionAssert.AreEquivalent(before,edit.Draft.ToArray());
+        }
+        [TestCase("duplicate")][TestCase("missing")][TestCase("unbound")][TestCase("identity")]
+        public void 不正な初期設定を黙って補完せず拒否する(string kind)
+        {
+            var bindings=Bindings();
+            if(kind=="duplicate")bindings[Cancel]="key-a";
+            if(kind=="missing")bindings.Remove(Confirm);
+            if(kind=="unbound")bindings[Confirm]=null;
+            if(kind=="identity")bindings[("","menu","unknown")]="key-c";
+            Assert.Throws<System.ArgumentException>(()=>new InputBindingProfile(bindings,new[]{Confirm,Cancel}));
+        }
+        [Test]
+        public void 入力辞書と必須一覧と編集スナップショットの変更を原本へ漏らさない()
+        {
+            var bindings=Bindings();var required=new List<(string,string,string)>{Confirm,Cancel};
+            var profile=new InputBindingProfile(bindings,required);bindings.Clear();required.Clear();
+            var edit=profile.BeginEdit();var snapshot=edit.Draft;
+            Assert.IsFalse(edit.TryAssign(Confirm,null,out _));Assert.IsTrue(edit.TryAssign(Confirm,"key-b",out _));
+            Assert.AreEqual("key-a",snapshot[Confirm]);Assert.AreEqual("key-a",profile.Bindings[Confirm]);
+            Assert.Throws<System.NotSupportedException>(()=>((IDictionary<(string,string,string),string>)profile.Bindings)[Confirm]="changed");
+            Assert.Throws<System.NotSupportedException>(()=>((IDictionary<(string,string,string),string>)snapshot)[Confirm]="changed");
+        }
+        [Test]
+        public void 並行した編集は互いへ漏れず採用する設定を呼出し側が選べる()
+        {
+            var profile=Profile();var a=profile.BeginEdit();var b=profile.BeginEdit();
+            Assert.IsTrue(a.TryAssign(Confirm,"key-b",out _));var committed=a.Apply();
+            Assert.AreEqual("key-a",b.Draft[Confirm]);Assert.AreEqual("key-b",committed.Bindings[Confirm]);
+            Assert.IsTrue(b.TryAssign(("controller","menu","confirm"),"button-c",out _));
+            var controllerEdit=b.Apply();Assert.AreEqual("key-a",controllerEdit.Bindings[Confirm]);
+            Assert.AreEqual("key-a",committed.Bindings[("controller","menu","confirm")]);
+        }
+    }
+}
