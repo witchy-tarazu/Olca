@@ -6,6 +6,27 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class PlayerMovementTests
     {
+        [TestCase(false)][TestCase(true)]
+        public void ジャンプ表示の参照で軌道と速度を変えず停止と着地に追従する(bool dash)
+        {
+            var movement=new PlayerMovement();if(dash)movement.StartDash();movement.Jump();
+            int Phase()=>Olca.Presentation.Field.GameFieldView.SelectJumpAnimationPhase(movement.IsJumping,movement.JumpProgress);
+            Assert.AreEqual(1,Phase());Assert.AreEqual(0,movement.HeightMilli);
+            movement.Update(200);Assert.AreEqual(1,Phase());Assert.AreEqual(.4f,movement.JumpProgress,.00001f);
+            var height=movement.HeightMilli;var position=movement.CurrentPositionMilli;movement.Pause();movement.Update(1000);
+            Assert.AreEqual(height,movement.HeightMilli);Assert.AreEqual(position,movement.CurrentPositionMilli);Assert.AreEqual(.4f,movement.JumpProgress,.00001f);
+            movement.Resume();movement.Update(50);Assert.AreEqual(2,Phase());Assert.AreEqual(2000,movement.HeightMilli);
+            movement.Update(50);Assert.AreEqual(3,Phase());Assert.AreEqual(.6f,movement.JumpProgress,.00001f);
+            movement.Update(200);Assert.AreEqual(0,Phase());Assert.IsFalse(movement.IsJumping);Assert.AreEqual(0,movement.HeightMilli);
+            Assert.AreEqual(dash?10000:5000,movement.CurrentPositionMilli);
+        }
+        [TestCase(13,1)][TestCase(14,2)][TestCase(15,2)][TestCase(16,2)][TestCase(17,3)][TestCase(29,3)]
+        public void ジャンプ表示は描画差分ではなく論理進行率で選ぶ(int frame,int expected)
+        {
+            Assert.AreEqual(expected,Olca.Presentation.Field.GameFieldView.SelectJumpAnimationPhase(true,frame/30f));
+            Assert.AreEqual(0,Olca.Presentation.Field.GameFieldView.SelectJumpAnimationPhase(false,frame/30f));
+        }
+
         [Test]
         public void Update_プレイヤーが基本速度で前進する()
         {

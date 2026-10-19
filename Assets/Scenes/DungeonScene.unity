@@ -6572,6 +6572,9 @@ MonoBehaviour:
   playerSprite: {fileID: 2050290227}
   idlePlayerSprite: {fileID: -975041138310192146, guid: d1f1093332d180d4f9b4241587ee2c61, type: 3}
   dashPlayerSprite: {fileID: 21300000, guid: f995dab3a0575a8e5a762191e7a123b8, type: 3}
+  jumpRisePlayerSprite: {fileID: 21300000, guid: e6e7272fa793232a09d22f42a0daf240, type: 3}
+  jumpApexPlayerSprite: {fileID: 21300000, guid: 565d2c62cbe03dcbe84515212db03428, type: 3}
+  jumpFallPlayerSprite: {fileID: 21300000, guid: 20f8a12b311d8969aa611fe0d7196749, type: 3}
   playerAnimator: {fileID: 2050290228}
   fieldCamera: {fileID: 1974572033}
   cameraFollowSpeed: 60

@@ -109,6 +109,9 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>ジャンプ中か</summary>
         public bool IsJumping => isJumping;
 
+        /// <summary>既存ジャンプの進行率。表示用の参照であり、移動・高さの更新は行わない。</summary>
+        public float JumpProgress => isJumping ? (float)(jumpTimerFrames / JUMP_DURATION_FRAMES) : 0f;
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
