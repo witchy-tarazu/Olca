@@ -9,6 +9,50 @@ namespace Olca.Tests.Domain
     [TestFixture]
     public class PlayerCharacterPoiseTests
     {
+        [TestCase(50, 5)][TestCase(-100, 20)][TestCase(0, 10)]
+        public void 明示した強靭度削り量は属性によるHP軽減増幅と独立する(int resistance, int hpDamage)
+        {
+            var player = new PlayerCharacter(100, poise: 30);
+            player.SetElementResistances(new ElementResistances(fire: resistance));
+            player.TakeDamage(10, attackElement: ElementType.Fire, poiseDamage: 7);
+            Assert.AreEqual(100 - hpDamage, player.CurrentHp); Assert.AreEqual(7, player.AccumulatedDamage);
+            player.TakeDamage(1, poiseDamage: 0); Assert.AreEqual(7, player.AccumulatedDamage);
+        }
+
+        [TestCase("immune")][TestCase("invincible")][TestCase("barrier")][TestCase("disabled")]
+        public void 無効化された攻撃は明示削り量を通さない(string prevention)
+        {
+            var player = new PlayerCharacter(100, poise: 30); int staggered = 0; player.OnStaggered += () => staggered++;
+            if (prevention == "immune") player.SetElementResistances(new ElementResistances(fire: 100));
+            if (prevention == "invincible") player.SetInvincible(1000);
+            if (prevention == "barrier") player.SetBarrier(20);
+            player.TakeDamage(10, affectsPoise: prevention != "disabled", attackElement: ElementType.Fire, poiseDamage: 30);
+            Assert.AreEqual(0, player.AccumulatedDamage); Assert.AreEqual(0, staggered);
+            Assert.AreEqual(prevention == "disabled" ? 90 : 100, player.CurrentHp);
+        }
+
+        [Test]
+        public void 明示削り0は強靭度0でものけぞらず負値は副作用前に拒否する()
+        {
+            var player = new PlayerCharacter(100, poise: 0); int staggered = 0; player.OnStaggered += () => staggered++;
+            player.TakeDamage(10, poiseDamage: 0); Assert.AreEqual(0, staggered); Assert.AreEqual(90, player.CurrentHp);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.TakeDamage(10, poiseDamage: -1));
+            Assert.AreEqual(90, player.CurrentHp); Assert.AreEqual(0, player.AccumulatedDamage);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new Olca.Core.Logic.Battle.BasicAttackAction(10, 100, poiseDamage: -1));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new Olca.Core.Logic.Battle.BasicAttackAction(poiseDamage: -1));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 敵AIの整数版と旧float版は明示削り量を同じように渡す(bool legacy)
+        {
+            var player = new PlayerCharacter(100, poise: 30);
+            var enemy = new Enemy("fixture", "検証", 10, ElementType.None, new Vector2Int(1, 0));
+            var action = legacy ? new Olca.Core.Logic.Battle.BasicAttackAction(10, .1f, poiseDamage: 7)
+                : new Olca.Core.Logic.Battle.BasicAttackAction(10, 100, poiseDamage: 7);
+            action.Execute(new Olca.Core.Logic.Battle.AIContext(enemy, player, new Olca.Core.Logic.Battle.BattleField(), new Olca.Tests.Mocks.MockRandomProvider(), new Olca.Tests.Mocks.MockLogger()));
+            Assert.AreEqual(90, player.CurrentHp); Assert.AreEqual(7, player.AccumulatedDamage);
+        }
+
         // ========== 基本動作 ==========
 
         [Test]

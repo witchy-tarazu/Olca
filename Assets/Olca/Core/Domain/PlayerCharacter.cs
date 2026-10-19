@@ -185,8 +185,10 @@ namespace Olca.Core.Domain
         /// <param name="damage">ダメージ量</param>
         /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
         /// <param name="affectsPoise">強靭度を削るか。地形などのHPダメージとは独立する。</param>
-        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None)
+        /// <param name="poiseDamage">明示した強靭度削り量。nullは旧定義のHPダメージ連動を維持する。</param>
+        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
         {
+            if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
             bool breakTransformation = false;
             OnDamageProcessingStarted?.Invoke();
@@ -220,21 +222,22 @@ namespace Olca.Core.Domain
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
-                // のけぞり判定（強靭度システム）
-                // 累計ダメージが強靭度を超えると、のけぞりが発生する
-                if (!IsDead && affectsPoise)
+                // 明示量はHP軽減と独立。完全無効・バリア完全吸収は上段で拒否する。
+                int impact = poiseDamage ?? damage;
+                // 明示0では蓄積も閾値判定も更新しない。既存の強制のけぞり指定は維持する。
+                if (!IsDead && affectsPoise && (poiseDamage != 0 || forceStagger))
                 {
                     if (frameHp.Active)
                     {
                         // 同フレームの全ヒットを受理後、閾値とリセットを一度だけ判定する。
                         framePoiseHit = true;
-                        framePoiseDamage += damage;
+                        framePoiseDamage += impact;
                         frameForceStagger |= forceStagger;
                     }
                     else
                     {
                         // フレーム外の互換呼び出しは従来の即時判定を維持する。
-                        long totalDamage = (long)accumulatedDamage + damage;
+                        long totalDamage = (long)accumulatedDamage + impact;
                         if (forceStagger || totalDamage >= poise)
                         {
                             accumulatedDamage = 0;

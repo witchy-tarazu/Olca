@@ -2317,6 +2317,64 @@ namespace Olca.Tests.Application
                     ResistanceCardTrace(fps, stall, restore, value.r, value.p, properties, statusResistance, statusType));
         }
 
+        private List<string> IndependentPoiseTrace(int fps, bool stall, bool restore, int impact)
+        {
+            var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());
+            var player = new PlayerCharacter(100); player.SetElementResistances(new ElementResistances(fire: 50));
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle); var saved = checkpoints.Store.Read();
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle; player = battle.Player; var session = CreateSession().session; session.Attach(battle);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); player.MoveTo(new Vector2Int(2, 0));
+            foreach (var enemy in battle.Enemies) { enemy.ApplyStun(60000); enemy.MoveTo(new Vector2Int(5, 0)); }
+            // 製品値を追加せず、公開登録APIで外部指定の攻撃を通常AI更新へ載せる。
+            for (int i = 0; i < 2; i++) battle.AddSummon(new Enemy("poise-fixture-" + i, "検証", 10,
+                ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),
+                new List<IEnemyAIAction> { new BasicAttackAction(10, 100000, ElementType.Fire, poiseDamage: impact) });
+            int staggered = 0, hpNotices = 0; player.OnStaggered += () => staggered++; player.OnHpChanged += (_, __) => hpNotices++;
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1) battle.Pause(BattlePauseReason.User);
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                manager.TickFrame(ms);
+                if (frame <= 5) { Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, staggered); }
+                trace.Add(frame + ":" + player.CurrentHp + ":" + player.AccumulatedDamage + ":" + staggered + ":" + hpNotices);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * total / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(90, player.CurrentHp); Assert.AreEqual(1, hpNotices);
+            Assert.AreEqual(impact >= 15 ? 1 : 0, staggered, "同フレームの合算後に一度だけ判定する");
+            Assert.AreEqual(impact >= 15 ? 0 : impact * 2, player.AccumulatedDamage);
+            var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
+            Assert.AreEqual(saved.Sequence, after.Sequence); Assert.AreEqual(saved.MapHash, after.MapHash);
+            Assert.AreEqual(saved.Player.FireResistance, after.Player.FireResistance);
+            CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder); CollectionAssert.AreEqual(saved.ObtainedOrder, after.ObtainedOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false, false)][TestCase(60, false, false)][TestCase(120, false, false)]
+        [TestCase(30, true, false)][TestCase(60, true, false)][TestCase(120, true, false)]
+        [TestCase(30, false, true)][TestCase(60, false, true)][TestCase(120, false, true)]
+        [TestCase(30, true, true)][TestCase(60, true, true)][TestCase(120, true, true)]
+        public void 敵AIの独立強靭度削りは保存復帰と描画頻度によらず同フレームで合算する(int fps, bool stall, bool restore)
+        {
+            foreach (int impact in new[] { 0, 7, 15, int.MaxValue })
+                CollectionAssert.AreEqual(IndependentPoiseTrace(60, false, false, impact), IndependentPoiseTrace(fps, stall, restore, impact));
+        }
+
         private List<string> TransformationImmunityTrace(int fps, bool stall, bool restore, int resistance, bool invincible, AttackProperty weakness = AttackProperty.None)
         {
             var map = DungeonConfig.CreateTestDungeon(8);

@@ -9,6 +9,7 @@ namespace Olca.Core.Logic.Battle
     public class BasicAttackAction : IEnemyAIAction
     {
         private readonly int attackDamage;
+        private readonly int? poiseDamage;
         private readonly ElementType attackElement;
         private readonly AttackProperty attackProperties;
         private readonly int cooldownMs;
@@ -18,8 +19,10 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldownMs">攻撃後のクールダウン時間（ミリ秒）</param>
-        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None)
+        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
         {
+            if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
+            this.poiseDamage = poiseDamage;
             AttackPropertyRules.Validate(attackProperties);
             this.attackProperties = attackProperties;
             this.attackElement = attackElement;
@@ -32,8 +35,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldown">攻撃後のクールダウン時間（秒）</param>
-        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None)
-            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties)
+        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
+            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties, poiseDamage)
         {
         }
 
@@ -56,7 +59,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (context.Player == null) return;
 
-            context.Player.TakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties);
+            context.Player.TakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage);
             context.Logger?.LogInfo($"{context.Self.Name}が{attackDamage}ダメージを与えた");
         }
 
