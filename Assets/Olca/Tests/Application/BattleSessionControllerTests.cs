@@ -1723,5 +1723,25 @@ namespace Olca.Tests.Application
             Assert.AreEqual(49, battle.Enemies[0].CurrentHp); session.Detach();
         }
 
+        [TestCase(30, 20, 0, 0, 1)] [TestCase(20, 30, 0, 0, 1)]
+        [TestCase(10, 15, 0, 25, 0)] [TestCase(15, 10, 0, 25, 0)]
+        [TestCase(5, 10, 20, 0, 1)] [TestCase(0, 0, 10, 10, 0)]
+        public void 強靭度削りは通常フレーム終端で合算し一度判定する(int first, int second, int initial, int expected, int staggers)
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            battle.Enemies[0].ApplyStun(60000);
+            if (initial > 0) battle.Player.TakeDamage(initial);
+            int count = 0; battle.Player.OnStaggered += () => { count++; Assert.AreEqual(0, battle.Player.AccumulatedDamage); };
+            session.ProcessLogicalFrame(() => {
+                battle.Player.TakeDamage(first); battle.Player.TakeDamage(second);
+                Assert.AreEqual(initial, battle.Player.AccumulatedDamage, "途中では蓄積を確定・リセットしない");
+                Assert.AreEqual(0, count);
+                battle.TickFrame(17);
+            });
+            Assert.AreEqual(expected, battle.Player.AccumulatedDamage); Assert.AreEqual(staggers, count);
+            Assert.AreEqual(100 - initial - first - second, battle.Player.CurrentHp);
+            session.Detach();
+        }
+
     }
 }

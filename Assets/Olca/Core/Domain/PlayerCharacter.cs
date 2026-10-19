@@ -49,11 +49,24 @@ namespace Olca.Core.Domain
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
         private bool frameInvincible, frameStaggered;
         private int pendingInvincibilityMs;
+        private long framePoiseDamage;
+        private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); frameInvincible = invincibilityTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
+            if (framePoiseHit)
+            {
+                long total = (long)accumulatedDamage + framePoiseDamage;
+                if (frameForceStagger || total >= poise)
+                {
+                    accumulatedDamage = 0;
+                    frameStaggered = !IsDead;
+                }
+                else accumulatedDamage = (int)total;
+            }
+            framePoiseDamage = 0; framePoiseHit = frameForceStagger = false;
             // 新規付与を当該フレームのTickで消費せず、次フレームへ全期間を渡す。
             if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
             pendingInvincibilityMs = 0;
@@ -206,18 +219,23 @@ namespace Olca.Core.Domain
                 // 累計ダメージが強靭度を超えると、のけぞりが発生する
                 if (!IsDead && affectsPoise)
                 {
-                    // 有効な負耐性で大きなダメージになっても、累計を符号反転させない。
-                    long totalDamage = (long)accumulatedDamage + damage;
-                    if (forceStagger || totalDamage >= poise)
+                    if (frameHp.Active)
                     {
-                        accumulatedDamage = 0;  // のけぞり後はリセット
-                        if (frameHp.Active) frameStaggered = true;
-                        else OnStaggered?.Invoke();
+                        // 同フレームの全ヒットを受理後、閾値とリセットを一度だけ判定する。
+                        framePoiseHit = true;
+                        framePoiseDamage += damage;
+                        frameForceStagger |= forceStagger;
                     }
                     else
                     {
-                        // 閾値未満なのでint範囲内。
-                        accumulatedDamage = (int)totalDamage;
+                        // フレーム外の互換呼び出しは従来の即時判定を維持する。
+                        long totalDamage = (long)accumulatedDamage + damage;
+                        if (forceStagger || totalDamage >= poise)
+                        {
+                            accumulatedDamage = 0;
+                            OnStaggered?.Invoke();
+                        }
+                        else accumulatedDamage = (int)totalDamage;
                     }
                 }
 
