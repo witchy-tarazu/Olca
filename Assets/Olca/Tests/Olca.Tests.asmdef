@@ -9,7 +9,8 @@
         "Olca.Application",
         "Olca.Presentation",
         "UnityEngine.UI",
-        "UniTask"
+        "UniTask",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [
         "Editor"

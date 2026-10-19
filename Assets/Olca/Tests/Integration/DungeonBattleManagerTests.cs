@@ -1260,6 +1260,141 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
             battle.TickFrame(17); Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
         }
+        private static List<string> TimestampedTrace(int fps, bool stall)
+        {
+            var loop = new Olca.Unity.UnityLogicalLoop(); long now = 0;
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp", flags).SetValue(loop, (System.Func<long>)(() => now));
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("observed", flags).SetValue(loop, 0L);
+            long At(int ms) => System.Diagnostics.Stopwatch.Frequency * ms / 1000;
+            var events = new List<Olca.Unity.TimestampedLogicalInput>();
+            void Add(int ms, LogicalInput value) { value.HasInputSample = true; events.Add(new Olca.Unity.TimestampedLogicalInput(At(ms), value)); }
+            Add(10, new LogicalInput { DashButtonDown = true, DashButton = true, AnyKey = true });
+            Add(20, new LogicalInput());
+            Add(35, new LogicalInput { BasicAttackButton = true, AnyKey = true });
+            Add(410, new LogicalInput());
+            Add(450, new LogicalInput { Horizontal = 1, HorizontalDown = 1, AnyKey = true });
+            Add(750, new LogicalInput());
+            Add(900, new LogicalInput { JumpButtonDown = true, CardUseButtonDown = true, AnyKey = true });
+            Add(905, new LogicalInput());
+            // 停止中の押下は復帰後へ持ち越さない。復帰時点で押し続けているキーは離すまで遮断する。
+            Add(1500, new LogicalInput { DashButtonDown = true, AnyKey = true });
+            Add(2000, new LogicalInput { BasicAttackButton = true, AnyKey = true });
+            Add(2200, new LogicalInput());
+            Add(2250, new LogicalInput { BasicAttackButton = true, AnyKey = true });
+            Add(2600, new LogicalInput());
+            var trace = new List<string>(); var random = new SeededRandom(); int cursor = 0, dash = 0, card = 0;
+            long moved = 0; var rolls = new List<int>();
+            void Pump(bool active)
+            {
+                var batch = new List<Olca.Unity.TimestampedLogicalInput>();
+                while (cursor < events.Count && events[cursor].Timestamp <= now) batch.Add(events[cursor++]);
+                // 演出の乱数消費量を描画回数ごとに変える。
+                for (int j = 0; j < fps; j++) { var ignored = UnityEngine.Random.value; }
+                loop.PumpTimestamped(active, batch, (f, ms, input) => {
+                    bool blocked = Olca.Unity.GameplayPause.InputBlocked;
+                    if (!blocked) {
+                        if (input.DashButtonDown) { dash++; rolls.Add(random.Range(0, 10000)); }
+                        if (input.CardUseButtonDown) { card++; rolls.Add(random.Range(0, 10000)); }
+                        moved += (long)input.Horizontal;
+                    }
+                    trace.Add(f+":"+blocked+":"+input.DashButtonDown+":"+input.BasicAttackButtonHoldTime+":"+input.Horizontal+":"+moved+":"+random.Calls);
+                });
+            }
+            void Segment(int start, int end)
+            {
+                if (stall) { now = At(end); Pump(true); return; }
+                for (int n = 1; now < At(end); n++) { now = System.Math.Min(At(end), At(start) + System.Diagnostics.Stopwatch.Frequency * n / fps); Pump(true); }
+            }
+            try {
+                Segment(0,1000); loop.Observe(true); loop.ReleaseInput(); Olca.Unity.GameplayPause.SetPaused(true);
+                now = At(1999); Pump(false);
+                now = At(2000); loop.Observe(false); loop.ReleaseInput(); Olca.Unity.GameplayPause.SetPaused(false);
+                Segment(2000,3000);
+                Assert.AreEqual(0,loop.LateInputEvents); Assert.AreEqual(120,loop.Clock.Frame); Assert.AreEqual(1,dash); Assert.AreEqual(1,card);
+                Assert.AreEqual(2,random.Calls); Assert.AreEqual(18,moved);
+                StringAssert.Contains(":"+(22f/60)+":",trace[23]);
+                return trace.Concat(rolls.Select(v=>"rng="+v)).ToList();
+            } finally {
+                loop.Dispose(); Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+        [TestCase(30,false)][TestCase(120,false)][TestCase(60,true)]
+        public void 同じイベント時刻列なら停止中の押下解放と移動チャージ復帰と乱数列が一致する(int fps,bool stall)
+        { CollectionAssert.AreEqual(TimestampedTrace(60,false),TimestampedTrace(fps,stall)); }
+        [Test]
+        public void 同一論理フレームの押下解放を翌フレームへ遅らせない()
+        {
+            var queue = new LogicalInputQueue();
+            queue.Enqueue(1,new LogicalInput { DashButtonDown=true,DashButton=true });
+            queue.Enqueue(1,new LogicalInput());
+            var first=queue.Take(1); Assert.IsTrue(first.DashButtonDown); Assert.IsFalse(first.DashButton);
+            Assert.IsFalse(queue.Take(2).DashButtonDown);
+        }
+        [Test]
+        public void InputSystemは同じ更新内の押下解放を生成時刻付きで両方採取する()
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            var provider=new Olca.Unity.UnityInputProvider();
+            try {
+                provider.StartEventCapture(); provider.CaptureTimestamped();
+                double time=UnityEngine.Time.realtimeSinceStartupAsDouble;
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.LeftShift),time-0.02);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(),time-0.01);
+                UnityEngine.InputSystem.InputSystem.Update();
+                var events=provider.CaptureTimestamped();
+                Assert.AreEqual(1,events.Count(e=>e.Input.DashButtonDown));
+                var press=events.Single(e=>e.Input.DashButtonDown);
+                var release=events.First(e=>e.Timestamp>press.Timestamp&&!e.Input.DashButton);
+                Assert.AreEqual(.01,(release.Timestamp-press.Timestamp)/(double)System.Diagnostics.Stopwatch.Frequency,.00001);
+            } finally { provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard); }
+        }
+        [Test]
+        public void 演出乱数を挟んでも実デッキの抽選順とゲーム乱数呼出数は変わらない()
+        {
+            string Draw(bool animate)
+            {
+                var factory = new Olca.Application.Battle.SimpleCardFactory();
+                var random = new SeededRandom();
+                var deck = new Deck(new List<Card> { factory.CreateById("sword"), factory.CreateById("bomb"), factory.CreateById("heal") });
+                var results = new List<string>();
+                for(int i=0;i<3;i++) {
+                    if(animate) for(int j=0;j<97;j++){var ignored=UnityEngine.Random.value;}
+                    results.Add(deck.DrawCards(1,random).Single().Id);
+                }
+                return string.Join(",",results)+":"+random.Calls;
+            }
+            Assert.AreEqual(Draw(false),Draw(true));
+        }
+        [Test]
+        public void スティックの片軸差分イベントも既存の生軸値として採取する()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            var provider=new Olca.Unity.UnityInputProvider();
+            try {
+                provider.StartEventCapture();provider.CaptureTimestamped();
+                UnityEngine.InputSystem.InputSystem.QueueDeltaStateEvent(pad.leftStick.x,.7f);
+                UnityEngine.InputSystem.InputSystem.Update();
+                Assert.IsTrue(provider.CaptureTimestamped().Any(e=>System.Math.Abs(e.Input.Horizontal-.7f)<.00001f && !e.Input.AnyKey));
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 遅着イベントは処理済みフレームへ戻さず未来イベントは時刻まで保持する()
+        {
+            var loop=new Olca.Unity.UnityLogicalLoop();long now=0;
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(System.Func<long>)(()=>now));
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("observed",flags).SetValue(loop,0L);
+            long frequency=System.Diagnostics.Stopwatch.Frequency;var presses=new List<long>();
+            System.Action<long,int,LogicalInput> tick=(f,ms,input)=>{if(input.DashButtonDown)presses.Add(f);};
+            now=frequency/10;loop.PumpTimestamped(true,null,tick);Assert.AreEqual(6,loop.Clock.Frame);
+            loop.PumpTimestamped(true,new[]{new Olca.Unity.TimestampedLogicalInput(frequency/20,new LogicalInput{DashButtonDown=true}),
+                new Olca.Unity.TimestampedLogicalInput(frequency/5,new LogicalInput{DashButtonDown=true})},tick);
+            Assert.IsEmpty(presses);Assert.AreEqual(1,loop.LateInputEvents);
+            now=frequency*3/10;loop.PumpTimestamped(true,null,tick);
+            CollectionAssert.AreEqual(new long[]{7,13},presses);loop.Dispose();
+        }
         private sealed class SeededRandom : Olca.Core.Interfaces.IRandomProvider
         {
             private readonly System.Random random = new System.Random(12345);

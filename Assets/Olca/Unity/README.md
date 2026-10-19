@@ -6,7 +6,7 @@ Unity固有機能のラッパー実装です。
 
 Core層のインターフェースに対するUnity実装を配置します。
 
-- UnityRandomProvider: UnityEngine.Randomのラッパー
+- UnityRandomProvider: 演出用UnityEngine.Randomから独立したSystem.Random
 - UnityTimeProvider: UnityEngine.Timeのラッパー
 - UnityInputProvider: UnityEngine.Inputのラッパー
 - UnityLogger: UnityEngine.Debugのラッパー

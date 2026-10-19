@@ -33,6 +33,7 @@ namespace Olca.Application.Battle
         private void Start()
         {
             inputProvider = new UnityInputProvider();
+            inputProvider.StartEventCapture();
             randomProvider = new UnityRandomProvider();
             logger = new UnityLogger();
 
@@ -71,9 +72,10 @@ namespace Olca.Application.Battle
         {
             if (battleSystem == null) return;
 
-            logicalLoop.Pump(!GameplayPause.IsPaused && Time.timeScale > 0,
-                GameplayPause.InputBlocked ? new Olca.Core.Logic.Integration.LogicalInput() : inputProvider.CaptureLogical(),
+            logicalLoop.PumpTimestamped(!GameplayPause.IsPaused && Time.timeScale > 0,
+                inputProvider.CaptureTimestamped(),
                 (frame, ms, input) => {
+                    if (GameplayPause.InputBlocked) input = new Olca.Core.Logic.Integration.LogicalInput();
                     if (input.CustomScreenButtonDown) battleSession.TryOpenCustomScreen();
                     if (input.CardUseButtonDown && !battleSystem.CustomScreen.IsOpen) battleSession.UseCardFromInput();
                     battleSystem.TickFrame(ms, input);
@@ -90,6 +92,7 @@ namespace Olca.Application.Battle
 
         private void OnDestroy()
         {
+            inputProvider?.Dispose();
             logicalLoop.Dispose();
             battleSession?.Detach();
             if (battleSystem != null)

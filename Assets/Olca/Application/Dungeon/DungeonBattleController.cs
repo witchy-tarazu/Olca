@@ -129,6 +129,7 @@ namespace Olca.Application.Dungeon
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
             else Time.timeScale = timeScaleBeforePause;
             pauseOverlay?.SetActive(paused);
+            inputProvider?.QueueSnapshot();
         }
 
         private void CreatePauseControls()
@@ -188,6 +189,7 @@ namespace Olca.Application.Dungeon
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
+            inputProvider.StartEventCapture();
 
             var dungeonConfig = configuredDungeon ?? DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
             var playerCharacter = new PlayerCharacter(
@@ -238,10 +240,8 @@ namespace Olca.Application.Dungeon
         private void Update()
         {
             if (manager == null) return;
-            GameplayPause.UpdateInputBarrier();
             bool active = !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
-            var sample = GameplayPause.InputBlocked ? new LogicalInput() : inputProvider.CaptureLogical();
-            logicalLoop.Pump(active, sample, TickLogicalFrame, () => !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
+            logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
                 () => manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused));
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
@@ -588,6 +588,7 @@ namespace Olca.Application.Dungeon
             {
                 logicalLoop.Observe(false);
                 logicalLoop.ReleaseInput();
+                inputProvider?.QueueSnapshot();
             }
         }
         // 候補と保存形式を検証した後でのみ旧モデルを破棄する。
@@ -613,6 +614,7 @@ namespace Olca.Application.Dungeon
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline();
+            inputProvider?.QueueSnapshot();
             manager = restored;
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;
@@ -628,6 +630,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            inputProvider?.Dispose();
             logicalLoop.Dispose();
             if (IsUserPaused) SetUserPaused(false);
             if (pauseCanvas != null) Destroy(pauseCanvas);

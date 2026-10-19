@@ -1,13 +1,110 @@
 using Olca.Core.Interfaces;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+using UnityEngine.InputSystem.LowLevel;
 
 namespace Olca.Unity
 {
     /// <summary>
     /// UnityEngine.Inputを使用した入力プロバイダー
     /// </summary>
-    public class UnityInputProvider : IInputProvider
+    public class UnityInputProvider : IInputProvider, System.IDisposable
     {
+        private readonly List<TimestampedLogicalInput> events = new List<TimestampedLogicalInput>();
+        private readonly Dictionary<ButtonControl, bool> buttons = new Dictionary<ButtonControl, bool>();
+        private readonly Dictionary<InputDevice, UnityEngine.Vector2> sticks = new Dictionary<InputDevice, UnityEngine.Vector2>();
+        private Olca.Core.Logic.Integration.LogicalInput eventState = new Olca.Core.Logic.Integration.LogicalInput();
+        private bool capturing;
+        private double eventClockOffset;
+        public void StartEventCapture()
+        {
+            if (capturing) return;
+            eventClockOffset = System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency - Time.realtimeSinceStartupAsDouble;
+            capturing = true; InputSystem.onEvent += CaptureEvent; InputSystem.onDeviceChange += DeviceChanged;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.pauseStateChanged += EditorPauseChanged;
+#endif
+            QueueSnapshot();
+        }
+        public void Dispose()
+        {
+            if (!capturing) return;
+            InputSystem.onEvent -= CaptureEvent; InputSystem.onDeviceChange -= DeviceChanged;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseChanged;
+#endif
+            capturing = false; events.Clear();
+        }
+#if UNITY_EDITOR
+        private void EditorPauseChanged(UnityEditor.PauseState state)
+        { if (state == UnityEditor.PauseState.Unpaused) QueueSnapshot(); }
+#endif
+        public TimestampedLogicalInput[] CaptureTimestamped()
+        { var result = events.ToArray(); events.Clear(); return result; }
+        // スティック方向の合成ButtonControlは旧Input.anyKeyの物理ボタンに含めない。
+        private static IEnumerable<ButtonControl> Buttons(InputDevice device)
+            => device.allControls.OfType<ButtonControl>().Where(button => !(button.parent is StickControl));
+        private static StickControl Stick(InputDevice device) => device is Gamepad pad ? pad.leftStick : (device as Joystick)?.stick;
+        public void QueueSnapshot()
+        {
+            buttons.Clear(); sticks.Clear();
+            foreach (var device in InputSystem.devices)
+            {
+                foreach (var button in Buttons(device)) buttons[button] = button.isPressed;
+                var stick = Stick(device); if (stick != null) sticks[device] = stick.ReadUnprocessedValue();
+            }
+            eventState = BuildState();
+            events.Add(new TimestampedLogicalInput(System.Diagnostics.Stopwatch.GetTimestamp(), eventState.Copy()));
+        }
+        private void DeviceChanged(InputDevice device, InputDeviceChange change)
+        {
+            if (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected ||
+                change == InputDeviceChange.Disabled || change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
+                QueueSnapshot();
+        }
+        private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
+        private Olca.Core.Logic.Integration.LogicalInput BuildState()
+        {
+            float x = (KeyHeld(Key.RightArrow) || KeyHeld(Key.D) ? 1 : 0) - (KeyHeld(Key.LeftArrow) || KeyHeld(Key.A) ? 1 : 0);
+            float y = (KeyHeld(Key.UpArrow) || KeyHeld(Key.W) ? 1 : 0) - (KeyHeld(Key.DownArrow) || KeyHeld(Key.S) ? 1 : 0);
+            foreach (var stick in sticks.Values)
+            {
+                // 既存InputManagerの軸0/1・dead=0.19と同じ範囲。キーは変更しない。
+                if (Mathf.Abs(stick.x) >= .19f && Mathf.Abs(stick.x) > Mathf.Abs(x)) x = stick.x;
+                if (Mathf.Abs(stick.y) >= .19f && Mathf.Abs(stick.y) > Mathf.Abs(y)) y = stick.y;
+            }
+            return new Olca.Core.Logic.Integration.LogicalInput {
+                HasInputSample = true, AnyKey = buttons.Values.Any(pressed => pressed),
+                Horizontal = x, Vertical = y, BasicAttackButton = KeyHeld(Key.Z),
+                DashButton = KeyHeld(Key.LeftShift) || KeyHeld(Key.RightShift)
+            };
+        }
+        private void CaptureEvent(InputEventPtr evt, InputDevice device)
+        {
+            if (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>()) return;
+            bool space = KeyHeld(Key.Space), leftShift = KeyHeld(Key.LeftShift), rightShift = KeyHeld(Key.RightShift);
+            bool leftAlt = KeyHeld(Key.LeftAlt), rightAlt = KeyHeld(Key.RightAlt);
+            foreach (var button in Buttons(device))
+                if (button.ReadValueFromEvent(evt, out float value)) buttons[button] = value >= button.pressPointOrDefault;
+            var stick = Stick(device);
+            if (stick != null)
+            {
+                sticks.TryGetValue(device, out var position);
+                if (stick.x.ReadUnprocessedValueFromEvent(evt, out float x)) position.x = x;
+                if (stick.y.ReadUnprocessedValueFromEvent(evt, out float y)) position.y = y;
+                sticks[device] = position;
+            }
+            var next = BuildState();
+            next.HorizontalDown = eventState.Horizontal == 0 ? next.Horizontal : 0;
+            next.JumpButtonDown = next.CardUseButtonDown = !space && KeyHeld(Key.Space);
+            next.DashButtonDown = (!leftShift && KeyHeld(Key.LeftShift)) || (!rightShift && KeyHeld(Key.RightShift));
+            next.CustomScreenButtonDown = (!leftAlt && KeyHeld(Key.LeftAlt)) || (!rightAlt && KeyHeld(Key.RightAlt));
+            long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
+            events.Add(new TimestampedLogicalInput(timestamp, next)); eventState = next;
+        }
         private float basicAttackButtonPressTime;
         private bool wasBasicAttackButtonPressed;
         private float lastHorizontal;
@@ -102,9 +199,10 @@ namespace Olca.Unity
             IsPaused = paused;
             if (!paused) { awaitRelease = true; resumeFrames = 2; }
         }
-        public static void UpdateInputBarrier()
+        public static void UpdateInputBarrier() => UpdateInputBarrier(Input.anyKey);
+        public static void UpdateInputBarrier(bool anyKey)
         {
-            if (!IsPaused && awaitRelease && !Input.anyKey)
+            if (!IsPaused && awaitRelease && !anyKey)
             { awaitRelease = false; resumeFrames = 2; }
         }
         public static void AdvanceLogicalFrame() { if (!IsPaused && !awaitRelease && resumeFrames > 0) resumeFrames--; }

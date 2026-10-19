@@ -1,4 +1,5 @@
 using Olca.Core.Interfaces;
+using System.Linq;
 using UnityEngine;
 
 namespace Olca.Unity
@@ -53,7 +54,8 @@ namespace Olca.Unity
 #endif
         }
 #if UNITY_EDITOR
-        private void EditorPauseChanged(UnityEditor.PauseState state) => Observe(state == UnityEditor.PauseState.Paused && Time.timeScale > 0);
+        private void EditorPauseChanged(UnityEditor.PauseState state)
+        { Observe(state == UnityEditor.PauseState.Paused && Time.timeScale > 0); ReleaseInput(); }
 #endif
         public void Dispose()
         {
@@ -66,7 +68,10 @@ namespace Olca.Unity
         private readonly System.Collections.Generic.SortedDictionary<long, System.Collections.Generic.List<System.Action>> commands = new System.Collections.Generic.SortedDictionary<long, System.Collections.Generic.List<System.Action>>();
         private System.Func<long> readTimestamp = System.Diagnostics.Stopwatch.GetTimestamp;
         private long observed = System.Diagnostics.Stopwatch.GetTimestamp();
-        private double wallRemainder;
+        private long wallRemainder;
+        private long inputFloor = long.MinValue;
+        public long LateInputEvents { get; private set; }
+        private readonly System.Collections.Generic.List<TimestampedLogicalInput> pendingEvents = new System.Collections.Generic.List<TimestampedLogicalInput>();
         private Olca.Core.Logic.Integration.LogicalInput previous = new Olca.Core.Logic.Integration.LogicalInput();
         public void Schedule(System.Action action, int delayFrames = 1)
         {
@@ -80,15 +85,39 @@ namespace Olca.Unity
             if (!commands.TryGetValue(target, out var list)) commands[target] = list = new System.Collections.Generic.List<System.Action>();
             list.Add(action);
         }
-        public void Observe(bool active)
+        public void Observe(bool active) => ObserveAt(readTimestamp(), active);
+        private void ObserveAt(long now, bool active)
         {
-            long now = readTimestamp();
+            now = System.Math.Max(now, observed);
             if (active)
             {
-                double ticks = (now - observed) * (10000000d / System.Diagnostics.Stopwatch.Frequency) + wallRemainder;
-                long whole = (long)ticks; wallRemainder = ticks - whole; Clock.Accumulate(whole);
+                long frequency = System.Diagnostics.Stopwatch.Frequency, elapsed = now - observed;
+                long numerator = elapsed % frequency * 10000000L + wallRemainder;
+                Clock.Accumulate(elapsed / frequency * 10000000L + numerator / frequency);
+                wallRemainder = numerator % frequency;
             }
             observed = now;
+        }
+        /// <summary>生成時刻までの経過量で入力フレームを確定してから追いつき処理を行う。</summary>
+        public void PumpTimestamped(bool active, System.Collections.Generic.IEnumerable<TimestampedLogicalInput> events,
+            System.Action<long, int, Olca.Core.Logic.Integration.LogicalInput> tick,
+            System.Func<bool> canAdvance = null, System.Func<bool> advanceHeldTime = null)
+        {
+            long now = readTimestamp();
+            if (!active) { ObserveAt(now, false); ReleaseInput(); return; }
+            if (events != null) pendingEvents.AddRange(events);
+            var ordered = pendingEvents.OrderBy(e => e.Timestamp).ToArray(); pendingEvents.Clear();
+            foreach (var entry in ordered)
+            {
+                if (entry.Timestamp < inputFloor) continue;
+                if (entry.Timestamp > now) { pendingEvents.Add(entry); continue; }
+                // 既に処理済みの時刻に遅着したイベントは巻き戻さず次の未処理フレームへ置く。
+                if (entry.Timestamp < observed) LateInputEvents++;
+                ObserveAt(entry.Timestamp, true);
+                inputs.Enqueue(Clock.InputFrame, entry.Input);
+            }
+            ObserveAt(now, true);
+            Advance(0, null, tick, canAdvance, advanceHeldTime: advanceHeldTime);
         }
         // セーブ読込で攻略そのものを置き換える場合だけ使用。通常のポーズには使用しない。
         public void StartNewTimeline()
@@ -96,7 +125,7 @@ namespace Olca.Unity
             Clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
             commands.Clear(); ReleaseInput(); wallRemainder = 0; Observe(false);
         }
-        public void ReleaseInput() { inputs.Release(); previous = new Olca.Core.Logic.Integration.LogicalInput(); }
+        public void ReleaseInput() { inputs.Release(); pendingEvents.Clear(); inputFloor = readTimestamp(); previous = new Olca.Core.Logic.Integration.LogicalInput(); }
         public void Pump(bool active, Olca.Core.Logic.Integration.LogicalInput sample,
             System.Action<long, int, Olca.Core.Logic.Integration.LogicalInput> tick, System.Func<bool> canAdvance = null, System.Func<bool> advanceHeldTime = null)
         {
@@ -120,9 +149,23 @@ namespace Olca.Unity
                     if (first.Key > frame) break;
                     commands.Remove(first.Key); foreach (var action in first.Value) action();
                 }
+                var input = inputs.Take(frame, advanceHeldTime == null || advanceHeldTime());
+                if (input.HasInputSample) GameplayPause.UpdateInputBarrier(input.AnyKey);
                 GameplayPause.AdvanceLogicalFrame();
-                tick(frame, ms, inputs.Take(frame, advanceHeldTime == null || advanceHeldTime()));
+                tick(frame, ms, input);
             }, budget, canAdvance);
         }
+    }
+}
+
+namespace Olca.Unity
+{
+    /// <summary>Stopwatchと同じ時間軸の生成時刻と、その時点の入力状態。</summary>
+    public readonly struct TimestampedLogicalInput
+    {
+        public readonly long Timestamp;
+        public readonly Olca.Core.Logic.Integration.LogicalInput Input;
+        public TimestampedLogicalInput(long timestamp, Olca.Core.Logic.Integration.LogicalInput input)
+        { Timestamp = timestamp; Input = input; }
     }
 }

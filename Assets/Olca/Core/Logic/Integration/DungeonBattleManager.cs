@@ -388,6 +388,8 @@ namespace Olca.Core.Logic.Integration
     /// <summary>1論理フレームの入力。押下イベントはそのフレームだけ有効。</summary>
     public sealed class LogicalInput : IInputProvider
     {
+        public bool HasInputSample { get; set; }
+        public bool AnyKey { get; set; }
         public float Horizontal { get; set; }
         public float HorizontalDown { get; set; }
         public float Vertical { get; set; }
@@ -411,14 +413,23 @@ namespace Olca.Core.Logic.Integration
         public void Enqueue(long frame, LogicalInput input)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));
-            // 同じフレームに複数の入力サンプルが来てもイベントを上書きしない。
-            long target = Math.Max(frame, lastQueued + 1);
+            // 同一フレームのイベントはそこで併合し、翌フレームへの遅延を追加しない。
+            long target = Math.Max(frame, lastQueued);
             pending.Enqueue(new KeyValuePair<long, LogicalInput>(target, input.Copy())); lastQueued = target;
         }
         public LogicalInput Take(long frame, bool advanceHeldTime = true)
         {
             held.ClearEdges();
-            if (pending.Count > 0 && pending.Peek().Key <= frame) held = pending.Dequeue().Value;
+            while (pending.Count > 0 && pending.Peek().Key <= frame)
+            {
+                var next = pending.Dequeue().Value;
+                next.JumpButtonDown |= held.JumpButtonDown;
+                next.DashButtonDown |= held.DashButtonDown;
+                next.CardUseButtonDown |= held.CardUseButtonDown;
+                next.CustomScreenButtonDown |= held.CustomScreenButtonDown;
+                if (next.HorizontalDown == 0) next.HorizontalDown = held.HorizontalDown;
+                held = next;
+            }
             heldFrames = held.BasicAttackButton ? heldFrames + (advanceHeldTime ? 1 : 0) : 0;
             held.BasicAttackButtonHoldTime = heldFrames / (float)LogicalFrameClock.FramesPerSecond;
             return held.Copy();
