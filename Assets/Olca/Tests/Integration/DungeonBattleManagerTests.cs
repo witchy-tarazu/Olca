@@ -1369,6 +1369,29 @@ namespace Olca.Tests.Integration
                 Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
                 Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
         }
+        [TestCase(UnityEngine.InputSystem.Key.Enter)][TestCase(UnityEngine.InputSystem.Key.NumpadEnter)]
+        public void 確定キーは同一更新の押下解放でもイベント時刻を維持する(UnityEngine.InputSystem.Key key)
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=new Olca.Unity.UnityInputProvider();
+            try { provider.StartEventCapture();provider.CaptureTimestamped();double time=UnityEngine.Time.realtimeSinceStartupAsDouble;
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(key),time-.02);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(),time-.01);UnityEngine.InputSystem.InputSystem.Update();
+                var events=provider.CaptureTimestamped();var confirm=events.Single(e=>e.Input.MenuConfirmButtonDown);var release=events.First(e=>e.Timestamp>confirm.Timestamp);
+                Assert.AreEqual(.01,(release.Timestamp-confirm.Timestamp)/(double)System.Diagnostics.Stopwatch.Frequency,.00001);
+                var queue=new LogicalInputQueue();foreach(var e in events)queue.Enqueue(1,e.Input);Assert.IsTrue(queue.Take(1).MenuConfirmButtonDown);Assert.IsFalse(queue.Take(2).MenuConfirmButtonDown);
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
+        [Test]
+        public void クリック解放時刻を使いポーズ境界で未実行UIコマンドを破棄する()
+        {
+            var mouse=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();var provider=new Olca.Unity.UnityInputProvider();
+            try {provider.StartEventCapture();double time=UnityEngine.Time.realtimeSinceStartupAsDouble;
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState().WithButton(UnityEngine.InputSystem.LowLevel.MouseButton.Left),time-.02);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState(),time-.01);UnityEngine.InputSystem.InputSystem.Update();
+                long timestamp=provider.PointerClickTimestamp;Assert.Less(timestamp,System.Diagnostics.Stopwatch.GetTimestamp()-System.Diagnostics.Stopwatch.Frequency/200);
+                var loop=new Olca.Unity.UnityLogicalLoop();int called=0;loop.QueueTimestampedCommand(timestamp,()=>called++);loop.ReleaseInput();loop.PumpTimestamped(true,null,(f,ms,input)=>{});Assert.AreEqual(0,called);loop.Dispose();
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);}
+        }
         [Test]
         public void 操作説明は適用済み割当だけを表示し破棄と未変更スロットを維持する()
         {

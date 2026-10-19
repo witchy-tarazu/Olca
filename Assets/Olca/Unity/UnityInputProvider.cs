@@ -19,6 +19,11 @@ namespace Olca.Unity
         private Olca.Core.Logic.Integration.LogicalInput eventState = new Olca.Core.Logic.Integration.LogicalInput();
         private bool capturing;
         private double eventClockOffset;
+        private long pointerReleaseTimestamp;
+        private int pointerReleaseRenderFrame = -1;
+        // UIのクリック通知はUpdate中に届く。物理イベントがないプログラム操作は呼出時刻を使う。
+        public long PointerClickTimestamp => pointerReleaseRenderFrame == Time.frameCount
+            ? pointerReleaseTimestamp : System.Diagnostics.Stopwatch.GetTimestamp();
         public Olca.Core.Domain.InputBindingProfile KeyboardProfile { get; private set; } = CreateDefaultKeyboardProfile();
         public static Olca.Core.Domain.InputBindingProfile CreateDefaultKeyboardProfile()
         {
@@ -121,6 +126,9 @@ namespace Olca.Unity
         private void CaptureEvent(InputEventPtr evt, InputDevice device)
         {
             if (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>()) return;
+            bool enter = KeyHeld(Key.Enter), numpadEnter = KeyHeld(Key.NumpadEnter), space = KeyHeld(Key.Space);
+            var pointer = device as Pointer;
+            bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
             bool jump = Held("exploration", "JumpPrimary"), card = Held("battle", "CardPrimary"), leftShift = Held("exploration", "DashPrimary"), rightShift = Held("exploration", "DashSecondary");
             bool leftAlt = Held("battle", "CustomPrimary"), rightAlt = Held("battle", "CustomSecondary");
             foreach (var button in Buttons(device))
@@ -140,6 +148,10 @@ namespace Olca.Unity
             next.DashButtonDown = (!leftShift && Held("exploration", "DashPrimary")) || (!rightShift && Held("exploration", "DashSecondary"));
             next.CustomScreenButtonDown = (!leftAlt && Held("battle", "CustomPrimary")) || (!rightAlt && Held("battle", "CustomSecondary"));
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
+            next.MenuConfirmButtonDown = (!enter && KeyHeld(Key.Enter)) || (!numpadEnter && KeyHeld(Key.NumpadEnter));
+            next.MenuDecideButtonDown = !space && KeyHeld(Key.Space);
+            if (pointerWasPressed && buttons.TryGetValue(pointer.press, out var pointerNow) && !pointerNow)
+            { pointerReleaseTimestamp = timestamp; pointerReleaseRenderFrame = Time.frameCount; }
             events.Add(new TimestampedLogicalInput(timestamp, next)); eventState = next;
         }
         private float basicAttackButtonPressTime;

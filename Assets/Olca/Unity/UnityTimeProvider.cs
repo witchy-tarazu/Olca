@@ -70,9 +70,16 @@ namespace Olca.Unity
         private long observed = System.Diagnostics.Stopwatch.GetTimestamp();
         private long wallRemainder;
         private long inputFloor = long.MinValue;
+        private int inputGeneration;
+        private readonly System.Collections.Generic.List<System.Action> frameInputCommands = new System.Collections.Generic.List<System.Action>();
         public long LateInputEvents { get; private set; }
         private readonly System.Collections.Generic.List<TimestampedLogicalInput> pendingEvents = new System.Collections.Generic.List<TimestampedLogicalInput>();
         private Olca.Core.Logic.Integration.LogicalInput previous = new Olca.Core.Logic.Integration.LogicalInput();
+        public void QueueTimestampedCommand(long timestamp, System.Action action)
+        {
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
+            pendingEvents.Add(new TimestampedLogicalInput(timestamp, null, action));
+        }
         public void Schedule(System.Action action, int delayFrames = 1)
         {
             long target = Clock.InputFrame + System.Math.Max(0, delayFrames - 1);
@@ -114,7 +121,12 @@ namespace Olca.Unity
                 // 既に処理済みの時刻に遅着したイベントは巻き戻さず次の未処理フレームへ置く。
                 if (entry.Timestamp < observed) LateInputEvents++;
                 ObserveAt(entry.Timestamp, true);
-                inputs.Enqueue(Clock.InputFrame, entry.Input);
+                if (entry.Command == null) inputs.Enqueue(Clock.InputFrame, entry.Input);
+                else
+                {
+                    int generation = inputGeneration;
+                    Schedule(() => frameInputCommands.Add(() => { if (generation == inputGeneration) entry.Command(); }));
+                }
             }
             ObserveAt(now, true);
             Advance(0, null, tick, canAdvance, advanceHeldTime: advanceHeldTime);
@@ -125,7 +137,7 @@ namespace Olca.Unity
             Clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
             commands.Clear(); ReleaseInput(); wallRemainder = 0; Observe(false);
         }
-        public void ReleaseInput() { inputs.Release(); pendingEvents.Clear(); inputFloor = readTimestamp(); previous = new Olca.Core.Logic.Integration.LogicalInput(); }
+        public void ReleaseInput() { inputGeneration++; inputs.Release(); pendingEvents.Clear(); inputFloor = readTimestamp(); previous = new Olca.Core.Logic.Integration.LogicalInput(); }
         public void Pump(bool active, Olca.Core.Logic.Integration.LogicalInput sample,
             System.Action<long, int, Olca.Core.Logic.Integration.LogicalInput> tick, System.Func<bool> canAdvance = null, System.Func<bool> advanceHeldTime = null)
         {
@@ -140,7 +152,7 @@ namespace Olca.Unity
             Clock.Accumulate(elapsedWallTicks);
             if (sample != null && (sample.Horizontal != previous.Horizontal || sample.Vertical != previous.Vertical ||
                 sample.BasicAttackButton != previous.BasicAttackButton || sample.DashButton != previous.DashButton ||
-                sample.JumpButtonDown || sample.CardUseButtonDown || sample.CustomScreenButtonDown || sample.DashButtonDown || sample.HorizontalDown != 0))
+                sample.JumpButtonDown || sample.CardUseButtonDown || sample.CustomScreenButtonDown || sample.DashButtonDown || sample.MenuConfirmButtonDown || sample.MenuDecideButtonDown || sample.HorizontalDown != 0))
             { inputs.Enqueue(Clock.InputFrame, sample); previous = sample.Copy(); previous.ClearEdges(); }
             Clock.Drain((frame, ms) => {
                 while (commands.Count > 0)
@@ -152,6 +164,8 @@ namespace Olca.Unity
                 var input = inputs.Take(frame, advanceHeldTime == null || advanceHeldTime());
                 if (input.HasInputSample) GameplayPause.UpdateInputBarrier(input.AnyKey);
                 GameplayPause.AdvanceLogicalFrame();
+                var inputCommands = frameInputCommands.ToArray(); frameInputCommands.Clear();
+                foreach (var command in inputCommands) command();
                 tick(frame, ms, input);
             }, budget, canAdvance);
         }
@@ -165,7 +179,8 @@ namespace Olca.Unity
     {
         public readonly long Timestamp;
         public readonly Olca.Core.Logic.Integration.LogicalInput Input;
-        public TimestampedLogicalInput(long timestamp, Olca.Core.Logic.Integration.LogicalInput input)
-        { Timestamp = timestamp; Input = input; }
+        public readonly System.Action Command;
+        public TimestampedLogicalInput(long timestamp, Olca.Core.Logic.Integration.LogicalInput input, System.Action command = null)
+        { Timestamp = timestamp; Input = input; Command = command; }
     }
 }

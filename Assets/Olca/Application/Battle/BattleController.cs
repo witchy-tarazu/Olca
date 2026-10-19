@@ -34,6 +34,7 @@ namespace Olca.Application.Battle
         {
             inputProvider = new UnityInputProvider();
             inputProvider.StartEventCapture();
+            customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
             randomProvider = new UnityRandomProvider();
             logger = new UnityLogger();
 
@@ -68,7 +69,8 @@ namespace Olca.Application.Battle
         }
 
         // ========== メインループ ==========
-        private void Update()
+        // EventSystemとViewのUpdateで受けたクリックを、同じ描画フレームの論理処理へ渡す。
+        private void LateUpdate()
         {
             if (battleSystem == null) return;
 
@@ -76,6 +78,7 @@ namespace Olca.Application.Battle
                 inputProvider.CaptureTimestamped(),
                 (frame, ms, input) => {
                     if (GameplayPause.InputBlocked) input = new Olca.Core.Logic.Integration.LogicalInput();
+                    customScreenView?.HandleLogicalConfirmation(input);
                     if (input.CustomScreenButtonDown) battleSession.TryOpenCustomScreen();
                     if (input.CardUseButtonDown && !battleSystem.CustomScreen.IsOpen) battleSession.UseCardFromInput();
                     battleSystem.TickFrame(ms, input);

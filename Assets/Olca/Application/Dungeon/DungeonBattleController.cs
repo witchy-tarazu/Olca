@@ -215,6 +215,7 @@ namespace Olca.Application.Dungeon
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
             inputProvider.StartEventCapture();
+            customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
             var dungeonConfig = configuredDungeon ?? DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
             var playerCharacter = new PlayerCharacter(
@@ -262,7 +263,8 @@ namespace Olca.Application.Dungeon
             logger.LogInfo("[DungeonBattleController] 初期化完了");
         }
 
-        private void Update()
+        // EventSystemとViewのUpdateで受けたクリックを、同じ描画フレームの論理処理へ渡す。
+        private void LateUpdate()
         {
             if (manager == null) return;
             bool active = !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
@@ -275,6 +277,7 @@ namespace Olca.Application.Dungeon
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
         {
             if (GameplayPause.InputBlocked) input = new LogicalInput();
+            customScreenView?.HandleLogicalConfirmation(input);
             HandleInput(input, deltaTimeMs);
             manager.TickFrame(deltaTimeMs, input);
         }
