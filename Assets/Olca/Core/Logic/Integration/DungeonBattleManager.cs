@@ -423,6 +423,8 @@ namespace Olca.Core.Logic.Integration
             while (pending.Count > 0 && pending.Peek().Key <= frame)
             {
                 var next = pending.Dequeue().Value;
+                // 同じ論理フレーム内で再押下されても、解放前の連続保持時間を引き継がない。
+                if (!next.BasicAttackButton) heldFrames = 0;
                 next.JumpButtonDown |= held.JumpButtonDown;
                 next.DashButtonDown |= held.DashButtonDown;
                 next.CardUseButtonDown |= held.CardUseButtonDown;

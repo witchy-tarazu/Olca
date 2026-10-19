@@ -1730,3 +1730,53 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class ContinuousHoldBoundaryTests
+    {
+        [TestCase(true)][TestCase(false)]
+        public void 同じ論理フレームの解放再押下で以前の保持時間を引き継がない(bool advancing)
+        {
+            var queue=new LogicalInputQueue();queue.Enqueue(1,new LogicalInput{BasicAttackButton=true});
+            LogicalInput value=null;for(int f=1;f<=30;f++)value=queue.Take(f);
+            Assert.AreEqual(.5f,value.BasicAttackButtonHoldTime,.000001f);
+            queue.Enqueue(31,new LogicalInput{BasicAttackButton=false});
+            queue.Enqueue(31,new LogicalInput{BasicAttackButton=true,CardUseButtonDown=true});
+            value=queue.Take(31,advancing);
+            Assert.IsTrue(value.BasicAttackButton);Assert.IsTrue(value.CardUseButtonDown);
+            Assert.AreEqual(advancing?1f/60:0f,value.BasicAttackButtonHoldTime,.000001f);
+            value=queue.Take(32);Assert.IsFalse(value.CardUseButtonDown);
+            Assert.AreEqual(advancing?2f/60:1f/60,value.BasicAttackButtonHoldTime,.000001f);
+            queue.Enqueue(33,new LogicalInput{BasicAttackButton=false});
+            queue.Enqueue(33,new LogicalInput{BasicAttackButton=true});
+            queue.Enqueue(33,new LogicalInput{BasicAttackButton=false});
+            value=queue.Take(33);Assert.IsFalse(value.BasicAttackButton);Assert.AreEqual(0,value.BasicAttackButtonHoldTime);
+        }
+        [TestCase(30)][TestCase(60)][TestCase(120)][TestCase(0)]
+        public void 生成時刻が同じフレームに入る解放再押下を描画間隔に関係なく反映する(int fps)
+        {
+            var loop=new Olca.Unity.UnityLogicalLoop();long now=0;
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(System.Func<long>)(()=>now));
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("observed",flags).SetValue(loop,0L);
+            long frequency=System.Diagnostics.Stopwatch.Frequency;
+            var events=new[]{
+                new Olca.Unity.TimestampedLogicalInput(frequency*10/1000,new LogicalInput{BasicAttackButton=true}),
+                new Olca.Unity.TimestampedLogicalInput(frequency*510/1000,new LogicalInput{BasicAttackButton=false}),
+                new Olca.Unity.TimestampedLogicalInput(frequency*511/1000,new LogicalInput{BasicAttackButton=true})};
+            var holds=new Dictionary<long,float>();bool submitted=false;
+            try {
+                for(int render=1;now<frequency*600/1000;render++) {
+                    now=fps==0?frequency*600/1000:System.Math.Min(frequency*600/1000,frequency*render/fps);
+                    loop.PumpTimestamped(true,submitted?null:events,(f,ms,input)=>holds[f]=input.BasicAttackButtonHoldTime);submitted=true;
+                }
+                Assert.AreEqual(36,loop.Clock.Frame);Assert.AreEqual(0,loop.LateInputEvents);
+                Assert.AreEqual(.5f,holds[30],.000001f);Assert.AreEqual(1f/60,holds[31],.000001f);
+                Assert.AreEqual(2f/60,holds[32],.000001f);Assert.AreEqual(6f/60,holds[36],.000001f);
+            } finally {loop.Dispose();}
+        }
+    }
+}
