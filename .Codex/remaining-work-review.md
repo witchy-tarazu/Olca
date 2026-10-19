@@ -235,3 +235,27 @@ PlayerCharacter.ApplyParalysis(durationFrames)は外部で確定した正の有�
 未実装: 設定画面自体、メニュー必須操作の割当、コントローラー設定の編集・永続化、破損設定のユーザー操作による復旧。今回は既存のキーボードゲーム操作スロットと適用APIの永続化に限定し、入力設定機能全体の完成とは扱わない。毒と回復の判断点は親からユーザーへ未提示の状態へ記録を訂正し、HP算式を変更していない。
 
 最終検証: Unity MCP全EditMode 1640/1640成功（34.52秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告14件。結果 /workspace/.olca-cloud/results/keyboard-settings/editmode-tests.json、console-before.json、console-after.json。初回の5失敗はInvalidDataExceptionの明示捕捉とテスト後の入力解放待ち状態の後片付けで修正し、初回結果をkeyboard-settings-attempt1へ保持した。
+
+
+## コントローラー設定の永続化に先立つ照合（798ffba時点）
+
+キーボード設定検証後の警告14件のうち、従来10件から増えた4件は「キー設定を読み込めません。保存済みデータは変更していません。」。MCP履歴の19:29:34 UTC、seq 15537/15541/15545/15549はいずれもFloorSequenceControllerTests.破損未知版と異なるデバイスのキー設定は初期操作で起動し上書きしないから発生した。broken/version/device/keyの4ケースが意図的に無効なファイルを用意しているためで、追加の実不具合とは分類しない。コンソール履歴は消去していない。根拠は /workspace/.olca-cloud/results/controller-settings-audit/warning-history.json と warning-classification.json。
+
+| 項目 | 照合結果 |
+| --- | --- |
+| 確定済み規則 | ゲーム全体仕様§18に独立保存、同一場面の重複禁止・交換、必須操作保護、保存成功後反映、破棄、ガイド更新がある。InputBindingProfile/InputBindingEditはデバイス文字列を含む衝突・交換規則を持つ。 |
+| 通常入力 | UnityInputProviderはGamepad.leftStick/Joystick.stickを読み、複数デバイスの軸を既存閾値で合成する。ゲーム操作のボタンとエッジはKeyboardProfileから読む。コントローラーのゲーム操作プロファイル・適用APIは存在しない。 |
+| 製品ボタン定義 | キーコンフィグ仕様の冒頭でデフォルト配置等を確定前の案と明記。表のA/B/XやLBを正式な製品定義として採用できない。 |
+| 既存アセット | InputSystem_Actions.inputactionsはプロジェクト設定へ登録されているが、PlayerのAttack=buttonWest等の定義を通常UnityInputProviderは読まない。カード使用・カスタムの定義もない。旧InputManagerのFire1等も通常ボタン経路ではない。これらを製品割当の根拠に置き換えない。 |
+| デバイス識別 | 現在は接続中Gamepad/Joystickのスナップショットを扱う。永続化対象を全パッド共通とするか機種/個体別にするか、およびGamepadとJoystickの設定共有・識別形式は未定義。 |
+| 保存形式 | KeyboardBindingFileStoreの版1はDevice=keyboardと既知15スロットを厳密検証する。コントローラー形式は未実装。旧仕様のgamepadConfigは例示であり、通常経路の復元先はまだない。 |
+
+阻害対象: コントローラー設定の通常経路への保存成功後反映・起動時復元。製品の操作スロット/初期配置と、設定を共有するデバイス範囲が不足しているため未着手・保留。実行拒否や結果不明ではない。未定義のボタン割当や接続方式を作らないという依頼に従い、空のプロファイルや仮のA/B/X設定を製品へ追加しない。保存失敗時旧設定保持・デバイス未接続時復元・旧ゲーム保存不変についても、コントローラー機能としては未検証であり、キーボードの成功を流用しない。
+
+再開に必要な最小の決定は、通常ゲーム操作とメニュー必須操作の正式なコントローラー初期割当表、および全対応パッド共通/機種別/個体別のどこまで設定を分けるか。低水準のJSONフィールド名はその決定後に実装側で定義できる。この判断点は親へ報告するもので、ユーザーへ提示済み・回答待ちとは記録しない。
+
+切断通知後も同じ環境でEditor PID 198663、Unity 6000.3.26f1、MCP editor_status=ready（19:31:35 UTC）を確認。798ffbaのpushは成功済みで再実行していない。この照合ではC#・入力設定・接続方式を変更していない。
+
+再接続後の回帰検証: Unity MCP全EditMode 1640/1640成功（32.98秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false。履歴を消さずに再実行したため警告は累積27件（実行前14件）。結果 /workspace/.olca-cloud/results/controller-settings-audit/editmode-tests.json、console-before.json、console-after.json。これは公開済みキーボード機能等の回帰検証であり、未実装のコントローラー永続化の成功ではない。
+
+再実行で発生した警告13件はCardSelectionView未設定6件、CardReward以外の選択拒否2件、WorldDamageNumberPool上限1件、無効なキー設定4件。MCPのsince=15599による読み取り結果をwarnings-after-regression.jsonへ保存した。累積27件を新規27不具合とは扱わない。
