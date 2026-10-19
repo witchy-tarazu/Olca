@@ -2317,6 +2317,134 @@ namespace Olca.Tests.Application
                     ResistanceCardTrace(fps, stall, restore, value.r, value.p, properties, statusResistance, statusType));
         }
 
+        private DungeonConfig EnemyPoiseMap(int maximum = 30, int frames = 6)
+        {
+            var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
+            var old = map.MapCells[5].Enemy;
+            map.MapCells[5] = new MapCell(5, new Enemy(old.EnemyId, old.Name, old.MaxHp, old.Element, old.GridPosition,
+                resistances: new ElementResistances(fire: 50), poiseDefinition: new EnemyPoiseDefinition(maximum, frames)));
+            return map;
+        }
+
+        private Card EnemyPoiseCard(int impact = 15, bool multi = true)
+        {
+            var modifier = new CardModifier();
+            if (multi) modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.MultiHit, HitCount = 2 });
+            return new Card("enemy-poise-card", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.Sword, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile,
+                modifier: modifier, startupTime: .05f, poiseDamage: impact);
+        }
+
+        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi)
+        {
+            var map = EnemyPoiseMap(); var card = EnemyPoiseCard(impact, multi); var deck = new Deck(new List<Card> { card });
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle); var saved = checkpoints.Store.Read();
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+                card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
+            }
+            Assert.AreEqual(impact, card.PoiseDamage);
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
+            Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); battle.Player.MoveTo(new Vector2Int(2, 0));
+            var target = battle.Enemies[0]; target.MoveTo(new Vector2Int(3, 0));
+            Assert.AreEqual(30, target.Poise); Assert.AreEqual(6, target.PoiseDefinition.StaggerFrames);
+            int initialHp = target.CurrentHp, used = 0, staggered = 0, initialFrames = 0;
+            target.OnStaggered += () => { staggered++; initialFrames = target.StaggerRemainingFrames; };
+            battle.CardUsage.OnCardUsed += _ => used++;
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => {
+                session.ProcessLogicalFrame(() => {
+                    if (frame == 1) session.UseCardFromInput();
+                    if (frame == 2) battle.Pause(BattlePauseReason.User);
+                    if (frame == 6) battle.Resume(BattlePauseReason.User);
+                    bool stopped = target.IsStaggered; int playerHp = battle.Player.CurrentHp;
+                    manager.TickFrame(ms);
+                    if (stopped) Assert.AreEqual(playerHp, battle.Player.CurrentHp, "のけぞり中は通常AI攻撃を受理しない");
+                });
+                if (frame <= 5) { Assert.AreEqual(initialHp, target.CurrentHp); Assert.AreEqual(0, staggered); }
+                trace.Add(frame + ":" + target.CurrentHp + ":" + target.AccumulatedPoiseDamage + ":" +
+                    target.StaggerRemainingFrames + ":" + staggered + ":" + used + ":" + battle.Player.CurrentHp);
+            };
+            long total = 3 * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            int hits = multi ? 2 : 1; long sum = (long)impact * hits;
+            Assert.AreEqual(initialHp - 5 * hits, target.CurrentHp); Assert.AreEqual(1, used);
+            Assert.AreEqual(sum >= 30 ? 1 : 0, staggered); Assert.AreEqual(sum >= 30 ? 6 : 0, initialFrames);
+            Assert.AreEqual(sum >= 30 ? 0 : sum, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
+            Assert.Less(battle.Player.CurrentHp, 990, "通常AIは期間終了後も攻撃を継続する");
+            var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
+            Assert.AreEqual(saved.MapHash, after.MapHash); Assert.AreEqual(saved.Sequence, after.Sequence);
+            CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder); CollectionAssert.AreEqual(saved.ObtainedOrder, after.ObtainedOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false, false)][TestCase(60, false, false)][TestCase(120, false, false)]
+        [TestCase(30, true, false)][TestCase(60, true, false)][TestCase(120, true, false)]
+        [TestCase(30, false, true)][TestCase(60, false, true)][TestCase(120, false, true)]
+        [TestCase(30, true, true)][TestCase(60, true, true)][TestCase(120, true, true)]
+        public void カードの独立削りと敵のけぞりは通常AI保存復帰描画頻度で一致する(int fps, bool stall, bool restore)
+        {
+            foreach (int impact in new[] { 0, 7, 15, int.MaxValue }) foreach (bool multi in new[] { false, true })
+                CollectionAssert.AreEqual(EnemyPoiseCardTrace(60, false, false, impact, multi), EnemyPoiseCardTrace(fps, stall, restore, impact, multi));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 敵の同フレーム死亡判定後にHPと生存時のけぞりだけを通知する(bool survive)
+        {
+            var target = new Enemy("poise", "検証", 10, ElementType.None, new Vector2Int(3, 0),
+                poiseDefinition: new EnemyPoiseDefinition(10, 6));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { target }, new Deck(),
+                randomProvider: new MockRandomProvider());
+            var session = CreateSession().session; session.Attach(battle); var notices = new List<string>();
+            target.OnHpChanged += (_, __) => notices.Add("hp"); target.OnStaggered += () => notices.Add("stagger"); target.OnDeath += () => notices.Add("death");
+            session.ProcessLogicalFrame(() => {
+                target.TakeDamage(survive ? 1 : 10, ElementType.None, poiseDamage: 5);
+                target.TakeDamage(1, ElementType.None, poiseDamage: 5);
+            });
+            CollectionAssert.AreEqual(survive ? new[] { "hp", "stagger" } : new[] { "hp", "death" }, notices);
+            Assert.AreEqual(survive, target.IsStaggered); session.Detach();
+        }
+
+        [TestCase("same")][TestCase("maximum")][TestCase("frames")][TestCase("card")]
+        public void 敵強靭度とカード削りの定義をファイル保存復帰で照合し旧形式を変えない(string changed)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-enemy-poise-" + Guid.NewGuid());
+            try {
+                var map = EnemyPoiseMap(); var deck = new Deck(new List<Card> { EnemyPoiseCard() });
+                var defaults = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+                var store = new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory);
+                var source = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions, store);
+                var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(100), deck,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: source);
+                for (int i = 0; i < 100 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+                Assert.IsNotNull(manager.CurrentBattle); byte[] bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+                var current = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(
+                    EnemyPoiseMap(changed == "maximum" ? 31 : 30, changed == "frames" ? 7 : 6),
+                    new Deck(new List<Card> { EnemyPoiseCard(changed == "card" ? 14 : 15) }));
+                var restoredStore = new Olca.Unity.FileCheckpointStore(current.Definitions, directory);
+                var resumed = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(current.Definitions, restoredStore);
+                bool ok = Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(resumed,
+                    new MockRandomProvider(), new MockLogger(), out var game, out var error);
+                Assert.AreEqual(changed == "same", ok, error);
+                if (ok) { Assert.IsTrue(manager.SuspendForCheckpoint()); game.ActivateCheckpoint(); Assert.AreEqual(30, game.CurrentBattle.Enemies[0].Poise); Assert.AreEqual(15, game.Dungeon.GetCurrentDeck().GetAllCards()[0].PoiseDamage); }
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+                Assert.AreEqual(1, store.Read().SchemaVersion);
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
         private List<string> IndependentPoiseTrace(int fps, bool stall, bool restore, int impact)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());

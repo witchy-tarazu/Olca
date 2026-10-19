@@ -124,7 +124,9 @@ namespace Olca.Core.Domain
     {
         private long remaining;
         public bool IsActive => remaining > 0;
-        public int Milliseconds => (int)((remaining + 2) / 3);
+        public int Milliseconds => (int)System.Math.Min(int.MaxValue, (remaining + 2) / 3);
+        public int Frames => (int)((remaining + 49) / 50);
+        public void SetFrames(int value) => remaining = System.Math.Max(0L, value * 50L);
         public void SetMilliseconds(int value) => remaining = System.Math.Max(0L, value * 3L);
         public void ExtendMilliseconds(int value) => remaining = System.Math.Max(remaining, value * 3L);
         public void Tick(int milliseconds) => remaining = System.Math.Max(0, remaining - milliseconds * 3L);

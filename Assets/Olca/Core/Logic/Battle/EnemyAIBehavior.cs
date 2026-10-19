@@ -19,7 +19,7 @@ namespace Olca.Core.Logic.Battle
         public Enemy Enemy => enemy;
 
         /// <summary>行動可能か（クールダウン終了・生存中・麻痺していない）</summary>
-        public bool CanAct => !cooldown.IsActive && !enemy.IsDead && !enemy.IsParalyzed;
+        public bool CanAct => !cooldown.IsActive && !enemy.IsDead && !enemy.IsParalyzed && !enemy.IsStunned;
 
         /// <summary>現在のクールダウン時間（ミリ秒）</summary>
         public int CurrentCooldownMs => cooldown.Milliseconds;

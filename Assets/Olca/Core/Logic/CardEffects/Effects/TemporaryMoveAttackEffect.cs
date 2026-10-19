@@ -100,7 +100,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 {
                     int damage = context.UsedCard.GetFinalPower();
                     ElementType attackElement = context.UsedCard.GetFinalElement();
-                    targetEnemy.TakeDamage(damage, attackElement, context.UsedCard.Properties);
+                    targetEnemy.TakeDamage(damage, attackElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage);
                 }
 
                 attackResolved = true;

@@ -8,6 +8,22 @@ namespace Olca.Tests.Domain
     [TestFixture]
     public class CardMasterParseTests
     {
+        [TestCase(0)][TestCase(7)]
+        public void 明示削り量はマスターと複製調律倍率派生超越でHP威力と独立して維持する(int impact)
+        {
+            var master = new CardMaster { Id = "impact", Name = "検証", Category = CardCategory.Attack,
+                Series = SeriesType.Sword, Power = 10 };
+            Assert.IsNull(Card.FromMaster(master).PoiseDamage);
+            master.PoiseDamage = impact; var card = Card.FromMaster(master);
+            var material = new Card("t", "検証", 1, CardRarity.Normal, CardCategory.Tuning,
+                ElementType.None, CardSeries.None, 0, "検証", poiseDamage: 99);
+            foreach (var copy in new[] { card.Clone(), card.WithPowerMultiplier(2), card.CreateSelfChainCopy(50),
+                card.ApplyTuning(material), new Olca.Application.Battle.SimpleCardFactory().CreateExceeded(card, ExceedLevel.Lv1) })
+                Assert.AreEqual(impact, copy.PoiseDamage);
+            master.PoiseDamage = -1;
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => Card.FromMaster(master));
+        }
+
         [Test]
         public void 複合性質はマスターから複製調律倍率自己派生超越へ維持し未指定は無しになる()
         {

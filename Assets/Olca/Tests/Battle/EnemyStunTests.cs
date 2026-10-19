@@ -20,6 +20,70 @@ namespace Olca.Tests.Battle
             enemy = new Enemy("slime", "スライム", 100, ElementType.None, new Vector2Int(3, 0));
         }
 
+        [Test]
+        public void 明示強靭度は独立削りを蓄積し最大値低下で残り1を保ち再成立で期間を戻す()
+        {
+            var target = new Enemy("poise", "検証", 100, ElementType.None, Vector2Int.Zero,
+                poiseDefinition: new EnemyPoiseDefinition(100, 6));
+            int notices = 0; target.OnStaggered += () => notices++;
+            target.TakeDamage(1, ElementType.None, poiseDamage: 30);
+            target.SetPoise(150); Assert.AreEqual(30, target.AccumulatedPoiseDamage);
+            target.SetPoise(20); Assert.AreEqual(19, target.AccumulatedPoiseDamage); Assert.AreEqual(0, notices);
+            target.TakeDamage(1, ElementType.None, poiseDamage: 0); Assert.AreEqual(19, target.AccumulatedPoiseDamage);
+            target.TakeDamage(1, ElementType.None, poiseDamage: 1); Assert.AreEqual(1, notices);
+            Assert.AreEqual(0, target.AccumulatedPoiseDamage); Assert.AreEqual(6, target.StaggerRemainingFrames);
+            for (int i = 0; i < 4; i++) target.TickStunFrame(); Assert.AreEqual(2, target.StaggerRemainingFrames);
+            target.TakeDamage(1, ElementType.None, poiseDamage: 20); Assert.AreEqual(6, target.StaggerRemainingFrames);
+            target.SetPoise(50); Assert.AreEqual(6, target.StaggerRemainingFrames); Assert.AreEqual(2, notices);
+            for (int i = 0; i < 6; i++) target.TickStunFrame(); Assert.IsFalse(target.IsStunned);
+        }
+
+        [TestCase(50, 95, 7)][TestCase(-100, 80, 7)][TestCase(100, 100, 0)]
+        public void 敵の完全耐性は削りを遮断し軽減増幅は独立値を変えない(int resistance, int hp, int impact)
+        {
+            var target = new Enemy("poise", "検証", 100, ElementType.None, Vector2Int.Zero,
+                resistances: new ElementResistances(fire: resistance), poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            target.TakeDamage(10, ElementType.Fire, poiseDamage: 7);
+            Assert.AreEqual(hp, target.CurrentHp); Assert.AreEqual(impact, target.AccumulatedPoiseDamage);
+        }
+
+        [Test]
+        public void 強靭度未設定は旧動作を維持し不正定義と負の削りを副作用前に拒否する()
+        {
+            enemy.TakeDamage(1, ElementType.None, poiseDamage: int.MaxValue);
+            Assert.IsNull(enemy.Poise); Assert.IsFalse(enemy.IsStaggered); Assert.AreEqual(0, enemy.AccumulatedPoiseDamage);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new EnemyPoiseDefinition(0, 6));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new EnemyPoiseDefinition(10, 0));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => enemy.TakeDamage(1, ElementType.None, poiseDamage: -1));
+            Assert.AreEqual(99, enemy.CurrentHp);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 敵AIは明示のけぞり期間を全て停止し終了翌更新に行動する(bool logical)
+        {
+            var target = new Enemy("poise", "検証", 100, ElementType.None, new Vector2Int(1, 0),
+                poiseDefinition: new EnemyPoiseDefinition(10, 6));
+            var player = new PlayerCharacter(100); var field = new BattleField();
+            var ai = new EnemyAIBehavior(target, new List<IEnemyAIAction> { new BasicAttackAction(1, 0) });
+            var context = new AIContext(target, player, field, new MockRandomProvider(), new MockLogger());
+            target.TakeDamage(1, ElementType.None, poiseDamage: 10); Assert.IsFalse(ai.CanAct);
+            if (logical) for (int i = 0; i < 6; i++) ai.Update(17, context, true);
+            else ai.Update(100, context);
+            Assert.AreEqual(100, player.CurrentHp); Assert.IsFalse(target.IsStaggered);
+            ai.Update(17, context, logical); Assert.AreEqual(99, player.CurrentHp);
+        }
+
+        [Test]
+        public void 敵の毒ダメージは強靭度を削らず通常フレームで進む()
+        {
+            var target = new Enemy("poise", "検証", 100, ElementType.None, new Vector2Int(5, 0),
+                poiseDefinition: new EnemyPoiseDefinition(1, 6));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { target }, new Deck(), randomProvider: new MockRandomProvider());
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 60));
+            for (int i = 0; i < 10; i++) battle.TickFrame(17);
+            Assert.Less(target.CurrentHp, 100); Assert.AreEqual(0, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
+        }
+
         // ========== Enemy.ApplyStun / IsStunned / StunDurationMs ==========
 
         [Test]

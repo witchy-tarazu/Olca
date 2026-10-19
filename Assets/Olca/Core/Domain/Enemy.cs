@@ -2,6 +2,21 @@ using System;
 
 namespace Olca.Core.Domain
 {
+    /// <summary>製品値を持たない外部指定の敵強靭度。期間は被弾した攻撃によらず共通。</summary>
+    public sealed class EnemyPoiseDefinition
+    {
+        public int Maximum { get; }
+        public int StaggerFrames { get; }
+        public EnemyPoiseDefinition(int maximum, int staggerFrames)
+        {
+            if (maximum <= 0) throw new ArgumentOutOfRangeException(nameof(maximum));
+            if (staggerFrames <= 0) throw new ArgumentOutOfRangeException(nameof(staggerFrames));
+            Maximum = maximum; StaggerFrames = staggerFrames;
+        }
+        public bool HasSameValues(EnemyPoiseDefinition other)
+            => other != null && Maximum == other.Maximum && StaggerFrames == other.StaggerFrames;
+    }
+
     /// <summary>
     /// 敵キャラクター
     /// </summary>
@@ -12,18 +27,54 @@ namespace Olca.Core.Domain
 
         public ElementResistances Resistances { get; }
         public TimedStatusResistances StatusResistances { get; }
+        public EnemyPoiseDefinition PoiseDefinition { get; }
+        public int? Poise { get; private set; }
+        public int AccumulatedPoiseDamage { get; private set; }
+        public bool IsStaggered => staggerTimer.IsActive;
+        public int StaggerRemainingFrames => staggerTimer.Frames;
+        private FrameCountdown staggerTimer;
+        private long framePoiseDamage;
+        private bool frameStaggered;
+        public event Action OnStaggered;
+
+        public void SetPoise(int value)
+        {
+            if (PoiseDefinition == null) throw new InvalidOperationException("強靭度の外部定義が必要です");
+            if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
+            if (value < Poise.Value) AccumulatedPoiseDamage = Math.Min(AccumulatedPoiseDamage, value - 1);
+            Poise = value;
+        }
+
+        private bool ApplyPoise(long damage)
+        {
+            if (!Poise.HasValue || damage <= 0) return false;
+            long total = AccumulatedPoiseDamage + damage;
+            if (total < Poise.Value) { AccumulatedPoiseDamage = (int)total; return false; }
+            AccumulatedPoiseDamage = 0;
+            if (IsDead) return false;
+            // 再成立時は残時間への加算や最大値選択ではなく、定義期間の先頭へ戻す。
+            staggerTimer.SetFrames(PoiseDefinition.StaggerFrames);
+            return true;
+        }
         internal Func<bool> IsOnGrass;
 
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
         internal long TotalDamageTaken { get; private set; }
         internal long TotalHitsTaken { get; private set; }
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() => frameHp.Begin(currentHp);
-        internal void CommitHpFrame() { currentHp = frameHp.Commit(currentHp, maxHp); }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); framePoiseDamage = 0; frameStaggered = false; }
+        internal void CommitHpFrame()
+        {
+            currentHp = frameHp.Commit(currentHp, maxHp);
+            frameStaggered = ApplyPoise(framePoiseDamage);
+            framePoiseDamage = 0;
+        }
         internal void PublishHpFrame()
         {
             bool changed = frameHp.TakeNotification(out bool died);
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
+            bool staggered = frameStaggered; frameStaggered = false;
+            if (!IsDead && staggered) OnStaggered?.Invoke();
             if (died) OnDeath?.Invoke();
         }
         private int currentHp;
@@ -92,10 +143,10 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>スタン中か</summary>
-        public bool IsStunned => stunTimer.IsActive;
+        public bool IsStunned => stunTimer.IsActive || staggerTimer.IsActive;
 
         /// <summary>残スタン時間（ミリ秒）</summary>
-        public int StunDurationMs => stunTimer.Milliseconds;
+        public int StunDurationMs => Math.Max(stunTimer.Milliseconds, staggerTimer.Milliseconds);
 
         /// <summary>現在の状態異常</summary>
         public StatusEffect ActiveStatus => activeStatusEffect;
@@ -123,8 +174,9 @@ namespace Olca.Core.Domain
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null)
+        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null)
         {
+            PoiseDefinition = poiseDefinition; Poise = poiseDefinition?.Maximum;
             Resistances = resistances ?? ElementResistances.Neutral;
             StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
             EnemyId = enemyId;
@@ -141,15 +193,16 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None)
+        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
         {
+            if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
-            ApplyDamage(damage, attackElement, false);
+            ApplyDamage(damage, attackElement, false, poiseDamage);
         }
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
-        private void ApplyDamage(int damage, ElementType attackElement, bool poison)
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -178,10 +231,18 @@ namespace Olca.Core.Domain
                     killedByThisHit = IsDead;
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
+                bool staggered = false;
+                if (!poison && Poise.HasValue && !IsDead)
+                {
+                    int impact = poiseDamage ?? finalDamage;
+                    if (frameHp.Active) framePoiseDamage += impact;
+                    else staggered = ApplyPoise(impact);
+                }
                 TotalDamageTaken += finalDamage;
                 TotalHitsTaken++;
                 // 命中通知は各ヒット、HPと死亡通知は論理フレームの確定後。
                 OnDamaged?.Invoke(finalDamage, multiplier);
+                if (!IsDead && staggered) OnStaggered?.Invoke();
 
                 if (killedByThisHit)
                 {
@@ -211,10 +272,10 @@ namespace Olca.Core.Domain
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         public void TickStun(int deltaTimeMs)
         {
-            stunTimer.Tick(deltaTimeMs);
+            stunTimer.Tick(deltaTimeMs); staggerTimer.Tick(deltaTimeMs);
         }
 
-        public void TickStunFrame() => stunTimer.TickFrame();
+        public void TickStunFrame() { stunTimer.TickFrame(); staggerTimer.TickFrame(); }
 
         /// <summary>
         /// 状態異常を付与する（既存の状態異常は上書き）

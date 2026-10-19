@@ -892,15 +892,16 @@ namespace Olca.Core.Logic.Dungeon
                     w.Write((int)cell.Type); w.Write(cell.Height);
                     if (cell.Enemy == null) continue;
                     var e = cell.Enemy;
-                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating)
+                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum)
                         throw new ArgumentException("敵の標準定義が必要です");
-                    enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition, resistances: e.Resistances, statusResistances: e.StatusResistances));
+                    enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition, resistances: e.Resistances, statusResistances: e.StatusResistances, poiseDefinition: e.PoiseDefinition));
                     heights.Add(i, cell.Height);
                     w.Write(e.EnemyId); w.Write(e.Name); w.Write(e.MaxHp); w.Write((int)e.Element);
                     // 中立の既存定義hashは維持し、設定済み耐性だけを定義照合に含める。
                     if (!e.Resistances.IsNeutral) { w.Write("resistances"); w.Write(e.Resistances.Fire); w.Write(e.Resistances.Water); w.Write(e.Resistances.Wind); w.Write(e.Resistances.Earth); }
                     // 未設定の旧マップhashは維持。設定値だけを保存復帰時の定義照合へ含める。
                     if (!e.StatusResistances.IsNeutral) { w.Write("timed-status-resistances"); w.Write(e.StatusResistances.Poison); w.Write(e.StatusResistances.Paralyze); }
+                    if (e.PoiseDefinition != null) { w.Write("enemy-poise"); w.Write(e.PoiseDefinition.Maximum); w.Write(e.PoiseDefinition.StaggerFrames); }
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
                 }
             });
@@ -923,7 +924,8 @@ namespace Olca.Core.Logic.Dungeon
                     throw new ArgumentException("未対応セルを保存できません");
                 if (cell.Enemy == null) continue;
                 if (!enemies.TryGetValue(i, out var template) || cell.Enemy.EnemyId != template.EnemyId ||
-                    cell.Enemy.Name != template.Name || cell.Enemy.MaxHp != template.MaxHp || cell.Enemy.Element != template.Element || !cell.Enemy.Resistances.HasSameValues(template.Resistances) || !cell.Enemy.StatusResistances.HasSameValues(template.StatusResistances) || cell.Height != heights[i])
+                    cell.Enemy.Name != template.Name || cell.Enemy.MaxHp != template.MaxHp || cell.Enemy.Element != template.Element || !cell.Enemy.Resistances.HasSameValues(template.Resistances) || !cell.Enemy.StatusResistances.HasSameValues(template.StatusResistances) ||
+                    !(cell.Enemy.PoiseDefinition == null ? template.PoiseDefinition == null : cell.Enemy.PoiseDefinition.HasSameValues(template.PoiseDefinition)) || cell.Height != heights[i])
                     throw new ArgumentException("敵個体・配置の定義が一致しません");
             }
         }
@@ -1072,6 +1074,7 @@ namespace Olca.Core.Logic.Dungeon
             // 未指定の既存定義hashは維持し、明示された効果種別の不一致を検出する。
             if (c.SubCategory != CardSubCategory.None) { w.Write("subcategory"); w.Write((int)c.SubCategory); }
             // 性質未指定の旧定義は同じbytes/hash。明示した性質だけ追加照合する。
+            if (c.PoiseDamage.HasValue) { w.Write("poise-damage"); w.Write(c.PoiseDamage.Value); }
             if (c.Properties != AttackProperty.None) { w.Write("attack-properties"); w.Write((int)c.Properties); }
         });
         internal static void Require(bool valid, string message) { if (!valid) throw new ArgumentException(message); }
@@ -1138,7 +1141,7 @@ namespace Olca.Core.Logic.Dungeon
                     CheckpointValues.Require(e != null && definitions.Enemies.TryGetValue(e.CellIndex, out _), "敵配置が未定義です");
                     var template = definitions.Enemies[e.CellIndex];
                     CheckpointValues.Require(e.EnemyId == template.EnemyId && e.Hp >= 0 && e.Hp <= template.MaxHp, "敵の値が不正です");
-                    var enemy = new Enemy(template.EnemyId, template.Name, template.MaxHp, template.Element, new Vector2Int(e.GridX, e.GridY), resistances: template.Resistances, statusResistances: template.StatusResistances);
+                    var enemy = new Enemy(template.EnemyId, template.Name, template.MaxHp, template.Element, new Vector2Int(e.GridX, e.GridY), resistances: template.Resistances, statusResistances: template.StatusResistances, poiseDefinition: template.PoiseDefinition);
                     // ダメージ処理・属性倍率・浮動小数の丸めを経由せず、新規候補のHPを復元する。
                     enemy.RestoreCheckpointHp(e.Hp);
                     CheckpointValues.Require(enemy.CurrentHp == e.Hp, "敵HPを復元できません");
@@ -1336,7 +1339,7 @@ namespace Olca.Core.Logic.Dungeon
             foreach (var pair in Definitions.Enemies)
             {
                 var e = mapped.TryGetValue(pair.Key, out var live) ? live : null;
-                if (e != null && (e.IsSummoned || (!e.IsDead && (e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating))))
+                if (e != null && (e.IsSummoned || (!e.IsDead && (e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum))))
                     throw new ArgumentException("未対応の敵状態を保存できません");
                 enemyStates.Add(new CheckpointEnemyDto { CellIndex = pair.Key, EnemyId = pair.Value.EnemyId,
                     Hp = e?.CurrentHp ?? 0, GridX = e?.GridPosition.X ?? pair.Value.GridPosition.X, GridY = e?.GridPosition.Y ?? pair.Value.GridPosition.Y });
@@ -1392,7 +1395,7 @@ namespace Olca.Core.Logic.Dungeon
             var floor = Floor(index);
             return floor.RestoreMap(floor.Enemies.ToDictionary(p => p.Key, p => new Enemy(
                 p.Value.EnemyId, p.Value.Name, p.Value.MaxHp, p.Value.Element, p.Value.GridPosition,
-                resistances: p.Value.Resistances, statusResistances: p.Value.StatusResistances)));
+                resistances: p.Value.Resistances, statusResistances: p.Value.StatusResistances, poiseDefinition: p.Value.PoiseDefinition)));
         }
         public DungeonCheckpointSession CreateCheckpointSession(int index, FloorSequenceSession route)
             => new DungeonCheckpointSession(Floor(index), new FloorCheckpointStore(route, index, index + 1 < FloorCount));
