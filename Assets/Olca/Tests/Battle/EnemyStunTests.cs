@@ -133,6 +133,34 @@ namespace Olca.Tests.Battle
             Assert.Throws<System.ArgumentException>(() => Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, new Deck()));
         }
 
+        [TestCase(false)][TestCase(true)]
+        public void 死亡確定時はHP通知より前にガードとのけぞりを解除する(bool logical)
+        {
+            var target = new Enemy("guard", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            var survivor = new Enemy("survivor", "検証", 100, ElementType.None, new Vector2Int(5, 0));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { target, survivor }, new Deck());
+            target.Guard.Set(true, false);
+            target.TakeDamage(1, ElementType.None, AttackProperty.Break, 30);
+            Assert.IsTrue(target.Guard.IsActive); Assert.IsTrue(target.IsStaggered);
+            int hpNotices = 0, deathNotices = 0;
+            target.OnHpChanged += (_, __) => {
+                hpNotices++;
+                Assert.IsTrue(target.IsDead);
+                Assert.IsFalse(target.Guard.IsActive);
+                Assert.IsFalse(target.Guard.InterruptOnStagger);
+                Assert.AreEqual(0, target.StaggerRemainingFrames);
+            };
+            target.OnDeath += () => {
+                deathNotices++;
+                Assert.IsFalse(target.Guard.IsActive); Assert.IsFalse(target.IsStaggered);
+            };
+            if (logical) battle.RunLogicalFrame(() => target.TakeDamage(200, ElementType.None, AttackProperty.Break, 0));
+            else target.TakeDamage(200, ElementType.None, AttackProperty.Break, 0);
+            Assert.IsFalse(battle.IsGameOver);
+            Assert.AreEqual(1, hpNotices); Assert.AreEqual(1, deathNotices);
+        }
+
         // ========== Enemy.ApplyStun / IsStunned / StunDurationMs ==========
 
         [Test]

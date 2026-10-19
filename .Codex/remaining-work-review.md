@@ -75,3 +75,13 @@ enemy-poise-scope.mdの単位で、外部指定した敵強靭度・のけぞり
 ガード横断追加テストは未公開パッチ /workspace/.olca-cloud/guard-boundaries-pending.patch に保全。1461/1462成功で、戦闘継続中に死亡した敵のGuard.IsActive残留を再現。修正は未着手で、この見た目修正とは分離する。
 
 公開範囲訂正: 接敵準備フックをmasterから分離し /workspace/.olca-cloud/contact-hooks-pending.patch に保全。移動中idle修正のみを独立公開する。
+
+## 死亡敵のガード残留修正
+
+e4e31eb465fa8b3e221042ff79796d6ff3a23a16 のバリア・オーラ確定規則を同期。耐久超過/基準以上の一発も全防御、耐性を無視して地形補正、追加効果/強靭度/被弾無敵の抑止、継続ダメージ/状態専用効果の例外を新仕様として扱う。これらを旧文書の未確定扱いに戻さない。バリア・オーラ全体の実装は本修正の対象外。
+
+上記の「死亡した敵のGuard.IsActive残留」は修正済み。Enemyの直接HP更新と論理フレーム確定の両入口で、死亡確定後・HP/死亡通知前にGuardとStaggerRemainingFramesを解除する。生存中の中断不可ガードは維持する。保全していた多段/ブレイク/耐性/描画頻度/ポーズ/保存復帰のテストと、通常カードによる死亡の再現テストを採用し、通知順の直接/論理フレーム回帰を追加。
+
+接敵v1素材は不採用。接敵フックは保全パッチのままで本変更に含めない。既存idle修正と正常素材を維持する。
+
+検証: Unity MCP EditMode 1466/1466成功（31.86秒）、consoleErrors=0、compilationFailed=false。結果は /workspace/.olca-cloud/results/guard-death/editmode-tests.json と console-after.json。既存警告10件。

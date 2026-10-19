@@ -58,6 +58,13 @@ namespace Olca.Core.Domain
             Guard.OnStaggered();
             return true;
         }
+        // 死亡確定時に解除し、HP/死亡の購読側にも残留状態を見せない。
+        private void ClearDeathReaction()
+        {
+            Guard.Clear();
+            staggerTimer.SetFrames(0);
+        }
+
         internal Func<bool> IsOnGrass;
 
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
@@ -69,6 +76,7 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             frameStaggered = ApplyPoise(framePoiseDamage);
+            if (IsDead) ClearDeathReaction();
             framePoiseDamage = 0;
         }
         internal void PublishHpFrame()
@@ -233,6 +241,7 @@ namespace Olca.Core.Domain
                     currentHp = Math.Max(0, currentHp - finalDamage);
                     // 通知内の別攻撃による死亡を、この攻撃から二重通知しない。
                     killedByThisHit = IsDead;
+                    if (killedByThisHit) ClearDeathReaction();
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
                 bool staggered = false;

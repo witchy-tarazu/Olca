@@ -2457,27 +2457,27 @@ namespace Olca.Tests.Application
             Assert.IsNotEmpty(error);
         }
 
-        private DungeonConfig EnemyPoiseMap(int maximum = 30, int frames = 6)
+        private DungeonConfig EnemyPoiseMap(int maximum = 30, int frames = 6, int resistance = 50)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
             var old = map.MapCells[5].Enemy;
             map.MapCells[5] = new MapCell(5, new Enemy(old.EnemyId, old.Name, old.MaxHp, old.Element, old.GridPosition,
-                resistances: new ElementResistances(fire: 50), poiseDefinition: new EnemyPoiseDefinition(maximum, frames)));
+                resistances: new ElementResistances(fire: resistance), poiseDefinition: new EnemyPoiseDefinition(maximum, frames)));
             return map;
         }
 
-        private Card EnemyPoiseCard(int impact = 15, bool multi = true)
+        private Card EnemyPoiseCard(int impact = 15, bool multi = true, AttackProperty properties = AttackProperty.None)
         {
             var modifier = new CardModifier();
             if (multi) modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.MultiHit, HitCount = 2 });
             return new Card("enemy-poise-card", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
                 CardSeries.Sword, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile,
-                modifier: modifier, startupTime: .05f, poiseDamage: impact);
+                modifier: modifier, startupTime: .05f, poiseDamage: impact, properties: properties);
         }
 
-        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi)
+        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None)
         {
-            var map = EnemyPoiseMap(); var card = EnemyPoiseCard(impact, multi); var deck = new Deck(new List<Card> { card });
+            var map = EnemyPoiseMap(resistance: resistance); var card = EnemyPoiseCard(impact, multi, properties); var deck = new Deck(new List<Card> { card });
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
             var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
                 new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
@@ -2496,6 +2496,8 @@ namespace Olca.Tests.Application
             battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); battle.Player.MoveTo(new Vector2Int(2, 0));
             var target = battle.Enemies[0]; target.MoveTo(new Vector2Int(3, 0));
             Assert.AreEqual(30, target.Poise); Assert.AreEqual(6, target.PoiseDefinition.StaggerFrames);
+            Assert.IsFalse(target.Guard.IsActive); Assert.IsFalse(target.IsStaggered);
+            target.Guard.Set(guard, interruptible);
             int initialHp = target.CurrentHp, used = 0, staggered = 0, initialFrames = 0;
             target.OnStaggered += () => { staggered++; initialFrames = target.StaggerRemainingFrames; };
             battle.CardUsage.OnCardUsed += _ => used++;
@@ -2511,7 +2513,7 @@ namespace Olca.Tests.Application
                 });
                 if (frame <= 5) { Assert.AreEqual(initialHp, target.CurrentHp); Assert.AreEqual(0, staggered); }
                 trace.Add(frame + ":" + target.CurrentHp + ":" + target.AccumulatedPoiseDamage + ":" +
-                    target.StaggerRemainingFrames + ":" + staggered + ":" + used + ":" + battle.Player.CurrentHp);
+                    target.StaggerRemainingFrames + ":" + staggered + ":" + used + ":" + battle.Player.CurrentHp + ":" + target.Guard.IsActive);
             };
             long total = 3 * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
             if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
@@ -2520,10 +2522,12 @@ namespace Olca.Tests.Application
                 clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
-            int hits = multi ? 2 : 1; long sum = (long)impact * hits;
+            bool blocked = resistance == 100 || (guard && (properties & AttackProperty.Break) == 0);
+            int hits = blocked ? 0 : multi ? 2 : 1; long sum = (long)impact * hits;
             Assert.AreEqual(initialHp - 5 * hits, target.CurrentHp); Assert.AreEqual(1, used);
             Assert.AreEqual(sum >= 30 ? 1 : 0, staggered); Assert.AreEqual(sum >= 30 ? 6 : 0, initialFrames);
             Assert.AreEqual(sum >= 30 ? 0 : sum, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
+            Assert.AreEqual(guard && !(interruptible && sum >= 30), target.Guard.IsActive, "期間終了後に中断済みガードを復活させない");
             Assert.Less(battle.Player.CurrentHp, 990, "通常AIは期間終了後も攻撃を継続する");
             var after = checkpoints.Store.Read(); Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion);
             Assert.AreEqual(saved.MapHash, after.MapHash); Assert.AreEqual(saved.Sequence, after.Sequence);
@@ -2539,6 +2543,47 @@ namespace Olca.Tests.Application
         {
             foreach (int impact in new[] { 0, 7, 15, int.MaxValue }) foreach (bool multi in new[] { false, true })
                 CollectionAssert.AreEqual(EnemyPoiseCardTrace(60, false, false, impact, multi), EnemyPoiseCardTrace(fps, stall, restore, impact, multi));
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void ガード多段ブレイクの合算中断から通常AI復帰まで保存復帰描画頻度で一致する(int fps, bool restore)
+        {
+            foreach (int resistance in new[] { 50, 100 })
+            foreach (int impact in new[] { 0, 7, 15 })
+            foreach (bool interruptible in new[] { false, true })
+            foreach (var properties in new[] { AttackProperty.Sword, AttackProperty.Sword | AttackProperty.Break })
+                CollectionAssert.AreEqual(EnemyPoiseCardTrace(60, false, false, impact, true, true, interruptible, resistance, properties),
+                    EnemyPoiseCardTrace(fps, true, restore, impact, true, true, interruptible, resistance, properties));
+        }
+
+        [Test]
+        public void のけぞり中の敵を通常ブレイクカードで倒してもガードと反応期間を残さない()
+        {
+            var target = new Enemy("target", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            var survivor = new Enemy("survivor", "検証", 100, ElementType.None, new Vector2Int(5, 0));
+            var battle = new BattleSystem(new PlayerCharacter(1000), new List<Enemy> { target, survivor }, new Deck());
+            var session = CreateSession().session; session.Attach(battle);
+            target.Guard.Set(true, false);
+            var opening = new Card("opening", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,
+                properties: AttackProperty.Break, poiseDamage: 30);
+            var lethal = new Card("lethal", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 200, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,
+                properties: AttackProperty.Break, poiseDamage: 0);
+            battle.Player.MoveTo(new Vector2Int(2, 0));
+            battle.CardUsage.EnqueueCards(new List<Card> { opening, lethal });
+            session.ProcessLogicalFrame(() => session.UseCardFromInput());
+            Assert.IsTrue(target.IsStaggered); Assert.IsTrue(target.Guard.IsActive);
+            session.ProcessLogicalFrame(() => session.UseCardFromInput());
+            Assert.IsTrue(target.IsDead); Assert.IsFalse(battle.IsGameOver);
+            Assert.IsFalse(target.Guard.IsActive, "死亡した敵のガードを戦闘終了まで残さない");
+            Assert.IsFalse(target.IsStaggered, "死亡した敵の反応期間を残さない");
+            int hp = battle.Player.CurrentHp;
+            for (int f = 0; f < 10; f++) battle.TickFrame(17);
+            Assert.AreEqual(hp, battle.Player.CurrentHp, "死亡した敵はAIへ戻らない");
+            session.Detach();
         }
 
         [TestCase(false)][TestCase(true)]
