@@ -39,10 +39,10 @@ namespace Olca.Core.Domain
         public StatusEffect(StatusEffectType type, int durationMs, int damagePerTick = 0, int durationResistancePercent = 0)
         {
             if (durationMs <= 0) throw new ArgumentException("持続時間は1以上である必要があります", nameof(durationMs));
-            if (durationResistancePercent < 0 || durationResistancePercent > 100) throw new ArgumentOutOfRangeException(nameof(durationResistancePercent));
+            if (durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationResistancePercent));
             Type = type;
             long frames = ((long)durationMs * 60 + 999) / 1000;
-            RemainingFrames = (int)(frames * (100 - durationResistancePercent) / 100);
+            RemainingFrames = (int)(frames * (100 - Math.Min(100, durationResistancePercent)) / 100);
             // 既存ms APIは耐性なしの場合の値を維持。論理更新では整数フレームを使用する。
             RemainingMs = durationResistancePercent == 0 ? durationMs : (int)Math.Min(int.MaxValue, ((long)RemainingFrames * 1000 + 59) / 60);
             DamagePerTick = damagePerTick;

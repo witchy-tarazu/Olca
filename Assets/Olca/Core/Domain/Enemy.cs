@@ -160,7 +160,8 @@ namespace Olca.Core.Domain
         public void ApplyStatus(StatusEffect status)
         {
             if (status == null) throw new ArgumentNullException(nameof(status));
-            if (IsDead) return;
+            // 時間耐性で無効化・0フレームになった付与は、既存状態と毒積算に触れない。
+            if (IsDead || status.RemainingFrames <= 0) return;
             bool refreshPoison = activeStatusEffect?.Type == StatusEffectType.Poison
                 && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison;
             activeStatusEffect = status;

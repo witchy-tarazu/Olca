@@ -491,5 +491,69 @@ namespace Olca.Tests.CardEffects
             battle.TickFrame(17);
             Assert.AreEqual(afterRestart - 1, enemy.CurrentHp);
         }
+        [TestCase(100, false, StatusEffectType.Poison)]
+        [TestCase(100, true, StatusEffectType.Poison)]
+        [TestCase(100, false, StatusEffectType.Paralyze)]
+        [TestCase(100, true, StatusEffectType.Paralyze)]
+        [TestCase(101, false, StatusEffectType.Poison)]
+        [TestCase(101, true, StatusEffectType.Poison)]
+        [TestCase(int.MaxValue, false, StatusEffectType.Paralyze)]
+        [TestCase(int.MaxValue, true, StatusEffectType.Paralyze)]
+        public void 無効な再付与はカードで付与した毒の状態と残時間と積算を変えない(int resistance, bool logical, StatusEffectType type)
+        {
+            enemy.ApplyStun(60000);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType = AdditionalEffectType.Poison, Trigger = DerivativeTrigger.OnDamage,
+                Duration = 2f, Power = 3 });
+            var card = new Card("fixture-poison", "検証用毒", 1, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.Canon, 1, "検証", DamageTargetType.Single, modifier: modifier);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+            if (logical) for (int frame = 0; frame < 19; frame++) battle.TickFrame(17);
+            else battle.Tick(333);
+            var original = enemy.ActiveStatus;
+            int frames = original.RemainingFrames, ms = original.RemainingMs, hp = enemy.CurrentHp;
+            for (int repeat = 0; repeat < 3; repeat++)
+                enemy.ApplyStatus(new StatusEffect(type, 5000, 60, durationResistancePercent: resistance));
+            Assert.AreSame(original, enemy.ActiveStatus);
+            Assert.AreEqual(frames, original.RemainingFrames);
+            Assert.AreEqual(ms, original.RemainingMs);
+            Assert.AreEqual(hp, enemy.CurrentHp);
+            // 無効な付与の後でも、有効な同種再付与で時間を更新でき、進行は保持される。
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 3));
+            Assert.AreEqual(60, enemy.ActiveStatus.RemainingFrames);
+            if (logical) battle.TickFrame(17); else battle.Tick(1);
+            Assert.AreEqual(hp - 1, enemy.CurrentHp);
+        }
+
+        [TestCase(0, 120)]
+        [TestCase(99, 1)]
+        [TestCase(100, 0)]
+        [TestCase(101, 0)]
+        [TestCase(int.MaxValue, 0)]
+        public void 時間耐性の境界は付与可否へ反映され属性耐性と独立する(int resistance, int expectedFrames)
+        {
+            var incoming = new StatusEffect(StatusEffectType.Paralyze, 2000, durationResistancePercent: resistance);
+            Assert.AreEqual(expectedFrames, incoming.RemainingFrames);
+            enemy.ApplyStatus(incoming);
+            if (expectedFrames == 0) Assert.IsNull(enemy.ActiveStatus);
+            else Assert.AreSame(incoming, enemy.ActiveStatus);
+            Assert.AreSame(ElementResistances.Neutral, enemy.Resistances);
+        }
+
+        [Test]
+        public void 切捨てで0フレームの効果は既存麻痺を解除しない()
+        {
+            var original = new StatusEffect(StatusEffectType.Paralyze, 1000);
+            enemy.ApplyStatus(original);
+            battle.TickFrame(17);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1, 60, durationResistancePercent: 99));
+            Assert.AreSame(original, enemy.ActiveStatus);
+            Assert.AreEqual(59, original.RemainingFrames);
+            Assert.IsTrue(enemy.IsParalyzed);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                new StatusEffect(StatusEffectType.Poison, 1000, durationResistancePercent: -1));
+        }
     }
 }
