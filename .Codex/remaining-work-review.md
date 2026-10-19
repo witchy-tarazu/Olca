@@ -273,3 +273,21 @@ DungeonBattleManager.TryValidateCarryHomeSelectionはクリア確定後のみ受
 未実装: 選択UI、選択状態の保存、永続所持への付与、超過トークン換算、帰還・経験値の確定処理。終了済みTerminalを再開不可とする旧仕様も維持する。中断復帰の検証は最終戦より前のチェックポイントからの復帰であり、クリア選択画面の保存復帰を実装したものではない。候補検証の完成を持ち帰り全体の完成と扱わない。
 
 最終検証: Unity MCP全EditMode 1650/1650成功（34.45秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告14件。結果 /workspace/.olca-cloud/results/carry-home-selection/editmode-tests.json、console-before.json、console-after.json。
+
+
+## 後隙キャンセル・通常移動の中間確定の実装前照合（3ee4385後）
+
+今回の指示は後隙キャンセルの確定タイミングと入力優先順を照合し、フレーム数や製品性能が未定義なら創作せず通常移動の中間確定へ切り替える、という範囲。現物とPlanningの照合結果は以下。
+
+- 全体仕様§7（221〜227行）は、通常移動の中間確定、中断前後の位置維持、行動予約なし、前後隙中の通常移動禁止、攻撃ごとのキャンセル開始フレーム、受理時に次攻撃の前隙開始、発射済み効果の維持を規定する。
+- 後隙開始からの具体的キャンセル開始フレーム数は未供給。固有攻撃とカード使用が同フレームの場合の優先順も未記載。現在Card/CardMasterにはStartupTime/RecoveryTimeはあるがキャンセル開始定義がない。古い秒数例やRecoveryTime=0の既定値はキャンセル開始値の根拠にしない。
+- 現在CardUsageSystemは実行中カードがあれば次カードを拒否し、PlayerMovementSystemはカード実行中の通常移動を拒否する。ModifiableCardEffectはWaitForActionAsyncで前後隙を待つ。BattleSessionControllerにも実行中の再入制御があるため、単にCtsをCancelする変更だけでは正式なキャンセル入力経路にならない。
+- 代替の通常移動はPlayerMovementSystem.TryMoveInternalで即時MoveToし、150ms/Grass 200msのクールダウンを付ける。これは押し続け入力の待ち時間であり、アニメーションの総時間・確定フレーム定義ではない。Planningの歩行スプライト枚数/fpsの範囲や一時移動攻撃のMoveMotionTimeも、通常の1マス移動時間とは同一視できない。
+
+阻害対象: 後隙キャンセルの通常入力接続、および代替候補の通常移動の中間確定。必要な製品タイミングと同時入力規則が不足しているため、両操作とも未実行・仕様/データ待ちで保留。実行拒否や結果不明ではない。C#・カード性能・移動クールダウン・保存形式は変更しない。
+
+再開に必要な最小情報: (1) 対象攻撃のキャンセル開始フレームと、固有攻撃/カード同時入力時にどちらを受け付けるか、または (2) 通常1マス移動の総論理フレーム数とマス確定フレーム。製品値未供給でも外部指定定義を受ける基盤だけ先行する方針なら、その範囲を親側で選べる。数値未供給と規則未確定を混同しない。この判断点はユーザーへ提示済み・回答待ちとは記録しない。
+
+今回、カード消費/返却・同フレーム入力・のけぞり/麻痺中断・ポーズ・保存復帰について新機能の成功を主張しない。公開済みの全回帰を再確認する。残件全体が仕様/データ待ちだけになったとの結論でもなく、外部定義の基盤接続等には実装作業が残る。
+
+照合後の回帰: Unity MCP全EditMode 1650/1650成功（33.36秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告は履歴を保持した累積27件。結果 /workspace/.olca-cloud/results/action-timing-audit/editmode-tests.json、console-before.json、console-after.json。今回は監査文書のみ変更し、新しいキャンセル/中間確定動作は未実装。
