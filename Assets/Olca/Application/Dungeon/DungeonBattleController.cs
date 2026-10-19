@@ -61,10 +61,13 @@ namespace Olca.Application.Dungeon
         private UnityRandomProvider randomProvider;
         private UnityLogger logger;
         private UnityInputProvider inputProvider;
+        private readonly UnityLogicalLoop logicalLoop = new UnityLogicalLoop(observeEditor: true);
+        public long LogicalFrame => logicalLoop.Clock.Frame;
+        public long PendingLogicalFrames => logicalLoop.Clock.PendingFrames;
         private BattleSessionController battleSession;
 
         private float dashStartPosition = -1f;    // ダッシュ開始位置（-1=非ダッシュ中）
-        private float dashCooldownRemaining = 0f; // クールタイム残り時間
+        private int dashCooldownRemaining; // クールタイム残り論理フレーム
 
         private bool battleFieldReady;
         private GameObject pauseCanvas;
@@ -73,6 +76,12 @@ namespace Olca.Application.Dungeon
         [SerializeField, HideInInspector] private string checkpointDirectoryOverride;
         private bool awaitingCheckpointChoice;
         private DungeonConfig configuredDungeon;
+        private int? simulationSeed;
+        public void ConfigureSimulationSeed(int seed)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後はseedを変更できません");
+            simulationSeed = seed;
+        }
         public void ConfigureDungeon(DungeonConfig config)
         {
             if (manager != null) throw new System.InvalidOperationException("起動後はマップを変更できません");
@@ -113,6 +122,8 @@ namespace Olca.Application.Dungeon
         public void SetUserPaused(bool paused)
         {
             if (manager == null || manager.IsUserPaused == paused) return;
+            logicalLoop.Observe(!manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
+            logicalLoop.ReleaseInput();
             manager.SetUserPaused(paused);
             GameplayPause.SetPaused(paused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
@@ -174,7 +185,7 @@ namespace Olca.Application.Dungeon
 
         private void Start()
         {
-            randomProvider = new UnityRandomProvider();
+            randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
 
@@ -216,9 +227,11 @@ namespace Olca.Application.Dungeon
 
             // バトルセッション共通操作をBattleSessionControllerに委譲
             if (battleView != null && customScreenView != null)
-                battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger);
+                battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger,
+                    (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames);
 
             CreatePauseControls();
+            logicalLoop.Observe(false);
             logger.LogInfo("[DungeonBattleController] 初期化完了");
         }
 
@@ -226,24 +239,30 @@ namespace Olca.Application.Dungeon
         {
             if (manager == null) return;
             GameplayPause.UpdateInputBarrier();
-            if (manager.Dungeon.IsCheckpointBlocked) { ShowCheckpointStatus(); return; }
-            if (awaitingCheckpointChoice || IsUserPaused) return;
-            inputProvider.Update();
-            if (!GameplayPause.InputBlocked) HandleInput();
-            int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
-            manager.Tick(deltaTimeMs, GameplayPause.InputBlocked ? null : inputProvider);
+            bool active = !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
+            var sample = GameplayPause.InputBlocked ? new LogicalInput() : inputProvider.CaptureLogical();
+            logicalLoop.Pump(active, sample, TickLogicalFrame, () => !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
+                () => manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused));
+            if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
         }
 
-        private void HandleInput()
+        private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
+        {
+            if (GameplayPause.InputBlocked) input = new LogicalInput();
+            HandleInput(input, deltaTimeMs);
+            manager.TickFrame(deltaTimeMs, input);
+        }
+
+        private void HandleInput(LogicalInput input, int deltaTimeMs)
         {
             switch (manager.CurrentPhase)
             {
                 case GamePhase.Dungeon:
-                    if (Input.GetKeyDown(KeyCode.Space)) manager.Jump();
+                    if (input.JumpButtonDown) manager.Jump();
 
                     // ダッシュ: 押した瞬間に発動し、指定マス数移動したら終了
-                    bool dashPressed = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift);
+                    bool dashPressed = input.DashButtonDown;
                     if (dashPressed && dashCooldownRemaining <= 0f && dashStartPosition < 0f)
                     {
                         manager.StartDash();
@@ -257,21 +276,21 @@ namespace Olca.Application.Dungeon
                         {
                             manager.StopDash();
                             dashStartPosition = -1f;
-                            dashCooldownRemaining = dashCooldown;
+                            dashCooldownRemaining = LogicalFrameClock.DurationFrames(dashCooldown);
                         }
                     }
 
                     if (dashCooldownRemaining > 0f)
-                        dashCooldownRemaining -= Time.deltaTime;
+                        dashCooldownRemaining--;
                     break;
 
                 case GamePhase.Battle:
                     // AltキーでBattleSessionControllerに委譲してカスタム画面を開く
-                    if (Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt))
+                    if (input.CustomScreenButtonDown)
                         battleSession?.TryOpenCustomScreen();
 
                     // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
-                    if (Input.GetKeyDown(KeyCode.Space))
+                    if (input.CardUseButtonDown)
                         battleSession?.UseCardFromInput();
                     break;
 
@@ -324,6 +343,10 @@ namespace Olca.Application.Dungeon
         private void OnBattleStarted(BattleSystem battle, ContactInfo contactInfo)
         {
             battleFieldReady = false;
+            // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            if (!battle.CustomScreen.IsOpen) battle.OpenCustomScreen(randomProvider);
+            battleSession?.Attach(battle);
             TransitionToBattleAsync(battle, contactInfo).Forget();
         }
 
@@ -382,7 +405,7 @@ namespace Olca.Application.Dungeon
                 customScreenView?.Initialize(battle.CustomScreen);
 
                 // バトルセッション開始（購読・ゲージ管理をBattleSessionControllerに委譲）
-                battleSession?.Attach(battle);
+                // 論理セッションは接敵フレームでAttach済み。
 
                 await hudHideTask;
 
@@ -391,8 +414,7 @@ namespace Olca.Application.Dungeon
                 if (battle.IsGameOver || !ReferenceEquals(manager.CurrentBattle, battle)) return;
 
                 // 4. ゲージ満タン → カスタム画面オープン
-                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
-                battleSession?.TryOpenCustomScreen();
+                if (battle.CustomScreen.IsOpen) battleView?.OpenCustomScreen();
 
                 logger.LogInfo("[Controller] バトル遷移完了");
             }
@@ -406,7 +428,17 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
+            if (manager.CurrentPhase == GamePhase.Dungeon) ScheduleExplorationResume();
             HandleBattleEndAsync().Forget();
+        }
+
+        private void ScheduleExplorationResume()
+        {
+            var owner = manager;
+            double seconds = hudFadeDuration + (contactAnimator != null ? contactAnimator.ReturnDurationSeconds : 0) + returnToDungeonDelayMs / 1000d;
+            logicalLoop.AfterFrames(LogicalFrameClock.DurationFrames(seconds), () => {
+                if (ReferenceEquals(manager, owner) && manager.CurrentPhase == GamePhase.Dungeon) manager.ResumeAfterBattle();
+            });
         }
 
         private void OnCardRewardPresented(IReadOnlyList<Card> choices)
@@ -450,7 +482,8 @@ namespace Olca.Application.Dungeon
                         Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct);
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
-                        manager.SelectCardReward(selectedCard);
+                        logicalLoop.Schedule(() => { manager.SelectCardReward(selectedCard); ScheduleExplorationResume(); });
+                        while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
                     }
                     else
                     {
@@ -458,7 +491,8 @@ namespace Olca.Application.Dungeon
                         logger.LogWarning("[Controller] CardSelectionView が未設定のためカード報酬をスキップします");
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
-                        manager.SelectCardReward(null);
+                        logicalLoop.Schedule(() => { manager.SelectCardReward(null); ScheduleExplorationResume(); });
+                        while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
                     }
                 }
 
@@ -484,7 +518,7 @@ namespace Olca.Application.Dungeon
                 // インターバル後に移動を再開（遷移アニメーション完了を保証）
                 await GameplayPause.Delay(returnToDungeonDelayMs, cancellationToken: ct);
                 await GameplayPause.WaitAsync(ct);
-                manager.ResumeAfterBattle();
+                // モデル再開はScheduleExplorationResumeの論理期限で処理済み。
             }
             catch (System.OperationCanceledException) { }
         }
@@ -566,9 +600,10 @@ namespace Olca.Application.Dungeon
             pendingCardChoices = null; cardSelectionView?.Hide();
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
+            logicalLoop.StartNewTimeline();
             manager = restored;
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
-            dashStartPosition = -1f; dashCooldownRemaining = 0f;
+            dashStartPosition = -1f; dashCooldownRemaining = 0;
             ShowCheckpointStatus();
             manager.OnBattleStarted += OnBattleStarted; manager.OnBattleEnded += OnBattleEnded;
             manager.OnCardRewardPresented += OnCardRewardPresented; manager.OnGameOver += OnGameOver;
@@ -581,6 +616,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            logicalLoop.Dispose();
             if (IsUserPaused) SetUserPaused(false);
             if (pauseCanvas != null) Destroy(pauseCanvas);
             transitionCts?.Cancel();

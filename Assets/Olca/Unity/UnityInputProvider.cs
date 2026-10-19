@@ -42,6 +42,21 @@ namespace Olca.Unity
 
         public bool CustomScreenButtonDown => Input.GetKeyDown(KeyCode.C);
 
+        public Olca.Core.Logic.Integration.LogicalInput CaptureLogical()
+        {
+            float horizontal = Input.GetAxisRaw("Horizontal");
+            var value = new Olca.Core.Logic.Integration.LogicalInput {
+                Horizontal = horizontal, HorizontalDown = lastHorizontal == 0 ? horizontal : 0,
+                Vertical = Input.GetAxisRaw("Vertical"), JumpButtonDown = Input.GetKeyDown(KeyCode.Space),
+                CardUseButtonDown = Input.GetKeyDown(KeyCode.Space), BasicAttackButton = Input.GetKey(KeyCode.Z),
+                DashButton = DashButton,
+                DashButtonDown = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift),
+                CustomScreenButtonDown = Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt)
+            };
+            lastHorizontal = horizontal;
+            return value;
+        }
+
         /// <summary>
         /// 毎フレーム呼び出して状態を更新
         /// </summary>
@@ -78,20 +93,21 @@ namespace Olca.Unity
     {
         public static bool IsPaused { get; private set; }
         private static bool awaitRelease;
-        private static int resumeFrame = -2;
-        public static bool InputBlocked => IsPaused || awaitRelease || Time.frameCount <= resumeFrame + 1;
+        private static int resumeFrames;
+        public static bool InputBlocked => IsPaused || awaitRelease || resumeFrames > 0;
         public static float DeltaTime => IsPaused ? 0f : Time.deltaTime;
         public static void SetPaused(bool paused)
         {
             if (IsPaused == paused) return;
             IsPaused = paused;
-            if (!paused) { awaitRelease = true; resumeFrame = Time.frameCount; }
+            if (!paused) { awaitRelease = true; resumeFrames = 2; }
         }
         public static void UpdateInputBarrier()
         {
             if (!IsPaused && awaitRelease && !Input.anyKey)
-            { awaitRelease = false; resumeFrame = Time.frameCount; }
+            { awaitRelease = false; resumeFrames = 2; }
         }
+        public static void AdvanceLogicalFrame() { if (!IsPaused && !awaitRelease && resumeFrames > 0) resumeFrames--; }
         public static async Cysharp.Threading.Tasks.UniTask WaitAsync(System.Threading.CancellationToken ct = default)
         {
             while (IsPaused) await Cysharp.Threading.Tasks.UniTask.Yield(Cysharp.Threading.Tasks.PlayerLoopTiming.Update, ct);

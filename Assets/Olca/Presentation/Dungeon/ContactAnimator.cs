@@ -160,6 +160,8 @@ namespace Olca.Presentation.Dungeon
         /// バトル後の定位置復帰ジャンプ
         /// 現在位置から指定位置へ放物線を描いて移動する（ダッシュ宙返りと同じ弧）
         /// </summary>
+        public float ReturnDurationSeconds => dashRollbackDuration;
+
         public async UniTask PlayReturnJumpAsync(Transform playerTransform, Vector3 targetPosition, CancellationToken ct = default, float units = 1f)
         {
             if (playerTransform == null) return;

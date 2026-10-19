@@ -154,7 +154,7 @@ namespace Olca.Core.Domain
             if (status == null) throw new ArgumentNullException(nameof(status));
             if (IsDead) return;
             activeStatusEffect = status;
-            poisonDamageRemainder = 0;
+            poisonDamageRemainder = 0; poisonFrameRemainder = 0;
         }
 
         /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。他の状態の持越し規則は変更しない。</summary>
@@ -162,7 +162,7 @@ namespace Olca.Core.Domain
         {
             if (activeStatusEffect?.Type != StatusEffectType.Paralyze) return;
             activeStatusEffect = null;
-            poisonDamageRemainder = 0;
+            poisonDamageRemainder = 0; poisonFrameRemainder = 0;
         }
 
         /// <summary>
@@ -170,6 +170,22 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="elapsedMs">経過時間（ミリ秒）</param>
         /// <returns>有効な残時間に対する毒ダメージ量（毒以外は0）</returns>
+        private long poisonFrameRemainder;
+        public int TickStatusFrame()
+        {
+            if (activeStatusEffect == null) return 0;
+            int damage = 0;
+            if (activeStatusEffect.RemainingFrames > 0 && activeStatusEffect.Type == StatusEffectType.Poison)
+            {
+                // 現行の毎秒量を維持。未定義の毒の間隔・製品値はここで新設しない。
+                poisonFrameRemainder += activeStatusEffect.DamagePerTick;
+                damage = (int)(poisonFrameRemainder / 60); poisonFrameRemainder %= 60;
+            }
+            // 終了フレームのダメージを計算してから解除する。
+            if (activeStatusEffect.TickFrame()) { activeStatusEffect = null; poisonFrameRemainder = 0; }
+            return damage;
+        }
+
         public int TickStatus(int elapsedMs)
         {
             if (activeStatusEffect == null || elapsedMs <= 0) return 0;
@@ -189,7 +205,7 @@ namespace Olca.Core.Domain
             if (expired)
             {
                 activeStatusEffect = null;
-                poisonDamageRemainder = 0;
+                poisonDamageRemainder = 0; poisonFrameRemainder = 0;
             }
 
             return poisonDamage;

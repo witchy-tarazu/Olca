@@ -26,17 +26,21 @@ namespace Olca.Application.Battle
         private BattleSystem currentBattle;
         private int sessionVersion;
         private bool isClosing;
+        private readonly Action<int, Action> scheduleLogical;
+        private readonly int closeDurationFrames;
 
         public BattleSessionController(
             IBattleView battleView,
             ICustomScreenView customScreenView,
             IRandomProvider randomProvider,
-            IGameLogger logger)
+            IGameLogger logger, Action<int, Action> scheduleLogical = null, int closeDurationFrames = 0)
         {
             this.battleView = battleView;
             this.customScreenView = customScreenView;
             this.randomProvider = randomProvider;
             this.logger = logger;
+            this.scheduleLogical = scheduleLogical;
+            this.closeDurationFrames = closeDurationFrames;
         }
 
         /// <summary>
@@ -49,6 +53,7 @@ namespace Olca.Application.Battle
             Detach();
             currentBattle = battle;
             currentBattle.CustomGauge.OnGaugeFull += OnGaugeFull;
+            if (scheduleLogical != null) currentBattle.CustomScreen.OnConfirmed += OnLogicalConfirmed;
             customScreenView.OnCustomScreenConfirmed += OnCustomScreenConfirmed;
         }
 
@@ -63,6 +68,7 @@ namespace Olca.Application.Battle
             if (currentBattle != null)
             {
                 currentBattle.CustomGauge.OnGaugeFull -= OnGaugeFull;
+                currentBattle.CustomScreen.OnConfirmed -= OnLogicalConfirmed;
                 currentBattle.CardUsage.Clear();
                 // バトル終了時にカスタム画面が開きっぱなしの場合は強制クローズ
                 // （確定アニメーション中にバトルが終了した際、Close()が呼ばれないケースへの対処）
@@ -122,13 +128,32 @@ namespace Olca.Application.Battle
             logger.LogInfo("[BattleSession] カスタムゲージ満タン！Altキーで画面を開けます");
         }
 
+        private void OnLogicalConfirmed(System.Collections.Generic.List<Olca.Core.Domain.Card> cards) => OnCustomScreenConfirmed();
+
         private void OnCustomScreenConfirmed()
         {
             // 意図: アニメーションを待ってから CustomScreen.Close() を呼ぶことで
             // バトルの Resume() が正しいタイミングで呼ばれる
             if (currentBattle == null || isClosing) return;
             isClosing = true;
-            CloseCustomScreenAsync().Forget();
+            if (scheduleLogical == null) CloseCustomScreenAsync().Forget();
+            else
+            {
+                var closing = currentBattle; int version = sessionVersion;
+                // 表示の終了通知ではなく既存演出時間を換算した論理フレームで再開する。
+                scheduleLogical(closeDurationFrames, () => {
+                    if (version != sessionVersion || !ReferenceEquals(currentBattle, closing)) return;
+                    closing.CustomScreen.Close(); isClosing = false;
+                });
+                CloseVisualOnlyAsync().Forget();
+            }
+        }
+
+        private async UniTask CloseVisualOnlyAsync()
+        {
+            try { await battleView.CloseCustomScreenAsync(); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { logger?.LogError($"[BattleSession] 表示の終了に失敗: {ex}"); }
         }
 
         private async UniTask CloseCustomScreenAsync()

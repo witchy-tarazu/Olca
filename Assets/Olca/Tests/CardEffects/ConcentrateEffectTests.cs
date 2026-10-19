@@ -553,9 +553,10 @@ namespace Olca.Tests.CardEffects
                 battle.Tick(101); await Task.Delay(30);
                 Assert.AreEqual(80, battle.Enemies[0].CurrentHp);
             }
-            battle.Tick(101);
+            // 論理フレームの入力処理がタイマー処理より先。Tick後の描画Yieldには依存しない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             battle.OpenCustomScreen(new MockRandomProvider(0));
+            battle.Tick(101);
             await Task.Delay(50);
             bool stopped = !pending.IsCompleted && player.IsInTemporaryMove;
             Assert.AreEqual(recovery ? 80 : 100, battle.Enemies[0].CurrentHp);

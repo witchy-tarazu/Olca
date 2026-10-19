@@ -87,6 +87,14 @@ namespace Olca.Core.Logic.Integration
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
         /// <param name="input">入力プロバイダー（オプショナル）</param>
+        private bool logicalFrameTick;
+        public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
+        {
+            logicalFrameTick = true;
+            try { Tick(compatibleMilliseconds, input); }
+            finally { logicalFrameTick = false; }
+        }
+
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (IsSuspended || dungeonSystem.IsCheckpointBlocked) return;
@@ -98,7 +106,8 @@ namespace Olca.Core.Logic.Integration
                     break;
 
                 case GamePhase.Battle:
-                    currentBattle?.Tick(deltaTimeMs, input);
+                    if (logicalFrameTick) currentBattle?.TickFrame(deltaTimeMs, input);
+                    else currentBattle?.Tick(deltaTimeMs, input);
                     break;
 
                 case GamePhase.CardReward:
@@ -325,5 +334,98 @@ namespace Olca.Core.Logic.Integration
 
         /// <summary>ゲームオーバー</summary>
         GameOver
+    }
+}
+
+namespace Olca.Core.Logic.Integration
+{
+    /// <summary>描画と独立した60 Hz論理時計。負荷上限で処理しきれないフレームは保持する。</summary>
+    public sealed class LogicalFrameClock
+    {
+        public const int FramesPerSecond = 60;
+        public const long WallTicksPerSecond = 10000000;
+        private long credit;
+        private bool advancing;
+        public long Frame { get; private set; }
+        public long PendingFrames => credit / WallTicksPerSecond;
+        public long InputFrame => Frame + PendingFrames + 1;
+        public double Interpolation => (double)(credit % WallTicksPerSecond) / WallTicksPerSecond;
+        public void Accumulate(long elapsedWallTicks)
+        {
+            if (elapsedWallTicks < 0) throw new ArgumentOutOfRangeException(nameof(elapsedWallTicks));
+            credit = checked(credit + elapsedWallTicks * FramesPerSecond);
+        }
+        public int Drain(Action<long, int> tick, int budget = 240, Func<bool> canAdvance = null)
+        {
+            if (tick == null) throw new ArgumentNullException(nameof(tick));
+            if (budget < 1) throw new ArgumentOutOfRangeException(nameof(budget));
+            if (advancing) return 0;
+            advancing = true;
+            int count = 0;
+            try
+            {
+                while (PendingFrames > 0 && count < budget && (canAdvance == null || canAdvance()))
+                {
+                    credit -= WallTicksPerSecond;
+                    long previous = Frame++;
+                    // 既存ms APIへの互換境界。16ms固定にせず、60フレームで必ず1000ms進める。
+                    int milliseconds = (int)(Frame * 1000 / FramesPerSecond - previous * 1000 / FramesPerSecond);
+                    tick(Frame, milliseconds);
+                    count++;
+                }
+            }
+            finally { advancing = false; }
+            return count;
+        }
+        public static int DurationFrames(double seconds)
+        {
+            if (seconds < 0 || double.IsNaN(seconds) || double.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
+            // SerializeFieldの0.2fなどの表現誤差だけを除く（1e-5フレーム未満）。
+            return seconds == 0 ? 0 : Math.Max(1, checked((int)Math.Ceiling(seconds * FramesPerSecond - 1e-5)));
+        }
+    }
+
+    /// <summary>1論理フレームの入力。押下イベントはそのフレームだけ有効。</summary>
+    public sealed class LogicalInput : IInputProvider
+    {
+        public float Horizontal { get; set; }
+        public float HorizontalDown { get; set; }
+        public float Vertical { get; set; }
+        public bool JumpButtonDown { get; set; }
+        public bool DashButton { get; set; }
+        public bool DashButtonDown { get; set; }
+        public bool CardUseButtonDown { get; set; }
+        public bool BasicAttackButton { get; set; }
+        public float BasicAttackButtonHoldTime { get; set; }
+        public bool CustomScreenButtonDown { get; set; }
+        public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
+        public void ClearEdges() { HorizontalDown = 0; JumpButtonDown = DashButtonDown = CardUseButtonDown = CustomScreenButtonDown = false; }
+    }
+
+    /// <summary>入力を論理フレームに割り当て、描画停止後の追いつき中にも一度だけ消費する。</summary>
+    public sealed class LogicalInputQueue
+    {
+        private readonly Queue<KeyValuePair<long, LogicalInput>> pending = new Queue<KeyValuePair<long, LogicalInput>>();
+        private LogicalInput held = new LogicalInput();
+        private long lastQueued, heldFrames;
+        public void Enqueue(long frame, LogicalInput input)
+        {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            // 同じフレームに複数の入力サンプルが来てもイベントを上書きしない。
+            long target = Math.Max(frame, lastQueued + 1);
+            pending.Enqueue(new KeyValuePair<long, LogicalInput>(target, input.Copy())); lastQueued = target;
+        }
+        public LogicalInput Take(long frame, bool advanceHeldTime = true)
+        {
+            held.ClearEdges();
+            if (pending.Count > 0 && pending.Peek().Key <= frame) held = pending.Dequeue().Value;
+            heldFrames = held.BasicAttackButton ? heldFrames + (advanceHeldTime ? 1 : 0) : 0;
+            held.BasicAttackButtonHoldTime = heldFrames / (float)LogicalFrameClock.FramesPerSecond;
+            return held.Copy();
+        }
+        public void Release()
+        {
+            pending.Clear(); held = new LogicalInput(); heldFrames = 0; lastQueued = 0;
+        }
     }
 }

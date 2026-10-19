@@ -27,6 +27,7 @@ namespace Olca.Application.Battle
         private IRandomProvider randomProvider;
         private IGameLogger logger;
         private BattleSessionController battleSession;
+        private readonly UnityLogicalLoop logicalLoop = new UnityLogicalLoop(observeEditor: true);
 
         // ========== 初期化 ==========
         private void Start()
@@ -34,6 +35,8 @@ namespace Olca.Application.Battle
             inputProvider = new UnityInputProvider();
             randomProvider = new UnityRandomProvider();
             logger = new UnityLogger();
+
+            logicalLoop.Observe(false);
 
             // テスト用バトルセットアップ
             var player = new PlayerCharacter(maxHp: 100, initialPosition: Vector2Int.Zero, attackPower: 10);
@@ -54,7 +57,8 @@ namespace Olca.Application.Battle
             customScreenView.Initialize(battleSystem.CustomScreen);
 
             // バトルセッション共通操作をBattleSessionControllerに委譲
-            battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger);
+            battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger,
+                    (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames);
             battleSession.Attach(battleSystem);
 
             // バトル開始時: ゲージを満タンにしてカスタム画面を即時オープン
@@ -67,18 +71,14 @@ namespace Olca.Application.Battle
         {
             if (battleSystem == null) return;
 
-            inputProvider?.Update();
-            int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
-            battleSystem.Tick(deltaTimeMs, inputProvider);
+            logicalLoop.Pump(!GameplayPause.IsPaused && Time.timeScale > 0,
+                GameplayPause.InputBlocked ? new Olca.Core.Logic.Integration.LogicalInput() : inputProvider.CaptureLogical(),
+                (frame, ms, input) => {
+                    if (input.CustomScreenButtonDown) battleSession.TryOpenCustomScreen();
+                    if (input.CardUseButtonDown && !battleSystem.CustomScreen.IsOpen) battleSession.UseCardFromInput();
+                    battleSystem.TickFrame(ms, input);
+                }, () => !GameplayPause.IsPaused, () => !battleSystem.IsPaused);
             battleView.Refresh();
-
-            // Altキーでカスタム画面を手動オープン
-            if (Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt))
-                battleSession.TryOpenCustomScreen();
-
-            // テスト用: スペースキーでキューの次のカードを使用
-            if (Input.GetKeyDown(KeyCode.Space) && !battleSystem.CustomScreen.IsOpen)
-                battleSession?.UseCardFromInput();
         }
 
         // ========== バトル終了 ==========
@@ -90,6 +90,7 @@ namespace Olca.Application.Battle
 
         private void OnDestroy()
         {
+            logicalLoop.Dispose();
             battleSession?.Detach();
             if (battleSystem != null)
                 battleSystem.OnBattleEnd -= OnBattleEnd;

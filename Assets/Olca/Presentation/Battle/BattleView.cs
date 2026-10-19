@@ -207,6 +207,8 @@ namespace Olca.Presentation.Battle
         /// Phase2: オーバーランを含むスライドアウトアニメーション
         /// アニメーション完了まで待つ
         /// </summary>
+        public int CloseDurationFrames => Olca.Core.Logic.Integration.LogicalFrameClock.DurationFrames(animationDuration);
+
         public async UniTask CloseCustomScreenAsync()
         {
             if (!isCustomScreenOpen) return;

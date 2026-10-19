@@ -191,6 +191,14 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="deltaTimeMs">前フレームからの経過時間（ミリ秒）</param>
         /// <param name="input">入力プロバイダー（オプショナル）</param>
+        private bool logicalFrameTick;
+        public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
+        {
+            logicalFrameTick = true;
+            try { Tick(compatibleMilliseconds, input); }
+            finally { logicalFrameTick = false; }
+        }
+
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (IsPaused || IsGameOver) return;
@@ -202,6 +210,8 @@ namespace Olca.Core.Logic.Battle
             try
             {
                 actionTimeMs += deltaTimeMs;
+                AdvanceActionWaits();
+                if (IsGameOver || IsPaused) return;
                 // カスタムゲージを更新
                 customGauge.Update(deltaTimeMs);
 
@@ -219,7 +229,7 @@ namespace Olca.Core.Logic.Battle
                 foreach (var enemy in tickParticipants)
                 {
                     if (enemy.IsDead) continue;
-                    int poisonDamage = enemy.TickStatus(deltaTimeMs);
+                    int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
                     if (poisonDamage > 0)
                     {
                         enemy.TakeDamage(poisonDamage, ElementType.None);
@@ -281,14 +291,36 @@ namespace Olca.Core.Logic.Battle
             finally { EndResolution(); }
         }
 
-        // Coreの時間は既存Tickのみで進める。Pause中の前隙/後隙は残り時間を維持する。
-        internal async UniTask WaitForActionAsync(float seconds, CancellationToken ct)
+        private sealed class ActionWait
         {
-            long deadline = actionTimeMs + (long)Math.Ceiling(seconds * 1000d);
-            await UniTask.WaitUntil(() => (!IsPaused && actionTimeMs >= deadline) || IsGameOver,
-                cancellationToken: ct, cancelImmediately: true);
+            public long Deadline;
+            public readonly UniTaskCompletionSource Completion = new UniTaskCompletionSource();
+            public CancellationTokenRegistration Registration;
+        }
+        private readonly List<ActionWait> actionWaits = new List<ActionWait>();
+
+        // Unity PlayerLoopのWaitUntilを使わず、期限に達した論理更新内で継続する。
+        internal UniTask WaitForActionAsync(float seconds, CancellationToken ct)
+        {
             ct.ThrowIfCancellationRequested();
-            if (IsGameOver) throw new OperationCanceledException();
+            if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
+            if (seconds <= 0) return UniTask.CompletedTask;
+            var wait = new ActionWait { Deadline = actionTimeMs + (long)Math.Ceiling(seconds * 1000d - 1e-4) };
+            actionWaits.Add(wait);
+            if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
+            return wait.Completion.Task;
+        }
+        private void AdvanceActionWaits()
+        {
+            // 継続内で追加された次の待機には、このフレームの時間を二重適用しない。
+            foreach (var wait in actionWaits.ToArray())
+            {
+                if (wait.Completion.Task.Status != UniTaskStatus.Pending || wait.Deadline <= actionTimeMs || IsGameOver)
+                {
+                    actionWaits.Remove(wait); wait.Registration.Dispose();
+                    if (IsGameOver) wait.Completion.TrySetCanceled(); else wait.Completion.TrySetResult();
+                }
+            }
         }
 
         /// <summary>

@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using NUnit.Framework;
 using System.Linq;
 using Olca.Core.Logic.Integration;
@@ -1153,6 +1154,146 @@ namespace Olca.Tests.Integration
             var dto = saved.Read(); Assert.AreEqual(1, dto.SchemaVersion); Assert.IsNull(dto.ProcessedObstacleCells);
             dto.ProcessedObstacleCells = new[] { 2 }; dto.Sequence++;
             Assert.IsFalse(saved.TryWrite(dto, out _)); Assert.AreEqual(1, saved.Read().SchemaVersion);
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class LogicalFrameClockTests
+    {
+        private sealed class SeededRandom : Olca.Core.Interfaces.IRandomProvider
+        {
+            private readonly System.Random random = new System.Random(12345);
+            public int Calls;
+            public int Range(int min, int max) { Calls++; return random.Next(min, max); }
+            public float Range(float min, float max) { Calls++; return min + (float)random.NextDouble() * (max - min); }
+            public float Value { get { Calls++; return (float)random.NextDouble(); } }
+        }
+        private static IEnumerable<long> RenderFrames(int fps, bool stall)
+        {
+            const long total = 100000000;
+            long previous = 0;
+            if (stall) { previous = 23000000; yield return previous; }
+            for (long frame = 1; previous < total; frame++)
+            {
+                long now = System.Math.Min(total, (stall ? 23000000 : 0) + frame * LogicalFrameClock.WallTicksPerSecond / fps);
+                yield return now - previous; previous = now;
+            }
+        }
+        private static List<string> BattleTrace(int fps, bool stall, int budget)
+        {
+            var clock = new LogicalFrameClock(); var input = new LogicalInputQueue(); var random = new SeededRandom();
+            var enemy = new Enemy("trace", "fixture", 10000, ElementType.None, new Vector2Int(3, 0));
+            var battle = new BattleSystem(new PlayerCharacter(10000), new List<Enemy> { enemy }, new Deck(), randomProvider: random, logger: new MockLogger());
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 7));
+            var card = new Card("trace", "fixture", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.None, 30, "fixture", startupTime: .2f, recoveryTime: .3f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card, card.Clone() });
+            input.Enqueue(3, new LogicalInput { CardUseButtonDown = true });
+            input.Enqueue(70, new LogicalInput { Horizontal = 1, BasicAttackButton = true });
+            input.Enqueue(110, new LogicalInput());
+            input.Enqueue(150, new LogicalInput { CardUseButtonDown = true });
+            var trace = new List<string>();
+            System.Action<long, int> tick = (frame, ms) => {
+                var value = input.Take(frame);
+                if (value.CardUseButtonDown) battle.CardUsage.TryUseCurrentCardAsync().Forget();
+                battle.TickFrame(ms, value);
+                trace.Add(frame+":"+battle.Player.CurrentHp+":"+enemy.CurrentHp+":"+enemy.GridPosition+":"+battle.Player.GridPosition+":"+battle.CardUsage.RemainingCount+":"+(battle.CardUsage.InFlightCard!=null)+":"+enemy.ActiveStatus?.RemainingMs+":"+random.Calls+":"+value.BasicAttackButtonHoldTime);
+            };
+            foreach (long elapsed in RenderFrames(fps, stall)) { clock.Accumulate(elapsed); clock.Drain(tick, budget); }
+            while (clock.PendingFrames > 0) clock.Drain(tick, budget);
+            Assert.AreEqual(600, clock.Frame); Assert.IsTrue(battle.CardUsage.IsEmpty, "描画Yieldなしで効果と後隙が完了する");
+            return trace;
+        }
+        [TestCase(30, false, 240)][TestCase(120, false, 240)][TestCase(60, true, 7)][TestCase(30, true, 7)]
+        public void 同じ入力列と乱数で描画速度や停止に関係なく毎論理フレームの戦闘状態が一致する(int fps, bool stall, int budget)
+        { CollectionAssert.AreEqual(BattleTrace(60, false, 240), BattleTrace(fps, stall, budget)); }
+        [Test] public void 六十フレームで正確に一秒となり処理上限でも未処理時間を捨てない()
+        {
+            var clock = new LogicalFrameClock(); long ms = 0; clock.Accumulate(LogicalFrameClock.WallTicksPerSecond);
+            Assert.AreEqual(7, clock.Drain((_, dt) => ms += dt, 7)); Assert.AreEqual(53, clock.PendingFrames);
+            while(clock.PendingFrames > 0) clock.Drain((_, dt) => ms += dt, 7);
+            Assert.AreEqual(60, clock.Frame); Assert.AreEqual(1000, ms);
+        }
+        [Test] public void 入力は論理フレームに一度だけ消費し保持時間も描画と独立する()
+        {
+            var queue = new LogicalInputQueue(); queue.Enqueue(2, new LogicalInput { JumpButtonDown = true, BasicAttackButton = true });
+            Assert.IsFalse(queue.Take(1).JumpButtonDown); Assert.IsTrue(queue.Take(2).JumpButtonDown);
+            var third = queue.Take(3); Assert.IsFalse(third.JumpButtonDown); Assert.AreEqual(2f/60, third.BasicAttackButtonHoldTime, .00001f);
+            queue.Release(); Assert.IsFalse(queue.Take(4).BasicAttackButton);
+        }
+        [Test] public void ポーズは獲得済みの未処理フレームを保持し再入で二重更新しない()
+        {
+            var clock = new LogicalFrameClock(); clock.Accumulate(1000000); int ticks = 0;
+            clock.Drain((_, ms) => ticks++, canAdvance: () => false); Assert.AreEqual(6, clock.PendingFrames);
+            clock.Drain((_, ms) => { ticks++; Assert.AreEqual(0, clock.Drain((f,d)=>ticks++)); });
+            Assert.AreEqual(6, ticks); Assert.AreEqual(0, clock.PendingFrames);
+        }
+        [TestCase(30)][TestCase(60)][TestCase(120)]
+        public void 探索の移動接触障害物も描画分割に依存しない(int fps)
+        {
+            var config = DungeonConfig.CreateTestDungeon(100, 30, 50);
+            config.MapCells[47] = new MapCell(47, new Obstacle("fixed", "fixture", 15));
+            var game = new DungeonBattleManager(config, new PlayerCharacter(100), new Deck(), new SeededRandom(), new MockLogger());
+            var clock = new LogicalFrameClock(); var input = new LogicalInputQueue(); input.Enqueue(1, new LogicalInput { DashButtonDown = true });
+            int contacts = 0; game.OnBattleStarted += (b, c) => { contacts++; b.Pause(); };
+            foreach(long elapsed in RenderFrames(fps, true))
+            {
+                clock.Accumulate(elapsed);
+                clock.Drain((frame, ms) => { var value=input.Take(frame); if(value.DashButtonDown)game.StartDash(); game.TickFrame(ms); });
+            }
+            Assert.AreEqual(600, clock.Frame); Assert.AreEqual(1, contacts);
+            Assert.AreEqual(48.5f, game.Dungeon.PlayerPosition); Assert.AreEqual(85, game.Dungeon.Player.CurrentHp);
+        }
+        [Test] public void 毒の期限と最終ダメージが同じ論理フレームでも最後の量を失わない()
+        {
+            var enemy = new Enemy("poison", "fixture", 100, ElementType.None, new Vector2Int(3,0));
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison,1000,7));
+            var clock = new LogicalFrameClock(); int damage=0, last=0;
+            clock.Accumulate(10000000); clock.Drain((frame,ms)=>{last=enemy.TickStatusFrame();damage+=last;});
+            Assert.AreEqual(7,damage); Assert.Greater(last,0); Assert.IsNull(enemy.ActiveStatus);
+        }
+        [Test] public void 描画用乱数を使ってもゲーム専用seedの列は変わらない()
+        {
+            var first = new Olca.Unity.UnityRandomProvider(10); var second = new Olca.Unity.UnityRandomProvider(10);
+            for(int i=0;i<100;i++){var ignored=UnityEngine.Random.value; Assert.AreEqual(first.Range(0,10000),second.Range(0,10000));}
+        }
+        [Test] public void 複数論理更新でもボタン押下を繰り返さず描画更新なしでも押下を保管する()
+        {
+            var loop = new Olca.Unity.UnityLogicalLoop();int presses=0;
+            System.Action<long,int,LogicalInput> tick=(f,ms,input)=>{if(input.JumpButtonDown)presses++;};
+            loop.Advance(10000,new LogicalInput{JumpButtonDown=true},tick);
+            loop.Advance(9990000,new LogicalInput(),tick);
+            Assert.AreEqual(1,presses);Assert.AreEqual(60,loop.Clock.Frame);
+        }
+        [Test] public void 耐性適用時の端数フレームを切り捨て終了フレームの毒量を処理する()
+        {
+            var status = new StatusEffect(StatusEffectType.Poison, 550, 60, durationResistancePercent:25);
+            Assert.AreEqual(24,status.RemainingFrames); // 33 * 0.75 = 24.75 → 24
+            var enemy=new Enemy("resistance","fixture",100,ElementType.None,new Vector2Int(3,0));enemy.ApplyStatus(status);
+            for(int i=0;i<23;i++)Assert.AreEqual(1,enemy.TickStatusFrame());
+            Assert.AreEqual(1,enemy.ActiveStatus.RemainingFrames);Assert.AreEqual(1,enemy.TickStatusFrame());Assert.IsNull(enemy.ActiveStatus);
+            Assert.AreEqual(0,enemy.TickStatusFrame());
+        }
+        [Test] public void 保存読込による攻略置換では旧攻略の入力と予約を新攻略へ適用しない()
+        {
+            var loop = new Olca.Unity.UnityLogicalLoop(); int oldCommands=0,presses=0;
+            loop.AfterFrames(2,()=>oldCommands++);
+            loop.Advance(10000,new LogicalInput{JumpButtonDown=true},(f,ms,input)=>{});
+            loop.StartNewTimeline();loop.Advance(10000000,null,(f,ms,input)=>{if(input.JumpButtonDown)presses++;});
+            Assert.AreEqual(0,oldCommands);Assert.AreEqual(0,presses);Assert.AreEqual(60,loop.Clock.Frame);
+        }
+        [TestCase(.2f,12)][TestCase(.4f,24)][TestCase(.5f,30)][TestCase(.1001f,7)]
+        public void 既存float秒の表現誤差で余計な一フレームを加えない(float seconds,int expected)
+        { Assert.AreEqual(expected,LogicalFrameClock.DurationFrames(seconds)); }
+        [Test] public void カスタム停止中は保持入力のタメ時間を進めず復帰後に続ける()
+        {
+            var input=new LogicalInputQueue();input.Enqueue(1,new LogicalInput{BasicAttackButton=true});
+            float before=input.Take(1).BasicAttackButtonHoldTime;
+            Assert.AreEqual(before,input.Take(2,false).BasicAttackButtonHoldTime);
+            Assert.AreEqual(before,input.Take(3,false).BasicAttackButtonHoldTime);
+            Assert.AreEqual(2f/60,input.Take(4).BasicAttackButtonHoldTime,.000001f);
         }
     }
 }

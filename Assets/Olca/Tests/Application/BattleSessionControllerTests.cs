@@ -79,6 +79,20 @@ namespace Olca.Tests.Application
             return (session, battleView, customScreenView, logger);
         }
 
+        [Test] public void 描画の閉じる処理が未完了でも論理期限で一度だけ戦闘を再開する()
+        {
+            var waiting = new TaskCompletionSource<bool>(); var view = new MockBattleView { CloseTask = waiting.Task };
+            var custom = new MockCustomScreenView(); var loop = new Olca.Unity.UnityLogicalLoop();
+            var session = new BattleSessionController(view, custom, new MockRandomProvider(0), new MockLogger(),
+                (frames,action)=>loop.AfterFrames(frames,action),24);
+            var battle=CreateBattleSystem();session.Attach(battle);battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);session.TryOpenCustomScreen();
+            battle.CustomScreen.Confirm(); custom.FireConfirmed();
+            loop.Advance(3833334,null,(frame,ms,input)=>battle.Tick(ms)); Assert.IsTrue(battle.IsPaused);
+            loop.Advance(166666,null,(frame,ms,input)=>battle.Tick(ms)); Assert.IsFalse(battle.IsPaused);
+            Assert.IsFalse(waiting.Task.IsCompleted); Assert.AreEqual(1,view.CloseCustomScreenCallCount);
+            waiting.SetResult(true);session.Detach();loop.Dispose();
+        }
+
         // ==================== Attach / Detach ====================
 
         [Test]

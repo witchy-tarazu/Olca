@@ -124,6 +124,7 @@ namespace Olca.Presentation.CustomScreen
                 customizeModeView.OnExecuteRequested += OnCustomizeExecuteRequested;
                 customizeModeView.OnCancelled += OnCustomizeModeCancelled;
             }
+            if (customScreen.IsOpen && !customScreen.IsConfirming) OnScreenOpened(new List<Card>(customScreen.CurrentHand));
         }
 
         private void Update()

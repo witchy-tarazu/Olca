@@ -16,8 +16,12 @@ namespace Olca.Unity
         private UnityRandomProvider randomProvider;
         private UnityLogger logger;
 
+        private readonly UnityLogicalLoop logicalLoop = new UnityLogicalLoop(observeEditor: true);
+        private void OnDestroy() => logicalLoop.Dispose();
+
         private void Start()
         {
+            logicalLoop.Observe(false);
             logger = new UnityLogger();
             randomProvider = new UnityRandomProvider();
 
@@ -199,11 +203,10 @@ namespace Olca.Unity
 
         private void Update()
         {
-            // バトルシステムの更新（整数ベースのdeltaTimeMs）
+            // 検証シーンも通常Controllerと同じ固定論理時計で更新する。
             if (battleSystem != null && !battleSystem.IsGameOver)
             {
-                int deltaTimeMs = Mathf.RoundToInt(Time.deltaTime * 1000f);
-                battleSystem.Tick(deltaTimeMs);
+                logicalLoop.Pump(!GameplayPause.IsPaused && Time.timeScale > 0, null, (frame, ms, input) => battleSystem.TickFrame(ms));
             }
         }
     }
