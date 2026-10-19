@@ -276,7 +276,13 @@ namespace Olca.Presentation.Field
         {
             // 既存スプライトを削除
             foreach (var view in enemyViews)
-                if (view != null) Destroy(view.gameObject);
+            {
+                if (view == null) continue;
+                // 同フレームの階層交換でも旧敵を表示し続けない。Editor上の再初期化も扱う。
+                view.gameObject.SetActive(false);
+                if (UnityEngine.Application.isPlaying) Destroy(view.gameObject);
+                else DestroyImmediate(view.gameObject);
+            }
             enemyViews.Clear();
 
             if (dungeonSystem == null) return;

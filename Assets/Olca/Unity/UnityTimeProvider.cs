@@ -154,20 +154,21 @@ namespace Olca.Unity
                 sample.BasicAttackButton != previous.BasicAttackButton || sample.DashButton != previous.DashButton ||
                 sample.JumpButtonDown || sample.CardUseButtonDown || sample.CustomScreenButtonDown || sample.DashButtonDown || sample.MenuConfirmButtonDown || sample.MenuDecideButtonDown || sample.HorizontalDown != 0))
             { inputs.Enqueue(Clock.InputFrame, sample); previous = sample.Copy(); previous.ClearEdges(); }
-            Clock.Drain((frame, ms) => {
+            var timeline = Clock;
+            timeline.Drain((frame, ms) => {
                 while (commands.Count > 0)
                 {
                     var iterator = commands.GetEnumerator(); iterator.MoveNext(); var first = iterator.Current; iterator.Dispose();
                     if (first.Key > frame) break;
-                    commands.Remove(first.Key); foreach (var action in first.Value) action();
+                    commands.Remove(first.Key); foreach (var action in first.Value) { action(); if (!ReferenceEquals(timeline, Clock)) return; }
                 }
                 var input = inputs.Take(frame, advanceHeldTime == null || advanceHeldTime());
                 if (input.HasInputSample) GameplayPause.UpdateInputBarrier(input.AnyKey);
                 GameplayPause.AdvanceLogicalFrame();
                 var inputCommands = frameInputCommands.ToArray(); frameInputCommands.Clear();
-                foreach (var command in inputCommands) command();
+                foreach (var command in inputCommands) { command(); if (!ReferenceEquals(timeline, Clock)) return; }
                 tick(frame, ms, input);
-            }, budget, canAdvance);
+            }, budget, () => ReferenceEquals(timeline, Clock) && (canAdvance == null || canAdvance()));
         }
     }
 }

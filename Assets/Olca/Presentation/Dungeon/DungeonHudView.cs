@@ -37,7 +37,7 @@ namespace Olca.Presentation.Dungeon
                 hpText.text = $"HP: {data.CurrentHp} / {data.MaxHp}";
 
             if (progressText != null)
-                progressText.text = $"{data.PlayerPosition:F0} / {data.DungeonLength:F0}";
+                progressText.text = (data.FloorNumber > 0 ? $"{data.FloorNumber}階  " : "") + $"{data.PlayerPosition:F0} / {data.DungeonLength:F0}";
 
             if (dashStateText != null)
             {
@@ -64,12 +64,13 @@ namespace Olca.Presentation.Dungeon
         public readonly bool IsDashCooldown;
         public readonly int DeckCount;
         public readonly int ObtainedCardCount;
+        public readonly int FloorNumber;
 
         public DungeonHudData(
             int currentHp, int maxHp,
             float playerPosition, float dungeonLength,
             bool isDashing, bool isDashCooldown,
-            int deckCount, int obtainedCardCount)
+            int deckCount, int obtainedCardCount, int floorNumber = 0)
         {
             CurrentHp = currentHp;
             MaxHp = maxHp;
@@ -79,6 +80,7 @@ namespace Olca.Presentation.Dungeon
             IsDashCooldown = isDashCooldown;
             DeckCount = deckCount;
             ObtainedCardCount = obtainedCardCount;
+            FloorNumber = floorNumber;
         }
     }
 }

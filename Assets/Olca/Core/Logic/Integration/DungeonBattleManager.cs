@@ -54,7 +54,7 @@ namespace Olca.Core.Logic.Integration
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false)
         {
             this.player = player;
             this.randomProvider = randomProvider;
@@ -70,12 +70,16 @@ namespace Olca.Core.Logic.Integration
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem,
-                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration, cardDatabase: cardDatabase);
+                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration, cardDatabase: cardDatabase, hasNextFloor: hasNextFloor);
 
             // イベント購読
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
             dungeonSystem.OnDungeonFailed += OnDungeonFailed;
             dungeonSystem.OnDungeonCleared += OnDungeonCleared;
+            dungeonSystem.OnFloorCompleted += () => {
+                currentPhase = GamePhase.DungeonTransition;
+                OnFloorCompleted?.Invoke();
+            };
             dungeonSystem.OnCardRewardOffered += OnCardRewardOfferedHandler;
             dungeonSystem.OnReturnToDungeon += OnReturnedToDungeon;
 
@@ -299,6 +303,7 @@ namespace Olca.Core.Logic.Integration
 
         /// <summary>バトル終了時（View遷移のトリガー）</summary>
         public event Action OnBattleEnded;
+        public event Action OnFloorCompleted;
 
         /// <summary>カード報酬選択画面表示時（選択肢リスト付き）</summary>
         public event Action<IReadOnlyList<Card>> OnCardRewardPresented;

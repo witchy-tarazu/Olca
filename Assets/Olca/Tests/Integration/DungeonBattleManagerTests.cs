@@ -2313,3 +2313,201 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class FloorSequenceControllerTests
+    {
+        private const System.Reflection.BindingFlags Hidden = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        private readonly List<UnityEngine.GameObject> objects = new List<UnityEngine.GameObject>();
+        private string directory;
+        private FloorSequenceDefinitions definitions;
+        private sealed class FaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Fail;
+            public System.Action BeforeReplace;
+            public override void Replace(string temporary, string destination, string backup)
+            {
+                BeforeReplace?.Invoke();
+                if (Fail) throw new System.IO.IOException("Controller階層保存失敗fixture");
+                base.Replace(temporary, destination, backup);
+            }
+        }
+        private static object Get(object target, string name) => target.GetType().GetField(name, Hidden).GetValue(target);
+        private static void Set(object target, string name, object value) => target.GetType().GetField(name, Hidden).SetValue(target, value);
+        private static void Call(object target, string name, params object[] args) => target.GetType().GetMethod(name, Hidden).Invoke(target, args);
+        private static DungeonBattleManager Model(Olca.Application.Dungeon.DungeonBattleController controller) => (DungeonBattleManager)Get(controller, "manager");
+        private static Olca.Unity.FloorSequenceFileStore Store(Olca.Application.Dungeon.DungeonBattleController controller) => (Olca.Unity.FloorSequenceFileStore)Get(controller, "floorStore");
+        private static DungeonConfig Empty(int cells) => new DungeonConfig("empty-" + cells, "終端fixture", cells,
+            Enumerable.Range(0, cells).Select(i => new MapCell(i)).ToList());
+        [SetUp] public void Setup() { directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floor-controller-" + System.Guid.NewGuid().ToString("N")); }
+        [TearDown] public void Cleanup()
+        {
+            foreach (var host in objects) if (host != null) UnityEngine.Object.DestroyImmediate(host);
+            objects.Clear();
+            if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
+        }
+        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null)
+        {
+            var host = new UnityEngine.GameObject("floor-controller-fixture"); host.SetActive(false); objects.Add(host);
+            var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            controller.ConfigureCheckpointDirectory(directory); controller.ConfigureSimulationSeed(7);
+            if (maps != null) {
+                var deck = (Deck)controller.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(controller, null);
+                definitions = new FloorSequenceDefinitions("controller-fixture", "v1", maps, deck);
+            }
+            controller.ConfigureFloorSequence(definitions);
+            var view = host.AddComponent<Olca.Presentation.Field.GameFieldView>(); Set(controller, "gameFieldView", view);
+            var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
+            var label = new UnityEngine.GameObject("progress", typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text));
+            label.transform.SetParent(host.transform); Set(hud, "progressText", label.GetComponent<UnityEngine.UI.Text>());
+            Call(controller, "Start"); return controller;
+        }
+        private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
+            => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
+        private static void ToBattle(Olca.Application.Dungeon.DungeonBattleController controller)
+        {
+            for (int i = 0; i < 120 && Model(controller).CurrentBattle == null; i++) Tick(controller);
+            Assert.IsNotNull(Model(controller).CurrentBattle);
+        }
+        private static IReadOnlyList<Card> Win(Olca.Application.Dungeon.DungeonBattleController controller)
+        {
+            IReadOnlyList<Card> choices = null;
+            var model = Model(controller); model.OnCardRewardPresented += cards => choices = cards;
+            foreach (var enemy in model.CurrentBattle.Enemies.ToArray())
+                if (!enemy.IsDead && !enemy.IsSummoned) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
+            return choices;
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 終端保存失敗中は旧モデルとファイルを維持し再試行後だけ描画と入力を切り替える(bool jumping)
+        {
+            var controller = Start(new[] { Empty(3), DungeonConfig.CreateTestDungeon(8) });
+            var old = Model(controller); old.Dungeon.Player.TakeDamage(37);
+            int clears = 0, transfers = 0; old.OnDungeonClearCompleted += _ => clears++;
+            old.OnFloorCompleted += () => { transfers++; Assert.AreEqual(1, Store(controller).Read().FloorIndex); };
+            var io = new FaultIo { Fail = true }; Set(Store(controller), "io", io);
+            var before = System.IO.File.ReadAllBytes(Store(controller).ActivePath);
+            if (jumping) { Tick(controller, new LogicalInput { DashButtonDown = true }); Tick(controller, new LogicalInput { JumpButtonDown = true }); }
+            for (int i = 0; i < 40 && !old.Dungeon.IsCheckpointBlocked; i++) Tick(controller);
+            Assert.IsTrue(old.Dungeon.IsCheckpointBlocked); Assert.AreSame(old, Model(controller));
+            Assert.AreEqual(0, controller.CurrentFloorIndex); Assert.AreEqual(0, transfers); Assert.AreEqual(0, clears);
+            var position = old.Dungeon.PlayerPosition;
+            for (int i = 0; i < 4; i++) Tick(controller, new LogicalInput { DashButtonDown = true, JumpButtonDown = true });
+            Assert.AreEqual(position, old.Dungeon.PlayerPosition);
+            Assert.IsFalse(controller.TryRestoreMemoryCheckpoint(out _)); Assert.IsFalse(controller.RetryMemoryCheckpoint());
+            CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(Store(controller).ActivePath));
+            io.Fail = false;
+            io.BeforeReplace = () => { Assert.IsFalse(controller.RetryMemoryCheckpoint()); Assert.AreSame(old, Model(controller)); };
+            Assert.IsTrue(controller.RetryMemoryCheckpoint());
+            var next = Model(controller);
+            Assert.AreNotSame(old, next); Assert.IsTrue(old.IsSuspended); Assert.AreEqual(1, transfers); Assert.AreEqual(0, clears);
+            Assert.AreEqual(1, controller.CurrentFloorIndex); Assert.AreEqual(63, next.Dungeon.Player.CurrentHp);
+            Assert.AreEqual(0, next.Dungeon.PlayerPosition); Assert.IsFalse(next.Dungeon.IsJumping); Assert.IsFalse(next.Dungeon.IsDashing);
+            Assert.AreSame(next.Dungeon, Get(Get(controller, "gameFieldView"), "dungeonSystem"));
+            Assert.IsTrue((bool)Get(Get(controller, "gameFieldView"), "playerPositionUpdateEnabled"));
+            StringAssert.Contains("2階", ((UnityEngine.UI.Text)Get(Get(controller, "dungeonHudView"), "progressText")).text);
+            Assert.IsFalse(controller.RetryMemoryCheckpoint()); old.SelectCardReward(null); old.TickFrame(17);
+            Assert.AreEqual(1, transfers); Assert.AreEqual(1, Store(controller).Read().FloorIndex);
+            Tick(controller, new LogicalInput { DashButtonDown = true }); Assert.IsTrue(next.Dungeon.IsDashing);
+            Tick(controller, new LogicalInput { JumpButtonDown = true }); Assert.IsTrue(next.Dungeon.IsJumping);
+            // 新規Controllerは旧階層ではなく、保存成功済みの次階層の開始を復元する。
+            var restarted = Start(); Assert.IsTrue(restarted.TryRestoreMemoryCheckpoint(out var error), error);
+            Assert.AreEqual(1, restarted.CurrentFloorIndex); Assert.AreEqual(0, Model(restarted).Dungeon.PlayerPosition);
+            Assert.AreEqual(63, Model(restarted).Dungeon.Player.CurrentHp);
+            Assert.AreEqual(CheckpointBoundary.Departure, Store(restarted).Read().State.Boundary);
+            Assert.IsFalse(System.IO.File.Exists(System.IO.Path.Combine(directory, "active.json")));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 中間ボス報酬完了後だけ進み最終階層だけクリアを通知する(bool skip)
+        {
+            var controller = Start(new[] { DungeonConfig.CreateTestDungeon(4), DungeonConfig.CreateTestDungeon(5) });
+            ToBattle(controller); var choices = Win(controller); Assert.IsNotNull(choices);
+            var old = Model(controller); Assert.AreEqual(GamePhase.CardReward, old.CurrentPhase);
+            Assert.AreEqual(0, controller.CurrentFloorIndex); int clears = 0, transfers = 0;
+            old.OnDungeonClearCompleted += _ => clears++; old.OnFloorCompleted += () => transfers++;
+            var io = new FaultIo { Fail = true }; Set(Store(controller), "io", io);
+            old.SelectCardReward(skip ? null : choices[0]);
+            Assert.IsTrue(old.Dungeon.IsCheckpointBlocked); Assert.AreEqual(0, transfers);
+            Assert.AreEqual(CheckpointBoundary.BattleStart, Store(controller).Read().State.Boundary);
+            io.Fail = false; Assert.IsTrue(controller.RetryMemoryCheckpoint());
+            Assert.AreEqual(1, transfers); Assert.AreEqual(0, clears); Assert.AreEqual(1, controller.CurrentFloorIndex);
+            var next = Model(controller); Assert.AreEqual(skip ? 0 : 1, next.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(6 + (skip ? 0 : 1), next.Dungeon.GetCurrentDeck().TotalCount);
+            old.SelectCardReward(choices[0]); Assert.AreEqual(1, transfers);
+            ToBattle(controller);
+            Assert.AreEqual(1, Store(controller).Read().FloorIndex);
+            Assert.AreEqual(CheckpointBoundary.BattleStart, Store(controller).Read().State.Boundary);
+            Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var restoreError), restoreError);
+            next = Model(controller); Assert.AreEqual(1, controller.CurrentFloorIndex);
+            Assert.AreEqual(GamePhase.Battle, next.CurrentPhase);
+            var finalChoices = Win(controller); Assert.IsNotNull(finalChoices);
+            next.OnDungeonClearCompleted += _ => clears++;
+            next.SelectCardReward(null); Tick(controller);
+            Assert.AreEqual(GamePhase.DungeonCleared, next.CurrentPhase); Assert.AreEqual(1, clears);
+            Assert.AreEqual(CheckpointBoundary.Terminal, Store(controller).Read().State.Boundary);
+            Assert.AreEqual(1, Store(controller).Read().FloorIndex);
+            next.SelectCardReward(finalChoices[0]); Tick(controller); Assert.AreEqual(1, clears);
+            var restarted = Start(); Assert.IsFalse(restarted.TryRestoreMemoryCheckpoint(out _));
+        }
+        [Test]
+        public void ボスなし階層は途中の全敵撃破では移動せず終端で進む()
+        {
+            var first = Empty(20); first.MapCells[2] = new MapCell(2, new Enemy("normal", "途中敵", 50, ElementType.None, new Vector2Int(2, 0)));
+            var controller = Start(new[] { first, DungeonConfig.CreateTestDungeon(5) });
+            ToBattle(controller); Win(controller);
+            if (Model(controller).CurrentPhase == GamePhase.CardReward) Model(controller).SelectCardReward(null);
+            Assert.AreEqual(0, controller.CurrentFloorIndex); Assert.AreEqual(GamePhase.Dungeon, Model(controller).CurrentPhase);
+            Assert.AreEqual(CheckpointBoundary.RewardCompleted, Store(controller).Read().State.Boundary);
+            Model(controller).ResumeAfterBattle();
+            for (int i = 0; i < 160 && controller.CurrentFloorIndex == 0; i++) Tick(controller);
+            Assert.AreEqual(1, controller.CurrentFloorIndex);
+        }
+        [Test]
+        public void 階層交換時に旧時計の追いつきフレームと予約入力を次階層へ流さない()
+        {
+            var controller = Start(new[] { Empty(2), Empty(3), DungeonConfig.CreateTestDungeon(5) });
+            var loop = (Olca.Unity.UnityLogicalLoop)Get(controller, "logicalLoop");
+            loop.Advance(100000000, null, (frame, ms, input) => Call(controller, "TickLogicalFrame", frame, ms, input));
+            Assert.AreEqual(1, controller.CurrentFloorIndex); Assert.AreEqual(0, Model(controller).Dungeon.PlayerPosition);
+            Assert.AreEqual(0, loop.Clock.Frame); Assert.AreEqual(0, loop.Clock.PendingFrames);
+            for (int i = 0; i < 25 && controller.CurrentFloorIndex == 1; i++) Tick(controller);
+            Assert.AreEqual(2, controller.CurrentFloorIndex);
+            var restarted = Start(); Assert.IsTrue(restarted.TryRestoreMemoryCheckpoint(out var error), error);
+            Assert.AreEqual(2, restarted.CurrentFloorIndex);
+        }
+        [Test]
+        public void 中間階層での敗北は次階層へ進めず終了保存から再開しない()
+        {
+            var controller = Start(new[] { DungeonConfig.CreateTestDungeon(4), DungeonConfig.CreateTestDungeon(5) });
+            ToBattle(controller); var model = Model(controller); int transitions = 0;
+            model.OnFloorCompleted += () => transitions++;
+            model.CurrentBattle.Player.TakeDamage(100); Tick(controller);
+            Assert.AreEqual(GamePhase.GameOver, model.CurrentPhase); Assert.AreEqual(0, transitions);
+            Assert.AreEqual(0, controller.CurrentFloorIndex); Assert.AreEqual(0, Store(controller).Read().State.Player.Hp);
+            Assert.AreEqual(CheckpointBoundary.Terminal, Store(controller).Read().State.Boundary);
+            var restarted = Start(); Assert.IsFalse(restarted.TryRestoreMemoryCheckpoint(out _));
+        }
+        [Test]
+        public void 外部指定が一階層だけならボス報酬後にそのまま最終クリアする()
+        {
+            var controller = Start(new[] { DungeonConfig.CreateTestDungeon(4) });
+            ToBattle(controller); Win(controller); int clears = 0;
+            Model(controller).OnDungeonClearCompleted += _ => clears++;
+            Model(controller).SelectCardReward(null); Tick(controller);
+            Assert.AreEqual(1, clears); Assert.AreEqual(0, controller.CurrentFloorIndex);
+            Assert.AreEqual(GamePhase.DungeonCleared, Model(controller).CurrentPhase);
+            Assert.AreEqual(CheckpointBoundary.Terminal, Store(controller).Read().State.Boundary);
+        }
+        [Test]
+        public void 階層定義が異なる再開は保存と表示中モデルを変更しない()
+        {
+            var controller = Start(new[] { Empty(2), DungeonConfig.CreateTestDungeon(5) });
+            var before = System.IO.File.ReadAllBytes(Store(controller).ActivePath);
+            var restarted = Start(new[] { Empty(2), DungeonConfig.CreateTestDungeon(6) });
+            var old = Model(restarted);
+            Assert.IsFalse(restarted.TryRestoreMemoryCheckpoint(out _)); Assert.AreSame(old, Model(restarted));
+            CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(Store(controller).ActivePath));
+        }
+    }
+}

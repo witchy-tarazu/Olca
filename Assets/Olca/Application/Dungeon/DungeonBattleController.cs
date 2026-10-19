@@ -77,6 +77,20 @@ namespace Olca.Application.Dungeon
         private bool awaitingCheckpointChoice;
         private DungeonConfig configuredDungeon;
         private Deck configuredDepartureDeck;
+        private FloorSequenceDefinitions floorDefinitions;
+        private FloorSequenceSession floorSession;
+        private FloorSequenceFileStore floorStore;
+        private bool floorSwapPending;
+        public int CurrentFloorIndex { get; private set; }
+        public int FloorCount => floorDefinitions?.FloorCount ?? 1;
+
+        /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
+        public void ConfigureFloorSequence(FloorSequenceDefinitions definitions)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後は階層列を変更できません");
+            floorDefinitions = definitions ?? throw new System.ArgumentNullException(nameof(definitions));
+        }
+
 
         /// <summary>新規出撃前の編成入力。失敗時は既存設定・保存ファイル・所持枚数を変更しない。</summary>
         public bool TryConfigureDepartureDeck(IReadOnlyList<Card> cards,
@@ -217,7 +231,7 @@ namespace Olca.Application.Dungeon
             inputProvider.StartEventCapture();
             customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
-            var dungeonConfig = configuredDungeon ?? DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
+            var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
             var playerCharacter = new PlayerCharacter(
                 maxHp: playerMaxHp,
                 initialPosition: new Vector2Int(0, 0),
@@ -230,17 +244,28 @@ namespace Olca.Application.Dungeon
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
 
             var initialDeck = CreateInitialDeck();
-            var definitions = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck).Definitions;
-            var store = new FileCheckpointStore(definitions, CheckpointDirectory);
-            memoryCheckpoints = new DungeonCheckpointSession(definitions, store);
-            awaitingCheckpointChoice = store.HasExistingData;
-            // 現行の出撃は単階層。旧保存の読込へ新規出撃条件を遡及適用しない。
-            if (!awaitingCheckpointChoice) dungeonConfig.ValidateFinalFloorForDeparture();
+            if (floorDefinitions != null)
+            {
+                floorStore = new FloorSequenceFileStore(floorDefinitions, CheckpointDirectory);
+                floorSession = new FloorSequenceSession(floorDefinitions, floorStore);
+                memoryCheckpoints = floorDefinitions.CreateCheckpointSession(0, floorSession);
+                awaitingCheckpointChoice = floorStore.HasExistingData;
+            }
+            else
+            {
+                var definitions = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck).Definitions;
+                var store = new FileCheckpointStore(definitions, CheckpointDirectory);
+                memoryCheckpoints = new DungeonCheckpointSession(definitions, store);
+                awaitingCheckpointChoice = store.HasExistingData;
+                // 旧保存には新規出撃条件を遡及適用しない。
+                if (!awaitingCheckpointChoice) dungeonConfig.ValidateFinalFloorForDeparture();
+            }
             manager = new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice ? null : memoryCheckpoints, cardDatabase: cardFactory);
+                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice ? null : memoryCheckpoints, cardDatabase: cardFactory,
+                hasNextFloor: !awaitingCheckpointChoice && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -248,6 +273,7 @@ namespace Olca.Application.Dungeon
             manager.OnCardRewardPresented += OnCardRewardPresented;
             manager.OnGameOver += OnGameOver;
             manager.OnDungeonClearCompleted += OnDungeonCleared;
+            manager.OnFloorCompleted += OnFloorCompleted;
 
             // GameFieldView 初期化（フィールド・敵スプライトを世界空間に配置）
             gameFieldView?.Initialize(manager.Dungeon);
@@ -272,6 +298,7 @@ namespace Olca.Application.Dungeon
             bool active = !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
             logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
                 () => manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused));
+            ApplyPendingFloor();
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
         }
@@ -286,6 +313,7 @@ namespace Olca.Application.Dungeon
                 manager.TickFrame(deltaTimeMs, input);
             }
             if (battleSession != null) battleSession.ProcessLogicalFrame(Process); else Process();
+            ApplyPendingFloor();
         }
 
         private void HandleInput(LogicalInput input, int deltaTimeMs)
@@ -364,11 +392,12 @@ namespace Olca.Application.Dungeon
                     currentHp: manager.Dungeon.Player.CurrentHp,
                     maxHp: manager.Dungeon.Player.MaxHp,
                     playerPosition: manager.Dungeon.PlayerPosition,
-                    dungeonLength: dungeonCellCount,
+                    dungeonLength: manager.Dungeon.Map.TotalCellCount,
                     isDashing: manager.Dungeon.IsDashing,
                     isDashCooldown: dashCooldownRemaining > 0f,
                     deckCount: manager.Dungeon.GetCurrentDeck().TotalCount,
-                    obtainedCardCount: manager.Dungeon.GetObtainedCards().Count
+                    obtainedCardCount: manager.Dungeon.GetObtainedCards().Count,
+                    floorNumber: floorDefinitions != null ? CurrentFloorIndex + 1 : 0
                 );
                 dungeonHudView.Refresh(data);
             }
@@ -491,6 +520,7 @@ namespace Olca.Application.Dungeon
         /// </summary>
         private async UniTaskVoid HandleBattleEndAsync()
         {
+            var owner = manager;
             bool useBattleGrid = battleFieldReady;
             // バトルセッション終了（購読解除）
             battleSession?.Detach();
@@ -518,7 +548,7 @@ namespace Olca.Application.Dungeon
                         Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct);
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
-                        logicalLoop.Schedule(() => { manager.SelectCardReward(selectedCard); ScheduleExplorationResume(); });
+                        logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(selectedCard); ScheduleExplorationResume(); } });
                         while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
                     }
                     else
@@ -527,7 +557,7 @@ namespace Olca.Application.Dungeon
                         logger.LogWarning("[Controller] CardSelectionView が未設定のためカード報酬をスキップします");
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
-                        logicalLoop.Schedule(() => { manager.SelectCardReward(null); ScheduleExplorationResume(); });
+                        logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(null); ScheduleExplorationResume(); } });
                         while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
                     }
                 }
@@ -624,6 +654,7 @@ namespace Olca.Application.Dungeon
             try
             {
                 bool saved = manager != null && manager.RetryCheckpoint();
+                ApplyPendingFloor();
                 if (saved && manager.CurrentPhase == GamePhase.Dungeon) manager.ResumeAfterBattle();
                 return saved;
             }
@@ -649,24 +680,71 @@ namespace Olca.Application.Dungeon
                 inputProvider?.QueueSnapshot();
             }
         }
+        private void OnFloorCompleted() { floorSwapPending = true; }
+
+        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session)
+        {
+            var state = route.Current.State;
+            session = floorDefinitions.CreateCheckpointSession(route.Current.FloorIndex, route);
+            var factory = new SimpleCardFactory();
+            return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
+                new ExceedSystem(factory), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
+                checkpoints: session, restoration: state, cardDatabase: factory,
+                hasNextFloor: route.Current.FloorIndex + 1 < floorDefinitions.FloorCount);
+        }
+
+        private void ApplyPendingFloor()
+        {
+            // 古い戦闘イベントの配信が終わってから一度だけ交換する。
+            if (!floorSwapPending || floorSession == null || floorSession.Current.FloorIndex != CurrentFloorIndex + 1) return;
+            var next = CreateFloorManager(floorSession, out var session);
+            if (!manager.SuspendForCheckpoint()) return;
+            floorSwapPending = false;
+            CurrentFloorIndex = floorSession.Current.FloorIndex;
+            ReplaceManager(next, session);
+        }
+
         private bool RestoreMemoryCheckpoint(out string error)
         {
             error = null;
             if (manager == null || memoryCheckpoints == null || manager.Dungeon.IsCheckpointBlocked)
             { error = "保存が未完了です"; return false; }
-            var factory = new SimpleCardFactory();
-            var candidate = memoryCheckpoints.Store is FileCheckpointStore file
-                ? new DungeonCheckpointSession(memoryCheckpoints.Definitions, new FileCheckpointStore(memoryCheckpoints.Definitions, file.DirectoryPath))
-                : memoryCheckpoints;
-            if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
-                out var restored, out error, new ExceedSystem(factory), new TuningSystem(),
-                new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
+            DungeonBattleManager restored;
+            DungeonCheckpointSession candidate;
+            FloorSequenceSession loadedRoute = null;
+            if (floorDefinitions != null)
+            {
+                loadedRoute = new FloorSequenceSession(floorDefinitions, floorStore);
+                if (!loadedRoute.TryLoad(out error)) return false;
+                if (loadedRoute.Current.Snapshot.State.Boundary == CheckpointBoundary.Terminal)
+                { error = "終了済みの攻略は再開できません"; return false; }
+                restored = CreateFloorManager(loadedRoute, out candidate);
+            }
+            else
+            {
+                var factory = new SimpleCardFactory();
+                candidate = memoryCheckpoints.Store is FileCheckpointStore file
+                    ? new DungeonCheckpointSession(memoryCheckpoints.Definitions, new FileCheckpointStore(memoryCheckpoints.Definitions, file.DirectoryPath))
+                    : memoryCheckpoints;
+                if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
+                    out restored, out error, new ExceedSystem(factory), new TuningSystem(),
+                    new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
+            }
             if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }
+            if (loadedRoute != null) { floorSession = loadedRoute; CurrentFloorIndex = loadedRoute.Current.FloorIndex; }
+            floorSwapPending = false;
+            ReplaceManager(restored, candidate);
+            return true;
+        }
+
+        private void ReplaceManager(DungeonBattleManager restored, DungeonCheckpointSession candidate)
+        {
             if (IsUserPaused) SetUserPaused(false);
             transitionCts?.Cancel(); battleSession?.Detach();
             manager.OnBattleStarted -= OnBattleStarted; manager.OnBattleEnded -= OnBattleEnded;
             manager.OnCardRewardPresented -= OnCardRewardPresented; manager.OnGameOver -= OnGameOver;
             manager.OnDungeonClearCompleted -= OnDungeonCleared;
+            manager.OnFloorCompleted -= OnFloorCompleted;
             pendingCardChoices = null; cardSelectionView?.Hide();
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
@@ -678,10 +756,12 @@ namespace Olca.Application.Dungeon
             manager.OnBattleStarted += OnBattleStarted; manager.OnBattleEnded += OnBattleEnded;
             manager.OnCardRewardPresented += OnCardRewardPresented; manager.OnGameOver += OnGameOver;
             manager.OnDungeonClearCompleted += OnDungeonCleared;
+            manager.OnFloorCompleted += OnFloorCompleted;
+            gameFieldView?.SetPlayerPositionUpdateEnabled(true);
             gameFieldView?.Initialize(manager.Dungeon);
             manager.ActivateCheckpoint();
             if (manager.CurrentPhase == GamePhase.Dungeon) gameFieldView?.ShowHUDAsync(0).Forget();
-            return true;
+            RefreshDungeonHud();
         }
 
         private void OnDestroy()
@@ -701,6 +781,7 @@ namespace Olca.Application.Dungeon
                 manager.OnCardRewardPresented -= OnCardRewardPresented;
                 manager.OnGameOver -= OnGameOver;
                 manager.OnDungeonClearCompleted -= OnDungeonCleared;
+            manager.OnFloorCompleted -= OnFloorCompleted;
             }
         }
     }

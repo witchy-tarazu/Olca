@@ -33,6 +33,8 @@ namespace Olca.Core.Logic.Dungeon
         // ========== 状態管理 ==========
         public bool IsInBattle { get; private set; }
         public bool IsDungeonCleared { get; private set; }
+        public bool IsFloorCompleted { get; private set; }
+        private readonly bool hasNextFloor;
 
         // ========== 接敵情報保持 ==========
         private ContactInfo currentContactInfo;
@@ -76,11 +78,14 @@ namespace Olca.Core.Logic.Dungeon
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false)
         {
             if (restoration?.Snapshot.Boundary == CheckpointBoundary.Terminal)
                 throw new ArgumentException("終端チェックポイントからゲームモデルは再開できません");
+            if (hasNextFloor && checkpoints == null)
+                throw new ArgumentException("階層移動には次階層開始を保存するセッションが必要です");
             this.cardDatabase = cardDatabase;
+            this.hasNextFloor = hasNextFloor;
             // 依存関係の初期化
             map = new DungeonMap(config);
             // 現行マップのボス種別を使い、最奥のボスをクリア対象として保持する。
@@ -143,7 +148,7 @@ namespace Olca.Core.Logic.Dungeon
         public void TickFrame() => TickStep(0, true);
         private void TickStep(int deltaTimeMs, bool logicalFrame)
         {
-            if (processingTick || IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
+            if (processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
             processingTick = true;
             try
@@ -172,9 +177,18 @@ namespace Olca.Core.Logic.Dungeon
                     if (contact.Cell.Obstacle != null) CheckObstacles(contact.Cell);
                     else if (contactSystem.NotifyContact(contact.Cell, playerMovement)) return;
                     // 通知先で開始・終了・再開が同期実行されても、残りの移動を持ち越さない。
-                    if (playerCharacter.CurrentHp <= 0 || IsInBattle || IsDungeonCleared || IsCheckpointBlocked ||
+                    if (playerCharacter.CurrentHp <= 0 || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked ||
                         checkpointSuspended || playerMovement.IsPaused || control != playerMovement.ControlRevision ||
                         encounter != encounterRevision) return;
+                }
+                if (hasNextFloor && finalBoss == null && step.End >= (long)map.TotalCellCount * 1000)
+                {
+                    // 旧保存形式の位置範囲を維持し、終端の直前を完了境界として保存する。
+                    playerMovement.ApplyStep(step, (long)map.TotalCellCount * 1000 - 1);
+                    playerMovement.Pause();
+                    try { StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), CompleteFloor); }
+                    catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
+                    return;
                 }
                 playerMovement.ApplyStep(step, step.End);
             }
@@ -188,7 +202,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void Jump()
         {
-            if (IsInBattle || IsCheckpointBlocked || checkpointSuspended) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended) return;
             playerMovement.Jump();
             logger.LogInfo("[Dungeon] ジャンプ！");
         }
@@ -198,7 +212,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
-            if (IsInBattle || IsCheckpointBlocked || checkpointSuspended) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended) return;
             playerMovement.StartDash();
         }
 
@@ -235,7 +249,7 @@ namespace Olca.Core.Logic.Dungeon
         /// <param name="contactInfo">接敵情報</param>
         public void StartBattle(ContactInfo contactInfo)
         {
-            if (IsInBattle || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended || playerCharacter.CurrentHp <= 0) return;
+            if (IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended || playerCharacter.CurrentHp <= 0) return;
             encounterRevision++;
             if (checkpointSession != null) { PlanCheckpointBattle(contactInfo); return; }
             IsInBattle = true;
@@ -499,7 +513,7 @@ namespace Olca.Core.Logic.Dungeon
                 if (pendingRewardChoices == null || (selectedCard != null && !pendingRewardChoices.Contains(selectedCard))) return;
                 SaveCheckpointReward(selectedCard); return;
             }
-            if (IsDungeonCleared || pendingRewardChoices == null) return;
+            if (IsFloorCompleted || IsDungeonCleared || pendingRewardChoices == null) return;
             if (selectedCard != null && !pendingRewardChoices.Contains(selectedCard)) return;
 
             // 獲得イベントからの再入より先に確定する。nullも一度だけのスキップ。
@@ -521,12 +535,19 @@ namespace Olca.Core.Logic.Dungeon
         }
 
         /// <summary>
-        /// ダンジョンに戻る（内部処理）
-        /// ※プレイヤー移動の再開は行わない。呼び出し元が遷移完了後に ResumePlayerMovement() を呼ぶこと。
+        /// 次階層開始の保存成功後に一度だけ階層完了を通知する。
         /// </summary>
+        private void CompleteFloor()
+        {
+            if (IsFloorCompleted) return;
+            IsFloorCompleted = true;
+            playerMovement.Pause();
+            OnFloorCompleted?.Invoke();
+        }
+
         private void ReturnToDungeon()
         {
-            if (IsDungeonCleared) return;
+            if (IsFloorCompleted || IsDungeonCleared) return;
 
             // バトルシステムをクリーンアップ
             currentBattle = null;
@@ -538,9 +559,10 @@ namespace Olca.Core.Logic.Dungeon
             // プレイヤーHPはバトル終了時のまま維持
             logger.LogInfo($"[Dungeon] HP維持: {playerCharacter.CurrentHp}/{playerCharacter.MaxHp}");
 
-            // ボス撃破と報酬完了でクリア。ボスなしのマップは従来の全敵撃破条件を維持する。
-            if (finalBoss != null ? finalBossDefeated : !map.HasAnyEnemy())
+            // 中間ボスは報酬完了で階層終了。旧単階層のボスなし保存には従来条件を維持する。
+            if (finalBoss != null ? finalBossDefeated : !hasNextFloor && !map.HasAnyEnemy())
             {
+                if (hasNextFloor) { CompleteFloor(); return; }
                 IsDungeonCleared = true;
                 logger.LogInfo("[Dungeon] クリア条件達成 - ダンジョンクリア！");
                 OnDungeonCleared?.Invoke();
@@ -560,7 +582,7 @@ namespace Olca.Core.Logic.Dungeon
         public void ResumePlayerMovement()
         {
             if (checkpointSuspended || IsCheckpointBlocked) return;
-            if (IsInBattle || IsDungeonCleared) return;
+            if (IsInBattle || IsFloorCompleted || IsDungeonCleared) return;
             playerMovement.ResetAirborneMovement();  // 復帰演出の着地後に、接敵前の空中状態を持ち越さない
             playerMovement.Resume();
             logger.LogInfo("[Dungeon] ダンジョン移動再開");
@@ -772,7 +794,7 @@ namespace Olca.Core.Logic.Dungeon
             if (IsCheckpointBlocked || checkpointSuspended) return;
             try
             {
-                bool cleared = finalBoss != null ? finalBossDefeated : !map.GetAllEnemies().Any(pair => !pair.enemy.IsDead);
+                bool cleared = finalBoss != null ? finalBossDefeated : !hasNextFloor && !map.GetAllEnemies().Any(pair => !pair.enemy.IsDead);
                 var boundary = cleared ? CheckpointBoundary.Terminal : CheckpointBoundary.RewardCompleted;
                 var snapshot = checkpointSession.Capture(this, boundary, selected);
                 StageCheckpoint(snapshot, () => {
@@ -793,6 +815,7 @@ namespace Olca.Core.Logic.Dungeon
         public event Action<PenaltyInfo> OnObstaclePenalty;   // 障害物ペナルティ
         public event Action OnDungeonFailed;
         public event Action OnDungeonCleared;
+        public event Action OnFloorCompleted;
     }
 }
 
@@ -1360,6 +1383,16 @@ namespace Olca.Core.Logic.Dungeon
                 }
             });
         }
+        public DungeonConfig CreateInitialMap(int index)
+        {
+            var floor = Floor(index);
+            return floor.RestoreMap(floor.Enemies.ToDictionary(p => p.Key, p => new Enemy(
+                p.Value.EnemyId, p.Value.Name, p.Value.MaxHp, p.Value.Element, p.Value.GridPosition,
+                resistances: p.Value.Resistances)));
+        }
+        public DungeonCheckpointSession CreateCheckpointSession(int index, FloorSequenceSession route)
+            => new DungeonCheckpointSession(Floor(index), new FloorCheckpointStore(route, index, index + 1 < FloorCount));
+
         internal CheckpointDefinitions Floor(int index)
         {
             if (index < 0 || index >= floors.Length) throw new ArgumentException("現在階層が範囲外です");
@@ -1393,6 +1426,35 @@ namespace Olca.Core.Logic.Dungeon
                 CellIndex = pair.Key, EnemyId = pair.Value.EnemyId, Hp = pair.Value.MaxHp,
                 GridX = pair.Value.GridPosition.X, GridY = pair.Value.GridPosition.Y }).ToArray();
             return next;
+        }
+    }
+
+    /// <summary>通常の境界保存を階層保存へ接続。中間の生存Terminalだけ次階層の出撃保存へ置換する。</summary>
+    internal sealed class FloorCheckpointStore : ICheckpointStore
+    {
+        private readonly FloorSequenceSession route;
+        private readonly int index;
+        private readonly bool hasNext;
+        private CheckpointDto pending;
+        private bool writing;
+        internal FloorCheckpointStore(FloorSequenceSession route, int index, bool hasNext)
+        { this.route = route; this.index = index; this.hasNext = hasNext; }
+        public CheckpointDto Read() => route.Current?.FloorIndex == index ? route.Current.Snapshot.State : null;
+        public bool TryWrite(CheckpointDto data, out string error)
+        {
+            if (writing) { error = "階層保存中です"; return false; }
+            writing = true;
+            try {
+                bool saved;
+                if (pending != null) saved = route.Retry(out error);
+                else if (route.Current == null) saved = route.TryStart(data, out error);
+                else if (hasNext && data.Boundary == CheckpointBoundary.Terminal && data.Player.Hp > 0)
+                    saved = route.TryTransferToNextFloor(index, data, out error);
+                else saved = route.TrySaveCurrent(index, data, out error);
+                pending = !saved && route.HasPendingSave ? data.Copy() : null;
+                return saved;
+            }
+            finally { writing = false; }
         }
     }
 
