@@ -772,5 +772,47 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        private List<string> SpreadFireTrace(int fps, bool stall)
+        {
+            var center = new Vector2Int(3,0); var empty = new Vector2Int(4,0);
+            var a=new Enemy("a","検証",1000,ElementType.None,center);
+            var b=new Enemy("b","検証",1000,ElementType.None,center);
+            var floating=new Enemy("f","検証",1000,ElementType.None,center);
+            var immune=new Enemy("i","検証",1000,ElementType.None,center,resistances:new ElementResistances(fire:100));
+            floating.TerrainState.IsFloating=true;
+            foreach(var e in new[]{a,b,floating,immune})e.ApplyStun(60000);
+            var battle=new BattleSystem(new PlayerCharacter(1000,new Vector2Int(1,0)),new List<Enemy>{a,b,floating,immune},new Deck());
+            var session=CreateSession().session;session.Attach(battle);
+            foreach(int x in new[]{2,3,4})battle.Field.ChangePanelType(new Vector2Int(x,0),PanelType.Grass);
+            var modifier=new CardModifier();modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.Spread,Trigger=DerivativeTrigger.Immediate});
+            var card=new Card("spread","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.Fire,CardSeries.Canon,10,"検証",
+                Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,modifier:modifier,startupTime:.05f);
+            var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();var trace=new List<string>();
+            Action<long,int> tick=(frame,ms)=>session.ProcessLogicalFrame(()=>{
+                if(frame==1||frame==10||frame==30){battle.CardUsage.EnqueueCards(new List<Card>{card});session.UseCardFromInput();}
+                if(frame==2)battle.Player.TakeDamage(1,forceStagger:true);
+                if(frame==11)battle.Pause(BattlePauseReason.User);
+                if(frame==15)battle.Resume(BattlePauseReason.User);
+                battle.TickFrame(ms);
+                if(frame==9||frame==14)Assert.AreEqual(PanelType.Grass,battle.Field.GetPanelType(empty));
+                if(frame==18){Assert.AreEqual(980,a.CurrentHp);Assert.AreEqual(980,b.CurrentHp);Assert.AreEqual(990,floating.CurrentHp);Assert.AreEqual(1000,immune.CurrentHp);}
+                trace.Add(frame+":"+a.CurrentHp+":"+b.CurrentHp+":"+floating.CurrentHp+":"+battle.Field.GetPanelType(empty));
+            });
+            long total=Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond,previous=0;
+            if(stall){previous=total/2;clock.Accumulate(previous);clock.Drain(tick,3);}
+            for(long render=1;previous<total;render++){
+                long now=Math.Min(total,(stall?total/2:0)+render*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps);
+                clock.Accumulate(now-previous);previous=now;clock.Drain(tick,3);
+            }
+            while(clock.PendingFrames>0)clock.Drain(tick,3);
+            Assert.AreEqual(970,a.CurrentHp);Assert.AreEqual(970,b.CurrentHp);
+            foreach(int x in new[]{2,3,4})Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(new Vector2Int(x,0)));
+            session.Detach();return trace;
+        }
+        [TestCase(30,false)] [TestCase(60,false)] [TestCase(120,false)]
+        [TestCase(30,true)] [TestCase(60,true)] [TestCase(120,true)]
+        public void 拡散火攻撃の燃焼と中断再開は通常セッションでFPSと処理遅延に依存しない(int fps,bool stall)
+        {CollectionAssert.AreEqual(SpreadFireTrace(60,false),SpreadFireTrace(fps,stall));}
+
     }
 }

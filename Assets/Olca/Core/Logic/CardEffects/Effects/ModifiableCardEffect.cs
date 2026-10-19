@@ -448,6 +448,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             if (baseTargets.Count == 0) return;
 
             var affectedEnemies = new HashSet<Enemy>();
+            var hitPanels = new HashSet<Vector2Int>();
             var aliveEnemies = context.Battle.GetAliveEnemies();
 
             // 各ターゲットの着弾地点から前後1マスに拡散
@@ -463,6 +464,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
                 foreach (var pos in spreadPositions)
                 {
+                    if (context.Field.IsInBounds(pos)) hitPanels.Add(pos);
                     foreach (var enemy in aliveEnemies)
                     {
                         if (enemy.GridPosition.Equals(pos))
@@ -473,7 +475,14 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 }
             }
 
+            var burningPanels = element == ElementType.Fire
+                ? hitPanels.Where(p => context.Field.GetPanelType(p) == PanelType.Grass).ToArray()
+                : new Vector2Int[0];
             DealDamageToTargets(new List<Enemy>(affectedEnemies), damage, element);
+            // 拡散の全対象へ補正を判定した後、敵がいない命中マスも含めて燃やす。
+            foreach (var panel in burningPanels)
+                if (context.Field.GetPanelType(panel) == PanelType.Grass)
+                    context.Field.ChangePanelType(panel, PanelType.Normal);
         }
 
         /// <summary>
