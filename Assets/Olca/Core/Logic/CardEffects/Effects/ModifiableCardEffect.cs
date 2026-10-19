@@ -186,6 +186,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
             // Immediate効果でダメージ処理が完了している場合は、通常のダメージ処理をスキップ
             if (!damageHandledByImmediate)
             {
+                // 移動・死亡通知で対象位置が変わる前に、今回当たる草むらを確定する。
+                var burningPanels = card.Category == CardCategory.Attack && finalElement == ElementType.Fire
+                    ? GetBaseHitPanels(context, targets).Where(p => context.Field.GetPanelType(p) == PanelType.Grass).ToArray()
+                    : new Vector2Int[0];
                 if (needsHitTracking)
                 {
                     // ヒット判定とダメージを個別に記録
@@ -209,6 +213,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     // 派生効果がない場合は通常のダメージ処理
                     DealDamageToTargets(targets, finalDamage, finalElement);
                 }
+                // 同一マスの全員へ地形補正を判定した後に燃やす。耐性100%でも消費する。
+                foreach (var panel in burningPanels)
+                    if (context.Field.GetPanelType(panel) == PanelType.Grass)
+                        context.Field.ChangePanelType(panel, PanelType.Normal);
             }
             else if (needsHitTracking)
             {
@@ -292,8 +300,27 @@ namespace Olca.Core.Logic.CardEffects.Effects
         }
 
         /// <summary>
-        /// 前方Nマスにいる敵を取得
+        /// 基本攻撃の命中パネルを取得。前方マス攻撃は空マスも含める。
         /// </summary>
+        private IEnumerable<Vector2Int> GetBaseHitPanels(BattleContext context, List<Enemy> targets)
+        {
+            int range = baseTargetType == DamageTargetType.FrontTile ? 1 :
+                baseTargetType == DamageTargetType.FrontTwoTiles ? 2 :
+                baseTargetType == DamageTargetType.FrontThreeTiles ? 3 : 0;
+            if (range > 0)
+            {
+                var origin = context.GetEffectivePlayerPosition();
+                for (int offset = 1; offset <= range; offset++)
+                {
+                    var position = new Vector2Int(origin.X + offset, origin.Y);
+                    if (context.Field.IsInBounds(position)) yield return position;
+                }
+            }
+            else
+                foreach (var position in targets.Select(t => t.GridPosition).Distinct())
+                    if (context.Field.IsInBounds(position)) yield return position;
+        }
+
         private List<Enemy> GetEnemiesInTileRange(BattleContext context, int range)
         {
             var result = new List<Enemy>();

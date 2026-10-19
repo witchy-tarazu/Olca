@@ -682,5 +682,95 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 通常セッションの火攻撃は同じ草むらの全員を判定してから燃焼する(bool trackHits)
+        {
+            var position = new Vector2Int(3, 0);
+            var first = new Enemy("a", "a", 1000, ElementType.None, position);
+            var second = new Enemy("b", "b", 1000, ElementType.None, position);
+            var floating = new Enemy("c", "c", 1000, ElementType.None, position);
+            var immune = new Enemy("d", "d", 1000, ElementType.None, position, resistances: new ElementResistances(fire:100));
+            floating.TerrainState.IsFloating = true;
+            var battle = new BattleSystem(new PlayerCharacter(1000, new Vector2Int(2,0)),
+                new List<Enemy>{first, second, floating, immune}, new Deck());
+            var session = CreateSession().session; session.Attach(battle);
+            var modifier = new CardModifier();
+            if (trackHits) modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType=AdditionalEffectType.Poison, Trigger=DerivativeTrigger.OnDamage, Power=3, Duration=1f });
+            var card = new Card("fire", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.Canon, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All, modifier:modifier);
+            battle.Field.ChangePanelType(position, PanelType.Grass);
+            session.ProcessLogicalFrame(() => UseStatusCard(battle,session,card));
+            Assert.AreEqual(980,first.CurrentHp); Assert.AreEqual(980,second.CurrentHp);
+            Assert.AreEqual(990,floating.CurrentHp); Assert.AreEqual(1000,immune.CurrentHp);
+            Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(position));
+            session.ProcessLogicalFrame(() => UseStatusCard(battle,session,card));
+            Assert.AreEqual(970,first.CurrentHp); Assert.AreEqual(970,second.CurrentHp);
+            session.Detach();
+        }
+
+        [Test]
+        public void 前方マスへの火攻撃は空の草むらも燃やし中断前やポーズ中には燃やさない()
+        {
+            var (battle, enemy, session) = StatusBattle();
+            enemy.ApplyStun(60000);
+            var empty = new Vector2Int(4,0);
+            battle.Field.ChangePanelType(empty, PanelType.Grass);
+            var card = new Card("fire", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.Canon, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTwoTiles,
+                startupTime:.05f);
+            battle.CardUsage.EnqueueCards(new List<Card>{card});
+            UniTask<bool> pending=default;
+            session.ProcessLogicalFrame(() => { pending=session.TryUseCardAsync(); battle.TickFrame(17); });
+            Assert.AreEqual(PanelType.Grass,battle.Field.GetPanelType(empty));
+            battle.Player.TakeDamage(1,forceStagger:true);
+            Assert.IsTrue(pending.GetAwaiter().GetResult(), "モーション開始後の中断でもカードは消費する");
+            for(int frame=0;frame<5;frame++)session.ProcessLogicalFrame(()=>battle.TickFrame(17));
+            Assert.AreEqual(PanelType.Grass,battle.Field.GetPanelType(empty));
+            battle.CardUsage.EnqueueCards(new List<Card>{card});
+            session.ProcessLogicalFrame(()=>pending=session.TryUseCardAsync());
+            battle.Pause(BattlePauseReason.User);
+            for(int frame=0;frame<60;frame++)session.ProcessLogicalFrame(()=>battle.TickFrame(17));
+            Assert.AreEqual(PanelType.Grass,battle.Field.GetPanelType(empty));
+            battle.Resume(BattlePauseReason.User);
+            for(int frame=0;frame<3;frame++)session.ProcessLogicalFrame(()=>battle.TickFrame(17));
+            Assert.IsTrue(pending.GetAwaiter().GetResult());
+            Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(empty));
+            session.Detach();
+        }
+
+        [TestCase(ElementType.Fire, PanelType.Normal, 1000)]
+        [TestCase(ElementType.Water, PanelType.Grass, 990)]
+        [TestCase(ElementType.None, PanelType.Grass, 990)]
+        public void 燃焼は火属性だけで耐性無効時も起こる(ElementType element, PanelType expectedPanel, int expectedHp)
+        {
+            var enemy = new Enemy("immune", "検証", 1000, ElementType.None, new Vector2Int(3,0),
+                resistances:new ElementResistances(fire:100));
+            var battle = new BattleSystem(new PlayerCharacter(1000,new Vector2Int(2,0)),new List<Enemy>{enemy},new Deck());
+            var session=CreateSession().session;session.Attach(battle);
+            battle.Field.ChangePanelType(enemy.GridPosition,PanelType.Grass);
+            var card=new Card("fixture","検証",1,CardRarity.Normal,CardCategory.Attack,element,
+                CardSeries.Canon,10,"検証",Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single);
+            session.ProcessLogicalFrame(()=>UseStatusCard(battle,session,card));
+            Assert.AreEqual(expectedHp,enemy.CurrentHp);
+            Assert.AreEqual(expectedPanel,battle.Field.GetPanelType(enemy.GridPosition));
+            session.Detach();
+        }
+
+        [Test]
+        public void 火属性を持つ非攻撃の地形カードは燃焼処理の対象外()
+        {
+            var (battle,enemy,session)=StatusBattle();
+            var modifier=new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType=AdditionalEffectType.PanelGrass, Trigger=DerivativeTrigger.Immediate });
+            var card=new Card("field","検証",1,CardRarity.Normal,CardCategory.Field,ElementType.Fire,
+                CardSeries.None,0,"検証",Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,modifier:modifier);
+            session.ProcessLogicalFrame(()=>UseStatusCard(battle,session,card));
+            Assert.AreEqual(PanelType.Grass,battle.Field.GetPanelType(enemy.GridPosition));
+            Assert.AreEqual(1000,enemy.CurrentHp);
+            session.Detach();
+        }
+
     }
 }
