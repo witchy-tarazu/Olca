@@ -15,6 +15,7 @@ namespace Olca.Core.Logic.Battle
         private readonly PlayerCharacter player;
         private readonly BattleField field;
         private readonly IGameLogger logger;
+        private readonly Func<bool> canStartNormalMove;
 
         private FrameCountdown moveCooldown; // 移動クールダウン（ミリ秒）
         private Vector2Int? pendingSlideDirection; // Ice滑り中の方向
@@ -23,7 +24,7 @@ namespace Olca.Core.Logic.Battle
         private const int NORMAL_MOVE_DELAY_MS = 150; // 通常移動時のクールダウン（ミリ秒、押しっぱなし対応）
 
         /// <summary>移動可能か（クールダウンと滑り状態をチェック）</summary>
-        public bool CanMove => !moveCooldown.IsActive && !IsSliding;
+        public bool CanMove => !moveCooldown.IsActive && !IsSliding && (canStartNormalMove?.Invoke() ?? true);
 
         /// <summary>Ice滑り中か</summary>
         public bool IsSliding => player.TerrainState.ReceivesPanelEffects && pendingSlideDirection.HasValue;
@@ -37,11 +38,12 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public PlayerMovementSystem(PlayerCharacter player, BattleField field, IGameLogger logger = null)
+        public PlayerMovementSystem(PlayerCharacter player, BattleField field, IGameLogger logger = null, Func<bool> canStartNormalMove = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.field = field ?? throw new ArgumentNullException(nameof(field));
             this.logger = logger;
+            this.canStartNormalMove = canStartNormalMove;
         }
 
         /// <summary>
@@ -82,6 +84,8 @@ namespace Olca.Core.Logic.Battle
         /// <returns>移動成功したらtrue</returns>
         public bool TryMove(Vector2Int direction, List<Enemy> enemies)
         {
+            // カード動作中の能動入力だけを拒否する。氷滑り・効果による移動は内部経路を維持。
+            if (!(canStartNormalMove?.Invoke() ?? true)) return false;
             CancelSlideWhileFloating();
 
             // クールダウン中は移動不可（Ice滑り中も含む）

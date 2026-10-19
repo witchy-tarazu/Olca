@@ -99,7 +99,7 @@ namespace Olca.Core.Logic.Battle
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
-            this.playerMovement = new PlayerMovementSystem(player, battleField, logger);
+            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => cardUsage.InFlightCard == null);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
             this.delayedEffects = new DelayedEffectSystem(this);
@@ -319,7 +319,7 @@ namespace Olca.Core.Logic.Battle
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
 
-            if (IsGameOver || IsPaused) return;
+            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null) return;
             BeginResolution();
             try
             {

@@ -314,6 +314,133 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        private List<string> CardActionLockTrace(int fps, bool stall, bool restore)
+        {
+            var card = new Card("action-lock", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All,
+                startupTime: .05f, recoveryTime: .1f);
+            var deck = new Deck(new List<Card> { card, card.Clone() });
+            var map = DungeonConfig.CreateTestDungeon(8, 3, 3);
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+            for (int i = 0; i < 1000 && manager.CurrentBattle == null; i++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            var saved = checkpoints.Store.Read();
+            if (restore) {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            battle.Player.MoveTo(new Vector2Int(2, 0));
+            foreach (var enemy in battle.Enemies) { enemy.MoveTo(new Vector2Int(5, 0)); enemy.ApplyStun(60000); }
+            var target = battle.Enemies[0]; int hp = target.CurrentHp, used = 0, attacks = 0;
+            battle.CardUsage.OnCardUsed += _ => used++; battle.OnPlayerAttack += (enemy, damage) => attacks++;
+            var cards = new List<Card>(manager.Dungeon.GetCurrentDeck().GetAllCards());
+            var input = new MockInputProvider(); var trace = new List<string>();
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                input.Horizontal = 0;
+                if (frame == 1) { battle.CardUsage.EnqueueCards(cards); session.UseCardFromInput(); }
+                if (frame == 2) battle.Pause(BattlePauseReason.User);
+                if (frame == 6) battle.Resume(BattlePauseReason.User);
+                if (frame == 1 || frame == 8) {
+                    Assert.IsNotNull(battle.CardUsage.InFlightCard);
+                    Assert.IsFalse(battle.PlayerMovement.CanMove);
+                    Assert.IsFalse(battle.PlayerMovement.TryMove(new Vector2Int(-1, 0), new List<Enemy>(battle.Enemies)));
+                    battle.PlayerBasicAttack(target);
+                    Assert.IsFalse(session.TryUseCardAsync().GetAwaiter().GetResult());
+                    input.Horizontal = -1;
+                }
+                if (frame == 15) {
+                    Assert.IsNull(battle.CardUsage.InFlightCard); Assert.IsTrue(battle.PlayerMovement.CanMove);
+                    Assert.AreEqual(2, battle.Player.GridPosition.X, "拒否入力は動作終了後に予約実行しない");
+                    Assert.AreEqual(hp - 10, target.CurrentHp); Assert.AreEqual(0, attacks);
+                    Assert.AreEqual(1, used); Assert.AreEqual(1, battle.CardUsage.RemainingCount);
+                }
+                if (frame == 16) { input.Horizontal = -1; battle.PlayerBasicAttack(target); }
+                manager.TickFrame(ms, input);
+                if (frame <= 12) Assert.AreEqual(2, battle.Player.GridPosition.X);
+                trace.Add(frame + ":" + battle.Player.GridPosition.X + ":" + target.CurrentHp + ":" +
+                    battle.CardUsage.InFlightCard?.Id + ":" + used + ":" + attacks + ":" + battle.PlayerMovement.CurrentCooldownMs);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * total / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            Assert.AreEqual(1, battle.Player.GridPosition.X); Assert.AreEqual(hp - 20, target.CurrentHp);
+            Assert.AreEqual(1, used); Assert.AreEqual(1, attacks); Assert.AreEqual(1, battle.CardUsage.RemainingCount);
+            var after = checkpoints.Store.Read();
+            Assert.AreEqual(saved.SchemaVersion, after.SchemaVersion); Assert.AreEqual(saved.Sequence, after.Sequence);
+            Assert.AreEqual(saved.MapHash, after.MapHash); CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder);
+            session.Detach(); return trace;
+        }
+
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void カード前隙後隙の通常移動と基本攻撃を拒否し復帰後もフレームが一致する(int fps, bool stall, bool restore)
+        { CollectionAssert.AreEqual(CardActionLockTrace(60, false, false), CardActionLockTrace(fps, stall, restore)); }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 外部取消またはセッション解除でカード動作の受付制限を残さない(bool detach)
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            var card = new Card("cancel", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 10, "検証", startupTime: 1f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            using (var cts = new System.Threading.CancellationTokenSource()) {
+                var pending = battle.CardUsage.TryUseCurrentCardAsync(cts.Token);
+                Assert.IsFalse(battle.PlayerMovement.CanMove);
+                if (detach) session.Detach(); else cts.Cancel();
+                Assert.IsFalse(pending.GetAwaiter().GetResult());
+                Assert.IsNull(battle.CardUsage.InFlightCard); Assert.IsTrue(battle.PlayerMovement.CanMove);
+                Assert.AreEqual(detach ? 0 : 1, battle.CardUsage.RemainingCount);
+            }
+            session.Detach();
+        }
+
+        [Test]
+        public void カード動作中も氷の自動滑りは止めず通常入力と区別する()
+        {
+            var player = new PlayerCharacter(100);
+            var enemy = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(5, 0)); enemy.ApplyStun(60000);
+            var battle = new BattleSystem(player, new List<Enemy> { enemy }, new Deck());
+            var session = CreateSession().session; session.Attach(battle);
+            battle.Field.ChangePanelType(new Vector2Int(1, 0), PanelType.Ice);
+            Assert.IsTrue(battle.PlayerMovement.TryMove(new Vector2Int(1, 0), new List<Enemy> { enemy }));
+            var card = new Card("ice-use", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 10, "検証", startupTime: 1f);
+            battle.CardUsage.EnqueueCards(new List<Card> { card }); session.UseCardFromInput();
+            session.ProcessLogicalFrame(() => battle.TickFrame(17, new MockInputProvider { Horizontal = -1 }));
+            Assert.AreEqual(2, player.GridPosition.X); Assert.IsNotNull(battle.CardUsage.InFlightCard);
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            session.Detach();
+        }
+
+        [Test]
+        public void 一時移動カード自身の移動と原位置への復帰は通常移動制限を迂回する()
+        {
+            var battle = CreateBattleSystem(); var session = CreateSession().session; session.Attach(battle);
+            foreach (var e in battle.Enemies) e.ApplyStun(60000);
+            var origin = battle.Player.GridPosition;
+            battle.CardUsage.EnqueueCards(new List<Card> { MovingCard() });
+            var pending = session.TryUseCardAsync();
+            Assert.IsTrue(battle.Player.IsInTemporaryMove); Assert.IsFalse(battle.PlayerMovement.CanMove);
+            var temporary = battle.Player.GridPosition;
+            Assert.IsFalse(battle.PlayerMovement.TryMove(new Vector2Int(-1, 0), new List<Enemy>(battle.Enemies)));
+            Assert.AreEqual(temporary, battle.Player.GridPosition);
+            for (int i = 0; i < 30; i++) session.ProcessLogicalFrame(() => battle.TickFrame(17));
+            Assert.IsTrue(pending.GetAwaiter().GetResult()); Assert.AreEqual(origin, battle.Player.GridPosition);
+            Assert.IsTrue(battle.PlayerMovement.CanMove); session.Detach();
+        }
+
         private Card MovingCard() => new Card("input_move", "入力移動攻撃", 1, CardRarity.Normal,
             CardCategory.Attack, ElementType.None, CardSeries.Sword, 10, "前隙・後隙",
             moveDirection: "Right", moveDistance: 3, moveMotionTime: 0.1f, attackMotionTime: 0.1f,
