@@ -16,6 +16,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly ICardPool cardPool;  // カードプール（nullの場合はフォールバック生成）
         private readonly List<Card> obtainedCards;  // 入手したカード（クリア報酬用）
 
+        private static readonly string[] FallbackCardIds = { "sword", "heal", "shield", "fire", "ice" };
         private const int REWARD_CHOICE_COUNT = 3;  // 選択肢の枚数
         private const float NORMAL_ENEMY_DROP_RATE = 0.5f;  // 雑魚戦の基本ドロップ率（50%）
 
@@ -73,10 +74,14 @@ namespace Olca.Core.Logic.Dungeon
             // 通常敵の場合は3枚（ノーマル中心）
             else
             {
+                // プール未設定の通常報酬も同じカードを重複させない。
+                // 抽選ごとに候補を除き、固定乱数でも再抽選ループを発生させない。
+                var remaining = new List<string>(FallbackCardIds);
                 for (int i = 0; i < REWARD_CHOICE_COUNT; i++)
                 {
-                    Card card = GenerateCard(CardRarity.Normal);
-                    choices.Add(card);
+                    int index = random.Range(0, remaining.Count);
+                    choices.Add(CreateFallbackCard(remaining[index], CardRarity.Normal));
+                    remaining.RemoveAt(index);
                 }
             }
 
@@ -121,9 +126,8 @@ namespace Olca.Core.Logic.Dungeon
         private Card GenerateCard(CardRarity targetRarity)
         {
             // フォールバック: カードプール未設定時はダミーカードを生成
-            string[] cardIds = { "sword", "heal", "shield", "fire", "ice" };
-            int randomIndex = random.Range(0, cardIds.Length);
-            string cardId = cardIds[randomIndex];
+            int randomIndex = random.Range(0, FallbackCardIds.Length);
+            string cardId = FallbackCardIds[randomIndex];
 
             return CreateFallbackCard(cardId, targetRarity);
         }

@@ -184,6 +184,71 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual("normal_card", choices[0].Id, "フォールバックでNormalカードが返る");
         }
 
+        private sealed class FallbackCountingRandom : IRandomProvider
+        {
+            public int Index, Calls;
+            public int Range(int min, int max) { Calls++; return Math.Max(min, Math.Min(Index, max - 1)); }
+            public float Range(float min, float max) => min;
+            public float Value => 0;
+        }
+
+        [TestCase(0)][TestCase(2)][TestCase(int.MaxValue)]
+        public void 未設定プールも固定乱数三回で重複なしになり次戦の候補を減らさない(int index)
+        {
+            var random = new FallbackCountingRandom { Index = index };
+            var rewards = new CardRewardSystem(CreateTestDeck(), random);
+            var enemy = new Enemy("normal", "敵", 10, ElementType.None, new Vector2Int(3, 0));
+            var choices = rewards.GenerateCardChoices(enemy);
+            Assert.AreEqual(3, random.Calls);
+            Assert.AreEqual(3, choices.Select(c => (c.Id, c.ExceedLevel)).Distinct().Count());
+            Assert.IsTrue(choices.All(c => c.Rarity == CardRarity.Normal));
+            CollectionAssert.IsSubsetOf(choices.Select(c => c.Id), new[] { "sword", "heal", "shield", "fire", "ice" });
+            var next = rewards.GenerateCardChoices(enemy);
+            Assert.AreEqual(6, random.Calls);
+            CollectionAssert.AreEqual(choices.Select(c => c.Id), next.Select(c => c.Id));
+            for (int i=0;i<3;i++) Assert.AreNotSame(choices[i], next[i]);
+            Assert.AreEqual(1, rewards.GetCurrentDeck().TotalCount);
+            var boss = rewards.GenerateCardChoices(new Enemy("boss", "ボス", 100, ElementType.None, new Vector2Int(9,0)));
+            Assert.AreEqual(7, random.Calls); Assert.AreEqual(1, boss.Count); Assert.AreEqual(CardRarity.Limited,boss[0].Rarity);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 通常三択の保存復帰では再抽選せず旧重複候補も保持する(bool legacyDuplicates)
+        {
+            var map=DungeonConfig.CreateTestDungeon(20,30,3);var deck=CreateTestDeck();
+            var session=DungeonCheckpointSession.CreateDefault(map,deck);
+            var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,mockRandom,new MockLogger(),checkpoints:session);
+            CheckpointDto saved=null;
+            for(int seed=0;seed<100;seed++) {
+                var departure=session.Store.Read();departure.Enemies[0].GridX=4;
+                var encounter=new CheckpointBattleDto { ContactCell=3, ParticipantCells=new[]{3}, HandLimit=10 };
+                Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure,encounter,session.Definitions,seed,null,
+                    c=>session.Definitions.CaptureKnownCard("fixture",c).DefinitionKey,out var plan,out var error),error);
+                if(plan.Snapshot.Battle.RewardOffered){saved=plan.Snapshot;break;}
+            }
+            Assert.IsNotNull(saved);Assert.AreEqual(3,saved.Battle.RewardCandidates.Length);
+            var records=saved.Battle.RewardCandidates.Select(id=>saved.Cards.Single(c=>c.InstanceId==id)).ToArray();
+            Assert.AreEqual(3,records.Select(c=>c.DefinitionKey).Distinct().Count());
+            if(legacyDuplicates) foreach(var record in records.Skip(1)) {
+                record.DefinitionKey=records[0].DefinitionKey;record.ValueHash=records[0].ValueHash;
+            }
+            var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-fallback-reward-"+Guid.NewGuid().ToString("N"));
+            try {
+                var store=new Olca.Unity.FileCheckpointStore(session.Definitions,directory);
+                Assert.IsTrue(store.TryWrite(saved,out var error),error);
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+                var reopened=new Olca.Unity.FileCheckpointStore(session.Definitions,directory);
+                Assert.IsTrue(new DungeonCheckpointSession(session.Definitions,reopened).TryRead(out var restored,out error),error);
+                CollectionAssert.AreEqual(saved.Battle.RewardCandidates,restored.Snapshot.Battle.RewardCandidates);
+                Assert.AreEqual(legacyDuplicates?1:3,restored.RewardCandidates.Select(c=>c.Id).Distinct().Count());
+                Assert.AreEqual(3,restored.RewardCandidates.Distinct().Count(),"同一定義でも保存個体を統合しない");
+                CollectionAssert.AreEqual(saved.Battle.FirstHand,restored.Snapshot.Battle.FirstHand);
+                CollectionAssert.AreEqual(saved.DeckOrder,restored.Snapshot.DeckOrder);
+                CollectionAssert.AreEqual(saved.ObtainedOrder,restored.Snapshot.ObtainedOrder);
+                CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+            } finally { if(System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory,true); }
+        }
+
         private sealed class FixedCountingRandom : IRandomProvider
         {
             public int Calls;
