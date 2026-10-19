@@ -354,6 +354,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
         {
             switch (effect.EffectType)
             {
+                case AdditionalEffectType.ChainCard:
+                    // 無条件派生は本体ダメージより前に、指定されたカードを発動する。
+                    ExecuteChainEffect(context, effect, targets);
+                    break;
+
                 case AdditionalEffectType.Spread:
                     // スプレッド効果: 着弾地点から前後1マスに拡散
                     ApplySpreadEffect(context, targets, damage, element);

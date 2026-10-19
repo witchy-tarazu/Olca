@@ -1074,5 +1074,84 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
+        private List<string> ImmediateChainTrace(int fps, bool stall, bool restore)
+        {
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                Trigger = DerivativeTrigger.Immediate, ChainCardId = "child", EffectOrigin = ChainEffectOrigin.PlayerPosition });
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 1, "検証", modifier: modifier, startupTime: .05f);
+            var deck = new Deck(new List<Card> { parent });
+            var map = DungeonConfig.CreateTestDungeon(30, 20, 5);
+            var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            var database = new Olca.Tests.CardEffects.MockCardDatabase();
+            database.AddCard(new Card("child", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.None, 2, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All));
+            var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints, cardDatabase: database);
+            for (int f = 0; f < 1000 && manager.CurrentBattle == null; f++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);
+            if (restore)
+            {
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error, cardDatabase: database), error);
+                Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
+                parent = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
+                Assert.AreEqual(DerivativeTrigger.Immediate, parent.Modifier.AdditionalEffects[0].Trigger);
+            }
+            var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            var enemy = battle.Enemies[0]; enemy.ApplyStun(60000); int initialHp = enemy.CurrentHp;
+            battle.Field.ChangePanelType(enemy.GridPosition, PanelType.Grass);
+            var hits = new List<int>(); enemy.OnDamaged += (damage, multiplier) => hits.Add(damage);
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1 || frame == 10 || frame == 30) { battle.CardUsage.EnqueueCards(new List<Card> { parent }); session.UseCardFromInput(); }
+                if (frame == 2) battle.Player.TakeDamage(1, forceStagger: true);
+                if (frame == 11) battle.Pause(BattlePauseReason.User);
+                if (frame == 15) battle.Resume(BattlePauseReason.User);
+                battle.TickFrame(ms);
+                if (frame == 9 || frame == 14) Assert.AreEqual(initialHp, enemy.CurrentHp);
+                if (frame == 18) CollectionAssert.AreEqual(new[] { 4, 1 }, hits, "派生ダメージが本体より先");
+                trace.Add(frame + ":" + enemy.CurrentHp + ":" + hits.Count + ":" + battle.Field.GetPanelType(enemy.GridPosition));
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+            for (long render = 1; previous < total; render++) {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+            CollectionAssert.AreEqual(new[] { 4, 1, 2, 1 }, hits);
+            Assert.AreEqual(initialHp - 8, enemy.CurrentHp);
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
+        [TestCase(30, true, false)] [TestCase(60, true, false)] [TestCase(120, true, false)]
+        [TestCase(30, false, true)] [TestCase(60, false, true)] [TestCase(120, false, true)]
+        [TestCase(30, true, true)] [TestCase(60, true, true)] [TestCase(120, true, true)]
+        public void 無条件派生は通常使用と保存復帰で本体より先に発動し論理フレームで一致する(int fps, bool stall, bool restore)
+        { CollectionAssert.AreEqual(ImmediateChainTrace(60, false, false), ImmediateChainTrace(fps, stall, restore)); }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 無条件派生は本体が空振りでも実行し未解決IDなら余分な本体ダメージを発生させない(bool missing)
+        {
+            var enemy = new Enemy("e", "検証", 100, ElementType.None, new Vector2Int(4, 0));
+            var database = new Olca.Tests.CardEffects.MockCardDatabase();
+            if (!missing) database.AddCard(new Card("child", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.None, 7, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All));
+            var battle = new BattleSystem(new PlayerCharacter(100, new Vector2Int(1, 0)), new List<Enemy> { enemy }, new Deck(), cardDatabase: database);
+            var session = CreateSession().session; session.Attach(battle);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.ChainCard,
+                Trigger = DerivativeTrigger.Immediate, ChainCardId = "child", EffectOrigin = ChainEffectOrigin.PlayerPosition });
+            var parent = new Card("parent", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile, modifier: modifier);
+            session.ProcessLogicalFrame(() => UseStatusCard(battle, session, parent));
+            Assert.AreEqual(missing ? 100 : 93, enemy.CurrentHp);
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount); session.Detach();
+        }
+
     }
 }
