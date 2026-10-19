@@ -5,6 +5,7 @@ using Olca.Core.Logic.CardEffects;
 using Olca.Core.Logic.CardEffects.Effects;
 using Olca.Tests.Mocks;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Olca.Tests.Battle
 {
@@ -53,6 +54,41 @@ namespace Olca.Tests.Battle
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             battle.OpenCustomScreen(new MockRandomProvider());
         }
+        [Test]
+        public void 変身一覧は使用済みも残し呼出元から変更できない()
+        {
+            var battle = CreateTransformationBattle();
+            var state = battle.Transformations;
+            var choices = state.AvailableDefinitions;
+            CollectionAssert.AreEqual(new[] { "fixture-a", "fixture-b" }, choices.Select(d => d.Id));
+            Assert.Throws<System.NotSupportedException>(() =>
+                ((IList<TransformationDefenseDefinition>)choices).Clear());
+            state.TryPreview("fixture-a");
+            battle.CustomScreen.Confirm();
+            Assert.AreEqual(2, choices.Count);
+            Assert.IsTrue(state.IsUsed(choices[0].Id));
+            ReopenTransformationScreen(battle);
+            Assert.IsFalse(state.TryPreview(choices[0].Id));
+            Assert.IsTrue(state.TryPreview(choices[1].Id));
+        }
+
+        [Test]
+        public void 重複ID定義の失敗で一覧を部分公開せず元リストの変更も反映しない()
+        {
+            var battle = new BattleSystem(player, new List<Enemy> {
+                new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0)) }, new Deck(new List<Card>()));
+            var state = battle.Transformations;
+            var definition = new TransformationDefenseDefinition("fixture", ElementResistances.Neutral, ElementType.Fire);
+            Assert.IsEmpty(state.AvailableDefinitions);
+            Assert.Throws<System.ArgumentException>(() => state.Configure(new[] { definition, definition }));
+            Assert.IsEmpty(state.AvailableDefinitions);
+            var source = new List<TransformationDefenseDefinition> { definition };
+            state.Configure(source);
+            source.Clear();
+            Assert.AreEqual(1, state.AvailableDefinitions.Count);
+            Assert.AreSame(definition, state.AvailableDefinitions[0]);
+        }
+
         [Test]
         public void 仮選択は未消費で確定時だけ消費し確定再試行で二重消費しない()
         {

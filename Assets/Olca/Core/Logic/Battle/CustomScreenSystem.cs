@@ -712,6 +712,9 @@ namespace Olca.Core.Logic.Battle
         private readonly HashSet<string> used = new HashSet<string>(StringComparer.Ordinal);
         private TransformationDefenseDefinition pending;
         private bool configured, confirmedThisOpening, disposed;
+        /// <summary>呼出元が解放済みとして設定した順序の一覧。使用済みも残し、IsUsedで選択可否を確認する。</summary>
+        public IReadOnlyList<TransformationDefenseDefinition> AvailableDefinitions { get; private set; }
+            = Array.AsReadOnly(new TransformationDefenseDefinition[0]);
         public string PendingId => pending?.Id;
         public string ActiveId { get; private set; }
         public IReadOnlyList<string> UsedIds => used.OrderBy(id => id, StringComparer.Ordinal).ToArray();
@@ -731,12 +734,15 @@ namespace Olca.Core.Logic.Battle
             if (disposed || configured) throw new InvalidOperationException("変身定義は戦闘ごとに一度だけ設定できます");
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             var next = new Dictionary<string, TransformationDefenseDefinition>(StringComparer.Ordinal);
+            var ordered = new List<TransformationDefenseDefinition>();
             foreach (var definition in definitions)
             {
                 if (definition == null) throw new ArgumentException("変身定義がnullです", nameof(definitions));
                 next.Add(definition.Id, definition);
+                ordered.Add(definition);
             }
             available = next;
+            AvailableDefinitions = ordered.AsReadOnly();
             configured = true;
         }
         public bool TryPreview(string id)
