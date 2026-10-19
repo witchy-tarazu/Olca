@@ -78,10 +78,12 @@ namespace Olca.Application.Battle
                 inputProvider.CaptureTimestamped(),
                 (frame, ms, input) => {
                     if (GameplayPause.InputBlocked) input = new Olca.Core.Logic.Integration.LogicalInput();
-                    customScreenView?.HandleLogicalConfirmation(input);
-                    if (input.CustomScreenButtonDown) battleSession.TryOpenCustomScreen();
-                    if (input.CardUseButtonDown && !battleSystem.CustomScreen.IsOpen) battleSession.UseCardFromInput();
-                    battleSystem.TickFrame(ms, input);
+                    battleSession.ProcessLogicalFrame(() => {
+                        customScreenView?.HandleLogicalConfirmation(input);
+                        if (input.CustomScreenButtonDown) battleSession.TryOpenCustomScreen();
+                        if (input.CardUseButtonDown && !battleSystem.CustomScreen.IsOpen) battleSession.UseCardFromInput();
+                        battleSystem.TickFrame(ms, input);
+                    });
                 }, () => !GameplayPause.IsPaused, () => !battleSystem.IsPaused);
             battleView.Refresh();
         }

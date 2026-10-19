@@ -522,5 +522,130 @@ namespace Olca.Tests.Application
             Assert.IsTrue(battle.IsPaused);session.Detach();
         }
 
+        private (BattleSystem battle, Enemy enemy, BattleSessionController session) StatusBattle()
+        {
+            var enemy = new Enemy("fixture", "検証", 1000, ElementType.None, new Vector2Int(3, 0));
+            var battle = new BattleSystem(new PlayerCharacter(1000, new Vector2Int(2, 0)),
+                new List<Enemy> { enemy }, new Deck(), logger: new MockLogger());
+            var session = CreateSession().session;
+            session.Attach(battle);
+            return (battle, enemy, session);
+        }
+        private Card StatusCard(AdditionalEffectType type, float seconds = 1f)
+        {
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = type,
+                Trigger = DerivativeTrigger.OnDamage, Duration = seconds, Power = 60 });
+            return new Card("fixture", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 1, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single, modifier: modifier);
+        }
+        private void UseStatusCard(BattleSystem battle, BattleSessionController session, Card card)
+        {
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            var use = session.TryUseCardAsync();
+            Assert.AreEqual(UniTaskStatus.Succeeded, use.Status);
+            Assert.IsTrue(use.GetAwaiter().GetResult());
+        }
+        [Test]
+        public void 通常セッションの毒付与は当該フレームに進まず再付与も次から有効になる()
+        {
+            var (battle, enemy, session) = StatusBattle();
+            enemy.ApplyStun(60000);
+            session.ProcessLogicalFrame(() => {
+                UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison));
+                Assert.IsNull(enemy.ActiveStatus);
+                battle.TickFrame(17);
+                Assert.AreEqual(999, enemy.CurrentHp);
+            });
+            Assert.AreEqual(60, enemy.ActiveStatus.RemainingFrames);
+            session.ProcessLogicalFrame(() => {
+                UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison, 2f));
+                Assert.AreEqual(60, enemy.ActiveStatus.RemainingFrames);
+                battle.TickFrame(17);
+            });
+            Assert.AreEqual(997, enemy.CurrentHp);
+            Assert.AreEqual(120, enemy.ActiveStatus.RemainingFrames);
+            session.ProcessLogicalFrame(() => { enemy.ClearStatus(StatusEffectType.Poison); battle.TickFrame(17); });
+            Assert.AreEqual(996, enemy.CurrentHp, "解除フレームの毒は計上する");
+            Assert.IsNull(enemy.ActiveStatus);
+            battle.TickFrame(17); Assert.AreEqual(996, enemy.CurrentHp);
+            session.Detach();
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 同フレームの解除は付与順によらず次フレームへの有効化も取り消す(bool clearFirst)
+        {
+            var (battle, enemy, session) = StatusBattle();
+            session.ProcessLogicalFrame(() => {
+                if (clearFirst) enemy.ClearStatus(StatusEffectType.Paralyze);
+                UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Paralyze));
+                if (!clearFirst) enemy.ClearStatus(StatusEffectType.Paralyze);
+                Assert.IsFalse(enemy.IsParalyzed);
+                battle.TickFrame(17);
+            });
+            Assert.IsFalse(enemy.IsParalyzed); Assert.IsNull(enemy.ActiveStatus);
+            Assert.AreEqual(990, battle.Player.CurrentHp, "新規麻痺では当該フレームの攻撃を中断しない");
+            session.Detach();
+        }
+        [Test]
+        public void 麻痺は次フレームから最終有効フレームまで行動判定に使う()
+        {
+            var (battle, enemy, session) = StatusBattle();
+            session.ProcessLogicalFrame(() => {
+                UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Paralyze, .001f));
+                battle.TickFrame(17);
+            });
+            Assert.AreEqual(990, battle.Player.CurrentHp); Assert.IsTrue(enemy.IsParalyzed);
+            session.ProcessLogicalFrame(() => {
+                Assert.IsTrue(enemy.IsParalyzed); battle.TickFrame(17);
+                Assert.IsTrue(enemy.IsParalyzed, "残時間切れでもこのフレームの判定は維持");
+            });
+            Assert.IsFalse(enemy.IsParalyzed); Assert.IsNull(enemy.ActiveStatus);
+            session.Detach();
+        }
+        [Test]
+        public void 付与フレームの死亡は保留状態を有効化せず終了する()
+        {
+            var (battle, enemy, session) = StatusBattle();
+            session.ProcessLogicalFrame(() => {
+                UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison));
+                enemy.TakeDamage(2000, ElementType.None); battle.TickFrame(17);
+            });
+            Assert.IsTrue(battle.IsGameOver); Assert.IsNull(enemy.ActiveStatus);
+            session.Detach();
+        }
+        private List<string> StatusTrace(int fps, bool stall)
+        {
+            var (battle, enemy, session) = StatusBattle();
+            enemy.ApplyStun(60000);
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
+            var trace = new List<string>();
+            Action<long, int> tick = (frame, ms) => session.ProcessLogicalFrame(() => {
+                if (frame == 1 || frame == 20) UseStatusCard(battle, session, StatusCard(AdditionalEffectType.Poison));
+                if (frame == 25) battle.Pause(BattlePauseReason.User);
+                if (frame == 30) battle.Resume(BattlePauseReason.User);
+                if (frame == 35) { battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen(); }
+                if (frame == 40) battle.CustomScreen.Cancel();
+                if (frame == 50) enemy.ClearStatus(StatusEffectType.Poison);
+                battle.TickFrame(ms);
+                trace.Add(frame+":"+enemy.CurrentHp+":"+enemy.ActiveStatus?.RemainingFrames+":"+battle.IsPaused);
+            });
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond * 2, previous = 0;
+            if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 7); }
+            for (long render = 1; previous < total; render++)
+            {
+                long now = Math.Min(total, (stall ? total / 2 : 0) + render * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps);
+                clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 7);
+            }
+            while (clock.PendingFrames > 0) clock.Drain(tick, 7);
+            Assert.AreEqual(120, clock.Frame); Assert.IsNull(enemy.ActiveStatus);
+            Assert.AreEqual(trace[24].Split(':')[1], trace[28].Split(':')[1]);
+            Assert.AreEqual(trace[34].Split(':')[1], trace[38].Split(':')[1]);
+            session.Detach(); return trace;
+        }
+        [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
+        [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
+        public void 通常BattleSessionの状態境界は描画FPSと処理遅延に依存しない(int fps, bool stall)
+        { CollectionAssert.AreEqual(StatusTrace(60, false), StatusTrace(fps, stall)); }
+
     }
 }

@@ -19,6 +19,37 @@ namespace Olca.Core.Domain
         private Vector2Int gridPosition;
         private FrameCountdown stunTimer;
         private StatusEffect activeStatusEffect;
+        private bool statusFrameOpen, frameParalyzed, pendingPoisonRefresh;
+        private StatusEffect pendingStatus;
+        private readonly System.Collections.Generic.HashSet<StatusEffectType> pendingStatusClears = new System.Collections.Generic.HashSet<StatusEffectType>();
+        internal void BeginStatusFrame()
+        {
+            if (statusFrameOpen) return;
+            frameParalyzed = IsParalyzed;
+            statusFrameOpen = true;
+        }
+        internal void EndStatusFrame()
+        {
+            if (!statusFrameOpen) return;
+            statusFrameOpen = false;
+            if (!IsDead && pendingStatus != null && !pendingStatusClears.Contains(pendingStatus.Type))
+                ApplyStatusImmediately(pendingStatus, pendingPoisonRefresh);
+            if (activeStatusEffect != null && pendingStatusClears.Contains(activeStatusEffect.Type))
+            { activeStatusEffect = null; poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
+            CancelStatusFrame();
+        }
+        internal void CancelStatusFrame()
+        {
+            statusFrameOpen = false; pendingStatus = null; pendingPoisonRefresh = false;
+            pendingStatusClears.Clear();
+        }
+        /// <summary>論理フレーム中の解除は後段で確定し、同種の未有効付与も取り消す。</summary>
+        public void ClearStatus(StatusEffectType type)
+        {
+            if (statusFrameOpen) { pendingStatusClears.Add(type); return; }
+            if (activeStatusEffect?.Type != type) return;
+            activeStatusEffect = null; poisonDamageRemainder = 0; poisonFrameRemainder = 0;
+        }
         private long poisonDamageRemainder; // ダメージ×ミリ秒の1000未満の端数
 
         // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
@@ -57,8 +88,8 @@ namespace Olca.Core.Domain
         public StatusEffect ActiveStatus => activeStatusEffect;
 
         /// <summary>麻痺中か</summary>
-        public bool IsParalyzed => activeStatusEffect?.Type == StatusEffectType.Paralyze
-                                && activeStatusEffect.RemainingMs > 0;
+        public bool IsParalyzed => statusFrameOpen ? frameParalyzed :
+            activeStatusEffect?.Type == StatusEffectType.Paralyze && activeStatusEffect.RemainingMs > 0;
 
         /// <summary>毒状態か</summary>
         public bool IsPoisoned => activeStatusEffect?.Type == StatusEffectType.Poison
@@ -162,8 +193,19 @@ namespace Olca.Core.Domain
             if (status == null) throw new ArgumentNullException(nameof(status));
             // 時間耐性で無効化・0フレームになった付与は、既存状態と毒積算に触れない。
             if (IsDead || status.RemainingFrames <= 0) return;
-            bool refreshPoison = activeStatusEffect?.Type == StatusEffectType.Poison
-                && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison;
+            if (statusFrameOpen)
+            {
+                pendingStatus = status;
+                pendingPoisonRefresh = activeStatusEffect?.Type == StatusEffectType.Poison
+                    && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison;
+                return;
+            }
+            ApplyStatusImmediately(status);
+        }
+        private void ApplyStatusImmediately(StatusEffect status, bool preservePoison = false)
+        {
+            bool refreshPoison = preservePoison || (activeStatusEffect?.Type == StatusEffectType.Poison
+                && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison);
             activeStatusEffect = status;
             // 同じ毒の再付与は時間だけ更新し、次のダメージへ向かう積算を失わない。
             if (!refreshPoison) { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
@@ -172,6 +214,7 @@ namespace Olca.Core.Domain
         /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。他の状態の持越し規則は変更しない。</summary>
         internal void ClearBattleParalysis()
         {
+            if (pendingStatus?.Type == StatusEffectType.Paralyze) pendingStatus = null;
             if (activeStatusEffect?.Type != StatusEffectType.Paralyze) return;
             activeStatusEffect = null;
             poisonDamageRemainder = 0; poisonFrameRemainder = 0;
@@ -194,7 +237,11 @@ namespace Olca.Core.Domain
                 damage = (int)(poisonFrameRemainder / 60); poisonFrameRemainder %= 60;
             }
             // 終了フレームのダメージを計算してから解除する。
-            if (activeStatusEffect.TickFrame()) { activeStatusEffect = null; poisonFrameRemainder = 0; }
+            if (activeStatusEffect.TickFrame())
+            {
+                activeStatusEffect = null;
+                if (!pendingPoisonRefresh) poisonFrameRemainder = 0;
+            }
             return damage;
         }
 

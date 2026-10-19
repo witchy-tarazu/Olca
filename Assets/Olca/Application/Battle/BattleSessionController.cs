@@ -94,6 +94,13 @@ namespace Olca.Application.Battle
             battleView.OpenCustomScreen();
         }
 
+        /// <summary>カード入力を含む通常ゲーム経路の一論理フレーム。</summary>
+        public void ProcessLogicalFrame(Action action)
+        {
+            var battle = currentBattle;
+            if (battle == null) action(); else battle.RunLogicalFrame(action);
+        }
+
         /// <summary>Unityの入力イベント用。非同期処理の例外はTryUseCardAsync内で処理する。</summary>
         public void UseCardFromInput() => TryUseCardAsync().Forget();
 

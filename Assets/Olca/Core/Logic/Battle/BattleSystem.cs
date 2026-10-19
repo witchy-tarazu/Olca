@@ -187,6 +187,8 @@ namespace Olca.Core.Logic.Battle
             // AI登録の検証に失敗した場合は参加者リストへ追加しない。
             RegisterEnemy(summon, actions);
             enemies.Add(summon);
+            if (statusFrameParticipants != null)
+            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(); }
             OnSummonAdded?.Invoke(summon);
         }
 
@@ -199,11 +201,28 @@ namespace Olca.Core.Logic.Battle
         /// <param name="deltaTimeMs">前フレームからの経過時間（ミリ秒）</param>
         /// <param name="input">入力プロバイダー（オプショナル）</param>
         private bool logicalFrameTick;
+        private List<Enemy> statusFrameParticipants;
+        /// <summary>入力による付与も含め、状態異常の有効化・解除境界を一論理フレームにまとめる。</summary>
+        public void RunLogicalFrame(Action action)
+        {
+            if (statusFrameParticipants != null || IsPaused || IsGameOver) { action(); return; }
+            var participants = new List<Enemy>(enemies);
+            statusFrameParticipants = participants;
+            foreach (var enemy in participants) enemy.BeginStatusFrame();
+            try { action(); }
+            finally
+            {
+                foreach (var enemy in participants) enemy.EndStatusFrame();
+                statusFrameParticipants = null;
+            }
+        }
         public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
         {
-            logicalFrameTick = true;
-            try { Tick(compatibleMilliseconds, input); }
-            finally { logicalFrameTick = false; }
+            RunLogicalFrame(() => {
+                logicalFrameTick = true;
+                try { Tick(compatibleMilliseconds, input); }
+                finally { logicalFrameTick = false; }
+            });
         }
 
         public void Tick(int deltaTimeMs, IInputProvider input = null)
@@ -479,6 +498,7 @@ namespace Olca.Core.Logic.Battle
         {
             foreach (var entry in enemyDeathHandlers)
             {
+                entry.Key.CancelStatusFrame();
                 entry.Key.IsOnGrass = null;
                 entry.Key.OnDamageProcessingStarted -= BeginResolution;
                 entry.Key.OnDamageProcessingCompleted -= EndResolution;

@@ -277,9 +277,13 @@ namespace Olca.Application.Dungeon
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
         {
             if (GameplayPause.InputBlocked) input = new LogicalInput();
-            customScreenView?.HandleLogicalConfirmation(input);
-            HandleInput(input, deltaTimeMs);
-            manager.TickFrame(deltaTimeMs, input);
+            void Process()
+            {
+                customScreenView?.HandleLogicalConfirmation(input);
+                HandleInput(input, deltaTimeMs);
+                manager.TickFrame(deltaTimeMs, input);
+            }
+            if (battleSession != null) battleSession.ProcessLogicalFrame(Process); else Process();
         }
 
         private void HandleInput(LogicalInput input, int deltaTimeMs)
