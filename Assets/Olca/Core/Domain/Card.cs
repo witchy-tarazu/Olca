@@ -41,6 +41,8 @@ namespace Olca.Core.Domain
         public ElementType Element { get; }
         public AttackProperty Properties { get; }
         public int? PoiseDamage { get; }
+        /// <summary>各ヒットで発生させる無敵の外部指定期間。0は発生なし。</summary>
+        public int HitInvincibilityMs { get; }
 
         /// <summary>系統（ソード系、ボム系など）</summary>
         public CardSeries Series { get; }
@@ -149,10 +151,11 @@ namespace Olca.Core.Domain
             bool extendRecoveryDuringDerivative = false,
             bool isInstantEffect = false,
             ExceedLevel exceedLevel = ExceedLevel.Normal,
-            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None, int? poiseDamage = null)
+            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0)
         {
             if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
-            PoiseDamage = poiseDamage;
+            if (hitInvincibilityMs < 0) throw new System.ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
+            PoiseDamage = poiseDamage; HitInvincibilityMs = hitInvincibilityMs;
             AttackPropertyRules.Validate(properties);
             Properties = properties;
             Id = id;
@@ -198,7 +201,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory, Properties, PoiseDamage
+                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs
             )
             {
                 TuningCount = TuningCount + 1,
@@ -221,7 +224,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory, Properties, PoiseDamage
+                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs
             ) { IsEffectCopy = true };
         }
 
@@ -289,7 +292,7 @@ namespace Olca.Core.Domain
                 master.RecoveryTime,
                 master.ExtendRecoveryDuringDerivative,
                 master.IsInstantEffect,
-                subCategory: master.SubCategory, properties: master.Properties, poiseDamage: master.PoiseDamage
+                subCategory: master.SubCategory, properties: master.Properties, poiseDamage: master.PoiseDamage, hitInvincibilityMs: master.HitInvincibilityMs
             );
         }
 

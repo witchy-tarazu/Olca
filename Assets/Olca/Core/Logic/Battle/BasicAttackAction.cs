@@ -66,7 +66,7 @@ namespace Olca.Core.Logic.Battle
             if (context.Player.TryTakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage))
             {
                 onHit?.Invoke(context.Player);
-                if (hitInvincibilityMs > 0) context.Player.SetInvincible(hitInvincibilityMs);
+                if (attackDamage > 0 && !context.Player.IsDead && hitInvincibilityMs > 0) context.Player.SetInvincible(hitInvincibilityMs);
             }
             context.Logger?.LogInfo($"{context.Self.Name}が{attackDamage}ダメージを与えた");
         }

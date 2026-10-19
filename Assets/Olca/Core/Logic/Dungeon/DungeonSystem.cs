@@ -1078,6 +1078,7 @@ namespace Olca.Core.Logic.Dungeon
             // 未指定の既存定義hashは維持し、明示された効果種別の不一致を検出する。
             if (c.SubCategory != CardSubCategory.None) { w.Write("subcategory"); w.Write((int)c.SubCategory); }
             // 性質未指定の旧定義は同じbytes/hash。明示した性質だけ追加照合する。
+            if (c.HitInvincibilityMs > 0) { w.Write("hit-invincibility-ms"); w.Write(c.HitInvincibilityMs); }
             if (c.PoiseDamage.HasValue) { w.Write("poise-damage"); w.Write(c.PoiseDamage.Value); }
             if (c.Properties != AttackProperty.None) { w.Write("attack-properties"); w.Write((int)c.Properties); }
         });

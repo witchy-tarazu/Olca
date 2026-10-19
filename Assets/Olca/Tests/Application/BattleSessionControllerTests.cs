@@ -2566,18 +2566,18 @@ namespace Olca.Tests.Application
             return map;
         }
 
-        private Card EnemyPoiseCard(int impact = 15, bool multi = true, AttackProperty properties = AttackProperty.None)
+        private Card EnemyPoiseCard(int impact = 15, bool multi = true, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0)
         {
             var modifier = new CardModifier();
             if (multi) modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.MultiHit, HitCount = 2 });
             return new Card("enemy-poise-card", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
                 CardSeries.Sword, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile,
-                modifier: modifier, startupTime: .05f, poiseDamage: impact, properties: properties);
+                modifier: modifier, startupTime: .05f, poiseDamage: impact, properties: properties, hitInvincibilityMs: hitInvincibilityMs);
         }
 
-        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None, bool recovery = false)
+        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None, bool recovery = false, int hitInvincibilityMs = 0)
         {
-            var map = EnemyPoiseMap(resistance: resistance, recovery: recovery ? 6 : (int?)null); var card = EnemyPoiseCard(impact, multi, properties); var deck = new Deck(new List<Card> { card });
+            var map = EnemyPoiseMap(resistance: resistance, recovery: recovery ? 6 : (int?)null); var card = EnemyPoiseCard(impact, multi, properties, hitInvincibilityMs); var deck = new Deck(new List<Card> { card });
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
             var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
                 new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
@@ -2589,7 +2589,7 @@ namespace Olca.Tests.Application
                 Assert.IsTrue(manager.SuspendForCheckpoint()); manager = resumed; manager.ActivateCheckpoint();
                 card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
             }
-            Assert.AreEqual(impact, card.PoiseDamage);
+            Assert.AreEqual(impact, card.PoiseDamage); Assert.AreEqual(hitInvincibilityMs, card.HitInvincibilityMs);
             var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
             Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
@@ -2599,7 +2599,7 @@ namespace Olca.Tests.Application
             Assert.IsFalse(target.Guard.IsActive); Assert.IsFalse(target.IsStaggered);
             target.Guard.Set(guard, interruptible);
             if (recovery) Assert.AreEqual(6, target.PoiseRecoveryDelayFrames, "戦闘開始保存から定義を復元する");
-            int initialHp = target.CurrentHp, used = 0, staggered = 0, initialFrames = 0;
+            int initialHp = target.CurrentHp, used = 0, staggered = 0, initialFrames = 0, invincibleFrames = 0;
             target.OnStaggered += () => { staggered++; initialFrames = target.StaggerRemainingFrames; };
             battle.CardUsage.OnCardUsed += _ => used++;
             var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>();
@@ -2612,9 +2612,10 @@ namespace Olca.Tests.Application
                     manager.TickFrame(ms);
                     if (stopped) Assert.AreEqual(playerHp, battle.Player.CurrentHp, "のけぞり中は通常AI攻撃を受理しない");
                 });
+                if (target.IsInvincible) invincibleFrames++;
                 if (frame <= 5) { Assert.AreEqual(initialHp, target.CurrentHp); Assert.AreEqual(0, staggered); }
                 trace.Add(frame + ":" + target.CurrentHp + ":" + target.AccumulatedPoiseDamage + ":" +
-                    target.StaggerRemainingFrames + ":" + staggered + ":" + used + ":" + battle.Player.CurrentHp + ":" + target.Guard.IsActive);
+                    target.StaggerRemainingFrames + ":" + staggered + ":" + used + ":" + battle.Player.CurrentHp + ":" + target.Guard.IsActive + ":" + target.IsInvincible);
             };
             long total = 3 * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
             if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
@@ -2624,6 +2625,7 @@ namespace Olca.Tests.Application
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
             bool blocked = resistance == 100 || (guard && (properties & AttackProperty.Break) == 0);
+            Assert.AreEqual(hitInvincibilityMs > 0 && !blocked, invincibleFrames > 0); Assert.IsFalse(target.IsInvincible);
             int hits = blocked ? 0 : multi ? 2 : 1; long sum = (long)impact * hits;
             Assert.AreEqual(initialHp - 5 * hits, target.CurrentHp); Assert.AreEqual(1, used);
             Assert.AreEqual(sum >= 30 ? 1 : 0, staggered); Assert.AreEqual(sum >= 30 ? 6 : 0, initialFrames);
@@ -2634,6 +2636,15 @@ namespace Olca.Tests.Application
             Assert.AreEqual(saved.MapHash, after.MapHash); Assert.AreEqual(saved.Sequence, after.Sequence);
             CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder); CollectionAssert.AreEqual(saved.ObtainedOrder, after.ObtainedOrder);
             session.Detach(); return trace;
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void カード被弾無敵設定は通常多段と保存復帰固定フレームで一致する(int fps, bool restore)
+        {
+            foreach (int impact in new[] { 0, 15 }) foreach (bool guard in new[] { false, true })
+                CollectionAssert.AreEqual(EnemyPoiseCardTrace(60,false,false,impact,true,guard:guard,hitInvincibilityMs:200),
+                    EnemyPoiseCardTrace(fps,true,restore,impact,true,guard:guard,hitInvincibilityMs:200));
         }
 
         [TestCase(30, false, false)][TestCase(60, false, false)][TestCase(120, false, false)]

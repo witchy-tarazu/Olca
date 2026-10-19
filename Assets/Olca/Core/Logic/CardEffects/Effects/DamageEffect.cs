@@ -87,7 +87,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             int finalDamage = baseDamage;
 
             // GetFinalElement()でElementOverrideを考慮した最終属性を使用
-            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement(), context.UsedCard.Properties, context.UsedCard.PoiseDamage);
+            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement(), context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
         }
 
         /// <summary>

@@ -34,6 +34,58 @@ namespace Olca.Tests.CardEffects
             battle = new BattleSystem(player, enemies, deck, logger: new MockLogger());
         }
 
+        [TestCase("none")][TestCase("guard")][TestCase("barrier")][TestCase("aura")][TestCase("resistance")][TestCase("simple")]
+        public void カード被弾無敵は受理ヒットだけで発生し同フレームの後続を防がない(string defense)
+        {
+            var enemy = new Enemy("hit", "検証", 100, ElementType.None, new Vector2Int(3,0),
+                resistances: new ElementResistances(fire: defense == "resistance" ? 100 : 0));
+            var model = new BattleSystem(player, new List<Enemy>{enemy}, new Deck());
+            if (defense == "guard") enemy.Guard.Set(true,false);
+            if (defense == "barrier") enemy.SetBarrier(1);
+            if (defense == "aura") enemy.SetAura(1);
+            var card = new Card("hit", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.None, 10, "検証", hitInvincibilityMs: 100);
+            var effect = defense == "simple" ? (ICardEffect)new DamageEffect(10) : CardEffectFactory.CreateEffect(card); var context = new BattleContext(model,card);
+            model.RunLogicalFrame(() => { effect.Execute(context); effect.Execute(context); });
+            Assert.AreEqual(defense == "none" || defense == "simple" ? 80 : 100, enemy.CurrentHp);
+            Assert.AreEqual(defense == "none" || defense == "simple", enemy.IsInvincible);
+            if (defense != "none" && defense != "simple") return;
+            var disabled = new Card("off", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire, CardSeries.None, 10, "検証");
+            model.RunLogicalFrame(() => CardEffectFactory.CreateEffect(disabled).Execute(new BattleContext(model,disabled)));
+            Assert.AreEqual(80, enemy.CurrentHp, "発生なし設定でも既存の無敵を通さない");
+            model.Pause(BattlePauseReason.User); for(int i=0;i<10;i++)model.TickFrame(17); Assert.IsTrue(enemy.IsInvincible);
+            model.Resume(BattlePauseReason.User); for(int i=0;i<6;i++)model.TickFrame(17); Assert.IsFalse(enemy.IsInvincible);
+            model.RunLogicalFrame(() => CardEffectFactory.CreateEffect(disabled).Execute(new BattleContext(model,disabled)));
+            Assert.AreEqual(70, enemy.CurrentHp); Assert.IsFalse(enemy.IsInvincible);
+        }
+
+        [TestCase(0)][TestCase(200)]
+        public void 状態専用ヒットと死亡した対象には新たな被弾無敵を残さない(int damage)
+        {
+            var enemy = battle.Enemies[0];
+            var card = new Card("hit", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, damage, "検証", hitInvincibilityMs: 100);
+            battle.RunLogicalFrame(() => CardEffectFactory.CreateEffect(card).Execute(new BattleContext(battle,card)));
+            Assert.IsFalse(enemy.IsInvincible);
+            var attacker = new Enemy("source", "検証", 100, ElementType.None, new Vector2Int(3,0));
+            var other = new BattleSystem(player,new List<Enemy>{attacker},new Deck()); int effects=0;
+            new BasicAttackAction(damage,1000,onHit:_=>effects++,hitInvincibilityMs:100).Execute(new AIContext(attacker,player,other.Field,new MockRandomProvider(),new MockLogger()));
+            Assert.AreEqual(1,effects); Assert.IsFalse(player.IsInvincible);
+        }
+
+        [Test]
+        public void カード被弾無敵の定義は複製とマスターで保持し不正値を副作用前に拒否する()
+        {
+            var master = new Olca.Core.Domain.Master.CardMaster { Id="hit", Name="検証", HitInvincibilityMs=100 };
+            var card = Card.FromMaster(master);
+            Assert.AreEqual(100, card.HitInvincibilityMs); Assert.AreEqual(100,card.Clone().HitInvincibilityMs);
+            Assert.AreEqual(100,new Olca.Application.Battle.SimpleCardFactory().CreateExceeded(card, ExceedLevel.Lv1).HitInvincibilityMs);
+            master.HitInvincibilityMs=-1; Assert.Throws<System.ArgumentOutOfRangeException>(()=>Card.FromMaster(master));
+            int notices=0; var enemy=battle.Enemies[0]; enemy.OnDamaged+=(_,__)=>notices++;
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>enemy.TakeDamage(1,ElementType.None,hitInvincibilityMs:-1));
+            Assert.AreEqual(0,notices); Assert.AreEqual(50,enemy.CurrentHp); Assert.IsFalse(enemy.IsInvincible);
+        }
+
         [TestCase(false, false)][TestCase(false, true)][TestCase(true, false)][TestCase(true, true)]
         public void 防御の消滅フレームは合計判定で全攻撃を防ぎ次フレームから通す(bool enemySide, bool aura)
         {

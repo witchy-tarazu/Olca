@@ -285,16 +285,17 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
+        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0)
         {
+            if (hitInvincibilityMs < 0) throw new ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
-            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties);
+            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs);
         }
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
-        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None)
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -338,6 +339,7 @@ namespace Olca.Core.Domain
                 }
                 TotalDamageTaken += finalDamage;
                 TotalHitsTaken++;
+                if (!poison && damage > 0 && !IsDead && hitInvincibilityMs > 0) SetInvincible(hitInvincibilityMs);
                 // 命中通知は各ヒット、HPと死亡通知は論理フレームの確定後。
                 OnDamaged?.Invoke(finalDamage, multiplier);
                 if (!IsDead && staggered) OnStaggered?.Invoke();
