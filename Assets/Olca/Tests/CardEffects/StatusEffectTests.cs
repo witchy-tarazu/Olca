@@ -323,13 +323,13 @@ namespace Olca.Tests.CardEffects
         [TestCase(StatusEffectType.Poison)]
         [TestCase(StatusEffectType.Paralyze)]
         [TestCase(StatusEffectType.None)]
-        public void 上書きは古い端数と効果を残さず新しい状態だけ進める(StatusEffectType replacement)
+        public void 同じ毒は積算を引き継ぎ別状態への上書きは古い積算を捨てる(StatusEffectType replacement)
         {
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 3));
             Assert.AreEqual(0, enemy.TickStatus(333));
             enemy.ApplyStatus(new StatusEffect(replacement, 1000, 3));
-            Assert.AreEqual(0, enemy.TickStatus(1));
-            Assert.AreEqual(replacement == StatusEffectType.Poison ? 3 : 0, enemy.TickStatus(999));
+            Assert.AreEqual(replacement == StatusEffectType.Poison ? 1 : 0, enemy.TickStatus(1));
+            Assert.AreEqual(replacement == StatusEffectType.Poison ? 2 : 0, enemy.TickStatus(999));
             Assert.IsNull(enemy.ActiveStatus);
         }
 
@@ -441,6 +441,55 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(BattleState.Victory, battle.State);
             enemy.TakeDamage(1, ElementType.None);
             Assert.AreEqual(1, deaths, "死亡済みへの追加攻撃で通知を繰り返さない");
+        }
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 毒カード再使用は積算を維持しポーズとカスタム中は停止する(bool custom)
+        {
+            enemy.ApplyStun(60000);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType = AdditionalEffectType.Poison, Trigger = DerivativeTrigger.OnDamage,
+                Duration = 1f, Power = 3 });
+            var card = new Card("fixture-poison", "検証用毒", 1, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.Canon, 1, "検証", DamageTargetType.Single, modifier: modifier);
+            System.Action use = () => {
+                battle.CardUsage.EnqueueCards(new List<Card> { card });
+                Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+                Assert.AreEqual(60, enemy.ActiveStatus.RemainingFrames);
+            };
+            use();
+            for (int repeat = 0; repeat < 3; repeat++)
+            {
+                int hp = enemy.CurrentHp;
+                int remaining = enemy.ActiveStatus.RemainingFrames;
+                for (int frame = 0; frame < 19; frame++) battle.TickFrame(17);
+                Assert.AreEqual(hp, enemy.CurrentHp);
+                if (custom)
+                {
+                    battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+                    battle.OpenCustomScreen(new MockRandomProvider(0));
+                }
+                else battle.Pause();
+                for (int frame = 0; frame < 120; frame++) battle.TickFrame(1000);
+                Assert.AreEqual(hp, enemy.CurrentHp);
+                Assert.AreEqual(remaining - 19, enemy.ActiveStatus.RemainingFrames);
+                if (custom) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+                else battle.Resume();
+                use();
+                hp = enemy.CurrentHp;
+                battle.TickFrame(17);
+                Assert.AreEqual(hp - 1, enemy.CurrentHp, "再付与の直後も元の20フレーム目に毒ダメージ");
+                Assert.AreEqual(59, enemy.ActiveStatus.RemainingFrames);
+            }
+            for (int frame = 0; frame < 59; frame++) battle.TickFrame(17);
+            Assert.IsNull(enemy.ActiveStatus);
+            use();
+            int afterRestart = enemy.CurrentHp;
+            for (int frame = 0; frame < 19; frame++) battle.TickFrame(17);
+            Assert.AreEqual(afterRestart, enemy.CurrentHp, "失効後の新規付与は最初から積算する");
+            battle.TickFrame(17);
+            Assert.AreEqual(afterRestart - 1, enemy.CurrentHp);
         }
     }
 }

@@ -161,8 +161,11 @@ namespace Olca.Core.Domain
         {
             if (status == null) throw new ArgumentNullException(nameof(status));
             if (IsDead) return;
+            bool refreshPoison = activeStatusEffect?.Type == StatusEffectType.Poison
+                && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison;
             activeStatusEffect = status;
-            poisonDamageRemainder = 0; poisonFrameRemainder = 0;
+            // 同じ毒の再付与は時間だけ更新し、次のダメージへ向かう積算を失わない。
+            if (!refreshPoison) { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
         }
 
         /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。他の状態の持越し規則は変更しない。</summary>
