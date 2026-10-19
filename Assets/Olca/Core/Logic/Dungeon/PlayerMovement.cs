@@ -13,6 +13,7 @@ namespace Olca.Core.Logic.Dungeon
         private long currentPositionMilli;  // 現在位置（1/1000単位）
         private bool isJumping;
         private bool isDashing;
+        private bool isDashJumping;
         private bool isPaused;          // 一時停止中（バトル中など）
 
         private double jumpTimerFrames;
@@ -31,13 +32,33 @@ namespace Olca.Core.Logic.Dungeon
             public readonly long Start, End;
             public readonly double DurationFrames;
             public readonly long EndRemainder;
-            public readonly bool WasJumping, IsDashing;
+            public readonly bool WasJumping, IsDashing, WasDashJumping;
+            private readonly double speedChangeFraction;
+            private readonly long speedChangePosition;
             public readonly double JumpTimeFrames;
             public readonly int StartHeightMilli;
-            public MovementStep(long start, long end, double durationFrames, bool jumping, bool dashing, double jumpTimeFrames, int height, long endRemainder)
-            { Start = start; End = end; DurationFrames = durationFrames; EndRemainder = endRemainder; WasJumping = jumping; IsDashing = dashing; JumpTimeFrames = jumpTimeFrames; StartHeightMilli = height; }
-            public double Fraction(long position) => End == Start ? 0 : (double)(position - Start) / (End - Start);
-            public long PositionAt(double fraction) => Start + (long)Math.Round((End - Start) * fraction);
+            public MovementStep(long start, long end, double durationFrames, bool jumping, bool dashing, double jumpTimeFrames, int height, long endRemainder, bool dashJumping, double changeFraction, long changePosition)
+            { Start = start; End = end; DurationFrames = durationFrames; EndRemainder = endRemainder; WasJumping = jumping; IsDashing = dashing; JumpTimeFrames = jumpTimeFrames; StartHeightMilli = height; WasDashJumping = dashJumping; speedChangeFraction = changeFraction; speedChangePosition = changePosition; }
+            // 着地で速度が変わる区間は、距離比ではなく前後それぞれの時間比へ戻す。
+            public double Fraction(long position)
+            {
+                if (speedChangeFraction > 0 && speedChangeFraction < 1 && End > Start)
+                {
+                    if (position <= speedChangePosition && speedChangePosition > Start)
+                        return speedChangeFraction * (position - Start) / (speedChangePosition - Start);
+                    if (End > speedChangePosition)
+                        return speedChangeFraction + (1 - speedChangeFraction) * (position - speedChangePosition) / (End - speedChangePosition);
+                }
+                return End == Start ? 0 : (double)(position - Start) / (End - Start);
+            }
+            public long PositionAt(double fraction)
+            {
+                if (speedChangeFraction > 0 && speedChangeFraction < 1 && End > Start)
+                    return fraction <= speedChangeFraction
+                        ? Start + (long)Math.Round((speedChangePosition - Start) * fraction / speedChangeFraction)
+                        : speedChangePosition + (long)Math.Round((End - speedChangePosition) * (fraction - speedChangeFraction) / (1 - speedChangeFraction));
+                return Start + (long)Math.Round((End - Start) * fraction);
+            }
             public float HeightAt(long position)
             {
                 if (!WasJumping) return StartHeightMilli / 1000f;
@@ -71,16 +92,22 @@ namespace Olca.Core.Logic.Dungeon
         private MovementStep PreviewTime(long timeUnits)
         {
             long elapsed = isPaused ? 0 : timeUnits;
-            int speed = isDashing ? DASH_SPEED_MILLI_PER_SEC : BASE_SPEED_MILLI_PER_SEC;
-            long numerator = positionRemainder + speed * elapsed;
+            double accelerated = isDashing || isDashJumping ? elapsed : 0;
+            if (isDashJumping && elapsed > 0)
+                accelerated = Math.Min(elapsed, Math.Max(0, (JUMP_DURATION_FRAMES - jumpTimerFrames) * 50));
+            long numerator = positionRemainder + BASE_SPEED_MILLI_PER_SEC * elapsed
+                + (long)Math.Round((DASH_SPEED_MILLI_PER_SEC - BASE_SPEED_MILLI_PER_SEC) * accelerated);
+            long landingPosition = currentPositionMilli + (positionRemainder + (long)Math.Round(DASH_SPEED_MILLI_PER_SEC * accelerated)) / 3000;
             return new MovementStep(currentPositionMilli, currentPositionMilli + numerator / 3000,
-                elapsed / 50d, isJumping, isDashing, jumpTimerFrames, heightMilli, numerator % 3000);
+                elapsed / 50d, isJumping, isDashing, jumpTimerFrames, heightMilli, numerator % 3000,
+                isDashJumping, elapsed == 0 ? 0 : accelerated / elapsed, landingPosition);
         }
         internal void ApplyStep(MovementStep step, long position)
         {
             // 区間終端まで進んだ場合だけ余りを持ち越す。接触で打切った移動は再開後へ漏らさない。
             positionRemainder = position == step.End ? step.EndRemainder : 0;
             currentPositionMilli = position; isJumping = step.WasJumping;
+            isDashing = step.IsDashing; isDashJumping = step.WasDashJumping;
             jumpTimerFrames = step.JumpTimeFrames; heightMilli = step.StartHeightMilli;
             if (isJumping) UpdateJump(step.DurationFrames * step.Fraction(position));
         }
@@ -105,6 +132,9 @@ namespace Olca.Core.Logic.Dungeon
 
         /// <summary>ダッシュ中か</summary>
         public bool IsDashing => isDashing;
+
+        /// <summary>地上ダッシュの終了後も着地まで保つ加速。通常ジャンプには付与しない。</summary>
+        public bool IsDashJumping => isDashJumping;
 
         /// <summary>ジャンプ中か</summary>
         public bool IsJumping => isJumping;
@@ -149,7 +179,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
-            if (isJumping || isPaused) return;
+            if (isJumping || isPaused || isDashing) return;
             isDashing = true; ControlChanged();
         }
 
@@ -168,6 +198,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (isJumping || isPaused) return;
 
+            isDashJumping = isDashing;
             isJumping = true;
             jumpTimerFrames = 0; ControlChanged();
         }
@@ -181,7 +212,9 @@ namespace Olca.Core.Logic.Dungeon
 
             if (jumpTimerFrames >= JUMP_DURATION_FRAMES)
             {
-                // ジャンプ終了
+                // ダッシュジャンプは地上側の残期間に関係なく着地で終了。
+                if (isDashJumping) isDashing = false;
+                isDashJumping = false;
                 isJumping = false;
                 heightMilli = 0;
             }
@@ -194,9 +227,14 @@ namespace Olca.Core.Logic.Dungeon
             }
         }
 
-        /// <summary>
-        /// 一時停止（バトル中など）
-        /// </summary>
+        /// <summary>戦闘からの復帰演出で着地した後に、接敵時の空中状態を破棄する。</summary>
+        internal void ResetAirborneMovement()
+        {
+            isDashing = isDashJumping = isJumping = false;
+            jumpTimerFrames = 0; heightMilli = 0; ControlChanged();
+        }
+
+        /// <summary>一時停止（バトル中など）。空中状態は維持する。</summary>
         public void Pause()
         {
             isPaused = true; ControlChanged();

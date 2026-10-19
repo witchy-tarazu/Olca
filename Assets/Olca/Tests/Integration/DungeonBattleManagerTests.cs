@@ -81,6 +81,62 @@ namespace Olca.Tests.Integration
             movement.Update(100); Assert.AreEqual(7f, movement.CurrentPosition);
         }
 
+        [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
+        [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
+        public void 距離式の終了前後でもダッシュジャンプは着地まで加速して回復を止める(int fps, bool stall)
+        {
+            foreach (float distance in new[] { 3f, 5f, 50f })
+            {
+                var config = DungeonConfig.CreateTestDungeon(200, 100, 100);
+                var deck = CreateTestDeck(); var checkpoints = DungeonCheckpointSession.CreateDefault(config, deck);
+                var game = new DungeonBattleManager(config, new PlayerCharacter(100), deck,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
+                var host = new UnityEngine.GameObject("dash-landing-test"); host.SetActive(false);
+                var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                var type = controller.GetType(); type.GetField("manager", flags).SetValue(controller, game);
+                // 3はコード既定、5は実シーン、50は着地前に距離式終了しない検証専用値。
+                type.GetField("dashDistanceCells", flags).SetValue(controller, distance);
+                var handle = type.GetMethod("HandleInput", flags); var clock = new LogicalFrameClock();
+                try
+                {
+                    System.Action<long, int> tick = (frame, ms) => {
+                        handle.Invoke(controller, new object[] { new LogicalInput {
+                            DashButtonDown = frame == 1 || frame == 20 || frame == 33 || frame == 38,
+                            JumpButtonDown = frame == 2 }, ms });
+                        game.TickFrame(ms);
+                        if (frame == 16) Assert.AreEqual(1.5f, game.Dungeon.PlayerHeight);
+                        if (frame == 30) {
+                            Assert.IsTrue(game.Dungeon.IsDashJumping); Assert.IsTrue(game.Dungeon.IsJumping);
+                            Assert.AreEqual(distance < 50 ? 6 : 0, type.GetField("dashCooldownRemaining", flags).GetValue(controller));
+                        }
+                        if (frame == 31) {
+                            Assert.IsFalse(game.Dungeon.IsDashJumping); Assert.IsFalse(game.Dungeon.IsJumping);
+                            Assert.IsFalse(game.Dungeon.IsDashing); Assert.AreEqual(0, game.Dungeon.PlayerHeight);
+                            Assert.AreEqual(10.333f, game.Dungeon.PlayerPosition, .001f);
+                        }
+                        if (frame == 33) Assert.IsFalse(game.Dungeon.IsDashing, "回復中の押下で再開しない");
+                        if (frame == 37) Assert.IsFalse(game.Dungeon.IsDashing, "不受理の押下を予約しない");
+                        if (frame == 38) Assert.IsTrue(game.Dungeon.IsDashing, "回復後の新しい押下");
+                    };
+                    long total = LogicalFrameClock.WallTicksPerSecond, previous = 0;
+                    if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
+                    for (long render = 1; previous < total; render++) {
+                        long now = System.Math.Min(total, (stall ? total / 2 : 0) + render * total / fps);
+                        clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
+                    }
+                    while (clock.PendingFrames > 0) clock.Drain(tick, 3);
+                    Assert.AreEqual(CheckpointBoundary.Departure, checkpoints.Store.Read().Boundary);
+                    Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(checkpoints, new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                    Assert.IsTrue(game.SuspendForCheckpoint()); resumed.ActivateCheckpoint();
+                    Assert.AreEqual(0f, resumed.Dungeon.PlayerPosition); Assert.IsFalse(resumed.Dungeon.IsDashJumping);
+                    Assert.IsFalse(resumed.Dungeon.IsJumping); Assert.IsFalse(resumed.Dungeon.IsDashing);
+                    type.GetField("manager", flags).SetValue(controller, resumed);
+                }
+                finally { UnityEngine.Object.DestroyImmediate(host); }
+            }
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 

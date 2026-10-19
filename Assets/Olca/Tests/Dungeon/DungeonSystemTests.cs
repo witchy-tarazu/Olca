@@ -1301,6 +1301,23 @@ namespace Olca.Tests.Dungeon
             return new DungeonConfig("swept-fixture", "接触fixture", 40, cells);
         }
         private static DungeonSystem Create(params MapCell[] placed) => new DungeonSystem(Config(placed), new PlayerCharacter(100), new Deck(), new MockRandomProvider(0, 1), new MockLogger());
+        [TestCase(false, 6)] [TestCase(true, 6)]
+        [TestCase(false, 16)] [TestCase(true, 16)]
+        public void ダッシュジャンプの空中と着地後の接敵は区間分割によらず通常距離で止まる(bool split, int cell)
+        {
+            var game = Create(EnemyCell(cell, height: cell == 6 ? 1.5f : 0f)); ContactInfo contact = null;
+            game.OnBattleStart += c => contact = c; game.StartDash(); game.Jump();
+            if (split) { for (int i = 0; i < 90 && !game.IsInBattle; i++) game.TickFrame(); }
+            else game.Tick(1500);
+            Assert.IsNotNull(contact); Assert.IsFalse(contact.IsDashContact); Assert.IsNull(contact.DashEffect);
+            Assert.AreEqual(cell - 1f, game.PlayerPosition, .001f);
+            Assert.AreEqual(50, game.CurrentBattle.Enemies[0].CurrentHp);
+            // 接敵で停止したジャンプを、戦闘復帰時に再開しない。
+            game.CurrentBattle.Enemies[0].TakeDamage(50, ElementType.None);
+            Assert.IsFalse(game.IsDungeonCleared);
+            game.ResumePlayerMovement(); Assert.IsFalse(game.IsJumping); Assert.IsFalse(game.IsDashJumping);
+            Assert.IsFalse(game.IsDashing); Assert.AreEqual(0, game.PlayerHeight);
+        }
         [TestCase(false, 4f)][TestCase(true, 3.5f)]
         public void 大きな経過時間でも最初の敵の接触位置で止まり余剰移動を捨てる(bool dash, float expected)
         {

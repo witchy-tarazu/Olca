@@ -27,6 +27,21 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(0,Olca.Presentation.Field.GameFieldView.SelectJumpAnimationPhase(false,frame/30f));
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void ダッシュ終了後の空中加速は着地で終わり長い更新も同じ距離になる(bool split)
+        {
+            var movement = new PlayerMovement(); movement.StartDash(); movement.Jump();
+            movement.Update(100); movement.StopDash();
+            Assert.IsTrue(movement.IsDashJumping); Assert.IsFalse(movement.IsDashing);
+            movement.Pause(); movement.Update(2000); Assert.AreEqual(2f, movement.CurrentPosition);
+            movement.Resume();
+            if (split) { for (int n = 0; n < 9; n++) movement.Update(100); }
+            else movement.Update(900);
+            Assert.AreEqual(15f, movement.CurrentPosition, .001f);
+            Assert.IsFalse(movement.IsDashJumping); Assert.IsFalse(movement.IsJumping);
+            Assert.IsFalse(movement.IsDashing); Assert.AreEqual(0, movement.Height);
+        }
+
         [Test]
         public void Update_プレイヤーが基本速度で前進する()
         {

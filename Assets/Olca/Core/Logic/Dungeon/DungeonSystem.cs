@@ -45,6 +45,7 @@ namespace Olca.Core.Logic.Dungeon
         public float PlayerPosition => playerMovement.CurrentPosition;
         public float PlayerHeight => playerMovement.Height;
         public bool IsJumping => playerMovement.IsJumping;
+        public bool IsDashJumping => playerMovement.IsDashJumping;
         public float JumpProgress => playerMovement.JumpProgress;
         public bool IsDashing => playerMovement.IsDashing;
         public PlayerCharacter Player => playerCharacter;
@@ -560,7 +561,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (checkpointSuspended || IsCheckpointBlocked) return;
             if (IsInBattle || IsDungeonCleared) return;
-            playerMovement.StopDash();  // バトル前のダッシュ状態を引き継がないようリセット
+            playerMovement.ResetAirborneMovement();  // 復帰演出の着地後に、接敵前の空中状態を持ち越さない
             playerMovement.Resume();
             logger.LogInfo("[Dungeon] ダンジョン移動再開");
         }

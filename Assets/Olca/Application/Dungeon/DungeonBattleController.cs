@@ -305,7 +305,7 @@ namespace Olca.Application.Dungeon
                     if (dashStartPosition >= 0f)
                     {
                         float traveled = manager.Dungeon.PlayerPosition - dashStartPosition;
-                        if (traveled >= dashDistanceCells)
+                        if (traveled >= dashDistanceCells || (!manager.Dungeon.IsDashing && !manager.Dungeon.IsDashJumping))
                         {
                             manager.StopDash();
                             dashStartPosition = -1f;
@@ -313,7 +313,7 @@ namespace Olca.Application.Dungeon
                         }
                     }
 
-                    if (dashCooldownRemaining > 0f)
+                    if (dashCooldownRemaining > 0f && !manager.Dungeon.IsDashJumping)
                         dashCooldownRemaining--;
                     break;
 

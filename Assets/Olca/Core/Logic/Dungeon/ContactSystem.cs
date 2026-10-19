@@ -58,7 +58,7 @@ namespace Olca.Core.Logic.Dungeon
         internal SweptContact? FindContact(PlayerMovement.MovementStep step, MapCell cell)
         {
             if (cell?.Enemy == null || cell.Enemy.IsDead || cell.Enemy == lastContactedEnemy) return null;
-            long offset = (long)((step.IsDashing ? DASH_CONTACT_DISTANCE : CONTACT_DISTANCE) * 1000);
+            long offset = (long)((step.IsDashing && !step.WasJumping ? DASH_CONTACT_DISTANCE : CONTACT_DISTANCE) * 1000);
             if (!step.TryCellRange(cell.Index, offset, out var first, out var last)) return null;
             var points = new List<long> { first, last };
             step.AddHeightTurningPoints(points, first, last);
