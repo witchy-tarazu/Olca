@@ -184,3 +184,15 @@ Enemyの受理済み通常ダメージから既存SetInvincibleへ接続し、Da
 通常カード→多段→敵のけぞり/無敵→期限後の通常AI継続を保存復帰、30/60/120fps、ポーズと追いつきで比較する。単発効果/防御拒否、状態専用、死亡、負値拒否、マスター生成・複製も確認する。実素材・描画コードは変更しない。
 
 カード被弾無敵の最終検証: Unity MCP全EditMode 1573/1573成功（33.08秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告10件。結果 /workspace/.olca-cloud/results/card-hit-invincibility/editmode-tests.json、console-before.json、console-after.json。初回追加テストのAIContext引数不足は修正済みで履歴は保持。
+
+## 段ごとの被弾後無敵設定（fa737f3の次単位）
+
+§7の「各段で発生設定」「最終段だけ発生」に対応し、AdditionalEffectのMultiHitごとに任意のHitInvincibilityStagesを追加。nullは従来のカード共通設定を全段で使用し、指定配列のfalseは発生なし、trueは既存HitInvincibilityMsを使用する。時間やヒット数の製品値は新設しない。既存のHitCount未指定時の3段という互換動作も変更しない。明示配列は解決済み段数と一致させ、非多段への指定や長さ違いを生成・実行・保存定義照合で拒否する。
+
+段番号は各MultiHit効果・各対象で先頭から数える。既存多段ループのダメージ順序、同フレームの全ヒット、草むら処理は変更せず、受理済みの指定段だけ既存の無敵発生入口へ渡す。既存無敵、完全無効、ガード、防御、元威力0、死亡の抑止は前単位の共通入口で維持する。
+
+配列は入力・取得・複製で共有しない。CardのClone/倍率コピー/調律、マスター取込、派生先カード、保存定義の複製と照合に対応。マスターの共通追加効果欄では多段効果へだけ配列を渡す。ドメインでは複数多段効果に別々の配列を持てる。自己チェインがModifierを除く既存仕様や、元から未対応のMultiHit直接OnHitトリガーを新たに実装する変更は含めない。OnHit派生で呼んだ別カードのMultiHitは、その派生先自身の設定を使用する。
+
+未設定の旧hash/DTO/schemaは維持し、明示した段配列だけ定義hashへ加える。設定の異なる定義へ復帰する場合は拒否する。通常カード・保存復帰・30/60/120fps・ポーズ・追いつき、最初/中間/最終段だけ有効、指定段がガードで拒否されたケース、複数効果/対象、派生・複製・入力配列改変を検証する。宙返り素材・ノックバックv2・移動修正には触れない。
+
+段設定の検証: Unity MCP全EditMode 1603/1603成功（33.81秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告10件。結果 /workspace/.olca-cloud/results/hit-invincibility-stages/editmode-tests.json、console-before.json、console-after.json。

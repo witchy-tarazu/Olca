@@ -138,6 +138,7 @@ namespace Olca.Core.Domain.Master
         /// ヒット回数（多段ヒット、チェイン回数など）
         /// </summary>
         public int AdditionalEffectHitCount { get; set; }
+        public bool[] AdditionalEffectHitInvincibilityStages { get; set; }
 
         /// <summary>
         /// 派生効果のトリガータイミング

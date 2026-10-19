@@ -217,8 +217,26 @@ namespace Olca.Core.Domain
     /// </summary>
     public class AdditionalEffect
     {
-        // 各項目は値型または不変の文字列。オブジェクトを分ければ効果の編集が元へ漏れない。
-        public AdditionalEffect Clone() => (AdditionalEffect)MemberwiseClone();
+        // 配列も複製し、元定義・加工結果・保存定義の間で変更を共有しない。
+        public AdditionalEffect Clone()
+        {
+            var copy = (AdditionalEffect)MemberwiseClone();
+            copy.hitInvincibilityStages = hitInvincibilityStages == null ? null : (bool[])hitInvincibilityStages.Clone();
+            return copy;
+        }
+        private bool[] hitInvincibilityStages;
+        /// <summary>多段効果ごとの発生設定。nullはカード共通設定、trueの段だけ指定期間を使用する。</summary>
+        public bool[] HitInvincibilityStages
+        {
+            get => hitInvincibilityStages == null ? null : (bool[])hitInvincibilityStages.Clone();
+            set => hitInvincibilityStages = value == null ? null : (bool[])value.Clone();
+        }
+        internal void ValidateHitInvincibilityStages()
+        {
+            if (hitInvincibilityStages == null) return;
+            if (EffectType != AdditionalEffectType.MultiHit || hitInvincibilityStages.Length != (HitCount > 0 ? HitCount : 3))
+                throw new System.ArgumentException("被弾無敵の段設定は多段効果のヒット数と一致させてください");
+        }
 
         /// <summary>効果の種類</summary>
         public AdditionalEffectType EffectType { get; set; }

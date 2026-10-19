@@ -180,6 +180,7 @@ namespace Olca.Core.Domain
             ExtendRecoveryDuringDerivative = extendRecoveryDuringDerivative;
             IsInstantEffect = isInstantEffect;
             Modifier = modifier ?? new CardModifier();
+            foreach (var effect in Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             ExceedLevel = exceedLevel;
         }
 
@@ -269,6 +270,8 @@ namespace Olca.Core.Domain
 
             // Modifierの構築（追加効果を解析）
             CardModifier modifier = ParseAdditionalEffects(master);
+            if (master.AdditionalEffectHitInvincibilityStages != null && !modifier.AdditionalEffects.Exists(e => e.EffectType == AdditionalEffectType.MultiHit))
+                throw new System.ArgumentException("段ごとの被弾無敵設定には多段効果が必要です");
 
             return new Card(
                 master.Id,
@@ -339,6 +342,7 @@ namespace Olca.Core.Domain
                         Power = master.AdditionalEffectPower,
                         Duration = master.AdditionalEffectDuration,
                         HitCount = master.AdditionalEffectHitCount,
+                        HitInvincibilityStages = effectType == AdditionalEffectType.MultiHit ? master.AdditionalEffectHitInvincibilityStages : null,
                         ChainCardId = master.ChainCardId,
                         Trigger = trigger
                     };

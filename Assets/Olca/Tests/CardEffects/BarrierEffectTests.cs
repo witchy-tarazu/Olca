@@ -34,6 +34,96 @@ namespace Olca.Tests.CardEffects
             battle = new BattleSystem(player, enemies, deck, logger: new MockLogger());
         }
 
+        private static Card StagedCard(bool[] stages, int power = 10, DerivativeTrigger trigger = DerivativeTrigger.Immediate)
+        {
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType=AdditionalEffectType.MultiHit, HitCount=3,
+                HitInvincibilityStages=stages, Trigger=trigger });
+            return new Card("staged", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
+                CardSeries.None, power, "検証", modifier:modifier, hitInvincibilityMs:100);
+        }
+
+        [TestCase(-1,1)][TestCase(-1,2)][TestCase(-1,3)]
+        [TestCase(0,1)][TestCase(0,2)][TestCase(0,3)]
+        [TestCase(1,1)][TestCase(1,2)][TestCase(1,3)]
+        [TestCase(2,1)][TestCase(2,2)][TestCase(2,3)]
+        public void 段ごとの無敵は受理された指定段だけが発生させ同フレーム後続を遮断しない(int enabledStage, int accepted)
+        {
+            var stages=new bool[3]; if(enabledStage>=0)stages[enabledStage]=true;
+            var card=StagedCard(stages); var enemy=battle.Enemies[0]; int hits=0;
+            enemy.OnDamaged+=(_,__)=>{hits++;Assert.IsFalse(enemy.IsInvincible);if(hits==accepted)enemy.Guard.Set(true,false);};
+            battle.RunLogicalFrame(()=>CardEffectFactory.CreateEffect(card).Execute(new BattleContext(battle,card)));
+            Assert.AreEqual(accepted,hits);Assert.AreEqual(50-accepted*10,enemy.CurrentHp);
+            Assert.AreEqual(enabledStage>=0 && enabledStage<accepted,enemy.IsInvincible);
+            enemy.Guard.Clear();
+            if(enemy.IsInvincible){battle.RunLogicalFrame(()=>enemy.TakeDamage(1,ElementType.None));Assert.AreEqual(accepted,hits);}
+        }
+
+        [TestCase("resistance")][TestCase("guard")][TestCase("barrier")][TestCase("aura")][TestCase("zero")][TestCase("death")]
+        public void 段設定があっても防御と状態専用と死亡では無敵を誤発生しない(string mode)
+        {
+            var enemy=new Enemy("staged","検証",50,ElementType.None,new Vector2Int(3,0),
+                resistances:new ElementResistances(fire:mode=="resistance"?100:0));
+            var model=new BattleSystem(player,new List<Enemy>{enemy},new Deck());
+            if(mode=="guard")enemy.Guard.Set(true,false);
+            if(mode=="barrier")enemy.SetBarrier(1);
+            if(mode=="aura")enemy.SetAura(1);
+            var card=StagedCard(new[]{false,false,true},mode=="zero"?0:mode=="death"?100:10);
+            model.RunLogicalFrame(()=>CardEffectFactory.CreateEffect(card).Execute(new BattleContext(model,card)));
+            Assert.IsFalse(enemy.IsInvincible);Assert.AreEqual(mode=="death"?0:50,enemy.CurrentHp);
+        }
+
+        [Test]
+        public void 段設定の配列と複製加工は互いに変更を共有せず不正な段数は実行前に拒否する()
+        {
+            var input=new[]{false,false,true};var card=StagedCard(input);input[0]=true;
+            var copy=card.Clone(); var powered=card.WithPowerMultiplier(2);
+            var tuned=card.ApplyTuning(new Card("tune","検証",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.None,0,"検証"));
+            foreach(var value in new[]{card,copy,powered,tuned})CollectionAssert.AreEqual(new[]{false,false,true},value.Modifier.AdditionalEffects[0].HitInvincibilityStages);
+            var returned=copy.Modifier.AdditionalEffects[0].HitInvincibilityStages;returned[0]=true;
+            copy.Modifier.AdditionalEffects[0].HitInvincibilityStages=new[]{true,false,false};
+            CollectionAssert.AreEqual(new[]{false,false,true},card.Modifier.AdditionalEffects[0].HitInvincibilityStages);
+            Assert.Throws<System.ArgumentException>(()=>StagedCard(new[]{true}));
+            card.Modifier.AdditionalEffects[0].HitInvincibilityStages=new[]{true};
+            Assert.Throws<System.ArgumentException>(()=>CardEffectFactory.CreateEffect(card).Execute(new BattleContext(battle,card)));
+            Assert.AreEqual(50,battle.Enemies[0].CurrentHp);Assert.IsFalse(battle.Enemies[0].IsInvincible);
+        }
+
+        [Test]
+        public void 複数多段効果と対象はそれぞれ先頭段から設定を使う()
+        {
+            var modifier=new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.MultiHit,HitCount=3,HitInvincibilityStages=new[]{false,false,false}});
+            modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.MultiHit,HitCount=3,HitInvincibilityStages=new[]{false,false,true}});
+            var card=new Card("multi","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,10,"検証",DamageTargetType.All,modifier:modifier,hitInvincibilityMs:100);
+            var targets=new List<Enemy>{new Enemy("a","検証",200,ElementType.None,new Vector2Int(3,0)),new Enemy("b","検証",200,ElementType.None,new Vector2Int(4,0))};
+            var model=new BattleSystem(player,targets,new Deck());
+            model.RunLogicalFrame(()=>CardEffectFactory.CreateEffect(card).Execute(new BattleContext(model,card)));
+            foreach(var target in targets){Assert.AreEqual(140,target.CurrentHp);Assert.IsTrue(target.IsInvincible);}
+        }
+
+        [Test]
+        public void マスターの段設定を取り込み非多段への誤指定を拒否する()
+        {
+            var master=new Olca.Core.Domain.Master.CardMaster{Id="stages",Name="検証",AdditionalEffectTypes="MultiHit",AdditionalEffectHitCount=3,
+                AdditionalEffectHitInvincibilityStages=new[]{false,false,true},HitInvincibilityMs=100};
+            var card=Card.FromMaster(master);master.AdditionalEffectHitInvincibilityStages[2]=false;
+            CollectionAssert.AreEqual(new[]{false,false,true},card.Modifier.AdditionalEffects[0].HitInvincibilityStages);
+            master.AdditionalEffectTypes="";Assert.Throws<System.ArgumentException>(()=>Card.FromMaster(master));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 命中派生から呼んだ多段カードは派生先固有の段設定を使う(bool enabled)
+        {
+            var child=StagedCard(new[]{false,false,enabled});var database=new MockCardDatabase();database.AddCard(child);
+            var modifier=new CardModifier();modifier.AdditionalEffects.Add(new AdditionalEffect{
+                EffectType=AdditionalEffectType.ChainCard,ChainCardId=child.Id,Trigger=DerivativeTrigger.OnHit});
+            var parent=new Card("parent","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"検証",modifier:modifier);
+            var context=new BattleContext(battle,parent){CardDatabase=database};
+            battle.RunLogicalFrame(()=>CardEffectFactory.CreateEffect(parent).Execute(context));
+            Assert.AreEqual(20,battle.Enemies[0].CurrentHp);Assert.AreEqual(enabled,battle.Enemies[0].IsInvincible);
+        }
+
         [TestCase("none")][TestCase("guard")][TestCase("barrier")][TestCase("aura")][TestCase("resistance")][TestCase("simple")]
         public void カード被弾無敵は受理ヒットだけで発生し同フレームの後続を防がない(string defense)
         {

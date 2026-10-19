@@ -1047,6 +1047,9 @@ namespace Olca.Core.Logic.Dungeon
                 w.Write((int)e.EffectType); w.Write(e.Power); w.Write(e.Duration); w.Write(e.HitCount); w.Write((int)e.Trigger);
                 Text(w, e.ChainCardId); w.Write((int)e.EffectOrigin); w.Write(e.DelayTime);
                 w.Write(e.TargetOffset.X); w.Write(e.TargetOffset.Y); w.Write(e.CancelOnHole);
+                e.ValidateHitInvincibilityStages();
+                var stages = e.HitInvincibilityStages;
+                if (stages != null) { w.Write("hit-invincibility-stages"); w.Write(stages.Length); foreach (bool enabled in stages) w.Write(enabled); }
             }
         }
         private static void Grant(System.IO.BinaryWriter w, TuningGrantDefinition grant)

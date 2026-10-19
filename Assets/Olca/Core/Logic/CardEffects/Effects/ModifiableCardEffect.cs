@@ -34,6 +34,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             if (context == null) throw new ArgumentNullException(nameof(context));
             ct.ThrowIfCancellationRequested();
             var card = context.UsedCard;
+            foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             bool effectResolved = false;
             try
             {
@@ -58,6 +59,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var card = context.UsedCard;
+            foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
 
             // 暗転系カードは前隙・後隙なしで即座に発動
             if (card.IsInstantEffect)
@@ -125,6 +127,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private void ExecuteCardEffect(BattleContext context)
         {
             var card = context.UsedCard;
+            foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             var modifier = card.Modifier;
 
             // 最終的な威力を計算
@@ -380,7 +383,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 case AdditionalEffectType.MultiHit:
                     // 多段ヒット効果
                     int hitCount = effect.HitCount > 0 ? effect.HitCount : 3;
-                    DealMultiHitDamage(targets, damage, element, hitCount, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealMultiHitDamage(targets, damage, element, hitCount, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, effect.HitInvincibilityStages);
                     break;
 
                 case AdditionalEffectType.PanelIce:
@@ -554,7 +557,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 多段ヒットダメージを与える
         /// </summary>
-        private void DealMultiHitDamage(List<Enemy> targets, int damagePerHit, ElementType element, int hitCount, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs)
+        private void DealMultiHitDamage(List<Enemy> targets, int damagePerHit, ElementType element, int hitCount, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, bool[] hitInvincibilityStages)
         {
             foreach (var target in targets)
             {
@@ -562,7 +565,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 {
                     if (!target.IsDead)
                     {
-                        target.TakeDamage(damagePerHit, element, properties, poiseDamage, hitInvincibilityMs);
+                        int duration = hitInvincibilityStages == null || hitInvincibilityStages[i] ? hitInvincibilityMs : 0;
+                        target.TakeDamage(damagePerHit, element, properties, poiseDamage, duration);
                     }
                 }
             }

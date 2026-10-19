@@ -2566,18 +2566,18 @@ namespace Olca.Tests.Application
             return map;
         }
 
-        private Card EnemyPoiseCard(int impact = 15, bool multi = true, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0)
+        private Card EnemyPoiseCard(int impact = 15, bool multi = true, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0, bool[] stages = null)
         {
             var modifier = new CardModifier();
-            if (multi) modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.MultiHit, HitCount = 2 });
+            if (multi) modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.MultiHit, HitCount = 2, HitInvincibilityStages = stages });
             return new Card("enemy-poise-card", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.Fire,
                 CardSeries.Sword, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile,
                 modifier: modifier, startupTime: .05f, poiseDamage: impact, properties: properties, hitInvincibilityMs: hitInvincibilityMs);
         }
 
-        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None, bool recovery = false, int hitInvincibilityMs = 0)
+        private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None, bool recovery = false, int hitInvincibilityMs = 0, bool[] stages = null)
         {
-            var map = EnemyPoiseMap(resistance: resistance, recovery: recovery ? 6 : (int?)null); var card = EnemyPoiseCard(impact, multi, properties, hitInvincibilityMs); var deck = new Deck(new List<Card> { card });
+            var map = EnemyPoiseMap(resistance: resistance, recovery: recovery ? 6 : (int?)null); var card = EnemyPoiseCard(impact, multi, properties, hitInvincibilityMs, stages); var deck = new Deck(new List<Card> { card });
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
             var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
                 new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
@@ -2590,6 +2590,7 @@ namespace Olca.Tests.Application
                 card = manager.Dungeon.GetCurrentDeck().GetAllCards()[0];
             }
             Assert.AreEqual(impact, card.PoiseDamage); Assert.AreEqual(hitInvincibilityMs, card.HitInvincibilityMs);
+            if (multi) CollectionAssert.AreEqual(stages, card.Modifier.AdditionalEffects[0].HitInvincibilityStages);
             var battle = manager.CurrentBattle; var session = CreateSession().session; session.Attach(battle);
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
             Assert.IsTrue(battle.CustomScreen.TrySelectCard(battle.CustomScreen.CurrentHand[0]));
@@ -2625,7 +2626,7 @@ namespace Olca.Tests.Application
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
             bool blocked = resistance == 100 || (guard && (properties & AttackProperty.Break) == 0);
-            Assert.AreEqual(hitInvincibilityMs > 0 && !blocked, invincibleFrames > 0); Assert.IsFalse(target.IsInvincible);
+            Assert.AreEqual(hitInvincibilityMs > 0 && !blocked && (stages == null || stages.Any(x => x)), invincibleFrames > 0); Assert.IsFalse(target.IsInvincible);
             int hits = blocked ? 0 : multi ? 2 : 1; long sum = (long)impact * hits;
             Assert.AreEqual(initialHp - 5 * hits, target.CurrentHp); Assert.AreEqual(1, used);
             Assert.AreEqual(sum >= 30 ? 1 : 0, staggered); Assert.AreEqual(sum >= 30 ? 6 : 0, initialFrames);
@@ -2636,6 +2637,29 @@ namespace Olca.Tests.Application
             Assert.AreEqual(saved.MapHash, after.MapHash); Assert.AreEqual(saved.Sequence, after.Sequence);
             CollectionAssert.AreEqual(saved.DeckOrder, after.DeckOrder); CollectionAssert.AreEqual(saved.ObtainedOrder, after.ObtainedOrder);
             session.Detach(); return trace;
+        }
+
+        [Test]
+        public void 保存定義は段設定を複製して保持し異なる段設定への復帰を拒否する()
+        {
+            var map=EnemyPoiseMap();var card=EnemyPoiseCard(hitInvincibilityMs:100,stages:new[]{false,true});var deck=new Deck(new List<Card>{card});
+            var source=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);
+            new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:source);
+            var saved=source.Store.Read();card.Modifier.AdditionalEffects[0].HitInvincibilityStages=new[]{true,false};
+            Assert.IsTrue(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(saved,source.Definitions,out var restored,out var error),error);
+            CollectionAssert.AreEqual(new[]{false,true},restored.Deck.GetAllCards()[0].Modifier.AdditionalEffects[0].HitInvincibilityStages);
+            var changed=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(EnemyPoiseMap(),new Deck(new List<Card>{card}));
+            Assert.IsFalse(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(saved,changed.Definitions,out _,out _));
+            Assert.AreEqual(saved.SchemaVersion,source.Store.Read().SchemaVersion);Assert.AreEqual(saved.Sequence,source.Store.Read().Sequence);
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void 段別無敵設定は通常多段の保存復帰と固定フレームで一致する(int fps, bool restore)
+        {
+            foreach (var stages in new[] { new[] { false, false }, new[] { true, false }, new[] { false, true }, new[] { true, true } })
+                CollectionAssert.AreEqual(EnemyPoiseCardTrace(60,false,false,15,true,hitInvincibilityMs:200,stages:stages),
+                    EnemyPoiseCardTrace(fps,true,restore,15,true,hitInvincibilityMs:200,stages:stages));
         }
 
         [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
