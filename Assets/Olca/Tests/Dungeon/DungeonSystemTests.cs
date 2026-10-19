@@ -1368,7 +1368,7 @@ namespace Olca.Tests.Dungeon
         [Test] public void 敵の接触範囲内で下降して回避高度を下回った時点を見落とさない()
         {
             var game = Create(EnemyCell(5)); game.Jump(); game.Tick(1000);
-            Assert.IsTrue(game.IsInBattle); Assert.Greater(game.PlayerPosition, 4.5f); Assert.Less(game.PlayerPosition, 5f);
+            Assert.IsTrue(game.IsInBattle); Assert.Greater(game.PlayerPosition, 4.4f); Assert.Less(game.PlayerPosition, 4.5f);
         }
         [Test] public void 後退区間でも最初に横切る既存前方検出範囲を一度だけ通知する()
         {
@@ -1402,7 +1402,7 @@ namespace Olca.Tests.Dungeon
         {
             var game = Create(EnemyCell(5)); game.Jump();
             foreach (int ms in partition == 0 ? new[] { 1000 } : new[] { 17, 111, 33, 239, 100, 500 }) game.Tick(ms);
-            Assert.IsTrue(game.IsInBattle); Assert.That(game.PlayerPosition, Is.InRange(4.597f, 4.599f));
+            Assert.IsTrue(game.IsInBattle); Assert.That(game.PlayerPosition, Is.InRange(4.458f, 4.460f));
         }
     }
 }

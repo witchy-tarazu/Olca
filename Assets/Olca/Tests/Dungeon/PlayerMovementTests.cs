@@ -15,7 +15,7 @@ namespace Olca.Tests.Dungeon
             movement.Update(200);Assert.AreEqual(1,Phase());Assert.AreEqual(.4f,movement.JumpProgress,.00001f);
             var height=movement.HeightMilli;var position=movement.CurrentPositionMilli;movement.Pause();movement.Update(1000);
             Assert.AreEqual(height,movement.HeightMilli);Assert.AreEqual(position,movement.CurrentPositionMilli);Assert.AreEqual(.4f,movement.JumpProgress,.00001f);
-            movement.Resume();movement.Update(50);Assert.AreEqual(2,Phase());Assert.AreEqual(2000,movement.HeightMilli);
+            movement.Resume();movement.Update(50);Assert.AreEqual(2,Phase());Assert.AreEqual(1500,movement.HeightMilli);
             movement.Update(50);Assert.AreEqual(3,Phase());Assert.AreEqual(.6f,movement.JumpProgress,.00001f);
             movement.Update(200);Assert.AreEqual(0,Phase());Assert.IsFalse(movement.IsJumping);Assert.AreEqual(0,movement.HeightMilli);
             Assert.AreEqual(dash?10000:5000,movement.CurrentPositionMilli);
@@ -89,7 +89,7 @@ namespace Olca.Tests.Dungeon
         }
 
         [Test]
-        public void Jump_最大高度は2マス分まで上がる()
+        public void Jump_最大高度は1点5マス分まで上がる()
         {
             // Arrange
             var movement = new PlayerMovement();
@@ -99,7 +99,7 @@ namespace Olca.Tests.Dungeon
             movement.Update(deltaTimeMs: 250);  // ジャンプ時間の中間が最大高度
 
             // Assert
-            Assert.AreEqual(2.0f, movement.Height, 0.01f, "ジャンプ最大高度が2マス分になっている");
+            Assert.AreEqual(1.5f, movement.Height, 0.01f, "ジャンプ最大高度が1.5マス分になっている");
         }
 
         [Test]
@@ -166,5 +166,39 @@ namespace Olca.Tests.Dungeon
             // Assert
             Assert.AreEqual(10f, movement.CurrentPosition);
         }
+        private static System.Collections.Generic.List<string> HeightTrace(int fps, bool stall, bool dash)
+        {
+            var m = new DungeonSystem(Olca.Core.Domain.DungeonConfig.CreateTestDungeon(2000,1000,1000),
+                new Olca.Core.Domain.PlayerCharacter(100),new Olca.Core.Domain.Deck(),new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger()); if (dash) m.StartDash(); m.Jump();
+            var clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
+            var trace = new System.Collections.Generic.List<string>();
+            float maxHeight = 0; int obstacleFrames = 0, enemyFrames = 0;
+            System.Action<long,int> tick = (frame,ms) => {
+                m.TickFrame(); maxHeight = System.Math.Max(maxHeight,m.PlayerHeight);
+                if (m.PlayerHeight > .1f) obstacleFrames++;
+                if (m.PlayerHeight > .5f) enemyFrames++;
+                trace.Add(frame + ":" + m.PlayerPosition + ":" + m.PlayerHeight + ":" + m.IsJumping);
+                if (frame == 15) Assert.AreEqual(1.5f,m.PlayerHeight);
+            };
+            long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / 2, previous = 0;
+            if (stall) { previous = total; clock.Accumulate(previous); clock.Drain(tick,3); }
+            for (long render=1;previous<total;render++) {
+                long now=System.Math.Min(total,render*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps);
+                clock.Accumulate(now-previous);previous=now;clock.Drain(tick,3);
+            }
+            while(clock.PendingFrames>0)clock.Drain(tick,3);
+            Assert.AreEqual(30,trace.Count);Assert.AreEqual(1.5f,maxHeight);
+            Assert.IsFalse(m.IsJumping);Assert.AreEqual(0,m.PlayerHeight);
+            Assert.AreEqual(dash?10f:5f,m.PlayerPosition);
+            Assert.AreEqual(29,obstacleFrames);Assert.AreEqual(23,enemyFrames);
+            return trace;
+        }
+        [TestCase(30,false,false)] [TestCase(60,false,false)] [TestCase(120,false,false)]
+        [TestCase(30,true,false)] [TestCase(60,true,false)] [TestCase(120,true,false)]
+        [TestCase(30,false,true)] [TestCase(60,false,true)] [TestCase(120,false,true)]
+        [TestCase(30,true,true)] [TestCase(60,true,true)] [TestCase(120,true,true)]
+        public void 高さ75パーセントでも滞空30フレームと通常ダッシュ飛距離を保つ(int fps,bool stall,bool dash)
+        { CollectionAssert.AreEqual(HeightTrace(60,false,dash),HeightTrace(fps,stall,dash)); }
+
     }
 }

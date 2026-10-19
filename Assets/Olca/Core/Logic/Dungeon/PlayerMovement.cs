@@ -87,7 +87,7 @@ namespace Olca.Core.Logic.Dungeon
         private const int BASE_SPEED_MILLI_PER_SEC = 10000;  // 基本移動速度（ミリ単位/秒）= 10.0
         private const int DASH_SPEED_MILLI_PER_SEC = 20000;  // ダッシュ速度（ミリ単位/秒）= 20.0
         private const int JUMP_DURATION_FRAMES = 30;           // ジャンプ時間（論理フレーム）= 0.5秒
-        private const int JUMP_HEIGHT_MILLI = 2000;         // ジャンプの最大高さ（ミリ単位）= 2.0
+        private const int JUMP_HEIGHT_MILLI = 1500;         // ジャンプの最大高さ（ミリ単位）= 1.5
 
         private int heightMilli;  // 高さ（ミリ単位、0=地上）
 
