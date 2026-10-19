@@ -1332,6 +1332,51 @@ namespace Olca.Tests.Integration
             var first=queue.Take(1); Assert.IsTrue(first.DashButtonDown); Assert.IsFalse(first.DashButton);
             Assert.IsFalse(queue.Take(2).DashButtonDown);
         }
+        [TestCase("battle", "CardPrimary", "Z")]
+        [TestCase("exploration", "JumpPrimary", "J")]
+        [TestCase("exploration", "DashPrimary", "K")]
+        [TestCase("battle", "CustomPrimary", "L")]
+        [TestCase("battle", "LeftPrimary", "J")]
+        public void 個別スロットは破棄なら元のまま適用なら実イベントを変換する(string context, string slot, string key)
+        {
+            var keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            var provider = new Olca.Unity.UnityInputProvider();
+            try {
+                provider.StartEventCapture();
+                var original = provider.KeyboardProfile;
+                var edit = original.BeginEdit();
+                Assert.IsTrue(edit.TryAssign(("keyboard",context,slot),key,out _));
+                Assert.AreSame(original,provider.KeyboardProfile);
+                edit.Discard(); Assert.AreEqual(original.Bindings[("keyboard",context,slot)],edit.Draft[("keyboard",context,slot)]);
+                Assert.IsTrue(edit.TryAssign(("keyboard",context,slot),key,out _));
+                Olca.Unity.GameplayPause.SetPaused(false);
+                Assert.IsFalse(provider.TryApplyKeyboardProfile(edit.Apply(),out _));
+                Olca.Unity.GameplayPause.SetPaused(true);
+                Assert.IsTrue(provider.TryApplyKeyboardProfile(edit.Apply(),out var error),error);
+                Assert.AreEqual("RightShift",provider.KeyboardProfile.Bindings[("keyboard","exploration","DashSecondary")]);
+                Assert.AreEqual("A",provider.KeyboardProfile.Bindings[("keyboard","battle","LeftSecondary")]);
+                if(slot=="CardPrimary") Assert.AreEqual("Space",provider.KeyboardProfile.Bindings[("keyboard","battle","AttackPrimary")]);
+                provider.CaptureTimestamped();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(System.Enum.Parse<UnityEngine.InputSystem.Key>(key)));
+                UnityEngine.InputSystem.InputSystem.Update();
+                var input=provider.CaptureTimestamped().Last().Input;
+                if(slot=="CardPrimary") { Assert.IsTrue(input.CardUseButtonDown); Assert.IsFalse(input.BasicAttackButton); Assert.IsFalse(input.JumpButtonDown); }
+                if(slot=="JumpPrimary") { Assert.IsTrue(input.JumpButtonDown); Assert.IsFalse(input.CardUseButtonDown); }
+                if(slot=="DashPrimary") Assert.IsTrue(input.DashButtonDown&&input.DashButton);
+                if(slot=="CustomPrimary") Assert.IsTrue(input.CustomScreenButtonDown);
+                if(slot=="LeftPrimary") Assert.AreEqual(-1,input.Horizontal);
+            } finally { provider.Dispose(); UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
+                Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
+        }
+        [TestCase("not-a-key")][TestCase("1")][TestCase("None")]
+        public void 不正キーは現在の実入力割当を変更しない(string key)
+        {
+            var provider=new Olca.Unity.UnityInputProvider(); var original=provider.KeyboardProfile;
+            var edit=original.BeginEdit(); Assert.IsTrue(edit.TryAssign(("keyboard","battle","CardPrimary"),key,out _));
+            try { Olca.Unity.GameplayPause.SetPaused(true); Assert.IsFalse(provider.TryApplyKeyboardProfile(edit.Apply(),out _)); Assert.AreSame(original,provider.KeyboardProfile); }
+            finally { provider.Dispose(); Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false); Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
+        }
         [Test]
         public void InputSystemは同じ更新内の押下解放を生成時刻付きで両方採取する()
         {

@@ -131,6 +131,18 @@ namespace Olca.Application.Dungeon
         }
 
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
+        public Olca.Core.Domain.InputBindingProfile GameplayKeyboardProfile => inputProvider?.KeyboardProfile;
+        public bool TryApplyGameplayKeyboardProfile(Olca.Core.Domain.InputBindingProfile profile, out string error)
+        {
+            error = null;
+            if (!IsUserPaused || inputProvider == null) { error = "ユーザーポーズ中のみ適用できます"; return false; }
+            if (!inputProvider.TryApplyKeyboardProfile(profile, out error)) return false;
+            // 論理時計は継続し、旧割当の入力だけを捨てる。再開時は既存の全キー解放待ちを通る。
+            logicalLoop.ReleaseInput();
+            inputProvider.QueueSnapshot();
+            return true;
+        }
+
         public void SetUserPaused(bool paused)
         {
             if (manager == null || manager.IsUserPaused == paused) return;

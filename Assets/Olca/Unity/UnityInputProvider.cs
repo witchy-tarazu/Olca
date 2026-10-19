@@ -19,6 +19,42 @@ namespace Olca.Unity
         private Olca.Core.Logic.Integration.LogicalInput eventState = new Olca.Core.Logic.Integration.LogicalInput();
         private bool capturing;
         private double eventClockOffset;
+        public Olca.Core.Domain.InputBindingProfile KeyboardProfile { get; private set; } = CreateDefaultKeyboardProfile();
+        public static Olca.Core.Domain.InputBindingProfile CreateDefaultKeyboardProfile()
+        {
+            var slots = new Dictionary<(string Device, string Context, string Action), string>();
+            void Add(string context, string action, Key key) => slots.Add(("keyboard", context, action), key.ToString());
+            Add("exploration", "JumpPrimary", Key.Space);
+            Add("exploration", "DashPrimary", Key.LeftShift); Add("exploration", "DashSecondary", Key.RightShift);
+            Add("battle", "LeftPrimary", Key.LeftArrow); Add("battle", "LeftSecondary", Key.A);
+            Add("battle", "RightPrimary", Key.RightArrow); Add("battle", "RightSecondary", Key.D);
+            Add("battle", "UpPrimary", Key.UpArrow); Add("battle", "UpSecondary", Key.W);
+            Add("battle", "DownPrimary", Key.DownArrow); Add("battle", "DownSecondary", Key.S);
+            Add("battle", "AttackPrimary", Key.Z); Add("battle", "CardPrimary", Key.Space);
+            Add("battle", "CustomPrimary", Key.LeftAlt); Add("battle", "CustomSecondary", Key.RightAlt);
+            return new Olca.Core.Domain.InputBindingProfile(slots, new (string, string, string)[0]);
+        }
+        // メニューの必須操作は対象外。既知の個別スロットだけをまとめて検証してから反映する。
+        public bool TryApplyKeyboardProfile(Olca.Core.Domain.InputBindingProfile profile, out string error)
+        {
+            error = null;
+            if (!GameplayPause.IsPaused) { error = "ユーザーポーズ中のみ適用できます"; return false; }
+            var defaults = CreateDefaultKeyboardProfile().Bindings;
+            if (profile == null || profile.Bindings.Count != defaults.Count || profile.Bindings.Keys.Any(k => !defaults.ContainsKey(k)))
+            { error = "キーボードのゲーム操作スロットが一致しません"; return false; }
+            foreach (var value in profile.Bindings.Values)
+                if (value != null && (!System.Enum.TryParse<Key>(value, out var key) || key == Key.None ||
+                    !System.Enum.IsDefined(typeof(Key), key) || key.ToString() != value))
+                { error = "キー識別子が不正です"; return false; }
+            KeyboardProfile = profile;
+            events.Clear(); QueueSnapshot();
+            return true;
+        }
+        private bool Held(string context, string action)
+        {
+            var value = KeyboardProfile.Bindings[("keyboard", context, action)];
+            return value != null && KeyHeld(System.Enum.Parse<Key>(value));
+        }
         public void StartEventCapture()
         {
             if (capturing) return;
@@ -68,8 +104,8 @@ namespace Olca.Unity
         private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
         private Olca.Core.Logic.Integration.LogicalInput BuildState()
         {
-            float x = (KeyHeld(Key.RightArrow) || KeyHeld(Key.D) ? 1 : 0) - (KeyHeld(Key.LeftArrow) || KeyHeld(Key.A) ? 1 : 0);
-            float y = (KeyHeld(Key.UpArrow) || KeyHeld(Key.W) ? 1 : 0) - (KeyHeld(Key.DownArrow) || KeyHeld(Key.S) ? 1 : 0);
+            float x = (Held("battle", "RightPrimary") || Held("battle", "RightSecondary") ? 1 : 0) - (Held("battle", "LeftPrimary") || Held("battle", "LeftSecondary") ? 1 : 0);
+            float y = (Held("battle", "UpPrimary") || Held("battle", "UpSecondary") ? 1 : 0) - (Held("battle", "DownPrimary") || Held("battle", "DownSecondary") ? 1 : 0);
             foreach (var stick in sticks.Values)
             {
                 // 既存InputManagerの軸0/1・dead=0.19と同じ範囲。キーは変更しない。
@@ -78,15 +114,15 @@ namespace Olca.Unity
             }
             return new Olca.Core.Logic.Integration.LogicalInput {
                 HasInputSample = true, AnyKey = buttons.Values.Any(pressed => pressed),
-                Horizontal = x, Vertical = y, BasicAttackButton = KeyHeld(Key.Z),
-                DashButton = KeyHeld(Key.LeftShift) || KeyHeld(Key.RightShift)
+                Horizontal = x, Vertical = y, BasicAttackButton = Held("battle", "AttackPrimary"),
+                DashButton = Held("exploration", "DashPrimary") || Held("exploration", "DashSecondary")
             };
         }
         private void CaptureEvent(InputEventPtr evt, InputDevice device)
         {
             if (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>()) return;
-            bool space = KeyHeld(Key.Space), leftShift = KeyHeld(Key.LeftShift), rightShift = KeyHeld(Key.RightShift);
-            bool leftAlt = KeyHeld(Key.LeftAlt), rightAlt = KeyHeld(Key.RightAlt);
+            bool jump = Held("exploration", "JumpPrimary"), card = Held("battle", "CardPrimary"), leftShift = Held("exploration", "DashPrimary"), rightShift = Held("exploration", "DashSecondary");
+            bool leftAlt = Held("battle", "CustomPrimary"), rightAlt = Held("battle", "CustomSecondary");
             foreach (var button in Buttons(device))
                 if (button.ReadValueFromEvent(evt, out float value)) buttons[button] = value >= button.pressPointOrDefault;
             var stick = Stick(device);
@@ -99,9 +135,10 @@ namespace Olca.Unity
             }
             var next = BuildState();
             next.HorizontalDown = eventState.Horizontal == 0 ? next.Horizontal : 0;
-            next.JumpButtonDown = next.CardUseButtonDown = !space && KeyHeld(Key.Space);
-            next.DashButtonDown = (!leftShift && KeyHeld(Key.LeftShift)) || (!rightShift && KeyHeld(Key.RightShift));
-            next.CustomScreenButtonDown = (!leftAlt && KeyHeld(Key.LeftAlt)) || (!rightAlt && KeyHeld(Key.RightAlt));
+            next.JumpButtonDown = !jump && Held("exploration", "JumpPrimary");
+            next.CardUseButtonDown = !card && Held("battle", "CardPrimary");
+            next.DashButtonDown = (!leftShift && Held("exploration", "DashPrimary")) || (!rightShift && Held("exploration", "DashSecondary"));
+            next.CustomScreenButtonDown = (!leftAlt && Held("battle", "CustomPrimary")) || (!rightAlt && Held("battle", "CustomSecondary"));
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
             events.Add(new TimestampedLogicalInput(timestamp, next)); eventState = next;
         }
