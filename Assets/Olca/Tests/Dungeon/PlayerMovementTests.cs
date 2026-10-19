@@ -7,6 +7,37 @@ namespace Olca.Tests.Dungeon
     public class PlayerMovementTests
     {
         [TestCase(false)][TestCase(true)]
+        public void ノックバック姿勢は順番を守り終了時に元の表示状態を復元する(bool enabled)
+        {
+            var go = new UnityEngine.GameObject("knockback-test");
+            var texture = new UnityEngine.Texture2D(256, 256);
+            var sprite = UnityEngine.Sprite.Create(texture, new UnityEngine.Rect(0, 0, 256, 256), new UnityEngine.Vector2(127f / 256, 14f / 256), 100);
+            try {
+                var view = go.AddComponent<Olca.Presentation.Field.GameFieldView>();
+                var renderer = go.AddComponent<UnityEngine.SpriteRenderer>(); var animator = go.AddComponent<UnityEngine.Animator>(); animator.enabled = enabled;
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                void Set(string name, object value) => typeof(Olca.Presentation.Field.GameFieldView).GetField(name, flags).SetValue(view, value);
+                Set("playerSprite", renderer); Set("playerAnimator", animator); Set("contactKnockbackSprites", new[] { sprite, sprite, sprite });
+                go.transform.position = new UnityEngine.Vector3(3, 2, 0); go.transform.localScale = new UnityEngine.Vector3(-1, 1, 1);
+                var phase = Olca.Presentation.Dungeon.ContactVisualPhase.Impact;
+                Assert.AreEqual(0, Olca.Presentation.Field.GameFieldView.SelectContactFrame(phase, 0, 3));
+                view.SetContactPose(phase, 0);
+                phase = Olca.Presentation.Dungeon.ContactVisualPhase.Knockback;
+                for (int frame = 1; frame <= 12; frame++) {
+                    float progress = frame / 12f;
+                    Assert.AreEqual(frame <= 6 ? 1 : 2, Olca.Presentation.Field.GameFieldView.SelectContactFrame(phase, progress, 3));
+                    view.SetContactPose(phase, progress); Assert.AreSame(sprite, renderer.sprite); Assert.IsFalse(animator.enabled);
+                    Assert.AreEqual(new UnityEngine.Vector3(3, 2, 0), go.transform.position);
+                    Assert.AreEqual(new UnityEngine.Vector3(-1, 1, 1), go.transform.localScale);
+                    Assert.AreEqual(UnityEngine.Quaternion.identity, go.transform.rotation);
+                }
+                view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None, 0);
+                Assert.AreEqual(enabled, animator.enabled); Assert.IsNull(renderer.sprite);
+                Assert.IsFalse((bool)typeof(Olca.Presentation.Field.GameFieldView).GetField("contactPoseActive", flags).GetValue(view));
+            } finally { UnityEngine.Object.DestroyImmediate(go); UnityEngine.Object.DestroyImmediate(sprite); UnityEngine.Object.DestroyImmediate(texture); }
+        }
+
+        [TestCase(false)][TestCase(true)]
         public void ジャンプ表示の参照で軌道と速度を変えず停止と着地に追従する(bool dash)
         {
             var movement=new PlayerMovement();if(dash)movement.StartDash();movement.Jump();
