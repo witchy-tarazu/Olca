@@ -27,12 +27,17 @@ namespace Olca.Presentation.Field
         [Header("プレイヤーモックスプライト")]
         [SerializeField] private Sprite idlePlayerSprite;
         [SerializeField] private Sprite dashPlayerSprite;
+        [SerializeField] private Sprite jumpRisePlayerSprite;
+        [SerializeField] private Sprite jumpApexPlayerSprite;
+        [SerializeField] private Sprite jumpFallPlayerSprite;
 
         [Header("プレイヤーアニメーション")]
         [SerializeField] private Animator playerAnimator;
 
         private static readonly int IsRunningParameter = Animator.StringToHash("isRunning");
         private static readonly int IsMovingParameter = Animator.StringToHash("isMoving");
+        private static readonly int JumpPhaseParameter = Animator.StringToHash("jumpPhase");
+        private int appliedJumpPhase;
         private float? previousAnimationPosition;
         private bool isMoving;
 
@@ -484,11 +489,16 @@ namespace Olca.Presentation.Field
         }
 
         /// <summary>
-        /// ダンジョン移動状態に応じてプレイヤーモックスプライトを切り替える。
-        /// 各素材は Inspector から差し替えられるため、モック追加時にコード変更は不要。
+        /// 30論理フレームの既存ジャンプを、上昇・頂点付近・下降の表示だけに分ける。
         /// </summary>
+        public static int SelectJumpAnimationPhase(bool jumping, float progress)
+            => !jumping ? 0 : progress < 14f / 30f ? 1 : progress <= 16f / 30f ? 2 : 3;
+
         private void UpdatePlayerSprite()
         {
+            int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && dungeonSystem.IsJumping
+                && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
+                dungeonSystem?.JumpProgress ?? 0f);
             // 接敵後の宙返り中はダッシュフラグが残る場合があるため、
             // バトル中でないこともダッシュ表示の条件にする。
             bool isDashing = dungeonSystem != null
@@ -501,10 +511,15 @@ namespace Olca.Presentation.Field
             {
                 playerAnimator.SetBool(IsRunningParameter, isDashing);
                 playerAnimator.SetBool(IsMovingParameter, isMoving && !isDashing);
+                playerAnimator.SetInteger(JumpPhaseParameter, jumpPhase);
+                // LateUpdateでも論理状態と同じ描画フレームに姿勢を切り替える。時間は進めない。
+                if (appliedJumpPhase != jumpPhase) playerAnimator.Update(0f);
+                appliedJumpPhase = jumpPhase;
                 return;
             }
 
-            SetPlayerSprite(isDashing ? dashPlayerSprite : idlePlayerSprite);
+            var jumpSprite = jumpPhase == 1 ? jumpRisePlayerSprite : jumpPhase == 2 ? jumpApexPlayerSprite : jumpPhase == 3 ? jumpFallPlayerSprite : null;
+            SetPlayerSprite(jumpSprite != null ? jumpSprite : isDashing ? dashPlayerSprite : idlePlayerSprite);
         }
 
         private void ResetMovementAnimation()

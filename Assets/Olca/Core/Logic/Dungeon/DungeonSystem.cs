@@ -43,6 +43,8 @@ namespace Olca.Core.Logic.Dungeon
         // ========== プロパティ ==========
         public float PlayerPosition => playerMovement.CurrentPosition;
         public float PlayerHeight => playerMovement.Height;
+        public bool IsJumping => playerMovement.IsJumping;
+        public float JumpProgress => playerMovement.JumpProgress;
         public bool IsDashing => playerMovement.IsDashing;
         public PlayerCharacter Player => playerCharacter;
         /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
