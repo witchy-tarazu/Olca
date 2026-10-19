@@ -37,48 +37,6 @@ namespace Olca.Presentation.Field
         private static readonly int IsRunningParameter = Animator.StringToHash("isRunning");
         private static readonly int IsMovingParameter = Animator.StringToHash("isMoving");
         private static readonly int JumpPhaseParameter = Animator.StringToHash("jumpPhase");
-        [SerializeField] private Sprite[] contactSomersaultSprites;
-        [SerializeField] private Sprite[] contactKnockbackSprites;
-        private Sprite contactPoseSprite;
-        private Sprite contactPreviousSprite;
-        private bool contactAnimatorWasEnabled;
-        private bool contactPoseActive;
-
-        /// <summary>接敵表示の進捗だけを受け取る。位置・回転・倍率は変更しない。</summary>
-        public void SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase phase, float progress)
-        {
-            if (phase == Olca.Presentation.Dungeon.ContactVisualPhase.None) {
-                contactPoseSprite = null;
-                if (contactPoseActive && playerSprite != null) playerSprite.sprite = contactPreviousSprite;
-                contactPreviousSprite = null;
-                if (contactPoseActive && playerAnimator != null) playerAnimator.enabled = contactAnimatorWasEnabled;
-                contactPoseActive = false;
-                UpdatePlayerSprite();
-                if (playerAnimator != null && playerAnimator.enabled && playerAnimator.runtimeAnimatorController != null) playerAnimator.Update(0f);
-                return;
-            }
-            Sprite[] frames = phase == Olca.Presentation.Dungeon.ContactVisualPhase.Somersault ? contactSomersaultSprites : contactKnockbackSprites;
-            Sprite sprite = phase == Olca.Presentation.Dungeon.ContactVisualPhase.DashRush ? dashPlayerSprite :
-                frames == null || frames.Length == 0 ? null : frames[SelectContactFrame(phase, progress, frames.Length)];
-            if (sprite == null) return; // 専用素材の未設定を別モーションの完成扱いにしない。
-            if (!contactPoseActive) {
-                contactPreviousSprite = playerSprite != null ? playerSprite.sprite : null;
-                contactAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled;
-                contactPoseActive = true;
-            }
-            if (playerAnimator != null) playerAnimator.enabled = false;
-            contactPoseSprite = sprite;
-            SetPlayerSprite(sprite);
-        }
-
-        public static int SelectContactFrame(Olca.Presentation.Dungeon.ContactVisualPhase phase, float progress, int count)
-        {
-            if (count <= 0) throw new System.ArgumentOutOfRangeException(nameof(count));
-            if (phase == Olca.Presentation.Dungeon.ContactVisualPhase.Impact) return 0;
-            int first = phase == Olca.Presentation.Dungeon.ContactVisualPhase.Knockback && count > 1 ? 1 : 0;
-            return first + Mathf.Clamp(Mathf.CeilToInt(Mathf.Clamp01(progress) * (count - first)) - 1, 0, count - first - 1);
-        }
-
         private int appliedJumpPhase;
         private bool isMoving;
 
@@ -543,7 +501,6 @@ namespace Olca.Presentation.Field
 
         private void UpdatePlayerSprite()
         {
-            if (contactPoseActive && contactPoseSprite != null) { SetPlayerSprite(contactPoseSprite); return; }
             int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && dungeonSystem.IsJumping
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
                 dungeonSystem?.JumpProgress ?? 0f);

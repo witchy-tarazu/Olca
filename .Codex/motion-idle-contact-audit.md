@@ -1,3 +1,5 @@
+> 公開範囲の訂正: 5aa4c0cに含めた接敵準備フックは後続コミットで分離。現在の公開実装は移動中idle修正のみ。フックは /workspace/.olca-cloud/contact-hooks-pending.patch に保全し、専用素材と同時に接続する。以下のフック説明は準備内容の記録。
+
 # 移動中idle混入の修正と接敵素材の準備
 
 ## 移動表示の不具合
@@ -29,3 +31,5 @@ Transform回転は行っていない。回転は素材内の姿勢として描�
 証跡は /workspace/.olca-cloud/results/motion-idle/。接敵の専用6/3枚の見た目確認は素材受領後の残件。親側生成中の素材は本コミットに含めない。
 
 最終全Unity MCPテスト1458/1458成功（30.68秒）。検証Editor現在error0/既知warning10、描画Editor現在error0/warning1。専用素材未設定のため接敵ビジュアル完成の報告は行わない。
+
+分離後の全Unity MCPは1457/1457成功（31.06秒）、error0/既知warning10。接敵準備用テスト1件もパッチへ分離。動画共有blobはfb8c7339339247006e48d65c569a2f00f06396e6（UTF-8 Base64）、撮影コードblobは3269ee7c15a65a92abc370ecd76bb6899c02d236。実取得平均17.4618fps、88枚/4.982304秒、1920×1080。MP4 SHA256: 0866f3a3d8de37892ad0952b7d79fd11c2732f8669c472c2241ebea05891307e。

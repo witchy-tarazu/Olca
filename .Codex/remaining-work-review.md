@@ -73,3 +73,5 @@ enemy-poise-scope.mdの単位で、外部指定した敵強靭度・のけぞり
 歩行表示を描画座標差から論理的な自動前進状態へ変更し、移動中idle混入の原因を除去。接敵の専用姿勢切替は準備し、宙返り6枚・ノックバック3枚は親側の素材完成待ち。motion-idle-contact-audit.mdを参照。
 
 ガード横断追加テストは未公開パッチ /workspace/.olca-cloud/guard-boundaries-pending.patch に保全。1461/1462成功で、戦闘継続中に死亡した敵のGuard.IsActive残留を再現。修正は未着手で、この見た目修正とは分離する。
+
+公開範囲訂正: 接敵準備フックをmasterから分離し /workspace/.olca-cloud/contact-hooks-pending.patch に保全。移動中idle修正のみを独立公開する。
