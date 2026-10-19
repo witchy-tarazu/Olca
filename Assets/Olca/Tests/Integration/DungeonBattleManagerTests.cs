@@ -2429,7 +2429,7 @@ namespace Olca.Tests.Integration
         {
             var host = new UnityEngine.GameObject("floor-controller-fixture"); host.SetActive(false); objects.Add(host);
             var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
-            controller.ConfigureCheckpointDirectory(directory); controller.ConfigureSimulationSeed(7);
+            controller.ConfigureCheckpointDirectory(directory); controller.ConfigureGameplaySettingsDirectory(System.IO.Path.Combine(directory,"settings")); controller.ConfigureSimulationSeed(7);
             if (maps != null) {
                 var deck = (Deck)controller.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(controller, null);
                 definitions = new FloorSequenceDefinitions("controller-fixture", "v1", maps, deck);
@@ -2454,6 +2454,83 @@ namespace Olca.Tests.Integration
                 if (!enemy.IsDead && !enemy.IsSummoned) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
             return choices;
         }
+        private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public string Fault;
+            public override void Replace(string temporary,string destination,string backup)
+            {
+                if(Fault=="before")throw new System.IO.IOException("fixture");
+                base.Replace(temporary,destination,backup);
+                if(Fault=="after")throw new System.IO.IOException("fixture");
+            }
+        }
+
+        [TestCase(null)][TestCase("before")][TestCase("after")]
+        public void キー保存適用は失敗時に旧割当を維持し再起動後の実入力とガイドへ復元する(string fault)
+        {
+            var controller=Start(new[]{Empty(3),DungeonConfig.CreateTestDungeon(8)});
+            var provider=(Olca.Unity.UnityInputProvider)Get(controller,"inputProvider");
+            Olca.Unity.UnityInputProvider restoredProvider=null;
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            try{
+                var gameplayBytes=System.IO.File.ReadAllBytes(Store(controller).ActivePath);
+                var settings=(Olca.Unity.KeyboardBindingFileStore)Get(controller,"keyboardSettings");
+                Assert.IsFalse(System.IO.File.Exists(settings.ActivePath));
+                var original=controller.GameplayKeyboardProfile;var edit=original.BeginEdit();
+                Assert.IsTrue(edit.TryAssign(("keyboard","exploration","JumpPrimary"),"J",out _));edit.Discard();
+                Assert.AreEqual("Space",edit.Draft[("keyboard","exploration","JumpPrimary")]);Assert.IsFalse(System.IO.File.Exists(settings.ActivePath));
+                controller.SetUserPaused(true);Assert.IsTrue(controller.TryApplyGameplayKeyboardProfile(original,out var error),error);
+                var before=System.IO.File.ReadAllBytes(settings.ActivePath);
+                Assert.IsTrue(edit.TryAssign(("keyboard","exploration","JumpPrimary"),"J",out _));var candidate=edit.Apply();
+                var io=new KeyboardFaultIo{Fault=fault};Set(settings,"io",io);
+                bool saved=controller.TryApplyGameplayKeyboardProfile(candidate,out error);
+                if(fault=="before"){
+                    Assert.IsFalse(saved);Assert.AreSame(original,controller.GameplayKeyboardProfile);
+                    CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(settings.ActivePath));
+                    io.Fault=null;Assert.IsTrue(controller.TryApplyGameplayKeyboardProfile(candidate,out error),error);
+                }else Assert.IsTrue(saved,error);
+                Assert.AreEqual("J",controller.GameplayKeyboardProfile.Bindings[("keyboard","exploration","JumpPrimary")]);
+                StringAssert.Contains("J",Olca.Presentation.Field.GameFieldView.FormatGameplayInstructions(controller.GameplayKeyboardProfile,GamePhase.Dungeon));
+                CollectionAssert.AreEqual(gameplayBytes,System.IO.File.ReadAllBytes(Store(controller).ActivePath));
+                controller.SetUserPaused(false);provider.Dispose();
+                var restarted=Start();restoredProvider=(Olca.Unity.UnityInputProvider)Get(restarted,"inputProvider");
+                Assert.IsNull(restarted.GameplayKeyboardSettingsError);
+                Assert.AreEqual("J",restarted.GameplayKeyboardProfile.Bindings[("keyboard","exploration","JumpPrimary")]);
+                Assert.AreEqual("RightShift",restarted.GameplayKeyboardProfile.Bindings[("keyboard","exploration","DashSecondary")]);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();
+                restoredProvider.CaptureTimestamped();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.J));UnityEngine.InputSystem.InputSystem.Update();
+                Assert.IsTrue(restoredProvider.CaptureTimestamped().Last().Input.JumpButtonDown);
+                CollectionAssert.AreEqual(gameplayBytes,System.IO.File.ReadAllBytes(Store(restarted).ActivePath));
+            }finally{
+                provider.Dispose();restoredProvider?.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
+                controller.SetUserPaused(false);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+
+        [TestCase("broken")][TestCase("version")][TestCase("device")][TestCase("key")]
+        public void 破損未知版と異なるデバイスのキー設定は初期操作で起動し上書きしない(string fault)
+        {
+            var settings=new Olca.Unity.KeyboardBindingFileStore(System.IO.Path.Combine(directory,"settings"));
+            Assert.IsTrue(settings.TryRead(out var defaults,out _));Assert.IsFalse(System.IO.Directory.Exists(settings.DirectoryPath));
+            Assert.IsTrue(settings.TrySave(defaults,out _));var text=System.IO.File.ReadAllText(settings.ActivePath);
+            text=fault=="broken"?"{broken":fault=="version"?text.Replace("\"Version\":1","\"Version\":99"):
+                fault=="device"?text.Replace("keyboard","controller"):text.Replace("LeftShift","not-a-key");
+            System.IO.File.WriteAllText(settings.ActivePath,text);
+            var controller=Start(new[]{Empty(3),DungeonConfig.CreateTestDungeon(8)});
+            try{
+                Assert.IsNotEmpty(controller.GameplayKeyboardSettingsError);
+                Assert.AreEqual("Space",controller.GameplayKeyboardProfile.Bindings[("keyboard","exploration","JumpPrimary")]);
+                controller.SetUserPaused(true);Assert.IsFalse(controller.TryApplyGameplayKeyboardProfile(defaults,out _));
+                Assert.AreEqual(text,System.IO.File.ReadAllText(settings.ActivePath));
+            }finally{
+                controller.SetUserPaused(false);((Olca.Unity.UnityInputProvider)Get(controller,"inputProvider")).Dispose();
+                Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 終端保存失敗中は旧モデルとファイルを維持し再試行後だけ描画と入力を切り替える(bool jumping)
         {

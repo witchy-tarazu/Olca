@@ -44,6 +44,14 @@ namespace Olca.Unity
         {
             error = null;
             if (!GameplayPause.IsPaused) { error = "ユーザーポーズ中のみ適用できます"; return false; }
+            if (!ValidateKeyboardProfile(profile, out error)) return false;
+            KeyboardProfile = profile;
+            events.Clear(); QueueSnapshot();
+            return true;
+        }
+        public static bool ValidateKeyboardProfile(Olca.Core.Domain.InputBindingProfile profile, out string error)
+        {
+            error = null;
             var defaults = CreateDefaultKeyboardProfile().Bindings;
             if (profile == null || profile.Bindings.Count != defaults.Count || profile.Bindings.Keys.Any(k => !defaults.ContainsKey(k)))
             { error = "キーボードのゲーム操作スロットが一致しません"; return false; }
@@ -51,9 +59,13 @@ namespace Olca.Unity
                 if (value != null && (!System.Enum.TryParse<Key>(value, out var key) || key == Key.None ||
                     !System.Enum.IsDefined(typeof(Key), key) || key.ToString() != value))
                 { error = "キー識別子が不正です"; return false; }
-            KeyboardProfile = profile;
-            events.Clear(); QueueSnapshot();
             return true;
+        }
+        public bool TryRestoreKeyboardProfile(Olca.Core.Domain.InputBindingProfile profile, out string error)
+        {
+            if (capturing) { error = "入力開始後は保存・適用を使用してください"; return false; }
+            if (!ValidateKeyboardProfile(profile, out error)) return false;
+            KeyboardProfile = profile; return true;
         }
         private bool Held(string context, string action)
         {
@@ -274,5 +286,91 @@ namespace Olca.Unity
         }
         public static Cysharp.Threading.Tasks.UniTask Delay(System.TimeSpan duration, System.Threading.CancellationToken cancellationToken = default)
             => Delay((int)duration.TotalMilliseconds, cancellationToken);
+    }
+}
+
+namespace Olca.Unity
+{
+    /// <summary>ゲーム保存と独立したキーボード設定。未知版・破損を上書きしない。</summary>
+    public sealed class KeyboardBindingFileStore
+    {
+        [System.Runtime.Serialization.DataContract]
+        private sealed class Document
+        {
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Version;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public string Device;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public Slot[] Slots;
+        }
+        [System.Runtime.Serialization.DataContract]
+        private sealed class Slot
+        {
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public string Context;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public string Action;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public string Key;
+        }
+        private readonly CheckpointFileIo io;
+        public string DirectoryPath { get; }
+        public string ActivePath => System.IO.Path.Combine(DirectoryPath,"keyboard-gameplay.json");
+        private string BackupPath => System.IO.Path.Combine(DirectoryPath,"keyboard-gameplay.backup.json");
+        public KeyboardBindingFileStore(string directory, CheckpointFileIo io=null)
+        {
+            DirectoryPath=System.IO.Path.GetFullPath(directory ?? throw new System.ArgumentNullException(nameof(directory)));
+            this.io=io ?? new CheckpointFileIo();
+        }
+        private static byte[] Encode(Olca.Core.Domain.InputBindingProfile profile)
+        {
+            var doc=new Document{Version=1,Device="keyboard",Slots=profile.Bindings.OrderBy(p=>p.Key.Context,System.StringComparer.Ordinal)
+                .ThenBy(p=>p.Key.Action,System.StringComparer.Ordinal).Select(p=>new Slot{Context=p.Key.Context,Action=p.Key.Action,Key=p.Value}).ToArray()};
+            using(var stream=new System.IO.MemoryStream()){
+                new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).WriteObject(stream,doc);return stream.ToArray();}
+        }
+        private static Olca.Core.Domain.InputBindingProfile Decode(byte[] bytes)
+        {
+            if(bytes.Length==0 || bytes.Length>65536)throw new System.IO.InvalidDataException();
+            Document doc;using(var stream=new System.IO.MemoryStream(bytes))
+                doc=(Document)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).ReadObject(stream);
+            if(doc==null || doc.Version!=1 || doc.Device!="keyboard" || doc.Slots==null)throw new System.IO.InvalidDataException();
+            var slots=new Dictionary<(string Device,string Context,string Action),string>();
+            foreach(var slot in doc.Slots){if(slot==null)throw new System.IO.InvalidDataException();slots.Add(("keyboard",slot.Context,slot.Action),slot.Key);}
+            var profile=new Olca.Core.Domain.InputBindingProfile(slots,new (string,string,string)[0]);
+            if(!UnityInputProvider.ValidateKeyboardProfile(profile,out _))throw new System.IO.InvalidDataException();
+            return profile;
+        }
+        private static bool Failure(System.Exception e) => e is System.IO.IOException || e is System.IO.InvalidDataException || e is System.UnauthorizedAccessException ||
+            e is System.Runtime.Serialization.SerializationException || e is System.Xml.XmlException || e is System.ArgumentException || e is System.Security.SecurityException;
+        public bool TryRead(out Olca.Core.Domain.InputBindingProfile profile,out string error)
+        {
+            profile=null;error=null;
+            try{
+                if(!System.IO.File.Exists(ActivePath)){
+                    if(System.IO.Directory.Exists(ActivePath) || System.IO.File.Exists(BackupPath) || System.IO.Directory.Exists(BackupPath))throw new System.IO.InvalidDataException();
+                    profile=UnityInputProvider.CreateDefaultKeyboardProfile();return true;}
+                profile=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
+            }catch(System.Exception e)when(Failure(e)){error="キー設定を読み込めません。保存済みデータは変更していません。";return false;}
+        }
+        private bool writing;
+        public bool TrySave(Olca.Core.Domain.InputBindingProfile profile,out string error)
+        {
+            error=null;
+            if(writing){error="キー設定を保存中です";return false;}
+            if(!UnityInputProvider.ValidateKeyboardProfile(profile,out error))return false;
+            if(!TryRead(out _,out error))return false;
+            var bytes=Encode(profile);string temporary=null;writing=true;
+            try{
+                System.IO.Directory.CreateDirectory(DirectoryPath);
+                temporary=System.IO.Path.Combine(DirectoryPath,".keyboard-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
+                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
+                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();
+                return true;
+            }catch(System.Exception e)when(Failure(e)){
+                // OSが置換後に失敗を返した場合は、確定済み内容を照合して二重保存を避ける。
+                try{if(System.IO.File.Exists(ActivePath) && System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                error="キー設定を保存できません。現在の割当を維持します。";return false;
+            }finally{
+                writing=false;
+                if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){}
+            }
+        }
     }
 }

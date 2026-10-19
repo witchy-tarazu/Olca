@@ -145,12 +145,23 @@ namespace Olca.Application.Dungeon
         }
 
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
+        private string gameplaySettingsDirectoryOverride;
+        private KeyboardBindingFileStore keyboardSettings;
+        public string GameplayKeyboardSettingsError { get; private set; }
+        public void ConfigureGameplaySettingsDirectory(string directory)
+        {
+            if (inputProvider != null) throw new System.InvalidOperationException("起動後は設定保存先を変更できません");
+            gameplaySettingsDirectoryOverride = System.IO.Path.GetFullPath(directory);
+        }
         public Olca.Core.Domain.InputBindingProfile GameplayKeyboardProfile => inputProvider?.KeyboardProfile;
         public bool TryApplyGameplayKeyboardProfile(Olca.Core.Domain.InputBindingProfile profile, out string error)
         {
             error = null;
             if (!IsUserPaused || inputProvider == null) { error = "ユーザーポーズ中のみ適用できます"; return false; }
+            if (!UnityInputProvider.ValidateKeyboardProfile(profile, out error)) return false;
+            if (keyboardSettings == null || !keyboardSettings.TrySave(profile, out error)) { GameplayKeyboardSettingsError = error; return false; }
             if (!inputProvider.TryApplyKeyboardProfile(profile, out error)) return false;
+            GameplayKeyboardSettingsError = null;
             gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             // 論理時計は継続し、旧割当の入力だけを捨てる。再開時は既存の全キー解放待ちを通る。
             logicalLoop.ReleaseInput();
@@ -228,6 +239,10 @@ namespace Olca.Application.Dungeon
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
+            keyboardSettings = new KeyboardBindingFileStore(gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
+            GameplayKeyboardSettingsError = settingsError;
+            if (settingsError != null) logger.LogWarning(settingsError);
             inputProvider.StartEventCapture();
             customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
