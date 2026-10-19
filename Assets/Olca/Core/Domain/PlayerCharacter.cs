@@ -295,6 +295,10 @@ namespace Olca.Core.Domain
         /// <param name="newPoise">新しい強靭度</param>
         public void SetPoise(int newPoise)
         {
+            // 正の最大値を下げたときだけ、残りを最低1にする。変更自体ではのけぞらない。
+            // 最大値0を許す既存APIの扱いは維持する。
+            if (newPoise > 0 && newPoise < poise)
+                accumulatedDamage = Math.Min(accumulatedDamage, newPoise - 1);
             poise = Math.Max(0, newPoise);
         }
 

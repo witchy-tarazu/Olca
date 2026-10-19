@@ -130,6 +130,40 @@ namespace Olca.Tests.Domain
             Assert.AreEqual(0, player.AccumulatedDamage, "リセット後は0");
         }
 
+        [TestCase(150, 30)]
+        [TestCase(50, 30)]
+        [TestCase(30, 29)]
+        [TestCase(20, 19)]
+        [TestCase(1, 0)]
+        public void SetPoise_削れた量を維持し最大値低下で残り1未満なら補正する(int maximum, int expectedDamage)
+        {
+            var player = new PlayerCharacter(1000, poise: 100);
+            player.TakeDamage(30);
+            int staggerCount = 0;
+            player.OnStaggered += () => staggerCount++;
+
+            player.SetPoise(maximum);
+
+            Assert.AreEqual(maximum, player.Poise);
+            Assert.AreEqual(expectedDamage, player.AccumulatedDamage);
+            Assert.AreEqual(970, player.CurrentHp);
+            Assert.AreEqual(0, staggerCount, "最大値変更だけではのけぞらない");
+            player.TakeDamage(maximum - expectedDamage);
+            Assert.AreEqual(1, staggerCount, "補正後の残りを削った攻撃でのけぞる");
+            Assert.AreEqual(0, player.AccumulatedDamage);
+        }
+
+        [Test]
+        public void SetPoise_低下後に増加しても補正済みの削れた量を維持する()
+        {
+            var player = new PlayerCharacter(1000, poise: 100);
+            player.TakeDamage(30);
+            player.SetPoise(20);
+            player.SetPoise(150);
+            Assert.AreEqual(19, player.AccumulatedDamage);
+            Assert.AreEqual(131, player.Poise - player.AccumulatedDamage);
+        }
+
         // ========== SetPoise ==========
 
         [Test]
