@@ -362,7 +362,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 case AdditionalEffectType.Penetration:
                     // 貫通効果: プレイヤーより前方の敵全てを対象に
                     targets = GetPenetratingTargets(context);
-                    DealDamageToTargets(targets, damage, element);
+                    ApplyPenetratingDamage(context, targets, damage, element);
                     break;
 
                 case AdditionalEffectType.MultiHit:
@@ -480,6 +480,26 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 : new Vector2Int[0];
             DealDamageToTargets(new List<Enemy>(affectedEnemies), damage, element);
             // 拡散の全対象へ補正を判定した後、敵がいない命中マスも含めて燃やす。
+            foreach (var panel in burningPanels)
+                if (context.Field.GetPanelType(panel) == PanelType.Grass)
+                    context.Field.ChangePanelType(panel, PanelType.Normal);
+        }
+
+        private void ApplyPenetratingDamage(BattleContext context, List<Enemy> targets, int damage, ElementType element)
+        {
+            var burningPanels = new List<Vector2Int>();
+            var origin = context.Player.GridPosition;
+            if (element == ElementType.Fire)
+            {
+                for (int x = origin.X + 1; x < BattleField.GRID_WIDTH; x++)
+                {
+                    var panel = new Vector2Int(x, origin.Y);
+                    if (context.Field.IsInBounds(panel) && context.Field.GetPanelType(panel) == PanelType.Grass)
+                        burningPanels.Add(panel);
+                }
+            }
+            DealDamageToTargets(targets, damage, element);
+            // 通過する全対象に地形補正を判定した後、空マスも含めて燃焼する。
             foreach (var panel in burningPanels)
                 if (context.Field.GetPanelType(panel) == PanelType.Grass)
                     context.Field.ChangePanelType(panel, PanelType.Normal);
