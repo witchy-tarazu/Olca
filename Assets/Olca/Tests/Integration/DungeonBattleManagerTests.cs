@@ -1644,6 +1644,18 @@ namespace Olca.Tests.Integration
                 var queue=new LogicalInputQueue();foreach(var e in events)queue.Enqueue(1,e.Input);Assert.IsTrue(queue.Take(1).MenuConfirmButtonDown);Assert.IsFalse(queue.Take(2).MenuConfirmButtonDown);
             } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
         }
+        [TestCase(UnityEngine.InputSystem.Key.Escape)]
+        public void 取消キーは同一更新の押下解放でもイベント時刻を維持する(UnityEngine.InputSystem.Key key)
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=new Olca.Unity.UnityInputProvider();
+            try { provider.StartEventCapture();provider.CaptureTimestamped();double time=UnityEngine.Time.realtimeSinceStartupAsDouble;
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(key),time-.02);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(),time-.01);UnityEngine.InputSystem.InputSystem.Update();
+                var events=provider.CaptureTimestamped();var confirm=events.Single(e=>e.Input.MenuCancelButtonDown);var release=events.First(e=>e.Timestamp>confirm.Timestamp);
+                Assert.AreEqual(.01,(release.Timestamp-confirm.Timestamp)/(double)System.Diagnostics.Stopwatch.Frequency,.00001);
+                var queue=new LogicalInputQueue();foreach(var e in events)queue.Enqueue(1,e.Input);Assert.IsTrue(queue.Take(1).MenuCancelButtonDown);Assert.IsFalse(queue.Take(2).MenuCancelButtonDown);
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
         [Test]
         public void クリック解放時刻を使いポーズ境界で未実行UIコマンドを破棄する()
         {

@@ -126,7 +126,7 @@ namespace Olca.Unity
         private void CaptureEvent(InputEventPtr evt, InputDevice device)
         {
             if (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>()) return;
-            bool enter = KeyHeld(Key.Enter), numpadEnter = KeyHeld(Key.NumpadEnter), space = KeyHeld(Key.Space);
+            bool enter = KeyHeld(Key.Enter), numpadEnter = KeyHeld(Key.NumpadEnter), space = KeyHeld(Key.Space), escape = KeyHeld(Key.Escape);
             var pointer = device as Pointer;
             bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
             bool jump = Held("exploration", "JumpPrimary"), card = Held("battle", "CardPrimary"), leftShift = Held("exploration", "DashPrimary"), rightShift = Held("exploration", "DashSecondary");
@@ -150,6 +150,7 @@ namespace Olca.Unity
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
             next.MenuConfirmButtonDown = (!enter && KeyHeld(Key.Enter)) || (!numpadEnter && KeyHeld(Key.NumpadEnter));
             next.MenuDecideButtonDown = !space && KeyHeld(Key.Space);
+            next.MenuCancelButtonDown = !escape && KeyHeld(Key.Escape);
             if (pointerWasPressed && buttons.TryGetValue(pointer.press, out var pointerNow) && !pointerNow)
             { pointerReleaseTimestamp = timestamp; pointerReleaseRenderFrame = Time.frameCount; }
             events.Add(new TimestampedLogicalInput(timestamp, next)); eventState = next;

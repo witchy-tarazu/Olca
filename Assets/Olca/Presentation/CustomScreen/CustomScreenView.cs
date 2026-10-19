@@ -61,6 +61,7 @@ namespace Olca.Presentation.CustomScreen
                 Olca.Unity.GameplayPause.InputBlocked || (customizeModeView != null && customizeModeView.IsActive)) return;
             if (input.MenuDecideButtonDown) OnDecidePressed(true);
             if (input.MenuConfirmButtonDown) customScreen.Confirm();
+            if (input.MenuCancelButtonDown) CancelLastCardSelection();
         }
         private List<HandCardView> handCardViews = new List<HandCardView>();
         private CancellationTokenSource animationCts;
@@ -293,9 +294,9 @@ namespace Olca.Presentation.CustomScreen
 
             // キャンセル（ESC）
             // TODO: コントローラ対応時にBボタン（Cancel）の処理を追加
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (queueConfirmation == null && Input.GetKeyDown(KeyCode.Escape))
             {
-                DeselectAllCards();
+                CancelLastCardSelection();
             }
         }
 
@@ -340,21 +341,17 @@ namespace Olca.Presentation.CustomScreen
         }
 
         /// <summary>
-        /// すべてのカードの選択を解除
+        /// 最後に選択した1枚だけを取り消し、Coreの結果を表示へ反映する。
         /// </summary>
-        private void DeselectAllCards()
+        private void CancelLastCardSelection()
         {
-            foreach (var card in customScreen.SelectedCards.ToList())
-            {
-                customScreen.TryDeselectCard(card);
-            }
-
-            // View更新
+            if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming ||
+                Olca.Unity.GameplayPause.InputBlocked) return;
+            var selected = customScreen.SelectedCards;
+            if (selected.Count == 0) return;
+            if (!customScreen.TryDeselectCard(selected[selected.Count - 1])) return;
             foreach (var view in handCardViews)
-            {
-                view.UpdateSelection(false);
-            }
-
+                view.UpdateSelection(customScreen.SelectedCards.Contains(view.Card));
             UpdateConfirmButton();
             UpdateCostDisplay();
             UpdateSelectedCardDisplay();
