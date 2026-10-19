@@ -622,6 +622,50 @@ namespace Olca.Presentation.Field
         }
 
         /// <summary>探索・戦闘・報酬・終了を問わず、同じ更新で実状態を表示する。</summary>
+        private UnityEngine.UI.Text instructionText;
+        private InputBindingProfile displayedKeyboardProfile;
+        private GamePhase displayedInstructionPhase;
+
+        public static string FormatGameplayInstructions(InputBindingProfile profile, GamePhase phase)
+        {
+            if (profile == null) return string.Empty;
+            string Keys(string context, params string[] actions)
+            {
+                var values = new List<string>();
+                foreach (var action in actions)
+                {
+                    var key = profile.Bindings[("keyboard", context, action)];
+                    values.Add(key ?? "未割当");
+                }
+                return string.Join(" / ", values);
+            }
+            if (phase == GamePhase.Battle)
+                return $"{Keys("battle", "LeftPrimary", "LeftSecondary")}: 左  {Keys("battle", "RightPrimary", "RightSecondary")}: 右  " +
+                    $"{Keys("battle", "UpPrimary", "UpSecondary")}: 上  {Keys("battle", "DownPrimary", "DownSecondary")}: 下\n" +
+                    $"{Keys("battle", "AttackPrimary")}: 固有攻撃  {Keys("battle", "CardPrimary")}: カード使用  {Keys("battle", "CustomPrimary", "CustomSecondary")}: カスタム";
+            if (phase == GamePhase.Dungeon)
+                return $"自動前進  {Keys("exploration", "JumpPrimary")}: ジャンプ  {Keys("exploration", "DashPrimary", "DashSecondary")}: ダッシュ";
+            return string.Empty;
+        }
+
+        public void RefreshGameplayInstructions(InputBindingProfile appliedProfile, GamePhase phase)
+        {
+            if (instructionText == null)
+            {
+                // 既存シーンの説明欄を再利用し、他シーンの同名UIを変更しない。
+                foreach (var root in gameObject.scene.GetRootGameObjects())
+                    foreach (var text in root.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+                        if (text.name == "InstructionText") { instructionText = text; break; }
+                if (instructionText == null) return;
+                var rect = instructionText.rectTransform;
+                rect.anchorMin = new Vector2(.05f, 0); rect.anchorMax = new Vector2(.95f, 0);
+                rect.sizeDelta = new Vector2(0, 52); rect.anchoredPosition = new Vector2(0, 30);
+            }
+            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && displayedInstructionPhase == phase) return;
+            displayedKeyboardProfile = appliedProfile; displayedInstructionPhase = phase;
+            instructionText.text = FormatGameplayInstructions(appliedProfile, phase);
+        }
+
         public void RefreshDebugUI(GamePhase phase)
         {
             if (debugPhaseText != null) debugPhaseText.text = $"{phase} Phase";

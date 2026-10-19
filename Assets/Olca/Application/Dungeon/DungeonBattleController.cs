@@ -137,6 +137,7 @@ namespace Olca.Application.Dungeon
             error = null;
             if (!IsUserPaused || inputProvider == null) { error = "ユーザーポーズ中のみ適用できます"; return false; }
             if (!inputProvider.TryApplyKeyboardProfile(profile, out error)) return false;
+            gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             // 論理時計は継続し、旧割当の入力だけを捨てる。再開時は既存の全キー解放待ちを通る。
             logicalLoop.ReleaseInput();
             inputProvider.QueueSnapshot();
@@ -327,6 +328,7 @@ namespace Olca.Application.Dungeon
         private void UpdateViews()
         {
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
+            gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             switch (manager.CurrentPhase)
             {
                 case GamePhase.Dungeon:

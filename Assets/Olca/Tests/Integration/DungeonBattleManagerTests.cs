@@ -1369,6 +1369,26 @@ namespace Olca.Tests.Integration
                 Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
                 Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
         }
+        [Test]
+        public void 操作説明は適用済み割当だけを表示し破棄と未変更スロットを維持する()
+        {
+            var profile=Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+            string Format(Olca.Core.Domain.InputBindingProfile p,GamePhase phase) => Olca.Presentation.Field.GameFieldView.FormatGameplayInstructions(p,phase);
+            var original=Format(profile,GamePhase.Dungeon);
+            StringAssert.Contains("Space: ジャンプ",original); StringAssert.Contains("LeftShift / RightShift: ダッシュ",original);
+            var edit=profile.BeginEdit(); Assert.IsTrue(edit.TryAssign(("keyboard","exploration","JumpPrimary"),"J",out _));
+            Assert.AreEqual(original,Format(profile,GamePhase.Dungeon)); edit.Discard(); Assert.AreEqual(original,Format(edit.Apply(),GamePhase.Dungeon));
+            Assert.IsTrue(edit.TryAssign(("keyboard","exploration","JumpPrimary"),"J",out _));profile=edit.Apply();
+            StringAssert.Contains("J: ジャンプ",Format(profile,GamePhase.Dungeon));StringAssert.DoesNotContain("Space",Format(profile,GamePhase.Dungeon));
+            StringAssert.Contains("LeftShift / RightShift",Format(profile,GamePhase.Dungeon));
+            var battle=Format(profile,GamePhase.Battle);
+            foreach(var pair in profile.Bindings) if(pair.Key.Context=="battle") StringAssert.Contains(pair.Value,battle);
+            edit=profile.BeginEdit();Assert.IsTrue(edit.TryAssign(("keyboard","battle","CardPrimary"),"Z",out _));
+            battle=Format(edit.Apply(),GamePhase.Battle);StringAssert.Contains("Z: カード使用",battle);StringAssert.Contains("Space: 固有攻撃",battle);
+            Assert.IsTrue(edit.TryAssign(("keyboard","exploration","DashPrimary"),null,out _));
+            StringAssert.Contains("未割当 / RightShift",Format(edit.Apply(),GamePhase.Dungeon));
+            Assert.AreEqual(string.Empty,Format(profile,GamePhase.CardReward));
+        }
         [TestCase("not-a-key")][TestCase("1")][TestCase("None")]
         public void 不正キーは現在の実入力割当を変更しない(string key)
         {
