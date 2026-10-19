@@ -33,6 +33,23 @@ namespace Olca.Presentation.Dungeon
         /// </summary>
         public void Refresh(DungeonHudData data)
         {
+            // 既存シーンで進行度欄が未割当でも、明示した階層列の現在階層を表示する。
+            if (data.FloorNumber > 0 && progressText == null)
+            {
+                var label = new GameObject("FloorProgressText", typeof(RectTransform), typeof(Text));
+                label.transform.SetParent(transform, false);
+                progressText = label.GetComponent<Text>();
+                progressText.font = deckCountText != null && deckCountText.font != null
+                    ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                progressText.fontSize = 28;
+                progressText.alignment = TextAnchor.MiddleCenter;
+                progressText.raycastTarget = false;
+                var rect = progressText.rectTransform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+                rect.pivot = new Vector2(0.5f, 1f);
+                rect.anchoredPosition = new Vector2(0f, -24f);
+                rect.sizeDelta = new Vector2(400f, 48f);
+            }
             if (hpText != null)
                 hpText.text = $"HP: {data.CurrentHp} / {data.MaxHp}";
 

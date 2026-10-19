@@ -2360,8 +2360,6 @@ namespace Olca.Tests.Integration
             controller.ConfigureFloorSequence(definitions);
             var view = host.AddComponent<Olca.Presentation.Field.GameFieldView>(); Set(controller, "gameFieldView", view);
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
-            var label = new UnityEngine.GameObject("progress", typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text));
-            label.transform.SetParent(host.transform); Set(hud, "progressText", label.GetComponent<UnityEngine.UI.Text>());
             Call(controller, "Start"); return controller;
         }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
@@ -2475,6 +2473,27 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(2, controller.CurrentFloorIndex);
             var restarted = Start(); Assert.IsTrue(restarted.TryRestoreMemoryCheckpoint(out var error), error);
             Assert.AreEqual(2, restarted.CurrentFloorIndex);
+        }
+        [Test]
+        public void 実シーンの未割当進行度欄も階層列でだけ一度生成し同じHUDで更新する()
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);
+            try
+            {
+                var hud = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.Dungeon.DungeonHudView>(true)).Single();
+                Assert.IsNull(Get(hud, "progressText"));
+                hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(100, 100, 0, 6, false, false, 6, 0));
+                Assert.IsNull(Get(hud, "progressText"), "既定単階層の表示を増やさない");
+                hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(100, 100, 1, 6, false, false, 6, 0, 1));
+                var label = (UnityEngine.UI.Text)Get(hud, "progressText");
+                Assert.IsNotNull(label); Assert.AreEqual("1階  1 / 6", label.text);
+                Assert.IsFalse(label.raycastTarget); Assert.AreSame(hud.transform, label.transform.parent);
+                Assert.AreSame(((UnityEngine.UI.Text)Get(hud, "deckCountText")).font, label.font);
+                hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(63, 100, 0, 20, false, false, 7, 1, 2));
+                Assert.AreSame(label, Get(hud, "progressText")); Assert.AreEqual("2階  0 / 20", label.text);
+                Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "FloorProgressText"));
+            }
+            finally { UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true); }
         }
         [Test]
         public void 中間階層での敗北は次階層へ進めず終了保存から再開しない()
