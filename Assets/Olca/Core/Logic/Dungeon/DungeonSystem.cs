@@ -895,7 +895,7 @@ namespace Olca.Core.Logic.Dungeon
                     w.Write((int)cell.Type); w.Write(cell.Height);
                     if (cell.Enemy == null) continue;
                     var e = cell.Enemy;
-                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || e.PoiseRecoveryDelayFrames.HasValue || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum)
+                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || (e.PoiseRecoveryDelayFrames != e.PoiseDefinition?.RecoveryDelayFrames || e.PoiseRecoveryRemainingFrames > 0) || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum)
                         throw new ArgumentException("敵の標準定義が必要です");
                     enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition, resistances: e.Resistances, statusResistances: e.StatusResistances, poiseDefinition: e.PoiseDefinition));
                     heights.Add(i, cell.Height);
@@ -904,7 +904,8 @@ namespace Olca.Core.Logic.Dungeon
                     if (!e.Resistances.IsNeutral) { w.Write("resistances"); w.Write(e.Resistances.Fire); w.Write(e.Resistances.Water); w.Write(e.Resistances.Wind); w.Write(e.Resistances.Earth); }
                     // 未設定の旧マップhashは維持。設定値だけを保存復帰時の定義照合へ含める。
                     if (!e.StatusResistances.IsNeutral) { w.Write("timed-status-resistances"); w.Write(e.StatusResistances.Poison); w.Write(e.StatusResistances.Paralyze); }
-                    if (e.PoiseDefinition != null) { w.Write("enemy-poise"); w.Write(e.PoiseDefinition.Maximum); w.Write(e.PoiseDefinition.StaggerFrames); }
+                    if (e.PoiseDefinition != null) { w.Write("enemy-poise"); w.Write(e.PoiseDefinition.Maximum); w.Write(e.PoiseDefinition.StaggerFrames);
+                        if (e.PoiseDefinition.RecoveryDelayFrames.HasValue) { w.Write("poise-recovery"); w.Write(e.PoiseDefinition.RecoveryDelayFrames.Value); } }
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
                 }
             });
@@ -1103,7 +1104,7 @@ namespace Olca.Core.Logic.Dungeon
             Enemies = new System.Collections.ObjectModel.ReadOnlyDictionary<int, Enemy>(enemies);
             Map = definitions.RestoreMap(enemies);
             var p = dto.Player;
-            Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames);
+            Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames, p.PoiseRecoveryFrames);
             Player.SetElementResistances(new ElementResistances(p.FireResistance, p.WaterResistance, p.WindResistance, p.EarthResistance));
             Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             Deck = new Deck(Array.ConvertAll(dto.DeckOrder, id => cards[id]).ToList());
@@ -1129,7 +1130,7 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
                 definitions.ValidateProcessedObstacles(d);
                 var p = d.Player;
-                CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 && p.StaggerFrames >= 0 &&
+                CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 && p.StaggerFrames >= 0 && (!p.PoiseRecoveryFrames.HasValue || p.PoiseRecoveryFrames > 0) &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
                 // 既存保存形式は上限100を検証する。旧負値は原値のまま復元し戦闘時に制限。
                 CheckpointValues.Require(p.FireResistance <= 100 && p.WaterResistance <= 100 &&
@@ -1331,7 +1332,7 @@ namespace Olca.Core.Logic.Dungeon
                 throw new ArgumentException("未確定HPを含むフレーム中は保存できません");
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
-            if (player.IsStaggered || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.HasAura || player.PoiseRecoveryDelayFrames.HasValue || player.IsConcentrating)
+            if (player.IsStaggered || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)
                 throw new ArgumentException("未対応の一時状態を保存できません");
             var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
             var obtained = dungeon.GetObtainedCards().ToList();
@@ -1342,7 +1343,7 @@ namespace Olca.Core.Logic.Dungeon
             foreach (var pair in Definitions.Enemies)
             {
                 var e = mapped.TryGetValue(pair.Key, out var live) ? live : null;
-                if (e != null && (e.IsSummoned || (!e.IsDead && (e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || e.PoiseRecoveryDelayFrames.HasValue || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum))))
+                if (e != null && (e.IsSummoned || (!e.IsDead && (e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || (e.PoiseRecoveryDelayFrames != e.PoiseDefinition?.RecoveryDelayFrames || e.PoiseRecoveryRemainingFrames > 0) || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum))))
                     throw new ArgumentException("未対応の敵状態を保存できません");
                 enemyStates.Add(new CheckpointEnemyDto { CellIndex = pair.Key, EnemyId = pair.Value.EnemyId,
                     Hp = e?.CurrentHp ?? 0, GridX = e?.GridPosition.X ?? pair.Value.GridPosition.X, GridY = e?.GridPosition.Y ?? pair.Value.GridPosition.Y });
@@ -1354,7 +1355,7 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
                 Player = new CheckpointPlayerDto { Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
-                    Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
+                    Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
                     WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()

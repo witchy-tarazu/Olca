@@ -63,6 +63,8 @@ namespace Olca.Core.Domain
         internal void ClearStagger() { staggerTimer.SetFrames(0); frameWasStaggered = false; }
         private int pendingInvincibilityMs;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
+        /// <summary>保存・戦闘をまたいで保持する外部定義。残り待ち時間は含めない。</summary>
+        public int? PoiseRecoveryDefinitionFrames { get; }
         public int? PoiseRecoveryDelayFrames => poiseRecovery.DelayFrames;
         public int PoiseRecoveryRemainingFrames => poiseRecovery.RemainingFrames;
         public void ConfigurePoiseRecovery(int? delayFrames)
@@ -72,7 +74,11 @@ namespace Olca.Core.Domain
             poiseRecovery.Configure(delayFrames);
         }
         internal void TickPoiseRecovery(int ms, bool logical) { if (poiseRecovery.Tick(ms, logical)) accumulatedDamage = 0; }
-        internal void ClearPoiseRecovery() => poiseRecovery.Clear();
+        internal void ClearPoiseRecovery()
+        {
+            poiseRecovery.Clear(); poiseRecovery.Configure(PoiseRecoveryDefinitionFrames);
+            accumulatedDamage = 0;
+        }
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
@@ -188,8 +194,8 @@ namespace Olca.Core.Domain
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
         /// <param name="poise">強靭度（デフォルト30）</param>
-        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0)
-            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise, staggerDurationFrames)
+        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null)
+            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise, staggerDurationFrames, poiseRecoveryDelayFrames)
         {
         }
 
@@ -201,10 +207,12 @@ namespace Olca.Core.Domain
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
         /// <param name="poise">強靭度（デフォルト30）</param>
-        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0)
+        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null)
         {
             if (staggerDurationFrames < 0) throw new ArgumentOutOfRangeException(nameof(staggerDurationFrames));
             StaggerDurationFrames = staggerDurationFrames;
+            poiseRecovery.Configure(poiseRecoveryDelayFrames);
+            PoiseRecoveryDefinitionFrames = poiseRecoveryDelayFrames;
             this.maxHp = maxHp;
             this.currentHp = maxHp;
             this.attackPower = attackPower;

@@ -42,14 +42,16 @@ namespace Olca.Core.Domain
     {
         public int Maximum { get; }
         public int StaggerFrames { get; }
-        public EnemyPoiseDefinition(int maximum, int staggerFrames)
+        public int? RecoveryDelayFrames { get; }
+        public EnemyPoiseDefinition(int maximum, int staggerFrames, int? recoveryDelayFrames = null)
         {
             if (maximum <= 0) throw new ArgumentOutOfRangeException(nameof(maximum));
             if (staggerFrames <= 0) throw new ArgumentOutOfRangeException(nameof(staggerFrames));
-            Maximum = maximum; StaggerFrames = staggerFrames;
+            if (recoveryDelayFrames <= 0) throw new ArgumentOutOfRangeException(nameof(recoveryDelayFrames));
+            Maximum = maximum; StaggerFrames = staggerFrames; RecoveryDelayFrames = recoveryDelayFrames;
         }
         public bool HasSameValues(EnemyPoiseDefinition other)
-            => other != null && Maximum == other.Maximum && StaggerFrames == other.StaggerFrames;
+            => other != null && Maximum == other.Maximum && StaggerFrames == other.StaggerFrames && RecoveryDelayFrames == other.RecoveryDelayFrames;
     }
 
     /// <summary>
@@ -98,7 +100,11 @@ namespace Olca.Core.Domain
             poiseRecovery.Configure(delayFrames);
         }
         internal void TickPoiseRecovery(int ms, bool logical) { if (poiseRecovery.Tick(ms, logical)) AccumulatedPoiseDamage = 0; }
-        internal void ClearPoiseRecovery() => poiseRecovery.Clear();
+        internal void ClearPoiseRecovery()
+        {
+            poiseRecovery.Clear(); poiseRecovery.Configure(PoiseDefinition?.RecoveryDelayFrames);
+            AccumulatedPoiseDamage = 0;
+        }
         public bool IsStaggered => staggerTimer.IsActive;
         public int StaggerRemainingFrames => staggerTimer.Frames;
         private FrameCountdown staggerTimer;
@@ -262,6 +268,7 @@ namespace Olca.Core.Domain
         public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null)
         {
             PoiseDefinition = poiseDefinition; Poise = poiseDefinition?.Maximum;
+            poiseRecovery.Configure(poiseDefinition?.RecoveryDelayFrames);
             Resistances = resistances ?? ElementResistances.Neutral;
             StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
             EnemyId = enemyId;

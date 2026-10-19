@@ -2509,25 +2509,60 @@ namespace Olca.Tests.Application
             string json;
             using (var stream = new System.IO.MemoryStream()) {
                 serializer.WriteObject(stream, dto);
-                json = System.Text.Encoding.UTF8.GetString(stream.ToArray()).Replace("\"StaggerFrames\":0,", "");
+                json = System.Text.Encoding.UTF8.GetString(stream.ToArray()).Replace("\"StaggerFrames\":0,", "").Replace("\"PoiseRecoveryFrames\":null,", "");
             }
-            StringAssert.DoesNotContain("StaggerFrames", json);
+            StringAssert.DoesNotContain("StaggerFrames", json); StringAssert.DoesNotContain("PoiseRecoveryFrames", json);
             CheckpointDto old;
             using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)))
                 old = (CheckpointDto)serializer.ReadObject(stream);
             Assert.IsTrue(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(old, source.Definitions, out var restored, out var error), error);
-            Assert.AreEqual(0, restored.Player.StaggerDurationFrames); Assert.IsFalse(restored.Player.IsStaggered);
+            Assert.AreEqual(0, restored.Player.StaggerDurationFrames); Assert.IsFalse(restored.Player.IsStaggered); Assert.IsNull(restored.Player.PoiseRecoveryDelayFrames);
+            foreach (int invalid in new[] { 0, -1 }) { old.Player.PoiseRecoveryFrames = invalid; Assert.IsFalse(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(old, source.Definitions, out _, out _)); }
+            old.Player.PoiseRecoveryFrames = null;
             old.Player.StaggerFrames = -1;
             Assert.IsFalse(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(old, source.Definitions, out _, out error));
             Assert.IsNotEmpty(error);
         }
 
-        private DungeonConfig EnemyPoiseMap(int maximum = 30, int frames = 6, int resistance = 50)
+        [TestCase(false)][TestCase(true)]
+        public void 自然回復の途中状態と一時上書きは出撃保存へ混入できない(bool enemySide)
+        {
+            foreach (bool temporary in new[] { false, true }) {
+                var map = EnemyPoiseMap(recovery: 6); var deck = new Deck();
+                var source = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+                var player = new PlayerCharacter(100, poiseRecoveryDelayFrames: 6);
+                if (enemySide) {
+                    var enemy = map.MapCells[5].Enemy;
+                    if (temporary) enemy.ConfigurePoiseRecovery(9); else enemy.TakeDamage(1, ElementType.None, poiseDamage: 7);
+                } else {
+                    if (temporary) player.ConfigurePoiseRecovery(9); else player.TakeDamage(1, poiseDamage: 7);
+                }
+                var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: source);
+                Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.IsNull(source.Store.Read());
+            }
+        }
+
+        [Test]
+        public void 敵の自然回復定義は照合対象で不正値と異なる期間への復帰を拒否する()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new EnemyPoiseDefinition(30, 6, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new PlayerCharacter(100, poiseRecoveryDelayFrames: -1));
+            var map = EnemyPoiseMap(recovery: 6); var deck = new Deck();
+            var source = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+            new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(100), deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: source);
+            var changed = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(EnemyPoiseMap(recovery: 9), deck);
+            Assert.AreNotEqual(source.Definitions.MapHash, changed.Definitions.MapHash);
+            Assert.IsFalse(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(source.Store.Read(), changed.Definitions, out _, out _));
+        }
+
+        private DungeonConfig EnemyPoiseMap(int maximum = 30, int frames = 6, int resistance = 50, int? recovery = null)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
             var old = map.MapCells[5].Enemy;
             map.MapCells[5] = new MapCell(5, new Enemy(old.EnemyId, old.Name, old.MaxHp, old.Element, old.GridPosition,
-                resistances: new ElementResistances(fire: resistance), poiseDefinition: new EnemyPoiseDefinition(maximum, frames)));
+                resistances: new ElementResistances(fire: resistance), poiseDefinition: new EnemyPoiseDefinition(maximum, frames, recovery)));
             return map;
         }
 
@@ -2542,7 +2577,7 @@ namespace Olca.Tests.Application
 
         private List<string> EnemyPoiseCardTrace(int fps, bool stall, bool restore, int impact, bool multi, bool guard = false, bool interruptible = false, int resistance = 50, AttackProperty properties = AttackProperty.None, bool recovery = false)
         {
-            var map = EnemyPoiseMap(resistance: resistance); var card = EnemyPoiseCard(impact, multi, properties); var deck = new Deck(new List<Card> { card });
+            var map = EnemyPoiseMap(resistance: resistance, recovery: recovery ? 6 : (int?)null); var card = EnemyPoiseCard(impact, multi, properties); var deck = new Deck(new List<Card> { card });
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
             var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(1000), deck,
                 new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
@@ -2563,7 +2598,7 @@ namespace Olca.Tests.Application
             Assert.AreEqual(30, target.Poise); Assert.AreEqual(6, target.PoiseDefinition.StaggerFrames);
             Assert.IsFalse(target.Guard.IsActive); Assert.IsFalse(target.IsStaggered);
             target.Guard.Set(guard, interruptible);
-            if (recovery) target.ConfigurePoiseRecovery(6);
+            if (recovery) Assert.AreEqual(6, target.PoiseRecoveryDelayFrames, "戦闘開始保存から定義を復元する");
             int initialHp = target.CurrentHp, used = 0, staggered = 0, initialFrames = 0;
             target.OnStaggered += () => { staggered++; initialFrames = target.StaggerRemainingFrames; };
             battle.CardUsage.OnCardUsed += _ => used++;
@@ -2765,7 +2800,7 @@ namespace Olca.Tests.Application
         private List<string> IndependentPoiseTrace(int fps, bool stall, bool restore, int impact, bool recovery = false)
         {
             var map = DungeonConfig.CreateTestDungeon(6, 30, 100); var deck = new Deck(new List<Card>());
-            var player = new PlayerCharacter(100); player.SetElementResistances(new ElementResistances(fire: 50));
+            var player = new PlayerCharacter(100, poiseRecoveryDelayFrames: recovery ? 6 : (int?)null); player.SetElementResistances(new ElementResistances(fire: 50));
             var checkpoints = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
             var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
                 new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints);
@@ -2780,7 +2815,7 @@ namespace Olca.Tests.Application
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); session.TryOpenCustomScreen();
             battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); player.MoveTo(new Vector2Int(2, 0));
             foreach (var enemy in battle.Enemies) { enemy.ApplyStun(60000); enemy.MoveTo(new Vector2Int(5, 0)); }
-            if (recovery) player.ConfigurePoiseRecovery(6);
+            if (recovery) Assert.AreEqual(6, player.PoiseRecoveryDelayFrames, "戦闘開始保存から定義を復元する");
             // 製品値を追加せず、公開登録APIで外部指定の攻撃を通常AI更新へ載せる。
             for (int i = 0; i < 2; i++) battle.AddSummon(new Enemy("poise-fixture-" + i, "検証", 10,
                 ElementType.Fire, new Vector2Int(3, 0), isSummoned: true),

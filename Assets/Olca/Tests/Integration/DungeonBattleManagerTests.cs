@@ -973,15 +973,20 @@ namespace Olca.Tests.Integration
         private DungeonCheckpointSession session;
         private FailingStore store;
         private SeedRandom random;
-        private void Create(bool failDeparture = false)
+        private void Create(bool failDeparture = false, int? recovery = null)
         {
             var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
+            if (recovery.HasValue) foreach (var index in Enumerable.Range(0, map.MapCells.Count).Where(i => map.MapCells[i].Enemy != null).ToArray()) {
+                var e = map.MapCells[index].Enemy;
+                map.MapCells[index] = new MapCell(index, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element,
+                    e.GridPosition, poiseDefinition: new EnemyPoiseDefinition(30, 6, recovery)));
+            }
             var factory = new Olca.Application.Battle.SimpleCardFactory();
             var deck = new Deck(new List<Card> { factory.CreateById("sword"), factory.CreateById("sword"), factory.CreateById("heal") });
             var defaults = DungeonCheckpointSession.CreateDefault(map, deck);
             store = new FailingStore(defaults.Definitions) { Fail = failDeparture };
             session = new DungeonCheckpointSession(defaults.Definitions, store); random = new SeedRandom();
-            manager = new DungeonBattleManager(map, new PlayerCharacter(100), deck, random, new MockLogger(), checkpoints: session);
+            manager = new DungeonBattleManager(map, new PlayerCharacter(100, poiseRecoveryDelayFrames: recovery), deck, random, new MockLogger(), checkpoints: session);
             if (!failDeparture)
             {
                 // 製品値に触れず、既存抽選で報酬ありとなるfixtureのSeedを探す。
@@ -1015,6 +1020,34 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(manager.SuspendForCheckpoint());
             Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session, random, new MockLogger(), out var restored, out var error), error);
             manager = restored; manager.ActivateCheckpoint();
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 自然回復定義は出撃戦闘報酬と再戦を通して保持し一時状態だけ解除する(bool restore)
+        {
+            Create(recovery: 6);
+            Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked);
+            Assert.AreEqual(6, store.Read().Player.PoiseRecoveryFrames);
+            Contact(); Assert.IsNotNull(manager.CurrentBattle);
+            Assert.AreEqual(CheckpointBoundary.BattleStart, store.Read().Boundary);
+            if (restore) Restore();
+            var player = manager.Dungeon.Player; var enemy = manager.CurrentBattle.Enemies[0];
+            Assert.AreEqual(6, player.PoiseRecoveryDelayFrames); Assert.AreEqual(6, enemy.PoiseRecoveryDelayFrames);
+            player.TakeDamage(1, poiseDamage: 7); enemy.TakeDamage(1, ElementType.None, poiseDamage: 7);
+            Assert.AreEqual(6, player.PoiseRecoveryRemainingFrames); Assert.AreEqual(6, enemy.PoiseRecoveryRemainingFrames);
+            var sequence = store.Read().Sequence;
+            Win(); store.Fail = true; manager.SelectCardReward(null);
+            Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.AreEqual(sequence, store.Read().Sequence);
+            Assert.AreEqual(6, player.PoiseRecoveryDelayFrames); Assert.AreEqual(0, player.PoiseRecoveryRemainingFrames);
+            Assert.AreEqual(0, player.AccumulatedDamage); Assert.AreEqual(6, enemy.PoiseRecoveryDelayFrames);
+            Assert.AreEqual(0, enemy.PoiseRecoveryRemainingFrames); Assert.AreEqual(0, enemy.AccumulatedPoiseDamage);
+            store.Fail = false; Assert.IsTrue(manager.RetryCheckpoint());
+            Assert.AreEqual(CheckpointBoundary.RewardCompleted, store.Read().Boundary);
+            Assert.AreEqual(6, store.Read().Player.PoiseRecoveryFrames); Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked);
+            Restore(); Assert.AreEqual(6, manager.Dungeon.Player.PoiseRecoveryDelayFrames);
+            for (int f = 0; f < 300 && manager.CurrentBattle == null; f++) manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle); Assert.AreEqual(6, manager.CurrentBattle.Enemies[0].PoiseRecoveryDelayFrames);
+            Assert.AreEqual(0, manager.Dungeon.Player.PoiseRecoveryRemainingFrames);
         }
 
         [Test]
@@ -2190,6 +2223,38 @@ namespace Olca.Tests.Integration
             foreach (var enemy in next.Enemies) enemy.Hp = 0;
             return next;
         }
+        [Test]
+        public void 自然回復定義は通常階層終端の保存とファイル再起動を越えて保持する()
+        {
+            foreach (var map in maps) foreach (var index in Enumerable.Range(0, map.MapCells.Count).Where(i => map.MapCells[i].Enemy != null).ToArray()) {
+                var e = map.MapCells[index].Enemy;
+                map.MapCells[index] = new MapCell(index, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element,
+                    e.GridPosition, poiseDefinition: new EnemyPoiseDefinition(30, 6, 9)));
+            }
+            definitions = new FloorSequenceDefinitions("fixture-route", "v1", maps, deck);
+            store = new Olca.Unity.FloorSequenceFileStore(definitions, directory);
+            run = new FloorSequenceSession(definitions, store);
+            var checkpoints = definitions.CreateCheckpointSession(0, run);
+            var player = new PlayerCharacter(100, poiseRecoveryDelayFrames: 6);
+            var manager = new DungeonBattleManager(definitions.CreateInitialMap(0), player, deck,
+                new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints, hasNextFloor: true);
+            manager.OnCardRewardPresented += _ => manager.SelectCardReward(null);
+            for (int f = 0; f < 600 && !manager.Dungeon.IsFloorCompleted; f++) {
+                manager.TickFrame(17);
+                var battle = manager.CurrentBattle;
+                if (battle == null) continue;
+                player.TakeDamage(1, poiseDamage: 7);
+                foreach (var enemy in battle.Enemies.ToArray()) if (!enemy.IsDead) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
+            }
+            Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked); Assert.IsTrue(manager.Dungeon.IsFloorCompleted);
+            Assert.AreEqual(1, run.Current.FloorIndex); Assert.AreEqual(6, run.Current.State.Player.PoiseRecoveryDelayFrames);
+            Assert.AreEqual(0, run.Current.State.Player.PoiseRecoveryRemainingFrames);
+            var reopened = new FloorSequenceSession(definitions, new Olca.Unity.FloorSequenceFileStore(definitions, directory));
+            Assert.IsTrue(reopened.TryLoad(out var error), error);
+            Assert.AreEqual(6, reopened.Current.State.Player.PoiseRecoveryDelayFrames);
+            Assert.IsTrue(reopened.Current.State.Enemies.Values.All(e => e.PoiseRecoveryDelayFrames == 9 && e.PoiseRecoveryRemainingFrames == 0));
+        }
+
         [TestCase("empty")] [TestCase("null")] [TestCase("future-cell")] [TestCase("final-boss")]
         public void 現在階層の保存前に階層列全体を検証する(string fault)
         {
