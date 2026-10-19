@@ -24,6 +24,23 @@ namespace Olca.Core.Domain
     [System.Flags]
     public enum AttackProperty { None = 0, Sword = 1, Break = 2 }
 
+    /// <summary>外部指定のガード判定。発生元・期間・入力は所有しない。</summary>
+    public sealed class BattleGuardState
+    {
+        public bool IsActive { get; private set; }
+        public bool InterruptOnStagger { get; private set; }
+        public void Set(bool active, bool interruptOnStagger)
+        { IsActive = active; InterruptOnStagger = active && interruptOnStagger; }
+        public void Clear() => Set(false, false);
+        internal void OnStaggered() { if (InterruptOnStagger) Clear(); }
+        public bool Blocks(int originalDamage, AttackProperty properties)
+        {
+            if (originalDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(originalDamage));
+            AttackPropertyRules.Validate(properties);
+            return IsActive && originalDamage > 0 && (properties & AttackProperty.Break) == 0;
+        }
+    }
+
     internal static class AttackPropertyRules
     {
         internal static void Validate(AttackProperty value)

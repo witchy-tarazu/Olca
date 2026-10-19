@@ -84,6 +84,55 @@ namespace Olca.Tests.Battle
             Assert.Less(target.CurrentHp, 100); Assert.AreEqual(0, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
         }
 
+        [TestCase(false)][TestCase(true)]
+        public void ガードは前後の基本攻撃と独立削りを防ぎブレイク中断だけ発生元設定に従う(bool interruptible)
+        {
+            var target = new Enemy("guard", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            var player = new PlayerCharacter(100);
+            var battle = new BattleSystem(player, new List<Enemy> { target }, new Deck());
+            target.Guard.Set(true, interruptible); int hits = 0; target.OnDamaged += (_, __) => hits++;
+            foreach (int x in new[] { 2, 4 }) {
+                player.MoveTo(new Vector2Int(x, 0)); battle.PlayerBasicAttack(target);
+            }
+            target.TakeDamage(1, ElementType.None, AttackProperty.Sword, int.MaxValue);
+            Assert.AreEqual(100, target.CurrentHp); Assert.AreEqual(0, hits); Assert.AreEqual(0, target.AccumulatedPoiseDamage);
+            battle.RunLogicalFrame(() => {
+                target.TakeDamage(1, ElementType.None, AttackProperty.Break, 15);
+                target.TakeDamage(1, ElementType.None, AttackProperty.Sword | AttackProperty.Break, 15);
+                Assert.IsTrue(target.Guard.IsActive, "同フレームの中断判定前はガードを保つ");
+            });
+            Assert.AreEqual(98, target.CurrentHp); Assert.AreEqual(2, hits); Assert.IsTrue(target.IsStaggered);
+            Assert.AreEqual(!interruptible, target.Guard.IsActive);
+            player.TakeDamage(1000); Assert.IsFalse(target.Guard.IsActive, "戦闘終了で一時状態を解除する");
+        }
+
+        [Test]
+        public void 中断行動のない敵はブレイクでガードを失わず毒と状態専用を受ける()
+        {
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { enemy }, new Deck());
+            enemy.Guard.Set(true, false); int hits = 0; enemy.OnDamaged += (_, __) => hits++;
+            enemy.TakeDamage(1, ElementType.None, AttackProperty.Break, int.MaxValue);
+            Assert.IsTrue(enemy.Guard.IsActive); Assert.AreEqual(99, enemy.CurrentHp);
+            enemy.TakeDamage(0, ElementType.Fire); Assert.AreEqual(2, hits);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 60));
+            for (int i = 0; i < 10; i++) battle.TickFrame(17);
+            Assert.Less(enemy.CurrentHp, 99); Assert.IsTrue(enemy.Guard.IsActive);
+        }
+
+        [Test]
+        public void 属性完全無効はブレイクでもガードと削りを変えず一時ガードを標準保存定義に混ぜない()
+        {
+            var target = new Enemy("guard", "検証", 100, ElementType.None, Vector2Int.Zero,
+                resistances: new ElementResistances(fire: 100), poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            target.Guard.Set(true, true);
+            target.TakeDamage(1, ElementType.Fire, AttackProperty.Break, int.MaxValue);
+            Assert.AreEqual(100, target.CurrentHp); Assert.AreEqual(0, target.AccumulatedPoiseDamage); Assert.IsTrue(target.Guard.IsActive);
+            var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
+            map.MapCells[5].Enemy.Guard.Set(true, false);
+            Assert.Throws<System.ArgumentException>(() => Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, new Deck()));
+        }
+
         // ========== Enemy.ApplyStun / IsStunned / StunDurationMs ==========
 
         [Test]

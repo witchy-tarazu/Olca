@@ -25,6 +25,7 @@ namespace Olca.Core.Domain
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
+        public BattleGuardState Guard { get; } = new BattleGuardState();
         public ElementResistances Resistances { get; }
         public TimedStatusResistances StatusResistances { get; }
         public EnemyPoiseDefinition PoiseDefinition { get; }
@@ -54,6 +55,7 @@ namespace Olca.Core.Domain
             if (IsDead) return false;
             // 再成立時は残時間への加算や最大値選択ではなく、定義期間の先頭へ戻す。
             staggerTimer.SetFrames(PoiseDefinition.StaggerFrames);
+            Guard.OnStaggered();
             return true;
         }
         internal Func<bool> IsOnGrass;
@@ -197,12 +199,12 @@ namespace Olca.Core.Domain
         {
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
-            ApplyDamage(damage, attackElement, false, poiseDamage);
+            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties);
         }
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
-        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null)
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -215,6 +217,8 @@ namespace Olca.Core.Domain
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
                 if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。
+                // 防いだ攻撃は命中/実ダメージ派生にも進めない。毒はガード判定の対象外。
+                if (!poison && Guard.Blocks(damage, properties)) return;
 
                 if (poison)
                     finalDamage = frameHp.Active ? frameHp.Poison(finalDamage) : Math.Min(finalDamage, Math.Max(0, currentHp - 1));
