@@ -630,6 +630,20 @@ namespace Olca.Application.Dungeon
         // 候補と保存形式を検証した後でのみ旧モデルを破棄する。
         public bool TryRestoreMemoryCheckpoint(out string error)
         {
+            // 呼出し前の進行時間は保持し、検証・初期化に費やす同期時間だけを除外する。
+            logicalLoop.Observe(manager != null && !IsUserPaused && !awaitingCheckpointChoice &&
+                !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
+            try { return RestoreMemoryCheckpoint(out error); }
+            finally
+            {
+                // 成功・拒否・例外のどの経路でも、完了後から再び経過時間を計測する。
+                logicalLoop.Observe(false);
+                logicalLoop.ReleaseInput();
+                inputProvider?.QueueSnapshot();
+            }
+        }
+        private bool RestoreMemoryCheckpoint(out string error)
+        {
             error = null;
             if (manager == null || memoryCheckpoints == null || manager.Dungeon.IsCheckpointBlocked)
             { error = "保存が未完了です"; return false; }
@@ -650,7 +664,6 @@ namespace Olca.Application.Dungeon
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline();
-            inputProvider?.QueueSnapshot();
             manager = restored;
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;

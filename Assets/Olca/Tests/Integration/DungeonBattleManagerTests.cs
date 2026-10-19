@@ -709,7 +709,14 @@ namespace Olca.Tests.Integration
             public FailingStore(CheckpointDefinitions definitions) { memory = new MemoryCheckpointStore(definitions); }
             public bool TryWrite(CheckpointDto dto, out string error)
             { BeforeWrite?.Invoke(); if (Fail) { error = "fixture保存失敗"; return false; } return memory.TryWrite(dto, out error); }
-            public CheckpointDto Read() => memory.Read();
+            public System.Action BeforeRead;
+            public bool ReadUnavailable, ThrowRead;
+            public CheckpointDto Read()
+            {
+                BeforeRead?.Invoke();
+                if (ThrowRead) throw new System.IO.IOException("fixture読込例外");
+                return ReadUnavailable ? null : memory.Read();
+            }
         }
         [Test]
         public void 保存再試行中の待機と同期保存時間を論理時計へ加算しない()
@@ -735,6 +742,52 @@ namespace Olca.Tests.Integration
                 Assert.AreEqual(60, loop.Clock.PendingFrames, "保存待ち・保存処理中の時間は追加せず既存の負債を保持する");
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)][TestCase(true,true)]
+        public void 復帰検証と初期化時間を除外し失敗再試行と購読と旧予約を保護する(bool throwRead,bool userPaused)
+        {
+            Create();Contact();
+            var go=new UnityEngine.GameObject("restore-clock-test");go.SetActive(false);
+            var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            var type=typeof(Olca.Application.Dungeon.DungeonBattleController);
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            Set("manager",manager);Set("memoryCheckpoints",session);Set("randomProvider",new Olca.Unity.UnityRandomProvider(123));Set("logger",new Olca.Unity.UnityLogger());
+            var overlay=new UnityEngine.GameObject("checkpoint-overlay");overlay.transform.SetParent(go.transform);Set("checkpointOverlay",overlay);
+            T Ui<T>(string name) where T:UnityEngine.Component {var obj=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(T));obj.transform.SetParent(go.transform);return obj.GetComponent<T>();}
+            Set("checkpointMessage",Ui<UnityEngine.UI.Text>("message"));Set("continueCheckpointButton",Ui<UnityEngine.UI.Button>("continue"));Set("retryCheckpointButton",Ui<UnityEngine.UI.Button>("retry"));
+            var loop=(Olca.Unity.UnityLogicalLoop)type.GetField("logicalLoop",flags).GetValue(controller);long now=0;long frequency=System.Diagnostics.Stopwatch.Frequency;
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(System.Func<long>)(()=>now));
+            typeof(Olca.Unity.UnityLogicalLoop).GetField("observed",flags).SetValue(loop,0L);
+            var handlers=new Dictionary<string,string>{{"OnBattleStarted","OnBattleStarted"},{"OnBattleEnded","OnBattleEnded"},{"OnCardRewardPresented","OnCardRewardPresented"},{"OnGameOver","OnGameOver"},{"OnDungeonClearCompleted","OnDungeonCleared"}};
+            foreach(var pair in handlers){var e=typeof(DungeonBattleManager).GetEvent(pair.Key);e.AddEventHandler(manager,System.Delegate.CreateDelegate(e.EventHandlerType,controller,type.GetMethod(pair.Value,flags)));}
+            int Subscriptions(DungeonBattleManager m,string name)=>((System.Delegate)typeof(DungeonBattleManager).GetField(name,flags).GetValue(m))?.GetInvocationList().Count(d=>ReferenceEquals(d.Target,controller))??0;
+            float oldScale=UnityEngine.Time.timeScale;UnityEngine.Time.timeScale=1;
+            int activationCalls=0;UnityEngine.Application.LogCallback delay=(message,stack,level)=>{if(message=="[INFO] [DungeonBattleManager] バトル開始"){activationCalls++;now+=frequency/4;}};
+            UnityEngine.Application.logMessageReceived+=delay;
+            try {
+                if(userPaused)controller.SetUserPaused(true);
+                var oldClock=loop.Clock;loop.Clock.Accumulate(10000000);int oldCommands=0,oldInput=0;
+                loop.AfterFrames(2,()=>oldCommands++);loop.QueueTimestampedCommand(0,()=>oldInput++);
+                now=frequency/5;store.BeforeRead=()=>now+=frequency/4;store.ReadUnavailable=!throwRead;store.ThrowRead=throwRead;
+                if(throwRead)Assert.Throws<System.IO.IOException>(()=>controller.TryRestoreMemoryCheckpoint(out _));
+                else Assert.IsFalse(controller.TryRestoreMemoryCheckpoint(out _));
+                Assert.AreSame(manager,type.GetField("manager",flags).GetValue(controller));Assert.IsFalse(manager.IsSuspended);Assert.AreSame(oldClock,loop.Clock);
+                Assert.AreEqual(userPaused?60:72,loop.Clock.PendingFrames,"失敗前の負債は保持、読込時間は除外");
+                foreach(var name in handlers.Keys)Assert.AreEqual(1,Subscriptions(manager,name));
+                now+=frequency/10;loop.Observe(!userPaused);Assert.AreEqual(userPaused?60:78,loop.Clock.PendingFrames,"失敗後の実経過は保持");
+                store.ReadUnavailable=false;store.ThrowRead=false;
+                Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error),error);
+                Assert.IsTrue(manager.IsSuspended);Assert.AreNotSame(oldClock,loop.Clock);Assert.AreEqual(0,loop.Clock.Frame);Assert.AreEqual(0,loop.Clock.PendingFrames);
+                Assert.AreEqual(1,activationCalls);
+                var restored=(DungeonBattleManager)type.GetField("manager",flags).GetValue(controller);
+                foreach(var name in handlers.Keys){Assert.AreEqual(0,Subscriptions(manager,name));Assert.AreEqual(1,Subscriptions(restored,name));}
+                now+=frequency/10;loop.PumpTimestamped(true,null,(frame,ms,input)=>{});Assert.AreEqual(6,loop.Clock.Frame);Assert.AreEqual(0,oldCommands);Assert.AreEqual(0,oldInput);
+                Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out error),error);Assert.AreEqual(2,activationCalls);Assert.AreEqual(0,loop.Clock.PendingFrames);
+                var again=(DungeonBattleManager)type.GetField("manager",flags).GetValue(controller);
+                foreach(var name in handlers.Keys){Assert.AreEqual(0,Subscriptions(restored,name));Assert.AreEqual(1,Subscriptions(again,name));}
+            } finally {UnityEngine.Application.logMessageReceived-=delay;UnityEngine.Object.DestroyImmediate(go);UnityEngine.Time.timeScale=oldScale;
+                Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
         }
         private DungeonBattleManager manager;
         private DungeonCheckpointSession session;
