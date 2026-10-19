@@ -121,6 +121,74 @@ namespace Olca.Tests.Battle
             Assert.Throws<System.ArgumentException>(()=>Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck()));
         }
 
+        private static StatusEffect PoisonFrames(int frames,int damage=3,int resistance=0)
+            => new StatusEffect(StatusEffectType.Poison,(frames*1000)/60,damage,resistance);
+
+        [Test]
+        public void 外部毒は付与フレームに発生せず間隔と最終フレームを含めて進む()
+        {
+            var poison=new TimedPoisonState();var source=PoisonFrames(6);
+            poison.BeginFrame();poison.Apply(source,2,true);Assert.AreEqual(0,poison.TickFrame());poison.EndFrame();
+            Assert.AreEqual(6,poison.RemainingFrames);Assert.AreEqual(2,poison.FramesUntilDamage);
+            var damages=new List<int>();for(int f=0;f<6;f++){poison.BeginFrame();damages.Add(poison.TickFrame());poison.EndFrame();}
+            CollectionAssert.AreEqual(new[]{0,3,0,3,0,3},damages);Assert.IsFalse(poison.IsActive);Assert.AreEqual(0,poison.FramesUntilDamage);
+            Assert.AreEqual(6,source.RemainingFrames,"外部の共有効果インスタンスは変更しない");
+        }
+
+        [Test]
+        public void 同種毒の再付与は短縮も受理し期限一致時も次の間隔をリセットしない()
+        {
+            var poison=new TimedPoisonState();poison.Apply(PoisonFrames(6),4,true);
+            poison.BeginFrame();Assert.AreEqual(0,poison.TickFrame());poison.EndFrame();
+            poison.BeginFrame();poison.Apply(PoisonFrames(1),4,true);Assert.AreEqual(0,poison.TickFrame());poison.EndFrame();
+            Assert.AreEqual(1,poison.RemainingFrames);Assert.AreEqual(2,poison.FramesUntilDamage);
+            poison.BeginFrame();Assert.AreEqual(0,poison.TickFrame());poison.Apply(PoisonFrames(6),4,true);poison.EndFrame();
+            Assert.AreEqual(6,poison.RemainingFrames);Assert.AreEqual(1,poison.FramesUntilDamage);
+            poison.BeginFrame();Assert.AreEqual(3,poison.TickFrame());poison.EndFrame();
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 毒解除は発生予定の同フレーム量を計上し付与予約を取り消す(bool active)
+        {
+            var poison=new TimedPoisonState();if(active){poison.Apply(PoisonFrames(6),1,true);poison.BeginFrame();poison.EndFrame();}
+            poison.BeginFrame();poison.Apply(PoisonFrames(6),1,true);poison.Clear();
+            Assert.AreEqual(active?3:0,poison.TickFrame());poison.EndFrame();Assert.IsFalse(poison.IsActive);Assert.IsFalse(poison.HasPendingApplication);
+        }
+
+        [Test]
+        public void 毒の無効耐性と間隔未満の期間はダメージを生まず不整合な定義を拒否する()
+        {
+            var poison=new TimedPoisonState();poison.Apply(PoisonFrames(6,resistance:100),2,true);Assert.IsFalse(poison.HasPendingApplication);
+            poison.Apply(PoisonFrames(6,resistance:50),4,true);
+            for(int i=0;i<3;i++){poison.BeginFrame();Assert.AreEqual(0,poison.TickFrame());poison.EndFrame();}Assert.IsFalse(poison.IsActive);
+            Assert.Throws<System.ArgumentException>(()=>poison.Apply(PoisonFrames(6),0,true));
+            Assert.Throws<System.NotSupportedException>(()=>poison.Apply(PoisonFrames(6),2,false));
+            poison.Apply(PoisonFrames(6),2,true);
+            Assert.Throws<System.InvalidOperationException>(()=>poison.Apply(PoisonFrames(6,4),2,true));
+            Assert.Throws<System.InvalidOperationException>(()=>poison.Apply(PoisonFrames(6),3,true));
+            poison.Reset();Assert.IsFalse(poison.HasPendingApplication);Assert.IsFalse(poison.IsActive);
+        }
+
+        [Test]
+        public void 毒のms互換更新は同じ実経過で論理フレームと一致する()
+        {
+            int Run(bool logical){var state=new TimedPoisonState();state.Apply(PoisonFrames(60,7),6,true);int total=0;
+                for(int f=0;f<(logical?60:10);f++){state.BeginFrame();total+=logical?state.TickFrame():state.TickMilliseconds(100);state.EndFrame();}
+                Assert.IsFalse(state.IsActive);return total;}
+            Assert.AreEqual(70,Run(true));Assert.AreEqual(70,Run(false));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 独立毒量は既存の通常ダメージ合算と防御例外へ渡せる(bool normalHit)
+        {
+            var player=new PlayerCharacter(5);var target=new Enemy("p","検証",100,ElementType.None,new Vector2Int(5,0));target.ApplyStun(60000);
+            var battle=new BattleSystem(player,new List<Enemy>{target},new Deck());var poison=new TimedPoisonState();poison.Apply(PoisonFrames(1,10),1,true);
+            if(!normalHit){player.SetBarrier(100);player.SetInvincible(100);}
+            battle.RunLogicalFrame(()=>{poison.BeginFrame();if(normalHit)player.TakeDamage(1,poiseDamage:0);player.TakePoisonDamage(poison.TickFrame());poison.EndFrame();});
+            Assert.AreEqual(normalHit?0:1,player.CurrentHp);Assert.AreEqual(0,player.AccumulatedDamage);Assert.IsFalse(poison.IsActive);
+            if(!normalHit)Assert.AreEqual(100,player.BarrierHp);
+        }
+
         [Test]
         public void プレイヤー麻痺は次フレーム開始から最終フレームまで有効で再付与は残り期間を置換する()
         {

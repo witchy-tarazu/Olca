@@ -44,6 +44,88 @@ namespace Olca.Core.Domain
     }
 
     /// <summary>
+    /// 外部定義の単一毒の時間状態。HP反映・他状態との共存・探索持越しは所有しない。
+    /// </summary>
+    public sealed class TimedPoisonState
+    {
+        private sealed class Application
+        {
+            internal int Frames, Damage, Interval;
+        }
+        private Application active, pending;
+        private long remainingUnits, nextDamageUnits;
+        private bool frameOpen, clearPending;
+        public bool IsActive => active != null && remainingUnits > 0;
+        public bool HasPendingApplication => pending != null;
+        public int RemainingFrames => (int)((remainingUnits + 49) / 50);
+        public int FramesUntilDamage => active == null ? 0 : (int)((nextDamageUnits + 49) / 50);
+
+        /// <summary>期間と量は既存効果から取得し、独立した間隔と終了時解除を明示させる。</summary>
+        public void Apply(StatusEffect effect, int intervalFrames, bool clearAtBattleEnd)
+        {
+            if (effect == null) throw new ArgumentNullException(nameof(effect));
+            if (effect.Type != StatusEffectType.Poison || effect.DamagePerTick < 0 || intervalFrames <= 0)
+                throw new ArgumentException("毒定義・非負の量・正の間隔が必要です");
+            if (!clearAtBattleEnd) throw new NotSupportedException("探索・階層への毒持越しは未接続です");
+            // 耐性で0フレームとなった付与では、既存毒を解除・更新しない。
+            if (effect.RemainingFrames <= 0) return;
+            var definition = pending ?? active;
+            if (definition != null && (definition.Damage != effect.DamagePerTick || definition.Interval != intervalFrames))
+                throw new InvalidOperationException("同種毒の再付与で量・間隔を変更する定義は未対応です");
+            pending = new Application { Frames=effect.RemainingFrames, Damage=effect.DamagePerTick, Interval=intervalFrames };
+            if (!frameOpen) clearPending = false;
+        }
+        public void Clear() { pending = null; clearPending = true; }
+        public void BeginFrame()
+        {
+            if (frameOpen) throw new InvalidOperationException("毒フレームが既に開始されています");
+            CommitChanges(); frameOpen = true;
+        }
+        /// <summary>確定毒量を返す。呼出し元がポーズ中は呼ばず、HP処理は別途行う。</summary>
+        public int TickFrame() => Advance(50);
+        public int TickMilliseconds(int milliseconds)
+        {
+            if (milliseconds < 0) throw new ArgumentOutOfRangeException(nameof(milliseconds));
+            return Advance(milliseconds * 3L);
+        }
+        private int Advance(long elapsedUnits)
+        {
+            if (!frameOpen) throw new InvalidOperationException("毒更新にはフレーム境界が必要です");
+            if (!IsActive || elapsedUnits == 0) return 0;
+            long elapsed = Math.Min(remainingUnits, elapsedUnits), pulses = 0;
+            if (elapsed >= nextDamageUnits) {
+                long intervalUnits = active.Interval * 50L;
+                pulses = 1 + (elapsed - nextDamageUnits) / intervalUnits;
+                nextDamageUnits = intervalUnits - (elapsed - nextDamageUnits) % intervalUnits;
+            } else nextDamageUnits -= elapsed;
+            remainingUnits -= elapsed;
+            return (int)Math.Min(int.MaxValue, pulses * active.Damage);
+        }
+        public void EndFrame()
+        {
+            if (!frameOpen) throw new InvalidOperationException("毒フレームが開始されていません");
+            CommitChanges(); frameOpen = false;
+        }
+        private void CommitChanges()
+        {
+            if (clearPending) { active = null; remainingUnits = nextDamageUnits = 0; }
+            else if (pending != null) {
+                // 期限と再付与が同時でも、同種の次回ダメージまでの進行は引き継ぐ。
+                if (active == null) nextDamageUnits = pending.Interval * 50L;
+                active = pending; remainingUnits = pending.Frames * 50L;
+            }
+            pending = null; clearPending = false;
+            if (remainingUnits <= 0) { active = null; nextDamageUnits = 0; }
+        }
+        /// <summary>死亡・終了時解除指定の戦闘終了で使用。付与予約も破棄する。</summary>
+        public void Reset()
+        {
+            active = pending = null; remainingUnits = nextDamageUnits = 0;
+            clearPending = false;
+        }
+    }
+
+    /// <summary>
     /// 状態異常インスタンス
     /// </summary>
     public class StatusEffect

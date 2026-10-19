@@ -210,3 +210,17 @@ PlayerCharacter.ApplyParalysis(durationFrames)は外部で確定した正の有�
 解除と再付与が同じフレームに含まれる場合は、既存EnemyのpendingStatusClearsと同じく解除を終端で優先する。付与→解除と解除→再付与の両順を検証し、有効中なら当該フレームの受付禁止は保つ。
 
 プレイヤー麻痺の最終検証: Unity MCP全EditMode 1619/1619成功（34.32秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告10件。結果 /workspace/.olca-cloud/results/player-paralysis/editmode-tests.json、console-before.json、console-after.json。初回テストの内部離脱API参照は通常Manager経路へ修正済み、履歴は保持。
+
+## プレイヤー毒の独立した時間状態と未解決のHP境界
+
+通常接続の調査で、FrameHpChanges.Poisonが開始時HPだけで毒の受理量を制限していることを確認した。開始HP5・毒10・回復10なら既存コードは毒を4に制限し最終HP11となる。回復を含めて毒を計算する解釈ならHP5となる。原文は毒と通常ダメージを分離することを規定するが、回復を毒下限へ含めるかは明記しないため、ユーザーへ具体例で確認を依頼した。この算式は変更せず、既存算式を新しい製品毒の正式規則として採用しない。
+
+回答に依存しない単位としてTimedPoisonStateを既存StatusEffect.csへ追加した。StatusEffectから期間/毒量を値として取り込み、独立した間隔と戦闘終了時解除指定を必須引数で受ける。既定の製品量・期間・間隔は追加しない。既存の敵毒の毎秒量積算は変更せず、新しい周期毒の解釈へ勝手に移行しない。探索/階層への持越し指定や、同種の再付与で量/間隔を変える定義は未対応として拒否する。
+
+状態は付与フレームに発生せず、次の更新フレームから期間/間隔を進め、期限と発生が一致した最後の量も返す。同種再付与は期間だけ置換し、期限と再付与が同時でも次の発生までの進行を維持する。解除フレームでは先に発生予定量を返し、終端で予約を含めて解除する。耐性で期間0となった付与は無効。死亡/戦闘終了で使用するResetは予約と両カウントを消す。ポーズ制御とHP反映は所有者の責務とし、このクラス自体はPlayerCharacterやBattleSystemへ自動登録しない。
+
+回復を含まない確定範囲では、通常AIの受理コールバックに外部所有の状態を付与し、既存TakePoisonDamageへ返却量を渡すテストfixtureで開始保存復帰・30/60/120fps・追いつき・ポーズを比較する。これは製品BattleSystemへの自動接続や毒の途中保存ではない。通常ダメージとの同フレーム合算、バリア/無敵の迂回、HP1、状態の周期・最終フレーム・再付与・解除・ms互換も検証する。旧保存DTO/schemaは変更しない。
+
+未完了: PlayerCharacter/BattleSystemへの状態所有と自動更新、実際の死亡/戦闘終了の購読、毒の有効/予約状態を含むCapture拒否の接続、毒と回復が同フレームになる製品通常使用。この依存部分はHP下限の回答待ち。毒+麻痺の共存・階層持越しを決めていない。独立状態基盤の完成をプレイヤー毒全体の完成として扱わない。
+
+独立毒状態の検証: Unity MCP全EditMode 1633/1633成功（34.59秒、失敗・スキップ0）、現在consoleErrors=0、compilationFailed=false、警告10件。結果 /workspace/.olca-cloud/results/timed-poison-state/editmode-tests.json、console-before.json、console-after.json。製品自動接続は未実施のまま。
