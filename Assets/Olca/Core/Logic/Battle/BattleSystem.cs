@@ -515,6 +515,7 @@ namespace Olca.Core.Logic.Battle
             {
                 entry.Key.CancelStatusFrame();
                 entry.Key.Guard.Clear();
+                entry.Key.ClearProtection();
                 entry.Key.IsOnGrass = null;
                 entry.Key.OnDamageProcessingStarted -= BeginResolution;
                 entry.Key.OnDamageProcessingCompleted -= EndResolution;

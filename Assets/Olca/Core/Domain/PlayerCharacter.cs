@@ -144,7 +144,8 @@ namespace Olca.Core.Domain
 
         /// <summary>バリアを持っているか</summary>
         public bool HasBarrier => barrierHp > 0;
-        public int AuraThreshold { get; private set; }
+        private int auraThreshold;
+        public int AuraThreshold => auraThreshold;
         public bool HasAura => AuraThreshold > 0;
 
         /// <summary>外部指定の単独オーラ。共存・再付与の未規定状態は変更前に拒否する。0は解除。</summary>
@@ -153,7 +154,7 @@ namespace Olca.Core.Domain
             if (threshold < 0) throw new ArgumentOutOfRangeException(nameof(threshold));
             if (threshold > 0 && (HasAura || HasBarrier || HasTransformationDefense || HasTransformationPreview))
                 throw new InvalidOperationException("オーラの共存・再付与・変身優先順は未対応です");
-            AuraThreshold = threshold;
+            auraThreshold = threshold;
         }
 
         /// <summary>無敵中か</summary>
@@ -231,24 +232,14 @@ namespace Olca.Core.Domain
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
-                if (HasAura && damage > 0)
-                {
-                    int auraDamage = ElementResistances.Neutral.CalculateDamage(damage, attackElement, grass);
-                    if (auraDamage >= AuraThreshold) AuraThreshold = 0;
-                    return false;
-                }
+                if (BattleProtectionRules.BlockAura(damage, grass, ref auraThreshold)) return false;
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 // 変身解除は既存の弱点規則を維持し、バリアの耐久計算とは分ける。
                 breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
                 // 元から威力0の状態専用ヒットはバリアを通過する。
-                if (barrierHp > 0 && damage > 0)
-                {
-                    int barrierDamage = ElementResistances.Neutral.CalculateDamage(damage, attackElement, grass);
-                    barrierHp = Math.Max(0, barrierHp - barrierDamage);
-                    return false;
-                }
+                if (BattleProtectionRules.BlockBarrier(damage, grass, ref barrierHp)) return false;
                 damage = bodyDamage;
                 if (originalDamage > 0 && damage == 0) return false; // 耐性無効は強靭度・付随効果へ進めない。
 

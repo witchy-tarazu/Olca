@@ -26,6 +26,25 @@ namespace Olca.Core.Domain
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
         public BattleGuardState Guard { get; } = new BattleGuardState();
+        private int barrierHp, auraThreshold;
+        public int BarrierHp => barrierHp;
+        public bool HasBarrier => barrierHp > 0;
+        public int AuraThreshold => auraThreshold;
+        public bool HasAura => auraThreshold > 0;
+        public void SetBarrier(int hp)
+        {
+            if (hp > 0 && (HasAura || Guard.IsActive))
+                throw new InvalidOperationException("バリアとオーラ・ガードの共存は未対応です");
+            barrierHp = Math.Max(0, hp);
+        }
+        public void SetAura(int threshold)
+        {
+            if (threshold < 0) throw new ArgumentOutOfRangeException(nameof(threshold));
+            if (threshold > 0 && (HasAura || HasBarrier || Guard.IsActive))
+                throw new InvalidOperationException("オーラの共存・再付与は未対応です");
+            auraThreshold = threshold;
+        }
+        internal void ClearProtection() { barrierHp = auraThreshold = 0; }
         public ElementResistances Resistances { get; }
         public TimedStatusResistances StatusResistances { get; }
         public EnemyPoiseDefinition PoiseDefinition { get; }
@@ -62,6 +81,7 @@ namespace Olca.Core.Domain
         private void ClearDeathReaction()
         {
             Guard.Clear();
+            ClearProtection();
             staggerTimer.SetFrames(0);
         }
 
@@ -186,6 +206,7 @@ namespace Olca.Core.Domain
         /// </summary>
         public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null)
         {
+            Guard.CanActivate = () => !HasBarrier && !HasAura;
             PoiseDefinition = poiseDefinition; Poise = poiseDefinition?.Maximum;
             Resistances = resistances ?? ElementResistances.Neutral;
             StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
@@ -222,6 +243,8 @@ namespace Olca.Core.Domain
 
                 // 属性相性によるダメージ補正
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
+                if (!poison && (BattleProtectionRules.BlockAura(damage, grass, ref auraThreshold) ||
+                    BattleProtectionRules.BlockBarrier(damage, grass, ref barrierHp))) return;
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
                 if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。

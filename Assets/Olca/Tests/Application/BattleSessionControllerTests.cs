@@ -2240,7 +2240,7 @@ namespace Olca.Tests.Application
             session.Detach();
         }
 
-        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None, int statusResistance = 0, AdditionalEffectType statusType = AdditionalEffectType.Poison, bool guarding = false)
+        private List<string> ResistanceCardTrace(int fps, bool stall, bool restore, int resistance, int power, AttackProperty properties = AttackProperty.None, int statusResistance = 0, AdditionalEffectType statusType = AdditionalEffectType.Poison, bool guarding = false, int protection = 0, bool aura = false)
         {
             var modifier = new CardModifier();
             modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = statusType,
@@ -2277,6 +2277,9 @@ namespace Olca.Tests.Application
             var enemy = battle.Enemies[0]; enemy.MoveTo(new Vector2Int(3, 0));
             Assert.IsFalse(enemy.Guard.IsActive, "ガード状態は戦闘開始保存へ持ち越さない");
             enemy.Guard.Set(guarding, false);
+            Assert.IsFalse(enemy.HasBarrier); Assert.IsFalse(enemy.HasAura);
+            if (aura) enemy.SetAura(protection); else enemy.SetBarrier(protection);
+            var savedProtectionBoundary = checkpoints.Store.Read();
             int initialHp = enemy.CurrentHp, used = 0, firstStatusFrames = -1;
             Assert.AreEqual(statusResistance, enemy.StatusResistances.Poison);
             battle.CardUsage.OnCardUsed += _ => used++;
@@ -2302,7 +2305,7 @@ namespace Olca.Tests.Application
                 clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
-            bool blocked = guarding && power > 0 && (properties & AttackProperty.Break) == 0;
+            bool blocked = power > 0 && (protection > 0 || (guarding && (properties & AttackProperty.Break) == 0));
             int damage = power == 0 || resistance >= 100 || blocked ? 0 : resistance < 0 ? 2 : 1;
             Assert.AreEqual(initialHp - damage, enemy.CurrentHp);
             bool accepted = !blocked && (power == 0 || resistance < 100) && statusResistance < 100;
@@ -2310,6 +2313,13 @@ namespace Olca.Tests.Application
             Assert.AreEqual(accepted ? 600 * (100 - statusResistance) / 100 : -1, firstStatusFrames);
             Assert.AreEqual(1, used, "空振りでも親を一枚消費し、派生では追加消費しない");
             Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            Assert.AreEqual(aura ? 0 : Math.Max(0, protection - power), enemy.BarrierHp);
+            Assert.AreEqual(aura && power < protection ? protection : 0, enemy.AuraThreshold);
+            var afterProtectionBoundary = checkpoints.Store.Read();
+            Assert.AreEqual(savedProtectionBoundary.SchemaVersion, afterProtectionBoundary.SchemaVersion);
+            Assert.AreEqual(savedProtectionBoundary.MapHash, afterProtectionBoundary.MapHash);
+            Assert.AreEqual(savedProtectionBoundary.Sequence, afterProtectionBoundary.Sequence);
+            CollectionAssert.AreEqual(savedProtectionBoundary.DeckOrder, afterProtectionBoundary.DeckOrder);
             session.Detach(); return trace;
         }
         [TestCase(30, false, false)] [TestCase(60, false, false)] [TestCase(120, false, false)]
@@ -2336,6 +2346,42 @@ namespace Olca.Tests.Application
             foreach (var status in new[] { AdditionalEffectType.Poison, AdditionalEffectType.Paralyze })
                 CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, resistance, power, properties, 0, status, true),
                     ResistanceCardTrace(fps, stall, restore, resistance, power, properties, 0, status, true));
+        }
+
+        [TestCase(30, false)][TestCase(60, false)][TestCase(120, false)]
+        [TestCase(30, true)][TestCase(60, true)][TestCase(120, true)]
+        public void 敵バリアと単独オーラは通常カードの派生と保存復帰で一貫する(int fps, bool restore)
+        {
+            foreach (bool aura in new[] { false, true })
+            foreach (int protection in new[] { 1, 2 })
+            foreach (int resistance in new[] { -100, 100 })
+            foreach (int power in new[] { 0, 1 })
+            foreach (var properties in new[] { AttackProperty.Sword, AttackProperty.Sword | AttackProperty.Break })
+                CollectionAssert.AreEqual(ResistanceCardTrace(60, false, false, resistance, power, properties, protection: protection, aura: aura),
+                    ResistanceCardTrace(fps, true, restore, resistance, power, properties, protection: protection, aura: aura));
+        }
+
+        [TestCase(false, 15, 100, 0)][TestCase(false, 10, 90, 7)]
+        [TestCase(true, 11, 100, 0)][TestCase(true, 10, 90, 7)]
+        public void 敵防御への通常多段カードは防いだ段の派生と削りを抑止する(bool aura, int protection, int hp, int impact)
+        {
+            var enemy = new Enemy("protected", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            var battle = new BattleSystem(new PlayerCharacter(100, new Vector2Int(2, 0)), new List<Enemy> { enemy }, new Deck());
+            if (aura) enemy.SetAura(protection); else enemy.SetBarrier(protection);
+            var modifier = new CardModifier();
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.MultiHit, HitCount = 2 });
+            modifier.AdditionalEffects.Add(new AdditionalEffect { EffectType = AdditionalEffectType.Poison, Trigger = DerivativeTrigger.OnHit, Power = 1, Duration = 10 });
+            var card = new Card("protected-multi", "検証", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None,
+                CardSeries.None, 10, "検証", Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,
+                modifier: modifier, properties: AttackProperty.Sword | AttackProperty.Break, poiseDamage: 7);
+            var session = CreateSession().session; session.Attach(battle);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            session.ProcessLogicalFrame(() => session.UseCardFromInput());
+            Assert.AreEqual(hp, enemy.CurrentHp); Assert.AreEqual(impact, enemy.AccumulatedPoiseDamage);
+            Assert.AreEqual(hp < 100, enemy.ActiveStatus != null);
+            Assert.AreEqual(0, battle.CardUsage.RemainingCount);
+            session.Detach();
         }
 
         private List<string> PlayerStaggerTrace(int fps, bool stall, bool restore, bool afterHit)

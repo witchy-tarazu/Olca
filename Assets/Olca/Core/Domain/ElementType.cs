@@ -27,10 +27,15 @@ namespace Olca.Core.Domain
     /// <summary>外部指定のガード判定。発生元・期間・入力は所有しない。</summary>
     public sealed class BattleGuardState
     {
+        internal System.Func<bool> CanActivate;
         public bool IsActive { get; private set; }
         public bool InterruptOnStagger { get; private set; }
         public void Set(bool active, bool interruptOnStagger)
-        { IsActive = active; InterruptOnStagger = active && interruptOnStagger; }
+        {
+            if (active && CanActivate != null && !CanActivate())
+                throw new System.InvalidOperationException("ガードとバリア・オーラの優先順は未対応です");
+            IsActive = active; InterruptOnStagger = active && interruptOnStagger;
+        }
         public void Clear() => Set(false, false);
         internal void OnStaggered() { if (InterruptOnStagger) Clear(); }
         public bool Blocks(int originalDamage, AttackProperty properties)
@@ -38,6 +43,25 @@ namespace Olca.Core.Domain
             if (originalDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(originalDamage));
             AttackPropertyRules.Validate(properties);
             return IsActive && originalDamage > 0 && (properties & AttackProperty.Break) == 0;
+        }
+    }
+
+    /// <summary>敵味方共通の単独防御判定。本体耐性・攻撃性質には依存しない。</summary>
+    internal static class BattleProtectionRules
+    {
+        internal static bool BlockBarrier(int damage, bool grass, ref int hp)
+        {
+            if (hp <= 0 || damage <= 0) return false;
+            int adjusted = ElementResistances.Neutral.CalculateDamage(damage, ElementType.None, grass);
+            hp = System.Math.Max(0, hp - adjusted);
+            return true;
+        }
+        internal static bool BlockAura(int damage, bool grass, ref int threshold)
+        {
+            if (threshold <= 0 || damage <= 0) return false;
+            int adjusted = ElementResistances.Neutral.CalculateDamage(damage, ElementType.None, grass);
+            if (adjusted >= threshold) threshold = 0;
+            return true;
         }
     }
 

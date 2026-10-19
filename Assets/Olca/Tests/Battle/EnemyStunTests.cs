@@ -20,6 +20,70 @@ namespace Olca.Tests.Battle
             enemy = new Enemy("slime", "スライム", 100, ElementType.None, new Vector2Int(3, 0));
         }
 
+        [TestCase(false, 9, 1)][TestCase(false, 10, 0)][TestCase(false, 11, 0)]
+        [TestCase(true, 9, 10)][TestCase(true, 10, 0)][TestCase(true, 11, 0)]
+        public void 敵防御は破壊した一発でも命中と独立削りを通さない(bool aura, int damage, int remaining)
+        {
+            var target = new Enemy("defense", "検証", 100, ElementType.None, Vector2Int.Zero,
+                poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            if (aura) target.SetAura(10); else target.SetBarrier(10);
+            int hits = 0; target.OnDamaged += (_, __) => hits++;
+            target.TakeDamage(damage, ElementType.Fire, AttackProperty.Sword | AttackProperty.Break, 999);
+            Assert.AreEqual(100, target.CurrentHp); Assert.AreEqual(0, hits);
+            Assert.AreEqual(0, target.AccumulatedPoiseDamage); Assert.IsFalse(target.IsStaggered);
+            Assert.AreEqual(remaining, aura ? target.AuraThreshold : target.BarrierHp);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 敵防御の地形補正は完全耐性を無視し毒と状態専用は通る(bool aura)
+        {
+            var target = new Enemy("defense", "検証", 100, ElementType.None, new Vector2Int(3, 0),
+                resistances: new ElementResistances(fire: 100), poiseDefinition: new EnemyPoiseDefinition(30, 6));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { target }, new Deck());
+            if (aura) target.SetAura(15); else target.SetBarrier(15);
+            battle.Field.ChangePanelType(target.GridPosition, PanelType.Grass);
+            target.TakeDamage(10, ElementType.Fire, AttackProperty.Break, 999);
+            Assert.IsFalse(target.HasBarrier); Assert.IsFalse(target.HasAura); Assert.AreEqual(100, target.CurrentHp);
+            if (aura) target.SetAura(15); else target.SetBarrier(15);
+            int hits = 0; target.OnDamaged += (_, __) => hits++;
+            target.TakeDamage(0, ElementType.Fire, poiseDamage: 0); Assert.AreEqual(1, hits);
+            target.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 1000, 60));
+            for (int f = 0; f < 10; f++) battle.TickFrame(17);
+            Assert.Less(target.CurrentHp, 100); Assert.AreEqual(15, aura ? target.AuraThreshold : target.BarrierHp);
+            Assert.AreEqual(0, target.AccumulatedPoiseDamage);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 敵防御は戦闘終了で解除し未規定共存と標準保存への混入を拒否する(bool aura)
+        {
+            if (aura) enemy.SetAura(10); else enemy.SetBarrier(10);
+            Assert.Throws<System.InvalidOperationException>(() => enemy.Guard.Set(true, false));
+            if (aura) Assert.Throws<System.InvalidOperationException>(() => enemy.SetBarrier(10));
+            else Assert.Throws<System.InvalidOperationException>(() => enemy.SetAura(10));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { enemy }, new Deck());
+            battle.Player.TakeDamage(1000); Assert.IsFalse(enemy.HasBarrier); Assert.IsFalse(enemy.HasAura);
+            enemy.Guard.Set(true, false);
+            Assert.Throws<System.InvalidOperationException>(() => enemy.SetBarrier(10));
+            Assert.Throws<System.InvalidOperationException>(() => enemy.SetAura(10));
+            var map = DungeonConfig.CreateTestDungeon(6, 30, 100);
+            if (aura) map.MapCells[5].Enemy.SetAura(10); else map.MapCells[5].Enemy.SetBarrier(10);
+            Assert.Throws<System.ArgumentException>(() => Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, new Deck()));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void フレーム途中に防御を付与しても死亡通知前に解除する(bool aura)
+        {
+            var survivor = new Enemy("survivor", "検証", 100, ElementType.None, new Vector2Int(5, 0));
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> { enemy, survivor }, new Deck());
+            int deaths = 0;
+            enemy.OnDeath += () => { deaths++; Assert.IsFalse(enemy.HasBarrier); Assert.IsFalse(enemy.HasAura); };
+            battle.RunLogicalFrame(() => {
+                enemy.TakeDamage(1000, ElementType.None);
+                if (aura) enemy.SetAura(10); else enemy.SetBarrier(10);
+            });
+            Assert.AreEqual(1, deaths); Assert.IsFalse(battle.IsGameOver);
+        }
+
         [Test]
         public void 明示強靭度は独立削りを蓄積し最大値低下で残り1を保ち再成立で期間を戻す()
         {
