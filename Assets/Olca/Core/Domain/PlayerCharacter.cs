@@ -13,24 +13,33 @@ namespace Olca.Core.Domain
         public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
         public ElementResistances ActiveResistances => transformationResistances ?? Resistances;
         public bool HasTransformationDefense => transformationResistances != null;
+        /// <summary>確定後に残る戦闘フェーズ数。フレーム数ではない。</summary>
+        public int RemainingTransformationPhases { get; private set; }
         private ElementResistances transformationResistances;
         private ElementType transformationBreakElement;
         internal Func<bool> IsOnGrass;
         public event Action OnTransformationDefenseEnded;
         public void SetElementResistances(ElementResistances value)
             => Resistances = value ?? throw new ArgumentNullException(nameof(value));
-        // 変身選択・使用回数・持続管理とは独立した、被弾計算用の置換状態。
+        // 確定済み変身の被弾状態を開始する。仮選択・取り消しには使用しない。
         public void BeginTransformationDefense(ElementResistances value, ElementType breakElement)
         {
             if (breakElement == ElementType.None || !Enum.IsDefined(typeof(ElementType), breakElement))
                 throw new ArgumentOutOfRangeException(nameof(breakElement));
             transformationResistances = value ?? throw new ArgumentNullException(nameof(value));
             transformationBreakElement = breakElement;
+            RemainingTransformationPhases = 3;
+        }
+        internal void AdvanceTransformationPhase()
+        {
+            if (HasTransformationDefense && --RemainingTransformationPhases == 0)
+                EndTransformationDefense();
         }
         public void EndTransformationDefense()
         {
             if (!HasTransformationDefense) return;
             transformationResistances = null;
+            RemainingTransformationPhases = 0;
             OnTransformationDefenseEnded?.Invoke();
         }
 

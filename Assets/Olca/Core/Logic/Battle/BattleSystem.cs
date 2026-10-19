@@ -124,6 +124,7 @@ namespace Olca.Core.Logic.Battle
                 RegisterEnemy(enemy, new List<IEnemyAIAction> { new BasicAttackAction(attackDamage: 10, cooldown: 2.0f) });
 
             // カスタム画面イベントの購読
+            customScreen.OnScreenOpened += OnTransformationPhaseOpened;
             customScreen.OnConfirmed += OnCustomScreenConfirmed;
             customScreen.OnScreenClosed += OnCustomScreenClosed;
 
@@ -349,6 +350,12 @@ namespace Olca.Core.Logic.Battle
             Pause();
         }
 
+        // 開き直しが実際に成立した時だけ、確定済み変身の残回数を進める。
+        private void OnTransformationPhaseOpened(List<Card> hand)
+        {
+            if (!IsGameOver) player.AdvanceTransformationPhase();
+        }
+
         /// <summary>
         /// カスタム画面で確定ボタンが押された時の処理（アニメーション開始）
         /// </summary>
@@ -488,6 +495,7 @@ namespace Olca.Core.Logic.Battle
             player.OnDeath -= OnPlayerDeath;
             player.OnStaggered -= OnPlayerStaggered;
             playerMovement.OnMoved -= OnPlayerMoved;
+            customScreen.OnScreenOpened -= OnTransformationPhaseOpened;
             customScreen.OnConfirmed -= OnCustomScreenConfirmed;
             customScreen.OnScreenClosed -= OnCustomScreenClosed;
             enemies.RemoveAll(enemy => enemy.IsSummoned);

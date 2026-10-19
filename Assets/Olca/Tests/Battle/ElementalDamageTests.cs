@@ -35,6 +35,63 @@ namespace Olca.Tests.Battle
         }
 
 
+        [Test]
+        public void 確定した画面を数えず次の三回目開始で耐性置換を解除する()
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0));
+            var battle = CreateBattle(enemy);
+            battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            player.BeginTransformationDefense(new ElementResistances(fire: 50), ElementType.Water);
+            int ended = 0; player.OnTransformationDefenseEnded += () => ended++;
+            battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            battle.CustomScreen.Confirm();battle.CustomScreen.CancelConfirmation();battle.CustomScreen.Confirm();
+            Assert.AreEqual(3, player.RemainingTransformationPhases, "重複Openや確定再試行で消費しない");
+            for (int remaining = 2; remaining >= 0; remaining--)
+            {
+                battle.CustomScreen.Close();
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+                battle.OpenCustomScreen(new MockRandomProvider());
+                Assert.AreEqual(remaining, player.RemainingTransformationPhases);
+                Assert.AreEqual(remaining > 0, player.HasTransformationDefense);
+                Assert.AreEqual(remaining == 0 ? 1 : 0, ended);
+            }
+            Assert.AreSame(player.Resistances, player.ActiveResistances);
+        }
+
+        [Test]
+        public void 切替で三回へ戻り被弾解除で残回数も消える()
+        {
+            var battle = CreateBattle(new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0)));
+            battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            player.BeginTransformationDefense(new ElementResistances(fire: 50), ElementType.Water);
+            battle.CustomScreen.Close();battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            Assert.AreEqual(2,player.RemainingTransformationPhases);
+            player.BeginTransformationDefense(new ElementResistances(water: 50), ElementType.Fire);
+            Assert.AreEqual(3,player.RemainingTransformationPhases);
+            player.TakeDamage(1,attackElement:ElementType.Fire);
+            Assert.AreEqual(0,player.RemainingTransformationPhases);
+            battle.CustomScreen.Close();battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            Assert.AreEqual(0,player.RemainingTransformationPhases);
+        }
+
+        [Test]
+        public void 戦闘終了で残回数を解除し次戦で古い購読を動かさない()
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0));
+            var battle = CreateBattle(enemy);
+            player.BeginTransformationDefense(new ElementResistances(fire: 50),ElementType.Water);
+            enemy.TakeDamage(100,ElementType.None);
+            Assert.AreEqual(0,player.RemainingTransformationPhases);
+            Assert.IsFalse(player.HasTransformationDefense);
+            var next=CreateBattle(new Enemy("next","敵",100,ElementType.None,new Vector2Int(1,0)));
+            next.CustomScreen.Open(new Card[0],new MockRandomProvider());
+            player.BeginTransformationDefense(new ElementResistances(fire:50),ElementType.Water);
+            battle.CustomScreen.Open(new Card[0],new MockRandomProvider());
+            Assert.AreEqual(3,player.RemainingTransformationPhases);
+            next.CustomScreen.Close();next.CustomScreen.Open(new Card[0],new MockRandomProvider());
+            Assert.AreEqual(2,player.RemainingTransformationPhases);
+        }
+
         [TestCase(-50, 1073741823)]
         [TestCase(int.MinValue, 50)]
         public void 負耐性の大ダメージを回復して再被弾しても強靭度累計が符号反転しない(int resistance,int damage)
