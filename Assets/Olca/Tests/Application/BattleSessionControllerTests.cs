@@ -1463,5 +1463,49 @@ namespace Olca.Tests.Application
             Assert.AreEqual(before, UnityEngine.JsonUtility.ToJson(dto));
         }
 
+        [TestCase(false, false)] [TestCase(false, true)] [TestCase(true, false)] [TestCase(true, true)]
+        public void 旧実定義の回復防御カードは通常加工経路で未定義の調律超越を生成保存しない(bool shield, bool exceed)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-legacy-processing-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var factory = new SimpleCardFactory(); var first = LegacyDefenseCard(shield);
+                var second = exceed ? LegacyDefenseCard(shield) : factory.CreateById(SimpleCardFactory.Tuning);
+                var deck = new Deck(new List<Card> { first, second });
+                var map = DungeonConfig.CreateTestDungeon(30, 20, 5);
+                var defaults = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, deck);
+                var store = new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory);
+                var checkpoints = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions, store);
+                var currentDeck = new Deck(new List<Card> { factory.CreateById(first.Id), factory.CreateById(second.Id) });
+                var current = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map, currentDeck);
+                var game = new Olca.Core.Logic.Integration.DungeonBattleManager(map, new PlayerCharacter(100), deck,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: checkpoints,
+                    exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(), cardDatabase: factory);
+                for (int frame = 0; frame < 1000 && game.CurrentBattle == null; frame++) game.TickFrame(17);
+                Assert.IsNotNull(game.CurrentBattle);
+                var screen = game.CurrentBattle.CustomScreen;
+                if (!screen.IsOpen) { game.CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); game.CurrentBattle.OpenCustomScreen(new MockRandomProvider()); }
+                var materials = new List<Card>(screen.CurrentHand);
+                var beforeDeck = new List<Card>(game.Dungeon.GetCurrentDeck().GetAllCards());
+                Assert.AreEqual(2, materials.Count);
+                byte[] active = System.IO.File.ReadAllBytes(store.ActivePath), backup = System.IO.File.ReadAllBytes(store.BackupPath);
+                string before = UnityEngine.JsonUtility.ToJson(store.Read());
+                var result = screen.ExecuteCustomization(materials);
+                Assert.IsFalse(result.CanExecute); StringAssert.Contains("未定義", result.Reason);
+                CollectionAssert.AreEqual(materials, screen.CurrentHand);
+                CollectionAssert.AreEqual(beforeDeck, game.Dungeon.GetCurrentDeck().GetAllCards());
+                Assert.AreEqual(before, UnityEngine.JsonUtility.ToJson(store.Read()));
+                var resumedStore = new Olca.Unity.FileCheckpointStore(current.Definitions, directory);
+                var resumedSession = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(current.Definitions, resumedStore);
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(resumedSession,
+                    new MockRandomProvider(), new MockLogger(), out var resumed, out var error, cardDatabase: factory), error);
+                Assert.AreEqual(2, resumed.Dungeon.GetCurrentDeck().TotalCount);
+                foreach (var card in resumed.Dungeon.GetCurrentDeck().GetAllCards()) {
+                    Assert.AreEqual(0, card.TuningCount); Assert.AreEqual(ExceedLevel.Normal, card.ExceedLevel);
+                }
+                CollectionAssert.AreEqual(active, System.IO.File.ReadAllBytes(store.ActivePath));
+                CollectionAssert.AreEqual(backup, System.IO.File.ReadAllBytes(store.BackupPath));
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
     }
 }
