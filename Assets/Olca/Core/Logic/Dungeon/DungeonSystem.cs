@@ -1334,6 +1334,8 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (dungeon.Player.HasPendingHpFrame || (dungeon.CurrentBattle != null && dungeon.CurrentBattle.Enemies.Any(e => e.HasPendingHpFrame)))
                 throw new ArgumentException("未確定HPを含むフレーム中は保存できません");
+            if (dungeon.CurrentBattle?.PlayerMovement.IsNormalMoving == true)
+                throw new ArgumentException("通常移動途中の状態は保存できません");
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
             if (player.IsStaggered || player.HasParalysisState || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)

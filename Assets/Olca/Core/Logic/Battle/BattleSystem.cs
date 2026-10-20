@@ -99,7 +99,7 @@ namespace Olca.Core.Logic.Battle
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
-            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => cardUsage.InFlightCard == null && !player.IsActionPrevented);
+            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => !IsPaused && !IsGameOver && cardUsage.InFlightCard == null && !player.IsActionPrevented);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
             this.delayedEffects = new DelayedEffectSystem(this);
@@ -214,7 +214,7 @@ namespace Olca.Core.Logic.Battle
             foreach (var enemy in participants) { enemy.BeginStatusFrame(); enemy.BeginHpFrame(); }
             try
             {
-                if (player.BeginParalysisFrame(!IsPaused)) cardUsage.InterruptCurrentCard();
+                if (player.BeginParalysisFrame(!IsPaused)) { cardUsage.InterruptCurrentCard(); playerMovement.InterruptNormalMove(); }
                 action();
             }
             finally
@@ -332,7 +332,7 @@ namespace Olca.Core.Logic.Battle
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
 
-            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null || player.IsActionPrevented) return;
+            if (IsGameOver || IsPaused || cardUsage.InFlightCard != null || playerMovement.IsNormalMoving || player.IsActionPrevented) return;
             BeginResolution();
             try
             {
@@ -453,6 +453,7 @@ namespace Olca.Core.Logic.Battle
         private void OnPlayerStaggered()
         {
             cardUsage.InterruptCurrentCard();
+            playerMovement.InterruptNormalMove();
             logger?.LogInfo("プレイヤーがのけぞり - カード効果を中断");
         }
 
@@ -554,6 +555,7 @@ namespace Olca.Core.Logic.Battle
             player.OnDamageProcessingCompleted -= EndResolution;
             player.OnDeath -= OnPlayerDeath;
             player.OnStaggered -= OnPlayerStaggered;
+            playerMovement.InterruptNormalMove();
             playerMovement.OnMoved -= OnPlayerMoved;
             customScreen.OnScreenOpened -= OnTransformationPhaseOpened;
             customScreen.OnConfirmed -= OnCustomScreenConfirmed;

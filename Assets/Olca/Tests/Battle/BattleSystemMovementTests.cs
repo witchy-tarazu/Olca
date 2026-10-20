@@ -557,3 +557,121 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class NormalMoveMidpointTests
+    {
+        private static BattleSystem Create(int x=3)
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(x,0),poise:1,staggerDurationFrames:3);
+            var enemy=new Enemy("e","敵",100,ElementType.None,new Vector2Int(x==5?0:5,0));
+            enemy.ApplyStun(60000);
+            return new BattleSystem(p,new System.Collections.Generic.List<Enemy>{enemy},new Deck());
+        }
+        private static MockInputProvider Input(int direction)=>new MockInputProvider{Horizontal=direction};
+        [TestCase(-1,false)][TestCase(1,false)][TestCase(-1,true)][TestCase(1,true)]
+        public void 通常移動は中間で占有と当たり判定を切り替え全動作中は攻撃カードを受け付けない(int direction,bool grass)
+        {
+            var battle=Create();var p=battle.Player;var move=battle.PlayerMovement;
+            battle.Enemies[0].MoveTo(new Vector2Int(direction>0?5:1,0));
+            var attack=new BasicAttackAction(1,0);var context=new AIContext(battle.Enemies[0],p,battle.Field,new MockRandomProvider(),new MockLogger());
+            var from=p.GridPosition;var to=new Vector2Int(3+direction,0);
+            if(grass)battle.Field.ChangePanelType(from,PanelType.Grass);
+            var card=new Card("c","攻撃",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,1,"fixture");
+            battle.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{card});int changed=0;move.OnMoved+=(_,__)=>changed++;
+            int total=grass?12:9,mid=NormalMoveTiming.Midpoint(total);
+            for(int frame=1;frame<=total;frame++){
+                battle.TickFrame(17,frame==1?Input(direction):null);
+                Assert.AreEqual(frame<mid?from:to,p.GridPosition,"frame "+frame);
+                Assert.AreEqual(frame>=mid,attack.CanExecute(context),"当たり判定も中間で切り替わる");
+                Assert.AreEqual(frame<mid,battle.Field.IsOccupied(from));Assert.AreEqual(frame>=mid,battle.Field.IsOccupied(to));
+                Assert.AreEqual(frame<total,move.IsNormalMoving);Assert.AreEqual(frame<mid?0:1,changed);
+                if(frame<total){
+                    int hp=battle.Enemies[0].CurrentHp;battle.PlayerBasicAttack(battle.Enemies[0]);Assert.AreEqual(hp,battle.Enemies[0].CurrentHp);
+                    Assert.IsFalse(battle.CardUsage.TryUseCurrentCard());Assert.IsFalse(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());
+                    Assert.IsFalse(move.TryMove(new Vector2Int(-direction,0),new System.Collections.Generic.List<Enemy>()));
+                }
+            }
+            Assert.AreEqual(1,battle.CardUsage.RemainingCount);Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+        }
+        [TestCase(-1,false,false)][TestCase(1,false,false)][TestCase(-1,true,false)][TestCase(1,true,false)]
+        [TestCase(-1,false,true)][TestCase(1,false,true)][TestCase(-1,true,true)][TestCase(1,true,true)]
+        public void 麻痺とのけぞりの中断位置は中間確定の前後で両方向とも維持する(int direction,bool committed,bool paralysis)
+        {
+            var battle=Create();int count=committed?5:4;
+            for(int i=0;i<count;i++)battle.TickFrame(17,i==0?Input(direction):null);
+            if(paralysis)battle.Player.ApplyParalysis(3);else battle.Player.TakeDamage(1,forceStagger:true,poiseDamage:1);
+            battle.TickFrame(17);Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);
+            Assert.AreEqual(new Vector2Int(committed?3+direction:3,0),battle.Player.GridPosition);
+            for(int i=0;i<12;i++)battle.TickFrame(17);
+            Assert.AreEqual(new Vector2Int(committed?3+direction:3,0),battle.Player.GridPosition);
+        }
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)]
+        public void ポーズは移動表示と占有の時計を止め動作中の反対入力を予約しない(BattlePauseReason reason)
+        {
+            var battle=Create();battle.TickFrame(17,Input(-1));float progress=battle.PlayerMovement.NormalMoveProgress;
+            battle.Pause(reason);for(int i=0;i<12;i++)battle.TickFrame(17,Input(1));
+            Assert.AreEqual(progress,battle.PlayerMovement.NormalMoveProgress);Assert.AreEqual(new Vector2Int(3,0),battle.Player.GridPosition);
+            battle.Resume(reason);for(int i=0;i<8;i++)battle.TickFrame(17,Input(1));
+            Assert.AreEqual(new Vector2Int(2,0),battle.Player.GridPosition);Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);
+            battle.TickFrame(17);Assert.AreEqual(new Vector2Int(2,0),battle.Player.GridPosition);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 中間直前に移動先が塞がれた場合は移動元に留める(bool hole)
+        {
+            var battle=Create();for(int i=0;i<4;i++)battle.TickFrame(17,i==0?Input(1):null);
+            if(hole)battle.Field.ChangePanelType(new Vector2Int(4,0),PanelType.Hole);else battle.Enemies[0].MoveTo(new Vector2Int(4,0));
+            int blocks=0;battle.PlayerMovement.OnMoveBlocked+=_=>blocks++;battle.TickFrame(17);
+            Assert.AreEqual(new Vector2Int(3,0),battle.Player.GridPosition);Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);Assert.AreEqual(1,blocks);
+        }
+        [TestCase(0,-1)][TestCase(5,1)]
+        public void 両端から盤外へは動作を開始しない(int x,int direction)
+        {var b=Create(x);b.TickFrame(17,Input(direction));Assert.IsFalse(b.PlayerMovement.IsNormalMoving);Assert.AreEqual(new Vector2Int(x,0),b.Player.GridPosition);}
+        [Test] public void ヒビの離脱とマグマ接触は開始時ではなく中間確定時だけ発生する()
+        {
+            var b=Create();b.Field.ChangePanelType(new Vector2Int(3,0),PanelType.Cracked);b.Field.ChangePanelType(new Vector2Int(4,0),PanelType.Magma);
+            for(int i=0;i<4;i++)b.TickFrame(17,i==0?Input(1):null);
+            Assert.AreEqual(100,b.Player.CurrentHp);Assert.AreEqual(PanelType.Cracked,b.Field.GetPanelType(new Vector2Int(3,0)));
+            b.TickFrame(17);Assert.AreEqual(95,b.Player.CurrentHp);Assert.AreEqual(PanelType.Hole,b.Field.GetPanelType(new Vector2Int(3,0)));
+            Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(new Vector2Int(4,0)));
+        }
+        [Test] public void 移動途中の中断再開は途中座標を保存せず既存の戦闘開始地点へ戻る()
+        {
+            var map=DungeonConfig.CreateTestDungeon(30,1,5);
+            var deck=new Deck(new List<Card>{new Card("c","攻撃",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,10,"fixture")});
+            var checkpoints=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);
+            var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:checkpoints);
+            for(int i=0;i<1000&&manager.CurrentBattle==null;i++)manager.TickFrame(17);
+            var battle=manager.CurrentBattle;Assert.IsNotNull(battle);
+            if(battle.CustomScreen.IsOpen){battle.CustomScreen.Confirm();battle.CustomScreen.Close();}
+            var before=checkpoints.Store.Read();
+            var enemies=battle.Enemies.ToList();var direction=new[]{-1,1}.First(d=>battle.Field.IsInBounds(new Vector2Int(battle.Player.GridPosition.X+d,0))&&
+                !enemies.Any(e=>e.GridPosition==new Vector2Int(battle.Player.GridPosition.X+d,0)));
+            Assert.IsTrue(battle.PlayerMovement.TryStartNormalMove(new Vector2Int(direction,0),enemies));
+            var capture=typeof(Olca.Core.Logic.Dungeon.DungeonCheckpointSession).GetMethod("Capture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            var rejected=Assert.Throws<System.Reflection.TargetInvocationException>(()=>capture.Invoke(checkpoints,new object[]{manager.Dungeon,before.Boundary,null}));
+            Assert.IsInstanceOf<System.ArgumentException>(rejected.InnerException);
+            Assert.IsTrue(manager.SuspendForCheckpoint());Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,new MockRandomProvider(),new MockLogger(),out var resumed,out var error),error);
+            resumed.ActivateCheckpoint();Assert.IsFalse(resumed.CurrentBattle.PlayerMovement.IsNormalMoving);
+            Assert.AreEqual(new Vector2Int(before.Player.GridX,before.Player.GridY),resumed.CurrentBattle.Player.GridPosition);
+            var after=checkpoints.Store.Read();Assert.AreEqual(before.SchemaVersion,after.SchemaVersion);Assert.AreEqual(before.Sequence,after.Sequence);
+            CollectionAssert.AreEqual(before.DeckOrder,after.DeckOrder);CollectionAssert.AreEqual(before.ObtainedOrder,after.ObtainedOrder);
+        }
+
+        [TestCase(7,4)][TestCase(8,4)][TestCase(1,1)]
+        public void 調整値の中間は奇数だけ後半へ切り上げる(int frames,int commit)
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var movement=new PlayerMovementSystem(p,new BattleField(),timing:new NormalMoveTiming(frames,frames));
+            var enemies=new System.Collections.Generic.List<Enemy>();
+            for(int i=1;i<=frames;i++){
+                movement.Tick(17,i==1?Input(1):null,enemies,true);Assert.AreEqual(i<commit?1:2,p.GridPosition.X);
+            }
+            Assert.IsFalse(movement.IsNormalMoving);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new NormalMoveTiming(0,12));
+        }
+    }
+}

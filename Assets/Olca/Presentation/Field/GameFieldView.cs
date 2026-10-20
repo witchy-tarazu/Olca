@@ -469,7 +469,11 @@ namespace Olca.Presentation.Field
             // バトル中のプレイヤー位置をグリッド座標からワールド座標に変換して反映
             if (playerTransform != null && battleGridView != null && currentBattle != null)
             {
-                float worldX = battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
+                var movement = currentBattle.PlayerMovement;
+                float worldX = movement.IsNormalMoving
+                    ? Mathf.Lerp(battleGridView.GridIndexToWorldX(movement.NormalMoveFrom.X),
+                        battleGridView.GridIndexToWorldX(movement.NormalMoveTo.X), movement.NormalMoveProgress)
+                    : battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
                 playerTransform.position = new Vector3(worldX, playerTransform.position.y, 0f);
             }
 
@@ -487,6 +491,9 @@ namespace Olca.Presentation.Field
             battleGridView?.Refresh();
             foreach (var view in enemyViews)
                 view?.Refresh();
+            // ControllerとViewのLateUpdate順に依存せず、更新済みの論理状態で同じ描画を確定する。
+            UpdateMovementAnimation();
+            UpdatePlayerSprite();
         }
 
         // ==================== HUD制御 ====================
@@ -556,11 +563,12 @@ namespace Olca.Presentation.Field
             // 未設定のシーンでは従来のモック画像表示を使用する。
             if (playerAnimator != null && playerAnimator.runtimeAnimatorController != null)
             {
+                bool movementChanged = playerAnimator.GetBool(IsMovingParameter) != (isMoving && !isDashing);
                 playerAnimator.SetBool(IsRunningParameter, isDashing);
                 playerAnimator.SetBool(IsMovingParameter, isMoving && !isDashing);
                 playerAnimator.SetInteger(JumpPhaseParameter, jumpPhase);
                 // LateUpdateでも論理状態と同じ描画フレームに姿勢を切り替える。時間は進めない。
-                if (appliedJumpPhase != jumpPhase) playerAnimator.Update(0f);
+                if (appliedJumpPhase != jumpPhase || movementChanged) playerAnimator.Update(0f);
                 appliedJumpPhase = jumpPhase;
                 return;
             }
@@ -580,10 +588,10 @@ namespace Olca.Presentation.Field
         {
             // 60Hz論理更新のない描画フレームも自動前進は継続中。
             // 座標差0や描画DeltaTimeでの速度推定を停止判定に使わない。
-            isMoving = dungeonSystem != null && playerTransform != null
-                && dungeonSystem.IsExplorationMoving
-                && playerPositionUpdateEnabled && cameraFollowEnabled
-                && dungeonSystem.PlayerHeight <= 0.001f && Olca.Unity.GameplayPause.DeltaTime > 0f;
+            bool battleMoving = currentBattle?.PlayerMovement.IsNormalMoving == true && !currentBattle.IsPaused;
+            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (battleMoving ||
+                (dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
+                && dungeonSystem.PlayerHeight <= 0.001f));
         }
 
         private void SetPlayerSprite(Sprite sprite)

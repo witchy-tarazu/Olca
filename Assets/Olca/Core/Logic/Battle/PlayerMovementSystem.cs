@@ -10,12 +10,37 @@ namespace Olca.Core.Logic.Battle
     /// 入力処理、衝突判定、Ice滑り、Grass クールダウンを管理
     /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
+    /// <summary>調整可能な暫定移動時間。占有は中間、奇数は後半側のフレームへ切り上げる。</summary>
+    public sealed class NormalMoveTiming
+    {
+        public const int DefaultNormalFrames = 9;
+        public const int DefaultGrassFrames = 12;
+        public int NormalFrames { get; }
+        public int GrassFrames { get; }
+        public NormalMoveTiming(int normalFrames = DefaultNormalFrames, int grassFrames = DefaultGrassFrames)
+        {
+            if (normalFrames <= 0 || grassFrames <= 0) throw new ArgumentOutOfRangeException(nameof(normalFrames));
+            NormalFrames = normalFrames; GrassFrames = grassFrames;
+        }
+        public static int Midpoint(int totalFrames) => totalFrames / 2 + totalFrames % 2;
+    }
+
     public class PlayerMovementSystem
     {
         private readonly PlayerCharacter player;
         private readonly BattleField field;
         private readonly IGameLogger logger;
         private readonly Func<bool> canStartNormalMove;
+
+        public NormalMoveTiming Timing { get; }
+        public bool IsNormalMoving { get; private set; }
+        public Vector2Int NormalMoveFrom { get; private set; }
+        public Vector2Int NormalMoveTo { get; private set; }
+        public int NormalMoveDurationFrames { get; private set; }
+        public int NormalMoveCommitFrame => NormalMoveTiming.Midpoint(NormalMoveDurationFrames);
+        public float NormalMoveProgress => IsNormalMoving ? (float)(normalMoveUnits / (NormalMoveDurationFrames * 50d)) : 1f;
+        private long normalMoveUnits;
+        private bool normalMoveCommitted;
 
         private FrameCountdown moveCooldown; // 移動クールダウン（ミリ秒）
         private Vector2Int? pendingSlideDirection; // Ice滑り中の方向
@@ -24,7 +49,7 @@ namespace Olca.Core.Logic.Battle
         private const int NORMAL_MOVE_DELAY_MS = 150; // 通常移動時のクールダウン（ミリ秒、押しっぱなし対応）
 
         /// <summary>移動可能か（クールダウンと滑り状態をチェック）</summary>
-        public bool CanMove => !moveCooldown.IsActive && !IsSliding && (canStartNormalMove?.Invoke() ?? true);
+        public bool CanMove => !IsNormalMoving && !moveCooldown.IsActive && !IsSliding && (canStartNormalMove?.Invoke() ?? true);
 
         /// <summary>Ice滑り中か</summary>
         public bool IsSliding => player.TerrainState.ReceivesPanelEffects && pendingSlideDirection.HasValue;
@@ -38,12 +63,13 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public PlayerMovementSystem(PlayerCharacter player, BattleField field, IGameLogger logger = null, Func<bool> canStartNormalMove = null)
+        public PlayerMovementSystem(PlayerCharacter player, BattleField field, IGameLogger logger = null, Func<bool> canStartNormalMove = null, NormalMoveTiming timing = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.field = field ?? throw new ArgumentNullException(nameof(field));
             this.logger = logger;
             this.canStartNormalMove = canStartNormalMove;
+            Timing = timing ?? new NormalMoveTiming();
         }
 
         /// <summary>
@@ -55,6 +81,12 @@ namespace Olca.Core.Logic.Battle
 
             // クールダウン更新
             if (logicalFrame) moveCooldown.TickFrame(); else moveCooldown.Tick(deltaTimeMs);
+
+            if (IsNormalMoving)
+            {
+                AdvanceNormalMove(logicalFrame ? 50L : deltaTimeMs * 3L, enemies);
+                return; // 動作中に届いた入力は予約しない。終了フレームも次の動作を開始しない。
+            }
 
             // Ice滑り処理が優先
             if (pendingSlideDirection.HasValue)
@@ -74,9 +106,50 @@ namespace Olca.Core.Logic.Battle
 
             if (direction != Vector2Int.Zero)
             {
-                TryMove(direction, enemies);
+                if (logicalFrame)
+                {
+                    if (TryStartNormalMove(direction, enemies)) AdvanceNormalMove(50L, enemies);
+                }
+                else TryMove(direction, enemies); // 旧ms入口の即時移動契約は維持する。
             }
         }
+
+        /// <summary>新しい通常移動を開始する。開始時は移動元を占有し、進行は論理更新だけで行う。</summary>
+        public bool TryStartNormalMove(Vector2Int direction, List<Enemy> enemies)
+        {
+            if (!CanMove || player.IsDead || player.IsActionPrevented || Math.Abs((long)direction.X) + Math.Abs((long)direction.Y) != 1) return false;
+            var target = new Vector2Int(player.GridPosition.X + direction.X, player.GridPosition.Y + direction.Y);
+            if (!CanEnterNormalTarget(target, enemies)) return false;
+            NormalMoveFrom = player.GridPosition; NormalMoveTo = target;
+            NormalMoveDurationFrames = field.GetPanelType(NormalMoveFrom) == PanelType.Grass && player.TerrainState.ReceivesPanelEffects
+                ? Timing.GrassFrames : Timing.NormalFrames;
+            normalMoveUnits = 0; normalMoveCommitted = false; IsNormalMoving = true;
+            return true;
+        }
+        private bool CanEnterNormalTarget(Vector2Int target, List<Enemy> enemies)
+        {
+            if (field.IsInBounds(target) && field.CanMoveTo(target, player.TerrainState) && !IsEnemyAt(target, enemies)) return true;
+            OnMoveBlocked?.Invoke(target); return false;
+        }
+        private void AdvanceNormalMove(long units, List<Enemy> enemies)
+        {
+            if (player.IsDead || player.IsActionPrevented || player.GridPosition != (normalMoveCommitted ? NormalMoveTo : NormalMoveFrom))
+            { InterruptNormalMove(); return; }
+            normalMoveUnits = Math.Min(NormalMoveDurationFrames * 50L, normalMoveUnits + Math.Max(0, units));
+            if (!normalMoveCommitted && normalMoveUnits >= NormalMoveCommitFrame * 50L)
+            {
+                if (!CanEnterNormalTarget(NormalMoveTo, enemies)) { InterruptNormalMove(); return; }
+                normalMoveCommitted = true;
+                player.MoveTo(NormalMoveTo);
+                OnMoved?.Invoke(NormalMoveTo, NormalMoveFrom);
+                if (!IsNormalMoving) return;
+                if (field.GetPanelType(NormalMoveTo) == PanelType.Ice && player.TerrainState.ReceivesPanelEffects)
+                    pendingSlideDirection = new Vector2Int(NormalMoveTo.X - NormalMoveFrom.X, NormalMoveTo.Y - NormalMoveFrom.Y);
+            }
+            if (normalMoveUnits >= NormalMoveDurationFrames * 50L) IsNormalMoving = false;
+        }
+        /// <summary>確定前は移動元、確定後は移動先に留める。予約入力や位置の巻戻しは作らない。</summary>
+        public void InterruptNormalMove() { IsNormalMoving = false; normalMoveUnits = 0; }
 
         /// <summary>
         /// 移動を試みる（公開API）
@@ -85,7 +158,7 @@ namespace Olca.Core.Logic.Battle
         public bool TryMove(Vector2Int direction, List<Enemy> enemies)
         {
             // カード動作中の能動入力だけを拒否する。氷滑り・効果による移動は内部経路を維持。
-            if (!(canStartNormalMove?.Invoke() ?? true)) return false;
+            if (IsNormalMoving || !(canStartNormalMove?.Invoke() ?? true)) return false;
             CancelSlideWhileFloating();
 
             // クールダウン中は移動不可（Ice滑り中も含む）
