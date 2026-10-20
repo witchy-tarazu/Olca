@@ -46,6 +46,8 @@ namespace Olca.Application.Dungeon
         [Header("戦闘の暫定調整値")]
         [Tooltip("敵味方共通ののけぞり論理フレーム数。仮値18=0.3秒。新規出撃用。")]
         [SerializeField, Min(1)] private int battleStaggerFrames = 18;
+        [Tooltip("既定AI攻撃・基本攻撃・マグマの被弾後無敵。仮値600ms。共通のけぞり時間より長く設定する。カードの個別設定は変更しない。")]
+        [SerializeField, Min(1)] private int commonHitInvincibilityMs = 600;
         [SerializeField, Min(1)] private int normalEnemyPoise = 30;
         [SerializeField, Min(1)] private int bossEnemyPoise = 60;
         [Tooltip("既定マップの敵の自然回復待ち。仮値180=3秒。外部マップ定義は上書きしない。")]
@@ -252,6 +254,8 @@ namespace Olca.Application.Dungeon
 
         private void Start()
         {
+            if (commonHitInvincibilityMs <= 0 || (long)commonHitInvincibilityMs * 60 <= (long)battleStaggerFrames * 1000)
+                throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
@@ -451,6 +455,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleStarted(BattleSystem battle, ContactInfo contactInfo)
         {
+            battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
             battleFieldReady = false;
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);

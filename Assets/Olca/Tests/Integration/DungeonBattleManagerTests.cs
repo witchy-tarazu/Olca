@@ -2497,10 +2497,11 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(0, player.PoiseRecoveryRemainingFrames);
         }
 
-        private Olca.Application.Dungeon.DungeonBattleController StartCombatDefaults(int stagger, int recovery)
+        private Olca.Application.Dungeon.DungeonBattleController StartCombatDefaults(int stagger, int recovery, int invincibilityMs = 600)
             => Start(configure: controller => {
                 Set(controller, "dungeonCellCount", 8); Set(controller, "firstEnemyCell", 2);
                 Set(controller, "battleStaggerFrames", stagger); Set(controller, "enemyPoiseRecoveryFrames", recovery);
+                Set(controller, "commonHitInvincibilityMs", invincibilityMs);
             });
 
         [TestCase(18)] [TestCase(6)]
@@ -2596,6 +2597,65 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(recovery == 0 ? (int?)null : recovery, battle.Player.PoiseRecoveryDelayFrames);
             Assert.IsNull(battle.Enemies[0].PoiseDefinition);
             CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(file.ActivePath));
+        }
+
+        [TestCase(600, 36)] [TestCase(400, 24)]
+        public void 通常出撃の共通被弾無敵は保存復帰後もAIと基本攻撃で次フレームから発生しポーズ中停止する(int milliseconds, int frames)
+        {
+            var controller = StartCombatDefaults(18, 180, milliseconds); ToBattle(controller);
+            Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle; var player = battle.Player; var enemy = battle.Enemies[0];
+            Assert.AreEqual(milliseconds, battle.DefaultHitInvincibilityMs);
+            Assert.IsFalse(player.IsInvincible); Assert.IsFalse(enemy.IsInvincible);
+            Assert.AreEqual(0, new Olca.Application.Battle.SimpleCardFactory().CreateById("sword").HitInvincibilityMs);
+            enemy.MoveTo(new Vector2Int(player.GridPosition.X + 1, player.GridPosition.Y));
+            battle.Resume(BattlePauseReason.CustomScreen);
+            battle.RunLogicalFrame(() => {
+                battle.PlayerBasicAttack(enemy); battle.PlayerBasicAttack(enemy);
+                Assert.IsFalse(enemy.IsInvincible, "新しい無敵は同フレームの2発目を妨げない");
+                battle.TickFrame(17);
+            });
+            Assert.AreEqual(30, enemy.CurrentHp); Assert.AreEqual(90, player.CurrentHp);
+            Assert.IsTrue(enemy.IsInvincible); Assert.IsTrue(player.IsInvincible);
+            Assert.AreEqual(milliseconds, player.InvincibleDurationMs);
+            Assert.IsFalse(player.TryTakeDamage(7, poiseDamage: 7)); Assert.AreEqual(10, player.AccumulatedDamage);
+            battle.PlayerBasicAttack(enemy); Assert.AreEqual(30, enemy.CurrentHp);
+            var card = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()); Assert.AreEqual(30, enemy.CurrentHp, "発生設定0のカードも既存無敵を貫通しない");
+            controller.SetUserPaused(true); for (int f = 0; f < 20; f++) Tick(controller);
+            Assert.AreEqual(milliseconds, player.InvincibleDurationMs); controller.SetUserPaused(false);
+            for (int f = 0; f < frames - 1; f++) battle.TickFrame(17);
+            Assert.IsTrue(player.IsInvincible); Assert.IsTrue(enemy.IsInvincible);
+            battle.TickFrame(17); Assert.IsFalse(player.IsInvincible); Assert.IsFalse(enemy.IsInvincible);
+            battle.PlayerBasicAttack(enemy); Assert.AreEqual(20, enemy.CurrentHp); Assert.IsTrue(enemy.IsInvincible);
+            Assert.Throws<System.InvalidOperationException>(() => battle.ConfigureDefaultHitInvincibility(1000));
+            Assert.AreEqual(milliseconds, battle.DefaultHitInvincibilityMs);
+        }
+
+        [TestCase(false, false, 5, true)] [TestCase(true, false, 0, false)] [TestCase(false, true, 0, false)]
+        public void 通常移動の中間で受理したマグマだけ共通無敵を発生し削りを増やさない(bool barrier, bool floating, int loss, bool invincible)
+        {
+            var controller = StartCombatDefaults(18, 180); ToBattle(controller);
+            var battle = Model(controller).CurrentBattle; var player = battle.Player;
+            foreach (var enemy in battle.Enemies) enemy.ApplyStun(100000);
+            battle.Resume(BattlePauseReason.CustomScreen);
+            if (barrier) player.SetBarrier(15); player.TerrainState.IsFloating = floating;
+            var target = new Vector2Int(player.GridPosition.X - 1, player.GridPosition.Y);
+            battle.Field.ChangePanelType(target, PanelType.Magma);
+            for (int f = 0; f < 4; f++) battle.TickFrame(17, new LogicalInput { Horizontal = -1 });
+            Assert.AreEqual(100, player.CurrentHp); Assert.IsFalse(player.IsInvincible);
+            battle.TickFrame(17, new LogicalInput { Horizontal = -1 });
+            Assert.AreEqual(target, player.GridPosition); Assert.AreEqual(100 - loss, player.CurrentHp);
+            Assert.AreEqual(invincible, player.IsInvincible); Assert.AreEqual(0, player.AccumulatedDamage);
+            Assert.AreEqual(PanelType.Normal, battle.Field.GetPanelType(target));
+            if (invincible) {
+                int remaining = player.InvincibleDurationMs;
+                battle.Field.ChangePanelType(target, PanelType.Magma);
+                battle.RunLogicalFrame(() => battle.PanelEffects.ApplyOnEnterEffect(player, target));
+                Assert.AreEqual(95, player.CurrentHp); Assert.AreEqual(remaining, player.InvincibleDurationMs);
+                Assert.AreEqual(PanelType.Normal, battle.Field.GetPanelType(target));
+            }
         }
 
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo

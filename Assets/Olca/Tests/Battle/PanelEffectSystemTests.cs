@@ -8,6 +8,25 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class PanelEffectSystemTests
     {
+        [TestCase(false)] [TestCase(true)]
+        public void 共通無敵で被弾したプレイヤーは勝敗通知前に無敵を解除し次戦へ持ち越さない(bool defeat)
+        {
+            var p = new PlayerCharacter(100);
+            var enemy = new Enemy("e", "敵", 50, ElementType.None, new Vector2Int(1, 0));
+            var battle = new BattleSystem(p, new System.Collections.Generic.List<Enemy> { enemy }, new Deck());
+            Assert.AreEqual(0, battle.DefaultHitInvincibilityMs);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => battle.ConfigureDefaultHitInvincibility(-1));
+            battle.ConfigureDefaultHitInvincibility(600); battle.TickFrame(17);
+            Assert.IsTrue(p.IsInvincible); Assert.AreEqual(90, p.CurrentHp);
+            int ends = 0; battle.OnBattleEnd += _ => { ends++; Assert.IsFalse(p.IsInvincible); };
+            if (defeat) {
+                for (int f = 0; f < 36; f++) battle.TickFrame(17);
+                battle.RunLogicalFrame(() => { p.TakeDamage(1000); p.SetInvincible(600); });
+            } else enemy.TakeDamage(50, ElementType.None);
+            Assert.AreEqual(1, ends); Assert.IsFalse(p.IsInvincible);
+            Assert.AreEqual(0, p.InvincibleDurationMs);
+        }
+
         [TestCase(0, false, false, 5, 0)]
         [TestCase(3, false, false, 0, 0)]
         [TestCase(8, false, false, 0, 3)]

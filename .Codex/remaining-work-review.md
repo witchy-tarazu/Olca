@@ -393,3 +393,16 @@ Controller統合回帰は、既定/調整のけぞり18/6、敵回復180/60、�
 初回の追加4件はテスト準備がnull階層定義を渡して失敗し、既存1706件は成功。準備を修正後はController23/23成功・全1710/1710成功（30.15秒）。その後に旧既定マップの互換性回帰を追加したため、その最終結果とは区別する。証跡は /workspace/.olca-cloud/results/default-combat-poise/ に保持する。
 
 最終検証: Unity MCP console→EditMode→consoleで1713/1713成功（29.94秒、失敗/スキップ0）、consoleErrors=0、compilationFailed=false、警告16件。旧既定マップの回復待ち未設定/180を再開し、別配置は保存を変えず拒否する回帰も成功。editmode-tests.json、console-before.json、console-after.jsonを保全。
+
+
+## 既定攻撃とプレイヤーマグマの共通被弾無敵（2026-10-20）
+
+既存候補の「共通無敵時間と通常発生元未接続」を選択。§7/16の確定規則に従い、DungeonBattleControllerのcommonHitInvincibilityMsを仮値600ms（36論理フレーム）として、既定敵BasicAttackAction、PlayerBasicAttack、プレイヤーのマグマ接触へ接続する。共通のけぞり18フレームより長い。Controller起動時に正数・共通のけぞりより長いことを検証する。Coreの単体生成は0の旧設定を維持し、ConfigureDefaultHitInvincibilityは戦闘更新前のみ許可する。
+
+通常Controllerの戦闘開始/保存復帰イベントで現在の共通設定を適用する。DTO/schema、MapHash、カードの定義hashは変更しない。カードのHitInvincibilityMs=0、段別発生設定、外部指定召喚AIは変更せず、全カード製品設定の完成とは扱わない。マグマの敵・同居全員処理等の地形全体を今回実装したものでもない。
+
+新しい無敵は既存のフレーム終端予約を使い、同フレームの複数ヒットを妨げず次フレームから遮断する。既存無敵は発生設定0のカードも防ぐ。受理したマグマだけ共通無敵を付与し、バリア/既存無敵/フロートで防いだ場合は追加付与しない。マグマ消費と強靭度削り0は保つ。戦闘限定バフの規則（§8）に従い、勝敗/放棄時はPlayerCharacterの残り無敵・未反映予約も勝敗通知前に解除し、探索/次戦と保存復帰で残留差を作らない。
+
+追加回帰: 通常Controllerの出撃→実ファイル戦闘開始保存/復帰、共通値600/400ms、通常AIからの発生、同フレームの基本攻撃2発、無敵中の独立削り遮断とカード0設定維持、ポーズ中停止、期限直前/期限/再被弾、移動5フレーム目のマグマ、バリア/フロート例外、勝利/敗北通知時の解除と致死フレームの予約破棄。既存の独立削り・HP集計・移動中間・旧保存回帰も維持する。
+
+Unity MCP console→全EditMode→consoleで1720/1720成功（30.68秒、失敗/スキップ0）、consoleErrors=0、compilationFailed=false、警告16件。/workspace/.olca-cloud/results/default-hit-invincibility/ にeditmode-tests.json、console-before.json、console-after.jsonを保全。可視証跡はローカル保全のみとし、未解決の動画共有拒否を迂回するアップロードは行わない。

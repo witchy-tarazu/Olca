@@ -59,6 +59,17 @@ namespace Olca.Core.Logic.Battle
         /// <summary>プレイヤー移動システム</summary>
         public PlayerMovementSystem PlayerMovement => playerMovement;
 
+        /// <summary>既定の敵AI・プレイヤー基本攻撃・マグマが発生させる共通無敵。0は旧設定。</summary>
+        public int DefaultHitInvincibilityMs { get; private set; }
+        public void ConfigureDefaultHitInvincibility(int durationMs)
+        {
+            if (durationMs < 0) throw new ArgumentOutOfRangeException(nameof(durationMs));
+            if (actionTimeUnits != 0 || IsGameOver) throw new InvalidOperationException("共通被弾無敵は戦闘更新前に設定してください");
+            DefaultHitInvincibilityMs = durationMs;
+            panelEffects.ConfigureHitInvincibility(durationMs);
+        }
+
+
         /// <summary>パネル効果システム</summary>
         public PanelEffectSystem PanelEffects => panelEffects;
 
@@ -124,7 +135,8 @@ namespace Olca.Core.Logic.Battle
 
             // 初期参加者のAIは既存設定を維持する。
             foreach (var enemy in this.enemies)
-                RegisterEnemy(enemy, new List<IEnemyAIAction> { new BasicAttackAction(attackDamage: 10, cooldown: 2.0f) });
+                RegisterEnemy(enemy, new List<IEnemyAIAction> { new BasicAttackAction(attackDamage: 10, cooldown: 2.0f,
+                    onHit: target => { if (!target.IsDead) target.SetInvincible(DefaultHitInvincibilityMs); }) });
 
             // カスタム画面イベントの購読
             customScreen.OnScreenOpened += OnTransformationPhaseOpened;
@@ -337,7 +349,7 @@ namespace Olca.Core.Logic.Battle
             try
             {
                 int damage = player.AttackPower;
-                target.TakeDamage(damage, ElementType.None);
+                target.TakeDamage(damage, ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
                 OnPlayerAttack?.Invoke(target, damage);
@@ -545,6 +557,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetOccupancyQuery(null);
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
+            player.ClearInvincibility();
             player.ClearStagger();
             player.ResetParalysis();
             player.ClearPoiseRecovery();

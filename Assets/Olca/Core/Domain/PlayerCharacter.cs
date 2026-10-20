@@ -427,6 +427,12 @@ namespace Olca.Core.Domain
         }
 
         public void TickInvincibleFrame() => invincibilityTimer.TickFrame();
+        // 戦闘限定の無敵と未反映予約を、勝敗通知/保存境界より前に解除する。
+        internal void ClearInvincibility()
+        {
+            invincibilityTimer.SetFrames(0); pendingInvincibilityMs = 0; frameInvincible = false;
+        }
+
 
         /// <summary>
         /// 集中バフを設定する

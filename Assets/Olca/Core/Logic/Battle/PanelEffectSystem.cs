@@ -14,6 +14,9 @@ namespace Olca.Core.Logic.Battle
         private readonly BattleField field;
         private readonly IGameLogger logger;
 
+        private int hitInvincibilityMs;
+        internal void ConfigureHitInvincibility(int durationMs) => hitInvincibilityMs = durationMs;
+
         private const int MAGMA_DAMAGE = 5; // マグマダメージ量
 
         /// <summary>
@@ -97,7 +100,8 @@ namespace Olca.Core.Logic.Battle
 
             // 消費条件は既存のまま、浮遊者をダメージ対象から除外する。
             int hpBefore = player.CurrentHp;
-            if (player.TerrainState.ReceivesPanelEffects) player.TakeDamage(MAGMA_DAMAGE, affectsPoise: false);
+            if (player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(MAGMA_DAMAGE, affectsPoise: false)
+                && !player.IsDead) player.SetInvincible(hitInvincibilityMs);
             field.ChangePanelType(position, PanelType.Normal);
             logger?.LogInfo($"Magmaパネルで{hpBefore - player.CurrentHp}ダメージ、通常パネルに変化: {position}");
             OnPanelEffectApplied?.Invoke(position, PanelType.Magma);
