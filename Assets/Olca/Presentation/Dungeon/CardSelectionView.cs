@@ -23,6 +23,7 @@ namespace Olca.Presentation.Dungeon
         [SerializeField] private float fadeInDuration = 0.3f;
 
         private UniTaskCompletionSource<Card> selectionTcs;
+        private Button skipButton;
 
         /// <summary>
         /// カード選択画面を表示し、選択が完了するまで待機する
@@ -37,6 +38,7 @@ namespace Olca.Presentation.Dungeon
             CancellationToken ct = default)
         {
             selectionTcs = new UniTaskCompletionSource<Card>();
+            EnsureSkipButton();
 
             // デッキ枚数表示
             if (deckCountText != null)
@@ -104,14 +106,14 @@ namespace Olca.Presentation.Dungeon
             const float gap = 16f;
             // 上下はHUD用の余白を残し、カードと文字を同じ比率で縮小する。
             float availableWidth = Mathf.Max(1f, parent.rect.width - 32f - gap * (visible.Count - 1));
-            float availableHeight = Mathf.Max(1f, parent.rect.height - 64f);
+            float availableHeight = Mathf.Max(1f, parent.rect.height - 220f);
             float scale = Mathf.Min(1f, availableWidth / (width * visible.Count), availableHeight / height);
             for (int i = 0; i < visible.Count; i++)
             {
                 var rect = visible[i];
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
                 rect.localScale = new Vector3(scale, scale, 1f);
-                rect.anchoredPosition = new Vector2((i - (visible.Count - 1) * 0.5f) * (width * scale + gap), 0f);
+                rect.anchoredPosition = new Vector2((i - (visible.Count - 1) * 0.5f) * (width * scale + gap), 45f);
             }
         }
 
@@ -131,9 +133,32 @@ namespace Olca.Presentation.Dungeon
         internal void OnItemClicked(Card card)
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
-            selectionTcs?.TrySetResult(card);
-            if (containerRoot != null)
-                containerRoot.SetActive(false);
+            // 受取とスキップの競合も最初の確定だけを既存Controllerへ渡す。
+            if (selectionTcs == null || !selectionTcs.TrySetResult(card)) return;
+            if (containerRoot != null) containerRoot.SetActive(false);
+        }
+
+        private void EnsureSkipButton()
+        {
+            if (skipButton != null) return;
+            var buttonObject = new GameObject("SkipCardReward", typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(containerRoot != null ? containerRoot.transform : transform, false);
+            var rect = (RectTransform)buttonObject.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0f);
+            rect.anchoredPosition = new Vector2(0f, 65f); rect.sizeDelta = new Vector2(500f, 70f);
+            buttonObject.GetComponent<Image>().color = new Color(.08f, .2f, .27f, .9f);
+            skipButton = buttonObject.GetComponent<Button>();
+            skipButton.onClick.AddListener(() => OnItemClicked(null));
+            var labelObject = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            labelObject.transform.SetParent(buttonObject.transform, false);
+            var labelRect = (RectTransform)labelObject.transform;
+            labelRect.anchorMin = Vector2.zero; labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero; labelRect.offsetMax = Vector2.zero;
+            var label = labelObject.GetComponent<Text>();
+            label.font = deckCountText != null ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.fontSize = 28; label.alignment = TextAnchor.MiddleCenter;
+            label.color = new Color(.9f, .97f, 1f); label.raycastTarget = false;
+            label.text = "受け取らずに進む";
         }
 
         private async UniTask FadeAsync(

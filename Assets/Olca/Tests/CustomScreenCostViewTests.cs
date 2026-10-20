@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
@@ -142,6 +143,36 @@ namespace Olca.Tests
             {
                 Object.DestroyImmediate(viewObject);
                 Object.DestroyImmediate(go);
+            }
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public async System.Threading.Tasks.Task 報酬の受取と明示スキップは最初の入力だけで確定し再表示でもボタンを増やさない(bool skipFirst)
+        {
+            var root = new GameObject("RewardSkip", typeof(RectTransform));
+            try {
+                var view = root.AddComponent<CardSelectionView>();
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CardSelectionView).GetField("containerRoot", flags).SetValue(view, root);
+                typeof(CardSelectionView).GetField("cardItems", flags).SetValue(view, new CardSelectionItemView[0]);
+                var card = Create("reward", CardSeries.Sword);
+                for (int repeat=0; repeat<2; repeat++) {
+                    var task = view.ShowAsync(new[] { card }, 6).AsTask();
+                    var button = root.GetComponentInChildren<Button>(true);
+                    Assert.AreEqual("SkipCardReward", button.name);
+                    Assert.AreEqual(1, root.GetComponentsInChildren<Button>(true).Length);
+                    // ポーズ中は明示スキップでも報酬を確定しない。
+                    Olca.Unity.GameplayPause.SetPaused(true); button.onClick.Invoke(); Assert.IsFalse(task.IsCompleted);
+                    Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                    Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+                    if (skipFirst) button.onClick.Invoke();
+                    typeof(CardSelectionView).GetMethod("OnItemClicked", flags).Invoke(view, new object[] { card });
+                    button.onClick.Invoke();
+                    Assert.AreSame(skipFirst ? null : card, await task); Assert.IsFalse(root.activeSelf);
+                }
+            } finally {
+                Object.DestroyImmediate(root); Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
             }
         }
 

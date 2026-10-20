@@ -490,3 +490,13 @@ SetUserPausedの2参照をUnityの!=nullによる生存判定へ変更した。�
 FHD仮UI画像attack-fhd.png（1920×1080、566926 bytes、SHA256 3ad94d7e30791046a9c5a09be0f33959533431f49bedea6fbdba2410d8152c91）は実GameViewのみで、認証画面/識別情報/秘密を含まないと確認。PNGもIHDR/IDAT/IENDのみ。witchy-tarazu/Olcaへの通常のUTF-8 Base64 blob作成を1回行ったが、自動承認審査が当該画像・宛先の特定承認不足として拒否した。画像送信だけ未実行のまま停止し、再試行/別経路への置換はしていない。画像とメタデータはローカル保全。これは当該操作の拒否であり、恒常的な共有停止ルールの復活ではない。通常移動動画blobは再作成しない。
 
 GUIの実Pause/キー設定からUI全体をControllerより先に破棄し、実editor_stopを実行。新規エラー0で、旧Terminal/現チェックポイント/進行データのSHA256が全て不変。実editor_play後も時間倍率1/全体ポーズ解除、同じ保存から復帰、保存Jによる攻撃11/経験値100/受領1を確認。通常のPause→キー設定→閉じる→再開も成功し、再開後の新規エラー0、compilationFailed=false。履歴は消去せず、GUIをFHDの戦闘HUD・Editor一時停止で維持する。
+
+## 戦闘カード報酬の明示スキップ接続（2026-10-20）
+
+全体仕様§10/§14で確定しているスキップを選択。CoreのSelectCardReward(null)とControllerの保存/復帰経路はある一方、既存CardSelectionViewとDungeonSceneにはスキップ入力がなかったため、下端の「受け取らずに進む」を接続した。候補/確率/報酬量/攻略ID/保存形式は変更しない。受取とスキップが競合しても最初の確定だけを返し、ポーズ中の入力を拒否する。カード領域を縮小して操作領域を確保し、仮値はPlanning/暫定実装一覧.mdへ記録した。
+
+Unity MCP console→全EditMode→consoleで1780/1780成功（40.19秒、失敗/スキップ0）。追加2ケースは受取/スキップ両順、ポーズ拒否と再表示時のボタン重複防止。最初のテストコードのUniTask拡張import不足は修正し、現在consoleErrors=0/compilationFailed=false（警告31）。履歴は消去しない。証跡 /workspace/.olca-cloud/results/reward-skip/。
+
+GUIの独立2階層fixtureで実Enter/Space→カード報酬表示→画面座標の最前面raycast/ポインターで「受け取らずに進む」を実行。中間ボスは次階層へ一度進み、デッキ6/取得履歴0/経験値0。最終ボスは持ち帰り候補0/所持0/経験値0の選択画面へ進む。0枚確定→帰還も実ボタンから完了し、保存を再読込して経験値100/所持0/受領1/Returnedを確認。敵HP/位置と既存ソードの使用キューは測定用fixtureで、製品設定に追加しない。FHD実GameViewでスキップ表示とカード非重複を目視確認し、reward-fhd.pngをローカル保存。画像外部送信は行わない。
+
+準備run_scriptの応答タイムアウトは状態読取で完了済みを確認し、二重実行しなかった。帰還試験はAwarded直後の再描画前にraycast検証が停止し、Awarded/経験値100/受領1を読取後、再描画を待って残りの帰還だけ実行した。試験の失敗結果も証跡に保存し、製品動作の失敗と混同しない。Play後の新規コンソールエラー0/compilationFailed=false（警告1）。旧攻略保存7ファイル（旧Terminalを含む）のハッシュ不変、原本差分0。GUIはこの独立fixtureの帰還画面・Editor一時停止で維持する。
