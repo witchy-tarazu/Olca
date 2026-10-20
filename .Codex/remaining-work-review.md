@@ -337,3 +337,10 @@ FrameHpChangesは毒の要求量を切り詰めずに集計し、回復を含め
 画面用EditorにはPlay移行時のMCP管理コマンド由来「Thread was being aborted」1件が残る。製品コンパイル失敗はなく、上記ゲーム内検証は成功。履歴を消去していない。全EditMode検証側はconsoleErrors=0。
 
 今回の画像共有は未完了。継続共有の承認履歴を踏まえてGitHub接続ツールのcreate_blobを1回実行したが、自動承認審査が「セットアップ/テストへの承認であり外部送信は未承認」と判断して拒否した。新しい画像についての対象・送信先の明示承認が必要として、画像をローカルに保全し再試行・迂回はしない。既に成功済みの集中画像共有とは別の操作で、コード公開の成否とも分離する。
+
+
+HP5画像共有の後続結果: 継続共有承認を対象・送信先へ適用した1回の再試行で成功。UTF-8 Base64 blob IDは7b00f9d5c91c361cc35ccb25d800f47fc80133b1、元PNG435019 bytes、SHA256 2af920e20bfed308e9241f3824c9d41d9ecebb76034ad00d04d96c3fda8ae84a。ローカル計算のGit blob SHAとも一致。画像のコード版は6f89facb4445ed23d81b7e09f78a581523596eb8。
+
+ThreadAbort切り分け: editor-restart.logの273187行付近で「Reloading assemblies for play mode」「Begin MonoManager ReloadAssembly」に続いてPipelineの/api/exec中断を記録。当該Play開始コマンドrun_script/EnterPaused.Mainの返却自体はsuccess=true。その後のruntime-configureとui-verifyもsuccess=true。ログにはHTTPリクエストの一意IDがなく、個別リクエストまでの断定はしない。同じ画面用Editorへ正規MCPで再接続した結果はplaying/paused・compiling=false・domainReloadInProgress=false。以前のcursor/session以降に新しいエラーは0件、履歴のconsoleErrors=1を保持する。再接続結果は /workspace/.olca-cloud/results/poison-healing-boundary/reconnect-status.json と reconnect-console.json。コード変更なしのため1681件成功済みの全件試験を繰り返さない。
+
+接続済みの範囲は共通HPフレーム集計、既存敵毒の通常TickFrame、通常ヒールカード、敵Heal入口と既存AI受理コールバックからの利用検証。新しい製品回復AIは追加していない。プレイヤー毒状態の所有と自動更新、付与元の製品定義、探索の毒時計/場面持越し/その保存は未接続。毒系全体の完成と扱わない。
