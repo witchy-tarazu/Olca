@@ -53,6 +53,48 @@ namespace Olca.Core.Domain
             OnTransformationDefenseEnded?.Invoke();
         }
 
+        private readonly Dictionary<string, TimedPoisonState> poisons = new Dictionary<string, TimedPoisonState>();
+        /// <summary>製品の付与元・量・間隔は定義せず、外部指定された毒種を所有する。</summary>
+        public void ApplyPoison(string kind, StatusEffect effect, int intervalFrames)
+        {
+            if (string.IsNullOrWhiteSpace(kind)) throw new ArgumentException("毒種が必要です");
+            if (HasParalysisState) throw new NotSupportedException("プレイヤー毒と麻痺の共存は未確定です");
+            if (IsDead) return;
+            if (!poisons.TryGetValue(kind, out var state)) {
+                state = new TimedPoisonState();
+                if (frameHp.Active) state.BeginFrame();
+                poisons.Add(kind, state);
+            }
+            state.ApplyPersistent(effect, intervalFrames);
+        }
+        public PlayerPoisonDto[] CapturePoisons()
+        {
+            var result = new List<PlayerPoisonDto>();
+            foreach (var pair in poisons) { var value=pair.Value.Capture(pair.Key); if(value!=null) result.Add(value); }
+            result.Sort((a,b)=>StringComparer.Ordinal.Compare(a.Kind,b.Kind));
+            return result.ToArray();
+        }
+        public void RestorePoisons(PlayerPoisonDto[] values)
+        {
+            if (frameHp.Active || HasParalysisState) throw new InvalidOperationException("状態更新中は毒を復元できません");
+            var restored = new Dictionary<string, TimedPoisonState>();
+            foreach (var value in values ?? Array.Empty<PlayerPoisonDto>()) {
+                if (value == null) throw new ArgumentException("毒状態が欠落しています");
+                value.Validate(); var state=new TimedPoisonState(); state.Restore(value);
+                if (restored.ContainsKey(value.Kind)) throw new ArgumentException("毒種が重複しています");
+                restored.Add(value.Kind,state);
+            }
+            poisons.Clear(); foreach(var pair in restored) poisons.Add(pair.Key,pair.Value);
+        }
+        public void ClearPoisons() { foreach(var state in poisons.Values) state.Clear(); }
+        public void ResetPoisonIntervals() { foreach(var state in poisons.Values) state.ResetInterval(); }
+        internal bool HasPoisonState { get { foreach(var state in poisons.Values) if(state.IsActive || state.HasPendingApplication) return true; return false; } }
+        internal void TickPoisons(int ms, bool logical)
+        {
+            if (!frameHp.Active) return;
+            foreach(var state in poisons.Values) TakePoisonDamage(logical ? state.TickFrame() : state.TickMilliseconds(ms));
+        }
+
         private readonly FrameHpChanges frameHp = new FrameHpChanges();
         private bool frameInvincible, frameStaggered, frameWasStaggered;
         private FrameCountdown staggerTimer;
@@ -74,6 +116,7 @@ namespace Olca.Core.Domain
         {
             if (durationFrames <= 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
             if (IsDead) return;
+            if (HasPoisonState) throw new NotSupportedException("プレイヤー毒と麻痺の共存は未確定です");
             pendingParalysisFrames = durationFrames;
             // 既存の敵状態処理と同じく、フレーム内の解除予約を再付与で打ち消さない。
             if (!paralysisFrameOpen) clearParalysisPending = false;
@@ -127,10 +170,11 @@ namespace Olca.Core.Domain
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); foreach(var state in poisons.Values) state.BeginFrame(); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
+            foreach(var state in poisons.Values) { state.EndFrame(); if (IsDead) state.Reset(); }
             if (IsDead) ResetParalysis();
             // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
             if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;

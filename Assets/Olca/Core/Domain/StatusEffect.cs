@@ -63,10 +63,14 @@ namespace Olca.Core.Domain
         /// <summary>期間と量は既存効果から取得し、独立した間隔と終了時解除を明示させる。</summary>
         public void Apply(StatusEffect effect, int intervalFrames, bool clearAtBattleEnd)
         {
+            if (!clearAtBattleEnd) throw new NotSupportedException("敵の探索持越しは未対応です");
+            ApplyPersistent(effect, intervalFrames);
+        }
+        internal void ApplyPersistent(StatusEffect effect, int intervalFrames)
+        {
             if (effect == null) throw new ArgumentNullException(nameof(effect));
             if (effect.Type != StatusEffectType.Poison || effect.DamagePerTick < 0 || intervalFrames <= 0)
                 throw new ArgumentException("毒定義・非負の量・正の間隔が必要です");
-            if (!clearAtBattleEnd) throw new NotSupportedException("探索・階層への毒持越しは未接続です");
             // 耐性で0フレームとなった付与では、既存毒を解除・更新しない。
             if (effect.RemainingFrames <= 0) return;
             var definition = pending ?? active;
@@ -117,11 +121,39 @@ namespace Olca.Core.Domain
             pending = null; clearPending = false;
             if (remainingUnits <= 0) { active = null; nextDamageUnits = 0; }
         }
+        internal void ResetInterval() { CommitChanges(); if (active != null) nextDamageUnits = active.Interval * 50L; }
+        internal PlayerPoisonDto Capture(string kind)
+        {
+            if (frameOpen) throw new InvalidOperationException("毒更新中は保存できません");
+            CommitChanges();
+            return active == null ? null : new PlayerPoisonDto { Kind=kind, Damage=active.Damage,
+                IntervalFrames=active.Interval, RemainingUnits=remainingUnits, NextDamageUnits=nextDamageUnits };
+        }
+        internal void Restore(PlayerPoisonDto value)
+        {
+            active = new Application { Damage=value.Damage, Interval=value.IntervalFrames };
+            remainingUnits=value.RemainingUnits; nextDamageUnits=value.NextDamageUnits;
+        }
         /// <summary>死亡・終了時解除指定の戦闘終了で使用。付与予約も破棄する。</summary>
         public void Reset()
         {
             active = pending = null; remainingUnits = nextDamageUnits = 0;
             clearPending = false;
+        }
+    }
+
+    /// <summary>毒種は外部識別子。1フレーム=50単位として旧ms APIの端数も保存する。</summary>
+    public sealed class PlayerPoisonDto
+    {
+        public string Kind;
+        public int Damage, IntervalFrames;
+        public long RemainingUnits, NextDamageUnits;
+        public PlayerPoisonDto Copy() => (PlayerPoisonDto)MemberwiseClone();
+        public void Validate()
+        {
+            if (string.IsNullOrWhiteSpace(Kind) || Damage < 0 || IntervalFrames <= 0 ||
+                RemainingUnits <= 0 || RemainingUnits > int.MaxValue * 50L || NextDamageUnits <= 0 ||
+                NextDamageUnits > IntervalFrames * 50L) throw new ArgumentException("保存されたプレイヤー毒が不正です");
         }
     }
 

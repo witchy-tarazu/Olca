@@ -41,6 +41,24 @@ namespace Olca.Tests.Dungeon
             dungeon.Player.TakeDamage(1000); Assert.IsFalse(dungeon.IsExplorationMoving);
         }
 
+        [Test]
+        public void プレイヤー毒は探索で自動進行し停止中は保存値も変わらず接敵と勝利で間隔だけ戻る()
+        {
+            var d=CreateDungeonSystem();var p=d.Player;
+            p.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,60000,2),60);
+            d.TickFrame();var a=p.CapturePoisons()[0];Assert.AreEqual(179950,a.RemainingUnits);Assert.AreEqual(2950,a.NextDamageUnits);
+            var movement=(Olca.Core.Logic.Dungeon.PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+            movement.Pause();for(int i=0;i<20;i++)d.TickFrame();Assert.AreEqual(a.RemainingUnits,p.CapturePoisons()[0].RemainingUnits);
+            movement.Resume();int frames=1;
+            while(!d.IsInBattle&&frames<2000){d.TickFrame();frames++;}
+            Assert.IsTrue(d.IsInBattle);var start=p.CapturePoisons()[0];
+            Assert.AreEqual(180000-frames*50,start.RemainingUnits);Assert.AreEqual(3000,start.NextDamageUnits);
+            d.CurrentBattle.TickFrame(16);var before=p.CapturePoisons()[0];
+            foreach(var e in d.CurrentBattle.Enemies.ToArray())e.TakeDamage(99999,ElementType.None);
+            Assert.IsFalse(d.IsInBattle);var end=p.CapturePoisons()[0];
+            Assert.AreEqual(before.RemainingUnits,end.RemainingUnits);Assert.AreEqual(3000,end.NextDamageUnits);
+        }
+
         private MockRandomProvider mockRandom;
         private MockLogger mockLogger;
 
@@ -1106,6 +1124,28 @@ namespace Olca.Tests.Dungeon
                     new CheckpointEnemyDto { CellIndex = 9, EnemyId = "boss", Hp = 200, GridX = 5 } }
             };
         }
+        [Test]
+        public void プレイヤー毒は旧保存互換を保ちファイル復帰へ正確に持ち越す()
+        {
+            Assert.IsTrue(CheckpointCodec.TryRestore(departure,definitions,out var legacy,out var error),error);
+            Assert.IsEmpty(legacy.Player.CapturePoisons());
+            departure.Player.Poisons=new[]{new PlayerPoisonDto{Kind="fixture",Damage=7,IntervalFrames=6,RemainingUnits=2997,NextDamageUnits=197}};
+            var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-player-poison-"+System.Guid.NewGuid().ToString("N"));
+            try {
+                var store=new Olca.Unity.FileCheckpointStore(definitions,directory);
+                Assert.IsTrue(store.TryWrite(departure,out error),error);
+                var data=new Olca.Unity.FileCheckpointStore(definitions,directory).Read();
+                Assert.IsTrue(CheckpointCodec.TryRestore(data,definitions,out var restored,out error),error);
+                Assert.AreEqual(2997,restored.Player.CapturePoisons()[0].RemainingUnits);
+                Assert.AreEqual(197,restored.Player.CapturePoisons()[0].NextDamageUnits);
+                var copy=data.Copy();copy.Player.Poisons[0].RemainingUnits=1;Assert.AreEqual(2997,data.Player.Poisons[0].RemainingUnits);
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);data.Player.Poisons[0].NextDamageUnits=301;
+                Assert.IsFalse(store.TryWrite(data,out error));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+                data.Player.Poisons=new[]{departure.Player.Poisons[0],departure.Player.Poisons[0]};
+                Assert.IsFalse(CheckpointCodec.TryRestore(data,definitions,out _,out error));
+            } finally {if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+
         [TestCase(0)] [TestCase(50)] [TestCase(150)]
         public void 敵の時間耐性は通常定義とファイル保存復帰へ伝わり異なる定義を拒否する(int resistance)
         {

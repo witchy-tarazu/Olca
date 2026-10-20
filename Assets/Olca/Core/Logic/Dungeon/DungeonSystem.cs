@@ -144,6 +144,14 @@ namespace Olca.Core.Logic.Dungeon
         /// 毎フレーム更新 - 整数ベース版
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+        private bool explorationHpFrame;
+        private ContactInfo pendingPoisonFrameContact;
+        private void CommitExplorationHp()
+        {
+            if (!explorationHpFrame) return;
+            explorationHpFrame=false;
+            playerCharacter.CommitHpFrame(); playerCharacter.PublishHpFrame();
+        }
         private bool processingTick;
         private int encounterRevision;
 
@@ -154,8 +162,11 @@ namespace Olca.Core.Logic.Dungeon
             if (processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
             processingTick = true;
+            bool resolvePoisonHp=playerCharacter.HasPoisonState;
+            if (resolvePoisonHp) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
             try
             {
+                if (explorationHpFrame) playerCharacter.TickPoisons(deltaTimeMs, logicalFrame);
                 var step = logicalFrame ? playerMovement.PreviewFrame() : playerMovement.PreviewStep(deltaTimeMs);
                 int control = playerMovement.ControlRevision, encounter = encounterRevision;
                 var contacts = new List<ContactSystem.SweptContact>();
@@ -189,13 +200,20 @@ namespace Olca.Core.Logic.Dungeon
                     // 旧保存形式の位置範囲を維持し、終端の直前を完了境界として保存する。
                     playerMovement.ApplyStep(step, (long)map.TotalCellCount * 1000 - 1);
                     playerMovement.Pause();
+                    CommitExplorationHp();
+                    if (playerCharacter.IsDead) return;
                     try { StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), CompleteFloor); }
                     catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
                     return;
                 }
                 playerMovement.ApplyStep(step, step.End);
             }
-            finally { processingTick = false; }
+            finally {
+                CommitExplorationHp(); processingTick = false;
+                var contact=pendingPoisonFrameContact; pendingPoisonFrameContact=null;
+                if (resolvePoisonHp && playerCharacter.IsDead) HandleExplorationDeath();
+                else if (contact!=null) OnEnemyContact(contact);
+            }
         }
 
         // ========== プレイヤーアクション ==========
@@ -234,6 +252,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         private void OnEnemyContact(ContactInfo contactInfo)
         {
+            if (explorationHpFrame) { pendingPoisonFrameContact=contactInfo; return; }
             // ダッシュ接敵の場合、効果を設定
             if (contactInfo.IsDashContact)
             {
@@ -253,6 +272,7 @@ namespace Olca.Core.Logic.Dungeon
         public void StartBattle(ContactInfo contactInfo)
         {
             if (IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended || playerCharacter.CurrentHp <= 0) return;
+            playerCharacter.ResetPoisonIntervals();
             encounterRevision++;
             if (checkpointSession != null) { PlanCheckpointBattle(contactInfo); return; }
             IsInBattle = true;
@@ -442,6 +462,7 @@ namespace Olca.Core.Logic.Dungeon
             // 通知先が同期再入しても、同じ戦闘の抽選・終了を繰り返さない。
             if (!IsInBattle) return;
             IsInBattle = false;
+            playerCharacter.ResetPoisonIntervals();
 
             // バトル終了イベント発火
             BattleResult result = victory ? BattleResult.Victory : BattleResult.Defeat;
@@ -660,19 +681,15 @@ namespace Olca.Core.Logic.Dungeon
 
             // 外部通知から再入されても、確定済みのHP・デッキが観測されるようにする。
             OnObstaclePenalty?.Invoke(penaltyInfo);
-            if (penaltyInfo.PenaltyType == ObstaclePenaltyType.ImmediateDamage)
-            {
-                // HP0以下でゲームオーバー
-                if (playerCharacter.CurrentHp <= 0)
-                {
-                    logger.LogInfo("[Dungeon] 障害物でゲームオーバー");
-                    if (checkpointSession == null) OnDungeonFailed?.Invoke();
-                    else
-                    {
-                        try { playerMovement.Pause(); StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), () => OnDungeonFailed?.Invoke()); }
-                        catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
-                    }
-                }
+            if (!explorationHpFrame) HandleExplorationDeath();
+        }
+        private void HandleExplorationDeath()
+        {
+            if (!playerCharacter.IsDead || IsCheckpointBlocked || checkpointSuspended) return;
+            if (checkpointSession == null) OnDungeonFailed?.Invoke();
+            else {
+                try { playerMovement.Pause(); StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), () => OnDungeonFailed?.Invoke()); }
+                catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
             }
         }
 
@@ -777,6 +794,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (!IsInBattle) return;
             IsInBattle = false;
+            playerCharacter.ResetPoisonIntervals();
             if (!victory)
             {
                 try { StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), () => {
@@ -1127,6 +1145,7 @@ namespace Olca.Core.Logic.Dungeon
             Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames, p.PoiseRecoveryFrames);
             Player.SetElementResistances(new ElementResistances(p.FireResistance, p.WaterResistance, p.WindResistance, p.EarthResistance));
             Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
+            Player.RestorePoisons(p.Poisons);
             Deck = new Deck(Array.ConvertAll(dto.DeckOrder, id => cards[id]).ToList());
             Obtained = Array.AsReadOnly(Array.ConvertAll(dto.ObtainedOrder, id => cards[id]));
             FirstHand = Array.AsReadOnly(Array.ConvertAll(dto.Battle?.FirstHand ?? new string[0], id => cards[id]));
@@ -1376,7 +1395,7 @@ namespace Olca.Core.Logic.Dungeon
                 ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
-                Player = new CheckpointPlayerDto { Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
+                Player = new CheckpointPlayerDto { Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
                     Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
                     WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),

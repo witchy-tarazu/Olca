@@ -12,6 +12,78 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class EnemyStunTests
     {
+        private static StatusEffect PlayerPoison(int frames, int damage=3, int resistance=0)
+            => new StatusEffect(StatusEffectType.Poison, frames*1000/60, damage, resistance);
+        private static BattleSystem PoisonBattle(PlayerCharacter player)
+            => new BattleSystem(player,new List<Enemy>{new Enemy("p","p",9999,ElementType.None,new Vector2Int(5,0))},new Deck());
+        [Test]
+        public void プレイヤー毒は自動更新し種類別に共存して最終フレームも与え下限一を守る()
+        {
+            var p=new PlayerCharacter(100);var b=PoisonBattle(p);
+            p.ApplyPoison("fixture-poison",PlayerPoison(6,4),2);
+            p.ApplyPoison("fixture-strong",PlayerPoison(6,7),3);
+            for(int i=0;i<6;i++) b.TickFrame(16);
+            Assert.AreEqual(74,p.CurrentHp);Assert.IsEmpty(p.CapturePoisons());
+            b.Tick(1);Assert.AreEqual(74,p.CurrentHp,"期限終了後のms互換更新も安全");
+            p.ApplyPoison("fixture-poison",PlayerPoison(1,1000),1);b.TickFrame(16);
+            Assert.AreEqual(1,p.CurrentHp);Assert.IsFalse(p.IsInvincible);Assert.IsFalse(p.IsStaggered);
+        }
+        [Test]
+        public void プレイヤー毒は停止中カウントを進めず付与フレームを消費しない()
+        {
+            var p=new PlayerCharacter(100);var b=PoisonBattle(p);
+            b.RunLogicalFrame(()=>p.ApplyPoison("fixture",PlayerPoison(6),2));
+            Assert.AreEqual(300,p.CapturePoisons()[0].RemainingUnits);
+            b.Pause();for(int i=0;i<20;i++)b.TickFrame(16);
+            Assert.AreEqual(300,p.CapturePoisons()[0].RemainingUnits);Assert.AreEqual(100,p.CurrentHp);
+            b.Resume();b.TickFrame(16);Assert.AreEqual(250,p.CapturePoisons()[0].RemainingUnits);
+            b.TickFrame(16);Assert.AreEqual(97,p.CurrentHp);
+        }
+        [Test]
+        public void プレイヤー毒の同フレーム回復は順序不変で通常ダメージは別計上する()
+        {
+            foreach(bool healFirst in new[]{true,false}) {
+                var p=new PlayerCharacter(100);p.TakeDamage(95,affectsPoise:false);var b=PoisonBattle(p);
+                p.ApplyPoison("fixture",PlayerPoison(1,10),1);
+                b.RunLogicalFrame(()=>{if(healFirst)p.Heal(10);b.TickFrame(16);if(!healFirst)p.Heal(10);});
+                Assert.AreEqual(5,p.CurrentHp);
+                p.ApplyPoison("fixture",PlayerPoison(1,100),1);
+                b.RunLogicalFrame(()=>{b.TickFrame(16);p.TakeDamage(1,affectsPoise:false);});
+                Assert.AreEqual(0,p.CurrentHp);
+            }
+        }
+        [Test]
+        public void プレイヤー毒は再付与で間隔を維持し移行で間隔だけ戻し全種解除する()
+        {
+            var p=new PlayerCharacter(100);var b=PoisonBattle(p);
+            p.ApplyPoison("a",PlayerPoison(12),4);b.TickFrame(16);
+            p.ApplyPoison("a",PlayerPoison(6),4);
+            var state=p.CapturePoisons()[0];Assert.AreEqual(300,state.RemainingUnits);Assert.AreEqual(150,state.NextDamageUnits);
+            p.ResetPoisonIntervals();state=p.CapturePoisons()[0];Assert.AreEqual(300,state.RemainingUnits);Assert.AreEqual(200,state.NextDamageUnits);
+            p.ApplyPoison("b",PlayerPoison(6),2);p.ClearPoisons();Assert.IsEmpty(p.CapturePoisons());
+        }
+        [Test]
+        public void プレイヤー毒の耐性は期間だけ短縮し短期間は無発生で共存未確定を拒否する()
+        {
+            var p=new PlayerCharacter(100);var b=PoisonBattle(p);
+            p.ApplyPoison("a",PlayerPoison(5,30,50),3);
+            Assert.AreEqual(100,p.CapturePoisons()[0].RemainingUnits);
+            Assert.Throws<System.NotSupportedException>(()=>p.ApplyParalysis(6));
+            for(int i=0;i<2;i++)b.TickFrame(16);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(p.CapturePoisons());
+            p.ApplyParalysis(6);Assert.Throws<System.NotSupportedException>(()=>p.ApplyPoison("a",PlayerPoison(6),2));
+        }
+        [Test]
+        public void プレイヤー毒の保存は独立コピーでms端数も復元し重複や破損を拒否する()
+        {
+            var p=new PlayerCharacter(100);var b=PoisonBattle(p);p.ApplyPoison("a",PlayerPoison(60),6);b.Tick(1);
+            var saved=p.CapturePoisons();Assert.AreEqual(2997,saved[0].RemainingUnits);Assert.AreEqual(297,saved[0].NextDamageUnits);
+            var q=new PlayerCharacter(100);q.RestorePoisons(saved);saved[0].RemainingUnits=1;
+            Assert.AreEqual(2997,q.CapturePoisons()[0].RemainingUnits);
+            var good=q.CapturePoisons()[0];Assert.Throws<System.ArgumentException>(()=>q.RestorePoisons(new[]{good,good}));
+            good.NextDamageUnits=0;Assert.Throws<System.ArgumentException>(()=>q.RestorePoisons(new[]{good}));
+            Assert.AreEqual(2997,q.CapturePoisons()[0].RemainingUnits,"失敗時に既存状態を壊さない");
+        }
+
         private Enemy enemy;
 
         [SetUp]

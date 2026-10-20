@@ -262,7 +262,7 @@ namespace Olca.Core.Logic.Battle
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (IsPaused || IsGameOver) return;
-            if (statusFrameParticipants == null && player.HasParalysisState) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
+            if (statusFrameParticipants == null && (player.HasParalysisState || player.HasPoisonState)) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
 
             // 追加登録・通知は即時だが、Tick途中の召喚へ過去の経過時間を渡さない。
             // 状態異常とAIは同じ開始時参加者だけを更新する。
@@ -288,6 +288,7 @@ namespace Olca.Core.Logic.Battle
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
                 player.TickStagger(deltaTimeMs, logicalFrameTick);
                 player.TickParalysis(deltaTimeMs, logicalFrameTick);
+                player.TickPoisons(deltaTimeMs, logicalFrameTick);
                 player.TickProtection(deltaTimeMs, logicalFrameTick);
                 player.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
 
