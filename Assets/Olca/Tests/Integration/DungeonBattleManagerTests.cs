@@ -2024,6 +2024,12 @@ namespace Olca.Tests.Integration
             CollectionAssert.AreEqual(deckAfter,resumed.Dungeon.GetCurrentDeck().GetAllCards());
             CollectionAssert.AreEqual(clear,resumed.Dungeon.GetObtainedCards());
             CollectionAssert.AreEqual(terminalBytes,System.IO.File.ReadAllBytes(reopened.ActivePath));
+            Assert.IsTrue(CheckpointCodec.TryRestore(reopened.Read(), defaults.Definitions, out var terminal, out error), error);
+            var returnFlow = new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory, "progress")));
+            Assert.IsTrue(returnFlow.Begin(terminal, "discard-route", new ClearReturnSettings()), returnFlow.Error);
+            Assert.IsTrue(returnFlow.Toggle(0)); Assert.IsTrue(returnFlow.ConfirmSelection()); Assert.IsTrue(returnFlow.ConfirmReturn());
+            Assert.AreEqual(clear[0].Id, returnFlow.Snapshot.Owned.Single().Id); Assert.AreEqual(1, returnFlow.Snapshot.Owned.Single().Count);
+            CollectionAssert.AreEqual(terminalBytes, System.IO.File.ReadAllBytes(reopened.ActivePath));
         }
         [Test]
         public void 通過済み破棄セル上で再開しても二重破棄せず不正参照と旧版を拒否する()
@@ -2764,6 +2770,43 @@ namespace Olca.Tests.Integration
             }
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 最終報酬後に持ち帰り選択と経験値と帰還を実ボタンで確定し各段階を再起動できる(bool multipleFloors)
+        {
+            var final = DungeonConfig.CreateTestDungeon(5, 30, 4);
+            var controller = Start(multipleFloors ? new[] { Empty(2), final } : new[] { final });
+            ToBattle(controller); Assert.IsNull(controller.PersistentProgress.Flow, "途中階層では永続付与しない");
+            var choices = Win(controller); Assert.IsNotNull(choices); Assert.IsNull(controller.PersistentProgress.Flow, "最終報酬完了前は付与しない");
+            Model(controller).SelectCardReward(choices[0]);
+            Assert.AreEqual(ClearReturnStage.Choosing, controller.PersistentProgress.Flow.Stage); Assert.AreEqual(0, controller.PersistentProgress.Experience);
+            var gameplay = System.IO.File.ReadAllBytes(Store(controller).ActivePath);
+            KeyboardButton(controller, "CarryCard_0");
+            controller = Start(); Assert.AreEqual(ClearReturnStage.Choosing, controller.PersistentProgress.Flow.Stage);
+            CollectionAssert.AreEqual(new[] { 0 }, controller.PersistentProgress.Flow.Selected);
+            KeyboardButton(controller, "ConfirmCarryHome"); Assert.AreEqual(100, controller.PersistentProgress.Experience);
+            Call(controller, "ConfirmCarryCards"); Assert.AreEqual(100, controller.PersistentProgress.Experience);
+            controller = Start(); Assert.AreEqual(ClearReturnStage.Awarded, controller.PersistentProgress.Flow.Stage);
+            KeyboardButton(controller, "ConfirmReturn"); Assert.AreEqual(105, controller.ReturnedPlayer.CurrentHp);
+            Assert.AreEqual(11, controller.ReturnedPlayer.AttackPower); Assert.AreEqual(1, controller.PersistentProgress.Owned.Single().Count);
+            controller = Start(); Assert.AreEqual(ClearReturnStage.Returned, controller.PersistentProgress.Flow.Stage);
+            Assert.AreEqual(100, controller.PersistentProgress.Experience); Assert.IsFalse(controller.TryRestoreMemoryCheckpoint(out _));
+            CollectionAssert.AreEqual(gameplay, System.IO.File.ReadAllBytes(Store(controller).ActivePath));
+        }
+        [Test]
+        public void 最終報酬保存失敗時は進行を付与せず保存成功後だけ帰還選択へ進む()
+        {
+            var controller = Start(new[] { DungeonConfig.CreateTestDungeon(5, 30, 4) }); ToBattle(controller);
+            var choices = Win(controller); var gameFile = Store(controller); var original = System.IO.File.ReadAllBytes(gameFile.ActivePath);
+            var io = new FaultIo { Fail = true }; Set(gameFile, "io", io);
+            Model(controller).SelectCardReward(choices[0]); Assert.IsTrue(Model(controller).Dungeon.IsCheckpointBlocked);
+            Assert.IsNull(controller.PersistentProgress.Flow); Assert.AreEqual(0, controller.PersistentProgress.Experience);
+            CollectionAssert.AreEqual(original, System.IO.File.ReadAllBytes(gameFile.ActivePath));
+            io.Fail = false; Assert.IsTrue(controller.RetryMemoryCheckpoint());
+            Assert.AreEqual(ClearReturnStage.Choosing, controller.PersistentProgress.Flow.Stage);
+            KeyboardButton(controller, "ConfirmCarryHome"); KeyboardButton(controller, "ConfirmReturn");
+            Assert.AreEqual(0, controller.PersistentProgress.Owned.Length); Assert.AreEqual(100, controller.PersistentProgress.Experience);
+        }
+
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo
         {
             public string Fault;
@@ -3046,6 +3089,135 @@ namespace Olca.Tests.Integration
             Assert.IsFalse(CarryHomeSelectionRules.TryValidate(obtained,null,out _,out _));
             Assert.IsFalse(CarryHomeSelectionRules.TryValidate(null,new Card[0],out _,out _));
             Assert.IsTrue(CarryHomeSelectionRules.TryValidate(obtained,new[]{obtained[0]},out _,out _));Assert.AreEqual(2,obtained.Length);
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class ClearReturnPersistenceTests
+    {
+        private string directory;
+        private sealed class FaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Before, After;
+            public System.Action During;
+            public override void MoveNew(string temporary, string destination) {
+                During?.Invoke(); if (Before) throw new System.IO.IOException("before"); base.MoveNew(temporary, destination); if (After) throw new System.IO.IOException("after");
+            }
+            public override void Replace(string temporary, string destination, string backup) {
+                During?.Invoke(); if (Before) throw new System.IO.IOException("before"); base.Replace(temporary, destination, backup); if (After) throw new System.IO.IOException("after");
+            }
+        }
+        [SetUp] public void Setup() => directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-return-" + System.Guid.NewGuid().ToString("N"));
+        [TearDown] public void Cleanup() { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        private static Card Card(string id, CardRarity rarity = CardRarity.Normal, ExceedLevel level = ExceedLevel.Normal)
+            => new Card(id, id, 1, rarity, CardCategory.Attack, ElementType.None, CardSeries.Sword, 1, "", exceedLevel: level);
+        // 選択規則用の取得履歴fixture。通常報酬/破棄とControllerの経路は別の統合ケースで通す。
+        private static RestoredCheckpoint Terminal(params Card[] history)
+        {
+            var map = DungeonConfig.CreateTestDungeon(8, 30, 2); var deck = new Deck(history.Select(c => c.Clone()).ToList());
+            var session = DungeonCheckpointSession.CreateDefault(map, deck);
+            var game = new DungeonBattleManager(map, new PlayerCharacter(100), deck, new MockRandomProvider(), new MockLogger(), checkpoints: session);
+            var rewards = (CardRewardSystem)typeof(DungeonSystem).GetField("cardRewardSystem", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(game.Dungeon);
+            foreach (var card in history) rewards.SelectCard(card);
+            game.OnCardRewardPresented += _ => game.SelectCardReward(null);
+            for (int f = 0; f < 500 && game.CurrentPhase != GamePhase.DungeonCleared; f++) {
+                game.TickFrame(17);
+                if (game.CurrentBattle != null) foreach (var e in game.CurrentBattle.Enemies.ToArray()) if (!e.IsDead) e.TakeDamage(e.MaxHp, ElementType.None);
+                game.ResumeAfterBattle();
+            }
+            Assert.AreEqual(GamePhase.DungeonCleared, game.CurrentPhase);
+            Assert.IsTrue(CheckpointCodec.TryRestore(session.Store.Read(), session.Definitions, out var result, out var error), error); return result;
+        }
+        private Olca.Unity.ClearReturnFileStore Store(FaultIo io = null) => new Olca.Unity.ClearReturnFileStore(directory, io);
+        [TestCase("begin")] [TestCase("toggle")] [TestCase("award")] [TestCase("return")]
+        public void 各保存段階の失敗は現状態とファイルを保ち同一計画を再試行して一度だけ受領する(string step)
+        {
+            var io = new FaultIo(); var store = Store(io); var flow = new ClearReturnSession(store); var source = Terminal(Card("a"));
+            if (step != "begin") Assert.IsTrue(flow.Begin(source, "dungeon", new ClearReturnSettings()), flow.Error);
+            if (step == "award" || step == "return") Assert.IsTrue(flow.Toggle(0), flow.Error);
+            if (step == "return") Assert.IsTrue(flow.ConfirmSelection(), flow.Error);
+            var before = flow.Snapshot;
+            var bytes = System.IO.File.Exists(store.ActivePath) ? System.IO.File.ReadAllBytes(store.ActivePath) : null;
+            io.Before = true;
+            bool saved = step == "begin" ? flow.Begin(source, "dungeon", new ClearReturnSettings()) : step == "toggle" ? flow.Toggle(0) : step == "award" ? flow.ConfirmSelection() : flow.ConfirmReturn();
+            Assert.IsFalse(saved); Assert.IsTrue(flow.HasPendingSave); Assert.AreEqual(before.Revision, flow.Snapshot.Revision);
+            Assert.AreEqual(before.Experience, flow.Snapshot.Experience); Assert.AreEqual(before.Owned.Length, flow.Snapshot.Owned.Length);
+            if (bytes == null) Assert.IsFalse(System.IO.File.Exists(store.ActivePath)); else CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+            var interrupted = new ClearReturnSession(Store()); Assert.AreEqual(before.Revision, interrupted.Snapshot.Revision);
+            Assert.AreEqual(before.Experience, interrupted.Snapshot.Experience);
+            Assert.IsFalse(flow.Toggle(0), "未保存計画に別の操作を混ぜない");
+            io.Before = false; io.During = () => Assert.IsFalse(flow.ConfirmSelection(), "保存コールバックの再入を拒否する");
+            Assert.IsTrue(flow.Retry(), flow.Error); io.During = null;
+            if (step == "begin") Assert.IsTrue(flow.Toggle(0));
+            Assert.IsTrue(flow.ConfirmSelection(), flow.Error); Assert.IsTrue(flow.ConfirmReturn(), flow.Error);
+            var committed = System.IO.File.ReadAllBytes(store.ActivePath);
+            Assert.IsTrue(flow.Begin(source, "dungeon", new ClearReturnSettings())); Assert.IsTrue(flow.ConfirmSelection()); Assert.IsTrue(flow.ConfirmReturn());
+            CollectionAssert.AreEqual(committed, System.IO.File.ReadAllBytes(store.ActivePath));
+            var restarted = new ClearReturnSession(Store());
+            Assert.AreEqual(100, restarted.Snapshot.Experience); Assert.AreEqual(2, restarted.Snapshot.Level);
+            Assert.AreEqual(1, restarted.Snapshot.Owned.Single().Count); Assert.AreEqual(1, restarted.Snapshot.Receipts.Length);
+            Assert.AreEqual(105, restarted.ReturnedPlayer.CurrentHp); Assert.AreEqual(11, restarted.ReturnedPlayer.AttackPower);
+            Assert.IsFalse(restarted.ReturnedPlayer.IsInvincible); Assert.IsFalse(restarted.ReturnedPlayer.IsActionPrevented);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 初回移動と既存置換の直後にOSエラーが返っても確定内容を照合して二重計上しない(bool existing)
+        {
+            var io = new FaultIo(); var flow = new ClearReturnSession(Store(io)); var source = Terminal(Card("a"));
+            if (existing) Assert.IsTrue(flow.Begin(source, "dungeon", new ClearReturnSettings()));
+            io.After = true;
+            Assert.IsTrue(existing ? flow.Toggle(0) : flow.Begin(source, "dungeon", new ClearReturnSettings()), flow.Error);
+            io.After = false; if (!existing) Assert.IsTrue(flow.Toggle(0));
+            io.After = true; Assert.IsTrue(flow.ConfirmSelection(), flow.Error); Assert.IsTrue(flow.ConfirmReturn(), flow.Error);
+            Assert.AreEqual(100, new ClearReturnSession(Store()).Snapshot.Experience);
+            Assert.AreEqual(1, new ClearReturnSession(Store()).Snapshot.Owned.Single().Count);
+        }
+        [Test]
+        public void 選択途中と経験値反映後と帰還後を再開し候補個体と制限と受領結果を保持する()
+        {
+            var source = Terminal(Card("a"), Card("a"), Card("forbidden", level: ExceedLevel.Lv3), Card("b"), Card("c"), Card("d"));
+            var original = source.Snapshot; var flow = new ClearReturnSession(Store());
+            Assert.IsTrue(flow.Begin(source, "dungeon", new ClearReturnSettings())); Assert.IsTrue(flow.Toggle(0));
+            flow = new ClearReturnSession(Store()); CollectionAssert.AreEqual(new[] { 0 }, flow.Snapshot.Flow.Selected);
+            CollectionAssert.AreEqual(original.ObtainedOrder, flow.Snapshot.Flow.Candidates.Select(c => c.InstanceId));
+            Assert.IsFalse(flow.Toggle(1), "同一カードを2枚選べない"); Assert.IsFalse(flow.Toggle(2), "★★★は不可");
+            Assert.IsTrue(flow.Toggle(3)); Assert.IsTrue(flow.Toggle(4)); Assert.IsFalse(flow.Toggle(5), "4枚目は不可");
+            Assert.IsTrue(flow.ConfirmSelection(), flow.Error); flow = new ClearReturnSession(Store());
+            Assert.AreEqual(ClearReturnStage.Awarded, flow.Snapshot.Flow.Stage); Assert.AreEqual(100, flow.Snapshot.Experience); Assert.IsNull(flow.ReturnedPlayer);
+            Assert.IsTrue(flow.ConfirmSelection()); Assert.AreEqual(3, flow.Snapshot.Owned.Length);
+            Assert.IsTrue(flow.ConfirmReturn()); flow = new ClearReturnSession(Store()); Assert.AreEqual(ClearReturnStage.Returned, flow.Snapshot.Flow.Stage);
+            CollectionAssert.AreEqual(original.DeckOrder, source.Snapshot.DeckOrder); CollectionAssert.AreEqual(original.ObtainedOrder, source.Snapshot.ObtainedOrder);
+        }
+        [TestCase(CardRarity.Normal, ExceedLevel.Normal, 1)] [TestCase(CardRarity.Limited, ExceedLevel.Lv1, 4)] [TestCase(CardRarity.Ultimate, ExceedLevel.Lv2, 9)]
+        public void 再クリア経験値と所持4枚上限とレギュレーション段階別超過変換を確定する(CardRarity rarity, ExceedLevel level, int tokens)
+        {
+            var flow = new ClearReturnSession(Store()); RestoredCheckpoint first = null;
+            for (int run = 0; run < 5; run++) {
+                var source = Terminal(Card("a", rarity, level)); if (first == null) first = source;
+                Assert.IsTrue(flow.Begin(source, "dungeon", new ClearReturnSettings()), flow.Error);
+                Assert.AreEqual(run == 0 ? 100 : 50, flow.Snapshot.Flow.ExperienceAward);
+                Assert.IsTrue(flow.Toggle(0)); Assert.IsTrue(flow.ConfirmSelection()); Assert.IsTrue(flow.ConfirmReturn());
+                flow = new ClearReturnSession(Store());
+            }
+            Assert.AreEqual(300, flow.Snapshot.Experience); Assert.AreEqual(4, flow.Snapshot.Level);
+            Assert.AreEqual(4, flow.Snapshot.Owned.Single().Count); Assert.AreEqual(tokens, flow.Snapshot.Tokens);
+            Assert.AreEqual(5, flow.Snapshot.Receipts.Length); Assert.IsTrue(flow.Begin(first, "dungeon", new ClearReturnSettings()));
+            Assert.AreEqual(300, flow.Snapshot.Experience); Assert.AreEqual(tokens, flow.Snapshot.Tokens);
+        }
+        [Test]
+        public void ゼロ枚でも確定でき別保存世代と破損データは上書きせず拒否する()
+        {
+            var a = new ClearReturnSession(Store()); Assert.IsTrue(a.Begin(Terminal(Card("a")), "dungeon", new ClearReturnSettings()));
+            var stale = new ClearReturnSession(Store()); Assert.IsTrue(a.Toggle(0)); Assert.IsFalse(stale.ConfirmSelection());
+            Assert.AreEqual(0, new ClearReturnSession(Store()).Snapshot.Experience);
+            var fresh = new ClearReturnSession(Store()); Assert.IsTrue(fresh.Toggle(0)); Assert.IsTrue(fresh.ConfirmSelection()); Assert.IsTrue(fresh.ConfirmReturn());
+            Assert.AreEqual(0, fresh.Snapshot.Owned.Length); Assert.AreEqual(100, fresh.Snapshot.Experience);
+            System.IO.File.WriteAllText(Store().ActivePath, "broken"); var broken = System.IO.File.ReadAllBytes(Store().ActivePath);
+            var blocked = new ClearReturnSession(Store()); Assert.IsFalse(blocked.Ready); Assert.IsFalse(blocked.ConfirmSelection());
+            Assert.IsFalse(fresh.Begin(Terminal(Card("b")), "dungeon", new ClearReturnSettings()));
+            CollectionAssert.AreEqual(broken, System.IO.File.ReadAllBytes(Store().ActivePath));
         }
     }
 }

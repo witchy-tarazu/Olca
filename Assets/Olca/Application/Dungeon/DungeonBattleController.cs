@@ -56,6 +56,16 @@ namespace Olca.Application.Dungeon
         [Tooltip("既定マップの敵の自然回復待ち。仮値180=3秒。外部マップ定義は上書きしない。")]
         [SerializeField, Min(1)] private int enemyPoiseRecoveryFrames = 180;
 
+        [Header("クリア成長・超過変換の暫定値")]
+        [SerializeField, Min(1)] private int clearExperience = 100;
+        [SerializeField, Min(1)] private int experiencePerLevel = 100;
+        [SerializeField, Min(1)] private int maximumPlayerLevel = 99;
+        [SerializeField, Min(0)] private int hpGrowthPerLevel = 5;
+        [SerializeField, Min(0)] private int attackGrowthPerLevel = 1;
+        [SerializeField, Min(1)] private int standardOverflowTokens = 1;
+        [SerializeField, Min(1)] private int limitedOverflowTokens = 2;
+        [SerializeField, Min(1)] private int ultimateOverflowTokens = 3;
+
         [Header("敵配置設定")]
         [Tooltip("敵と敵の間隔（セル数）")]
         [SerializeField] private int enemySpacing = 30;
@@ -252,7 +262,80 @@ namespace Olca.Application.Dungeon
             ((RectTransform)retryCheckpointButton.transform).sizeDelta = new Vector2(320, 70);
             retryCheckpointButton.onClick.AddListener(() => { RetryMemoryCheckpoint(); ShowCheckpointStatus(); });
             ShowCheckpointStatus();
+            var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
+            clearReturnView = returnPanel.AddComponent<ClearReturnView>();
+            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn);
         }
+        private ClearReturnFileStore clearReturnStore;
+        private ClearReturnSession clearReturnSession;
+        private ClearReturnView clearReturnView;
+        private bool clearReturnVisible, progressStartupBlocked;
+        private string clearReturnError, progressDirectoryOverride;
+        public ClearReturnProfile PersistentProgress => clearReturnSession?.Snapshot;
+        public PlayerCharacter ReturnedPlayer => clearReturnSession?.ReturnedPlayer;
+        public string ProgressDirectory => progressDirectoryOverride ?? (string.IsNullOrEmpty(checkpointDirectoryOverride)
+            ? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath, "Olca", "progress") : System.IO.Path.Combine(CheckpointDirectory, "progress"));
+        public void ConfigureProgressDirectory(string directory)
+        {
+            if (clearReturnSession != null) throw new System.InvalidOperationException("起動後は進行保存先を変更できません");
+            progressDirectoryOverride = System.IO.Path.GetFullPath(directory);
+        }
+        private ClearReturnSettings ReturnSettings() => new ClearReturnSettings {
+            FirstClearExperience = clearExperience, ExperiencePerLevel = experiencePerLevel, MaximumLevel = maximumPlayerLevel,
+            BaseMaxHp = playerMaxHp, BaseAttack = playerAttackPower, HpPerLevel = hpGrowthPerLevel, AttackPerLevel = attackGrowthPerLevel,
+            StandardTokens = standardOverflowTokens, LimitedTokens = limitedOverflowTokens, UltimateTokens = ultimateOverflowTokens };
+        private bool HasIncompleteReturn => clearReturnSession?.Snapshot?.Flow != null && clearReturnSession.Snapshot.Flow.Stage != ClearReturnStage.Returned;
+        private bool TryReadCompletedRun(out RestoredCheckpoint restored, out string dungeonKey, out string error)
+        {
+            restored = null; error = null; dungeonKey = null;
+            if (floorDefinitions != null) {
+                var data = floorStore.Read();
+                if (data == null) { error = floorStore.ReadError; return false; }
+                if (data.FloorIndex != floorDefinitions.FloorCount - 1 || data.State?.Boundary != CheckpointBoundary.Terminal || data.State.Player == null || data.State.Player.Hp <= 0) return false;
+                if (!floorDefinitions.TryRestore(data, out var route, out error)) return false;
+                restored = route.State; dungeonKey = floorDefinitions.RouteId; return true;
+            }
+            var dto = memoryCheckpoints?.Store.Read();
+            if (dto?.Boundary != CheckpointBoundary.Terminal || dto.Player == null || dto.Player.Hp <= 0) return false;
+            if (!CheckpointCodec.TryRestore(dto, memoryCheckpoints.Definitions, out restored, out error)) return false;
+            dungeonKey = dto.DungeonId; return true;
+        }
+        private void ShowClearReturn()
+        {
+            clearReturnVisible = true; transitionCts?.Cancel();
+            checkpointOverlay?.SetActive(false); pauseOverlay?.SetActive(false); keyboardSettingsView?.DiscardAndClose();
+            clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.DisplayFlow,
+                !clearReturnSession.Ready || clearReturnSession.HasPendingSave || progressStartupBlocked || clearReturnError != null,
+                clearReturnError ?? clearReturnSession.Error);
+        }
+        private void ResumeClearReturnIfNeeded()
+        {
+            if (!clearReturnSession.Ready) { ShowClearReturn(); return; }
+            if (HasIncompleteReturn) { ShowClearReturn(); return; }
+            if (awaitingCheckpointChoice && TryReadCompletedRun(out var source, out var key, out var error)) {
+                clearReturnSession.Begin(source, key, ReturnSettings()); ShowClearReturn();
+            }
+        }
+        private void BeginClearReturn()
+        {
+            if (!TryReadCompletedRun(out var source, out var key, out var error)) {
+                clearReturnError = error ?? "クリア済みの保存を確認できません。既存データは変更していません。";
+            } else {
+                clearReturnError = null; clearReturnSession.Begin(source, key, ReturnSettings());
+            }
+            ShowClearReturn();
+        }
+        private void ToggleCarryCard(int index) { clearReturnSession.Toggle(index); ShowClearReturn(); }
+        private void ConfirmCarryCards() { clearReturnSession.ConfirmSelection(); ShowClearReturn(); }
+        private void ConfirmClearReturn() { clearReturnSession.ConfirmReturn(); ShowClearReturn(); }
+        private void RetryClearReturn()
+        {
+            clearReturnSession.Retry();
+            if (progressStartupBlocked && clearReturnSession.Ready) clearReturnError = "進行データを読み込めました。ゲームを再起動して再開してください。";
+            else if (clearReturnError != null && clearReturnSession.Ready && !clearReturnSession.HasPendingSave) { BeginClearReturn(); return; }
+            ShowClearReturn();
+        }
+
         private CancellationTokenSource transitionCts;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
@@ -266,6 +349,11 @@ namespace Olca.Application.Dungeon
         {
             if (commonHitInvincibilityMs <= 0 || (long)commonHitInvincibilityMs * 60 <= (long)battleStaggerFrames * 1000)
                 throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
+            ReturnSettings().Validate();
+            clearReturnStore = clearReturnStore ?? new ClearReturnFileStore(ProgressDirectory);
+            clearReturnSession = new ClearReturnSession(clearReturnStore);
+            progressStartupBlocked = !clearReturnSession.Ready;
+            int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
@@ -278,9 +366,9 @@ namespace Olca.Application.Dungeon
 
             var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
             var playerCharacter = new PlayerCharacter(
-                maxHp: playerMaxHp,
+                maxHp: ReturnSettings().MaxHp(persistentLevel),
                 initialPosition: new Vector2Int(0, 0),
-                attackPower: playerAttackPower,
+                attackPower: ReturnSettings().Attack(persistentLevel),
                 staggerDurationFrames: battleStaggerFrames,
                 poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
 
@@ -331,8 +419,8 @@ namespace Olca.Application.Dungeon
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice ? null : memoryCheckpoints, cardDatabase: cardFactory,
-                hasNextFloor: !awaitingCheckpointChoice && floorDefinitions != null && floorDefinitions.FloorCount > 1);
+                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn ? null : memoryCheckpoints, cardDatabase: cardFactory,
+                hasNextFloor: !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -354,6 +442,7 @@ namespace Olca.Application.Dungeon
                     (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames);
 
             CreatePauseControls();
+            ResumeClearReturnIfNeeded();
             logicalLoop.Observe(false);
             logger.LogInfo("[DungeonBattleController] 初期化完了");
         }
@@ -362,8 +451,8 @@ namespace Olca.Application.Dungeon
         private void LateUpdate()
         {
             if (manager == null) return;
-            bool active = !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
-            logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
+            bool active = !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
+            logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
                 () => manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused));
             ApplyPendingFloor();
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
@@ -684,6 +773,7 @@ namespace Olca.Application.Dungeon
             // 最終報酬の選択後はDungeonフェーズを経由しないため、ここで最新値を反映する。
             RefreshDungeonHud();
             logger.LogInfo($"[Controller] ダンジョンクリア！ 獲得カード: {obtainedCards.Count}枚");
+            BeginClearReturn();
         }
 
         // ==================== 初期デッキ ====================
@@ -741,6 +831,7 @@ namespace Olca.Application.Dungeon
         // 候補と保存形式を検証した後でのみ旧モデルを破棄する。
         public bool TryRestoreMemoryCheckpoint(out string error)
         {
+            if (clearReturnVisible) { error = "クリア後の帰還処理を先に完了してください"; return false; }
             // 呼出し前の進行時間は保持し、検証・初期化に費やす同期時間だけを除外する。
             logicalLoop.Observe(manager != null && !IsUserPaused && !awaitingCheckpointChoice &&
                 !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);

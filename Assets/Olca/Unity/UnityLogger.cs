@@ -329,3 +329,104 @@ namespace Olca.Unity
         }
     }
 }
+
+namespace Olca.Unity
+{
+    // 進行・帰還段階・受領台帳を一つの原子的文書へ保存し、二つのファイル間の部分確定を避ける。
+    public sealed class ClearReturnFileStore : Olca.Core.Domain.IClearReturnStore
+    {
+        [System.Runtime.Serialization.DataContract]
+        private sealed class Envelope
+        {
+            [System.Runtime.Serialization.DataMember(IsRequired = true)] public int Version;
+            [System.Runtime.Serialization.DataMember(IsRequired = true)] public string Payload;
+            [System.Runtime.Serialization.DataMember(IsRequired = true)] public string Sha256;
+        }
+        private readonly CheckpointFileIo io;
+        private bool writing;
+        public string DirectoryPath { get; }
+        public string ActivePath => System.IO.Path.Combine(DirectoryPath, "progress.json");
+        public string BackupPath => System.IO.Path.Combine(DirectoryPath, "progress.backup.json");
+        public ClearReturnFileStore(string directory, CheckpointFileIo io = null)
+        {
+            DirectoryPath = System.IO.Path.GetFullPath(directory ?? throw new System.ArgumentNullException(nameof(directory)));
+            this.io = io ?? new CheckpointFileIo();
+        }
+        private static byte[] Serialize<T>(T value)
+        {
+            using (var stream = new System.IO.MemoryStream()) {
+                new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T)).WriteObject(stream, value); return stream.ToArray();
+            }
+        }
+        private static T Deserialize<T>(byte[] bytes)
+        {
+            using (var stream = new System.IO.MemoryStream(bytes))
+                return (T)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T)).ReadObject(stream);
+        }
+        private static string Hash(byte[] bytes)
+        {
+            using (var sha = System.Security.Cryptography.SHA256.Create()) return System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+        }
+        private static byte[] Encode(Olca.Core.Domain.ClearReturnProfile profile)
+        {
+            var payload = Serialize(profile);
+            return Serialize(new Envelope { Version = 1, Payload = System.Text.Encoding.UTF8.GetString(payload), Sha256 = Hash(payload) });
+        }
+        private static Olca.Core.Domain.ClearReturnProfile Decode(byte[] bytes)
+        {
+            if (bytes.Length == 0 || bytes.Length > 16 * 1024 * 1024) throw new System.IO.InvalidDataException();
+            var envelope = Deserialize<Envelope>(bytes);
+            if (envelope == null || envelope.Version != 1 || envelope.Payload == null || Hash(System.Text.Encoding.UTF8.GetBytes(envelope.Payload)) != envelope.Sha256)
+                throw new System.IO.InvalidDataException();
+            var profile = Deserialize<Olca.Core.Domain.ClearReturnProfile>(System.Text.Encoding.UTF8.GetBytes(envelope.Payload));
+            Olca.Core.Domain.ClearReturnProfile.Validate(profile); return profile;
+        }
+        private static bool Failure(System.Exception e) => e is System.IO.IOException || e is System.UnauthorizedAccessException ||
+            e is System.Runtime.Serialization.SerializationException || e is System.Xml.XmlException || e is System.ArgumentException || e is System.Security.SecurityException || e is System.OverflowException;
+        public Olca.Core.Domain.ClearReturnProfile Read(out string error)
+        {
+            error = null;
+            try {
+                if (!System.IO.File.Exists(ActivePath)) {
+                    if (System.IO.Directory.Exists(ActivePath) || System.IO.File.Exists(BackupPath) || System.IO.Directory.Exists(BackupPath)) throw new System.IO.InvalidDataException();
+                    return new Olca.Core.Domain.ClearReturnProfile();
+                }
+                return Decode(System.IO.File.ReadAllBytes(ActivePath));
+            } catch (System.Exception e) when (Failure(e)) { error = "進行データを読み込めません。既存データは変更していません。"; return null; }
+        }
+        public bool TryWrite(long expectedRevision, Olca.Core.Domain.ClearReturnProfile next, out string error)
+        {
+            error = null;
+            if (writing) { error = "進行データを保存中です"; return false; }
+            writing = true; string temporary = null; byte[] bytes = null;
+            try {
+                Olca.Core.Domain.ClearReturnProfile.Validate(next);
+                bytes = Encode(next);
+                System.IO.Directory.CreateDirectory(DirectoryPath);
+                using (var fileLock = new System.IO.FileStream(System.IO.Path.Combine(DirectoryPath, "progress.lock"),
+                    System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite, System.IO.FileShare.None)) {
+                var existing = Read(out error); if (existing == null) return false;
+                // OSが書換え後にエラーを返した同じ計画の再試行は、世代チェックより先に識別する。
+                if (System.IO.File.Exists(ActivePath) && Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) return true;
+                if (existing.Revision != expectedRevision || next.Revision != checked(expectedRevision + 1))
+                { error = "進行データが別の処理で更新されています。再読込してください。"; return false; }
+                System.IO.Directory.CreateDirectory(DirectoryPath);
+                temporary = System.IO.Path.Combine(DirectoryPath, ".progress-" + System.Guid.NewGuid().ToString("N") + ".tmp");
+                io.WriteAndFlush(temporary, bytes); Decode(System.IO.File.ReadAllBytes(temporary));
+                if (System.IO.File.Exists(ActivePath)) io.Replace(temporary, ActivePath, BackupPath); else io.MoveNew(temporary, ActivePath);
+                if (!Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) throw new System.IO.IOException();
+                return true;
+                }
+            } catch (System.Exception e) when (Failure(e)) {
+                try { if (bytes != null && System.IO.File.Exists(ActivePath) && Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) return true; }
+                catch (System.Exception read) when (Failure(read)) { }
+                error = "保存できません。現在の所持・経験値を保ったまま同じ処理を再試行できます。"; return false;
+            } finally {
+                writing = false;
+                if (temporary != null) try { if (System.IO.File.Exists(temporary)) System.IO.File.Delete(temporary); }
+                    catch (System.Exception e) when (Failure(e)) { }
+            }
+        }
+        private static bool Equal(byte[] a, byte[] b) => System.Linq.Enumerable.SequenceEqual(a, b);
+    }
+}
