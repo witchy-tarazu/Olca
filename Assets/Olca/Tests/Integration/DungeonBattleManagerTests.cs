@@ -2570,13 +2570,15 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(0, enemy.AccumulatedPoiseDamage); Assert.AreEqual(1, notices);
         }
 
-        [TestCase(0, false)] [TestCase(180, false)] [TestCase(180, true)]
-        public void 既定敵の強靭度追加前の保存は旧定義で再開し別配置や新時間の遡及を許さない(int recovery, bool differentLayout)
+        [TestCase(0, false, true)] [TestCase(180, false, true)] [TestCase(180, true, true)] [TestCase(180, false, false)]
+        public void 旧カードと旧敵定義の保存は既知の組合せで再開し別配置や新値の遡及を許さない(int recovery, bool differentLayout, bool legacyMap)
         {
             var host = new UnityEngine.GameObject("legacy-default-deck"); host.SetActive(false); objects.Add(host);
             var factoryController = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
-            var deck = (Deck)factoryController.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(factoryController, null);
-            var map = DungeonConfig.CreateTestDungeon(8, 30, differentLayout ? 3 : 2);
+            var deck = (Deck)factoryController.GetType().GetMethod("CreateDepartureDeck", Hidden).Invoke(factoryController, new object[] { true });
+            var map = DungeonConfig.CreateTestDungeon(8, 30, differentLayout ? 3 : 2,
+                enemyPoise: legacyMap ? null : new EnemyPoiseDefinition(30, 18, 180),
+                bossPoise: legacyMap ? null : new EnemyPoiseDefinition(60, 18, 180));
             var legacyDefinitions = DungeonCheckpointSession.CreateDefault(map, deck).Definitions;
             var file = new Olca.Unity.FileCheckpointStore(legacyDefinitions, directory);
             var session = new DungeonCheckpointSession(legacyDefinitions, file);
@@ -2595,7 +2597,10 @@ namespace Olca.Tests.Integration
             var battle = Model(controller).CurrentBattle;
             Assert.AreEqual(0, battle.Player.StaggerDurationFrames);
             Assert.AreEqual(recovery == 0 ? (int?)null : recovery, battle.Player.PoiseRecoveryDelayFrames);
-            Assert.IsNull(battle.Enemies[0].PoiseDefinition);
+            if (legacyMap) Assert.IsNull(battle.Enemies[0].PoiseDefinition);
+            else Assert.AreEqual(30, battle.Enemies[0].PoiseDefinition.Maximum);
+            foreach (var card in Model(controller).Dungeon.GetCurrentDeck().GetAllCards().Where(c => c.Category == CardCategory.Attack))
+                Assert.IsNull(card.PoiseDamage, "旧カードのHP連動を新しい仮値へ書き換えない");
             CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(file.ActivePath));
         }
 
@@ -2656,6 +2661,46 @@ namespace Olca.Tests.Integration
                 Assert.AreEqual(95, player.CurrentHp); Assert.AreEqual(remaining, player.InvincibleDurationMs);
                 Assert.AreEqual(PanelType.Normal, battle.Field.GetPanelType(target));
             }
+        }
+
+        [TestCase("sword", 30, 15)] [TestCase("bomb", 40, 20)] [TestCase("fire_sword", 60, 30)]
+        public void 通常カタログの攻撃カードは威力と独立した仮の削りでボスを攻撃し超越でも削りを保持する(string id, int power, int impact)
+        {
+            var controller = Start(configure: c => { Set(c, "dungeonCellCount", 8); Set(c, "firstEnemyCell", 7); });
+            ToBattle(controller); Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle; var enemy = battle.Enemies[0];
+            var factory = (Olca.Application.Battle.SimpleCardFactory)controller.GetType().GetMethod("CreateCardFactory", Hidden).Invoke(controller, null);
+            Card card;
+            if (id == "fire_sword") {
+                var fused = new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(), factory)
+                    .Execute(new[] { factory.CreateById("sword"), factory.CreateById("bomb") });
+                Assert.IsTrue(fused.IsSuccess, fused.ErrorMessage); card = fused.ResultCard;
+            } else card = Model(controller).Dungeon.GetCurrentDeck().GetAllCards().First(c => c.Id == id);
+            Assert.AreEqual(impact, card.PoiseDamage); Assert.AreEqual(power, card.Power);
+            var exceeded = factory.CreateExceeded(card, ExceedLevel.Lv1);
+            Assert.AreEqual((int)(power * 1.5f), exceeded.Power); Assert.AreEqual(impact, exceeded.PoiseDamage);
+            Assert.AreEqual(impact, card.Clone().PoiseDamage); Assert.AreEqual(0, card.HitInvincibilityMs);
+            enemy.MoveTo(new Vector2Int(battle.Player.GridPosition.X + 1, battle.Player.GridPosition.Y));
+            battle.Player.SetInvincible(100000); battle.Resume(BattlePauseReason.CustomScreen);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            battle.RunLogicalFrame(() => Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()));
+            Assert.AreEqual(200 - power, enemy.CurrentHp); Assert.AreEqual(impact, enemy.AccumulatedPoiseDamage);
+        }
+
+        [TestCase(0)] [TestCase(9)]
+        public void 出撃設定の削り調整は初期カードと保存復帰と通常使用へ一貫して届く(int impact)
+        {
+            var controller = Start(configure: c => { Set(c, "dungeonCellCount", 8); Set(c, "firstEnemyCell", 7); Set(c, "swordPoiseDamage", impact); });
+            ToBattle(controller); Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle; var enemy = battle.Enemies[0];
+            var card = Model(controller).Dungeon.GetCurrentDeck().GetAllCards().First(c => c.Id == "sword");
+            Assert.AreEqual(impact, card.PoiseDamage);
+            enemy.MoveTo(new Vector2Int(battle.Player.GridPosition.X + 1, battle.Player.GridPosition.Y));
+            battle.Player.SetInvincible(100000); battle.Resume(BattlePauseReason.CustomScreen);
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            battle.RunLogicalFrame(() => Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()));
+            Assert.AreEqual(170, enemy.CurrentHp); Assert.AreEqual(impact, enemy.AccumulatedPoiseDamage);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new Olca.Application.Battle.CardPoiseSettings(sword: -1));
         }
 
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo

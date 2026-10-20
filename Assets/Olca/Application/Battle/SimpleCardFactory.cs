@@ -9,6 +9,19 @@ namespace Olca.Application.Battle
     /// シンプルなカードファクトリー実装。
     /// コードベースでカードデータを定義する（CSVマスターデータ未整備の間の仮実装）。
     /// </summary>
+    // 調整用の仮値。威力・超越倍率と独立し、0も指定できる。
+    public sealed class CardPoiseSettings
+    {
+        public int Sword { get; }
+        public int Bomb { get; }
+        public int FireSword { get; }
+        public CardPoiseSettings(int sword = 15, int bomb = 20, int fireSword = 30)
+        {
+            if (sword < 0 || bomb < 0 || fireSword < 0) throw new System.ArgumentOutOfRangeException("強靭度削りは0以上です");
+            Sword = sword; Bomb = bomb; FireSword = fireSword;
+        }
+    }
+
     public class SimpleCardFactory : ICardFactory, ICardDatabase
     {
         // カードID定数
@@ -21,15 +34,18 @@ namespace Olca.Application.Battle
 
         private readonly Dictionary<string, Card> catalog;
 
-        public SimpleCardFactory()
+        public SimpleCardFactory() : this(null, false) { }
+
+        public SimpleCardFactory(CardPoiseSettings poise = null, bool legacyPoise = false)
         {
+            poise ??= new CardPoiseSettings();
             catalog = new Dictionary<string, Card>
             {
                 [Sword] = new Card(Sword, "ソード", 1, CardRarity.Normal, CardCategory.Attack,
-                    ElementType.None, CardSeries.Sword, 30, "前方1マス攻撃"),
+                    ElementType.None, CardSeries.Sword, 30, "前方1マス攻撃", poiseDamage: legacyPoise ? (int?)null : poise.Sword),
 
                 [Bomb] = new Card(Bomb, "ボム", 2, CardRarity.Normal, CardCategory.Attack,
-                    ElementType.None, CardSeries.Bomb, 40, "範囲攻撃"),
+                    ElementType.None, CardSeries.Bomb, 40, "範囲攻撃", poiseDamage: legacyPoise ? (int?)null : poise.Bomb),
 
                 [Heal] = new Card(Heal, "ヒール", 2, CardRarity.Normal, CardCategory.Defense,
                     ElementType.None, CardSeries.None, 20, "HP回復", subCategory: CardSubCategory.Heal),
@@ -41,7 +57,7 @@ namespace Olca.Application.Battle
                     ElementType.None, CardSeries.None, 0, "対象カードに強化効果を付与する調律カード"),
 
                 [FireSword] = new Card(FireSword, "ファイアソード", 2, CardRarity.Limited, CardCategory.Attack,
-                    ElementType.Fire, CardSeries.Sword, 60, "前方1マス炎属性攻撃（ソード＋ボムの融合）"),
+                    ElementType.Fire, CardSeries.Sword, 60, "前方1マス炎属性攻撃（ソード＋ボムの融合）", poiseDamage: legacyPoise ? (int?)null : poise.FireSword),
             };
         }
 

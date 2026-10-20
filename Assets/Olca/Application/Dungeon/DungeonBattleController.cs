@@ -48,6 +48,9 @@ namespace Olca.Application.Dungeon
         [SerializeField, Min(1)] private int battleStaggerFrames = 18;
         [Tooltip("既定AI攻撃・基本攻撃・マグマの被弾後無敵。仮値600ms。共通のけぞり時間より長く設定する。カードの個別設定は変更しない。")]
         [SerializeField, Min(1)] private int commonHitInvincibilityMs = 600;
+        [SerializeField, Min(0)] private int swordPoiseDamage = 15;
+        [SerializeField, Min(0)] private int bombPoiseDamage = 20;
+        [SerializeField, Min(0)] private int fireSwordPoiseDamage = 30;
         [SerializeField, Min(1)] private int normalEnemyPoise = 30;
         [SerializeField, Min(1)] private int bossEnemyPoise = 60;
         [Tooltip("既定マップの敵の自然回復待ち。仮値180=3秒。外部マップ定義は上書きしない。")]
@@ -274,7 +277,7 @@ namespace Olca.Application.Dungeon
                 staggerDurationFrames: battleStaggerFrames,
                 poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
 
-            var cardFactory = new SimpleCardFactory();
+            var cardFactory = CreateCardFactory();
             var recipeProvider = new SimpleFusionRecipeProvider();
             var exceedSystem = new ExceedSystem(cardFactory);
             var tuningSystem = new TuningSystem();
@@ -292,15 +295,24 @@ namespace Olca.Application.Dungeon
             {
                 var definitions = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck).Definitions;
                 var store = new FileCheckpointStore(definitions, CheckpointDirectory);
-                if (configuredDungeon == null && store.HasExistingData && store.Read() == null)
+                if (store.HasExistingData && store.Read() == null)
                 {
-                    var legacyMap = CreateDefaultDungeon(legacy: true);
-                    var legacyDefinitions = DungeonCheckpointSession.CreateDefault(legacyMap, initialDeck).Definitions;
-                    var legacyStore = new FileCheckpointStore(legacyDefinitions, CheckpointDirectory);
-                    // 不正データや別配置を許容しない。既存の完全検証に通る旧定義だけを採用する。
-                    if (legacyStore.Read() != null)
+                    // マップ/カードそれぞれの既知の旧定義だけを完全検証する。保存は書き換えない。
+                    var maps = configuredDungeon == null
+                        ? new[] { dungeonConfig, CreateDefaultDungeon(legacy: true) } : new[] { dungeonConfig };
+                    var decks = new[] { initialDeck, CreateDepartureDeck(legacyPoise: true) };
+                    bool matched = false;
+                    foreach (var map in maps)
                     {
-                        dungeonConfig = legacyMap; definitions = legacyDefinitions; store = legacyStore;
+                        foreach (var deck in decks)
+                        {
+                            var candidate = DungeonCheckpointSession.CreateDefault(map, deck).Definitions;
+                            var candidateStore = new FileCheckpointStore(candidate, CheckpointDirectory);
+                            if (candidateStore.Read() == null) continue;
+                            dungeonConfig = map; initialDeck = deck; definitions = candidate; store = candidateStore;
+                            matched = true; break;
+                        }
+                        if (matched) break;
                     }
                 }
                 memoryCheckpoints = new DungeonCheckpointSession(definitions, store);
@@ -669,7 +681,11 @@ namespace Olca.Application.Dungeon
 
         // ==================== 初期デッキ ====================
 
-        private Deck CreateInitialDeck()
+        private SimpleCardFactory CreateCardFactory()
+            => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage));
+
+        private Deck CreateInitialDeck() => CreateDepartureDeck(legacyPoise: false);
+        private Deck CreateDepartureDeck(bool legacyPoise)
         {
             if (configuredDepartureDeck != null)
             {
@@ -678,7 +694,7 @@ namespace Olca.Application.Dungeon
                 return new Deck(cards);
             }
             // 編成入力のない既存シーンは加工・戦闘確認用のfixtureを使用する。
-            var f = new SimpleCardFactory();
+            var f = legacyPoise ? new SimpleCardFactory(legacyPoise: true) : CreateCardFactory();
             return new Deck(new List<Card>
             {
                 // 超越テスト用: 同名カード2枚
@@ -736,7 +752,7 @@ namespace Olca.Application.Dungeon
         {
             var state = route.Current.State;
             session = floorDefinitions.CreateCheckpointSession(route.Current.FloorIndex, route);
-            var factory = new SimpleCardFactory();
+            var factory = CreateCardFactory();
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
                 new ExceedSystem(factory), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
@@ -772,7 +788,7 @@ namespace Olca.Application.Dungeon
             }
             else
             {
-                var factory = new SimpleCardFactory();
+                var factory = CreateCardFactory();
                 candidate = memoryCheckpoints.Store is FileCheckpointStore file
                     ? new DungeonCheckpointSession(memoryCheckpoints.Definitions, new FileCheckpointStore(memoryCheckpoints.Definitions, file.DirectoryPath))
                     : memoryCheckpoints;

@@ -1187,8 +1187,9 @@ namespace Olca.Tests.Dungeon
         [Test]
         public void 性質未指定のソードは導入前保存の定義ハッシュと一致する()
         {
-            // a5caaed の実行時保存から取得した旧値。性質追加で既存保存を無効化しない。
-            var sword = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            // a5caaed の実行時保存から取得した旧値。旧カタログを明示して互換性を検証する。
+            var sword = new Olca.Application.Battle.SimpleCardFactory(legacyPoise: true).CreateById("sword");
+            Assert.IsNull(sword.PoiseDamage);
             definitions.RegisterCard("legacy-sword", sword);
             Assert.AreEqual(AttackProperty.None, sword.Properties);
             Assert.AreEqual("6FF05396427C959B85CF868B3F3B186894D17E8DD4CBF04214C0F6A85B236A72",
