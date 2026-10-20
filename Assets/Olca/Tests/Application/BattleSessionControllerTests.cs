@@ -1769,6 +1769,48 @@ namespace Olca.Tests.Application
                         ConditionalDerivativeTrace(fps, stall, restore, trigger, scenario), trigger + ":" + scenario);
         }
 
+        [TestCase(30,false)][TestCase(60,false)][TestCase(120,false)]
+        [TestCase(30,true)][TestCase(60,true)][TestCase(120,true)]
+        public void 集中の翌フレーム有効化は通常セッションと開始保存復帰で一致する(int fps,bool restore)
+        {
+            var buff=new Card("concentrate","集中",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.None,50,"既存の集中");
+            var attack=new Card("attack","攻撃",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,10,"fixture");
+            var deck=new Deck(new List<Card>{buff,attack});var map=DungeonConfig.CreateTestDungeon(30,1,5);
+            var checkpoints=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);
+            var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(1000),deck,new MockRandomProvider(),new MockLogger(),checkpoints:checkpoints);
+            for(int f=0;f<1000&&manager.CurrentBattle==null;f++)manager.TickFrame(17);
+            Assert.IsNotNull(manager.CurrentBattle);var saved=checkpoints.Store.Read();
+            if(restore){
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(checkpoints,new MockRandomProvider(),new MockLogger(),out var resumed,out var error),error);
+                Assert.IsTrue(manager.SuspendForCheckpoint());manager=resumed;manager.ActivateCheckpoint();
+                buff=manager.Dungeon.GetCurrentDeck().GetAllCards().Single(c=>c.Id=="concentrate");
+                attack=manager.Dungeon.GetCurrentDeck().GetAllCards().Single(c=>c.Id=="attack");
+            }
+            var battle=manager.CurrentBattle;var session=CreateSession().session;session.Attach(battle);
+            if(battle.CustomScreen.IsOpen){battle.CustomScreen.Confirm();battle.CustomScreen.Close();}
+            foreach(var enemy in battle.Enemies){enemy.ApplyStun(60000);enemy.MoveTo(new Vector2Int(5,battle.Player.GridPosition.Y));}
+            var target=battle.Enemies[0];int hp=target.CurrentHp,used=0;
+            battle.CardUsage.OnCardUsed+=_=>used++;
+            battle.CardUsage.EnqueueCards(new List<Card>{buff,attack,attack});
+            var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();
+            Action<long,int> tick=(frame,ms)=>session.ProcessLogicalFrame(()=>{
+                if(frame==1){Assert.IsFalse(battle.IsPaused);session.UseCardFromInput();Assert.IsFalse(battle.Player.IsConcentrating);session.UseCardFromInput();Assert.AreEqual(2,used);}
+                if(frame==2){Assert.AreEqual(hp-10,target.CurrentHp);battle.Pause(BattlePauseReason.User);}
+                if(frame==3){session.UseCardFromInput();Assert.AreEqual(2,used);Assert.IsTrue(battle.Player.IsConcentrating);}
+                if(frame==4){battle.Resume(BattlePauseReason.User);session.UseCardFromInput();Assert.IsFalse(battle.Player.IsConcentrating);}
+                battle.TickFrame(ms);
+            });
+            long previous=0;for(int render=1;render<=fps;render++){
+                long now=(long)render*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;
+                clock.Accumulate(now-previous);previous=now;clock.Drain(tick,3);
+            }
+            while(clock.PendingFrames>0)clock.Drain(tick,3);
+            Assert.AreEqual(hp-25,target.CurrentHp);Assert.AreEqual(3,used);Assert.AreEqual(0,battle.CardUsage.RemainingCount);
+            var after=checkpoints.Store.Read();Assert.AreEqual(saved.SchemaVersion,after.SchemaVersion);Assert.AreEqual(saved.Sequence,after.Sequence);
+            CollectionAssert.AreEqual(saved.DeckOrder,after.DeckOrder);CollectionAssert.AreEqual(saved.ObtainedOrder,after.ObtainedOrder);
+            session.Detach();
+        }
+
         private List<string> ShieldCardTrace(int fps, bool stall, bool restore, bool legacy = false)
         {
             var database = new SimpleCardFactory();

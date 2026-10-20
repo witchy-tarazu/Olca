@@ -114,6 +114,49 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(30, next.Player.BarrierHp);
         }
 
+        [TestCase(false)][TestCase(true)]
+        public void 集中の同フレーム解除は順序によらず付与予約より優先する(bool clearFirst)
+        {
+            player.SetConcentrateBuff(2f);
+            battle.RunLogicalFrame(() => {
+                if(clearFirst)player.SetConcentrateBuff(1f);
+                player.SetConcentrateBuff(1.5f);
+                if(!clearFirst)player.SetConcentrateBuff(1f);
+                Assert.AreEqual(2f,player.ConsumeConcentrateBuff(),"解除フレームには既存効果が残る");
+            });
+            Assert.AreEqual(1f,player.NextCardMultiplier);
+            battle.TickFrame(17);Assert.IsFalse(player.IsConcentrating);
+        }
+        [TestCase(true)][TestCase(false)]
+        public void 集中の付与フレームに戦闘が終われば通知前に予約も解除する(bool victory)
+        {
+            bool notified=false;battle.OnBattleEnd+=_=>{notified=true;Assert.IsFalse(player.IsConcentrating);};
+            battle.RunLogicalFrame(() => {
+                new ConcentrateEffect().Execute(new BattleContext(battle,deck.GetAllCards()[0]));
+                if(victory)battle.Enemies[0].TakeDamage(1000,ElementType.None);else player.TakeDamage(1000);
+            });
+            Assert.IsTrue(notified);Assert.IsFalse(player.IsConcentrating);
+            player.SetHp(100);
+            var next=new BattleSystem(player,new List<Enemy>{new Enemy("next","next",100,ElementType.None,new Vector2Int(3,0))},new Deck());
+            next.TickFrame(17);Assert.IsFalse(player.IsConcentrating);
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 集中の通常カード付与は同フレームの攻撃に乗らず次フレームで一度消費する(bool asyncUse)
+        {
+            var buff = new Card("concentrate", "集中", 1, CardRarity.Normal, CardCategory.Support,
+                ElementType.None, CardSeries.None, 50, "既存の集中");
+            var attack = deck.GetAllCards()[0];
+            battle.CardUsage.EnqueueCards(new List<Card> { buff, attack, attack, attack });
+            void Use() { if(asyncUse) Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());
+                else Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()); }
+            battle.RunLogicalFrame(() => { Use();Assert.IsFalse(player.IsConcentrating);Use(); });
+            Assert.AreEqual(90,battle.Enemies[0].CurrentHp);Assert.IsTrue(player.IsConcentrating);
+            battle.RunLogicalFrame(() => { Use();Use(); });
+            Assert.AreEqual(65,battle.Enemies[0].CurrentHp);Assert.IsFalse(player.IsConcentrating);
+            Assert.AreEqual(10,attack.GetFinalPower());Assert.AreEqual(0,battle.CardUsage.RemainingCount);
+        }
+
         [Test]
         public void ConcentrateEffectでNextCardMultiplierが設定される()
         {

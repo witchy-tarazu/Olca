@@ -131,6 +131,10 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             if (IsDead) ResetParalysis();
+            // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
+            if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;
+            else if (pendingConcentrateMultiplier.HasValue) nextCardMultiplier = pendingConcentrateMultiplier.Value;
+            pendingConcentrateMultiplier = null; clearConcentratePending = false;
             protection.CommitFrame();
             if (poiseRecovery.CommitFrame()) accumulatedDamage = 0;
             if (framePoiseHit)
@@ -168,6 +172,8 @@ namespace Olca.Core.Domain
         private readonly BattleProtectionState protection = new BattleProtectionState();
         private FrameCountdown invincibilityTimer; // 無敵残り時間（固定精度）
         private float nextCardMultiplier = 1.0f; // 次カード威力倍率（集中バフ）
+        private float? pendingConcentrateMultiplier;
+        private bool clearConcentratePending;
 
         // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
         internal event Action OnDamageProcessingStarted;
@@ -427,7 +433,16 @@ namespace Olca.Core.Domain
         /// <param name="multiplier">次カードへの威力倍率</param>
         public void SetConcentrateBuff(float multiplier)
         {
-            nextCardMultiplier = Math.Max(1.0f, multiplier);
+            float value = Math.Max(1.0f, multiplier);
+            if (frameHp.Active)
+            {
+                if (value <= 1f) clearConcentratePending = true;
+                else pendingConcentrateMultiplier = value;
+                return;
+            }
+            // フレーム外の旧直接APIは即時設定を維持する。戦闘終了の解除もここを通る。
+            nextCardMultiplier = value;
+            pendingConcentrateMultiplier = null; clearConcentratePending = false;
         }
 
         /// <summary>
