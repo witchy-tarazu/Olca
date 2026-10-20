@@ -295,6 +295,13 @@ namespace Olca.Core.Domain
             copy.Candidates = Candidates?.Select(c => c?.Copy()).ToArray(); copy.Selected = Selected?.ToArray(); copy.Settings = Settings?.Copy(); return copy;
         }
     }
+    // 進行文書を先に確定し、別攻略ディレクトリへ同じ出撃スナップショットを再試行する。
+    public sealed class NextDepartureData
+    {
+        public string ParentRunId, DefinitionKey;
+        public CheckpointDto Start;
+        public NextDepartureData Copy() => new NextDepartureData { ParentRunId = ParentRunId, DefinitionKey = DefinitionKey, Start = Start?.Copy() };
+    }
     public sealed class ClearReturnProfile
     {
         public int Version = 1;
@@ -305,10 +312,11 @@ namespace Olca.Core.Domain
         public string[] ClearedDungeons = new string[0];
         public ClearReceipt[] Receipts = new ClearReceipt[0];
         public ClearReturnData Flow;
+        public NextDepartureData NextDeparture;
         public ClearReturnProfile Copy() => new ClearReturnProfile {
             Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
-            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy() };
+            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy() };
         public static void Validate(ClearReturnProfile p)
         {
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
@@ -321,6 +329,12 @@ namespace Olca.Core.Domain
                 p.Receipts.Any(r => r == null || string.IsNullOrWhiteSpace(r.RunId) || string.IsNullOrWhiteSpace(r.Fingerprint) || r.Experience < 0 || r.Tokens < 0) ||
                 p.Receipts.Select(r => r.RunId).Distinct().Count() != p.Receipts.Length)
                 throw new ArgumentException("所持カードまたは受領履歴が不正です");
+            var n = p.NextDeparture;
+            if (n != null && (string.IsNullOrWhiteSpace(n.ParentRunId) || string.IsNullOrWhiteSpace(n.DefinitionKey) ||
+                n.Start == null || !Guid.TryParseExact(n.Start.RunId, "N", out _) || n.Start.RunId == n.ParentRunId ||
+                n.Start.Boundary != CheckpointBoundary.Departure || n.Start.Sequence != 1 || n.Start.PositionMilli != 0 ||
+                n.Start.Player == null || n.Start.Player.Hp != n.Start.Player.MaxHp || n.Start.ObtainedOrder == null || n.Start.ObtainedOrder.Length != 0 ||
+                !p.Receipts.Any(r => r.RunId == n.ParentRunId))) throw new ArgumentException("次回出撃計画が不正です");
             var f = p.Flow; if (f == null) return;
             if (string.IsNullOrWhiteSpace(f.RunId) || string.IsNullOrWhiteSpace(f.DungeonKey) || string.IsNullOrWhiteSpace(f.Fingerprint) ||
                 !Enum.IsDefined(typeof(ClearReturnStage), f.Stage) || f.Candidates == null || f.Selected == null || f.Settings == null || f.ExperienceAward < 0 || f.TokenAward < 0)
@@ -443,6 +457,15 @@ namespace Olca.Core.Domain
             if (!Available() || current.Flow == null || current.Flow.Stage == ClearReturnStage.Choosing) return Fail("持ち帰りを先に確定してください");
             if (current.Flow.Stage == ClearReturnStage.Returned) { Error = null; return true; }
             var next = current.Copy(); next.Flow.Stage = ClearReturnStage.Returned; next.ReturnedHp = next.Flow.ReturnedMaxHp; return Stage(next);
+        }
+        public bool PrepareNextDeparture(CheckpointDto start, string definitionKey)
+        {
+            if (!Available() || current.Flow?.Stage != ClearReturnStage.Returned) return Fail("帰還確定後に出撃してください");
+            // 同じ帰還画面の再操作は、既に確定した攻略ID/能力/デッキを使う。
+            if (current.NextDeparture?.ParentRunId == current.Flow.RunId) { Error = null; return true; }
+            var next = current.Copy();
+            next.NextDeparture = new NextDepartureData { ParentRunId = current.Flow.RunId, DefinitionKey = definitionKey, Start = start?.Copy() };
+            return Stage(next);
         }
         public PlayerCharacter ReturnedPlayer => current?.Flow?.Stage == ClearReturnStage.Returned
             ? new PlayerCharacter(current.Flow.ReturnedMaxHp, attackPower: current.Flow.ReturnedAttack) : null;

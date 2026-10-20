@@ -935,6 +935,11 @@ namespace Olca.Core.Logic.Dungeon
             }
         }
 
+        // 攻略中に敵やセルが変化していても、固定した定義から新規攻略を生成する。
+        public DungeonConfig CreateInitialMap() => RestoreMap(enemies.ToDictionary(p => p.Key, p => new Enemy(
+            p.Value.EnemyId, p.Value.Name, p.Value.MaxHp, p.Value.Element, p.Value.GridPosition,
+            resistances: p.Value.Resistances, statusResistances: p.Value.StatusResistances, poiseDefinition: p.Value.PoiseDefinition)));
+
         internal DungeonConfig RestoreMap(IReadOnlyDictionary<int, Enemy> restoredEnemies)
         {
             var cells = new List<MapCell>();

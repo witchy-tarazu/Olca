@@ -2807,6 +2807,124 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(0, controller.PersistentProgress.Owned.Length); Assert.AreEqual(100, controller.PersistentProgress.Experience);
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 帰還から次回出撃と再クリアでも所持と成長を保ち取得履歴と報酬を分離する(bool route)
+        {
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> setup = c => c.ConfigureDungeon(DungeonConfig.CreateTestDungeon(5, 30, 4));
+            var c = route ? Start(new[] { Empty(2), DungeonConfig.CreateTestDungeon(5, 30, 4) }) : Start(configure: setup);
+            ToBattle(c); Model(c).SelectCardReward(Win(c)[0]); KeyboardButton(c, "CarryCard_0");
+            KeyboardButton(c, "ConfirmCarryHome"); KeyboardButton(c, "ConfirmReturn");
+            var oldPath = route ? Store(c).ActivePath : ((Olca.Unity.FileCheckpointStore)((DungeonCheckpointSession)Get(c, "memoryCheckpoints")).Store).ActivePath;
+            var oldBytes = System.IO.File.ReadAllBytes(oldPath); string parent = c.PersistentProgress.Flow.RunId;
+            var initialIds = ((Deck)c.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(c, null)).GetAllCards().Select(x => x.Id).ToArray();
+            KeyboardButton(c, "NextDeparture");
+            var plan = c.PersistentProgress.NextDeparture; Assert.IsNotNull(plan, (string)Get(c, "clearReturnError")); Assert.AreEqual(parent, plan.ParentRunId);
+            Assert.AreNotEqual(parent, plan.Start.RunId); Assert.AreEqual(CheckpointBoundary.Departure, plan.Start.Boundary);
+            Assert.AreEqual(105, Model(c).Dungeon.Player.CurrentHp); Assert.AreEqual(11, Model(c).Dungeon.Player.AttackPower);
+            Assert.IsFalse(Model(c).Dungeon.Player.IsInvincible); Assert.AreEqual(0, Model(c).Dungeon.GetObtainedCards().Count);
+            CollectionAssert.AreEqual(initialIds, Model(c).Dungeon.GetCurrentDeck().GetAllCards().Select(x => x.Id));
+            Assert.AreEqual(100, c.PersistentProgress.Experience); Assert.AreEqual(1, c.PersistentProgress.Owned.Single().Count);
+            var nextDir = c.ActiveCheckpointDirectory; Assert.AreNotEqual(directory, nextDir);
+            Call(c, "StartNextDeparture"); Assert.AreEqual(plan.Start.RunId, c.PersistentProgress.NextDeparture.Start.RunId, "再入で新規攻略を作らない");
+            c.SetUserPaused(true); KeyboardButton(c, "OwnedCardsButton");
+            var view = (Olca.Presentation.Dungeon.ClearReturnView)Get(c, "clearReturnView");
+            Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text.Contains("1/4枚")));
+            Assert.IsFalse(view.GetComponentsInChildren<UnityEngine.UI.Button>(true).Any(b => b.name == "NextDeparture" && b.gameObject.activeSelf));
+            KeyboardButton(c, "CloseOwnedCards"); Assert.IsTrue(c.IsUserPaused); c.SetUserPaused(false);
+            c = route ? Start() : Start(configure: setup);
+            Assert.AreEqual(nextDir, c.ActiveCheckpointDirectory); Assert.AreEqual(100, c.PersistentProgress.Experience);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error), error); Assert.AreEqual(105, Model(c).Dungeon.Player.CurrentHp);
+            ToBattle(c); Model(c).SelectCardReward(Win(c)[0]);
+            Assert.AreEqual(ClearReturnStage.Choosing, c.PersistentProgress.Flow.Stage); Assert.AreEqual(50, c.PersistentProgress.Flow.ExperienceAward);
+            Assert.AreEqual(1, c.PersistentProgress.Flow.Candidates.Length, "前回の取得履歴を持ち込まない");
+            KeyboardButton(c, "CarryCard_0"); KeyboardButton(c, "ConfirmCarryHome"); KeyboardButton(c, "ConfirmReturn");
+            Assert.AreEqual(150, c.PersistentProgress.Experience); Assert.AreEqual(2, c.PersistentProgress.Owned.Single().Count); Assert.AreEqual(2, c.PersistentProgress.Receipts.Length);
+            KeyboardButton(c, "NextDeparture"); Assert.AreNotEqual(nextDir, c.ActiveCheckpointDirectory);
+            CollectionAssert.AreEqual(oldBytes, System.IO.File.ReadAllBytes(oldPath));
+        }
+        [TestCase(false, "progress")] [TestCase(true, "progress")]
+        [TestCase(false, "checkpoint")] [TestCase(true, "checkpoint")]
+        [TestCase(false, "after")] [TestCase(true, "after")]
+        public void 次回出撃の進行保存と攻略保存の失敗および中断を同じ計画で復旧する(bool route, string fault)
+        {
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> setup = c => c.ConfigureDungeon(DungeonConfig.CreateTestDungeon(5, 30, 4));
+            var c = route ? Start(new[] { Empty(2), DungeonConfig.CreateTestDungeon(5, 30, 4) }) : Start(configure: setup);
+            ToBattle(c); Model(c).SelectCardReward(Win(c)[0]); KeyboardButton(c, "CarryCard_0"); KeyboardButton(c, "ConfirmCarryHome"); KeyboardButton(c, "ConfirmReturn");
+            var oldModel = Model(c); var oldPath = route ? Store(c).ActivePath : ((Olca.Unity.FileCheckpointStore)((DungeonCheckpointSession)Get(c, "memoryCheckpoints")).Store).ActivePath;
+            var oldBytes = System.IO.File.ReadAllBytes(oldPath);
+            var progressIo = new KeyboardFaultIo { Fault = fault == "progress" ? "before" : null };
+            Set(Get(c, "clearReturnStore"), "io", progressIo);
+            var nextIo = new KeyboardFaultIo { Fault = fault == "checkpoint" ? "before" : fault == "after" ? "after" : null }; Set(c, "nextDepartureIo", nextIo);
+            KeyboardButton(c, "NextDeparture");
+            if (fault == "progress") {
+                Assert.AreSame(oldModel, Model(c)); Assert.IsNull(c.PersistentProgress.NextDeparture);
+                Assert.IsTrue(((ClearReturnSession)Get(c, "clearReturnSession")).HasPendingSave);
+                progressIo.Fault = null; KeyboardButton(c, "RetryClearReturn");
+            } else if (fault == "checkpoint") {
+                Assert.AreSame(oldModel, Model(c)); var frozenId = c.PersistentProgress.NextDeparture.Start.RunId;
+                // 進行文書だけ確定して終了しても、旧攻略や受領を戻さず同じ新規攻略を再試行する。
+                System.Action<Olca.Application.Dungeon.DungeonBattleController> restartSetup = x => { if (!route) setup(x); Set(x, "nextDepartureIo", nextIo); };
+                c = Start(configure: restartSetup); Assert.AreEqual(frozenId, c.PersistentProgress.NextDeparture.Start.RunId);
+                nextIo.Fault = null; KeyboardButton(c, "RetryClearReturn"); Assert.AreEqual(frozenId, c.PersistentProgress.NextDeparture.Start.RunId);
+            }
+            Assert.AreEqual(GamePhase.Dungeon, Model(c).CurrentPhase); Assert.AreEqual(105, Model(c).Dungeon.Player.CurrentHp);
+            Assert.AreEqual(100, c.PersistentProgress.Experience); Assert.AreEqual(1, c.PersistentProgress.Receipts.Length); Assert.AreEqual(1, c.PersistentProgress.Owned.Single().Count);
+            CollectionAssert.AreEqual(oldBytes, System.IO.File.ReadAllBytes(oldPath));
+            var nextId = c.PersistentProgress.NextDeparture.Start.RunId;
+            c = route ? Start() : Start(configure: setup); Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error), error);
+            Assert.AreEqual(nextId, ((DungeonCheckpointSession)Get(c, "memoryCheckpoints")).RunId); Assert.AreEqual(100, c.PersistentProgress.Experience);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 次回攻略の保存が破損していたら再生成や旧クリアへの巻戻しをせず停止する(bool route)
+        {
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> setup = c => c.ConfigureDungeon(DungeonConfig.CreateTestDungeon(5, 30, 4));
+            var c = route ? Start(new[] { Empty(2), DungeonConfig.CreateTestDungeon(5, 30, 4) }) : Start(configure: setup);
+            ToBattle(c); Model(c).SelectCardReward(Win(c)[0]); KeyboardButton(c, "ConfirmCarryHome"); KeyboardButton(c, "ConfirmReturn");
+            Set(c, "nextDepartureIo", new KeyboardFaultIo { Fault = "before" }); KeyboardButton(c, "NextDeparture");
+            var planId = c.PersistentProgress.NextDeparture.Start.RunId;
+            string brokenPath = System.IO.Path.Combine(c.ActiveCheckpointDirectory, route ? "floors.json" : "active.json");
+            // 実際の階層保存名を使う。
+            if (route) brokenPath = new Olca.Unity.FloorSequenceFileStore(definitions, c.ActiveCheckpointDirectory).ActivePath;
+            System.IO.File.WriteAllText(brokenPath, "broken-next-run");
+            c = route ? Start() : Start(configure: setup);
+            Assert.IsFalse(c.TryRestoreMemoryCheckpoint(out var error)); Assert.IsNotEmpty(error);
+            Assert.AreEqual(planId, c.PersistentProgress.NextDeparture.Start.RunId); Assert.AreEqual(100, c.PersistentProgress.Experience);
+            Assert.AreEqual(1, c.PersistentProgress.Receipts.Length); Assert.AreEqual("broken-next-run", System.IO.File.ReadAllText(brokenPath));
+        }
+        [Test]
+        public void 旧定義の成功Terminalは一度帰還し次回出撃だけ現在の定義と成長を使う()
+        {
+            var host = new UnityEngine.GameObject("legacy-next-deck"); host.SetActive(false); objects.Add(host);
+            var template = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var deck = (Deck)template.GetType().GetMethod("CreateDepartureDeck", Hidden).Invoke(template, new object[] { true });
+            var map = DungeonConfig.CreateTestDungeon(8, 30, 2);
+            var defs = DungeonCheckpointSession.CreateDefault(map, deck).Definitions;
+            var file = new Olca.Unity.FileCheckpointStore(defs, directory);
+            var legacy = new DungeonBattleManager(map, new PlayerCharacter(100), deck, new MockRandomProvider(), new MockLogger(), checkpoints: new DungeonCheckpointSession(defs, file));
+            legacy.OnCardRewardPresented += _ => legacy.SelectCardReward(null);
+            for (int i = 0; i < 600 && legacy.CurrentPhase != GamePhase.DungeonCleared; i++) {
+                legacy.TickFrame(17); if (legacy.CurrentBattle != null) foreach (var e in legacy.CurrentBattle.Enemies.ToArray()) if (!e.IsDead) e.TakeDamage(e.MaxHp, ElementType.None);
+                legacy.ResumeAfterBattle();
+            }
+            Assert.AreEqual(GamePhase.DungeonCleared, legacy.CurrentPhase); var terminal = System.IO.File.ReadAllBytes(file.ActivePath);
+            var c = StartCombatDefaults(18, 180); Assert.AreEqual(ClearReturnStage.Choosing, c.PersistentProgress.Flow.Stage);
+            KeyboardButton(c, "ConfirmCarryHome"); KeyboardButton(c, "ConfirmReturn"); KeyboardButton(c, "NextDeparture");
+            Assert.IsNotNull(c.PersistentProgress.NextDeparture, (string)Get(c, "clearReturnError"));
+            Assert.AreEqual(GamePhase.Dungeon, Model(c).CurrentPhase); Assert.AreEqual(105, Model(c).Dungeon.Player.MaxHp);
+            Assert.AreEqual(18, Model(c).Dungeon.Player.StaggerDurationFrames); Assert.AreEqual(100, c.PersistentProgress.Experience);
+            Assert.AreEqual(15, Model(c).Dungeon.GetCurrentDeck().GetAllCards().First(x => x.Id == "sword").PoiseDamage);
+            CollectionAssert.AreEqual(terminal, System.IO.File.ReadAllBytes(file.ActivePath));
+        }
+        [Test]
+        public void 旧進行に帰還がなくても攻略中の所持参照は保存と進行を変えない()
+        {
+            var c = Start(); var game = Model(c); var progress = c.PersistentProgress.Revision;
+            c.SetUserPaused(true); KeyboardButton(c, "OwnedCardsButton");
+            Assert.IsTrue(((Olca.Presentation.Dungeon.ClearReturnView)Get(c, "clearReturnView")).gameObject.activeSelf);
+            KeyboardButton(c, "CloseOwnedCards"); Assert.AreSame(game, Model(c)); Assert.AreEqual(progress, c.PersistentProgress.Revision);
+            c.SetUserPaused(false);
+        }
+
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo
         {
             public string Fault;

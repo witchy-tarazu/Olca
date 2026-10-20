@@ -167,19 +167,19 @@ namespace Olca.Presentation.Dungeon
     {
         private Font font;
         private Action<int> toggle;
-        private Action confirm, finish, retry;
+        private Action confirm, finish, retry, depart, closeCollection;
         private GameObject content;
         private int page;
         private string lastRun;
         private ClearReturnStage? lastStage;
         private const int PageSize = 8;
-        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry)
+        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null)
         {
-            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry;
+            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.AddComponent<Image>().color = new Color(0.03f, 0.05f, 0.1f, 1f); gameObject.SetActive(false);
         }
-        public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error)
+        public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false)
         {
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;
             lastRun = flow?.RunId; lastStage = flow?.Stage;
@@ -187,12 +187,12 @@ namespace Olca.Presentation.Dungeon
             content = new GameObject("ReturnContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.SetActive(true); profile = profile ?? new ClearReturnProfile();
-            Text("Title", flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
+            Text("Title", collectionOnly ? "所持カード・成長" : flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
                 flow.Stage == ClearReturnStage.Awarded ? "持ち帰り・経験値を反映しました" : "帰還しました", 0, 455, 1750, 80, 36);
             Text("ReturnStatus", error ?? "", 0, 365, 1750, 80, 24);
-            if (flow == null) {
+            if (flow == null && !collectionOnly) {
                 Text("ReturnHelp", "進行データを確認できるまで、既存の保存を変更せず停止します。", 0, 100, 1700, 120, 28);
-            } else if (flow.Stage == ClearReturnStage.Choosing) {
+            } else if (!collectionOnly && flow.Stage == ClearReturnStage.Choosing) {
                 Text("SelectionRules", $"最大3枚・同じカード1枚まで・★★★不可　選択 {flow.Selected.Length}/3\n選ばなかったカードは失います。経験値予定 +{flow.ExperienceAward}", 0, 260, 1740, 110, 25);
                 int pages = Math.Max(1, (flow.Candidates.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
                 for (int row = 0; row < PageSize && page * PageSize + row < flow.Candidates.Length; row++) {
@@ -206,14 +206,14 @@ namespace Olca.Presentation.Dungeon
                 if (flow.Candidates.Length == 0) Text("NoCarryCards", "持ち帰れる獲得カードはありません。0枚で確定できます。", 0, 100, 1700, 90, 28);
                 Pages(profile, flow, blocked, error, pages);
                 Button("ConfirmCarryHome", $"{flow.Selected.Length}枚で確定・経験値反映", 0, -420, 900, 75, confirm).interactable = !blocked;
-            } else if (flow.Stage == ClearReturnStage.Awarded) {
+            } else if (!collectionOnly && flow.Stage == ClearReturnStage.Awarded) {
                 Text("AwardSummary", $"経験値 +{flow.ExperienceAward}（反映済み）　Lv {profile.Level}　総経験値 {profile.Experience}\n超過変換 +{flow.TokenAward} トークン　所持トークン {profile.Tokens}", 0, 240, 1750, 160, 30);
                 string chosen = string.Join("\n", flow.Selected.Select(i => flow.Candidates[i].Name + new string('★', (int)flow.Candidates[i].Level)));
                 Text("AwardCards", "持ち帰り確定\n" + (chosen.Length == 0 ? "0枚" : chosen), 0, 0, 1700, 260, 28);
                 Text("ReturnStats", $"帰還後：HP {flow.ReturnedMaxHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}\n帰還を確定すると、攻略中の状態を解除して全回復します。", 0, -220, 1750, 130, 26);
                 Button("ConfirmReturn", "帰還を確定", 0, -420, 900, 75, finish).interactable = !blocked;
             } else {
-                Text("HomeStats", $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}　カード・経験値は保存済みです。", 0, 260, 1750, 130, 28);
+                Text("HomeStats", collectionOnly ? $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\n所持カードは攻略中に消費・減少しません。" : $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}　カード・経験値は保存済みです。", 0, 260, 1750, 130, 28);
                 int pages = Math.Max(1, (profile.Owned.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
                 Text("OwnedTitle", "永続所持カード", 0, 180, 1500, 60, 28);
                 for (int row = 0; row < PageSize && page * PageSize + row < profile.Owned.Length; row++) {
@@ -221,15 +221,17 @@ namespace Olca.Presentation.Dungeon
                     Text("OwnedCard_" + row, card.Name + new string('★', (int)card.Level) + $"　{card.Count}/4枚", 0, 105 - row * 49, 1500, 48, 26);
                 }
                 if (profile.Owned.Length == 0) Text("NoOwnedCards", "永続所持カードはまだありません。", 0, 50, 1500, 80, 28);
-                Pages(profile, flow, blocked, error, pages);
+                Pages(profile, flow, blocked, error, pages, collectionOnly);
+                if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, -420, 900, 75, closeCollection);
+                else if (depart != null) Button("NextDeparture", "既存デッキで再出撃", 0, -420, 900, 75, depart).interactable = !blocked;
             }
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -510, 800, 58, retry);
         }
-        private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages)
+        private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)
         {
             Text("ReturnPage", $"{page + 1}/{pages}", 0, -340, 300, 55, 24);
-            Button("ReturnPreviousPage", "前へ", -380, -340, 240, 55, () => { page = Math.Max(0, page - 1); Render(p, f, blocked, error); }).interactable = page > 0;
-            Button("ReturnNextPage", "次へ", 380, -340, 240, 55, () => { page = Math.Min(pages - 1, page + 1); Render(p, f, blocked, error); }).interactable = page + 1 < pages;
+            Button("ReturnPreviousPage", "前へ", -380, -340, 240, 55, () => { page = Math.Max(0, page - 1); Render(p, f, blocked, error, collectionOnly); }).interactable = page > 0;
+            Button("ReturnNextPage", "次へ", 380, -340, 240, 55, () => { page = Math.Min(pages - 1, page + 1); Render(p, f, blocked, error, collectionOnly); }).interactable = page + 1 < pages;
         }
         private UnityEngine.UI.Text Text(string name, string value, float x, float y, float width, float height, int size)
         {
