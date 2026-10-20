@@ -2433,24 +2433,25 @@ namespace Olca.Tests.Integration
         private static Olca.Unity.FloorSequenceFileStore Store(Olca.Application.Dungeon.DungeonBattleController controller) => (Olca.Unity.FloorSequenceFileStore)Get(controller, "floorStore");
         private static DungeonConfig Empty(int cells) => new DungeonConfig("empty-" + cells, "終端fixture", cells,
             Enumerable.Range(0, cells).Select(i => new MapCell(i)).ToList());
-        [SetUp] public void Setup() { directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floor-controller-" + System.Guid.NewGuid().ToString("N")); }
+        [SetUp] public void Setup() { definitions = null; directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floor-controller-" + System.Guid.NewGuid().ToString("N")); }
         [TearDown] public void Cleanup()
         {
             foreach (var host in objects) if (host != null) UnityEngine.Object.DestroyImmediate(host);
             objects.Clear();
             if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
         }
-        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null)
+        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null, System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = null)
         {
             var host = new UnityEngine.GameObject("floor-controller-fixture"); host.SetActive(false); objects.Add(host);
             var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
             if (recoveryFrames.HasValue) Set(controller, "playerPoiseRecoveryFrames", recoveryFrames.Value);
+            configure?.Invoke(controller);
             controller.ConfigureCheckpointDirectory(directory); controller.ConfigureGameplaySettingsDirectory(System.IO.Path.Combine(directory,"settings")); controller.ConfigureSimulationSeed(7);
             if (maps != null) {
                 var deck = (Deck)controller.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(controller, null);
                 definitions = new FloorSequenceDefinitions("controller-fixture", "v1", maps, deck);
             }
-            controller.ConfigureFloorSequence(definitions);
+            if (definitions != null) controller.ConfigureFloorSequence(definitions);
             var view = host.AddComponent<Olca.Presentation.Field.GameFieldView>(); Set(controller, "gameFieldView", view);
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
@@ -2494,6 +2495,107 @@ namespace Olca.Tests.Integration
             battle.TickFrame(17);
             Assert.AreEqual(0, player.AccumulatedDamage);
             Assert.AreEqual(0, player.PoiseRecoveryRemainingFrames);
+        }
+
+        private Olca.Application.Dungeon.DungeonBattleController StartCombatDefaults(int stagger, int recovery)
+            => Start(configure: controller => {
+                Set(controller, "dungeonCellCount", 8); Set(controller, "firstEnemyCell", 2);
+                Set(controller, "battleStaggerFrames", stagger); Set(controller, "enemyPoiseRecoveryFrames", recovery);
+            });
+
+        [TestCase(18)] [TestCase(6)]
+        public void 既定出撃と保存復帰のプレイヤーは通常AIの累積削りで共通時間のけぞり入力を遮断する(int stagger)
+        {
+            var controller = StartCombatDefaults(stagger, 180);
+            var map = Model(controller).Dungeon.Map;
+            Assert.AreEqual(30, map.GetCell(2).Enemy.PoiseDefinition.Maximum);
+            Assert.AreEqual(60, map.GetCell(7).Enemy.PoiseDefinition.Maximum);
+            Assert.AreEqual(stagger, map.GetCell(7).Enemy.PoiseDefinition.StaggerFrames);
+            ToBattle(controller);
+            Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle; var player = battle.Player; var enemy = battle.Enemies[0];
+            Assert.AreEqual(stagger, player.StaggerDurationFrames);
+            enemy.MoveTo(new Vector2Int(player.GridPosition.X + 1, player.GridPosition.Y));
+            battle.Resume(BattlePauseReason.CustomScreen);
+            int notices = 0; player.OnStaggered += () => notices++;
+            for (int f = 0; f < 400 && !player.IsStaggered; f++) battle.TickFrame(17);
+            Assert.IsTrue(player.IsStaggered, "通常登録の隣接攻撃3発で累積30に到達");
+            Assert.AreEqual(70, player.CurrentHp); Assert.AreEqual(1, notices);
+            Assert.AreEqual(stagger, player.StaggerRemainingFrames); Assert.AreEqual(0, player.AccumulatedDamage);
+            var card = new Olca.Application.Battle.SimpleCardFactory().CreateById("heal");
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            Assert.IsFalse(battle.CardUsage.TryUseCurrentCard()); Assert.AreEqual(1, battle.CardUsage.RemainingCount);
+            int hp = enemy.CurrentHp; battle.PlayerBasicAttack(enemy); Assert.AreEqual(hp, enemy.CurrentHp);
+            var position = player.GridPosition;
+            controller.SetUserPaused(true); for (int f = 0; f < 20; f++) Tick(controller);
+            Assert.AreEqual(stagger, player.StaggerRemainingFrames); controller.SetUserPaused(false);
+            for (int f = 0; f < stagger; f++) {
+                battle.TickFrame(17, new LogicalInput { Horizontal = -1 });
+                Assert.AreEqual(position, player.GridPosition); Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);
+            }
+            Assert.IsFalse(player.IsStaggered);
+            battle.TickFrame(17, new LogicalInput { Horizontal = -1 });
+            Assert.IsTrue(battle.PlayerMovement.IsNormalMoving, "終了後の新しい入力を受け付ける");
+        }
+
+        [TestCase(18, 180)] [TestCase(6, 60)]
+        public void 既定敵は通常カードの独立削りでのけぞり自然回復し定義が保存復帰する(int stagger, int recovery)
+        {
+            var controller = StartCombatDefaults(stagger, recovery); ToBattle(controller);
+            Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle; var enemy = battle.Enemies[0]; var player = battle.Player;
+            Assert.AreEqual(30, enemy.PoiseDefinition.Maximum); Assert.AreEqual(stagger, enemy.PoiseDefinition.StaggerFrames);
+            Assert.AreEqual(recovery, enemy.PoiseRecoveryDelayFrames);
+            player.SetInvincible(100000); enemy.MoveTo(new Vector2Int(player.GridPosition.X + 1, player.GridPosition.Y));
+            battle.Resume(BattlePauseReason.CustomScreen);
+            var card = new Card("poise-fixture", "検証ソード", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 1, "HP1とは独立の削り7", poiseDamage: 7);
+            System.Action hit = () => {
+                battle.CardUsage.EnqueueCards(new List<Card> { card.Clone() });
+                battle.RunLogicalFrame(() => Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()));
+            };
+            int notices = 0; enemy.OnStaggered += () => notices++;
+            for (int i = 0; i < 4; i++) hit();
+            Assert.AreEqual(46, enemy.CurrentHp); Assert.AreEqual(28, enemy.AccumulatedPoiseDamage);
+            hit(); Assert.AreEqual(45, enemy.CurrentHp); Assert.AreEqual(1, notices);
+            Assert.AreEqual(stagger, enemy.StaggerRemainingFrames); Assert.AreEqual(0, enemy.AccumulatedPoiseDamage);
+            battle.Pause(BattlePauseReason.User); for (int f = 0; f < 20; f++) battle.TickFrame(17);
+            Assert.AreEqual(stagger, enemy.StaggerRemainingFrames); battle.Resume(BattlePauseReason.User);
+            for (int f = 0; f < stagger; f++) battle.TickFrame(17);
+            Assert.IsFalse(enemy.IsStaggered);
+            hit(); Assert.AreEqual(7, enemy.AccumulatedPoiseDamage);
+            for (int f = 0; f < recovery - 1; f++) battle.TickFrame(17);
+            Assert.AreEqual(7, enemy.AccumulatedPoiseDamage); battle.TickFrame(17);
+            Assert.AreEqual(0, enemy.AccumulatedPoiseDamage); Assert.AreEqual(1, notices);
+        }
+
+        [TestCase(0, false)] [TestCase(180, false)] [TestCase(180, true)]
+        public void 既定敵の強靭度追加前の保存は旧定義で再開し別配置や新時間の遡及を許さない(int recovery, bool differentLayout)
+        {
+            var host = new UnityEngine.GameObject("legacy-default-deck"); host.SetActive(false); objects.Add(host);
+            var factoryController = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var deck = (Deck)factoryController.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(factoryController, null);
+            var map = DungeonConfig.CreateTestDungeon(8, 30, differentLayout ? 3 : 2);
+            var legacyDefinitions = DungeonCheckpointSession.CreateDefault(map, deck).Definitions;
+            var file = new Olca.Unity.FileCheckpointStore(legacyDefinitions, directory);
+            var session = new DungeonCheckpointSession(legacyDefinitions, file);
+            var legacy = new DungeonBattleManager(map, new PlayerCharacter(100, poiseRecoveryDelayFrames: recovery == 0 ? (int?)null : recovery),
+                deck, new MockRandomProvider(), new MockLogger(), checkpoints: session);
+            for (int f = 0; f < 120 && legacy.CurrentBattle == null; f++) legacy.TickFrame(17);
+            Assert.IsNotNull(legacy.CurrentBattle);
+            var bytes = System.IO.File.ReadAllBytes(file.ActivePath);
+            var controller = StartCombatDefaults(18, 180);
+            CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(file.ActivePath));
+            if (differentLayout) {
+                Assert.IsFalse(controller.TryRestoreMemoryCheckpoint(out _));
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(file.ActivePath)); return;
+            }
+            Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle;
+            Assert.AreEqual(0, battle.Player.StaggerDurationFrames);
+            Assert.AreEqual(recovery == 0 ? (int?)null : recovery, battle.Player.PoiseRecoveryDelayFrames);
+            Assert.IsNull(battle.Enemies[0].PoiseDefinition);
+            CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(file.ActivePath));
         }
 
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo

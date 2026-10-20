@@ -378,3 +378,18 @@ ThreadAbort切り分け: editor-restart.logの273187行付近で「Reloading ass
 追加したControllerテストは既定180/調整60について、出撃→実ファイルの戦闘開始保存→復帰→正の削り→ポーズ中停止→期限直前維持→期限一括リセットを確認。初回は新規2件成功・既存階層fixture2件失敗（1704/1706）で、上記のHP初期化を直した後は1706/1706成功（29.54秒、スキップ0）。Unity MCP console→EditMode→console、consoleErrors=0、compilationFailed=false、既存警告14件。証跡: /workspace/.olca-cloud/results/player-poise-default/。
 
 先の通常移動動画共有は自動承認レビューによる再拒否後、停止を維持する。新しい確認素材はローカル保全のみとし、アップロードしない。
+
+
+## 既定出撃の敵味方のけぞり・敵強靭度の接続（2026-10-20）
+
+数値裁量を適用し、通常DungeonBattleControllerの新規出撃プレイヤーと既定生成マップの敵に共通のけぞり18論理フレームを設定する。通常敵の強靭度30、ボス60、敵の自然回復待ち180フレームは調整用の仮値。battleStaggerFrames/normalEnemyPoise/bossEnemyPoise/enemyPoiseRecoveryFramesから変更可能。外部マップの敵定義は上書きせず、CoreコンストラクタとCreateTestDungeon引数省略時の旧契約も維持する。通常AI・カードの攻撃判定/削り量や、状態共存/優先順は変更しない。独立した被弾無敵の製品時間・付与定義は別残件。
+
+旧既定マップは強靭度定義追加でMapHashが変わるため、新定義で既存ファイルが読めない場合のみ同じ配置の旧定義でも完全検証する。検証成功時に旧定義を採用し、旧プレイヤーのStaggerFrames=0や回復待ちnull/180を維持する。保存を書き換えず、別配置・破損データは引き続き拒否する。調整値を変更した新マップ間を自動変換する機能ではない。
+
+前回の探索障害物0について: 従来の即時HPダメージ型はHP量を強靭度削りへ暗黙加算したが、951ad1b以降は仮値0として加算しない。障害物自身の停止/拘束は維持し、通常戦闘のpoiseDamage独立指定は変更しない。今回もHP1/削り7の通常カードでHPと削りが別に蓄積することを回帰する。
+
+Controller統合回帰は、既定/調整のけぞり18/6、敵回復180/60、通常AI3発のHP70/累積30到達、のけぞり中の移動/基本攻撃/カード拒否と未消費、ポーズ停止、終了後の新入力受理、カード5発HP1/削り7による敵のけぞり、自然回復期限、戦闘開始の実ファイル保存/復帰、旧定義保存2種と別配置拒否を含む。既存の旧DTO/防御/麻痺/再のけぞり等も全EditModeで確認する。
+
+初回の追加4件はテスト準備がnull階層定義を渡して失敗し、既存1706件は成功。準備を修正後はController23/23成功・全1710/1710成功（30.15秒）。その後に旧既定マップの互換性回帰を追加したため、その最終結果とは区別する。証跡は /workspace/.olca-cloud/results/default-combat-poise/ に保持する。
+
+最終検証: Unity MCP console→EditMode→consoleで1713/1713成功（29.94秒、失敗/スキップ0）、consoleErrors=0、compilationFailed=false、警告16件。旧既定マップの回復待ち未設定/180を再開し、別配置は保存を変えず拒否する回帰も成功。editmode-tests.json、console-before.json、console-after.jsonを保全。

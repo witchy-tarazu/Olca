@@ -55,7 +55,9 @@ namespace Olca.Core.Domain
         /// <param name="cellCount">総マス数</param>
         /// <param name="enemySpacing">敵と敵の間隔（セル数）</param>
         /// <param name="firstEnemyCell">最初の敵が出現するセルインデックス</param>
-        public static DungeonConfig CreateTestDungeon(int cellCount = 20, int enemySpacing = 30, int firstEnemyCell = 10)
+        // 省略時は旧マップ定義を維持。通常シーンの仮値はControllerから供給する。
+        public static DungeonConfig CreateTestDungeon(int cellCount = 20, int enemySpacing = 30, int firstEnemyCell = 10,
+            EnemyPoiseDefinition enemyPoise = null, EnemyPoiseDefinition bossPoise = null)
         {
             var cells = new List<MapCell>();
 
@@ -64,13 +66,13 @@ namespace Olca.Core.Domain
                 // 最後のマスにボスを配置
                 if (i == cellCount - 1)
                 {
-                    var boss = new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(i, 0));
+                    var boss = new Enemy("boss", "ボス", 200, ElementType.None, new Vector2Int(i, 0), poiseDefinition: bossPoise);
                     cells.Add(new MapCell(i, boss));
                 }
                 // firstEnemyCell以降、enemySpacingマスごとに通常敵を配置
                 else if (i >= firstEnemyCell && (i - firstEnemyCell) % enemySpacing == 0)
                 {
-                    var enemy = new Enemy($"enemy_{i}", "スライム", 50, ElementType.None, new Vector2Int(i, 0));
+                    var enemy = new Enemy($"enemy_{i}", "スライム", 50, ElementType.None, new Vector2Int(i, 0), poiseDefinition: enemyPoise);
                     cells.Add(new MapCell(i, enemy));
                 }
                 // それ以外は空白

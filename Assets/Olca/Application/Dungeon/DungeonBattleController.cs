@@ -43,6 +43,14 @@ namespace Olca.Application.Dungeon
         [SerializeField] private float dashDistanceCells = 3f;  // ダッシュで進むマス数
         [SerializeField] private float dashCooldown = 0.1f;   // ダッシュのクールタイム（秒）
 
+        [Header("戦闘の暫定調整値")]
+        [Tooltip("敵味方共通ののけぞり論理フレーム数。仮値18=0.3秒。新規出撃用。")]
+        [SerializeField, Min(1)] private int battleStaggerFrames = 18;
+        [SerializeField, Min(1)] private int normalEnemyPoise = 30;
+        [SerializeField, Min(1)] private int bossEnemyPoise = 60;
+        [Tooltip("既定マップの敵の自然回復待ち。仮値180=3秒。外部マップ定義は上書きしない。")]
+        [SerializeField, Min(1)] private int enemyPoiseRecoveryFrames = 180;
+
         [Header("敵配置設定")]
         [Tooltip("敵と敵の間隔（セル数）")]
         [SerializeField] private int enemySpacing = 30;
@@ -236,6 +244,12 @@ namespace Olca.Application.Dungeon
         private CancellationTokenSource transitionCts;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
+        // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
+        private DungeonConfig CreateDefaultDungeon(bool legacy = false)
+            => DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell,
+                enemyPoise: legacy ? null : new EnemyPoiseDefinition(normalEnemyPoise, battleStaggerFrames, enemyPoiseRecoveryFrames),
+                bossPoise: legacy ? null : new EnemyPoiseDefinition(bossEnemyPoise, battleStaggerFrames, enemyPoiseRecoveryFrames));
+
         private void Start()
         {
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
@@ -248,11 +262,12 @@ namespace Olca.Application.Dungeon
             inputProvider.StartEventCapture();
             customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
-            var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell);
+            var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
             var playerCharacter = new PlayerCharacter(
                 maxHp: playerMaxHp,
                 initialPosition: new Vector2Int(0, 0),
                 attackPower: playerAttackPower,
+                staggerDurationFrames: battleStaggerFrames,
                 poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
 
             var cardFactory = new SimpleCardFactory();
@@ -273,6 +288,17 @@ namespace Olca.Application.Dungeon
             {
                 var definitions = DungeonCheckpointSession.CreateDefault(dungeonConfig, initialDeck).Definitions;
                 var store = new FileCheckpointStore(definitions, CheckpointDirectory);
+                if (configuredDungeon == null && store.HasExistingData && store.Read() == null)
+                {
+                    var legacyMap = CreateDefaultDungeon(legacy: true);
+                    var legacyDefinitions = DungeonCheckpointSession.CreateDefault(legacyMap, initialDeck).Definitions;
+                    var legacyStore = new FileCheckpointStore(legacyDefinitions, CheckpointDirectory);
+                    // 不正データや別配置を許容しない。既存の完全検証に通る旧定義だけを採用する。
+                    if (legacyStore.Read() != null)
+                    {
+                        dungeonConfig = legacyMap; definitions = legacyDefinitions; store = legacyStore;
+                    }
+                }
                 memoryCheckpoints = new DungeonCheckpointSession(definitions, store);
                 awaitingCheckpointChoice = store.HasExistingData;
                 // 旧保存には新規出撃条件を遡及適用しない。
