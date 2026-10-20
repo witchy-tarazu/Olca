@@ -474,6 +474,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnScreenOpened(List<Card> hand)
         {
+            UpdateSelectedCardDisplay();
             customizeSelectedCards.Clear();
             if (customizeModeView != null) customizeModeView.Exit();
             if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
@@ -1078,8 +1079,16 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void UpdateSelectedCardDisplay()
         {
-            // カーソル位置のカード表示に統一するため、このメソッドは使用しない
-            // 互換性のため残しているが、何もしない
+            if (customScreen == null) return;
+            var indicator = transform.Find("SelectionIndicator");
+            if (indicator == null) return;
+            var images = indicator.GetComponentsInChildren<Image>(true).OrderBy(i => i.rectTransform.anchoredPosition.x).ToArray();
+            for (int i = 0; i < images.Length; i++)
+            {
+                images[i].gameObject.SetActive(i < customScreen.MaxSelectionCount);
+                images[i].color = i < customScreen.SelectedCards.Count ? Color.yellow : new Color(.18f,.27f,.33f,1f);
+                images[i].raycastTarget = false;
+            }
         }
 
         /// <summary>
@@ -1209,6 +1218,7 @@ namespace Olca.Presentation.CustomScreen
             if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
             if (selectedCardDescription != null) selectedCardDescription.text = "選択したカードを確定しました";
             UpdateUndoButton();
+            UpdateSelectedCardDisplay();
             // 購読者（BattleController・DungeonBattleControllerなど）に通知
             OnCustomScreenConfirmed?.Invoke();
         }

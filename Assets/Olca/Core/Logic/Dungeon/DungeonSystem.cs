@@ -45,6 +45,8 @@ namespace Olca.Core.Logic.Dungeon
 
         // ========== プロパティ ==========
         public float PlayerPosition => playerMovement.CurrentPosition;
+        public int NormalMovementSpeedMilliPerSecond => playerMovement.NormalSpeedMilliPerSecond;
+        public void ConfigureNormalMovementSpeed(int value) => playerMovement.ConfigureNormalSpeed(value);
         public float PlayerHeight => playerMovement.Height;
         public bool IsJumping => playerMovement.IsJumping;
         public bool IsDashJumping => playerMovement.IsDashJumping;

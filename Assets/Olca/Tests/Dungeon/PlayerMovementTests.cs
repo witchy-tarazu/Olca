@@ -6,6 +6,39 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class PlayerMovementTests
     {
+        [TestCase(false)] [TestCase(true)]
+        public void 通常シーン用の減速値はダッシュ速度とジャンプ期間を変えず固定時間で進む(bool dash)
+        {
+            var p=new PlayerMovement();p.ConfigureNormalSpeed(8000);if(dash)p.StartDash();
+            for(int n=0;n<60;n++)p.Update(n%3==0?16:17);
+            Assert.AreEqual(dash?20000:8000,p.CurrentPositionMilli);
+            var jump=new PlayerMovement();jump.ConfigureNormalSpeed(8000);jump.Jump();jump.Update(250);
+            Assert.IsTrue(jump.IsJumping);Assert.AreEqual(1500,jump.HeightMilli);jump.Update(250);
+            Assert.IsFalse(jump.IsJumping);Assert.AreEqual(0,jump.HeightMilli);Assert.AreEqual(4000,jump.CurrentPositionMilli);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>p.ConfigureNormalSpeed(0));
+        }
+
+        [TestCase(9)] [TestCase(12)]
+        public void 戦闘移動は中間を隠して移動前後に表示しSpriteの形と色を変えない(int frames)
+        {
+            var root=new UnityEngine.GameObject("battle-blink");root.SetActive(false);
+            var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var sr=root.AddComponent<UnityEngine.SpriteRenderer>();
+            var texture=new UnityEngine.Texture2D(8,16);var sprite=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,8,16),UnityEngine.Vector2.zero);
+            sr.sprite=sprite;sr.color=new UnityEngine.Color(.6f,.7f,.8f,1);root.transform.localScale=new UnityEngine.Vector3(-1,1,1);
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Presentation.Field.GameFieldView).GetField("playerSprite",flags).SetValue(view,sr);
+            var apply=typeof(Olca.Presentation.Field.GameFieldView).GetMethod("SetBattleMoveVisibility",flags);
+            try{
+                for(int f=1;f<=frames;f++){
+                    bool visible=Olca.Presentation.Field.GameFieldView.IsBattleMoveVisible(true,(float)f/frames);
+                    apply.Invoke(view,new object[]{visible});
+                    if(f==Olca.Core.Logic.Battle.NormalMoveTiming.Midpoint(frames))Assert.IsFalse(sr.enabled,"占有切替時は消失中");
+                    Assert.AreSame(sprite,sr.sprite);Assert.AreEqual(new UnityEngine.Vector3(-1,1,1),root.transform.localScale);Assert.AreEqual(new UnityEngine.Color(.6f,.7f,.8f,1),sr.color);
+                }
+                Assert.IsTrue(sr.enabled);apply.Invoke(view,new object[]{false});apply.Invoke(view,new object[]{true});Assert.IsTrue(sr.enabled);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(texture);}
+        }
+
         [TestCase(false)][TestCase(true)]
         public void ノックバック姿勢は順番を守り終了時に元の表示状態を復元する(bool enabled)
         {

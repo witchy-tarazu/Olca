@@ -95,8 +95,8 @@ namespace Olca.Core.Logic.Dungeon
             double accelerated = isDashing || isDashJumping ? elapsed : 0;
             if (isDashJumping && elapsed > 0)
                 accelerated = Math.Min(elapsed, Math.Max(0, (JUMP_DURATION_FRAMES - jumpTimerFrames) * 50));
-            long numerator = positionRemainder + BASE_SPEED_MILLI_PER_SEC * elapsed
-                + (long)Math.Round((DASH_SPEED_MILLI_PER_SEC - BASE_SPEED_MILLI_PER_SEC) * accelerated);
+            long numerator = positionRemainder + normalSpeedMilliPerSecond * elapsed
+                + (long)Math.Round((DASH_SPEED_MILLI_PER_SEC - normalSpeedMilliPerSecond) * accelerated);
             long landingPosition = currentPositionMilli + (positionRemainder + (long)Math.Round(DASH_SPEED_MILLI_PER_SEC * accelerated)) / 3000;
             return new MovementStep(currentPositionMilli, currentPositionMilli + numerator / 3000,
                 elapsed / 50d, isJumping, isDashing, jumpTimerFrames, heightMilli, numerator % 3000,
@@ -111,7 +111,13 @@ namespace Olca.Core.Logic.Dungeon
             jumpTimerFrames = step.JumpTimeFrames; heightMilli = step.StartHeightMilli;
             if (isJumping) UpdateJump(step.DurationFrames * step.Fraction(position));
         }
-        private const int BASE_SPEED_MILLI_PER_SEC = 10000;  // 基本移動速度（ミリ単位/秒）= 10.0
+        private int normalSpeedMilliPerSecond = 10000;
+        public int NormalSpeedMilliPerSecond => normalSpeedMilliPerSecond;
+        public void ConfigureNormalSpeed(int value)
+        {
+            if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
+            normalSpeedMilliPerSecond = value; ControlChanged();
+        }
         private const int DASH_SPEED_MILLI_PER_SEC = 20000;  // ダッシュ速度（ミリ単位/秒）= 20.0
         private const int JUMP_DURATION_FRAMES = 30;           // ジャンプ時間（論理フレーム）= 0.5秒
         private const int JUMP_HEIGHT_MILLI = 1500;         // ジャンプの最大高さ（ミリ単位）= 1.5

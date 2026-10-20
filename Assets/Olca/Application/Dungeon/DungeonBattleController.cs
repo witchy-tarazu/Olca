@@ -49,6 +49,8 @@ namespace Olca.Application.Dungeon
         [SerializeField, Min(1)] private int battleStaggerFrames = 18;
         [Tooltip("既定AI攻撃・基本攻撃・マグマの被弾後無敵。仮値600ms。共通のけぞり時間より長く設定する。カードの個別設定は変更しない。")]
         [SerializeField, Min(1)] private int commonHitInvincibilityMs = 600;
+        [Tooltip("探索通常速度。旧10000から20%減速。ダッシュ速度/ジャンプ期間/戦闘移動時間は独立。") ]
+        [SerializeField, Min(1)] private int explorationNormalSpeedMilliPerSecond = 8000;
         [SerializeField, Min(0)] private int swordPoiseDamage = 15;
         [SerializeField, Min(0)] private int bombPoiseDamage = 20;
         [SerializeField, Min(0)] private int fireSwordPoiseDamage = 30;
@@ -762,6 +764,8 @@ namespace Olca.Application.Dungeon
                 fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null ? null : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
+            manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
+
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
             manager.OnBattleEnded += OnBattleEnded;
@@ -1269,6 +1273,7 @@ namespace Olca.Application.Dungeon
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
             manager = restored;
+            manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;
             ShowCheckpointStatus();

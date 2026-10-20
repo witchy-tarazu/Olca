@@ -79,6 +79,17 @@ namespace Olca.Presentation.Field
 
         private int appliedJumpPhase;
         private bool isMoving;
+        private bool battleMoveHidden, battleMoveRendererWasEnabled;
+        public static bool IsBattleMoveVisible(bool moving, float progress)
+            => !moving || progress < .2f || progress >= .8f;
+        private void SetBattleMoveVisibility(bool visible)
+        {
+            if (playerSprite == null) return;
+            if (!visible && !battleMoveHidden) { battleMoveRendererWasEnabled = playerSprite.enabled; battleMoveHidden = true; }
+            if (battleMoveHidden) playerSprite.enabled = visible && battleMoveRendererWasEnabled;
+            if (visible) battleMoveHidden = false;
+        }
+
 
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
@@ -242,7 +253,7 @@ namespace Olca.Presentation.Field
             if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
         }
 
-        private void OnDisable() => UnbindPlayerDamage();
+        private void OnDisable() { SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
             UnbindPlayerDamage();
@@ -415,6 +426,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleEnded()
         {
+            SetBattleMoveVisibility(true);
             StopPlayerDamageFeedback();
             if (currentBattle != null)
             {
@@ -470,10 +482,9 @@ namespace Olca.Presentation.Field
             if (playerTransform != null && battleGridView != null && currentBattle != null)
             {
                 var movement = currentBattle.PlayerMovement;
-                float worldX = movement.IsNormalMoving
-                    ? Mathf.Lerp(battleGridView.GridIndexToWorldX(movement.NormalMoveFrom.X),
-                        battleGridView.GridIndexToWorldX(movement.NormalMoveTo.X), movement.NormalMoveProgress)
-                    : battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
+                // 消失中に、モデルが中間フレームで確定した座標へ切り替える。走行補間は使わない。
+                float worldX = battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
+                SetBattleMoveVisibility(IsBattleMoveVisible(movement.IsNormalMoving, movement.NormalMoveProgress));
                 playerTransform.position = new Vector3(worldX, playerTransform.position.y, 0f);
             }
 
@@ -588,10 +599,8 @@ namespace Olca.Presentation.Field
         {
             // 60Hz論理更新のない描画フレームも自動前進は継続中。
             // 座標差0や描画DeltaTimeでの速度推定を停止判定に使わない。
-            bool battleMoving = currentBattle?.PlayerMovement.IsNormalMoving == true && !currentBattle.IsPaused;
-            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (battleMoving ||
-                (dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
-                && dungeonSystem.PlayerHeight <= 0.001f));
+            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (currentBattle == null && dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
+                && dungeonSystem.PlayerHeight <= 0.001f);
         }
 
         private void SetPlayerSprite(Sprite sprite)

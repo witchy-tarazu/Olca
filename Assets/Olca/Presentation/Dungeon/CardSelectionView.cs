@@ -357,8 +357,8 @@ namespace Olca.Presentation.Dungeon
         private UnityEngine.GameObject exploration;
         public void Initialize(UnityEngine.Font font, System.Action tap, System.Func<int> shortPressFrames)
         {
-            var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = UnityEngine.Vector2.one;
-            rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,-200);
+            var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = new UnityEngine.Vector2(1,0);
+            rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,115);
             var face = gameObject.AddComponent<UnityEngine.UI.Image>(); face.color = new UnityEngine.Color(.04f,.11f,.16f,.87f); face.raycastTarget = false;
             var edge = gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
             UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
