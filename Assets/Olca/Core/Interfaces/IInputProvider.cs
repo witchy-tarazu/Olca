@@ -138,3 +138,12 @@ namespace Olca.Core.Domain
         public void Discard() { draft = committed.Bindings.ToDictionary(p => p.Key, p => p.Value); }
     }
 }
+
+namespace Olca.Core.Interfaces
+{
+    /// <summary>解放済みの短いタッチだけを一度受け取る任意入力。既存のキーボード軸とは分離する。</summary>
+    public interface IHorizontalTapInput
+    {
+        float HorizontalTap { get; }
+    }
+}

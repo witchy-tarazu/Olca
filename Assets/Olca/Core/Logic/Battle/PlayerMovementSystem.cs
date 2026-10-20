@@ -101,8 +101,9 @@ namespace Olca.Core.Logic.Battle
             // Horizontalを使用して押しっぱなし移動に対応
             Vector2Int direction = Vector2Int.Zero;
 
-            if (input.Horizontal > 0.5f) direction = new Vector2Int(1, 0); // 右
-            else if (input.Horizontal < -0.5f) direction = new Vector2Int(-1, 0); // 左
+            float horizontal = input is IHorizontalTapInput tap && tap.HorizontalTap != 0 ? tap.HorizontalTap : input.Horizontal;
+            if (horizontal > 0.5f) direction = new Vector2Int(1, 0); // 右
+            else if (horizontal < -0.5f) direction = new Vector2Int(-1, 0); // 左
 
             if (direction != Vector2Int.Zero)
             {

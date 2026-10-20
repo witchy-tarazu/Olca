@@ -288,6 +288,143 @@ namespace Olca.Tests.Application
             } finally { transformations.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        [Test]
+        public void OSのタッチ取消は同じ指のUIクリックだけを取り消し別指は残す()
+        {
+            var screen=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Touchscreen>();
+            var host=new UnityEngine.GameObject("cancel-touch-ui");var guard=host.AddComponent<Olca.Unity.TouchUiCancelGuard>();
+            var first=new UnityEngine.InputSystem.UI.ExtendedPointerEventData(null){device=screen,touchId=1,pointerId=101,eligibleForClick=true};
+            var second=new UnityEngine.InputSystem.UI.ExtendedPointerEventData(null){device=screen,touchId=2,pointerId=102,eligibleForClick=true};
+            try {
+                guard.OnPointerDown(first);guard.OnPointerDown(second);Olca.Unity.TouchUiCancelGuard.CancelTouch(screen.deviceId,1);
+                Assert.IsFalse(first.eligibleForClick);Assert.IsTrue(second.eligibleForClick);
+                var fast=new UnityEngine.InputSystem.UI.ExtendedPointerEventData(null){device=screen,touchId=3,pointerId=103,eligibleForClick=true};
+                Olca.Unity.TouchUiCancelGuard.CancelTouch(screen.deviceId,3);guard.OnPointerDown(fast);
+                Assert.IsFalse(fast.eligibleForClick,"同一Input更新でPointerDownより先に届いた取消も保持");guard.OnPointerUp(fast);
+                Olca.Unity.TouchUiCancelGuard.BeginTouch(screen.deviceId,3);fast.eligibleForClick=true;guard.OnPointerDown(fast);
+                Assert.IsTrue(fast.eligibleForClick,"次の新規押下は受理する");guard.OnPointerUp(fast);
+                guard.OnPointerUp(first);using var provider=new Olca.Unity.UnityInputProvider();provider.QueueSnapshot();Assert.IsFalse(second.eligibleForClick,"場面切替等の入力リセットでUI押下も取消す");
+            }finally{guard.OnPointerUp(first);guard.OnPointerUp(second);UnityEngine.Object.DestroyImmediate(host);UnityEngine.InputSystem.InputSystem.RemoveDevice(screen);}
+        }
+
+        [Test]
+        public void スマホの指状態は後押し優先で優先指解放時に反対側へ戻る()
+        {
+            var state=new Olca.Core.Logic.Integration.TouchMovementState();
+            state.Press(1,-1);state.Press(2,1);Assert.AreEqual(1,state.Direction);
+            state.Press(1,-1);Assert.AreEqual(1,state.Direction,"移動イベントで押下順を変えない");
+            state.Press(3,1);state.Release(3);Assert.AreEqual(1,state.Direction);
+            state.Release(2);Assert.AreEqual(-1,state.Direction);state.Clear();Assert.AreEqual(0,state.Direction);
+        }
+        [Test]
+        public void 短タップの補完はタッチだけに限定しキーボード両押しの相殺を変えない()
+        {
+            var player=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(1,0));
+            var battle=new BattleSystem(player,new List<Enemy>{new Enemy("e","e",100,ElementType.None,new Olca.Core.Domain.Vector2Int(5,0))},new Deck());
+            battle.TickFrame(16,new Olca.Core.Logic.Integration.LogicalInput{Horizontal=0,HorizontalDown=-1});
+            Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);Assert.AreEqual(1,player.GridPosition.X);
+            battle.TickFrame(16,new Olca.Core.Logic.Integration.LogicalInput{Horizontal=0,TouchHorizontalDown=1});
+            for(int i=0;i<12;i++)battle.TickFrame(16,new Olca.Core.Logic.Integration.LogicalInput());
+            Assert.AreEqual(2,player.GridPosition.X);Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);
+        }
+        [Test]
+        public void スマホ短タップは論理一回でキャンセルはタップだけを取り消す()
+        {
+            var queue=new Olca.Core.Logic.Integration.LogicalInputQueue();
+            queue.Enqueue(1,new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1,TouchHorizontalDown=1});
+            queue.Enqueue(1,new Olca.Core.Logic.Integration.LogicalInput());
+            Assert.AreEqual(1,queue.Take(1).HorizontalDown);Assert.AreEqual(0,queue.Take(2).HorizontalDown);
+            queue.Enqueue(3,new Olca.Core.Logic.Integration.LogicalInput{TouchHorizontalDown=1});
+            queue.Enqueue(3,new Olca.Core.Logic.Integration.LogicalInput{CancelTouchTap=true,HorizontalDown=-1});
+            Assert.AreEqual(-1,queue.Take(3).HorizontalDown,"キーボードの立ち上がりは消さない");
+        }
+        [Test]
+        public void 実TouchStateは左右保持後押し取消とポーズ相当の再押下待ちを時刻付き入力へ渡す()
+        {
+            var screen=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Touchscreen>();
+            var provider=new Olca.Unity.UnityInputProvider();var queue=new Olca.Core.Logic.Integration.LogicalInputQueue();long frame=0;
+            void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,float x) {
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(screen,new UnityEngine.InputSystem.LowLevel.TouchState{touchId=id,phase=phase,position=new UnityEngine.Vector2(UnityEngine.Screen.width*x,10)});
+                UnityEngine.InputSystem.InputSystem.Update();
+            }
+            Olca.Core.Logic.Integration.LogicalInput Take(){foreach(var e in provider.CaptureTimestamped())queue.Enqueue(frame+1,e.Input);return queue.Take(++frame);}
+            try {
+                provider.StartEventCapture();provider.SetTouchMovementEnabled(true);Take();
+                Touch(1,UnityEngine.InputSystem.TouchPhase.Began,.2f);Assert.AreEqual(-1,Take().Horizontal);
+                Touch(2,UnityEngine.InputSystem.TouchPhase.Began,.8f);Assert.AreEqual(1,Take().Horizontal);
+                Touch(2,UnityEngine.InputSystem.TouchPhase.Ended,.8f);Assert.AreEqual(-1,Take().Horizontal);
+                provider.SetTouchMovementEnabled(false);queue.Release();Assert.AreEqual(0,Take().Horizontal);
+                provider.SetTouchMovementEnabled(true);queue.Release();Assert.AreEqual(0,Take().Horizontal,"押し続けた指を場面間で再利用しない");
+                Touch(1,UnityEngine.InputSystem.TouchPhase.Moved,.8f);Assert.AreEqual(0,Take().Horizontal);
+                Touch(1,UnityEngine.InputSystem.TouchPhase.Ended,.8f);Take();
+                Touch(1,UnityEngine.InputSystem.TouchPhase.Began,.8f);Touch(1,UnityEngine.InputSystem.TouchPhase.Ended,.8f);
+                Assert.AreEqual(1,Take().HorizontalDown,"同一描画更新間の短タップも一度");Assert.AreEqual(0,Take().HorizontalDown);
+                Touch(3,UnityEngine.InputSystem.TouchPhase.Began,.2f);Touch(3,UnityEngine.InputSystem.TouchPhase.Canceled,.2f);
+                var canceled=Take();Assert.AreEqual(0,canceled.Horizontal);Assert.AreEqual(0,canceled.HorizontalDown);
+                Assert.IsFalse(canceled.AnyKey);
+                Touch(4,UnityEngine.InputSystem.TouchPhase.Began,.2f);Assert.AreEqual(-1,Take().Horizontal);
+                UnityEngine.InputSystem.InputSystem.DisableDevice(screen);var disabled=Take();
+                Assert.AreEqual(0,disabled.Horizontal);Assert.IsFalse(disabled.AnyKey,"無効端末の指を解放待ちへ残さない");
+                UnityEngine.InputSystem.InputSystem.EnableDevice(screen);Assert.AreEqual(0,Take().Horizontal);
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(screen);}
+        }
+        public sealed class TouchTestEventSystem : UnityEngine.EventSystems.EventSystem
+        {
+            public void Register(){base.OnEnable();}
+            public void Unregister(){base.OnDisable();}
+        }
+        // headless EditModeはGraphic.depthが生成されない。Raycaster契約を検証し、実GraphicRaycasterはGUIで確認する。
+        public sealed class TouchUiRaycaster : UnityEngine.EventSystems.BaseRaycaster
+        {
+            public void Register(){base.OnEnable();}
+            public void Unregister(){base.OnDisable();}
+            public UnityEngine.RectTransform Target;
+            public override UnityEngine.Camera eventCamera => null;
+            public override void Raycast(UnityEngine.EventSystems.PointerEventData data,List<UnityEngine.EventSystems.RaycastResult> hits)
+            {
+                if(Target!=null&&UnityEngine.RectTransformUtility.RectangleContainsScreenPoint(Target,data.position))
+                    hits.Add(new UnityEngine.EventSystems.RaycastResult{gameObject=Target.gameObject,module=this,screenPosition=data.position});
+            }
+        }
+        [Test]
+        public void UI上で開始した実指は移動へ混入せず別の指の保持とキーボードを壊さない()
+        {
+            var screen=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Touchscreen>();
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            var system=new UnityEngine.GameObject("touch-test-events",typeof(TouchTestEventSystem));
+            system.GetComponent<TouchTestEventSystem>().Register();
+            var canvas=new UnityEngine.GameObject("touch-test-ui",typeof(UnityEngine.Canvas),typeof(TouchUiRaycaster));
+            canvas.GetComponent<UnityEngine.Canvas>().renderMode=UnityEngine.RenderMode.ScreenSpaceOverlay;
+            var button=new UnityEngine.GameObject("excluded-button",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));button.transform.SetParent(canvas.transform,false);
+            var rect=(UnityEngine.RectTransform)button.transform;rect.sizeDelta=new UnityEngine.Vector2(100,100);rect.anchoredPosition=new UnityEngine.Vector2(UnityEngine.Screen.width*.25f,0);UnityEngine.Canvas.ForceUpdateCanvases();canvas.GetComponent<TouchUiRaycaster>().Target=rect;canvas.GetComponent<TouchUiRaycaster>().Register();
+            var provider=new Olca.Unity.UnityInputProvider();
+            void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,float x){UnityEngine.InputSystem.InputSystem.QueueStateEvent(screen,new UnityEngine.InputSystem.LowLevel.TouchState{touchId=id,phase=phase,position=new UnityEngine.Vector2(UnityEngine.Screen.width*x,UnityEngine.Screen.height*.5f)});UnityEngine.InputSystem.InputSystem.Update();}
+            try {
+                provider.StartEventCapture();provider.SetTouchMovementEnabled(true);provider.CaptureTimestamped();
+                Touch(1,UnityEngine.InputSystem.TouchPhase.Began,.2f);Assert.AreEqual(-1,provider.CaptureTimestamped().Last().Input.Horizontal);
+                Touch(2,UnityEngine.InputSystem.TouchPhase.Began,.75f);Assert.AreEqual(-1,provider.CaptureTimestamped().Last().Input.Horizontal,"UI指は後押し優先へ入らない");
+                Touch(2,UnityEngine.InputSystem.TouchPhase.Moved,.1f);Assert.AreEqual(-1,provider.CaptureTimestamped().Last().Input.Horizontal,"UIから外へ動かしても移動へ変えない");
+                Touch(2,UnityEngine.InputSystem.TouchPhase.Canceled,.1f);Assert.IsFalse(provider.CaptureTimestamped().Last().Input.CancelTouchTap);
+                Touch(1,UnityEngine.InputSystem.TouchPhase.Ended,.2f);provider.CaptureTimestamped();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.D));UnityEngine.InputSystem.InputSystem.Update();
+                Assert.AreEqual(1,provider.CaptureTimestamped().Last().Input.Horizontal);
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(screen);UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);canvas.GetComponent<TouchUiRaycaster>().Unregister();system.GetComponent<TouchTestEventSystem>().Unregister();UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(system);}
+        }
+        [TestCase(30,false)][TestCase(60,false)][TestCase(120,false)][TestCase(30,true)][TestCase(120,true)]
+        public void スマホ保持移動は描画fpsや追いつき処理で変わらない(int fps,bool stall)
+        {
+            var p=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(1,0));var b=new BattleSystem(p,new List<Enemy>{new Enemy("e","e",100,ElementType.None,new Olca.Core.Domain.Vector2Int(5,0))},new Deck());
+            using var loop=new Olca.Unity.UnityLogicalLoop();long previous=0;
+            System.Action<long,int,Olca.Core.Logic.Integration.LogicalInput> tick=(f,ms,input)=>b.TickFrame(ms,input);
+            if(stall){previous=5000000;loop.Advance(previous,new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1,TouchHorizontalDown=1},tick,budget:3);}
+            for(int render=1;previous<10000000;render++){
+                long now=System.Math.Min(10000000,(stall?5000000:0)+render*10000000L/fps);
+                loop.Advance(now-previous,new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1},tick,budget:3);previous=now;
+            }
+            while(loop.Clock.PendingFrames>0)loop.Advance(0,null,tick,budget:3);
+            Assert.AreEqual(4,p.GridPosition.X);Assert.IsFalse(b.PlayerMovement.IsNormalMoving);
+        }
+
         [TestCase(false)][TestCase(true)]
         public void 実ESC入力はリマップ後も一フレーム一段階だけ取り消し継続変身を保護する(bool remap)
         {

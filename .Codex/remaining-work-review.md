@@ -569,3 +569,27 @@ UnityMCPはconsole(error)→EditMode→console(error)を実施。最終1822/1822
 GUIは新規の独立fixture保存先 /workspace/work/Olca-player-poison-proof-20261020 を使用。検証用の外部毒（60秒/1ダメージ/60フレーム間隔）を一度だけAPI付与し、その後は通常Controllerの時計で更新した。fixtureの中間敵と最終ボスはHP30で、製品データではない。実手札クリック/Enter/D/Spaceで中間敵を撃破し、実SkipCardRewardで探索境界保存、実Pause/LoadCheckpoint/Pauseで別プレイヤーへの再読込を確認。読込ボタン直後の観測listenerでHP・残期間・次回カウントが保存値と完全一致し、再付与はない。実Resumeで持越し済み毒が探索中のHPと残期間を自動減少させ、実Pauseで停止することも確認。カスタム/ユーザーポーズ/報酬演出停止、探索→戦闘と勝利→探索の間隔リセット・残期間保持が成立した。新しい発生源や通常入力で毒を付与する製品機能が完成したとは扱わない。
 
 GUI現在error0/compilationFailed=false（警告1、既存エラー履歴23は消去せず保持）。Setup/Configureの60秒応答タイムアウトは、同じEditorの状態読取で完了を確認し二重実行しなかった。Editor PID198663/19159を存続させ、GUIは読込後の探索・ユーザーポーズ/Editor一時停止で維持。原本差分0、旧6保存先のJSON58件はハッシュ不変。認証/ライセンス/ネットワーク/設定を変更せず、新しい画像/動画生成や送信は行わない。証跡は /workspace/.olca-cloud/results/player-poison/。
+
+
+## スマホ移動・複数指入力（2026-10-20）
+
+根拠/対象: 全体仕様§18「スマホ操作の基本」の左右タップ1マス/保持連続移動、操作UI除外、別指で攻撃/カード使用、後押し優先と解放時復帰、探索専用ジャンプ/ダッシュ。既存の入力捕捉はキーボード/スティックとUI攻撃クリックのみで、Touchscreenの各指を横移動へ接続する処理と探索/カード使用のタッチ入口が未接続だった。新しいコントローラ割当・ゲームの進行規則・タメ攻撃の本体実装は対象外。
+
+UnityInputProviderがInput SystemのTouchState/全画面状態を指IDと生成時刻で読み、Unity非依存TouchMovementStateで後押し優先を管理する。UI接触は押下時にEventSystem.RaycastAllで判定し、その指は離すまで移動へ転用しない。単指TouchStateはInput System公式実装上primaryTouchにのみマップされるため、その読取を含めた。タッチ取消は専用の論理立ち上がりのみ消し、キーボード立ち上がりとは分離した。PlayerMovementSystemは短タップのHorizontalDownを一度だけ受け、保持・移動中の非予約・移動時間は既存動作を使う。
+
+Controllerは探索ジャンプ/ダッシュ・戦闘カード使用のUIを既存HUD内へ接続し、クリックの時刻付きコマンドを論理入力へ渡す。旧基本攻撃UIを併用する。ポーズ/カスタム/場面切替/復帰/フォーカス喪失でタッチを中立化し、押したままの指は解放待ちにする。入力破棄後にスナップショットを送る順序とし、新しい独自時計やTime.deltaTimeによるゲーム進行は追加しない。
+
+画面試験の初回短マップでは、探索ボタンの観測時に既に接敵済みとなり、探索試験の前提が崩れたため停止した。状態読取で戦闘移行を確認し、手札UIへの生TouchStateとキーボードEnterが実際に届くことを切り分けた。続く実TouchState試験で、短タップ/保持/後押し/解放時復帰は成立したが、攻撃ボタン上のTouchPhase.CanceledがUIクリックになることを再現した。これを製品側の入力取消の問題として修正し、指別TouchUiCancelGuardでEventSystemの該当クリック資格だけを破棄する。別指のUI押下は残す。ポーズ/フォーカス喪失等では保留UI押下も取り消す。
+
+短タップの補完は任意IHorizontalTapInputへ分離し、従来のキーボードHorizontalDownを通常移動の予約へ転用しない。キーボード左右同時押しの軸相殺を保つ回帰試験を追加した。headless EditModeではGraphic.depthとEventSystemの有効化が通常Playと異なるため、試験用Raycasterの契約と登録を明示し、実GraphicRaycasterの確認はGUIへ分ける。試験fixtureの失敗を製品のUI除外成功と混同しない。
+
+
+最終UnityMCP: console(error)→EditMode→console(error)。1833/1833成功、49.08秒、現在error0/compilationFailed=false（主Editor警告58）。追加11件は指別優先/同じ指の移動イベント非昇格、同一フレーム短タップと取消、実TouchStateの保持/解放/再押下待ち/端末無効化、UI Raycaster除外とキーボード併用、30/60/120fpsと追いつき処理、指別UI取消とリセット/PointerDown前取消/次の新規押下、キーボード両押し相殺の維持。既存リマップ/保存試験も成功した。取消順序と入力リセットの追加修正後に、最終版で全件再実行した。
+
+GUI最終確認は /workspace/work/Olca-mobile-input-v2-proof-20261020 の独立固定fixture（100セル、中間接敵50セル、敵HP9999、既存6枚デッキ）を使用。これは製品データではない。InputSystemUIInputModuleの実GraphicRaycasterと仮想Touchscreenへ生TouchStateを投入し、実ジャンプ/空中ダッシュ拒否/地上ダッシュ、自然接敵、実手札タッチ/キーボードEnter、探索から押したままの指の持越し拒否を確認。左右短タップ1マス、保持、後押し優先、優先指解放時の復帰、取消を確認。敵隣接の移動制限位置で移動指を保持し、別指の実攻撃/カードボタンで10/30ダメージ各1回、UI指が移動方向を変えないことを確認。移動中の受付制約は既存と同じで、新たな行動予約は作らない。攻撃UIの通常取消と同一Input更新の押下→取消は無発動、次の通常押下は発動した。
+
+実TouchStateのPause/Resume、Pause/LoadCheckpointを確認。保持指は復帰・再読込後の入力待ちに留まり、実解放/取消後に手札タッチ/Enterで再開しても勝手な移動がない。試験側はEditor一時停止解除と同じ更新で入力を送らず、復帰更新を待ってから送る。押したままの指を残した状態では復帰バリアがEnterも遮断することを観測し、正常な解放順で通し直した。HP/位置/カードキューを直接注入せず、fixture設定以外は実UIとInput System経路を使用した。
+
+途中の切断通知後、同じ環境のシェル/両MCP/同じPID19159・198663を確認して継続した。最終GUI error0/compilationFailed=false（警告1、履歴error24は保持）。Play中の再コンパイル後の初期化で空保存先によるStart失敗を観測したため、通常のPlay再起動と明示的なfixture保存先で復旧した。旧保存/認証/通信設定には触れない。Setup/Configureの応答タイムアウトは状態読取で確認し、未完了のfixtureのみ修正して再初期化した。新しい環境/再認証/ライセンス操作はない。原本差分0、旧保存JSON61件ハッシュ不変。GUIは再読込後の戦闘・Editor一時停止で維持。
+
+確認済みはEditorの仮想Touchscreen/Input System/実UIとEditMode試験。スマホ実機・ビルド・OS固有中断/復帰・安全領域・実指の感触は未確認でユーザー担当。新しいコントローラ割当/タメ攻撃/ゲーム数値/画像・動画は追加していない。証跡 /workspace/.olca-cloud/results/mobile-input/。

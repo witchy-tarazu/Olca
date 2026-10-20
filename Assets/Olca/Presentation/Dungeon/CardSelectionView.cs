@@ -353,7 +353,8 @@ namespace Olca.Presentation.Dungeon
     public sealed class BasicAttackHud : UnityEngine.MonoBehaviour
     {
         private UnityEngine.UI.Text title, state;
-        private UnityEngine.UI.Button button;
+        private UnityEngine.UI.Button button, jumpButton, dashButton, cardButton;
+        private UnityEngine.GameObject exploration;
         public void Initialize(UnityEngine.Font font, System.Action tap, System.Func<int> shortPressFrames)
         {
             var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = UnityEngine.Vector2.one;
@@ -377,9 +378,38 @@ namespace Olca.Presentation.Dungeon
             var pointer = o.AddComponent<BasicAttackTapButton>(); pointer.Initialize(tap, System.Diagnostics.Stopwatch.GetTimestamp, shortPressFrames, System.Diagnostics.Stopwatch.Frequency); button.onClick.AddListener(pointer.Click);
             var label = Label("BasicAttackLabel",0,0,155,74,26); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
         }
-        public void Render(string key, string value, bool available)
+        public void InitializeExploration(UnityEngine.Font font, System.Action jump, System.Action dash, System.Action card)
         {
-            title.text = "基本攻撃 [" + (key ?? "未割当") + "]"; state.text = value; button.interactable = available;
+            exploration=new UnityEngine.GameObject("ExplorationTouchControls",typeof(UnityEngine.RectTransform));
+            exploration.transform.SetParent(transform,false);
+            UnityEngine.UI.Button Make(string name,string label,float x,System.Action action) {
+                var o=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));o.transform.SetParent(exploration.transform,false);
+                var r=(UnityEngine.RectTransform)o.transform;r.sizeDelta=new UnityEngine.Vector2(190,80);r.anchoredPosition=new UnityEngine.Vector2(x,0);
+                o.GetComponent<UnityEngine.UI.Image>().color=new UnityEngine.Color(.2f,.46f,.53f,.86f);
+                var b=o.GetComponent<UnityEngine.UI.Button>();b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};b.onClick.AddListener(()=>action());
+                var t=new UnityEngine.GameObject(name+"Label",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));t.transform.SetParent(o.transform,false);
+                var text=t.GetComponent<UnityEngine.UI.Text>();text.font=font;text.fontSize=26;text.text=label;text.color=UnityEngine.Color.white;text.alignment=UnityEngine.TextAnchor.MiddleCenter;text.raycastTarget=false;
+                var tr=text.rectTransform;tr.anchorMin=UnityEngine.Vector2.zero;tr.anchorMax=UnityEngine.Vector2.one;tr.offsetMin=tr.offsetMax=UnityEngine.Vector2.zero;return b;
+            }
+            jumpButton=Make("ExplorationJumpButton","ジャンプ",-110,jump);dashButton=Make("ExplorationDashButton","ダッシュ",110,dash);
+            cardButton=Make("TouchCardUseButton","カード",0,card);
+            cardButton.transform.SetParent(transform,false);((UnityEngine.RectTransform)cardButton.transform).anchoredPosition=new UnityEngine.Vector2(-80,5);
+            ((UnityEngine.RectTransform)cardButton.transform).sizeDelta=new UnityEngine.Vector2(190,60);
+            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,60);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,30);title.fontSize=22;
+            exploration.SetActive(false);
+        }
+        public void RenderExploration(bool available)
+        {
+            title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
+            transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
+            jumpButton.interactable=dashButton.interactable=available;
+        }
+        public void Render(string key, string value, bool available, bool canUseCard=false)
+        {
+            title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
+            transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
+            if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
+            title.text = "攻撃 [" + (key ?? "未割当") + "] / カード"; state.text = value; button.interactable = available;
             state.color = available ? new UnityEngine.Color(.65f,1f,.95f) : new UnityEngine.Color(.92f,.94f,.98f);
         }
     }

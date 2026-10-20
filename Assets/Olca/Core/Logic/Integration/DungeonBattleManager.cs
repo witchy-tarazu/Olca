@@ -402,12 +402,15 @@ namespace Olca.Core.Logic.Integration
     }
 
     /// <summary>1論理フレームの入力。押下イベントはそのフレームだけ有効。</summary>
-    public sealed class LogicalInput : IInputProvider
+    public sealed class LogicalInput : IInputProvider, IHorizontalTapInput
     {
         public bool HasInputSample { get; set; }
         public bool AnyKey { get; set; }
         public float Horizontal { get; set; }
         public float HorizontalDown { get; set; }
+        public float TouchHorizontalDown { get; set; }
+        public float HorizontalTap => TouchHorizontalDown;
+        public bool CancelTouchTap { get; set; }
         public float Vertical { get; set; }
         public bool JumpButtonDown { get; set; }
         public bool DashButton { get; set; }
@@ -422,7 +425,23 @@ namespace Olca.Core.Logic.Integration
         public bool MenuDecideButtonDown { get; set; }
         public bool MenuCancelButtonDown { get; set; }
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { HorizontalDown = 0; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+        public void ClearEdges() { HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+    }
+
+    /// <summary>指ごとの押下順だけを所有する。UI除外・座標・時計はUnity側で決める。</summary>
+    public sealed class TouchMovementState
+    {
+        private readonly List<KeyValuePair<long,int>> held = new List<KeyValuePair<long,int>>();
+        public int Direction => held.Count == 0 ? 0 : held[held.Count-1].Value;
+        public void Press(long id, int direction)
+        {
+            if(direction != -1 && direction != 1) throw new ArgumentOutOfRangeException(nameof(direction));
+            if(held.Exists(v=>v.Key==id)) return;
+            held.Add(new KeyValuePair<long,int>(id,direction));
+        }
+        public bool Contains(long id) => held.Exists(v=>v.Key==id);
+        public void Release(long id) { held.RemoveAll(v=>v.Key==id); }
+        public void Clear() { held.Clear(); }
     }
 
     /// <summary>入力を論理フレームに割り当て、描画停止後の追いつき中にも一度だけ消費する。</summary>
@@ -455,12 +474,16 @@ namespace Olca.Core.Logic.Integration
                 next.MenuConfirmButtonDown |= held.MenuConfirmButtonDown;
                 next.MenuDecideButtonDown |= held.MenuDecideButtonDown;
                 next.MenuCancelButtonDown |= held.MenuCancelButtonDown;
+                if (next.CancelTouchTap) held.TouchHorizontalDown = 0;
+                if (next.TouchHorizontalDown == 0) next.TouchHorizontalDown = held.TouchHorizontalDown;
                 if (next.HorizontalDown == 0) next.HorizontalDown = held.HorizontalDown;
                 held = next;
             }
             heldFrames = held.BasicAttackButton ? heldFrames + (advanceHeldTime ? 1 : 0) : 0;
             held.BasicAttackButtonHoldTime = heldFrames / (float)LogicalFrameClock.FramesPerSecond;
-            return held.Copy();
+            var result=held.Copy();
+            if(result.TouchHorizontalDown!=0) result.HorizontalDown=result.TouchHorizontalDown;
+            return result;
         }
         public void Release()
         {

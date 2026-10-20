@@ -8,6 +8,46 @@ using UnityEngine.InputSystem.LowLevel;
 
 namespace Olca.Unity
 {
+    /// <summary>OSによる指の取消をUIクリックへ転用しない。指ごとのEventSystemデータだけを取消す。</summary>
+    public sealed class TouchUiCancelGuard : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler
+    {
+        private static readonly HashSet<TouchUiCancelGuard> active=new HashSet<TouchUiCancelGuard>();
+        private static readonly Dictionary<(int Device,int Finger),int> canceled=new Dictionary<(int,int),int>();
+        public static void BeginTouch(int deviceId,int touchId){canceled.Remove((deviceId,touchId));}
+        private readonly Dictionary<int,UnityEngine.EventSystems.PointerEventData> presses=new Dictionary<int,UnityEngine.EventSystems.PointerEventData>();
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if(data==null)return;
+            if(data is UnityEngine.InputSystem.UI.ExtendedPointerEventData touch && touch.device!=null &&
+                canceled.TryGetValue((touch.device.deviceId,touch.touchId),out var frame) && frame>=Time.frameCount-1)
+                data.eligibleForClick=false;
+            presses[data.pointerId]=data;active.Add(this);
+        }
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if(data!=null)presses.Remove(data.pointerId);
+            if(data is UnityEngine.InputSystem.UI.ExtendedPointerEventData touch && touch.device!=null)canceled.Remove((touch.device.deviceId,touch.touchId));
+            if(presses.Count==0)active.Remove(this);
+        }
+        public static void CancelTouch(int deviceId,int touchId)
+        {
+            // 同一Input更新内の押下→取消は、EventSystemのPointerDownより先に届くことがある。
+            foreach(var key in canceled.Where(v=>v.Value<Time.frameCount-1).Select(v=>v.Key).ToArray())canceled.Remove(key);
+            canceled[(deviceId,touchId)]=Time.frameCount;
+            foreach(var guard in active.ToArray()) foreach(var data in guard.presses.Values)
+                if(data is UnityEngine.InputSystem.UI.ExtendedPointerEventData touch && touch.device?.deviceId==deviceId && touch.touchId==touchId)
+                    data.eligibleForClick=false;
+        }
+        public static void CancelAll()
+        {
+            foreach(var guard in active.ToArray())foreach(var data in guard.presses.Values)data.eligibleForClick=false;
+        }
+        private void OnDisable()
+        {
+            foreach(var data in presses.Values)data.eligibleForClick=false;presses.Clear();active.Remove(this);
+        }
+    }
+
     /// <summary>
     /// UnityEngine.Inputを使用した入力プロバイダー
     /// </summary>
@@ -17,6 +57,64 @@ namespace Olca.Unity
         private readonly Dictionary<ButtonControl, bool> buttons = new Dictionary<ButtonControl, bool>();
         private readonly Dictionary<InputDevice, UnityEngine.Vector2> sticks = new Dictionary<InputDevice, UnityEngine.Vector2>();
         private Olca.Core.Logic.Integration.LogicalInput eventState = new Olca.Core.Logic.Integration.LogicalInput();
+        private readonly Olca.Core.Logic.Integration.TouchMovementState touchMovement = new Olca.Core.Logic.Integration.TouchMovementState();
+        private readonly HashSet<long> physicalTouches = new HashSet<long>();
+        private readonly HashSet<long> blockedTouches = new HashSet<long>();
+        private bool touchMovementEnabled;
+        public bool SetTouchMovementEnabled(bool enabled)
+        {
+            if(touchMovementEnabled==enabled) return false;
+            touchMovementEnabled=enabled; QueueSnapshot(); return true;
+        }
+        private static long TouchKey(InputDevice device,int id) => ((long)device.deviceId<<32)|(uint)id;
+        private static bool IsTouchOverUi(UnityEngine.Vector2 position)
+        {
+            var system=UnityEngine.EventSystems.EventSystem.current;
+            if(system==null) return false;
+            var hits=new List<UnityEngine.EventSystems.RaycastResult>();
+            system.RaycastAll(new UnityEngine.EventSystems.PointerEventData(system){position=position},hits);
+            if(hits.Count>0) {
+                var button=hits[0].gameObject.GetComponentInParent<UnityEngine.UI.Button>();
+                if(button!=null&&button.GetComponent<TouchUiCancelGuard>()==null)button.gameObject.AddComponent<TouchUiCancelGuard>();
+            }
+            return hits.Count>0;
+        }
+        private void SnapshotTouches()
+        {
+            TouchUiCancelGuard.CancelAll();
+            touchMovement.Clear(); physicalTouches.Clear(); blockedTouches.Clear();
+            foreach(var screen in InputSystem.devices.OfType<Touchscreen>().Where(screen=>screen.enabled))
+                foreach(var touch in screen.touches) if(touch.press.isPressed) {
+                    long id=TouchKey(screen,touch.touchId.ReadValue()); physicalTouches.Add(id); blockedTouches.Add(id);
+                    TouchUiCancelGuard.CancelTouch(screen.deviceId,touch.touchId.ReadValue());
+                }
+        }
+        private void CaptureTouches(InputEventPtr evt,Touchscreen screen,out float down,out bool canceled)
+        {
+            down=0;canceled=false;
+            var seen=new HashSet<int>();
+            // 単指TouchStateイベントはprimaryTouchにだけマップされる。全画面状態も同じ入口で読む。
+            foreach(var touch in screen.touches.Prepend(screen.primaryTouch)) {
+                if(!touch.touchId.ReadValueFromEvent(evt,out int finger)||finger<=0||!seen.Add(finger)||
+                    !touch.phase.ReadValueFromEvent(evt,out var phase)) continue;
+                long id=TouchKey(screen,finger); int previous=touchMovement.Direction;
+                if(phase==UnityEngine.InputSystem.TouchPhase.Began) {
+                    TouchUiCancelGuard.BeginTouch(screen.deviceId,finger);
+                    physicalTouches.Add(id);
+                    if(!blockedTouches.Contains(id)) {
+                        touch.position.ReadValueFromEvent(evt,out var position);
+                        bool overUi=IsTouchOverUi(position);
+                        if(touchMovementEnabled&&!overUi) touchMovement.Press(id,position.x<Screen.width*.5f?-1:1);
+                        else blockedTouches.Add(id);
+                    }
+                } else if(phase==UnityEngine.InputSystem.TouchPhase.Ended||phase==UnityEngine.InputSystem.TouchPhase.Canceled) {
+                    if(phase==UnityEngine.InputSystem.TouchPhase.Canceled)TouchUiCancelGuard.CancelTouch(screen.deviceId,finger);
+                    canceled|=phase==UnityEngine.InputSystem.TouchPhase.Canceled && touchMovement.Contains(id);
+                    physicalTouches.Remove(id);blockedTouches.Remove(id);touchMovement.Release(id);
+                }
+                if(touchMovement.Direction!=previous&&touchMovement.Direction!=0) down=touchMovement.Direction;
+            }
+        }
         private bool capturing;
         private double eventClockOffset;
         private long pointerReleaseTimestamp;
@@ -101,7 +199,7 @@ namespace Olca.Unity
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseChanged;
 #endif
-            capturing = false; events.Clear();
+            capturing = false; events.Clear(); touchMovement.Clear(); physicalTouches.Clear(); blockedTouches.Clear();
         }
 #if UNITY_EDITOR
         private void EditorPauseChanged(UnityEditor.PauseState state)
@@ -111,11 +209,11 @@ namespace Olca.Unity
         { var result = events.ToArray(); events.Clear(); return result; }
         // スティック方向の合成ButtonControlは旧Input.anyKeyの物理ボタンに含めない。
         private static IEnumerable<ButtonControl> Buttons(InputDevice device)
-            => device.allControls.OfType<ButtonControl>().Where(button => !(button.parent is StickControl));
+            => device is Touchscreen ? System.Array.Empty<ButtonControl>() : device.allControls.OfType<ButtonControl>().Where(button => !(button.parent is StickControl));
         private static StickControl Stick(InputDevice device) => device is Gamepad pad ? pad.leftStick : (device as Joystick)?.stick;
         public void QueueSnapshot()
         {
-            buttons.Clear(); sticks.Clear();
+            SnapshotTouches(); buttons.Clear(); sticks.Clear();
             foreach (var device in InputSystem.devices)
             {
                 foreach (var button in Buttons(device)) buttons[button] = button.isPressed;
@@ -142,8 +240,8 @@ namespace Olca.Unity
                 if (Mathf.Abs(stick.y) >= .19f && Mathf.Abs(stick.y) > Mathf.Abs(y)) y = stick.y;
             }
             return new Olca.Core.Logic.Integration.LogicalInput {
-                HasInputSample = true, AnyKey = buttons.Values.Any(pressed => pressed),
-                Horizontal = x, Vertical = y, BasicAttackButton = Held("battle", "AttackPrimary"),
+                HasInputSample = true, AnyKey = physicalTouches.Count>0 || buttons.Values.Any(pressed => pressed),
+                Horizontal = touchMovement.Direction!=0 ? touchMovement.Direction : x, Vertical = y, BasicAttackButton = Held("battle", "AttackPrimary"),
                 DashButton = Held("exploration", "DashPrimary") || Held("exploration", "DashSecondary")
             };
         }
@@ -166,8 +264,13 @@ namespace Olca.Unity
                 if (stick.y.ReadUnprocessedValueFromEvent(evt, out float y)) position.y = y;
                 sticks[device] = position;
             }
+            int previousTouchCount=physicalTouches.Count;
+            float touchDown=0; bool touchCanceled=false;
+            if(device is Touchscreen screen) CaptureTouches(evt,screen,out touchDown,out touchCanceled);
             var next = BuildState();
-            next.HorizontalDown = eventState.Horizontal == 0 ? next.Horizontal : 0;
+            // タッチの短い押下/取消はキーボードの立ち上がりと独立に併合する。
+            next.TouchHorizontalDown=touchDown; next.CancelTouchTap=touchCanceled;
+            next.HorizontalDown = device is Touchscreen ? 0 : eventState.Horizontal == 0 ? next.Horizontal : 0;
             next.JumpButtonDown = !jump && Held("exploration", "JumpPrimary");
             next.CardUseButtonDown = !card && Held("battle", "CardPrimary");
             next.BasicAttackButtonDown = !basic && Held("battle", "AttackPrimary");
@@ -178,7 +281,7 @@ namespace Olca.Unity
             next.MenuConfirmButtonDown = (!enter && KeyHeld(Key.Enter)) || (!numpadEnter && KeyHeld(Key.NumpadEnter));
             next.MenuDecideButtonDown = !space && KeyHeld(Key.Space);
             next.MenuCancelButtonDown = !escape && KeyHeld(Key.Escape);
-            if (pointerWasPressed && buttons.TryGetValue(pointer.press, out var pointerNow) && !pointerNow)
+            if ((device is Touchscreen && physicalTouches.Count < previousTouchCount) || (pointerWasPressed && buttons.TryGetValue(pointer.press, out var pointerNow) && !pointerNow))
             { pointerReleaseTimestamp = timestamp; pointerReleaseRenderFrame = Time.frameCount; }
             events.Add(new TimestampedLogicalInput(timestamp, next)); eventState = next;
         }
