@@ -21,6 +21,28 @@ namespace Olca.Presentation.CustomScreen
         /// DungeonBattleController など外部コントローラーが購読して画面を閉じる処理を行う。
         /// </summary>
         public event System.Action OnCustomScreenConfirmed;
+        [SerializeField] private CardVisualEntry[] cardVisuals=System.Array.Empty<CardVisualEntry>();
+        public Sprite GetCardIllustration(string id)=>cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.Illustration;
+        private Sprite generatedSwordIcon;
+        public Sprite GetCardIcon(string id)
+        {
+            var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.CustomIcon;
+            if(assigned!=null||id!="sword")return assigned;
+            if(generatedSwordIcon==null)generatedSwordIcon=SwordMiniIcon.Create();
+            return generatedSwordIcon;
+        }
+        public void ConfigureCardVisuals(IEnumerable<CardVisualEntry> entries)
+        {
+            var values=(entries??System.Array.Empty<CardVisualEntry>()).ToArray();var seen=new HashSet<string>();
+            foreach(var value in values){
+                if(value==null||string.IsNullOrWhiteSpace(value.CardId)||!seen.Add(value.CardId))throw new System.ArgumentException("カード素材IDが不正または重複しています");
+                if(value.Illustration!=null&&value.Illustration==value.CustomIcon)throw new System.ArgumentException("本絵と専用miniは別Spriteが必要です");
+            }
+            cardVisuals=values.Select(v=>v.Copy()).ToArray();
+            foreach(var view in handCardViews)if(view!=null)view.RefreshArtwork();
+            if(customScreen!=null&&cursor!=null)UpdateCursorCardDisplay(cursor.CurrentIndex);
+        }
+
         [Header("カード配置")]
         [SerializeField] private Transform handCardContainer;
         [SerializeField] private GameObject handCardPrefab;
@@ -1064,6 +1086,7 @@ namespace Olca.Presentation.CustomScreen
         {
             if (customizeModeView != null && customizeModeView.IsActive)
             {
+                if(selectedCardImage!=null)selectedCardImage.sprite=null;
                 UpdateCustomizationPreview(cursorIndex);
                 return;
             }
@@ -1085,6 +1108,8 @@ namespace Olca.Presentation.CustomScreen
                 if (selectedCardImage != null)
                 {
                     selectedCardImage.color = Color.white;
+                    selectedCardImage.sprite=GetCardIllustration(cursorCard.Id);
+                    selectedCardImage.preserveAspect=true;
                 }
             }
             else if (cursorIndex == -1)
@@ -1105,6 +1130,7 @@ namespace Olca.Presentation.CustomScreen
                 if (selectedCardImage != null)
                 {
                     selectedCardImage.color = Color.white;
+                    selectedCardImage.sprite=null;
                 }
             }
             else
@@ -1118,6 +1144,7 @@ namespace Olca.Presentation.CustomScreen
                 if (selectedCardImage != null)
                 {
                     selectedCardImage.color = Color.white;
+                    selectedCardImage.sprite=null;
                 }
             }
         }
@@ -1185,6 +1212,8 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnDestroy()
         {
+            if(generatedSwordIcon!=null){var texture=generatedSwordIcon.texture;if(Application.isPlaying){Destroy(generatedSwordIcon);Destroy(texture);}else{DestroyImmediate(generatedSwordIcon);DestroyImmediate(texture);}}
+
             BindTransformations(null);
             if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
             // アニメーション用CancellationTokenをキャンセル

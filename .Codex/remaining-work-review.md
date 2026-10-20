@@ -593,3 +593,20 @@ GUI最終確認は /workspace/work/Olca-mobile-input-v2-proof-20261020 の独立
 途中の切断通知後、同じ環境のシェル/両MCP/同じPID19159・198663を確認して継続した。最終GUI error0/compilationFailed=false（警告1、履歴error24は保持）。Play中の再コンパイル後の初期化で空保存先によるStart失敗を観測したため、通常のPlay再起動と明示的なfixture保存先で復旧した。旧保存/認証/通信設定には触れない。Setup/Configureの応答タイムアウトは状態読取で確認し、未完了のfixtureのみ修正して再初期化した。新しい環境/再認証/ライセンス操作はない。原本差分0、旧保存JSON61件ハッシュ不変。GUIは再読込後の戦闘・Editor一時停止で維持。
 
 確認済みはEditorの仮想Touchscreen/Input System/実UIとEditMode試験。スマホ実機・ビルド・OS固有中断/復帰・安全領域・実指の感触は未確認でユーザー担当。新しいコントローラ割当/タメ攻撃/ゲーム数値/画像・動画は追加していない。証跡 /workspace/.olca-cloud/results/mobile-input/。
+
+
+## カスタムゲージ固定Sprite・カード素材別参照（2026-10-20）
+
+本人の拡縮撤去/素材差替え指定と、親からの単純UI図形の新規設計承認に基づく。現物はUnity標準32×32のBackground/UISpriteを縦50×750へ表示し、満タン時にTime.unscaledDeltaTimeでscale1〜1.05と白帯を動かしていた。bg_custom.pngにはカスタム/HP枠も含まれるため加工せず、ゲージの背景/フィルを独立のコード由来UI図形へ差し替えた。
+
+GaugeSpriteSetは128×1920の背景/通常フィル/満タン8枚を初回だけ生成し、View破棄でSprite/Textureを破棄する。8枚は異なるSprite/Textureで、FullRect/pivot/寸法は同じ。GaugeSpritePlaybackはBattleSystemの既存actionFrameの読み取り専用LogicalFrameで選択し、6フレーム/枚・48フレーム周期。scale/anchoredPositionの変更はない。Slider.fillRectをRectMask2Dとして使い、子の絵を50×750で固定して量をクリップする。半量でも絵が375へ伸縮しない。既存モデルの増加処理・速度・発動条件は無変更。満タン以外/消費/終了/解除は通常表示へ戻す。描画時間による0.3秒の独自減少表示も廃止し、確定済みモデル値に従う。
+
+CardVisualEntryのIllustration/CustomIconを別々のUnity参照としてCustomScreenViewへ追加。ConfigureCardVisualsは重複ID/同一Sprite兼用を拒否し、受理データをコピーする。手札miniと詳細本絵は別入口で取得し、欠落本絵はnullへクリアする。ソードminiはSwordMiniIconの独立した256×256の幾何学形状で、本絵の縮小/切抜きではない。大きい絵・コスト・説明・数値は独立。Coreカードの保存定義/効果/名称/数値を変更しない。
+
+UnityMCP console→EditMode→consoleは1840/1840成功、50.13秒、現在error0/compilationFailed=false（主Editor警告58）。追加7件は30/60/120fpsと追いつき処理の論理位相、停止/復帰/消費/再充填、Sprite8枚の独立性/固定寸法/pivot、半量クリップと外形scale保持、別素材参照と未受領/不正兼用拒否。参照試験の本絵は検査用の一時Spriteで、受領したソード本絵ではない。
+
+GUIは旧mobile-v2のBattleStart等を /workspace/work/Olca-gauge-proof-20261020 へ通常コピーして起動。実ContinueCheckpoint/手札クリック/Enterで復帰・消費し、専用SwordCustomIconの割当と本絵nullを確認した。通常論理進行中に8枚すべてを観測し、実Pauseで位相停止/Resumeで進行、消費後はGaugeFill、外寸/位置/scale不変を確認した。FHD1920×1080ではenergy論理50×750/実50×750、4K3840×2160では同論理50×750/実100×1500、双方1:15。空/半量/満タン/消費後の8枚を撮影し、実画像を確認。静止画はfixtureの量指定とモデル停止で正確な状態を固定したもので、製品数値の変更ではない。テスト追加GameViewサイズは正確に2件だけ削除し、元の選択へ戻した。
+
+生成Sprite原寸のPNGと、同じ背景/8枚を0.1秒ずつ重ねて循環する素材確認動画sprite-loop.mp4（128×1920、10fps、3.2秒/32フレーム）を準備した。動画は図形素材のループ確認用であり、スマホ実機やゲームプレイ録画ではない。FHD/4K実UIスクリーンショットは screens/。画像の伸縮/切貼りで素材を代用せず、ゲーム内と同じコード生成Spriteを描画した。証跡 /workspace/.olca-cloud/results/gauge-sprites/。
+
+本絵の唯一の阻害: 正規Library prepare_materializeで署名付き転送を取得したが、継承proxyによるsdmntprcentralus.oaiusercontent.comへのCONNECT403で停止。ファイルはこの環境へ未取得で、存在/読取/サイズ/hash/実画像を検証できず、未組込み。別proxy/直接IP/CA/TLS設定変更/推測API/他の共有操作への迂回はない。IDと期待hash等はlibrary-blocker.jsonに記録し、署名URL/tokenは成果物へ含めていない。ゲージと別参照構造/専用miniは独立して完了する。

@@ -35,11 +35,9 @@ namespace Olca.Presentation.Battle
 
         private Slider gaugeSlider;
         private Image gaugeFill;
-        private Image gaugeHighlight;
-        private Color normalGaugeColor;
-        private Vector3 normalGaugeScale;
+        private GaugeSpriteSet gaugeSprites;
+        private readonly GaugeSpritePlayback gaugePlayback = new GaugeSpritePlayback();
         private bool gaugeResetting;
-        private float gaugePulseTime;
 
         // ========== 定数 ==========
         private const float CUSTOM_SCREEN_HIDDEN_X = -900f;  // 左端接続を保ち、縦ゲージ枠を画面内に残す閉じ位置
@@ -93,60 +91,37 @@ namespace Olca.Presentation.Battle
             customScreenBackdrop.raycastTarget = false;
         }
 
-        // フィルの子として生成し、既存のゲージ配置や入力対象を変えない。
+        // 元の50×750の面内に描く。フィルは一定寸法のまま、Sliderの高さでクリップする。
         private void EnsureGaugeVisual()
         {
-            if (gaugeSlider != null || customGaugeContainer == null) return;
-            gaugeSlider = customGaugeContainer.GetComponentInChildren<Slider>(true);
-            if (gaugeSlider == null || gaugeSlider.fillRect == null) return;
-            gaugeFill = gaugeSlider.fillRect.GetComponent<Image>();
-            if (gaugeFill == null) return;
-            normalGaugeColor = gaugeFill.color;
-            normalGaugeScale = gaugeSlider.transform.localScale;
-            var highlight = new GameObject("FullGaugeHighlight", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            highlight.transform.SetParent(gaugeSlider.fillRect, false);
-            gaugeHighlight = highlight.GetComponent<Image>();
-            gaugeHighlight.color = new Color(1f, 1f, 1f, 0.65f);
-            gaugeHighlight.raycastTarget = false;
-            gaugeHighlight.gameObject.SetActive(false);
+            if(gaugeSlider!=null||customGaugeContainer==null)return;
+            gaugeSlider=customGaugeContainer.GetComponentInChildren<Slider>(true);
+            if(gaugeSlider==null||gaugeSlider.fillRect==null)return;
+            gaugeSprites=new GaugeSpriteSet();
+            var original=gaugeSlider.fillRect.GetComponent<Image>();
+            if(original!=null){original.enabled=false;original.raycastTarget=false;}
+            if(gaugeSlider.fillRect.GetComponent<RectMask2D>()==null)gaugeSlider.fillRect.gameObject.AddComponent<RectMask2D>();
+            var area=(RectTransform)gaugeSlider.fillRect.parent;
+            var energy=new GameObject("GaugeEnergy",typeof(RectTransform),typeof(CanvasRenderer),typeof(Image));
+            energy.transform.SetParent(gaugeSlider.fillRect,false);gaugeFill=energy.GetComponent<Image>();
+            var rect=gaugeFill.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,0);rect.pivot=new Vector2(.5f,0);
+            rect.anchoredPosition=Vector2.zero;rect.sizeDelta=area.rect.size;
+            gaugeFill.sprite=gaugeSprites.Fill;gaugeFill.color=Color.white;gaugeFill.type=Image.Type.Simple;gaugeFill.raycastTarget=false;
+            var background=gaugeSlider.transform.Find("Background")?.GetComponent<Image>();
+            if(background!=null){background.sprite=gaugeSprites.Track;background.color=Color.white;background.type=Image.Type.Simple;background.raycastTarget=false;}
         }
-
-        private void Update()
+        private void Update() => UpdateGaugeVisual();
+        private void UpdateGaugeVisual()
         {
-            if (!Olca.Unity.GameplayPause.IsPaused) UpdateGaugeVisual(Time.unscaledDeltaTime);
+            if(gaugeFill==null)return;
+            bool full=isActiveAndEnabled&&battleSystem!=null&&!battleSystem.IsGameOver&&battleSystem.CustomGauge.IsFull&&!gaugeResetting;
+            int frame=gaugePlayback.Sample(full,battleSystem?.LogicalFrame??0);
+            gaugeFill.sprite=frame<0?gaugeSprites.Fill:gaugeSprites.FullFrames[frame];
         }
-
-        private void UpdateGaugeVisual(float deltaTime)
-        {
-            if (gaugeFill == null) return;
-            bool full = isActiveAndEnabled && battleSystem != null
-                && !battleSystem.IsGameOver && battleSystem.CustomGauge.IsFull && !gaugeResetting;
-            if (!full)
-            {
-                ResetGaugeVisual();
-                return;
-            }
-
-            gaugePulseTime = Mathf.Repeat(gaugePulseTime + deltaTime, 0.5f);
-            float phase = gaugePulseTime / 0.5f;
-            float pulse = 0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f);
-            gaugeFill.color = new Color32(0xF3, 0x9C, 0x12, 0xFF);
-            gaugeSlider.transform.localScale = normalGaugeScale * (1f + 0.05f * pulse);
-            gaugeHighlight.gameObject.SetActive(true);
-            var rect = gaugeHighlight.rectTransform;
-            float y = phase * 0.84f;
-            rect.anchorMin = new Vector2(0f, y);
-            rect.anchorMax = new Vector2(1f, y + 0.16f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
         private void ResetGaugeVisual()
         {
-            gaugePulseTime = 0f;
-            if (gaugeFill != null) gaugeFill.color = normalGaugeColor;
-            if (gaugeSlider != null) gaugeSlider.transform.localScale = normalGaugeScale;
-            if (gaugeHighlight != null) gaugeHighlight.gameObject.SetActive(false);
+            gaugePlayback.Reset();
+            if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
         private void OnBattleEnded(BattleResult result) => ResetGaugeVisual();
@@ -178,7 +153,7 @@ namespace Olca.Presentation.Battle
                 if (slider != null)
                     slider.value = battleSystem.CustomGauge.NormalizedGauge;
             }
-            UpdateGaugeVisual(0f);
+            UpdateGaugeVisual();
             // フィールド・敵の更新は GameFieldView.RefreshBattleField() が担当
         }
 
@@ -358,23 +333,10 @@ namespace Olca.Presentation.Battle
             var slider = customGaugeContainer.GetComponentInChildren<Slider>();
             if (slider == null) return;
 
-            float resetDuration = 0.3f; // 0.3秒で急速にリセット
-            float elapsed = 0f;
-            float startValue = slider.value;
-
-            while (elapsed < resetDuration)
-            {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
-                float t = elapsed / resetDuration;
-                float easedT = EaseInQuad(t);
-
-                slider.value = Mathf.Lerp(startValue, 0f, easedT);
-
-                await Olca.Unity.GameplayPause.NextFrame(ct);
-            }
-
-            // 最終値を保証
-            slider.value = 0f;
+            // 消費量はモデルが確定済み。描画時間による独自の減少アニメーションを作らない。
+            ct.ThrowIfCancellationRequested();
+            slider.value=battleSystem?.CustomGauge.NormalizedGauge??0;
+            await UniTask.CompletedTask;
         }
 
         // ========== イージング関数 ==========
@@ -397,7 +359,7 @@ namespace Olca.Presentation.Battle
         // ========== イベントハンドラー ==========
         private void OnGaugeChanged(float newValue)
         {
-            UpdateGaugeVisual(0f);
+            UpdateGaugeVisual();
             if (!isCustomScreenOpen && customGaugeContainer != null)
             {
                 var slider = customGaugeContainer.GetComponentInChildren<Slider>();
@@ -422,6 +384,64 @@ namespace Olca.Presentation.Battle
 
             DetachBattleEvents();
             ResetGaugeVisual();
+            gaugeSprites?.Dispose();gaugeSprites=null;
+        }
+    }
+}
+
+namespace Olca.Presentation.Battle
+{
+    /// <summary>単純なUI図形から生成する固定外形の独立Sprite。既存イラストの加工はしない。</summary>
+    public sealed class GaugeSpriteSet : System.IDisposable
+    {
+        public const int Width=128,Height=1920;
+        public Sprite Track{get;}
+        public Sprite Fill{get;}
+        public Sprite[] FullFrames{get;}
+        private readonly System.Collections.Generic.List<Sprite> owned=new System.Collections.Generic.List<Sprite>();
+        public GaugeSpriteSet()
+        {
+            Track=Create("GaugeTrack",-2);Fill=Create("GaugeFill",-1);
+            FullFrames=new Sprite[GaugeSpritePlayback.FrameCount];
+            for(int i=0;i<FullFrames.Length;i++)FullFrames[i]=Create("GaugeFull_"+i,i);
+        }
+        private static bool Inside(int x,int y,int inset)
+        {
+            const int corner=14;
+            return x>=inset&&x<Width-inset&&y>=inset&&y<Height-inset&&
+                x+y>=inset*2+corner&&Width-1-x+y>=inset*2+corner&&
+                x+Height-1-y>=inset*2+corner&&Width-1-x+Height-1-y>=inset*2+corner;
+        }
+        private Sprite Create(string name,int frame)
+        {
+            var pixels=new Color32[Width*Height];
+            for(int y=0;y<Height;y++){
+                float delta=Mathf.Abs(y-frame*Height/8f);delta=Mathf.Min(delta,Height-delta);
+                float light=frame>=0?Mathf.Exp(-delta*delta/(260f*260f)):0;
+                for(int x=0;x<Width;x++){
+                    Color color=Color.clear;
+                    if(frame==-2&&Inside(x,y,4)){
+                        color=new Color(.055f,.13f,.18f,.7f);
+                        if(!Inside(x,y,7))color=new Color(.33f,.88f,.94f,.85f);
+                        else if(!Inside(x,y,14)&&Inside(x,y,12))color=new Color(.28f,.69f,.76f,.45f);
+                        if(y%(Height/12)<3&&(x<26||x>Width-27))color=new Color(.5f,.94f,.98f,.55f);
+                    }else if(frame!=-2&&Inside(x,y,16)){
+                        float middle=1-Mathf.Abs(x-Width*.5f)/(Width*.5f);
+                        color=new Color(.06f+.10f*middle,.33f+.19f*middle,.43f+.18f*middle,.82f);
+                        if(x%24<2)color=Color.Lerp(color,new Color(.3f,.82f,.88f,.9f),.3f);
+                        if(frame>=0)color=Color.Lerp(color,new Color(.68f,1f,1f,.98f),light*.65f);
+                    }
+                    pixels[y*Width+x]=color;
+                }
+            }
+            var texture=new Texture2D(Width,Height,TextureFormat.RGBA32,false){name=name,filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp,hideFlags=HideFlags.HideAndDontSave};
+            texture.SetPixels32(pixels);texture.Apply(false,true);
+            var sprite=Sprite.Create(texture,new Rect(0,0,Width,Height),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=name;sprite.hideFlags=HideFlags.HideAndDontSave;owned.Add(sprite);return sprite;
+        }
+        public void Dispose()
+        {
+            foreach(var sprite in owned){var texture=sprite.texture;if(Application.isPlaying){Object.Destroy(sprite);Object.Destroy(texture);}else{Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}}
+            owned.Clear();
         }
     }
 }

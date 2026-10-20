@@ -116,3 +116,20 @@ namespace Olca.Core.Logic.Battle
         public event Action OnGaugeFull;
     }
 }
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>満タン演出のフレーム選択。参照回数や描画fpsでは進めない。</summary>
+    public sealed class GaugeSpritePlayback
+    {
+        public const int FrameCount=8, FramesPerSprite=6;
+        private long? start;
+        public int Sample(bool full,long logicalFrame)
+        {
+            if(!full){Reset();return -1;}
+            if(!start.HasValue||logicalFrame<start.Value)start=logicalFrame;
+            return (int)((logicalFrame-start.Value)/FramesPerSprite%FrameCount);
+        }
+        public void Reset(){start=null;}
+    }
+}

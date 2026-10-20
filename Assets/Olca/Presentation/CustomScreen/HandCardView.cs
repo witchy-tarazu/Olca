@@ -72,11 +72,18 @@ namespace Olca.Presentation.CustomScreen
             this.Card = card;
             this.parentView = parent;
 
+            RefreshArtwork();
+
             // カード情報表示（コストのみ）
             costText.text = $"{card.GetFinalCost()}";
 
             // クリックイベント
             cardButton.onClick.AddListener(() => parentView.OnCardClicked(card));
+        }
+
+        public void RefreshArtwork()
+        {
+            if(cardImage!=null)cardImage.sprite=parentView==null?null:parentView.GetCardIcon(Card?.Id);
         }
 
         /// <summary>
@@ -218,6 +225,43 @@ namespace Olca.Presentation.CustomScreen
 
             destroyCts?.Cancel();
             destroyCts?.Dispose();
+        }
+    }
+}
+
+namespace Olca.Presentation.CustomScreen
+{
+    [System.Serializable]
+    public sealed class CardVisualEntry
+    {
+        public string CardId;
+        public Sprite Illustration;
+        public Sprite CustomIcon;
+        public CardVisualEntry Copy()=>new CardVisualEntry{CardId=CardId,Illustration=Illustration,CustomIcon=CustomIcon};
+    }
+}
+
+namespace Olca.Presentation.CustomScreen
+{
+    /// <summary>カスタム画面専用の剣記号。本絵の縮小・切抜きではなくUI図形として独立制作する。</summary>
+    public static class SwordMiniIcon
+    {
+        public static Sprite Create()
+        {
+            const int size=256;var pixels=new Color32[size*size];
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++){
+                float t=(x-85)*.7f+(y-112)*.714f,n=(x-85)*.714f-(y-112)*.7f;
+                Color color=Color.clear;
+                if(t>=0&&t<155&&Mathf.Abs(n)<11*(1-t/165))color=new Color(.7f,.98f,1f,1);
+                if(t>=0&&t<140&&Mathf.Abs(n)<3)color=new Color(1,1,1,1);
+                if(Mathf.Abs(t)<5&&Mathf.Abs(n)<34)color=new Color(.2f,.82f,.9f,1);
+                if(t< -5&&t> -34&&Mathf.Abs(n)<6)color=new Color(.15f,.55f,.65f,1);
+                if((t+38)*(t+38)+n*n<35)color=new Color(.65f,.97f,1,1);
+                pixels[y*size+x]=color;
+            }
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,false){name="SwordCustomIcon",filterMode=FilterMode.Bilinear,hideFlags=HideFlags.HideAndDontSave};
+            texture.SetPixels32(pixels);texture.Apply(false,true);
+            var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name="SwordCustomIcon";sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
         }
     }
 }

@@ -34,6 +34,8 @@ namespace Olca.Core.Logic.Battle
         private long actionTimeUnits;
         private long actionFrame;
         internal long ActionFrame => actionFrame;
+        /// <summary>表示が参照する戦闘の論理時刻。停止中は進まない。</summary>
+        public long LogicalFrame => actionFrame;
         private int resolutionDepth;
         private bool resolutionRequested;
 

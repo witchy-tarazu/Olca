@@ -288,6 +288,71 @@ namespace Olca.Tests.Application
             } finally { transformations.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        [TestCase(30,false)][TestCase(60,false)][TestCase(120,false)][TestCase(30,true)]
+        public void 満タンSpriteは論理時刻だけでループし停止復帰消費で正しく切り替わる(int fps,bool stall)
+        {
+            var playback=new GaugeSpritePlayback();var b=CreateBattleSystem();b.CustomGauge.SetGaugeMs(10000);
+            Assert.AreEqual(0,playback.Sample(true,b.LogicalFrame));
+            var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();long previous=0;
+            System.Action<long,int> tick=(frame,ms)=>{b.TickFrame(ms);playback.Sample(b.CustomGauge.IsFull,b.LogicalFrame);};
+            if(stall){clock.Accumulate(5000000);clock.Drain(tick,3);previous=5000000;}
+            for(int render=1;previous<10000000;render++){
+                long now=System.Math.Min(10000000,(stall?5000000:0)+render*10000000L/fps);clock.Accumulate(now-previous);previous=now;clock.Drain(tick,3);
+                playback.Sample(true,b.LogicalFrame);playback.Sample(true,b.LogicalFrame);
+            }
+            while(clock.PendingFrames>0)clock.Drain(tick,3);
+            Assert.AreEqual(60,b.LogicalFrame);Assert.AreEqual(2,playback.Sample(true,b.LogicalFrame));Assert.AreEqual(10000,b.CustomGauge.CurrentGaugeMs);
+            b.Pause();for(int n=0;n<60;n++)b.TickFrame(16);Assert.AreEqual(2,playback.Sample(true,b.LogicalFrame));
+            b.Resume();for(int n=0;n<6;n++)b.TickFrame(16);Assert.AreEqual(3,playback.Sample(true,b.LogicalFrame));
+            b.CustomGauge.Reset();Assert.AreEqual(-1,playback.Sample(b.CustomGauge.IsFull,b.LogicalFrame));
+            b.CustomGauge.SetGaugeMs(10000);Assert.AreEqual(0,playback.Sample(true,b.LogicalFrame));
+        }
+        [Test]
+        public void ゲージ素材は八枚独立Spriteで寸法とpivotがすべて同じ()
+        {
+            using var sprites=new Olca.Presentation.Battle.GaugeSpriteSet();Assert.AreEqual(8,sprites.FullFrames.Length);
+            Assert.AreEqual(8,sprites.FullFrames.Distinct().Count());
+            foreach(var sprite in sprites.FullFrames.Concat(new[]{sprites.Track,sprites.Fill})){
+                Assert.AreEqual(128,sprite.rect.width);Assert.AreEqual(1920,sprite.rect.height);Assert.AreEqual(new UnityEngine.Vector2(64,960),sprite.pivot);
+            }
+        }
+        [Test]
+        public void ゲージ表示は満タンと解除でも外寸scaleを変えず半量で素材を縦伸縮しない()
+        {
+            var root=new UnityEngine.GameObject("fixed-gauge-test",typeof(UnityEngine.RectTransform));root.SetActive(false);
+            var sliderObject=new UnityEngine.GameObject("Slider",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Slider));sliderObject.transform.SetParent(root.transform,false);
+            var sr=(UnityEngine.RectTransform)sliderObject.transform;sr.sizeDelta=new UnityEngine.Vector2(100,750);sr.localScale=new UnityEngine.Vector3(1.1f,.9f,1);
+            var area=new UnityEngine.GameObject("FillArea",typeof(UnityEngine.RectTransform));area.transform.SetParent(sliderObject.transform,false);((UnityEngine.RectTransform)area.transform).sizeDelta=new UnityEngine.Vector2(50,750);
+            var fill=new UnityEngine.GameObject("Fill",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));fill.transform.SetParent(area.transform,false);
+            var background=new UnityEngine.GameObject("Background",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));background.transform.SetParent(sliderObject.transform,false);
+            ((UnityEngine.RectTransform)fill.transform).sizeDelta=UnityEngine.Vector2.zero;
+            var slider=sliderObject.GetComponent<UnityEngine.UI.Slider>();slider.direction=UnityEngine.UI.Slider.Direction.BottomToTop;slider.fillRect=(UnityEngine.RectTransform)fill.transform;
+            var view=root.AddComponent<Olca.Presentation.Battle.BattleView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            view.GetType().GetField("customGaugeContainer",flags).SetValue(view,(UnityEngine.RectTransform)root.transform);
+            var b=CreateBattleSystem();try{
+                root.SetActive(true);view.Initialize(b);b.CustomGauge.SetGaugeMs(5000);view.Refresh();
+                var energy=fill.transform.Find("GaugeEnergy").GetComponent<UnityEngine.UI.Image>();Assert.AreEqual(750,energy.rectTransform.rect.height);Assert.AreEqual(375,slider.fillRect.rect.height);
+                b.CustomGauge.SetGaugeMs(10000);view.Refresh();var first=energy.sprite;
+                for(int n=0;n<6;n++)b.TickFrame(16);view.Refresh();Assert.AreNotSame(first,energy.sprite);
+                b.Pause();for(int n=0;n<30;n++)b.TickFrame(16);view.Refresh();var stopped=energy.sprite;view.Refresh();Assert.AreSame(stopped,energy.sprite);
+                b.CustomGauge.Reset();view.Refresh();Assert.AreEqual("GaugeFill",energy.sprite.name);Assert.AreEqual(new UnityEngine.Vector3(1.1f,.9f,1),sr.localScale);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 本絵と専用miniは別参照で未受領の本絵を生成済みにしない()
+        {
+            var root=new UnityEngine.GameObject("separate-card-art");root.SetActive(false);var view=root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
+            var a=new UnityEngine.Texture2D(16,16);var b=new UnityEngine.Texture2D(16,16);var art=UnityEngine.Sprite.Create(a,new UnityEngine.Rect(0,0,16,16),UnityEngine.Vector2.zero);var icon=UnityEngine.Sprite.Create(b,new UnityEngine.Rect(0,0,16,16),UnityEngine.Vector2.zero);
+            try{
+                Assert.IsNull(view.GetCardIllustration("sword"));var generated=view.GetCardIcon("sword");Assert.IsNotNull(generated);Assert.AreEqual(256,generated.texture.width);
+                var entry=new Olca.Presentation.CustomScreen.CardVisualEntry{CardId="sword",Illustration=art,CustomIcon=icon};view.ConfigureCardVisuals(new[]{entry});entry.CardId="changed";
+                Assert.AreSame(art,view.GetCardIllustration("sword"));Assert.AreSame(icon,view.GetCardIcon("sword"));Assert.IsNull(view.GetCardIcon("unknown"));
+                Assert.Throws<System.ArgumentException>(()=>view.ConfigureCardVisuals(new[]{new Olca.Presentation.CustomScreen.CardVisualEntry{CardId="sword",Illustration=art,CustomIcon=art}}));
+                Assert.AreSame(icon,view.GetCardIcon("sword"));
+                view.ConfigureCardVisuals(null);Assert.IsNull(view.GetCardIllustration("sword"));Assert.AreSame(generated,view.GetCardIcon("sword"));
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(art);UnityEngine.Object.DestroyImmediate(icon);UnityEngine.Object.DestroyImmediate(a);UnityEngine.Object.DestroyImmediate(b);}
+        }
+
         [Test]
         public void OSのタッチ取消は同じ指のUIクリックだけを取り消し別指は残す()
         {
