@@ -1353,7 +1353,7 @@ namespace Olca.Tests.Integration
         {
             var defs = Definitions(damage); io = new FaultIo(); store = new Olca.Unity.FileCheckpointStore(defs, directory, io);
             session = new DungeonCheckpointSession(defs, store);
-            manager = new DungeonBattleManager(Map(damage), new PlayerCharacter(100), Deck(), new MockRandomProvider(), new MockLogger(), checkpoints: session);
+            manager = new DungeonBattleManager(Map(damage), new PlayerCharacter(100, poiseRecoveryDelayFrames: 180), Deck(), new MockRandomProvider(), new MockLogger(), checkpoints: session);
             Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked, manager.Dungeon.CheckpointError);
         }
         [SetUp] public void Setup() => directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-obstacle-checkpoint-" + System.Guid.NewGuid().ToString("N"));
@@ -2440,10 +2440,11 @@ namespace Olca.Tests.Integration
             objects.Clear();
             if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
         }
-        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null)
+        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null)
         {
             var host = new UnityEngine.GameObject("floor-controller-fixture"); host.SetActive(false); objects.Add(host);
             var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            if (recoveryFrames.HasValue) Set(controller, "playerPoiseRecoveryFrames", recoveryFrames.Value);
             controller.ConfigureCheckpointDirectory(directory); controller.ConfigureGameplaySettingsDirectory(System.IO.Path.Combine(directory,"settings")); controller.ConfigureSimulationSeed(7);
             if (maps != null) {
                 var deck = (Deck)controller.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(controller, null);
@@ -2469,6 +2470,32 @@ namespace Olca.Tests.Integration
                 if (!enemy.IsDead && !enemy.IsSummoned) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
             return choices;
         }
+        [TestCase(null, 180)] [TestCase(60, 60)]
+        public void 通常出撃の自然回復値は保存復帰後も有効で期限に蓄積を一括回復する(int? configured, int expected)
+        {
+            var controller = Start(new[] { DungeonConfig.CreateTestDungeon(20, 30, 2) }, configured);
+            Assert.AreEqual(expected, Model(controller).Dungeon.Player.PoiseRecoveryDefinitionFrames);
+            ToBattle(controller);
+            Assert.IsTrue(controller.TryRestoreMemoryCheckpoint(out var error), error);
+            var battle = Model(controller).CurrentBattle;
+            var player = battle.Player;
+            Assert.AreEqual(expected, player.PoiseRecoveryDefinitionFrames);
+            foreach (var enemy in battle.Enemies) enemy.ApplyStun(60000);
+            battle.Resume(BattlePauseReason.CustomScreen);
+            battle.RunLogicalFrame(() => { player.TakeDamage(1, poiseDamage: 7); battle.TickFrame(17); });
+            Assert.AreEqual(expected, player.PoiseRecoveryRemainingFrames);
+            controller.SetUserPaused(true);
+            for (int i = 0; i < 20; i++) Tick(controller);
+            Assert.AreEqual(expected, player.PoiseRecoveryRemainingFrames);
+            controller.SetUserPaused(false);
+            for (int i = 0; i < expected - 1; i++) battle.TickFrame(17);
+            Assert.AreEqual(7, player.AccumulatedDamage);
+            Assert.AreEqual(1, player.PoiseRecoveryRemainingFrames);
+            battle.TickFrame(17);
+            Assert.AreEqual(0, player.AccumulatedDamage);
+            Assert.AreEqual(0, player.PoiseRecoveryRemainingFrames);
+        }
+
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo
         {
             public string Fault;
@@ -2550,7 +2577,8 @@ namespace Olca.Tests.Integration
         public void 終端保存失敗中は旧モデルとファイルを維持し再試行後だけ描画と入力を切り替える(bool jumping)
         {
             var controller = Start(new[] { Empty(3), DungeonConfig.CreateTestDungeon(8) });
-            var old = Model(controller); old.Dungeon.Player.TakeDamage(37);
+            // 階層引継ぎ用のHP初期条件。戦闘外の強靭度削りは作らない。
+            var old = Model(controller); old.Dungeon.Player.TakeDamage(37, affectsPoise: false);
             int clears = 0, transfers = 0; old.OnDungeonClearCompleted += _ => clears++;
             old.OnFloorCompleted += () => { transfers++; Assert.AreEqual(1, Store(controller).Read().FloorIndex); };
             var io = new FaultIo { Fail = true }; Set(Store(controller), "io", io);

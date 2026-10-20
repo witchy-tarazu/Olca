@@ -367,3 +367,14 @@ ThreadAbort切り分け: editor-restart.logの273187行付近で「Reloading ass
 実画面検証: 通常Controllerへ時刻付きRightArrow/LeftArrowの短い入力を入れ、2→3→2→3→2→3→2の6移動を確認。移動中に観測したspriteはすべてmove_01/02、最終spriteはidleへ戻る。最終動画 /workspace/.olca-cloud/results/normal-move-midpoint/normal.mp4 は486384 bytes、SHA256 d178e79a1692284baaa2d79b5ae0da004ef39730f6db17bba16c149e650f090f。1920×1080の実GameViewから109フレームを取得、取得範囲5.463456秒、実取得19.7677fps。実取得時刻を使い、末尾50ms保持＋1枚重複のみで、拡大縮小・補間なし。runtime-verification.json、normal.csv、render-source-hashes.json、video-metadata.jsonも保持。画面側consoleErrors=0、compilationFailed=false。初回の長いキー保持と描画遅れを含む撮影はattempt1〜3として別保全し、最終成果物へ混ぜていない。
 
 動画共有は未完了。継続共有承認を踏まえてwitchy-tarazu/OlcaへのUTF-8 Base64 blob作成を1回実行したが、自動承認審査が「一般的な保留解除のみで、この動画と送信先の明示承認がない」として拒否した。操作は未実行とされ、再試行・迂回せず動画をローカルに保全する。コード公開の成否とは分離する。
+
+
+## 通常出撃への自然回復仮値の接続（2026-10-20）
+
+最新の「細かな仮値を決めてよい」という許可に従い、§7で確定済みの自然回復規則へ通常プレイヤーの値を供給する。DungeonBattleControllerの新規出撃時に180論理フレーム（3秒）を渡す。InspectorのplayerPoiseRecoveryFramesで調整可能。Coreの未指定互換性、旧保存のnull、復帰時の保存定義優先は維持する。敵の強靭度/回復値、独立のスタンドアロン確認シーンはこの単位の対象外。
+
+通常探索の即時HP障害物はHP量を強靭度へ暗黙加算していたため、回復待ち設定を有効にすると探索中の一時待ち状態が保存を阻害し得る。即時HP型の削りは仮値0として分離し、障害物自身の停止/拘束経路は維持する。障害物チェックポイント回帰のプレイヤーにも180を設定して、接触→保存→復帰を検証した。階層保存失敗/再試行fixtureのHP初期化はaffectsPoise:falseへ明示した。
+
+追加したControllerテストは既定180/調整60について、出撃→実ファイルの戦闘開始保存→復帰→正の削り→ポーズ中停止→期限直前維持→期限一括リセットを確認。初回は新規2件成功・既存階層fixture2件失敗（1704/1706）で、上記のHP初期化を直した後は1706/1706成功（29.54秒、スキップ0）。Unity MCP console→EditMode→console、consoleErrors=0、compilationFailed=false、既存警告14件。証跡: /workspace/.olca-cloud/results/player-poise-default/。
+
+先の通常移動動画共有は自動承認レビューによる再拒否後、停止を維持する。新しい確認素材はローカル保全のみとし、アップロードしない。

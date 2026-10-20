@@ -652,7 +652,8 @@ namespace Olca.Core.Logic.Dungeon
             // 即時ダメージの場合はプレイヤーHPを減らす
             if (penaltyInfo.PenaltyType == ObstaclePenaltyType.ImmediateDamage)
             {
-                playerCharacter.TakeDamage(penaltyInfo.Damage);
+                // 即時HPペナルティの強靭度削りは仮値0。探索停止は障害物自身の処理が担う。
+                playerCharacter.TakeDamage(penaltyInfo.Damage, affectsPoise: false);
                 logger.LogInfo($"[Dungeon] 障害物ダメージ: {penaltyInfo.Damage}");
 
             }

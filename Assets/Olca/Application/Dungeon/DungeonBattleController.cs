@@ -38,6 +38,8 @@ namespace Olca.Application.Dungeon
         [SerializeField] private int dungeonCellCount = 20;
         [SerializeField] private int playerMaxHp = 100;
         [SerializeField] private int playerAttackPower = 10;
+        [Tooltip("正の強靭度削りを受けなくなってから蓄積をリセットする論理フレーム数。仮値180=3秒。新規出撃に適用する。")]
+        [SerializeField, Min(1)] private int playerPoiseRecoveryFrames = 180;
         [SerializeField] private float dashDistanceCells = 3f;  // ダッシュで進むマス数
         [SerializeField] private float dashCooldown = 0.1f;   // ダッシュのクールタイム（秒）
 
@@ -250,7 +252,8 @@ namespace Olca.Application.Dungeon
             var playerCharacter = new PlayerCharacter(
                 maxHp: playerMaxHp,
                 initialPosition: new Vector2Int(0, 0),
-                attackPower: playerAttackPower);
+                attackPower: playerAttackPower,
+                poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
 
             var cardFactory = new SimpleCardFactory();
             var recipeProvider = new SimpleFusionRecipeProvider();
