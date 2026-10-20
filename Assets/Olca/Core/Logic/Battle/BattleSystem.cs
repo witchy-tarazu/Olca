@@ -145,13 +145,6 @@ namespace Olca.Core.Logic.Battle
             customScreen.OnConfirmed += OnCustomScreenConfirmed;
             customScreen.OnScreenClosed += OnCustomScreenClosed;
 
-            // プレイヤー移動時にパネル効果を適用
-            playerMovement.OnMoved += OnPlayerMoved;
-        }
-
-        private void OnPlayerMoved(Vector2Int newPos, Vector2Int oldPos)
-        {
-            panelEffects.ApplyOnEnterEffect(player, newPos);
         }
 
         private void OnPlayerPositionChanged(Vector2Int position)
@@ -159,7 +152,18 @@ namespace Olca.Core.Logic.Battle
             var previous = previousPlayerPosition;
             previousPlayerPosition = position;
             if (!IsGameOver && !player.IsDead && previous != position)
-                panelEffects.ApplyOnLeaveEffect(player.TerrainState, previous);
+            {
+                BeginResolution();
+                try
+                {
+                    panelEffects.ApplyOnLeaveEffect(player.TerrainState, previous);
+                    // 通常移動以外の位置変更も同じ進入処理を通し、通知を二重購読しない。
+                    if (enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == position))
+                        panelEffects.ApplyOnEnemyEnterEffect(enemies, player, position);
+                    else panelEffects.ApplyOnEnterEffect(player, position);
+                }
+                finally { EndResolution(); }
+            }
         }
 
         private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
@@ -593,7 +597,6 @@ namespace Olca.Core.Logic.Battle
             player.OnDeath -= OnPlayerDeath;
             player.OnStaggered -= OnPlayerStaggered;
             playerMovement.InterruptNormalMove();
-            playerMovement.OnMoved -= OnPlayerMoved;
             customScreen.OnScreenOpened -= OnTransformationPhaseOpened;
             customScreen.OnConfirmed -= OnCustomScreenConfirmed;
             customScreen.OnScreenClosed -= OnCustomScreenClosed;

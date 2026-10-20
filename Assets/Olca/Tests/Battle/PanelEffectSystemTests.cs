@@ -8,6 +8,32 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class PanelEffectSystemTests
     {
+        [TestCase(false)] [TestCase(true)]
+        public void 通常移動外のプレイヤー位置変更も進入処理を一回だけ適用する(bool floating)
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(1,0)); p.TerrainState.IsFloating = floating;
+            var target = new Vector2Int(2,0);
+            var battle = new BattleSystem(p, new System.Collections.Generic.List<Enemy>{new Enemy("e","敵",50,ElementType.None,new Vector2Int(5,0))},new Deck());
+            battle.ConfigureDefaultHitInvincibility(600); battle.Field.ChangePanelType(target,PanelType.Magma);
+            int events=0; battle.PanelEffects.OnPanelEffectApplied += (_,t)=>{if(t==PanelType.Magma)events++;};
+            battle.RunLogicalFrame(()=>p.MoveTo(target));
+            Assert.AreEqual(floating?100:95,p.CurrentHp); Assert.AreEqual(!floating,p.IsInvincible);
+            Assert.AreEqual(1,events); Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(target));
+            battle.Field.ChangePanelType(target,PanelType.Magma); p.MoveTo(target);
+            Assert.AreEqual(1,events); Assert.AreEqual(PanelType.Magma,battle.Field.GetPanelType(target));
+        }
+
+        [Test]
+        public void 同居位置へのプレイヤー進入も敵の判定を終えてからマグマを消費する()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var target=new Vector2Int(2,0);
+            var e=new Enemy("e","敵",50,ElementType.None,target);
+            var battle=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck());
+            battle.Field.ChangePanelType(target,PanelType.Magma);
+            battle.RunLogicalFrame(()=>p.MoveTo(target));
+            Assert.AreEqual(95,p.CurrentHp);Assert.AreEqual(45,e.CurrentHp);Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(target));
+        }
+
         [Test]
         public void 敵の移動先のマグマは同居全員を個別判定して一回だけ消費する()
         {
