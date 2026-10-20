@@ -312,3 +312,6 @@ PlayerCharacterは通常論理フレーム内の集中付与・解除を予約�
 実画面確認: 同環境の既存GUI Editor PID 19159へ既存ソース24ファイルを同期し、通常DungeonBattleController・実Enter・BattleSessionのカード入力でHP50→40→25、集中の一度消費を確認。検証用攻撃10と既存集中倍率1.5を注入したfixtureであり、製品データの追加ではない。結果 ui-verify.json、画像 normal-gameview.png（1920×1080、436207 bytes）、SHA256 5bd8de4addbef7d9df8961d97d42f0012f65f9b69546657d5581670ce9d0e7b5。画像は /workspace/.olca-cloud/results/concentrate-frame-boundary/ 配下。セットアップの応答タイムアウト後は状態を読み、完了済みを確認して二重実行を避けた。
 
 画像の共有は未完了。直接GitHub APIはForbiddenで停止。接続ツールの読み取り成功後、従来形式のUTF-8 Base64 blob作成を試みたが、自動承認審査が画像と送信先witchy-tarazu/Olcaへの明示承認不足を理由に拒否した。画像共有操作は再試行せず、ローカル成果物を保持する。コード公開の成否とは分離する。
+
+
+画像共有の後続結果（2026-10-20）: ユーザーの対象画像への追加承認後、同じGitHub接続ツールでのblob作成が成功した。blob ID 985f17c2bba70847529ec48ef57d45c27daf34a7、UTF-8 Base64を1回復号すると元PNG（436207 bytes、1920×1080）になる。元PNG SHA256は5bd8de4addbef7d9df8961d97d42f0012f65f9b69546657d5581670ce9d0e7b5、検証対象HEADはedf111adb57dbde2a77e22f92fce311208c9bd38。返されたblob IDをローカルで計算したGit blob SHAと照合済み。以前の共有拒否は解消した。
