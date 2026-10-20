@@ -229,8 +229,9 @@ namespace Olca.Application.Dungeon
             manager.SetUserPaused(paused);
             GameplayPause.SetPaused(paused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
-            else { Time.timeScale = timeScaleBeforePause; keyboardSettingsView?.DiscardAndClose(); }
-            pauseOverlay?.SetActive(paused);
+            else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose(); }
+            // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
+            if (pauseOverlay != null) pauseOverlay.SetActive(paused);
             inputProvider?.QueueSnapshot();
         }
 

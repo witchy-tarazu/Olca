@@ -2807,6 +2807,44 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(0, controller.PersistentProgress.Owned.Length); Assert.AreEqual(100, controller.PersistentProgress.Experience);
         }
 
+        [TestCase("keyboard")][TestCase("overlay")][TestCase("both")][TestCase("none")]
+        public void 先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(string destroyed)
+        {
+            float oldScale=UnityEngine.Time.timeScale;
+            try {
+                var c=Start();var model=Model(c);var session=(DungeonCheckpointSession)Get(c,"memoryCheckpoints");
+                var file=(Olca.Unity.FileCheckpointStore)session.Store;var saved=System.IO.File.ReadAllBytes(file.ActivePath);
+                var keyboard=(Olca.Presentation.Field.GameplayKeyboardSettingsView)Get(c,"keyboardSettingsView");
+                UnityEngine.Time.timeScale=.75f;c.SetUserPaused(true);KeyboardButton(c,"KeyboardSettingsButton");
+                if(destroyed=="keyboard"||destroyed=="both")UnityEngine.Object.DestroyImmediate(keyboard.gameObject);
+                if(destroyed=="overlay"||destroyed=="both")UnityEngine.Object.DestroyImmediate((UnityEngine.GameObject)Get(c,"pauseOverlay"));
+                Assert.DoesNotThrow(()=>c.SetUserPaused(false));Assert.IsFalse(model.IsUserPaused);Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused);
+                Assert.AreEqual(.75f,UnityEngine.Time.timeScale);Assert.AreSame(model,Model(c));
+                if(keyboard!=null)Assert.IsFalse(keyboard.gameObject.activeSelf,"通常の解除は従来どおり設定画面を閉じる");
+                CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(file.ActivePath));
+            } finally {
+                UnityEngine.Time.timeScale=oldScale;Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 全ポーズUIの先行破棄後もController終了は例外なく解除し重複終了で保存を変えない(bool paused)
+        {
+            float oldScale=UnityEngine.Time.timeScale;
+            try {
+                var c=Start();var model=Model(c);var session=(DungeonCheckpointSession)Get(c,"memoryCheckpoints");
+                var file=(Olca.Unity.FileCheckpointStore)session.Store;var saved=System.IO.File.ReadAllBytes(file.ActivePath);
+                UnityEngine.Time.timeScale=.75f;if(paused)c.SetUserPaused(true);
+                UnityEngine.Object.DestroyImmediate((UnityEngine.GameObject)Get(c,"pauseCanvas"));
+                Assert.DoesNotThrow(()=>Call(c,"OnDestroy"));Assert.DoesNotThrow(()=>Call(c,"OnDestroy"));
+                Assert.IsFalse(model.IsUserPaused);Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused);Assert.AreEqual(.75f,UnityEngine.Time.timeScale);
+                CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(file.ActivePath));
+            } finally {
+                UnityEngine.Time.timeScale=oldScale;Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+
         [Test]
         public void 実キーZと保存したリマップJの短押しは成長後の攻撃値を通常Controllerへ渡す()
         {

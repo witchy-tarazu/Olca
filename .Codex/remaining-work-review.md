@@ -479,3 +479,14 @@ FHD1920×1080/4K3840×2160の実GameViewを保存し、Canvas倍率1/2・画面�
 通常移動動画の共有は別操作。対象と送信先を明示した新しい本人回答を受け、指定のUTF-8 Base64 blob作成を1回だけ再試行し成功。blob 8e09d3b03b234227cd790888a3b00395fdac70cc、元486384 bytes/SHA256 d178e79a1692284baaa2d79b5ae0da004ef39730f6db17bba16c149e650f090f。Base64テキスト648512 bytesのGit SHAも一致。リポジトリのファイル追加や動画プレーヤー公開とは別で、今回のUI画像の共有許可へ転用しない。
 
 最終GUI再起動で保存J/実J11/画面ボタン11を再確認し、所持一覧の背後メニュー非表示をFHD/4Kで確認。GUIをFHD・通常戦闘HUD表示・Editor一時停止で維持する。現在のGUI consoleErrors=0/compilationFailed=false（警告2）。履歴には07:09の再生停止時MissingReferenceException（既存SetUserPausedのkeyboardSettingsView?.DiscardAndCloseがOnDestroyで破棄済みViewへ到達）と07:14の接続サービス終了通知がある。どちらも保存したconsole履歴から除外/消去しない。破棄順の既存不具合は通常攻撃/仮UIの操作試験とは分けた残件。
+
+
+## 再生停止時のポーズUI破棄順の修正（2026-10-20）
+
+2ab0440の通常再生停止履歴で、Controller.OnDestroy→SetUserPaused(false)が破棄済みGameplayKeyboardSettingsView.DiscardAndCloseへ到達していた。C#の?.はUnityの破棄済み参照を生存判定しないためで、ポーズ面GameObjectにも同じ問題がある。修正前にキー設定View/ポーズ面/両方/全UI先行破棄で4失敗を再現（Controller61件中57成功）。
+
+SetUserPausedの2参照をUnityの!=nullによる生存判定へ変更した。通常ポーズ解除、モデル、時間倍率、入力解除、購読解除、既存ゲーム仕様は変更しない。追加6ケースで通常UI/破棄済みUI/終了の重複呼出し、0.75への時間倍率復元、チェックポイントのバイト列不変を確認。Unity MCP console→全EditMode→consoleで1778/1778成功（34.32秒、失敗/スキップ0）、現在のエラー0/compilationFailed=false、警告31。証跡 /workspace/.olca-cloud/results/view-teardown/。
+
+FHD仮UI画像attack-fhd.png（1920×1080、566926 bytes、SHA256 3ad94d7e30791046a9c5a09be0f33959533431f49bedea6fbdba2410d8152c91）は実GameViewのみで、認証画面/識別情報/秘密を含まないと確認。PNGもIHDR/IDAT/IENDのみ。witchy-tarazu/Olcaへの通常のUTF-8 Base64 blob作成を1回行ったが、自動承認審査が当該画像・宛先の特定承認不足として拒否した。画像送信だけ未実行のまま停止し、再試行/別経路への置換はしていない。画像とメタデータはローカル保全。これは当該操作の拒否であり、恒常的な共有停止ルールの復活ではない。通常移動動画blobは再作成しない。
+
+GUIの実Pause/キー設定からUI全体をControllerより先に破棄し、実editor_stopを実行。新規エラー0で、旧Terminal/現チェックポイント/進行データのSHA256が全て不変。実editor_play後も時間倍率1/全体ポーズ解除、同じ保存から復帰、保存Jによる攻撃11/経験値100/受領1を確認。通常のPause→キー設定→閉じる→再開も成功し、再開後の新規エラー0、compilationFailed=false。履歴は消去せず、GUIをFHDの戦闘HUD・Editor一時停止で維持する。
