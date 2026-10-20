@@ -304,7 +304,7 @@ namespace Olca.Application.Dungeon
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
-            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture);
+            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture, OpenSavedDeckMenu);
             var attackPanel = new GameObject("BasicAttackHud", typeof(RectTransform)); attackPanel.transform.SetParent(pauseCanvas.transform, false);
             basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, () => basicAttackShortPressFrames);
             basicAttackHud.gameObject.SetActive(false);
@@ -325,6 +325,62 @@ namespace Olca.Application.Dungeon
         private void CloseOwnedCards() { collectionOpen = false; clearReturnView.gameObject.SetActive(false); pauseOverlay.SetActive(IsUserPaused); }
 
         private bool ownedDepartureEditing;
+        private bool savedDeckMenuOpen, savedDeckDirty;
+        private string editingSavedDeckId, editingSavedDeckName;
+        private SavedDepartureDeck[] SavedDecks => clearReturnSession.Snapshot.SavedDecks??new SavedDepartureDeck[0];
+        private void OpenSavedDeckMenu(){if(!CanEditOwnedDeparture)return;savedDeckMenuOpen=true;ShowSavedDeckMenu();}
+        private void ShowSavedDeckMenu(string deleting=null)
+        {
+            ownedDepartureEditing=false;
+            clearReturnView.RenderSavedDeckMenu(clearReturnSession.Snapshot, clearReturnSession.Error??ownedDepartureError,
+                !clearReturnSession.Ready||clearReturnSession.HasPendingSave,()=>EditSavedDeck(null),EditSavedDeck,CloneSavedDeck,EquipSavedDeck,
+                id=>ShowSavedDeckMenu(id),()=>{savedDeckMenuOpen=false;ShowClearReturn();},RetryClearReturn,
+                deleting,()=>{clearReturnSession.DeleteDeck(deleting);ShowSavedDeckMenu();},ReloadSavedDeckMenu);
+        }
+        private void ReloadSavedDeckMenu()
+        {
+            if(!CanEditOwnedDeparture)return;
+            ownedDepartureError=null;clearReturnSession.Reload();ShowSavedDeckMenu();
+        }
+        private void EditSavedDeck(string id)
+        {
+            if(!CanEditOwnedDeparture)return;
+            OpenOwnedDeparture();savedDeckMenuOpen=true;
+            var saved=SavedDecks.SingleOrDefault(d=>d.Id==id);
+            editingSavedDeckId=saved?.Id??System.Guid.NewGuid().ToString("N");editingSavedDeckName=saved?.Name??("デッキ "+(SavedDecks.Length+1));
+            ownedDepartureDraft.Clear();
+            if(saved!=null)foreach(var slot in saved.Cards){var card=ownedDepartureOptions.FirstOrDefault(c=>c!=null&&c.Id==slot.Id&&c.ExceedLevel==slot.Level);
+                ownedDepartureDraft.Add(card?.Clone()??new Card(slot.Id,"未解決: "+slot.Id,0,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"",exceedLevel:slot.Level));}
+            savedDeckDirty=false;ownedDepartureError=null;ShowOwnedDeparture();
+        }
+        private void SaveEditingDeck()
+        {
+            if(!CanEditOwnedDeparture||editingSavedDeckId==null)return;
+            if(clearReturnSession.SaveDeck(editingSavedDeckId,editingSavedDeckName,ownedDepartureDraft.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel}).ToArray())){
+                savedDeckDirty=false;ownedDepartureError=null;
+            }else ownedDepartureError=clearReturnSession.Error;
+            ShowOwnedDeparture();
+        }
+        private bool TryResolveSavedDeck(SavedDepartureDeck saved,out Deck deck,out string error)
+        {
+            deck=null;if(!SavedDepartureDeck.TryValidateEquipped(clearReturnSession.Snapshot,saved,out error))return false;
+            var cards=new List<Card>();
+            foreach(var slot in saved.Cards){var o=clearReturnSession.Snapshot.Owned.Single(x=>x.Id==slot.Id&&x.Level==slot.Level);Card card;
+                bool found=floorDefinitions!=null?floorDefinitions.TryResolveOwnedCard(o.Id,o.Level,o.Rarity,o.Name,out card):nextDepartureDefinitions.TryResolveOwnedCard(o.Id,o.Level,o.Rarity,o.Name,out card);
+                if(!found){error="保存デッキのカード定義を解決できません。保存は変更していません";return false;}cards.Add(card);}
+            return DepartureDeckRules.TryCreate(cards,clearReturnSession.Snapshot.Owned.ToDictionary(o=>(o.Id,o.Level),o=>o.Count),out deck,out error);
+        }
+        private void EquipSavedDeck(string id)
+        {
+            if(!CanEditOwnedDeparture)return;
+            if(TryResolveSavedDeck(SavedDecks.SingleOrDefault(d=>d.Id==id),out _,out ownedDepartureError))clearReturnSession.EquipDeck(id);
+            ShowSavedDeckMenu();
+        }
+        private void CloneSavedDeck(string id)
+        {
+            if(!CanEditOwnedDeparture)return;var saved=SavedDecks.SingleOrDefault(d=>d.Id==id);if(saved==null)return;
+            clearReturnSession.SaveDeck(System.Guid.NewGuid().ToString("N"),saved.Name+" の複製",saved.Cards);ShowSavedDeckMenu();
+        }
         private readonly List<Card> ownedDepartureDraft = new List<Card>();
         private Card[] ownedDepartureOptions;
         private string ownedDepartureError;
@@ -334,6 +390,7 @@ namespace Olca.Application.Dungeon
         private void OpenOwnedDeparture()
         {
             if (!CanEditOwnedDeparture) return;
+            editingSavedDeckId=null;savedDeckDirty=false;
             ownedDepartureOptions = clearReturnSession.Snapshot.Owned.Select(o => {
                 Card card; bool resolved = floorDefinitions != null ? floorDefinitions.TryResolveOwnedCard(o.Id, o.Level, o.Rarity, o.Name, out card)
                     : nextDepartureDefinitions.TryResolveOwnedCard(o.Id, o.Level, o.Rarity, o.Name, out card);
@@ -342,13 +399,17 @@ namespace Olca.Application.Dungeon
             ownedDepartureDraft.Clear(); ownedDepartureEditing = true; ownedDepartureError = null; ShowOwnedDeparture();
         }
         private bool TryOwnedDepartureDeck(out Deck deck, out string error)
-            => DepartureDeckRules.TryCreate(ownedDepartureDraft, clearReturnSession.Snapshot.Owned.ToDictionary(o => (o.Id, o.Level), o => o.Count), out deck, out error);
+        {
+            deck=null;if(ownedDepartureDraft.Any(c=>!ownedDepartureOptions.Any(o=>o!=null&&o.Id==c.Id&&o.ExceedLevel==c.ExceedLevel))){error="カード定義が未解決です";return false;}
+            return DepartureDeckRules.TryCreate(ownedDepartureDraft, clearReturnSession.Snapshot.Owned.ToDictionary(o => (o.Id, o.Level), o => o.Count), out deck, out error);
+        }
         private void ShowOwnedDeparture(bool confirmDiscard = false)
         {
             TryOwnedDepartureDeck(out _, out var validation);
             clearReturnView.RenderOwnedDeparture(clearReturnSession.Snapshot, ownedDepartureOptions, ownedDepartureDraft,
                 ownedDepartureError ?? validation, validation == null, ChangeOwnedDeparture, ConfirmOwnedDeparture,
-                CloseOwnedDeparture, () => ShowOwnedDeparture(), confirmDiscard);
+                CloseOwnedDeparture, () => ShowOwnedDeparture(), confirmDiscard, editingSavedDeckId==null?null:SaveEditingDeck,
+                editingSavedDeckName, name=>{editingSavedDeckName=name;savedDeckDirty=true;}, clearReturnSession.HasPendingSave, RetryClearReturn);
         }
         private void ChangeOwnedDeparture(int index, int delta)
         {
@@ -356,23 +417,24 @@ namespace Olca.Application.Dungeon
             var card = ownedDepartureOptions[index]; if (card == null) return;
             if (delta > 0) {
                 int count = ownedDepartureDraft.Count(c => c.Id == card.Id && c.ExceedLevel == card.ExceedLevel);
-                if (count >= clearReturnSession.Snapshot.Owned[index].Count || ownedDepartureDraft.Count >= 20) return;
+                if (editingSavedDeckId==null && (count >= clearReturnSession.Snapshot.Owned[index].Count || ownedDepartureDraft.Count >= 20)) return;
                 ownedDepartureDraft.Add(card.Clone());
             } else {
                 int found = ownedDepartureDraft.FindLastIndex(c => c.Id == card.Id && c.ExceedLevel == card.ExceedLevel);
                 if (found >= 0) ownedDepartureDraft.RemoveAt(found);
             }
-            ownedDepartureError = null; ShowOwnedDeparture();
+            savedDeckDirty=true;ownedDepartureError = null; ShowOwnedDeparture();
         }
         private void CloseOwnedDeparture(bool discard)
         {
             if (!ownedDepartureEditing || !CanEditOwnedDeparture) return;
-            if (!discard && ownedDepartureDraft.Count > 0) { ShowOwnedDeparture(true); return; }
-            ownedDepartureDraft.Clear(); ownedDepartureEditing = false; ShowClearReturn();
+            if (!discard && (editingSavedDeckId!=null?savedDeckDirty:ownedDepartureDraft.Count>0)) { ShowOwnedDeparture(true); return; }
+            ownedDepartureDraft.Clear(); ownedDepartureEditing = false; editingSavedDeckId=null;
+            if(savedDeckMenuOpen)ShowSavedDeckMenu();else ShowClearReturn();
         }
         private void ConfirmOwnedDeparture()
         {
-            if (!ownedDepartureEditing || !CanEditOwnedDeparture) return;
+            if (!ownedDepartureEditing || !CanEditOwnedDeparture || editingSavedDeckId!=null) return;
             if (!TryOwnedDepartureDeck(out var deck, out ownedDepartureError)) { ShowOwnedDeparture(); return; }
             ownedDepartureEditing = false; StartNextDepartureWithDeck(deck);
         }
@@ -493,6 +555,7 @@ namespace Olca.Application.Dungeon
         private void ConfirmClearReturn() { clearReturnSession.ConfirmReturn(); ShowClearReturn(); }
         private void RetryClearReturn()
         {
+            if(savedDeckMenuOpen){clearReturnSession.Retry();if(!clearReturnSession.HasPendingSave){savedDeckDirty=false;editingSavedDeckId=null;ownedDepartureError=null;}ShowSavedDeckMenu();return;}
             if (!clearReturnSession.Retry()) { ShowClearReturn(); return; }
             if (!progressStartupBlocked && clearReturnSession.Snapshot.NextDeparture?.ParentRunId == clearReturnSession.Snapshot.Flow?.RunId &&
                 clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) {
@@ -520,7 +583,9 @@ namespace Olca.Application.Dungeon
                 if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId) {
                     var map = floorDefinitions?.CreateInitialMap(0) ?? nextDepartureDefinitions.CreateInitialMap();
                     if (floorDefinitions == null) map.ValidateFinalFloorForDeparture();
-                    var deck = ownedDeck ?? CreateInitialDeck();
+                    Deck deck=ownedDeck;
+                    if(deck==null&&clearReturnSession.Snapshot.EquippedDeckId!=null&&!TryResolveSavedDeck(SavedDecks.SingleOrDefault(d=>d.Id==clearReturnSession.Snapshot.EquippedDeckId),out deck,out clearReturnError)){ShowClearReturn();return;}
+                    deck=deck??CreateInitialDeck();
                     // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
                     var frozen = floorDefinitions?.CreateDepartureSession() ?? new DungeonCheckpointSession(nextDepartureDefinitions, new MemoryCheckpointStore(nextDepartureDefinitions));
                     var level = clearReturnSession.Snapshot.Level; var settings = ReturnSettings();

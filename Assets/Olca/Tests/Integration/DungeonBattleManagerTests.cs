@@ -2876,6 +2876,68 @@ namespace Olca.Tests.Integration
             } finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
         }
 
+        private Olca.Application.Dungeon.DungeonBattleController SavedDeckFixture()
+        {
+            var c=Start(new[]{DungeonConfig.CreateTestDungeon(5,30,4)});ToBattle(c);Model(c).SelectCardReward(Win(c)[0]);KeyboardButton(c,"ConfirmCarryHome");KeyboardButton(c,"ConfirmReturn");SeedOwnedDeparture(c);return c;
+        }
+        private static SavedDeckCard[] TwentySavedCards()=>new[]{"sword","heal","shield","fire","ice"}.SelectMany(id=>Enumerable.Range(0,4).Select(_=>new SavedDeckCard{Id=id,Level=ExceedLevel.Normal})).ToArray();
+        private static void SavedName(Olca.Application.Dungeon.DungeonBattleController c,string name)
+        {((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentInChildren<UnityEngine.UI.InputField>(true).text=name;}
+        [Test]
+        public void 保存デッキの空保存と編成と複製と装備と確認付き削除を実UIから接続し選択二十枚で再開する()
+        {
+            var c=SavedDeckFixture();var owned=c.PersistentProgress.Owned.Select(o=>o.Count).ToArray();var receipts=c.PersistentProgress.Receipts.Length;
+            KeyboardButton(c,"SavedDeckMenu");KeyboardButton(c,"NewSavedDeck");SavedName(c,"出撃A");KeyboardButton(c,"SaveNamedDeck");
+            var a=c.PersistentProgress.SavedDecks.Single().Id;Assert.IsEmpty(c.PersistentProgress.SavedDecks[0].Cards);Assert.IsNull(c.PersistentProgress.EquippedDeckId);
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"EquipDeck_"+a);Assert.IsNull(c.PersistentProgress.EquippedDeckId);
+            KeyboardButton(c,"EditDeck_"+a);for(int row=0;row<5;row++)for(int n=0;n<4;n++)KeyboardButton(c,"AddDepartureCard_"+row);
+            KeyboardButton(c,"SaveNamedDeck");KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"CloneDeck_"+a);
+            var b=c.PersistentProgress.SavedDecks.Single(d=>d.Id!=a).Id;Assert.AreEqual(2,c.PersistentProgress.SavedDecks.Length);KeyboardButton(c,"EquipDeck_"+a);
+            KeyboardButton(c,"EditDeck_"+a);KeyboardButton(c,"RemoveDepartureCard_0");var file=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(file.ActivePath);
+            KeyboardButton(c,"SaveNamedDeck");CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(file.ActivePath));Assert.AreEqual(20,c.PersistentProgress.SavedDecks.Single(d=>d.Id==a).Cards.Length);
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"KeepEditingDeparture");Assert.AreEqual(19,((List<Card>)Get(c,"ownedDepartureDraft")).Count);
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"DiscardDepartureDraft");
+            KeyboardButton(c,"EditDeck_"+b);KeyboardButton(c,"AddDepartureCard_0");KeyboardButton(c,"SaveNamedDeck");Assert.AreEqual(21,c.PersistentProgress.SavedDecks.Single(d=>d.Id==b).Cards.Length);
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"EquipDeck_"+b);Assert.AreEqual(a,c.PersistentProgress.EquippedDeckId);
+            KeyboardButton(c,"EditDeck_"+b);KeyboardButton(c,"RemoveDepartureCard_0");KeyboardButton(c,"SaveNamedDeck");KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"EquipDeck_"+b);
+            Assert.IsFalse(((ClearReturnSession)Get(c,"clearReturnSession")).DeleteDeck(b));Assert.AreEqual(b,c.PersistentProgress.EquippedDeckId);
+            KeyboardButton(c,"DeleteDeck_"+a);KeyboardButton(c,"CancelDeleteDeck");Assert.AreEqual(2,c.PersistentProgress.SavedDecks.Length);
+            KeyboardButton(c,"DeleteDeck_"+a);KeyboardButton(c,"ConfirmDeleteDeck");Assert.AreEqual(b,c.PersistentProgress.SavedDecks.Single().Id);
+            CollectionAssert.AreEqual(owned,c.PersistentProgress.Owned.Select(o=>o.Count));Assert.AreEqual(receipts,c.PersistentProgress.Receipts.Length);
+            KeyboardButton(c,"ReloadSavedDecks");Assert.AreEqual(b,c.PersistentProgress.EquippedDeckId);Assert.AreEqual(20,c.PersistentProgress.SavedDecks.Single().Cards.Length);
+            var snapshot=c.PersistentProgress;snapshot.SavedDecks[0].Cards[0].Id="mutation";Assert.AreNotEqual("mutation",c.PersistentProgress.SavedDecks[0].Cards[0].Id);
+            c=Start();Assert.AreEqual(b,c.PersistentProgress.EquippedDeckId);Assert.AreEqual(20,c.PersistentProgress.SavedDecks.Single().Cards.Length);
+            KeyboardButton(c,"NextDeparture");Assert.AreEqual(20,Model(c).Dungeon.GetCurrentDeck().TotalCount);Assert.AreEqual(20,Model(c).Dungeon.GetCurrentDeck().GetAllCards().Distinct().Count());
+            var plan=c.PersistentProgress.NextDeparture;Assert.AreEqual(20,plan.Start.DeckOrder.Length);
+            var session=(ClearReturnSession)Get(c,"clearReturnSession");Assert.IsFalse(session.SaveDeck(b,"変更",TwentySavedCards()));Assert.IsFalse(session.EquipDeck(b));Assert.IsFalse(session.DeleteDeck(b));
+            c=Start();Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(plan.Start.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(20,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+            CollectionAssert.AreEqual(owned,c.PersistentProgress.Owned.Select(o=>o.Count));Assert.AreEqual(100,c.PersistentProgress.Experience);
+        }
+        [TestCase("save","before")][TestCase("save","after")][TestCase("equip","before")][TestCase("equip","after")][TestCase("delete","before")][TestCase("delete","after")]
+        public void 保存装備削除の失敗とOS完了後エラーを同じ計画で再試行し所持を増やさない(string operation,string fault)
+        {
+            var c=SavedDeckFixture();var session=(ClearReturnSession)Get(c,"clearReturnSession");string a=System.Guid.NewGuid().ToString("N"),b=System.Guid.NewGuid().ToString("N");
+            Assert.IsTrue(session.SaveDeck(a,"A",TwentySavedCards()));Assert.IsTrue(session.SaveDeck(b,"B",TwentySavedCards()));Assert.IsTrue(session.EquipDeck(a));
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var before=System.IO.File.ReadAllBytes(store.ActivePath);var revision=c.PersistentProgress.Revision;
+            var io=new KeyboardFaultIo{Fault=fault};Set(store,"io",io);
+            bool result=operation=="save"?session.SaveDeck(b,"B空",new SavedDeckCard[0]):operation=="equip"?session.EquipDeck(b):session.DeleteDeck(b);
+            Assert.AreEqual(fault=="after",result);
+            if(fault=="before"){Assert.IsTrue(session.HasPendingSave);Assert.AreEqual(revision,c.PersistentProgress.Revision);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));io.Fault=null;Assert.IsTrue(session.Retry(),session.Error);}
+            Assert.AreEqual(revision+1,c.PersistentProgress.Revision);Assert.AreEqual(20,c.PersistentProgress.Owned.Sum(o=>o.Count));Assert.AreEqual(100,c.PersistentProgress.Experience);Assert.AreEqual(1,c.PersistentProgress.Receipts.Length);
+            c=Start();Assert.AreEqual(operation=="equip"?b:a,c.PersistentProgress.EquippedDeckId);
+            Assert.AreEqual(operation=="delete"?1:2,c.PersistentProgress.SavedDecks.Length);if(operation=="save")Assert.IsEmpty(c.PersistentProgress.SavedDecks.Single(d=>d.Id==b).Cards);
+        }
+        [Test]
+        public void 非装備は共通制限違反を保存でき未所持の新規登録と不正な装備参照を拒否する()
+        {
+            var c=SavedDeckFixture();var session=(ClearReturnSession)Get(c,"clearReturnSession");var id=System.Guid.NewGuid().ToString("N");
+            Assert.IsTrue(session.SaveDeck(id,"上限超過",Enumerable.Range(0,20).Select(_=>new SavedDeckCard{Id="sword",Level=ExceedLevel.Normal}).ToArray()));Assert.IsFalse(session.EquipDeck(id));
+            var before=c.PersistentProgress.Revision;Assert.IsFalse(session.SaveDeck(System.Guid.NewGuid().ToString("N"),"未所持",new[]{new SavedDeckCard{Id="unknown",Level=ExceedLevel.Normal}}));Assert.AreEqual(before,c.PersistentProgress.Revision);
+            var broken=c.PersistentProgress;broken.EquippedDeckId=System.Guid.NewGuid().ToString("N");Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(broken));
+            broken=c.PersistentProgress;broken.SavedDecks=broken.SavedDecks.Concat(new[]{broken.SavedDecks[0].Copy()}).ToArray();Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(broken));
+            Assert.AreEqual(20,c.PersistentProgress.Owned.Sum(o=>o.Count));
+        }
+
         private void SeedPriorProgressForFailure()
         {
             var p=new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Experience=100,Level=2,Tokens=17,
@@ -3422,7 +3484,7 @@ namespace Olca.Tests.Integration
             var session=new ClearReturnSession(Store());Assert.IsTrue(session.Begin(Terminal(Card("old")),"legacy",new ClearReturnSettings()));Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
             var serializer=new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(LegacyEnvelope));LegacyEnvelope envelope;
             using(var stream=new System.IO.MemoryStream(System.IO.File.ReadAllBytes(Store().ActivePath)))envelope=(LegacyEnvelope)serializer.ReadObject(stream);
-            envelope.Payload=envelope.Payload.Replace("\"Outcome\":0,","");StringAssert.DoesNotContain("Outcome",envelope.Payload);
+            envelope.Payload=envelope.Payload.Replace("\"Outcome\":0,","").Replace("\"SavedDecks\":[],","").Replace("\"EquippedDeckId\":null,","");StringAssert.DoesNotContain("Outcome",envelope.Payload);StringAssert.DoesNotContain("SavedDecks",envelope.Payload);
             using(var sha=System.Security.Cryptography.SHA256.Create())envelope.Sha256=System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(envelope.Payload))).Replace("-","");
             using(var stream=new System.IO.MemoryStream()){serializer.WriteObject(stream,envelope);System.IO.File.WriteAllBytes(Store().ActivePath,stream.ToArray());}
             var old=System.IO.File.ReadAllBytes(Store().ActivePath);var restored=new ClearReturnSession(Store());Assert.IsTrue(restored.Ready,restored.Error);Assert.AreEqual(RunReturnOutcome.Cleared,restored.Snapshot.Flow.Outcome);Assert.AreEqual(RunReturnOutcome.Cleared,restored.Snapshot.Receipts.Single().Outcome);CollectionAssert.AreEqual(old,System.IO.File.ReadAllBytes(Store().ActivePath));

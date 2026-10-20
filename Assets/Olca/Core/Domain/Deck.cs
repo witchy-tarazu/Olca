@@ -306,6 +306,30 @@ namespace Olca.Core.Domain
         public CheckpointDto Start;
         public NextDepartureData Copy() => new NextDepartureData { ParentRunId = ParentRunId, DefinitionKey = DefinitionKey, Start = Start?.Copy() };
     }
+    public sealed class SavedDeckCard
+    {
+        public string Id;
+        public ExceedLevel Level;
+        public SavedDeckCard Copy() => (SavedDeckCard)MemberwiseClone();
+    }
+    public sealed class SavedDepartureDeck
+    {
+        public string Id, Name;
+        public SavedDeckCard[] Cards = new SavedDeckCard[0];
+        public SavedDepartureDeck Copy() => new SavedDepartureDeck { Id=Id, Name=Name, Cards=Cards?.Select(c=>c?.Copy()).ToArray() };
+        public static bool TryValidateEquipped(ClearReturnProfile profile, SavedDepartureDeck saved, out string error)
+        {
+            error=null;
+            if(saved?.Cards==null||saved.Cards.Any(c=>c==null)){error="デッキがありません";return false;}
+            var cards=new List<Card>();
+            foreach(var slot in saved.Cards){
+                var owned=profile.Owned.SingleOrDefault(o=>o.Id==slot.Id&&o.Level==slot.Level);
+                if(owned==null){error="未所持カードを装備できません";return false;}
+                cards.Add(new Card(owned.Id,owned.Name,0,owned.Rarity,CardCategory.Attack,ElementType.None,CardSeries.None,0,"",exceedLevel:owned.Level));
+            }
+            return DepartureDeckRules.TryCreate(cards,profile.Owned.ToDictionary(o=>(o.Id,o.Level),o=>o.Count),out _,out error);
+        }
+    }
     public sealed class ClearReturnProfile
     {
         public int Version = 1;
@@ -317,10 +341,13 @@ namespace Olca.Core.Domain
         public ClearReceipt[] Receipts = new ClearReceipt[0];
         public ClearReturnData Flow;
         public NextDepartureData NextDeparture;
+        public SavedDepartureDeck[] SavedDecks = new SavedDepartureDeck[0];
+        public string EquippedDeckId;
         public ClearReturnProfile Copy() => new ClearReturnProfile {
             Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
-            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy() };
+            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId,
+            SavedDecks=(SavedDecks??new SavedDepartureDeck[0]).Select(d=>d?.Copy()).ToArray() };
         public static void Validate(ClearReturnProfile p)
         {
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
@@ -334,6 +361,12 @@ namespace Olca.Core.Domain
                     (r.Outcome != RunReturnOutcome.Cleared && (r.Experience != 0 || r.Tokens != 0))) ||
                 p.Receipts.Select(r => r.RunId).Distinct().Count() != p.Receipts.Length)
                 throw new ArgumentException("所持カードまたは受領履歴が不正です");
+            var decks=p.SavedDecks??new SavedDepartureDeck[0];
+            if(decks.Any(d=>d==null||!Guid.TryParseExact(d.Id,"N",out _)||string.IsNullOrWhiteSpace(d.Name)||d.Cards==null||
+                d.Cards.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||!Enum.IsDefined(typeof(ExceedLevel),c.Level)||c.Level==ExceedLevel.Lv3))||
+                decks.Select(d=>d.Id).Distinct().Count()!=decks.Length)throw new ArgumentException("保存デッキの識別/参照が不正です");
+            if(p.EquippedDeckId!=null){var equipped=decks.SingleOrDefault(d=>d.Id==p.EquippedDeckId);
+                if(equipped==null||!SavedDepartureDeck.TryValidateEquipped(p,equipped,out _))throw new ArgumentException("装備デッキの構築条件が不正です");}
             var n = p.NextDeparture;
             if (n != null && (string.IsNullOrWhiteSpace(n.ParentRunId) || string.IsNullOrWhiteSpace(n.DefinitionKey) ||
                 n.Start == null || !Guid.TryParseExact(n.Start.RunId, "N", out _) || n.Start.RunId == n.ParentRunId ||
@@ -500,6 +533,36 @@ namespace Olca.Core.Domain
             var next = current.Copy();
             next.NextDeparture = new NextDepartureData { ParentRunId = current.Flow.RunId, DefinitionKey = definitionKey, Start = start?.Copy() };
             return Stage(next);
+        }
+        private bool DeckEditingAvailable() => Available() && current.Flow?.Stage==ClearReturnStage.Returned && current.NextDeparture?.ParentRunId!=current.Flow.RunId;
+        public bool SaveDeck(string id,string name,IReadOnlyList<SavedDeckCard> cards)
+        {
+            if(!DeckEditingAvailable())return Fail("帰還後・保存完了後にデッキを編集してください");
+            try{
+                var next=current.Copy();var decks=next.SavedDecks.ToList();var prior=decks.SingleOrDefault(d=>d.Id==id);
+                var saved=new SavedDepartureDeck{Id=id,Name=name?.Trim(),Cards=cards?.Select(c=>c?.Copy()).ToArray()};
+                if(saved.Cards==null||saved.Cards.Any(c=>c==null))return Fail("カード参照が不正です");
+                foreach(var group in saved.Cards.GroupBy(c=>(c.Id,c.Level)))
+                    if(!current.Owned.Any(o=>o.Id==group.Key.Id&&o.Level==group.Key.Level)&&group.Count()>(prior?.Cards.Count(c=>c.Id==group.Key.Id&&c.Level==group.Key.Level)??0))
+                        return Fail("未所持カードは新しく登録できません");
+                if(id==next.EquippedDeckId&&!SavedDepartureDeck.TryValidateEquipped(next,saved,out var error))return Fail(error);
+                if(prior!=null)decks.Remove(prior);decks.Add(saved);next.SavedDecks=decks.ToArray();return Stage(next);
+            }catch(ArgumentException e){return Fail(e.Message);}
+        }
+        public bool EquipDeck(string id)
+        {
+            if(!DeckEditingAvailable())return Fail("攻略中はデッキを切り替えられません");
+            var saved=(current.SavedDecks??new SavedDepartureDeck[0]).SingleOrDefault(d=>d.Id==id);
+            if(!SavedDepartureDeck.TryValidateEquipped(current,saved,out var error))return Fail(error);
+            if(current.EquippedDeckId==id){Error=null;return true;}
+            var next=current.Copy();next.EquippedDeckId=id;return Stage(next);
+        }
+        public bool DeleteDeck(string id)
+        {
+            if(!DeckEditingAvailable())return Fail("攻略中はデッキを削除できません");
+            if(current.EquippedDeckId==id)return Fail("装備中の削除と自動切替は未対応です。先に別のデッキを装備してください");
+            var next=current.Copy();if(!next.SavedDecks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
+            next.SavedDecks=next.SavedDecks.Where(d=>d.Id!=id).ToArray();return Stage(next);
         }
         public PlayerCharacter ReturnedPlayer => current?.Flow?.Stage == ClearReturnStage.Returned
             ? new PlayerCharacter(current.Flow.ReturnedMaxHp, attackPower: current.Flow.ReturnedAttack) : null;

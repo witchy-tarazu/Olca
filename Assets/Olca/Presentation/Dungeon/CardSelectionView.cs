@@ -192,16 +192,17 @@ namespace Olca.Presentation.Dungeon
     {
         private Font font;
         private Action<int> toggle;
-        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture;
+        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture, savedDeckMenu;
+        private int savedDeckPage;
         private int departurePage;
         private GameObject content;
         private int page;
         private string lastRun;
         private ClearReturnStage? lastStage;
         private const int PageSize = 8;
-        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null)
+        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null, Action savedDeckMenu = null)
         {
-            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;
+            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;this.savedDeckMenu=savedDeckMenu;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
@@ -253,13 +254,14 @@ namespace Olca.Presentation.Dungeon
                 if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, -420, 900, 75, closeCollection);
                 else {
                     if (editOwnedDeparture != null) Button("EditOwnedDeparture", "所持カードで出撃デッキを編成", -440, -420, 820, 75, editOwnedDeparture).interactable = !blocked;
-                    if (depart != null) Button("NextDeparture", "既存デッキで再出撃", 440, -420, 820, 75, depart).interactable = !blocked;
+                    if (depart != null) Button("NextDeparture", profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃", 440, -420, 820, 75, depart).interactable = !blocked;
                 }
             }
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",0,-510,800,58,savedDeckMenu);
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -510, 800, 58, retry);
         }
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
-            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard)
+            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null)
         {
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
@@ -271,6 +273,10 @@ namespace Olca.Presentation.Dungeon
                 Button("KeepEditingDeparture", "編集に戻る", -420, -150, 750, 80, resume);
                 Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, () => close(true)); return;
             }
+            if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(InputField));inputObj.transform.SetParent(content.transform,false);
+                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(0,405);ir.sizeDelta=new Vector2(1100,48);inputObj.GetComponent<Image>().color=new Color(.05f,.12f,.16f,.8f);
+                var label=Text("SavedDeckNameText",deckName??"",0,0,1080,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;
+                var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;input.onValueChanged.AddListener(value=>rename(value));}
             Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 350, 1750, 120, 26);
             Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 250, 1750, 70, 25);
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
@@ -278,15 +284,44 @@ namespace Olca.Presentation.Dungeon
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
                 int count = draft.Count(c => c.Id == owned.Id && c.ExceedLevel == owned.Level); float y = 160 - row * 75;
                 Text("DepartureCard_" + index, owned.Name + new string('★', (int)owned.Level) + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -260, y, 1100, 65, 25);
-                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, () => change(index, -1)).interactable = option != null && count > 0;
-                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, () => change(index, 1)).interactable = option != null && count < owned.Count && draft.Count < 20;
+                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, () => change(index, -1)).interactable = !pending && option != null && count > 0;
+                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, () => change(index, 1)).interactable = !pending && option != null && (save!=null||(count < owned.Count && draft.Count < 20));
             }
             if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);
             Text("DeparturePage", $"{departurePage+1}/{pages}", 0, -340, 250, 50, 24);
             Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, () => { departurePage--; resume(); }).interactable = departurePage > 0;
             Button("NextDeparturePage", "次へ", 380, -340, 240, 55, () => { departurePage++; resume(); }).interactable = departurePage+1 < pages;
-            Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, confirm).interactable = valid;
-            Button("CloseOwnedDeparture", "帰還画面へ戻る", 0, -510, 800, 58, () => close(false));
+            if(save==null)Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, confirm).interactable = valid;
+            else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,save).interactable=!pending;
+            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-510,800,58,retrySave);
+            else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -510, 800, 58, () => close(false));
+        }
+
+        public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
+        {
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("SavedDeckContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("SavedDeckTitle","保存デッキ・装備",0,455,1700,70,36);
+            Text("SavedDeckError",error??"",0,290,1750,80,25);
+            var decks=profile.SavedDecks??new SavedDepartureDeck[0];
+            if(deleting!=null){var d=decks.SingleOrDefault(x=>x.Id==deleting);Text("DeleteDeckWarning",(d?.Name??"")+" を削除しますか？\n所持カードは減りません。",0,100,1700,180,30);
+                Button("ConfirmDeleteDeck","削除する",-400,-150,700,75,confirmDelete).interactable=!pending;Button("CancelDeleteDeck","取消し",400,-150,700,75,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload));return;}
+            Text("SavedDeckHelp","非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。",0,365,1750,100,25);
+            const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
+            for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
+                Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);
+                Button("EquipDeck_"+d.Id,"装備",30,y,160,60,()=>equip(d.Id)).interactable=!pending&&!active;
+                Button("EditDeck_"+d.Id,"編集",240,y,160,60,()=>edit(d.Id)).interactable=!pending;
+                Button("CloneDeck_"+d.Id,"複製",450,y,160,60,()=>clone(d.Id)).interactable=!pending;
+                Button("DeleteDeck_"+d.Id,"削除",660,y,160,60,()=>delete(d.Id)).interactable=!pending&&!active;}
+            Text("SavedDeckPage",$"{savedDeckPage+1}/{pages}",0,-300,300,55,24);
+            Button("PreviousSavedDeckPage","前へ",-380,-300,240,55,()=>{savedDeckPage--;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);}).interactable=!pending&&savedDeckPage>0;
+            Button("NextSavedDeckPage","次へ",380,-300,240,55,()=>{savedDeckPage++;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);}).interactable=!pending&&savedDeckPage+1<pages;
+            Button("NewSavedDeck","新しいデッキ",-450,-420,750,75,create).interactable=!pending;
+            Button("CloseSavedDeckMenu","帰還画面へ戻る",450,-420,750,75,close).interactable=!pending;
+            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-510,800,58,retry);
+            else if(reload!=null)Button("ReloadSavedDecks","保存から再読込",0,-510,800,58,reload);
         }
 
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)
