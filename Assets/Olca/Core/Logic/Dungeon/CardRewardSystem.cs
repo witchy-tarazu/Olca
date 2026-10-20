@@ -183,4 +183,37 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public event Action<Card> OnCardAdded;
     }
+    /// <summary>
+    /// 戦闘開始時の通貨対象と外部定義額を固定する。受領・保存・勝敗時の扱いは所有しない。
+    /// </summary>
+    public sealed class BattleCurrencyRewardSnapshot
+    {
+        private readonly List<KeyValuePair<Enemy, int>> initialTargets = new List<KeyValuePair<Enemy, int>>();
+
+        public BattleCurrencyRewardSnapshot(IEnumerable<Enemy> initialParticipants, Func<Enemy, int> amountForEnemy)
+        {
+            if (initialParticipants == null) throw new ArgumentNullException(nameof(initialParticipants));
+            if (amountForEnemy == null) throw new ArgumentNullException(nameof(amountForEnemy));
+            var seen = new HashSet<Enemy>();
+            foreach (var enemy in initialParticipants)
+            {
+                if (enemy == null || !seen.Add(enemy)) throw new ArgumentException("初期参加者がnullまたは重複しています", nameof(initialParticipants));
+                // 召喚物には通貨定義を要求せず、初期配置でも集計対象から除外する。
+                if (enemy.IsSummoned) continue;
+                int amount = amountForEnemy(enemy);
+                if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amountForEnemy), "通貨額は非負です");
+                initialTargets.Add(new KeyValuePair<Enemy, int>(enemy, amount));
+            }
+        }
+
+        /// <summary>確定済みの死亡だけを合計する。0なら通貨報酬の提示対象はない。</summary>
+        public long GetDefeatedEnemyTotal()
+        {
+            long total = 0;
+            foreach (var target in initialTargets)
+                if (target.Key.IsDead) total += target.Value;
+            return total;
+        }
+    }
+
 }

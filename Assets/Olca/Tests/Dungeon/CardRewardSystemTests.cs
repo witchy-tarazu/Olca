@@ -13,6 +13,54 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class CardRewardSystemTests
     {
+        [Test]
+        public void 通貨は初期参加した撃破敵だけを集計し召喚物と後発参加を除外する()
+        {
+            var a=new Enemy("a","敵A",10,ElementType.None,new Vector2Int(3,0));
+            var zero=new Enemy("z","額0",10,ElementType.None,new Vector2Int(4,0));
+            var summon=new Enemy("s","召喚",10,ElementType.None,new Vector2Int(5,0),isSummoned:true);
+            var initial=new List<Enemy>{a,zero,summon};int calls=0,amount=17;
+            var reward=new BattleCurrencyRewardSnapshot(initial,e=>{calls++;return e==a?amount:0;});
+            amount=999;initial.Clear();var late=new Enemy("late","後発",10,ElementType.None,new Vector2Int(4,0));initial.Add(late);
+            Assert.AreEqual(2,calls);Assert.AreEqual(0,reward.GetDefeatedEnemyTotal());
+            summon.TakeDamage(10,ElementType.None);late.TakeDamage(10,ElementType.None);
+            Assert.AreEqual(0,reward.GetDefeatedEnemyTotal());
+            a.TakeDamage(10,ElementType.None);zero.TakeDamage(10,ElementType.None);
+            Assert.AreEqual(17,reward.GetDefeatedEnemyTotal());Assert.AreEqual(17,reward.GetDefeatedEnemyTotal());Assert.AreEqual(2,calls);
+        }
+
+        [Test]
+        public void 同じ敵IDでも初期参加した別個体の額をそれぞれ合計する()
+        {
+            var a=new Enemy("same","同型A",10,ElementType.None,new Vector2Int(3,0));
+            var b=new Enemy("same","同型B",10,ElementType.None,new Vector2Int(4,0));
+            var reward=new BattleCurrencyRewardSnapshot(new[]{a,b},e=>e==a?7:11);
+            a.TakeDamage(10,ElementType.None);Assert.AreEqual(7,reward.GetDefeatedEnemyTotal());
+            b.TakeDamage(10,ElementType.None);Assert.AreEqual(18,reward.GetDefeatedEnemyTotal());
+        }
+
+        [Test]
+        public void 通貨の個体額合計はint範囲で折り返さない()
+        {
+            var a=new Enemy("a","敵A",1,ElementType.None,new Vector2Int(3,0));var b=new Enemy("b","敵B",1,ElementType.None,new Vector2Int(4,0));
+            var reward=new BattleCurrencyRewardSnapshot(new[]{a,b},_=>int.MaxValue);
+            a.TakeDamage(1,ElementType.None);b.TakeDamage(1,ElementType.None);
+            Assert.AreEqual(2L*int.MaxValue,reward.GetDefeatedEnemyTotal());
+        }
+
+        [Test]
+        public void 不正な初期参加者や負額では通貨対象を作らず敵も変更しない()
+        {
+            var e=new Enemy("e","敵",10,ElementType.None,new Vector2Int(3,0));
+            Assert.Throws<ArgumentNullException>(()=>new BattleCurrencyRewardSnapshot(null,_=>0));
+            Assert.Throws<ArgumentNullException>(()=>new BattleCurrencyRewardSnapshot(new[]{e},null));
+            Assert.Throws<ArgumentException>(()=>new BattleCurrencyRewardSnapshot(new Enemy[]{null},_=>0));
+            Assert.Throws<ArgumentException>(()=>new BattleCurrencyRewardSnapshot(new[]{e,e},_=>0));
+            Assert.Throws<ArgumentOutOfRangeException>(()=>new BattleCurrencyRewardSnapshot(new[]{e},_=>-1));
+            Assert.AreEqual(10,e.CurrentHp);
+            Assert.AreEqual(0,new BattleCurrencyRewardSnapshot(Array.Empty<Enemy>(),_=>0).GetDefeatedEnemyTotal());
+        }
+
         private MockRandomProvider mockRandom;
 
         [SetUp]
