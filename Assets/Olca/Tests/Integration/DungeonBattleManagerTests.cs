@@ -2876,6 +2876,74 @@ namespace Olca.Tests.Integration
             } finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
         }
 
+        private void SeedPriorProgressForFailure()
+        {
+            var p=new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Experience=100,Level=2,Tokens=17,
+                Owned=new[]{new OwnedCardCount{Id="heal",Name="heal_card",Rarity=CardRarity.Normal,Level=ExceedLevel.Normal,Count=2}},
+                ClearedDungeons=new[]{"prior-clear"},Receipts=new[]{new ClearReceipt{RunId="prior-run",Fingerprint="prior-result",Experience=100}}};
+            Assert.IsTrue(new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress")).TryWrite(0,p,out var error),error);
+        }
+        private static void ReachNonClearBattle(Olca.Application.Dungeon.DungeonBattleController c)
+        {for(int n=0;n<1200&&Model(c).CurrentBattle==null;n++)Tick(c);Assert.IsNotNull(Model(c).CurrentBattle);}
+        [TestCase(false, RunReturnOutcome.Defeated, "none")]
+        [TestCase(false, RunReturnOutcome.Defeated, "before")]
+        [TestCase(false, RunReturnOutcome.Defeated, "after")]
+        [TestCase(false, RunReturnOutcome.Retreated, "none")]
+        [TestCase(false, RunReturnOutcome.Retreated, "before")]
+        [TestCase(false, RunReturnOutcome.Retreated, "after")]
+        [TestCase(true, RunReturnOutcome.Defeated, "none")]
+        [TestCase(true, RunReturnOutcome.Defeated, "before")]
+        [TestCase(true, RunReturnOutcome.Defeated, "after")]
+        [TestCase(true, RunReturnOutcome.Retreated, "none")]
+        [TestCase(true, RunReturnOutcome.Retreated, "before")]
+        [TestCase(true, RunReturnOutcome.Retreated, "after")]
+        [TestCase(false, RunReturnOutcome.Retreated, "child")]
+        [TestCase(true, RunReturnOutcome.Defeated, "child")]
+        public void 敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(bool route,RunReturnOutcome outcome,string fault)
+        {
+            SeedPriorProgressForFailure();var map=DungeonConfig.CreateTestDungeon(14,5,2);
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> setup=x=>x.ConfigureDungeon(DungeonConfig.CreateTestDungeon(14,5,2));
+            var c=route?Start(new[]{map,DungeonConfig.CreateTestDungeon(5,30,4)}):Start(configure:setup);
+            ReachNonClearBattle(c);var choices=Win(c);Assert.IsNotNull(choices);Model(c).SelectCardReward(choices[0]);
+            Assert.AreEqual(1,Model(c).Dungeon.GetObtainedCards().Count);Assert.AreEqual(7,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+            var progress=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var before=System.IO.File.ReadAllBytes(progress.ActivePath);
+            var io=new KeyboardFaultIo{Fault=fault=="before"||fault=="after"?fault:null};Set(progress,"io",io);
+            if(outcome==RunReturnOutcome.Defeated){Model(c).ResumeAfterBattle();ReachNonClearBattle(c);Model(c).CurrentBattle.Player.TakeDamage(99999);}
+            else{c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"CancelRetreat");Assert.IsTrue(c.IsUserPaused);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(progress.ActivePath));KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");}
+            if(fault=="before"){
+                Assert.IsNull(c.PersistentProgress.Flow);Assert.AreEqual(1,c.PersistentProgress.Receipts.Length);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(progress.ActivePath));
+                Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).HasPendingSave);io.Fault=null;KeyboardButton(c,"RetryClearReturn");
+            }
+            var ended=c.PersistentProgress.Flow;Assert.IsNotNull(ended,((ClearReturnSession)Get(c,"clearReturnSession")).Error);Assert.AreEqual(outcome,ended.Outcome);
+            Assert.AreEqual(ClearReturnStage.Returned,ended.Stage);Assert.IsEmpty(ended.Candidates);Assert.IsEmpty(ended.Selected);Assert.AreEqual(0,ended.ExperienceAward);Assert.AreEqual(0,ended.TokenAward);
+            Assert.AreEqual(100,c.PersistentProgress.Experience);Assert.AreEqual(2,c.PersistentProgress.Level);Assert.AreEqual(17,c.PersistentProgress.Tokens);Assert.AreEqual(2,c.PersistentProgress.Owned.Single().Count);
+            CollectionAssert.AreEqual(new[]{"prior-clear"},c.PersistentProgress.ClearedDungeons);Assert.AreEqual(2,c.PersistentProgress.Receipts.Length);
+            Assert.AreEqual(105,c.ReturnedPlayer.CurrentHp);Assert.AreEqual(11,c.ReturnedPlayer.AttackPower);Assert.IsFalse(c.ReturnedPlayer.IsInvincible);Assert.IsFalse(c.ReturnedPlayer.IsStaggered);
+            Assert.IsFalse(c.TryRestoreMemoryCheckpoint(out _));Call(c,"EndRunWithoutRewards",outcome);Assert.AreEqual(2,c.PersistentProgress.Receipts.Length);
+            var oldPath=route?Store(c).ActivePath:((Olca.Unity.FileCheckpointStore)((DungeonCheckpointSession)Get(c,"memoryCheckpoints")).Store).ActivePath;
+            var closedBytes=System.IO.File.ReadAllBytes(oldPath);
+            c=route?Start():Start(configure:setup);Assert.AreEqual(outcome,c.PersistentProgress.Flow.Outcome);Assert.IsTrue((bool)Get(c,"clearReturnVisible"));Assert.IsFalse(c.TryRestoreMemoryCheckpoint(out _));
+            var childIo=new KeyboardFaultIo{Fault=fault=="child"?"before":null};Set(c,"nextDepartureIo",childIo);KeyboardButton(c,"NextDeparture");
+            string run=c.PersistentProgress.NextDeparture.Start.RunId;Assert.AreNotEqual(ended.RunId,run);
+            if(fault=="child"){
+                c=Start(configure:x=>{if(!route)setup(x);Set(x,"nextDepartureIo",childIo);});childIo.Fault=null;KeyboardButton(c,"RetryClearReturn");Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);
+            }
+            Assert.AreEqual(6,Model(c).Dungeon.GetCurrentDeck().TotalCount);Assert.IsEmpty(Model(c).Dungeon.GetObtainedCards());Assert.AreEqual(105,Model(c).Dungeon.Player.CurrentHp);
+            Assert.AreEqual(2,c.PersistentProgress.Receipts.Length);Assert.AreEqual(2,c.PersistentProgress.Owned.Single().Count);Assert.AreEqual(100,c.PersistentProgress.Experience);
+            c=route?Start():Start(configure:setup);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);
+            CollectionAssert.AreEqual(closedBytes,System.IO.File.ReadAllBytes(oldPath));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 未保存の終了依頼を再起動しても敗北はTerminalから復旧し撤退は未確定の旧保存から再依頼できる(bool defeat)
+        {
+            SeedPriorProgressForFailure();var map=DungeonConfig.CreateTestDungeon(14,5,2);System.Action<Olca.Application.Dungeon.DungeonBattleController> setup=x=>x.ConfigureDungeon(DungeonConfig.CreateTestDungeon(14,5,2));
+            var c=Start(configure:setup);ReachNonClearBattle(c);Set(Get(c,"clearReturnStore"),"io",new KeyboardFaultIo{Fault="before"});
+            if(defeat)Model(c).CurrentBattle.Player.TakeDamage(99999);else{c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");}
+            Assert.IsNull(c.PersistentProgress.Flow);c=Start(configure:setup);
+            if(!defeat){Assert.IsNull(c.PersistentProgress.Flow);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");}
+            Assert.AreEqual(defeat?RunReturnOutcome.Defeated:RunReturnOutcome.Retreated,c.PersistentProgress.Flow.Outcome);Assert.AreEqual(2,c.PersistentProgress.Receipts.Length);Assert.AreEqual(100,c.PersistentProgress.Experience);
+        }
+
         // 所持を十分に集めた状態のfixture。製品スターターの付与ではない。
         private void SeedOwnedDeparture(Olca.Application.Dungeon.DungeonBattleController c)
         {
@@ -3341,6 +3409,25 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        [System.Runtime.Serialization.DataContract]
+        private sealed class LegacyEnvelope
+        {
+            [System.Runtime.Serialization.DataMember] public int Version;
+            [System.Runtime.Serialization.DataMember] public string Payload;
+            [System.Runtime.Serialization.DataMember] public string Sha256;
+        }
+        [Test]
+        public void 終了種別フィールドのない旧版進行は成功帰還として読み既存バイト列を書き換えない()
+        {
+            var session=new ClearReturnSession(Store());Assert.IsTrue(session.Begin(Terminal(Card("old")),"legacy",new ClearReturnSettings()));Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            var serializer=new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(LegacyEnvelope));LegacyEnvelope envelope;
+            using(var stream=new System.IO.MemoryStream(System.IO.File.ReadAllBytes(Store().ActivePath)))envelope=(LegacyEnvelope)serializer.ReadObject(stream);
+            envelope.Payload=envelope.Payload.Replace("\"Outcome\":0,","");StringAssert.DoesNotContain("Outcome",envelope.Payload);
+            using(var sha=System.Security.Cryptography.SHA256.Create())envelope.Sha256=System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(envelope.Payload))).Replace("-","");
+            using(var stream=new System.IO.MemoryStream()){serializer.WriteObject(stream,envelope);System.IO.File.WriteAllBytes(Store().ActivePath,stream.ToArray());}
+            var old=System.IO.File.ReadAllBytes(Store().ActivePath);var restored=new ClearReturnSession(Store());Assert.IsTrue(restored.Ready,restored.Error);Assert.AreEqual(RunReturnOutcome.Cleared,restored.Snapshot.Flow.Outcome);Assert.AreEqual(RunReturnOutcome.Cleared,restored.Snapshot.Receipts.Single().Outcome);CollectionAssert.AreEqual(old,System.IO.File.ReadAllBytes(Store().ActivePath));
+        }
+
         private string directory;
         private sealed class FaultIo : Olca.Unity.CheckpointFileIo
         {

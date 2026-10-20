@@ -240,6 +240,7 @@ namespace Olca.Core.Domain
 namespace Olca.Core.Domain
 {
     public enum ClearReturnStage { Choosing, Awarded, Returned }
+    public enum RunReturnOutcome { Cleared, Defeated, Retreated }
 
     // クリア導線の暫定調整値。攻略途中には成長を反映しない。
     public sealed class ClearReturnSettings
@@ -278,6 +279,7 @@ namespace Olca.Core.Domain
     public sealed class ClearReceipt
     {
         public string RunId, Fingerprint;
+        public RunReturnOutcome Outcome;
         public long Experience, Tokens;
         public ClearReceipt Copy() => (ClearReceipt)MemberwiseClone();
     }
@@ -285,6 +287,7 @@ namespace Olca.Core.Domain
     {
         public string RunId, DungeonKey, Fingerprint;
         public ClearReturnStage Stage;
+        public RunReturnOutcome Outcome;
         public ReturnCardData[] Candidates = new ReturnCardData[0];
         public int[] Selected = new int[0];
         public long ExperienceAward, TokenAward;
@@ -327,7 +330,8 @@ namespace Olca.Core.Domain
                 !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.Level)) ||
                 p.Owned.GroupBy(c => (c.Id, c.Level)).Any(g => g.Count() > 1) ||
                 p.ClearedDungeons.Any(string.IsNullOrWhiteSpace) || p.ClearedDungeons.Distinct().Count() != p.ClearedDungeons.Length ||
-                p.Receipts.Any(r => r == null || string.IsNullOrWhiteSpace(r.RunId) || string.IsNullOrWhiteSpace(r.Fingerprint) || r.Experience < 0 || r.Tokens < 0) ||
+                p.Receipts.Any(r => r == null || string.IsNullOrWhiteSpace(r.RunId) || string.IsNullOrWhiteSpace(r.Fingerprint) || r.Experience < 0 || r.Tokens < 0 || !Enum.IsDefined(typeof(RunReturnOutcome), r.Outcome) ||
+                    (r.Outcome != RunReturnOutcome.Cleared && (r.Experience != 0 || r.Tokens != 0))) ||
                 p.Receipts.Select(r => r.RunId).Distinct().Count() != p.Receipts.Length)
                 throw new ArgumentException("所持カードまたは受領履歴が不正です");
             var n = p.NextDeparture;
@@ -338,9 +342,11 @@ namespace Olca.Core.Domain
                 !p.Receipts.Any(r => r.RunId == n.ParentRunId))) throw new ArgumentException("次回出撃計画が不正です");
             var f = p.Flow; if (f == null) return;
             if (string.IsNullOrWhiteSpace(f.RunId) || string.IsNullOrWhiteSpace(f.DungeonKey) || string.IsNullOrWhiteSpace(f.Fingerprint) ||
-                !Enum.IsDefined(typeof(ClearReturnStage), f.Stage) || f.Candidates == null || f.Selected == null || f.Settings == null || f.ExperienceAward < 0 || f.TokenAward < 0)
+                !Enum.IsDefined(typeof(ClearReturnStage), f.Stage) || !Enum.IsDefined(typeof(RunReturnOutcome), f.Outcome) || f.Candidates == null || f.Selected == null || f.Settings == null || f.ExperienceAward < 0 || f.TokenAward < 0)
                 throw new ArgumentException("帰還段階が不正です");
             f.Settings.Validate();
+            if (f.Outcome != RunReturnOutcome.Cleared && (f.Stage != ClearReturnStage.Returned || f.Candidates.Length != 0 ||
+                f.Selected.Length != 0 || f.ExperienceAward != 0 || f.TokenAward != 0)) throw new ArgumentException("失敗・撤退で報酬を付与できません");
             if (f.Candidates.Any(c => c == null || string.IsNullOrWhiteSpace(c.InstanceId) || string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name) ||
                 string.IsNullOrWhiteSpace(c.ValueHash) || !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.Level) || c.OverflowTokens <= 0) ||
                 f.Candidates.Select(c => c.InstanceId).Distinct().Count() != f.Candidates.Length)
@@ -348,7 +354,7 @@ namespace Olca.Core.Domain
             ValidateSelection(f);
             var receipt = p.Receipts.SingleOrDefault(r => r.RunId == f.RunId);
             if (f.Stage == ClearReturnStage.Choosing ? receipt != null : receipt == null || receipt.Fingerprint != f.Fingerprint ||
-                receipt.Experience != f.ExperienceAward || receipt.Tokens != f.TokenAward || f.NewLevel < 1 || f.ReturnedMaxHp <= 0 || f.ReturnedAttack < 0)
+                receipt.Outcome != f.Outcome || receipt.Experience != f.ExperienceAward || receipt.Tokens != f.TokenAward || f.NewLevel < 1 || f.ReturnedMaxHp <= 0 || f.ReturnedAttack < 0)
                 throw new ArgumentException("帰還と受領履歴の対応が不正です");
             if (f.Stage != ClearReturnStage.Choosing && (f.NewLevel != p.Level || f.ReturnedMaxHp != f.Settings.MaxHp(p.Level) || f.ReturnedAttack != f.Settings.Attack(p.Level)))
                 throw new ArgumentException("成長反映値が不正です");
@@ -422,6 +428,33 @@ namespace Olca.Core.Domain
                 return Stage(next);
             } catch (Exception e) when (e is ArgumentException || e is OverflowException) { return Fail(e.Message); }
         }
+        /// <summary>終了済みRunIdを報酬なしで記録する。進行保存が確定するまで未確定。</summary>
+        public bool EndWithoutRewards(Olca.Core.Logic.Dungeon.RestoredCheckpoint source, string dungeonKey,
+            ClearReturnSettings settings, RunReturnOutcome outcome)
+        {
+            if (!Available()) return Fail("未保存の処理を先に再試行してください");
+            try {
+                if (settings == null) throw new ArgumentNullException(nameof(settings)); settings.Validate();
+                var dto = source?.Snapshot;
+                if (dto == null || string.IsNullOrWhiteSpace(dungeonKey) || !Enum.IsDefined(typeof(RunReturnOutcome), outcome) || outcome == RunReturnOutcome.Cleared ||
+                    (outcome == RunReturnOutcome.Defeated ? dto.Boundary != CheckpointBoundary.Terminal || dto.Player.Hp != 0 : dto.Boundary == CheckpointBoundary.Terminal))
+                    throw new ArgumentException("敗北境界または未終了攻略の撤退が必要です");
+                string fingerprint = Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w => {
+                    w.Write("non-clear-return-v1"); w.Write(dto.RunId); w.Write(dto.Sequence); w.Write(dto.MapHash); w.Write(dungeonKey); w.Write((int)outcome);
+                });
+                var receipt = current.Receipts.SingleOrDefault(r => r.RunId == dto.RunId);
+                if (receipt != null) return receipt.Outcome == outcome && receipt.Fingerprint == fingerprint || Fail("終了済み攻略の内容が一致しません");
+                if (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned) return Fail("別の未完了帰還があります");
+                var next = current.Copy();
+                next.Flow = new ClearReturnData { RunId = dto.RunId, DungeonKey = dungeonKey, Fingerprint = fingerprint,
+                    Outcome = outcome, Stage = ClearReturnStage.Returned, Settings = settings.Copy(), NewLevel = next.Level,
+                    ReturnedMaxHp = settings.MaxHp(next.Level), ReturnedAttack = settings.Attack(next.Level) };
+                next.ReturnedHp = next.Flow.ReturnedMaxHp;
+                next.Receipts = next.Receipts.Concat(new[] { new ClearReceipt { RunId = dto.RunId, Fingerprint = fingerprint, Outcome = outcome } }).ToArray();
+                return Stage(next);
+            } catch (Exception e) when (e is ArgumentException || e is OverflowException) { return Fail(e.Message); }
+        }
+
         public bool Toggle(int index)
         {
             if (!Available() || current.Flow?.Stage != ClearReturnStage.Choosing) return Fail("カードを選択できる状態ではありません");

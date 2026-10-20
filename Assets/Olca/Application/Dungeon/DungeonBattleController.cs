@@ -268,6 +268,17 @@ namespace Olca.Application.Dungeon
             MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
                 .onClick.AddListener(() => keyboardSettingsView.Open(GameplayKeyboardProfile));
             MakeButton("OwnedCardsButton", "所持カード", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -300)).onClick.AddListener(OpenOwnedCards);
+            MakeButton("RetreatButton", "撤退して帰還", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -400)).onClick.AddListener(RequestRetreat);
+            retreatConfirmation = new GameObject("RetreatConfirmation", typeof(RectTransform), typeof(Image)); retreatConfirmation.transform.SetParent(pauseCanvas.transform, false);
+            var rr = (RectTransform)retreatConfirmation.transform; rr.anchorMin = Vector2.zero; rr.anchorMax = Vector2.one; rr.offsetMin = rr.offsetMax = Vector2.zero;
+            retreatConfirmation.GetComponent<Image>().color = new Color(.02f,.05f,.08f,.96f);
+            var warning = new GameObject("RetreatWarning", typeof(RectTransform), typeof(Text)); warning.transform.SetParent(retreatConfirmation.transform, false);
+            var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
+            wt.text = "撤退すると攻略中に獲得したカードをすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
+            wt.rectTransform.sizeDelta = new Vector2(1600,200); wt.rectTransform.anchoredPosition = new Vector2(0,150);
+            MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100)).onClick.AddListener(ConfirmRetreat);
+            MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100)).onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
+            retreatConfirmation.SetActive(false);
             var settingsPanel = new GameObject("KeyboardSettingsPanel", typeof(RectTransform));
             settingsPanel.transform.SetParent(pauseCanvas.transform, false);
             keyboardSettingsView = settingsPanel.AddComponent<GameplayKeyboardSettingsView>();
@@ -366,6 +377,48 @@ namespace Olca.Application.Dungeon
             ownedDepartureEditing = false; StartNextDepartureWithDeck(deck);
         }
 
+        private bool endingRun;
+        private RunReturnOutcome? nonClearReturnRequest;
+        private GameObject retreatConfirmation;
+        private bool TryReadCurrentSavedRun(out RestoredCheckpoint source, out string key, out string error)
+        {
+            source = null; key = null; error = null;
+            if (floorDefinitions != null) {
+                var data = floorStore.Read(); if (data == null) { error = floorStore.ReadError; return false; }
+                if (!floorDefinitions.TryRestore(data, out var restored, out error)) return false;
+                source = restored.State; key = floorDefinitions.RouteId; return true;
+            }
+            var dto = memoryCheckpoints?.Store.Read();
+            if (dto == null) { error = "攻略保存を読み込めません"; return false; }
+            key = dto.DungeonId; return CheckpointCodec.TryRestore(dto, memoryCheckpoints.Definitions, out source, out error);
+        }
+        private void RequestRetreat()
+        {
+            if (!IsUserPaused || clearReturnVisible || endingRun || manager.IsSuspended || manager.Dungeon.IsCheckpointBlocked ||
+                manager.CurrentPhase == GamePhase.GameOver || manager.CurrentPhase == GamePhase.DungeonCleared) return;
+            pauseOverlay.SetActive(false); retreatConfirmation.SetActive(true);
+        }
+        private void ConfirmRetreat()
+        {
+            if (!IsUserPaused || retreatConfirmation == null || !retreatConfirmation.activeSelf || clearReturnVisible) return;
+            EndRunWithoutRewards(RunReturnOutcome.Retreated);
+        }
+        private void EndRunWithoutRewards(RunReturnOutcome outcome)
+        {
+            if (endingRun || clearReturnSession == null || !clearReturnSession.Ready) return;
+            endingRun = true; nonClearReturnRequest = outcome;
+            try {
+                if (!TryReadCurrentSavedRun(out var source, out var key, out var error)) { clearReturnError = error; ShowClearReturn(); return; }
+                if (outcome == RunReturnOutcome.Retreated && !manager.IsSuspended && !manager.SuspendForCheckpoint()) return;
+                if (IsUserPaused) SetUserPaused(false);
+                transitionCts?.Cancel(); battleSession?.Detach(); cardSelectionView?.Hide();
+                pendingCardChoices = null; floorSwapPending = false; basicAttackInput.Reset(); queuedBasicAttackTap = false;
+                clearReturnError = null;
+                if (!clearReturnSession.EndWithoutRewards(source, key, ReturnSettings(), outcome) && !clearReturnSession.HasPendingSave) clearReturnError = clearReturnSession.Error;
+                ShowClearReturn();
+            } finally { endingRun = false; }
+        }
+
         private string clearReturnError, progressDirectoryOverride;
         public ClearReturnProfile PersistentProgress => clearReturnSession?.Snapshot;
         public PlayerCharacter ReturnedPlayer => clearReturnSession?.ReturnedPlayer;
@@ -398,7 +451,7 @@ namespace Olca.Application.Dungeon
         }
         private void ShowClearReturn()
         {
-            clearReturnVisible = true; transitionCts?.Cancel();
+            clearReturnVisible = true; transitionCts?.Cancel(); retreatConfirmation?.SetActive(false);
             checkpointOverlay?.SetActive(false); pauseOverlay?.SetActive(false); keyboardSettingsView?.DiscardAndClose();
             clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.DisplayFlow,
                 !clearReturnSession.Ready || clearReturnSession.HasPendingSave || progressStartupBlocked || clearReturnError != null,
@@ -412,6 +465,16 @@ namespace Olca.Application.Dungeon
                 return;
             }
             if (HasIncompleteReturn) { ShowClearReturn(); return; }
+            if (awaitingCheckpointChoice && TryReadCurrentSavedRun(out var ended, out var endedKey, out var endedError)) {
+                var flow = clearReturnSession.Snapshot.Flow;
+                if (flow != null && flow.Outcome != RunReturnOutcome.Cleared && flow.RunId == ended.Snapshot.RunId) { ShowClearReturn(); return; }
+                if (clearReturnSession.Snapshot.Receipts.Any(r => r.RunId == ended.Snapshot.RunId && r.Outcome != RunReturnOutcome.Cleared)) {
+                    clearReturnError = "終了済みの攻略は再開できません。既存保存は保持しています。"; ShowClearReturn(); return;
+                }
+                if (ended.Snapshot.Boundary == CheckpointBoundary.Terminal && ended.Snapshot.Player.Hp == 0) {
+                    clearReturnSession.EndWithoutRewards(ended, endedKey, ReturnSettings(), RunReturnOutcome.Defeated); ShowClearReturn(); return;
+                }
+            }
             if (awaitingCheckpointChoice && TryReadCompletedRun(out var source, out var key, out var error)) {
                 clearReturnSession.Begin(source, key, ReturnSettings()); ShowClearReturn();
             }
@@ -436,6 +499,10 @@ namespace Olca.Application.Dungeon
                 if (!ActivateNextDeparture(out clearReturnError)) ShowClearReturn();
                 return;
             }
+            if (clearReturnSession.Snapshot.Flow?.Outcome != RunReturnOutcome.Cleared && clearReturnSession.Snapshot.Flow != null && !clearReturnSession.HasPendingSave) {
+                clearReturnError = null; ShowClearReturn(); return;
+            }
+            if (nonClearReturnRequest.HasValue) { EndRunWithoutRewards(nonClearReturnRequest.Value); return; }
             if (progressStartupBlocked && clearReturnSession.Ready) clearReturnError = "進行データを読み込めました。ゲームを再起動して再開してください。";
             else if (clearReturnError != null && clearReturnSession.Ready && !clearReturnSession.HasPendingSave) { BeginClearReturn(); return; }
             ShowClearReturn();
@@ -505,7 +572,7 @@ namespace Olca.Application.Dungeon
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
             floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
-            clearReturnVisible = false; clearReturnError = null; clearReturnView.gameObject.SetActive(false); checkpointOverlay.SetActive(false);
+            clearReturnVisible = false; clearReturnError = null; nonClearReturnRequest = null; clearReturnView.gameObject.SetActive(false); checkpointOverlay.SetActive(false);
             ReplaceManager(next, session); return true;
         }
 
@@ -943,6 +1010,7 @@ namespace Olca.Application.Dungeon
         private void OnGameOver()
         {
             logger.LogInfo("[Controller] ゲームオーバー");
+            EndRunWithoutRewards(RunReturnOutcome.Defeated);
         }
 
         private void OnDungeonCleared(IReadOnlyList<Card> obtainedCards)
@@ -1008,7 +1076,7 @@ namespace Olca.Application.Dungeon
         // 候補と保存形式を検証した後でのみ旧モデルを破棄する。
         public bool TryRestoreMemoryCheckpoint(out string error)
         {
-            if (clearReturnVisible) { error = "クリア後の帰還処理を先に完了してください"; return false; }
+            if (clearReturnVisible) { error = "帰還処理を先に完了してください"; return false; }
             // 呼出し前の進行時間は保持し、検証・初期化に費やす同期時間だけを除外する。
             logicalLoop.Observe(manager != null && !IsUserPaused && !awaitingCheckpointChoice &&
                 !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
@@ -1071,6 +1139,8 @@ namespace Olca.Application.Dungeon
                     out restored, out error, new ExceedSystem(factory), new TuningSystem(),
                     new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
             }
+            if (clearReturnSession?.Snapshot?.Receipts.Any(r => r.RunId == candidate.RunId && r.Outcome != RunReturnOutcome.Cleared) == true)
+            { restored.SuspendForCheckpoint(); error = "敗北・撤退が確定した攻略は再開できません"; return false; }
             if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }
             if (loadedRoute != null) { floorSession = loadedRoute; CurrentFloorIndex = loadedRoute.Current.FloorIndex; }
             floorSwapPending = false;
