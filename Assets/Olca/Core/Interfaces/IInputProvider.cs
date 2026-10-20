@@ -127,9 +127,11 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>検証済みの不変設定を返す。呼出し側が保存・実入力への適用を行う。</summary>
+        // 保存成功前の候補取得では編集の破棄先を変更しない。
+        public InputBindingProfile Preview() => committed.With(draft);
         public InputBindingProfile Apply()
         {
-            committed = committed.With(draft);
+            committed = Preview();
             Discard();
             return committed;
         }

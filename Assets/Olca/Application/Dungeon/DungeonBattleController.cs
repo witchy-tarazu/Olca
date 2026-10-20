@@ -87,6 +87,7 @@ namespace Olca.Application.Dungeon
         private bool battleFieldReady;
         private GameObject pauseCanvas;
         private GameObject pauseOverlay;
+        private GameplayKeyboardSettingsView keyboardSettingsView;
         private float timeScaleBeforePause;
         [SerializeField, HideInInspector] private string checkpointDirectoryOverride;
         private bool awaitingCheckpointChoice;
@@ -192,7 +193,7 @@ namespace Olca.Application.Dungeon
             manager.SetUserPaused(paused);
             GameplayPause.SetPaused(paused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
-            else Time.timeScale = timeScaleBeforePause;
+            else { Time.timeScale = timeScaleBeforePause; keyboardSettingsView?.DiscardAndClose(); }
             pauseOverlay?.SetActive(paused);
             inputProvider?.QueueSnapshot();
         }
@@ -226,6 +227,12 @@ namespace Olca.Application.Dungeon
             pauseOverlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
             MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
             MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
+            MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
+                .onClick.AddListener(() => keyboardSettingsView.Open(GameplayKeyboardProfile));
+            var settingsPanel = new GameObject("KeyboardSettingsPanel", typeof(RectTransform));
+            settingsPanel.transform.SetParent(pauseCanvas.transform, false);
+            keyboardSettingsView = settingsPanel.AddComponent<GameplayKeyboardSettingsView>();
+            keyboardSettingsView.Initialize(font, candidate => TryApplyGameplayKeyboardProfile(candidate, out var error) ? null : error);
             pauseOverlay.SetActive(false);
             checkpointOverlay = new GameObject("CheckpointOverlay", typeof(RectTransform), typeof(Image));
             checkpointOverlay.transform.SetParent(pauseCanvas.transform, false);

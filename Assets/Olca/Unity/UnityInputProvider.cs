@@ -39,6 +39,18 @@ namespace Olca.Unity
             Add("battle", "CustomPrimary", Key.LeftAlt); Add("battle", "CustomSecondary", Key.RightAlt);
             return new Olca.Core.Domain.InputBindingProfile(slots, new (string, string, string)[0]);
         }
+        // 設定画面専用の単一キー取得。ゲーム入力や論理時計へは流さない。
+        public static (int HeldCount, string Key) CaptureBindingKey()
+        {
+            int held = 0; string key = null;
+            if (Keyboard.current != null)
+                foreach (var control in Keyboard.current.allKeys)
+                {
+                    if (control.isPressed) { held++; key = control.keyCode.ToString(); }
+                }
+            return (held, key);
+        }
+
         // メニューの必須操作は対象外。既知の個別スロットだけをまとめて検証してから反映する。
         public bool TryApplyKeyboardProfile(Olca.Core.Domain.InputBindingProfile profile, out string error)
         {

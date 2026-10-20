@@ -755,3 +755,145 @@ namespace Olca.Presentation.Field
         }
     }
 }
+
+
+namespace Olca.Presentation.Field
+{
+    // ゲーム操作の既存スロットを編集する画面。重複/必須判定と保存は既存モデル・Controllerへ委譲する。
+    public sealed class GameplayKeyboardSettingsView : MonoBehaviour
+    {
+        private InputBindingProfile applied;
+        private InputBindingEdit edit;
+        private System.Func<InputBindingProfile, string> save;
+        private readonly Dictionary<(string Device, string Context, string Action), UnityEngine.UI.Text> labels
+            = new Dictionary<(string, string, string), UnityEngine.UI.Text>();
+        private (string Device, string Context, string Action)? listening;
+        private bool awaitRelease;
+        private UnityEngine.UI.Text status;
+        private UnityEngine.UI.Button saveButton;
+        private GameObject resetConfirmation;
+        private Font font;
+
+        public void Initialize(Font font, System.Func<InputBindingProfile, string> save)
+        {
+            this.font = font; this.save = save;
+            var root = (RectTransform)transform;
+            root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
+            gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(0.03f, 0.05f, 0.1f, 1f);
+            MakeText("Title", "キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38);
+            status = MakeText("Status", "", transform, new Vector2(0, 360), new Vector2(1740, 100), 26);
+            var defaults = Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+            int[] rows = { 0, 0, 0 };
+            MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28);
+            MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28);
+            MakeText("ActionTitle", "戦闘：行動", transform, new Vector2(560, 285), new Vector2(520, 50), 28);
+            foreach (var slot in defaults.Bindings.Keys)
+            {
+                int column = slot.Context == "exploration" ? 0 :
+                    (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
+                float x = (column - 1) * 560, y = 215 - rows[column]++ * 70;
+                MakeText("Action_" + slot.Action, Label(slot.Action), transform, new Vector2(x - 165, y), new Vector2(180, 55), 24);
+                var button = MakeButton("Bind_" + slot.Context + "_" + slot.Action, "", transform, new Vector2(x + 15, y), new Vector2(175, 54));
+                labels.Add(slot, button.GetComponentInChildren<UnityEngine.UI.Text>());
+                button.onClick.AddListener(() => BeginCapture(slot));
+                MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + 195, y), new Vector2(100, 54))
+                    .onClick.AddListener(() => { listening = null; Assign(slot, null); });
+            }
+            MakeButton("CancelCapture", "キー入力を取消", transform, new Vector2(-560, -175), new Vector2(400, 55))
+                .onClick.AddListener(() => { listening = null; Refresh("キー入力を取り消しました。"); });
+            saveButton = MakeButton("SaveKeyboardSettings", "保存・適用", transform, new Vector2(-560, -420), new Vector2(400, 70));
+            saveButton.onClick.AddListener(Save);
+            MakeButton("ResetKeyboardSettings", "初期配置へ戻す", transform, new Vector2(0, -420), new Vector2(400, 70))
+                .onClick.AddListener(() => { listening = null; resetConfirmation.SetActive(true); Refresh(""); });
+            MakeButton("CloseKeyboardSettings", "破棄して戻る", transform, new Vector2(560, -420), new Vector2(400, 70))
+                .onClick.AddListener(DiscardAndClose);
+            resetConfirmation = new GameObject("ResetKeyboardConfirmation", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            resetConfirmation.transform.SetParent(transform, false);
+            var rect = (RectTransform)resetConfirmation.transform;
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            resetConfirmation.GetComponent<UnityEngine.UI.Image>().color = new Color(0.02f, 0.03f, 0.06f, 0.98f);
+            MakeText("ResetQuestion", "初期配置へ戻しますか？\n保存・適用するまでは変更を破棄できます。", resetConfirmation.transform,
+                new Vector2(0, 100), new Vector2(1500, 150), 34);
+            MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75))
+                .onClick.AddListener(() => {
+                    edit = Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile().BeginEdit();
+                    resetConfirmation.SetActive(false); Refresh("初期配置を表示しました。保存・適用で確定します。");
+                });
+            MakeButton("CancelKeyboardReset", "やめる", resetConfirmation.transform, new Vector2(280, -80), new Vector2(450, 75))
+                .onClick.AddListener(() => { resetConfirmation.SetActive(false); Refresh("初期化を取り消しました。"); });
+            resetConfirmation.SetActive(false); gameObject.SetActive(false);
+        }
+
+        public void Open(InputBindingProfile profile)
+        {
+            applied = profile; edit = profile.BeginEdit(); listening = null;
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            resetConfirmation.SetActive(false); gameObject.SetActive(true);
+            Refresh("変更するキーを選んでください。同じ場面の割り当ては交換されます。");
+        }
+        public void BeginCapture((string Device, string Context, string Action) slot)
+        {
+            listening = slot; awaitRelease = true;
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            Refresh("押しているキーを離してから、新しいキーを1つ押してください。");
+        }
+        private void Update()
+        {
+            if (!gameObject.activeSelf || !listening.HasValue) return;
+            var keys = Olca.Unity.UnityInputProvider.CaptureBindingKey();
+            if (awaitRelease) { if (keys.HeldCount == 0) awaitRelease = false; return; }
+            if (keys.HeldCount == 0) return;
+            if (keys.HeldCount != 1) { awaitRelease = true; Refresh("新しいキーを1つだけ押してください。"); return; }
+            var slot = listening.Value; listening = null; Assign(slot, keys.Key);
+        }
+        private void Assign((string Device, string Context, string Action) slot, string key)
+        {
+            Refresh(edit.TryAssign(slot, key, out var error) ? "変更しました。保存・適用で確定します。" : error);
+        }
+        private void Save()
+        {
+            if (listening.HasValue) return;
+            var candidate = edit.Preview();
+            string error = save(candidate);
+            if (error != null) { Refresh("保存できませんでした。変更はまだ適用されていません。\n再試行するか、破棄して戻ってください。"); return; }
+            applied = candidate; edit = candidate.BeginEdit(); Refresh("保存・適用しました。");
+        }
+        public void DiscardAndClose()
+        {
+            listening = null; if (applied != null) edit = applied.BeginEdit();
+            gameObject.SetActive(false);
+        }
+        private void Refresh(string message)
+        {
+            foreach (var pair in labels) pair.Value.text = edit.Draft[pair.Key] ?? "未割当";
+            status.text = message; saveButton.interactable = !listening.HasValue;
+        }
+        private static string Label(string action)
+        {
+            bool second = action.EndsWith("Secondary"); string suffix = second ? " 2" : " 1";
+            if (action.StartsWith("Dash")) return "ダッシュ" + suffix;
+            if (action.StartsWith("Left")) return "左移動" + suffix;
+            if (action.StartsWith("Right")) return "右移動" + suffix;
+            if (action.StartsWith("Up")) return "上移動" + suffix;
+            if (action.StartsWith("Down")) return "下移動" + suffix;
+            if (action.StartsWith("Custom")) return "カスタム" + suffix;
+            return action == "JumpPrimary" ? "ジャンプ" : action == "AttackPrimary" ? "固有攻撃" : "カード使用";
+        }
+        private UnityEngine.UI.Text MakeText(string name, string text, Transform parent, Vector2 position, Vector2 size, int fontSize)
+        {
+            var obj = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Text)); obj.transform.SetParent(parent, false);
+            var view = obj.GetComponent<UnityEngine.UI.Text>(); view.text = text; view.font = font; view.fontSize = fontSize;
+            view.alignment = TextAnchor.MiddleCenter; view.raycastTarget = false;
+            view.rectTransform.anchorMin = view.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            view.rectTransform.anchoredPosition = position; view.rectTransform.sizeDelta = size; return view;
+        }
+        private UnityEngine.UI.Button MakeButton(string name, string text, Transform parent, Vector2 position, Vector2 size)
+        {
+            var obj = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Image), typeof(UnityEngine.UI.Button)); obj.transform.SetParent(parent, false);
+            var rect = (RectTransform)obj.transform; rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f); rect.anchoredPosition = position; rect.sizeDelta = size;
+            obj.GetComponent<UnityEngine.UI.Image>().color = new Color(0.12f, 0.2f, 0.36f, 1f);
+            var button = obj.GetComponent<UnityEngine.UI.Button>(); button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
+            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); return button;
+        }
+    }
+}

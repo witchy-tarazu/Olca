@@ -2703,9 +2703,76 @@ namespace Olca.Tests.Integration
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new Olca.Application.Battle.CardPoiseSettings(sword: -1));
         }
 
+        private static void KeyboardButton(Olca.Application.Dungeon.DungeonBattleController controller, string name)
+        {
+            var canvas = (UnityEngine.GameObject)Get(controller, "pauseCanvas");
+            canvas.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b => b.name == name).onClick.Invoke();
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ポーズのキー設定画面で実キーを交換し保存失敗は未適用のまま再試行と破棄と確認付き初期化ができる(bool failFirst)
+        {
+            var controller = Start(new[] { Empty(3), DungeonConfig.CreateTestDungeon(8) });
+            var saveBytes = System.IO.File.ReadAllBytes(Store(controller).ActivePath);
+            controller.SetUserPaused(true); KeyboardButton(controller, "KeyboardSettingsButton");
+            var view = (Olca.Presentation.Field.GameplayKeyboardSettingsView)Get(controller, "keyboardSettingsView");
+            var keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            void Send(params UnityEngine.InputSystem.Key[] keys) {
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, new UnityEngine.InputSystem.LowLevel.KeyboardState(keys));
+                UnityEngine.InputSystem.InputSystem.Update(); Call(view, "Update");
+            }
+            string Draft(string name) => view.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b => b.name == name).GetComponentInChildren<UnityEngine.UI.Text>().text;
+            try {
+                KeyboardButton(controller, "Clear_exploration_DashSecondary");
+                Assert.AreEqual("未割当", Draft("Bind_exploration_DashSecondary"));
+                KeyboardButton(controller, "Bind_battle_AttackPrimary"); Send();
+                Send(UnityEngine.InputSystem.Key.J, UnityEngine.InputSystem.Key.K);
+                Assert.AreEqual("Z", Draft("Bind_battle_AttackPrimary"), "複数キーを勝手な優先順で採用しない");
+                Send(); Send(UnityEngine.InputSystem.Key.Space); Send();
+                Assert.AreEqual("Space", Draft("Bind_battle_AttackPrimary")); Assert.AreEqual("Z", Draft("Bind_battle_CardPrimary"));
+                Assert.AreEqual("Z", controller.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+                var settings = (Olca.Unity.KeyboardBindingFileStore)Get(controller, "keyboardSettings");
+                var io = new KeyboardFaultIo { Fault = failFirst ? "before" : null }; Set(settings, "io", io);
+                KeyboardButton(controller, "SaveKeyboardSettings");
+                if (failFirst) {
+                    Assert.AreEqual("Z", controller.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+                    Assert.IsFalse(System.IO.File.Exists(settings.ActivePath));
+                    Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text.Contains("保存できませんでした")));
+                    KeyboardButton(controller, "CloseKeyboardSettings"); KeyboardButton(controller, "KeyboardSettingsButton");
+                    Assert.AreEqual("Z", Draft("Bind_battle_AttackPrimary"), "失敗後の破棄は未保存候補でなく適用済み設定へ戻る");
+                    KeyboardButton(controller, "Bind_battle_AttackPrimary"); Send(); Send(UnityEngine.InputSystem.Key.Space); Send();
+                    io.Fault = null; KeyboardButton(controller, "SaveKeyboardSettings");
+                }
+                Assert.AreEqual("Space", controller.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+                Assert.AreEqual("Z", controller.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "CardPrimary")]);
+                var bytes = System.IO.File.ReadAllBytes(settings.ActivePath);
+                KeyboardButton(controller, "ResetKeyboardSettings"); KeyboardButton(controller, "CancelKeyboardReset");
+                Assert.AreEqual("Space", Draft("Bind_battle_AttackPrimary"));
+                KeyboardButton(controller, "ResetKeyboardSettings"); KeyboardButton(controller, "ConfirmKeyboardReset");
+                Assert.AreEqual("Z", Draft("Bind_battle_AttackPrimary"));
+                Assert.AreEqual("Space", controller.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+                KeyboardButton(controller, "CloseKeyboardSettings"); KeyboardButton(controller, "KeyboardSettingsButton");
+                Assert.AreEqual("Space", Draft("Bind_battle_AttackPrimary")); CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(settings.ActivePath));
+                KeyboardButton(controller, "ResetKeyboardSettings"); KeyboardButton(controller, "ConfirmKeyboardReset"); KeyboardButton(controller, "SaveKeyboardSettings");
+                Assert.AreEqual("Z", controller.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+                controller.SetUserPaused(false); Assert.IsFalse(view.gameObject.activeSelf);
+                CollectionAssert.AreEqual(saveBytes, System.IO.File.ReadAllBytes(Store(controller).ActivePath));
+                var restarted = Start(); Assert.AreEqual("Z", restarted.GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")]);
+            } finally {
+                UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard); controller.SetUserPaused(false);
+                Olca.Unity.GameplayPause.SetPaused(false); Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame(); Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+
         private sealed class KeyboardFaultIo : Olca.Unity.CheckpointFileIo
         {
             public string Fault;
+            public override void MoveNew(string temporary, string destination)
+            {
+                if (Fault == "before") throw new System.IO.IOException("fixture");
+                base.MoveNew(temporary, destination);
+                if (Fault == "after") throw new System.IO.IOException("fixture");
+            }
             public override void Replace(string temporary,string destination,string backup)
             {
                 if(Fault=="before")throw new System.IO.IOException("fixture");
