@@ -264,4 +264,36 @@ namespace Olca.Presentation.CustomScreen
             var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name="SwordCustomIcon";sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
         }
     }
+    /// <summary>本絵とは独立した回復・防御のUI記号。下部はコスト文字用に空ける。</summary>
+    public static class SupportMiniIcon
+    {
+        public static Sprite Create(string cardId)
+        {
+            if(cardId!="heal"&&cardId!="shield")throw new System.ArgumentException("専用miniの対象外です",nameof(cardId));
+            const int size=256;var pixels=new Color32[size*size];
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++){
+                float dx=Mathf.Abs(x-128),dy=Mathf.Abs(y-164);
+                Color color=Color.clear;
+                if(cardId=="heal"){
+                    // 太い十字で100px表示でも回復を識別できる。
+                    if((dx<=20&&dy<=67)||(dx<=67&&dy<=20))color=new Color(.2f,.82f,.9f,1);
+                    if((dx<=13&&dy<=60)||(dx<=60&&dy<=13))color=new Color(.7f,.98f,1,1);
+                }else{
+                    // 上辺と肩を持ち、下端へ細くなる盾。内側は透ける面にする。
+                    float halfWidth=y>=184?66:Mathf.Lerp(0,66,Mathf.Clamp01((y-88)/96f));
+                    if(y>=88&&y<=226&&dx<=halfWidth){
+                        bool edge=dx>=halfWidth-9||y>=217;
+                        color=edge?new Color(.7f,.98f,1,1):new Color(.2f,.82f,.9f,.25f);
+                        if(dx<=4&&y>=113&&y<=207)color=new Color(.2f,.82f,.9f,1);
+                    }
+                }
+                pixels[y*size+x]=color;
+            }
+            var name=cardId=="heal"?"HealCustomIcon":"ShieldCustomIcon";
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,false){name=name,filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp,hideFlags=HideFlags.HideAndDontSave};
+            texture.SetPixels32(pixels);texture.Apply(false,true);
+            var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
+        }
+    }
+
 }

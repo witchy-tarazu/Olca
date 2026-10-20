@@ -23,13 +23,16 @@ namespace Olca.Presentation.CustomScreen
         public event System.Action OnCustomScreenConfirmed;
         [SerializeField] private CardVisualEntry[] cardVisuals=System.Array.Empty<CardVisualEntry>();
         public Sprite GetCardIllustration(string id)=>cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.Illustration;
-        private Sprite generatedSwordIcon;
+        private readonly Dictionary<string, Sprite> generatedMiniIcons = new Dictionary<string, Sprite>();
         public Sprite GetCardIcon(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.CustomIcon;
-            if(assigned!=null||id!="sword")return assigned;
-            if(generatedSwordIcon==null)generatedSwordIcon=SwordMiniIcon.Create();
-            return generatedSwordIcon;
+            if(assigned!=null||(id!="sword"&&id!="heal"&&id!="shield"))return assigned;
+            if(!generatedMiniIcons.TryGetValue(id,out var icon)||icon==null){
+                icon=id=="sword"?SwordMiniIcon.Create():SupportMiniIcon.Create(id);
+                generatedMiniIcons[id]=icon;
+            }
+            return icon;
         }
         public void ConfigureCardVisuals(IEnumerable<CardVisualEntry> entries)
         {
@@ -1212,7 +1215,8 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnDestroy()
         {
-            if(generatedSwordIcon!=null){var texture=generatedSwordIcon.texture;if(Application.isPlaying){Destroy(generatedSwordIcon);Destroy(texture);}else{DestroyImmediate(generatedSwordIcon);DestroyImmediate(texture);}}
+            foreach(var icon in generatedMiniIcons.Values)if(icon!=null){var texture=icon.texture;if(Application.isPlaying){Destroy(icon);Destroy(texture);}else{DestroyImmediate(icon);DestroyImmediate(texture);}}
+            generatedMiniIcons.Clear();
 
             BindTransformations(null);
             if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
