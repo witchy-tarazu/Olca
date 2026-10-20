@@ -163,10 +163,14 @@ namespace Olca.Core.Domain
         internal void PublishHpFrame()
         {
             bool changed = frameHp.TakeNotification(out bool died);
-            if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
-            bool staggered = frameStaggered; frameStaggered = false;
-            if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) OnDeath?.Invoke();
+            try { frameHp.PublishPoisonHits(); }
+            finally
+            {
+                if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
+                bool staggered = frameStaggered; frameStaggered = false;
+                if (!IsDead && staggered) OnStaggered?.Invoke();
+                if (died) OnDeath?.Invoke();
+            }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -293,6 +297,16 @@ namespace Olca.Core.Domain
             ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs);
         }
 
+        /// <summary>回復量をHP集計へ加える。確定済みの死亡は復活させない。</summary>
+        public void Heal(int amount)
+        {
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            if (IsDead) return;
+            if (frameHp.Active) { frameHp.Heal(amount); return; }
+            currentHp = (int)Math.Min(maxHp, (long)currentHp + amount);
+            OnHpChanged?.Invoke(currentHp, maxHp);
+        }
+
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
         private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0)
@@ -313,8 +327,16 @@ namespace Olca.Core.Domain
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
                 if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。
 
-                if (poison)
-                    finalDamage = frameHp.Active ? frameHp.Poison(finalDamage) : Math.Min(finalDamage, Math.Max(0, currentHp - 1));
+                if (poison && frameHp.Active)
+                {
+                    frameHp.Poison(finalDamage, accepted => {
+                        TotalDamageTaken += accepted;
+                        TotalHitsTaken++;
+                        OnDamaged?.Invoke(accepted, multiplier);
+                    });
+                    return;
+                }
+                if (poison) finalDamage = Math.Min(finalDamage, Math.Max(0, currentHp - 1));
                 if (poison && finalDamage == 0) return;
                 bool killedByThisHit = false;
                 if (frameHp.Active)

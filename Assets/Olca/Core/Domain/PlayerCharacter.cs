@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Olca.Core.Domain
 {
@@ -545,24 +546,43 @@ namespace Olca.Core.Domain
         private int initialHp;
         private long damage, healing, poison;
         private bool touched, notify, died;
+        private readonly List<(int Amount, Action<int> Notify)> poisonHits = new List<(int, Action<int>)>();
+        private readonly List<(int Amount, Action<int> Notify)> acceptedPoisonHits = new List<(int, Action<int>)>();
         public void Begin(int hp)
         {
             if (Active) throw new InvalidOperationException("HPフレームが既に開始されています");
             initialHp = hp; damage = healing = poison = 0; touched = notify = died = false; Active = true;
+            poisonHits.Clear(); acceptedPoisonHits.Clear();
         }
         public void Damage(int amount) { damage += amount; touched = true; }
         public void Heal(int amount) { healing += amount; touched = true; }
-        public int Poison(int amount)
+        public void Poison(int amount, Action<int> notifyHit = null)
         {
-            // 通常攻撃・同フレーム回復とは独立して、開始時HPを基準に毒をHP1で止める。
-            int accepted = (int)Math.Min(amount, Math.Max(0L, (long)initialHp - 1 - poison));
-            poison += accepted; touched |= accepted > 0; return accepted;
+            // 後から入る同フレーム回復も含め、受理量と通知を終端まで確定しない。
+            poison += amount;
+            poisonHits.Add((amount, notifyHit));
+        }
+        public void PublishPoisonHits()
+        {
+            var hits = acceptedPoisonHits.ToArray(); acceptedPoisonHits.Clear();
+            foreach (var hit in hits) hit.Notify?.Invoke(hit.Amount);
         }
         public int Commit(int hp, int maxHp)
         {
             if (!Active) return hp;
-            Active = false; notify = touched;
-            int result = (int)Math.Max(0L, Math.Min(maxHp, (long)initialHp + healing - damage - poison));
+            Active = false;
+            long healedHp = (long)initialHp + healing;
+            long acceptedPoison = Math.Min(poison, Math.Max(0L, healedHp - 1));
+            notify = touched || acceptedPoison > 0;
+            long remaining = acceptedPoison;
+            foreach (var hit in poisonHits)
+            {
+                int accepted = (int)Math.Min(hit.Amount, remaining); remaining -= accepted;
+                if (accepted > 0 && hit.Notify != null) acceptedPoisonHits.Add((accepted, hit.Notify));
+            }
+            poisonHits.Clear();
+            // 毒だけではHP1を割らず、通常ダメージはその下限とは独立して死亡させ得る。
+            int result = (int)Math.Max(0L, Math.Min(maxHp, healedHp - acceptedPoison - damage));
             died = initialHp > 0 && result == 0;
             return result;
         }

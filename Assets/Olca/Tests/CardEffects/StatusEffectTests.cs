@@ -636,3 +636,78 @@ namespace Olca.Tests.CardEffects
         }
     }
 }
+
+
+namespace Olca.Tests.CardEffects
+{
+    [TestFixture]
+    public class PoisonHealingFrameTests
+    {
+        private static readonly int[][] Orders={new[]{0,1,2},new[]{0,2,1},new[]{1,0,2},new[]{1,2,0},new[]{2,0,1},new[]{2,1,0}};
+        [TestCase(5,10,10,0,5)][TestCase(5,10,0,0,1)][TestCase(5,10,2,0,1)]
+        [TestCase(5,10,10,5,0)][TestCase(5,10,10,4,1)][TestCase(95,10,100,0,100)]
+        [TestCase(1,int.MaxValue,int.MaxValue,0,1)][TestCase(5,0,int.MaxValue,0,100)]
+        [TestCase(5,int.MaxValue,0,int.MaxValue,0)]
+        public void プレイヤーの毒回復通常攻撃を全順序で集計しHPを一度通知する(int hp,int poison,int heal,int damage,int expected)
+        {
+            foreach(var order in Orders){
+                var p=new PlayerCharacter(100);p.SetHp(hp);
+                var enemy=new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0));
+                var battle=new BattleSystem(p,new List<Enemy>{enemy},new Deck());
+                int notices=0,deaths=0,ends=0;
+                p.OnHpChanged+=(_,__)=>{notices++;Assert.AreEqual(expected,p.CurrentHp);};p.OnDeath+=()=>deaths++;battle.OnBattleEnd+=_=>ends++;
+                battle.RunLogicalFrame(()=>{foreach(int action in order){
+                    if(action==0)p.TakePoisonDamage(poison);else if(action==1)p.Heal(heal);else if(damage>0)p.TakeDamage(damage,poiseDamage:0);
+                }});
+                Assert.AreEqual(expected,p.CurrentHp);Assert.AreEqual(1,notices);Assert.AreEqual(expected==0?1:0,deaths);Assert.AreEqual(deaths,ends);
+            }
+        }
+        [TestCase(5,10,0,5)][TestCase(5,0,0,1)][TestCase(5,2,0,1)]
+        [TestCase(5,10,5,0)][TestCase(5,10,4,1)][TestCase(95,100,0,100)]
+        public void 敵の通常毒更新と回復も全順序で集計して死亡通知を一度だけ出す(int hp,int heal,int damage,int expected)
+        {
+            foreach(var order in Orders){
+                var p=new PlayerCharacter(100);var enemy=new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0));
+                var battle=new BattleSystem(p,new List<Enemy>{enemy},new Deck());enemy.TakeDamage(100-hp,ElementType.None);enemy.ApplyStun(60000);
+                enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison,1000,600));
+                int poisonDamage=0;enemy.OnDamaged+=(amount,_)=>poisonDamage+=amount;
+                int notices=0,deaths=0,ends=0;enemy.OnHpChanged+=(_,__)=>{notices++;Assert.AreEqual(expected,enemy.CurrentHp);};enemy.OnDeath+=()=>deaths++;battle.OnBattleEnd+=_=>ends++;
+                battle.RunLogicalFrame(()=>{foreach(int action in order){
+                    if(action==0)battle.TickFrame(17);else if(action==1)enemy.Heal(heal);else if(damage>0)enemy.TakeDamage(damage,ElementType.None,poiseDamage:0);
+                }});
+                Assert.AreEqual(expected,enemy.CurrentHp);Assert.AreEqual(1,notices);Assert.AreEqual(expected==0?1:0,deaths);Assert.AreEqual(deaths,ends);
+                Assert.AreEqual(System.Math.Min(10,hp+heal-1)+damage,poisonDamage,"毒の通知量も回復を含めて確定する");
+            }
+        }
+        [Test] public void 通常AIの受理ヒットによる回復と毒を同じフレームへ集計する()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(0,0));var enemy=new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0));
+            var battle=new BattleSystem(p,new List<Enemy>{enemy},new Deck());enemy.TakeDamage(95,ElementType.None);
+            battle.AddSummon(new Enemy("healer","検証AI",10,ElementType.None,new Vector2Int(1,0),isSummoned:true),
+                new List<IEnemyAIAction>{new BasicAttackAction(1,100000,poiseDamage:0,onHit:_=>enemy.Heal(10))});
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison,1000,600));battle.TickFrame(17);
+            Assert.AreEqual(5,enemy.CurrentHp);Assert.AreEqual(99,p.CurrentHp);Assert.IsFalse(battle.IsGameOver);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 通常のヒールカードと毒を同じフレームに受けても処理順でHPが変わらない(bool poisonFirst)
+        {
+            var p=new PlayerCharacter(100);p.SetHp(5);
+            var heal=new Card("heal","回復",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,10,"fixture");
+            var battle=new BattleSystem(p,new List<Enemy>{new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0))},new Deck(new List<Card>{heal}));
+            battle.CardUsage.EnqueueCards(new List<Card>{heal});int notices=0;p.OnHpChanged+=(_,__)=>notices++;
+            battle.RunLogicalFrame(()=>{
+                if(poisonFirst)p.TakePoisonDamage(10);
+                Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());
+                if(!poisonFirst)p.TakePoisonDamage(10);
+            });
+            Assert.AreEqual(5,p.CurrentHp);Assert.AreEqual(1,notices);Assert.AreEqual(0,battle.CardUsage.RemainingCount);Assert.AreEqual(10,heal.Power);
+        }
+
+        [Test] public void 確定済みの敵死亡は回復で復活せず負値は拒否する()
+        {
+            var e=new Enemy("e","敵",5,ElementType.None,new Vector2Int(1,0));int deaths=0;e.OnDeath+=()=>deaths++;
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>e.Heal(-1));e.TakeDamage(5,ElementType.None);e.Heal(10);
+            Assert.AreEqual(0,e.CurrentHp);Assert.AreEqual(1,deaths);
+        }
+    }
+}
