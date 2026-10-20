@@ -8,6 +8,21 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class PanelEffectSystemTests
     {
+        [Test]
+        public void 一時ヒット座標の移動と復帰を新しい論理地形進入として扱わない()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var temporary=new Vector2Int(2,0);
+            var e=new Enemy("e","敵",50,ElementType.None,new Vector2Int(5,0));
+            var battle=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck());
+            battle.Field.ChangePanelType(temporary,PanelType.Magma);int events=0;
+            battle.PanelEffects.OnPanelEffectApplied+=(_,__)=>events++;
+            battle.RunLogicalFrame(()=>p.MoveTemporarily(temporary));
+            Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(PanelType.Magma,battle.Field.GetPanelType(temporary));
+            Assert.AreEqual(new Vector2Int(1,0),p.GetLogicalPosition());
+            battle.RunLogicalFrame(()=>p.ReturnToOriginalPosition());Assert.AreEqual(0,events);
+            battle.RunLogicalFrame(()=>p.MoveTo(temporary));Assert.AreEqual(95,p.CurrentHp);Assert.AreEqual(1,events);
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 通常移動外のプレイヤー位置変更も進入処理を一回だけ適用する(bool floating)
         {

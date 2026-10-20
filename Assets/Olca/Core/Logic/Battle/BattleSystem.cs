@@ -18,6 +18,7 @@ namespace Olca.Core.Logic.Battle
         private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
         private readonly Dictionary<Enemy, Action<Vector2Int>> enemyPositionHandlers = new Dictionary<Enemy, Action<Vector2Int>>();
         private Vector2Int previousPlayerPosition;
+        private Vector2Int previousPlayerLogicalPosition;
         private readonly BattleField battleField;
         private readonly CustomGaugeSystem customGauge;
         private readonly CustomScreenSystem customScreen;
@@ -124,6 +125,7 @@ namespace Olca.Core.Logic.Battle
                 (!player.IsDead && player.GridPosition == position) ||
                 this.enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == position));
             previousPlayerPosition = player.GridPosition;
+            previousPlayerLogicalPosition = player.GetLogicalPosition();
             player.OnPositionChanged += OnPlayerPositionChanged;
 
             // プレイヤー死亡時の処理
@@ -151,16 +153,23 @@ namespace Olca.Core.Logic.Battle
         {
             var previous = previousPlayerPosition;
             previousPlayerPosition = position;
-            if (!IsGameOver && !player.IsDead && previous != position)
+            var logicalPosition = player.GetLogicalPosition();
+            bool enteredLogicalPosition = previousPlayerLogicalPosition != logicalPosition;
+            previousPlayerLogicalPosition = logicalPosition;
+            if (!IsGameOver && !player.IsDead && (previous != position || enteredLogicalPosition))
             {
                 BeginResolution();
                 try
                 {
-                    panelEffects.ApplyOnLeaveEffect(player.TerrainState, previous);
-                    // 通常移動以外の位置変更も同じ進入処理を通し、通知を二重購読しない。
-                    if (enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == position))
-                        panelEffects.ApplyOnEnemyEnterEffect(enemies, player, position);
-                    else panelEffects.ApplyOnEnterEffect(player, position);
+                    // 一時移動先からの離脱・ヒビ破壊は従来の占有通知を維持する。
+                    if (previous != position) panelEffects.ApplyOnLeaveEffect(player.TerrainState, previous);
+                    // 一時ヒット座標だけの変更を新しい接地へ転用しない。
+                    if (enteredLogicalPosition)
+                    {
+                        if (enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == logicalPosition))
+                            panelEffects.ApplyOnEnemyEnterEffect(enemies, player, logicalPosition);
+                        else panelEffects.ApplyOnEnterEffect(player, logicalPosition);
+                    }
                 }
                 finally { EndResolution(); }
             }
