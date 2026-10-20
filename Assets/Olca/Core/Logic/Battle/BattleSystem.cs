@@ -174,7 +174,15 @@ namespace Olca.Core.Logic.Battle
                 var from = previous;
                 previous = position;
                 if (!IsGameOver && !enemy.IsDead && from != position)
-                    panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
+                {
+                    BeginResolution();
+                    try
+                    {
+                        panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
+                        panelEffects.ApplyOnEnemyEnterEffect(enemies, player, position);
+                    }
+                    finally { EndResolution(); }
+                }
             };
             enemyPositionHandlers.Add(enemy, moved);
             enemy.OnPositionChanged += moved;

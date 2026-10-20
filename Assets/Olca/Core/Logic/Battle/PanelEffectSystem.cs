@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
 
@@ -61,6 +63,28 @@ namespace Olca.Core.Logic.Battle
             }
         }
 
+        /// <summary>敵の移動先にいる対象全員を、パネル消費前に個別判定する。</summary>
+        public void ApplyOnEnemyEnterEffect(IReadOnlyList<Enemy> enemies, PlayerCharacter player, Vector2Int position)
+        {
+            if (field.GetPanelType(position) != PanelType.Magma) return;
+            var occupants = enemies.Where(e => !e.IsDead && e.GridPosition == position).ToArray();
+            if (occupants.Length == 0) return;
+            // ダメージ通知による死亡・占有変更に影響されないよう対象を先に固定する。
+            foreach (var enemy in occupants)
+                if (enemy.Element != ElementType.Fire && enemy.TerrainState.ReceivesPanelEffects)
+                    enemy.TakeDamage(MAGMA_DAMAGE, ElementType.None, poiseDamage: 0, hitInvincibilityMs: hitInvincibilityMs);
+            if (player != null && !player.IsDead && player.GridPosition == position)
+                ApplyMagmaPlayerDamage(player);
+            field.ChangePanelType(position, PanelType.Normal);
+            OnPanelEffectApplied?.Invoke(position, PanelType.Magma);
+        }
+
+        private void ApplyMagmaPlayerDamage(PlayerCharacter player)
+        {
+            if (player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(MAGMA_DAMAGE, affectsPoise: false)
+                && !player.IsDead) player.SetInvincible(hitInvincibilityMs);
+        }
+
         /// <summary>
         /// プレイヤーがパネルから離れた時の効果を適用
         /// </summary>
@@ -100,8 +124,7 @@ namespace Olca.Core.Logic.Battle
 
             // 消費条件は既存のまま、浮遊者をダメージ対象から除外する。
             int hpBefore = player.CurrentHp;
-            if (player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(MAGMA_DAMAGE, affectsPoise: false)
-                && !player.IsDead) player.SetInvincible(hitInvincibilityMs);
+            ApplyMagmaPlayerDamage(player);
             field.ChangePanelType(position, PanelType.Normal);
             logger?.LogInfo($"Magmaパネルで{hpBefore - player.CurrentHp}ダメージ、通常パネルに変化: {position}");
             OnPanelEffectApplied?.Invoke(position, PanelType.Magma);

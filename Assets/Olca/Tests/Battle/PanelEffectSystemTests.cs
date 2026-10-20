@@ -8,6 +8,45 @@ namespace Olca.Tests.Battle
     [TestFixture]
     public class PanelEffectSystemTests
     {
+        [Test]
+        public void 敵の移動先のマグマは同居全員を個別判定して一回だけ消費する()
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(0, 0));
+            var target = new Vector2Int(4, 0);
+            var mover = new Enemy("m", "移動", 50, ElementType.None, new Vector2Int(3, 0), poiseDefinition: new EnemyPoiseDefinition(10, 18));
+            var ground = new Enemy("g", "地上", 50, ElementType.None, target);
+            var fire = new Enemy("f", "火", 50, ElementType.Fire, target);
+            var floating = new Enemy("l", "浮遊", 50, ElementType.None, target); floating.TerrainState.IsFloating = true;
+            var invincible = new Enemy("i", "無敵", 50, ElementType.None, target); invincible.SetInvincible(1000);
+            var barrier = new Enemy("b", "バリア", 50, ElementType.None, target); barrier.SetBarrier(3);
+            var battle = new BattleSystem(p, new System.Collections.Generic.List<Enemy>{mover,ground,fire,floating,invincible,barrier}, new Deck());
+            battle.ConfigureDefaultHitInvincibility(600);
+            battle.Field.ChangePanelType(target, PanelType.Magma);
+            int events = 0; battle.PanelEffects.OnPanelEffectApplied += (_, type) => { if(type == PanelType.Magma) events++; };
+            battle.RunLogicalFrame(() => mover.MoveTo(target));
+            Assert.AreEqual(45, mover.CurrentHp); Assert.AreEqual(45, ground.CurrentHp);
+            Assert.AreEqual(50, fire.CurrentHp); Assert.AreEqual(50, floating.CurrentHp); Assert.AreEqual(50, invincible.CurrentHp);
+            Assert.AreEqual(50, barrier.CurrentHp); Assert.AreEqual(0, barrier.BarrierHp);
+            Assert.AreEqual(0, mover.AccumulatedPoiseDamage); Assert.IsTrue(mover.IsInvincible); Assert.IsTrue(ground.IsInvincible);
+            Assert.IsFalse(fire.IsInvincible); Assert.IsFalse(floating.IsInvincible);
+            Assert.AreEqual(PanelType.Normal, battle.Field.GetPanelType(target)); Assert.AreEqual(1, events);
+            mover.MoveTo(new Vector2Int(3,0)); mover.MoveTo(target); Assert.AreEqual(1, events);
+            Assert.AreEqual(100, p.CurrentHp);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void マグマの全員判定は同フレーム回復と勝敗確定より先に完了する(bool heal)
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(0,0)); var target = new Vector2Int(4,0);
+            var first = new Enemy("a", "先", 5, ElementType.None, new Vector2Int(3,0));
+            var second = new Enemy("b", "後", 5, ElementType.None, target);
+            var battle = new BattleSystem(p, new System.Collections.Generic.List<Enemy>{first,second}, new Deck());
+            battle.Field.ChangePanelType(target, PanelType.Magma); int ended = 0;
+            battle.OnBattleEnd += _ => { ended++; Assert.IsTrue(first.IsDead); Assert.IsTrue(second.IsDead); Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(target)); };
+            battle.RunLogicalFrame(() => { first.MoveTo(target); if(heal) second.Heal(1); });
+            Assert.IsTrue(first.IsDead); Assert.AreEqual(heal?1:0,second.CurrentHp); Assert.AreEqual(heal?0:1,ended);
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 共通無敵で被弾したプレイヤーは勝敗通知前に無敵を解除し次戦へ持ち越さない(bool defeat)
         {
