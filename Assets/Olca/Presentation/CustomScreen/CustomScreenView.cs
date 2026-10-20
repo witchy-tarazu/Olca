@@ -81,6 +81,8 @@ namespace Olca.Presentation.CustomScreen
             if (input.MenuCancelButtonDown) CancelSelection();
         }
         private List<HandCardView> handCardViews = new List<HandCardView>();
+        private List<Card> inputHand = new List<Card>();
+        private bool handAnimating;
         private CancellationTokenSource animationCts;
         private CustomScreenCursor cursor;
         private bool isScreenVisible = true;
@@ -349,10 +351,9 @@ namespace Olca.Presentation.CustomScreen
             {
                 // カードで決定 → 選択/解除トグル
                 int cardIndex = cursor.CurrentIndex;
-                if (cardIndex >= 0 && cardIndex < handCardViews.Count)
+                if (cardIndex >= 0 && cardIndex < inputHand.Count)
                 {
-                    var cardView = handCardViews[cardIndex];
-                    OnCardClicked(cardView.Card);
+                    OnCardClicked(inputHand[cardIndex]);
                 }
             }
         }
@@ -379,7 +380,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         public void OnCardPointerEntered(HandCardView view)
         {
-            if (Olca.Unity.GameplayPause.InputBlocked) return;
+            if (Olca.Unity.GameplayPause.InputBlocked || handAnimating) return;
             if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
             int index = handCardViews.IndexOf(view);
             if (index >= 0) cursor.MoveToCard(index);
@@ -387,7 +388,7 @@ namespace Olca.Presentation.CustomScreen
 
         public void OnCardPointerExited(HandCardView view)
         {
-            if (Olca.Unity.GameplayPause.InputBlocked) return;
+            if (Olca.Unity.GameplayPause.InputBlocked || handAnimating) return;
             if (cursor != null && handCardViews.IndexOf(view) == cursor.CurrentIndex)
                 cursor.MoveToConfirmButton();
         }
@@ -403,19 +404,10 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void ShowCursorAfterAnimation()
         {
-            if (handCardViews.Count > 0)
-            {
-                // カードが存在する場合は最初のカード（インデックス0）に移動
-                cursor.Initialize(handCardViews.Count);
-                UpdateCursorIndicator(0);
-            }
-            else
-            {
-                // カードが存在しない場合は確定ボタンに移動
-                cursor.Initialize(0);
-                cursor.MoveToConfirmButton();
-                UpdateCursorIndicator(-1);
-            }
+            handAnimating = false;
+            if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
+            // 表示完了で、演出中に操作したカーソル位置を巻き戻さない。
+            OnCursorMoved(cursor.CurrentIndex);
         }
 
         /// <summary>
@@ -448,6 +440,13 @@ namespace Olca.Presentation.CustomScreen
             }
         }
 
+        private void InitializeInputHand(IEnumerable<Card> hand)
+        {
+            inputHand = hand.ToList();
+            cursor.Initialize(inputHand.Count);
+            if (inputHand.Count == 0) cursor.MoveToConfirmButton();
+        }
+
         private void OnScreenOpened(List<Card> hand)
         {
             customizeSelectedCards.Clear();
@@ -465,6 +464,9 @@ namespace Olca.Presentation.CustomScreen
             }
             handCardViews.Clear();
 
+            // 入力対象とカーソルは演出を待たず、開いた時点の手札順で固定する。
+            InitializeInputHand(hand);
+            handAnimating = true;
             // 新しい手札View生成（アニメーション付き）
             AnimateCardsShootAsync(hand, animationCts.Token).Forget();
 
@@ -496,6 +498,7 @@ namespace Olca.Presentation.CustomScreen
                 var cardObj = Instantiate(handCardPrefab, handCardContainer);
                 var cardView = cardObj.GetComponent<HandCardView>();
                 cardView.Initialize(card, this);
+                cardView.UpdateSelection(customScreen.SelectedCards.Contains(card));
                 handCardViews.Add(cardView);
 
                 // カード射出アニメーション（非同期で並行実行）
@@ -933,12 +936,14 @@ namespace Olca.Presentation.CustomScreen
             handCardViews.Clear();
 
             var hand = customScreen.CurrentHand.Concat(customScreen.SelectedCards).ToList();
+            InitializeInputHand(hand); handAnimating = false;
             for (int i = 0; i < hand.Count; i++)
             {
                 var card = hand[i];
                 var cardObj = Instantiate(handCardPrefab, handCardContainer);
                 var cardView = cardObj.GetComponent<HandCardView>();
                 cardView.Initialize(card, this);
+                cardView.UpdateSelection(customScreen.SelectedCards.Contains(card));
                 handCardViews.Add(cardView);
 
                 var rectTransform = cardView.GetComponent<RectTransform>();
@@ -946,7 +951,6 @@ namespace Olca.Presentation.CustomScreen
                 rectTransform.rotation = Quaternion.identity;
             }
 
-            cursor.Initialize(handCardViews.Count);
             RefreshAllHighlights();
             UpdateConfirmButton();
             UpdateCostDisplay();
@@ -1063,10 +1067,10 @@ namespace Olca.Presentation.CustomScreen
                 UpdateCustomizationPreview(cursorIndex);
                 return;
             }
-            if (cursorIndex >= 0 && cursorIndex < handCardViews.Count)
+            if (cursorIndex >= 0 && cursorIndex < inputHand.Count)
             {
-                // カーソルが置かれているカードの情報を表示
-                var cursorCard = handCardViews[cursorIndex].Card;
+                // 表示の生成途中でも、操作対象のカード情報を使用する。
+                var cursorCard = inputHand[cursorIndex];
 
                 if (selectedCardDescription != null)
                 {

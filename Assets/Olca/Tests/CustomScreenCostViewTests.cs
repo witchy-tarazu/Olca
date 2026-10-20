@@ -15,6 +15,45 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [Test]
+        public void 表示生成前の決定は先頭手札を選び再選択と後続カーソルを演出完了で変えない()
+        {
+            var root=new GameObject("EarlyCustomInput",typeof(RectTransform));
+            try {
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("a",CardSeries.Sword),Create("b",CardSeries.Sword),Create("c",CardSeries.Sword)}));
+                model.Open(new Card[0],new MockRandomProvider(0));var order=new List<Card>(model.CurrentHand);
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);
+                typeof(CustomScreenView).GetField("costDisplay",flags).SetValue(view,root.AddComponent<Text>());
+                var cursor=new CustomScreenCursor();typeof(CustomScreenView).GetField("cursor",flags).SetValue(view,cursor);
+                view.ConfigureLogicalConfirmation((time,action)=>action(),()=>0);
+                typeof(CustomScreenView).GetMethod("InitializeInputHand",flags).Invoke(view,new object[]{order});
+                typeof(CustomScreenView).GetField("handAnimating",flags).SetValue(view,true);
+                var decide=new Olca.Core.Logic.Integration.LogicalInput{MenuDecideButtonDown=true};
+                view.HandleLogicalConfirmation(decide);Assert.IsTrue(model.IsOpen);Assert.IsFalse(model.IsConfirming);Assert.AreSame(order[0],model.SelectedCards[0]);
+                view.HandleLogicalConfirmation(decide);Assert.IsEmpty(model.SelectedCards,"同じ位置の再決定は同じカードを取り消す");
+                cursor.MoveToCard(1);view.HandleLogicalConfirmation(decide);Assert.AreSame(order[1],model.SelectedCards[0]);
+                typeof(CustomScreenView).GetMethod("ShowCursorAfterAnimation",flags).Invoke(view,null);Assert.AreEqual(1,cursor.CurrentIndex);
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput{MenuConfirmButtonDown=true});Assert.IsTrue(model.IsConfirming);Assert.AreSame(order[1],model.AvailableCards[0]);
+            } finally { Object.DestroyImmediate(root); }
+        }
+        [Test]
+        public void 手札演出中の通過ホバーはキー選択位置を確定へ移さず空手札は明示確定できる()
+        {
+            var root=new GameObject("CustomHover",typeof(RectTransform));
+            try {
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var cursor=new CustomScreenCursor();cursor.Initialize(1);typeof(CustomScreenView).GetField("cursor",flags).SetValue(view,cursor);
+                var cardObject=new GameObject("MovingCard");cardObject.transform.SetParent(root.transform);var moving=cardObject.AddComponent<HandCardView>();
+                ((List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view)).Add(moving);
+                typeof(CustomScreenView).GetField("handAnimating",flags).SetValue(view,true);view.OnCardPointerExited(moving);Assert.AreEqual(0,cursor.CurrentIndex);
+                var empty=new CustomScreenSystem(new Deck(new List<Card>()));empty.Open(new Card[0],new MockRandomProvider(0));
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,empty);
+                typeof(CustomScreenView).GetMethod("InitializeInputHand",flags).Invoke(view,new object[]{new List<Card>()});Assert.IsTrue(cursor.IsOnConfirmButton);
+                view.ConfigureLogicalConfirmation((time,action)=>action(),()=>0);view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput{MenuDecideButtonDown=true});Assert.IsTrue(empty.IsConfirming);
+            } finally { Object.DestroyImmediate(root); }
+        }
+
         [TestCase(5, true, 5, 2)]
         [TestCase(8, false, 6, 2)]
         [TestCase(9, false, 9, 3)]
