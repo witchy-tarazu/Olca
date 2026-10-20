@@ -153,6 +153,7 @@ namespace Olca.Unity
             bool enter = KeyHeld(Key.Enter), numpadEnter = KeyHeld(Key.NumpadEnter), space = KeyHeld(Key.Space), escape = KeyHeld(Key.Escape);
             var pointer = device as Pointer;
             bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
+            bool basic = Held("battle", "AttackPrimary");
             bool jump = Held("exploration", "JumpPrimary"), card = Held("battle", "CardPrimary"), leftShift = Held("exploration", "DashPrimary"), rightShift = Held("exploration", "DashSecondary");
             bool leftAlt = Held("battle", "CustomPrimary"), rightAlt = Held("battle", "CustomSecondary");
             foreach (var button in Buttons(device))
@@ -169,6 +170,8 @@ namespace Olca.Unity
             next.HorizontalDown = eventState.Horizontal == 0 ? next.Horizontal : 0;
             next.JumpButtonDown = !jump && Held("exploration", "JumpPrimary");
             next.CardUseButtonDown = !card && Held("battle", "CardPrimary");
+            next.BasicAttackButtonDown = !basic && Held("battle", "AttackPrimary");
+            next.BasicAttackButtonUp = basic && !Held("battle", "AttackPrimary");
             next.DashButtonDown = (!leftShift && Held("exploration", "DashPrimary")) || (!rightShift && Held("exploration", "DashSecondary"));
             next.CustomScreenButtonDown = (!leftAlt && Held("battle", "CustomPrimary")) || (!rightAlt && Held("battle", "CustomSecondary"));
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);

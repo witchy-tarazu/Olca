@@ -94,6 +94,32 @@ namespace Olca.Application.Dungeon
         private float dashStartPosition = -1f;    // ダッシュ開始位置（-1=非ダッシュ中）
         private int dashCooldownRemaining; // クールタイム残り論理フレーム
 
+        [Header("基本攻撃の暫定調整（Planning/暫定実装一覧）")]
+        [SerializeField, Min(1)] private int basicAttackShortPressFrames = 30;
+        [SerializeField, Min(1)] private int basicAttackIntervalFrames = 12;
+        private readonly BasicAttackInputState basicAttackInput = new BasicAttackInputState();
+        private BasicAttackHud basicAttackHud;
+        private bool queuedBasicAttackTap;
+        private bool BasicAttackUiAvailable => manager?.CurrentPhase == GamePhase.Battle && !IsUserPaused && !GameplayPause.InputBlocked &&
+            !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && basicAttackInput.CooldownFrames == 0;
+        private void QueueBasicAttackFromUi()
+        {
+            if (!BasicAttackUiAvailable) return;
+            logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => queuedBasicAttackTap = true);
+        }
+        private void RefreshBasicAttackHud()
+        {
+            if (basicAttackHud == null) return;
+            bool visible = manager?.CurrentPhase == GamePhase.Battle && !clearReturnVisible && !collectionOpen &&
+                (keyboardSettingsView == null || !keyboardSettingsView.gameObject.activeSelf);
+            basicAttackHud.gameObject.SetActive(visible); if (!visible) return;
+            var battle = manager.CurrentBattle;
+            string state = IsUserPaused ? "ポーズ中" : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中" :
+                battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中" :
+                battle.CardUsage.InFlightCard != null ? "カード使用中" : basicAttackInput.CooldownFrames > 0 ? "再使用待ち" :
+                GameplayPause.InputBlocked ? "キーを離してください" : "使用できます";
+            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable);
+        }
         private bool battleFieldReady;
         private GameObject pauseCanvas;
         private GameObject pauseOverlay;
@@ -266,6 +292,9 @@ namespace Olca.Application.Dungeon
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
             clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards);
+            var attackPanel = new GameObject("BasicAttackHud", typeof(RectTransform)); attackPanel.transform.SetParent(pauseCanvas.transform, false);
+            basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, () => basicAttackShortPressFrames);
+            basicAttackHud.gameObject.SetActive(false);
         }
         private ClearReturnFileStore clearReturnStore;
         private ClearReturnSession clearReturnSession;
@@ -278,9 +307,9 @@ namespace Olca.Application.Dungeon
         private void OpenOwnedCards()
         {
             if (!IsUserPaused || HasIncompleteReturn) return;
-            collectionOpen = true; clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.Snapshot?.Flow, false, null, true);
+            collectionOpen = true; pauseOverlay.SetActive(false); clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.Snapshot?.Flow, false, null, true);
         }
-        private void CloseOwnedCards() { collectionOpen = false; clearReturnView.gameObject.SetActive(false); }
+        private void CloseOwnedCards() { collectionOpen = false; clearReturnView.gameObject.SetActive(false); pauseOverlay.SetActive(IsUserPaused); }
 
         private string clearReturnError, progressDirectoryOverride;
         public ClearReturnProfile PersistentProgress => clearReturnSession?.Snapshot;
@@ -544,11 +573,13 @@ namespace Olca.Application.Dungeon
             ApplyPendingFloor();
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
+            RefreshBasicAttackHud();
         }
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
         {
-            if (GameplayPause.InputBlocked) input = new LogicalInput();
+            if (GameplayPause.InputBlocked) { input = new LogicalInput(); queuedBasicAttackTap = false; }
+            if (queuedBasicAttackTap) { input = input.Copy(); input.BasicAttackButtonDown = input.BasicAttackButtonUp = true; input.BasicAttackButton = false; queuedBasicAttackTap = false; }
             void Process()
             {
                 customScreenView?.HandleLogicalConfirmation(input);
@@ -595,6 +626,7 @@ namespace Olca.Application.Dungeon
                     if (input.CustomScreenButtonDown)
                         battleSession?.TryOpenCustomScreen();
 
+                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackShortPressFrames, basicAttackIntervalFrames);
                     // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
                     if (input.CardUseButtonDown)
                         battleSession?.UseCardFromInput();
@@ -999,7 +1031,7 @@ namespace Olca.Application.Dungeon
             pendingCardChoices = null; cardSelectionView?.Hide();
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
-            logicalLoop.StartNewTimeline();
+            logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
             manager = restored;
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;

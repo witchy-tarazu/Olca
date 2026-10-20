@@ -414,13 +414,15 @@ namespace Olca.Core.Logic.Integration
         public bool DashButtonDown { get; set; }
         public bool CardUseButtonDown { get; set; }
         public bool BasicAttackButton { get; set; }
+        public bool BasicAttackButtonDown { get; set; }
+        public bool BasicAttackButtonUp { get; set; }
         public float BasicAttackButtonHoldTime { get; set; }
         public bool CustomScreenButtonDown { get; set; }
         public bool MenuConfirmButtonDown { get; set; }
         public bool MenuDecideButtonDown { get; set; }
         public bool MenuCancelButtonDown { get; set; }
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { HorizontalDown = 0; JumpButtonDown = DashButtonDown = CardUseButtonDown = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+        public void ClearEdges() { HorizontalDown = 0; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
     }
 
     /// <summary>入力を論理フレームに割り当て、描画停止後の追いつき中にも一度だけ消費する。</summary>
@@ -447,6 +449,8 @@ namespace Olca.Core.Logic.Integration
                 next.JumpButtonDown |= held.JumpButtonDown;
                 next.DashButtonDown |= held.DashButtonDown;
                 next.CardUseButtonDown |= held.CardUseButtonDown;
+                next.BasicAttackButtonDown |= held.BasicAttackButtonDown;
+                next.BasicAttackButtonUp |= held.BasicAttackButtonUp;
                 next.CustomScreenButtonDown |= held.CustomScreenButtonDown;
                 next.MenuConfirmButtonDown |= held.MenuConfirmButtonDown;
                 next.MenuDecideButtonDown |= held.MenuDecideButtonDown;

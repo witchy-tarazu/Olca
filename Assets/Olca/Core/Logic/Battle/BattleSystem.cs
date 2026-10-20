@@ -357,6 +357,19 @@ namespace Olca.Core.Logic.Battle
             finally { EndResolution(); }
         }
 
+        // 暫定通常攻撃: 既存の右向きグリッドで前方1マスの先配置の生存敵1体。
+        public bool CanPlayerBasicAttack => !IsGameOver && !IsPaused && !player.IsDead && cardUsage.InFlightCard == null &&
+            !playerMovement.IsNormalMoving && !player.IsActionPrevented;
+        public bool TryPlayerBasicAttackForward()
+        {
+            if (!CanPlayerBasicAttack) return false;
+            foreach (var enemy in enemies)
+                if (!enemy.IsDead && enemy.GridPosition.X == player.GridPosition.X + 1 && enemy.GridPosition.Y == player.GridPosition.Y) {
+                    PlayerBasicAttack(enemy); return true;
+                }
+            return false;
+        }
+
         private sealed class ActionWait
         {
             public long Deadline;

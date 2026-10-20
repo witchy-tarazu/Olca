@@ -2807,6 +2807,37 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(0, controller.PersistentProgress.Owned.Length); Assert.AreEqual(100, controller.PersistentProgress.Experience);
         }
 
+        [Test]
+        public void 実キーZと保存したリマップJの短押しは成長後の攻撃値を通常Controllerへ渡す()
+        {
+            var progress = new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress"));
+            Assert.IsTrue(progress.TryWrite(0,new ClearReturnProfile { Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Experience=100,Level=2 },out var error),error);
+            var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
+            battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
+            var target=battle.Enemies[0];target.MoveTo(new Vector2Int(battle.Player.GridPosition.X+1,battle.Player.GridPosition.Y));
+            Assert.AreEqual(11,battle.Player.AttackPower);
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=(Olca.Unity.UnityInputProvider)Get(c,"inputProvider");
+            void Tap(UnityEngine.InputSystem.Key key) {
+                var queue=new LogicalInputQueue();provider.CaptureTimestamped();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(key));UnityEngine.InputSystem.InputSystem.Update();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();
+                foreach(var e in provider.CaptureTimestamped())queue.Enqueue(1,e.Input);
+                Tick(c,queue.Take(1));
+            }
+            try {
+                int hp=target.CurrentHp;Tap(UnityEngine.InputSystem.Key.Z);Assert.AreEqual(hp-11,target.CurrentHp);
+                for(int i=0;i<40;i++)Tick(c);
+                c.SetUserPaused(true);var edit=c.GameplayKeyboardProfile.BeginEdit();Assert.IsTrue(edit.TryAssign(("keyboard","battle","AttackPrimary"),"J",out error),error);
+                Assert.IsTrue(c.TryApplyGameplayKeyboardProfile(edit.Apply(),out error),error);c.SetUserPaused(false);
+                Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+                hp=target.CurrentHp;Tap(UnityEngine.InputSystem.Key.Z);Assert.AreEqual(hp,target.CurrentHp);Tap(UnityEngine.InputSystem.Key.J);Assert.AreEqual(hp-11,target.CurrentHp);
+                Call(c,"RefreshBasicAttackHud");var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
+                Assert.IsTrue(hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Any(t=>t.text.Contains("[J]")));
+                c=StartCombatDefaults(18,180);Assert.AreEqual("J",c.GameplayKeyboardProfile.Bindings[("keyboard","battle","AttackPrimary")]);
+                Assert.AreEqual(100,c.PersistentProgress.Experience);Assert.AreEqual(2,c.PersistentProgress.Level);
+            } finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 帰還から次回出撃と再クリアでも所持と成長を保ち取得履歴と報酬を分離する(bool route)
         {
@@ -2827,10 +2858,11 @@ namespace Olca.Tests.Integration
             var nextDir = c.ActiveCheckpointDirectory; Assert.AreNotEqual(directory, nextDir);
             Call(c, "StartNextDeparture"); Assert.AreEqual(plan.Start.RunId, c.PersistentProgress.NextDeparture.Start.RunId, "再入で新規攻略を作らない");
             c.SetUserPaused(true); KeyboardButton(c, "OwnedCardsButton");
+            Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf, "透過一覧の背後へメニューを重ねない");
             var view = (Olca.Presentation.Dungeon.ClearReturnView)Get(c, "clearReturnView");
             Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text.Contains("1/4枚")));
             Assert.IsFalse(view.GetComponentsInChildren<UnityEngine.UI.Button>(true).Any(b => b.name == "NextDeparture" && b.gameObject.activeSelf));
-            KeyboardButton(c, "CloseOwnedCards"); Assert.IsTrue(c.IsUserPaused); c.SetUserPaused(false);
+            KeyboardButton(c, "CloseOwnedCards"); Assert.IsTrue(c.IsUserPaused); Assert.IsTrue(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf); c.SetUserPaused(false);
             c = route ? Start() : Start(configure: setup);
             Assert.AreEqual(nextDir, c.ActiveCheckpointDirectory); Assert.AreEqual(100, c.PersistentProgress.Experience);
             Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error), error); Assert.AreEqual(105, Model(c).Dungeon.Player.CurrentHp);
@@ -3336,6 +3368,89 @@ namespace Olca.Tests.Integration
             var blocked = new ClearReturnSession(Store()); Assert.IsFalse(blocked.Ready); Assert.IsFalse(blocked.ConfirmSelection());
             Assert.IsFalse(fresh.Begin(Terminal(Card("b")), "dungeon", new ClearReturnSettings()));
             CollectionAssert.AreEqual(broken, System.IO.File.ReadAllBytes(Store().ActivePath));
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class BasicAttackProvisionalTests
+    {
+        private Olca.Core.Logic.Battle.BattleSystem battle;
+        private Olca.Application.Battle.BasicAttackInputState state;
+        private Enemy target;
+        private void SetupBattle(int x=2,int y=0) {
+            target=new Enemy("target","target",200,ElementType.None,new Vector2Int(x,y));
+            var p=new PlayerCharacter(500,new Vector2Int(1,0),attackPower:11,staggerDurationFrames:3);
+            battle=new Olca.Core.Logic.Battle.BattleSystem(p,new List<Enemy>{target,new Enemy("keeper","keeper",200,ElementType.None,new Vector2Int(5,0))},new Deck());
+            state=new Olca.Application.Battle.BasicAttackInputState();
+        }
+        private void Step(LogicalInput input=null)=>state.Tick(battle,input??new LogicalInput(),30,12);
+        private static LogicalInput Tap(bool card=false)=>new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true,CardUseButtonDown=card};
+        [TestCase(2,0,189)][TestCase(3,0,200)][TestCase(0,0,200)][TestCase(2,1,200)]
+        public void 前方一マス同じ列の敵だけに成長後の無属性攻撃を適用する(int x,int y,int hp)
+        {SetupBattle(x,y);Step(Tap());Assert.AreEqual(hp,target.CurrentHp);}
+        [Test]
+        public void 同マスは先配置一体だけを選び無敵対象を別の敵へ付け替えない()
+        {
+            SetupBattle();var second=new Enemy("second","second",200,ElementType.None,target.GridPosition,isSummoned:true);battle.AddSummon(second,new List<Olca.Core.Logic.Battle.IEnemyAIAction>{new Olca.Core.Logic.Battle.BasicAttackAction()});
+            target.SetInvincible(1000);Step(Tap());Assert.AreEqual(200,target.CurrentHp);Assert.AreEqual(200,second.CurrentHp);
+        }
+        [TestCase(1,true)][TestCase(29,true)][TestCase(30,false)]
+        public void 短押しは解放で一度だけ発動し長押しはタメ代替の通常攻撃を出さない(int held,bool accepted)
+        {
+            SetupBattle();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            for(int i=1;i<held;i++)Step(new LogicalInput{BasicAttackButton=true});Assert.AreEqual(200,target.CurrentHp);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(accepted?189:200,target.CurrentHp);
+            for(int i=0;i<40;i++)Step();Assert.AreEqual(accepted?189:200,target.CurrentHp);
+        }
+        [Test]
+        public void 同一フレームの押下解放を保持し連打は十二フレーム未満を予約しない()
+        {
+            SetupBattle();var q=new LogicalInputQueue();q.Enqueue(1,new LogicalInput{BasicAttackButton=true,BasicAttackButtonDown=true});q.Enqueue(1,new LogicalInput{BasicAttackButtonUp=true});
+            var tap=q.Take(1);Assert.IsTrue(tap.BasicAttackButtonDown&&tap.BasicAttackButtonUp);Step(tap);Assert.AreEqual(189,target.CurrentHp);
+            Step(Tap());for(int i=0;i<10;i++)Step();Assert.AreEqual(189,target.CurrentHp);Step(Tap());Assert.AreEqual(178,target.CurrentHp);
+            Assert.IsFalse(q.Take(2).BasicAttackButtonUp);
+        }
+        [Test]
+        public void 画面ボタンも短いポインター解放だけ発動し長押しを通常攻撃へ転用しない()
+        {
+            var o=new UnityEngine.GameObject("tap-fixture");
+            try {var tap=o.AddComponent<Olca.Presentation.Dungeon.BasicAttackTapButton>();long frame=0;int fired=0;tap.Initialize(()=>fired++,()=>frame,()=>30);
+                tap.OnPointerDown(null);frame=2;tap.OnPointerUp(null);tap.Click();Assert.AreEqual(1,fired);
+                tap.OnPointerDown(null);frame+=30;tap.OnPointerUp(null);tap.Click();Assert.AreEqual(1,fired);
+                tap.Click();Assert.AreEqual(2,fired,"メニューSubmit/onClickは一つの短押し操作");
+            }finally{UnityEngine.Object.DestroyImmediate(o);}
+        }
+        [Test]
+        public void ポインターの短押しは描画追いつき前の論理フレーム番号ではなく生成時刻で測る()
+        {
+            var o=new UnityEngine.GameObject("timestamp-tap-fixture");try {
+                var tap=o.AddComponent<Olca.Presentation.Dungeon.BasicAttackTapButton>();long stamp=1000;int fired=0;
+                tap.Initialize(()=>fired++,()=>stamp,()=>30,1000);tap.OnPointerDown(null);
+                stamp=1070;tap.OnPointerUp(null);tap.Click();Assert.AreEqual(1,fired);
+                tap.OnPointerDown(null);stamp+=500;tap.OnPointerUp(null);tap.Click();Assert.AreEqual(1,fired);
+            }finally{UnityEngine.Object.DestroyImmediate(o);}
+        }
+        [Test]
+        public void カード同時入力を優先し攻撃が後から発火しない()
+        {SetupBattle();Step(Tap(true));Assert.AreEqual(200,target.CurrentHp);Step();Assert.AreEqual(200,target.CurrentHp);Step(Tap());Assert.AreEqual(189,target.CurrentHp);}
+        [TestCase("pause")][TestCase("custom")][TestCase("move")][TestCase("stagger")][TestCase("paralysis")]
+        public void 拘束中の押下解放や拘束前の保持を復帰後に予約しない(string kind)
+        {
+            SetupBattle();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            if(kind=="pause")battle.Pause(BattlePauseReason.User);
+            if(kind=="custom"){battle.CustomGauge.SetGaugeMs(Olca.Core.Logic.Battle.CustomGaugeSystem.MAX_GAUGE_MS);battle.OpenCustomScreen(new MockRandomProvider());}
+            if(kind=="move")battle.TickFrame(17,new LogicalInput{Horizontal=-1});
+            if(kind=="stagger"){battle.Player.TakeDamage(1,poiseDamage:30);}
+            if(kind=="paralysis"){battle.Player.ApplyParalysis(3);battle.TickFrame(17);}
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200,target.CurrentHp);
+            if(kind=="pause")battle.Resume(BattlePauseReason.User);
+            if(kind=="custom")battle.CustomScreen.Close();
+            for(int i=0;i<20;i++){Step();battle.TickFrame(17);}
+            Assert.AreEqual(200,target.CurrentHp);
+            target.MoveTo(new Vector2Int(battle.Player.GridPosition.X+1,battle.Player.GridPosition.Y));Step(Tap());Assert.AreEqual(189,target.CurrentHp);
         }
     }
 }

@@ -191,3 +191,31 @@ namespace Olca.Application.Battle
         }
     }
 }
+
+namespace Olca.Application.Battle
+{
+    // タメ性能未定義の間の暫定短押し入力。拘束中の入力を予約せず、カードを優先する。
+    public sealed class BasicAttackInputState
+    {
+        private Olca.Core.Logic.Battle.BattleSystem current;
+        private bool armed;
+        private int heldFrames;
+        public int CooldownFrames { get; private set; }
+        public void Reset() { current = null; armed = false; heldFrames = 0; CooldownFrames = 0; }
+        public void Tick(Olca.Core.Logic.Battle.BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input, int shortPressFrames, int intervalFrames)
+        {
+            if (shortPressFrames < 1 || intervalFrames < 1) throw new System.ArgumentOutOfRangeException();
+            if (!ReferenceEquals(current, battle)) { Reset(); current = battle; }
+            if (battle == null) return;
+            if (!battle.IsPaused && CooldownFrames > 0) CooldownFrames--;
+            if (!battle.CanPlayerBasicAttack || input.CardUseButtonDown || input.CustomScreenButtonDown) { armed = false; heldFrames = 0; return; }
+            if (input.BasicAttackButtonDown) { armed = CooldownFrames == 0; heldFrames = 0; }
+            if (armed && (input.BasicAttackButton || input.BasicAttackButtonUp)) heldFrames = System.Math.Min(shortPressFrames + 1, heldFrames + 1);
+            if (input.BasicAttackButtonUp && !input.BasicAttackButton) {
+                bool fire = armed && heldFrames <= shortPressFrames && CooldownFrames == 0;
+                armed = false; heldFrames = 0;
+                if (fire) { CooldownFrames = intervalFrames; battle.TryPlayerBasicAttackForward(); }
+            } else if (!input.BasicAttackButton) { armed = false; heldFrames = 0; }
+        }
+    }
+}

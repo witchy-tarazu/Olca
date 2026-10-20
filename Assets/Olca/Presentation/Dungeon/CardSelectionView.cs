@@ -177,7 +177,8 @@ namespace Olca.Presentation.Dungeon
         {
             this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
-            gameObject.AddComponent<Image>().color = new Color(0.03f, 0.05f, 0.1f, 1f); gameObject.SetActive(false);
+            gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
+            var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
         }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false)
         {
@@ -243,8 +244,61 @@ namespace Olca.Presentation.Dungeon
         {
             var o = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); o.transform.SetParent(content.transform, false);
             var r = (RectTransform)o.transform; r.anchorMin = r.anchorMax = new Vector2(.5f, .5f); r.anchoredPosition = new Vector2(x, y); r.sizeDelta = new Vector2(width, height);
-            o.GetComponent<Image>().color = new Color(.12f, .2f, .36f, 1f); var b = o.GetComponent<Button>(); b.navigation = new Navigation { mode = Navigation.Mode.None }; b.onClick.AddListener(() => action());
+            o.GetComponent<Image>().color = new Color(.14f, .29f, .36f, .78f);
+            var edge = o.AddComponent<Outline>(); edge.effectColor = new Color(.5f,.9f,.93f,.6f); edge.effectDistance = new Vector2(1,-1); var b = o.GetComponent<Button>(); b.navigation = new Navigation { mode = Navigation.Mode.None }; b.onClick.AddListener(() => action());
             var text = Text(name + "Label", label, x, y, width, height, 25); text.transform.SetParent(o.transform, false); text.rectTransform.anchoredPosition = Vector2.zero; return b;
         }
+    }
+}
+
+namespace Olca.Presentation.Dungeon
+{
+    // 既存FHD Canvas上の小さな操作面。面は透過し、操作ボタン以外は入力を遮らない。
+    public sealed class BasicAttackHud : UnityEngine.MonoBehaviour
+    {
+        private UnityEngine.UI.Text title, state;
+        private UnityEngine.UI.Button button;
+        public void Initialize(UnityEngine.Font font, System.Action tap, System.Func<int> shortPressFrames)
+        {
+            var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = UnityEngine.Vector2.one;
+            rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,-200);
+            var face = gameObject.AddComponent<UnityEngine.UI.Image>(); face.color = new UnityEngine.Color(.04f,.11f,.16f,.87f); face.raycastTarget = false;
+            var edge = gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
+            UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
+            {
+                var o = new UnityEngine.GameObject(name, typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text)); o.transform.SetParent(transform,false);
+                var text = o.GetComponent<UnityEngine.UI.Text>(); text.font = font; text.fontSize = size; text.color = new UnityEngine.Color(.94f,.99f,1f);
+                text.alignment = UnityEngine.TextAnchor.MiddleCenter; text.raycastTarget = false;
+                var r = text.rectTransform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(x,y); r.sizeDelta = new UnityEngine.Vector2(w,h); return text;
+            }
+            title = Label("BasicAttackKey",-80,50,300,44,26);
+            Label("BasicAttackHelp",-80,0,310,60,22).text = "前方一マス・敵一体\n短く押して離す";
+            state = Label("BasicAttackState",0,-55,470,36,22);
+            var o = new UnityEngine.GameObject("BasicAttackButton",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button)); o.transform.SetParent(transform,false);
+            var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,25); r.sizeDelta = new UnityEngine.Vector2(155,74);
+            o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>();
+            button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
+            var pointer = o.AddComponent<BasicAttackTapButton>(); pointer.Initialize(tap, System.Diagnostics.Stopwatch.GetTimestamp, shortPressFrames, System.Diagnostics.Stopwatch.Frequency); button.onClick.AddListener(pointer.Click);
+            var label = Label("BasicAttackLabel",0,0,155,74,26); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
+        }
+        public void Render(string key, string value, bool available)
+        {
+            title.text = "基本攻撃 [" + (key ?? "未割当") + "]"; state.text = value; button.interactable = available;
+            state.color = available ? new UnityEngine.Color(.65f,1f,.95f) : new UnityEngine.Color(.92f,.94f,.98f);
+        }
+    }
+}
+
+namespace Olca.Presentation.Dungeon
+{
+    public sealed class BasicAttackTapButton : UnityEngine.MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler
+    {
+        private System.Action fire; private System.Func<long> timestamp; private System.Func<int> limit; private long frequency;
+        private bool pointer, accepted; private long start;
+        public void Initialize(System.Action fire, System.Func<long> timestamp, System.Func<int> limit, long frequency = 60) { this.fire=fire;this.timestamp=timestamp;this.limit=limit;this.frequency=frequency; }
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data) { pointer=true;accepted=false;start=timestamp(); }
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data) { accepted=(timestamp()-start)/(double)frequency < limit()/60.0; }
+        public void Click() { bool use=!pointer||accepted;pointer=false;accepted=false;if(use)fire(); }
+        private void OnDisable() { pointer=false;accepted=false; }
     }
 }

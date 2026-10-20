@@ -30,3 +30,7 @@ OnScreenClosedでも残ゲージをリセットしてから再開する。通常
 公式Unity CLI MCP console(error) → 全EditMode → console(error) で1,364/1,364成功、失敗/スキップ0、28.67秒。現在のエラー0、分類済み既存警告10。14テスト追加。既存リマップ・入力境界・ポーズ・旧保存テストも含めて成功。基本攻撃ボタン接続の動作テストとは区別する。
 
 証跡: `/workspace/.olca-cloud/results/custom-close-gauge/` の editmode-tests.json、console-before.json、console-after.json。原本差分0、meta変更なし。
+
+## 2026-10-20 暫定方針の承認後
+
+上記の基本攻撃未接続は当時の履歴。ユーザーが仮実装の明示管理を条件に裁量を認めたため、短押し前方1マス/先配置の敵1体、カード同時入力優先、タメ後回しで通常入力を接続する。現在のAPIの移動/のけぞり/麻痺/カード実行中/ポーズ/終了の拘束を維持する。製品仕様の確定ではなく、Planning/暫定実装一覧.mdで根拠・数値・差分・UIを管理する。
