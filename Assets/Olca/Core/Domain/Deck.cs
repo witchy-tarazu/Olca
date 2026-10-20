@@ -187,6 +187,7 @@ namespace Olca.Core.Domain
             if (cards.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) ||
                 !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.ExceedLevel)))
             { error = "カード定義が不正です"; return false; }
+            if (cards.Any(c => c.ExceedLevel == ExceedLevel.Lv3)) { error = "★★★は戦闘内専用で初期デッキに登録できません"; return false; }
             if (cards.GroupBy(c => c.Id).Any(g => g.Select(c => c.Rarity).Distinct().Count() != 1))
             { error = "同じカードIDのレギュレーションが一致しません"; return false; }
             foreach (var group in cards.GroupBy(c => (c.Id, c.ExceedLevel)))

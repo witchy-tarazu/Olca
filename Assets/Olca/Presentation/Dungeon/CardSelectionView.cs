@@ -192,15 +192,16 @@ namespace Olca.Presentation.Dungeon
     {
         private Font font;
         private Action<int> toggle;
-        private Action confirm, finish, retry, depart, closeCollection;
+        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture;
+        private int departurePage;
         private GameObject content;
         private int page;
         private string lastRun;
         private ClearReturnStage? lastStage;
         private const int PageSize = 8;
-        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null)
+        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null)
         {
-            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection;
+            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
@@ -249,10 +250,44 @@ namespace Olca.Presentation.Dungeon
                 if (profile.Owned.Length == 0) Text("NoOwnedCards", "永続所持カードはまだありません。", 0, 50, 1500, 80, 28);
                 Pages(profile, flow, blocked, error, pages, collectionOnly);
                 if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, -420, 900, 75, closeCollection);
-                else if (depart != null) Button("NextDeparture", "既存デッキで再出撃", 0, -420, 900, 75, depart).interactable = !blocked;
+                else {
+                    if (editOwnedDeparture != null) Button("EditOwnedDeparture", "所持カードで出撃デッキを編成", -440, -420, 820, 75, editOwnedDeparture).interactable = !blocked;
+                    if (depart != null) Button("NextDeparture", "既存デッキで再出撃", 440, -420, 820, 75, depart).interactable = !blocked;
+                }
             }
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -510, 800, 58, retry);
         }
+        public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
+            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard)
+        {
+            if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
+            content = new GameObject("DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
+            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            gameObject.SetActive(true);
+            Text("DepartureTitle", "所持から出撃デッキを編成", 0, 455, 1750, 70, 36);
+            if (confirmDiscard) {
+                Text("DiscardDepartureHelp", "未確定の編成を破棄して帰還画面へ戻りますか？", 0, 100, 1700, 130, 30);
+                Button("KeepEditingDeparture", "編集に戻る", -420, -150, 750, 80, resume);
+                Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, () => close(true)); return;
+            }
+            Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 350, 1750, 120, 26);
+            Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 250, 1750, 70, 25);
+            const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
+            for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
+                int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
+                int count = draft.Count(c => c.Id == owned.Id && c.ExceedLevel == owned.Level); float y = 160 - row * 75;
+                Text("DepartureCard_" + index, owned.Name + new string('★', (int)owned.Level) + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -260, y, 1100, 65, 25);
+                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, () => change(index, -1)).interactable = option != null && count > 0;
+                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, () => change(index, 1)).interactable = option != null && count < owned.Count && draft.Count < 20;
+            }
+            if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);
+            Text("DeparturePage", $"{departurePage+1}/{pages}", 0, -340, 250, 50, 24);
+            Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, () => { departurePage--; resume(); }).interactable = departurePage > 0;
+            Button("NextDeparturePage", "次へ", 380, -340, 240, 55, () => { departurePage++; resume(); }).interactable = departurePage+1 < pages;
+            Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, confirm).interactable = valid;
+            Button("CloseOwnedDeparture", "帰還画面へ戻る", 0, -510, 800, 58, () => close(false));
+        }
+
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)
         {
             Text("ReturnPage", $"{page + 1}/{pages}", 0, -340, 300, 55, 24);

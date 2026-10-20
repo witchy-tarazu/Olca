@@ -2876,6 +2876,61 @@ namespace Olca.Tests.Integration
             } finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
         }
 
+        // 所持を十分に集めた状態のfixture。製品スターターの付与ではない。
+        private void SeedOwnedDeparture(Olca.Application.Dungeon.DungeonBattleController c)
+        {
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var p=c.PersistentProgress;long revision=p.Revision;
+            p.Owned=new[]{"sword","heal","shield","fire","ice"}.Select(id=>{var card=CardRewardSystem.CreateFallbackCard(id,CardRarity.Normal);
+                return new OwnedCardCount{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,Count=4};}).ToArray();
+            p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(revision,p,out var error),error);
+            Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).Reload());
+        }
+        [TestCase(false,"none")][TestCase(true,"none")][TestCase(false,"progress")][TestCase(true,"checkpoint")]
+        public void 所持二十枚の編成から通常出撃し保存失敗と再開でも選択枚数と旧受領を維持する(bool route,string fault)
+        {
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> setup=c=>c.ConfigureDungeon(DungeonConfig.CreateTestDungeon(5,30,4));
+            var c=route?Start(new[]{Empty(2),DungeonConfig.CreateTestDungeon(5,30,4)}):Start(configure:setup);
+            ToBattle(c);Model(c).SelectCardReward(Win(c)[0]);KeyboardButton(c,"ConfirmCarryHome");KeyboardButton(c,"ConfirmReturn");SeedOwnedDeparture(c);
+            var oldPath=route?Store(c).ActivePath:((Olca.Unity.FileCheckpointStore)((DungeonCheckpointSession)Get(c,"memoryCheckpoints")).Store).ActivePath;
+            var oldBytes=System.IO.File.ReadAllBytes(oldPath);var progress=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");
+            var before=System.IO.File.ReadAllBytes(progress.ActivePath);var oldModel=Model(c);
+            KeyboardButton(c,"EditOwnedDeparture");KeyboardButton(c,"AddDepartureCard_0");
+            Call(c,"ConfirmOwnedDeparture");Assert.IsNull(c.PersistentProgress.NextDeparture);Assert.AreSame(oldModel,Model(c));
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"KeepEditingDeparture");
+            Assert.AreEqual(1,((List<Card>)Get(c,"ownedDepartureDraft")).Count);
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"DiscardDepartureDraft");KeyboardButton(c,"EditOwnedDeparture");
+            Assert.AreEqual(0,((List<Card>)Get(c,"ownedDepartureDraft")).Count);
+            for(int row=0;row<5;row++)for(int count=0;count<5;count++)Call(c,"ChangeOwnedDeparture",row,1);
+            var draft=((List<Card>)Get(c,"ownedDepartureDraft")).ToArray();Assert.AreEqual(20,draft.Length);Assert.IsTrue(draft.GroupBy(x=>x.Id).All(g=>g.Count()==4));
+            CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(progress.ActivePath));
+            var progressIo=new KeyboardFaultIo{Fault=fault=="progress"?"before":null};Set(progress,"io",progressIo);
+            var checkpointIo=new KeyboardFaultIo{Fault=fault=="checkpoint"?"before":null};Set(c,"nextDepartureIo",checkpointIo);
+            KeyboardButton(c,"ConfirmOwnedDeparture");
+            if(fault=="progress"){Assert.AreSame(oldModel,Model(c));Assert.IsNull(c.PersistentProgress.NextDeparture);progressIo.Fault=null;KeyboardButton(c,"RetryClearReturn");}
+            if(fault=="checkpoint"){Assert.AreSame(oldModel,Model(c));var id=c.PersistentProgress.NextDeparture.Start.RunId;
+                c=Start(configure:x=>{if(!route)setup(x);Set(x,"nextDepartureIo",checkpointIo);});checkpointIo.Fault=null;KeyboardButton(c,"RetryClearReturn");Assert.AreEqual(id,c.PersistentProgress.NextDeparture.Start.RunId);}
+            var plan=c.PersistentProgress.NextDeparture;Assert.AreEqual(20,plan.Start.DeckOrder.Length);
+            CollectionAssert.AreEqual(draft.Select(x=>x.Id),Model(c).Dungeon.GetCurrentDeck().GetAllCards().Select(x=>x.Id));
+            Assert.AreEqual(20,Model(c).Dungeon.GetCurrentDeck().GetAllCards().Distinct().Count());Assert.IsTrue(c.PersistentProgress.Owned.All(o=>o.Count==4));
+            Assert.AreEqual(100,c.PersistentProgress.Experience);Assert.AreEqual(1,c.PersistentProgress.Receipts.Length);Assert.AreEqual(0,Model(c).Dungeon.GetObtainedCards().Count);
+            c=route?Start():Start(configure:setup);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
+            Assert.AreEqual(plan.Start.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(20,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+            c.SetUserPaused(true);KeyboardButton(c,"OwnedCardsButton");Call(c,"OpenOwnedDeparture");Assert.IsFalse((bool)Get(c,"ownedDepartureEditing"));c.SetUserPaused(false);
+            CollectionAssert.AreEqual(oldBytes,System.IO.File.ReadAllBytes(oldPath));
+        }
+        [Test]
+        public void 未解決の所持を編成せず未所持を候補に足さず空所持でも既存出撃を保つ()
+        {
+            var c=Start(new[]{DungeonConfig.CreateTestDungeon(5,30,4)});ToBattle(c);Model(c).SelectCardReward(Win(c)[0]);KeyboardButton(c,"ConfirmCarryHome");KeyboardButton(c,"ConfirmReturn");
+            KeyboardButton(c,"EditOwnedDeparture");Assert.AreEqual(0,((Card[])Get(c,"ownedDepartureOptions")).Length);KeyboardButton(c,"CloseOwnedDeparture");
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var p=c.PersistentProgress;long revision=p.Revision;
+            p.Owned=new[]{new OwnedCardCount{Id="unresolved",Name="未知",Rarity=CardRarity.Normal,Level=ExceedLevel.Normal,Count=4}};
+            p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(revision,p,out var error),error);Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).Reload());
+            KeyboardButton(c,"EditOwnedDeparture");Assert.AreEqual(1,((Card[])Get(c,"ownedDepartureOptions")).Length);Assert.IsNull(((Card[])Get(c,"ownedDepartureOptions"))[0]);
+            Call(c,"ChangeOwnedDeparture",0,1);Assert.AreEqual(0,((List<Card>)Get(c,"ownedDepartureDraft")).Count);Call(c,"ConfirmOwnedDeparture");Assert.IsNull(c.PersistentProgress.NextDeparture);
+            KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"NextDeparture");Assert.AreEqual(6,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 帰還から次回出撃と再クリアでも所持と成長を保ち取得履歴と報酬を分離する(bool route)
         {

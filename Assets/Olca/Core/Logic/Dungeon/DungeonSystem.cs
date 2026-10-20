@@ -957,6 +957,16 @@ namespace Olca.Core.Logic.Dungeon
             CheckpointValues.CardHash(definition); // 不完全な値は登録時にも拒否。
             cards.Add(key, definition.Clone());
         }
+        /// <summary>既存の未加工定義だけを所持識別へ解決する。未定義/同じ識別の競合を補完しない。</summary>
+        public bool TryResolveOwnedCard(string id, ExceedLevel level, CardRarity rarity, string name, out Card card)
+        {
+            card = null;
+            if (level == ExceedLevel.Lv3) return false;
+            var matches = cards.Values.Where(c => c.Id == id && c.ExceedLevel == level && c.Rarity == rarity && c.Name == name)
+                .GroupBy(c => CheckpointValues.CardHash(c)).Select(g => g.First()).ToArray();
+            if (matches.Length != 1) return false;
+            card = matches[0].Clone(); return true;
+        }
         public void RegisterGrant(string key, TuningGrantDefinition grant)
         {
             if (string.IsNullOrWhiteSpace(key) || grant == null) throw new ArgumentException("調律定義が必要です");
@@ -1415,6 +1425,11 @@ namespace Olca.Core.Logic.Dungeon
         }
         public DungeonCheckpointSession CreateCheckpointSession(int index, FloorSequenceSession route)
             => new DungeonCheckpointSession(Floor(index), new FloorCheckpointStore(route, index, index + 1 < FloorCount));
+
+        public bool TryResolveOwnedCard(string id, ExceedLevel level, CardRarity rarity, string name, out Card card)
+            => Floor(0).TryResolveOwnedCard(id, level, rarity, name, out card);
+        public DungeonCheckpointSession CreateDepartureSession()
+            => new DungeonCheckpointSession(Floor(0), new MemoryCheckpointStore(Floor(0)));
 
         internal CheckpointDefinitions Floor(int index)
         {

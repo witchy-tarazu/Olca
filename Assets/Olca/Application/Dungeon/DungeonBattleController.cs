@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
@@ -292,7 +293,7 @@ namespace Olca.Application.Dungeon
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
-            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards);
+            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture);
             var attackPanel = new GameObject("BasicAttackHud", typeof(RectTransform)); attackPanel.transform.SetParent(pauseCanvas.transform, false);
             basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, () => basicAttackShortPressFrames);
             basicAttackHud.gameObject.SetActive(false);
@@ -311,6 +312,59 @@ namespace Olca.Application.Dungeon
             collectionOpen = true; pauseOverlay.SetActive(false); clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.Snapshot?.Flow, false, null, true);
         }
         private void CloseOwnedCards() { collectionOpen = false; clearReturnView.gameObject.SetActive(false); pauseOverlay.SetActive(IsUserPaused); }
+
+        private bool ownedDepartureEditing;
+        private readonly List<Card> ownedDepartureDraft = new List<Card>();
+        private Card[] ownedDepartureOptions;
+        private string ownedDepartureError;
+        private bool CanEditOwnedDeparture => clearReturnVisible && !collectionOpen && !departureWriting && !progressStartupBlocked &&
+            clearReturnSession.Ready && !clearReturnSession.HasPendingSave && clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned &&
+            clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId;
+        private void OpenOwnedDeparture()
+        {
+            if (!CanEditOwnedDeparture) return;
+            ownedDepartureOptions = clearReturnSession.Snapshot.Owned.Select(o => {
+                Card card; bool resolved = floorDefinitions != null ? floorDefinitions.TryResolveOwnedCard(o.Id, o.Level, o.Rarity, o.Name, out card)
+                    : nextDepartureDefinitions.TryResolveOwnedCard(o.Id, o.Level, o.Rarity, o.Name, out card);
+                return resolved ? card : null;
+            }).ToArray();
+            ownedDepartureDraft.Clear(); ownedDepartureEditing = true; ownedDepartureError = null; ShowOwnedDeparture();
+        }
+        private bool TryOwnedDepartureDeck(out Deck deck, out string error)
+            => DepartureDeckRules.TryCreate(ownedDepartureDraft, clearReturnSession.Snapshot.Owned.ToDictionary(o => (o.Id, o.Level), o => o.Count), out deck, out error);
+        private void ShowOwnedDeparture(bool confirmDiscard = false)
+        {
+            TryOwnedDepartureDeck(out _, out var validation);
+            clearReturnView.RenderOwnedDeparture(clearReturnSession.Snapshot, ownedDepartureOptions, ownedDepartureDraft,
+                ownedDepartureError ?? validation, validation == null, ChangeOwnedDeparture, ConfirmOwnedDeparture,
+                CloseOwnedDeparture, () => ShowOwnedDeparture(), confirmDiscard);
+        }
+        private void ChangeOwnedDeparture(int index, int delta)
+        {
+            if (!ownedDepartureEditing || !CanEditOwnedDeparture || index < 0 || index >= ownedDepartureOptions.Length) return;
+            var card = ownedDepartureOptions[index]; if (card == null) return;
+            if (delta > 0) {
+                int count = ownedDepartureDraft.Count(c => c.Id == card.Id && c.ExceedLevel == card.ExceedLevel);
+                if (count >= clearReturnSession.Snapshot.Owned[index].Count || ownedDepartureDraft.Count >= 20) return;
+                ownedDepartureDraft.Add(card.Clone());
+            } else {
+                int found = ownedDepartureDraft.FindLastIndex(c => c.Id == card.Id && c.ExceedLevel == card.ExceedLevel);
+                if (found >= 0) ownedDepartureDraft.RemoveAt(found);
+            }
+            ownedDepartureError = null; ShowOwnedDeparture();
+        }
+        private void CloseOwnedDeparture(bool discard)
+        {
+            if (!ownedDepartureEditing || !CanEditOwnedDeparture) return;
+            if (!discard && ownedDepartureDraft.Count > 0) { ShowOwnedDeparture(true); return; }
+            ownedDepartureDraft.Clear(); ownedDepartureEditing = false; ShowClearReturn();
+        }
+        private void ConfirmOwnedDeparture()
+        {
+            if (!ownedDepartureEditing || !CanEditOwnedDeparture) return;
+            if (!TryOwnedDepartureDeck(out var deck, out ownedDepartureError)) { ShowOwnedDeparture(); return; }
+            ownedDepartureEditing = false; StartNextDepartureWithDeck(deck);
+        }
 
         private string clearReturnError, progressDirectoryOverride;
         public ClearReturnProfile PersistentProgress => clearReturnSession?.Snapshot;
@@ -388,7 +442,8 @@ namespace Olca.Application.Dungeon
         }
 
         private string DepartureDefinitionKey(CheckpointDto start) => floorDefinitions?.RouteHash ?? nextDepartureDefinitions.MapHash;
-        private void StartNextDeparture()
+        private void StartNextDeparture() => StartNextDepartureWithDeck(null);
+        private void StartNextDepartureWithDeck(Deck ownedDeck)
         {
             if (departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
                 clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned) return;
@@ -398,7 +453,9 @@ namespace Olca.Application.Dungeon
                 if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId) {
                     var map = floorDefinitions?.CreateInitialMap(0) ?? nextDepartureDefinitions.CreateInitialMap();
                     if (floorDefinitions == null) map.ValidateFinalFloorForDeparture();
-                    var deck = CreateInitialDeck(); var frozen = DungeonCheckpointSession.CreateDefault(map, deck);
+                    var deck = ownedDeck ?? CreateInitialDeck();
+                    // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
+                    var frozen = floorDefinitions?.CreateDepartureSession() ?? new DungeonCheckpointSession(nextDepartureDefinitions, new MemoryCheckpointStore(nextDepartureDefinitions));
                     var level = clearReturnSession.Snapshot.Level; var settings = ReturnSettings();
                     var player = new PlayerCharacter(settings.MaxHp(level), attackPower: settings.Attack(level),
                         staggerDurationFrames: battleStaggerFrames, poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);

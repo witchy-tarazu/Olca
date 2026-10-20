@@ -343,6 +343,25 @@ namespace Olca.Tests.Dungeon
         private static Dictionary<(string, ExceedLevel), int> Owned(IEnumerable<Card> cards)
             => cards.GroupBy(c => (c.Id, c.ExceedLevel)).ToDictionary(g => g.Key, g => g.Count());
 
+        [Test]
+        public void 戦闘専用の最上位を所持枚数指定で初期編成へ混ぜられない()
+        {
+            var cards=ValidCards();cards[0]=Card("transcend",level:ExceedLevel.Lv3);
+            Assert.IsFalse(DepartureDeckRules.TryCreate(cards,Owned(cards),out _,out var error));StringAssert.Contains("★★★",error);
+        }
+        [Test]
+        public void 所持定義は登録済みの名前と段階とレギュレーションを照合し未定義や競合を補完しない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();
+            var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(5),new Deck(new List<Card>{f.CreateById("sword")})).Definitions;
+            Assert.IsTrue(defs.TryResolveOwnedCard("sword",ExceedLevel.Normal,CardRarity.Normal,"sword_card",out var fallback));Assert.AreEqual(30,fallback.Power);
+            Assert.IsTrue(defs.TryResolveOwnedCard("sword",ExceedLevel.Normal,CardRarity.Normal,"ソード",out var normal));Assert.AreEqual("前方1マス攻撃",normal.Description);
+            Assert.IsFalse(defs.TryResolveOwnedCard("unknown",ExceedLevel.Normal,CardRarity.Normal,"unknown",out _));
+            Assert.IsFalse(defs.TryResolveOwnedCard("sword",ExceedLevel.Lv3,CardRarity.Normal,"sword_card",out _));
+            defs.RegisterCard("conflicting",new Card("sword","sword_card",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,99,"different"));
+            Assert.IsFalse(defs.TryResolveOwnedCard("sword",ExceedLevel.Normal,CardRarity.Normal,"sword_card",out _));Assert.AreEqual(30,fallback.Power);
+        }
+
         [TestCase(19)][TestCase(21)][TestCase(0)]
         public void 出撃前だけ二十枚以外を拒否し下書き自体を変更しない(int count)
         {
@@ -376,7 +395,7 @@ namespace Olca.Tests.Dungeon
         [Test]
         public void 同一IDの段階違いは別カードとして数え各所持枚数と別個体を維持する()
         {
-            var templates=new[]{Card("same"),Card("same",level:ExceedLevel.Lv1),Card("same",level:ExceedLevel.Lv2),Card("same",level:ExceedLevel.Lv3),Card("other")};
+            var templates=new[]{Card("same"),Card("same",level:ExceedLevel.Lv1),Card("same",level:ExceedLevel.Lv2),Card("another"),Card("other")};
             var cards=templates.SelectMany(c=>Enumerable.Repeat(c,4)).ToList();var owned=Owned(cards);var before=owned.ToArray();
             Assert.IsTrue(DepartureDeckRules.TryCreate(cards,owned,out var a,out var error),error);
             Assert.IsTrue(DepartureDeckRules.TryCreate(cards,owned,out var b,out error),error);
