@@ -58,7 +58,6 @@ namespace Olca.Core.Domain
         public void ApplyPoison(string kind, StatusEffect effect, int intervalFrames)
         {
             if (string.IsNullOrWhiteSpace(kind)) throw new ArgumentException("毒種が必要です");
-            if (HasParalysisState) throw new NotSupportedException("プレイヤー毒と麻痺の共存は未確定です");
             if (IsDead) return;
             if (!poisons.TryGetValue(kind, out var state)) {
                 state = new TimedPoisonState();
@@ -76,7 +75,7 @@ namespace Olca.Core.Domain
         }
         public void RestorePoisons(PlayerPoisonDto[] values)
         {
-            if (frameHp.Active || HasParalysisState) throw new InvalidOperationException("状態更新中は毒を復元できません");
+            if (frameHp.Active) throw new InvalidOperationException("状態更新中は毒を復元できません");
             var restored = new Dictionary<string, TimedPoisonState>();
             foreach (var value in values ?? Array.Empty<PlayerPoisonDto>()) {
                 if (value == null) throw new ArgumentException("毒状態が欠落しています");
@@ -116,7 +115,6 @@ namespace Olca.Core.Domain
         {
             if (durationFrames <= 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
             if (IsDead) return;
-            if (HasPoisonState) throw new NotSupportedException("プレイヤー毒と麻痺の共存は未確定です");
             pendingParalysisFrames = durationFrames;
             // 既存の敵状態処理と同じく、フレーム内の解除予約を再付与で打ち消さない。
             if (!paralysisFrameOpen) clearParalysisPending = false;

@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System.Linq;
 using Olca.Core.Logic.Dungeon;
+using Olca.Core.Logic.Integration;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
 using Olca.Tests.Mocks;
@@ -57,6 +58,44 @@ namespace Olca.Tests.Dungeon
             foreach(var e in d.CurrentBattle.Enemies.ToArray())e.TakeDamage(99999,ElementType.None);
             Assert.IsFalse(d.IsInBattle);var end=p.CapturePoisons()[0];
             Assert.AreEqual(before.RemainingUnits,end.RemainingUnits);Assert.AreEqual(3000,end.NextDamageUnits);
+        }
+
+        [Test]
+        public void 併存戦闘の終了で麻痺だけ解除し毒を報酬保存と探索復帰へ持ち越す()
+        {
+            var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-coexisting-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
+                var deck = new Deck(new System.Collections.Generic.List<Card> { CardRewardSystem.CreateFallbackCard("sword", CardRarity.Normal) });
+                var defaults = DungeonCheckpointSession.CreateDefault(map, deck);
+                var files = new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory);
+                var session = new DungeonCheckpointSession(defaults.Definitions, files); var p = new PlayerCharacter(100);
+                var game = new Olca.Core.Logic.Integration.DungeonBattleManager(map, p, deck, new MockRandomProvider(), new MockLogger(), checkpoints: session);
+                p.ApplyPoison("fixture", new StatusEffect(StatusEffectType.Poison, 60000, 2), 60);
+                for (int f = 0; f < 300 && game.CurrentBattle == null; f++) game.TickFrame(17);
+                Assert.IsNotNull(game.CurrentBattle);
+                p.ApplyParalysis(6); game.TickFrame(17); Assert.IsTrue(p.IsParalyzed);
+                var before = p.CapturePoisons()[0];
+                Assert.AreEqual(CheckpointBoundary.BattleStart, files.Read().Boundary, "途中状態の保存境界を増やさない");
+                var battle = game.CurrentBattle;
+                battle.RunLogicalFrame(() => { foreach (var enemy in battle.Enemies.ToArray()) enemy.TakeDamage(99999, ElementType.None); });
+                if (game.CurrentPhase == GamePhase.CardReward) game.SelectCardReward(null);
+                Assert.AreEqual(GamePhase.Dungeon, game.CurrentPhase); Assert.IsFalse(p.IsParalyzed); Assert.AreEqual(0, p.ParalysisRemainingFrames);
+                Assert.AreEqual(before.RemainingUnits, p.CapturePoisons()[0].RemainingUnits);
+                Assert.AreEqual(3000, p.CapturePoisons()[0].NextDamageUnits);
+                var saved = files.Read(); Assert.AreEqual(CheckpointBoundary.RewardCompleted, saved.Boundary);
+                Assert.AreEqual(before.RemainingUnits, saved.Player.Poisons.Single().RemainingUnits);
+                var bytes = System.IO.File.ReadAllBytes(files.ActivePath);
+                Assert.IsTrue(game.SuspendForCheckpoint());
+                var reopened = new DungeonCheckpointSession(defaults.Definitions, new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory));
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(reopened, new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                resumed.ActivateCheckpoint(); Assert.IsFalse(resumed.Dungeon.Player.IsParalyzed);
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(files.ActivePath));
+                Assert.AreEqual(before.RemainingUnits, resumed.Dungeon.Player.CapturePoisons()[0].RemainingUnits);
+                resumed.TickFrame(17);
+                Assert.AreEqual(before.RemainingUnits - 50, resumed.Dungeon.Player.CapturePoisons()[0].RemainingUnits);
+                Assert.AreEqual(2950, resumed.Dungeon.Player.CapturePoisons()[0].NextDamageUnits);
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
         }
 
         private MockRandomProvider mockRandom;

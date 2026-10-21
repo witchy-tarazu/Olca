@@ -3743,8 +3743,8 @@ namespace Olca.Tests.Integration
                     Step(new LogicalInput{BasicAttackButtonDown=frame==1||frame==30,BasicAttackButton=frame<=70,BasicAttackButtonUp=frame==71});
                     trace.Add(frame+":"+state.ChargeFrames+":"+target.CurrentHp+":"+state.CooldownFrames);
                 }
-                if(fps==0){clock.Accumulate(1500000000);clock.Drain(Tick);}
-                else for(int sample=1;clock.Frame<90;sample++){long next=(long)sample*1000000000/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Tick);}
+                if(fps==0){clock.Accumulate(LogicalFrameClock.WallTicksPerSecond*3/2);clock.Drain(Tick);}
+                else for(int sample=1;clock.Frame<90;sample++){long next=(long)sample*LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Tick);}
                 Assert.AreEqual(178,target.CurrentHp);return trace.Take(90).ToList();
             }
             var expected=Trace(60);CollectionAssert.AreEqual(expected,Trace(30));CollectionAssert.AreEqual(expected,Trace(120));CollectionAssert.AreEqual(expected,Trace(0));

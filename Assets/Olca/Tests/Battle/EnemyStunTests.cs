@@ -63,15 +63,80 @@ namespace Olca.Tests.Battle
             p.ApplyPoison("b",PlayerPoison(6),2);p.ClearPoisons();Assert.IsEmpty(p.CapturePoisons());
         }
         [Test]
-        public void プレイヤー毒の耐性は期間だけ短縮し短期間は無発生で共存未確定を拒否する()
+        public void プレイヤー毒の耐性は期間だけ短縮し麻痺と併存しても短期間は無発生になる()
         {
             var p=new PlayerCharacter(100);var b=PoisonBattle(p);
             p.ApplyPoison("a",PlayerPoison(5,30,50),3);
             Assert.AreEqual(100,p.CapturePoisons()[0].RemainingUnits);
-            Assert.Throws<System.NotSupportedException>(()=>p.ApplyParalysis(6));
+            Assert.DoesNotThrow(()=>p.ApplyParalysis(6));
             for(int i=0;i<2;i++)b.TickFrame(16);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(p.CapturePoisons());
-            p.ApplyParalysis(6);Assert.Throws<System.NotSupportedException>(()=>p.ApplyPoison("a",PlayerPoison(6),2));
+            p.ApplyParalysis(6);Assert.DoesNotThrow(()=>p.ApplyPoison("a",PlayerPoison(6),2));
         }
+        private static BattleSystem CoexistingStatusBattle(PlayerCharacter player, bool poisonFirst)
+        {
+            var battle = PoisonBattle(player);
+            var source = new Enemy("status-fixture", "検証", 9999, ElementType.None,
+                new Vector2Int(player.GridPosition.X + 1, player.GridPosition.Y), isSummoned: true);
+            battle.AddSummon(source, new List<IEnemyAIAction> {
+                new BasicAttackAction(1, 100000, poiseDamage: 0, onHit: p => {
+                    if (poisonFirst) p.ApplyPoison("fixture", PlayerPoison(120), 6);
+                    p.ApplyParalysis(12);
+                    if (!poisonFirst) p.ApplyPoison("fixture", PlayerPoison(120), 6);
+                }) });
+            return battle;
+        }
+
+        [TestCase(false, false)] [TestCase(true, false)]
+        [TestCase(false, true)] [TestCase(true, true)]
+        public void 通常敵攻撃の併存付与は順序によらず独立進行し停止復帰と個別解除を維持する(bool poisonFirst, bool clearPoison)
+        {
+            var p = new PlayerCharacter(100, new Vector2Int(2, 0));
+            var b = CoexistingStatusBattle(p, poisonFirst);
+            b.TickFrame(17);
+            Assert.AreEqual(99, p.CurrentHp); Assert.AreEqual(12, p.ParalysisRemainingFrames);
+            Assert.AreEqual(6000, p.CapturePoisons()[0].RemainingUnits, "付与フレームは毒を進めない");
+            for (int f = 0; f < 6; f++) b.TickFrame(17, new Olca.Core.Logic.Integration.LogicalInput { Horizontal = -1 });
+            Assert.AreEqual(96, p.CurrentHp, "麻痺中も毒の6フレーム間隔が進む");
+            Assert.AreEqual(new Vector2Int(2, 0), p.GridPosition); Assert.IsFalse(b.PlayerMovement.IsNormalMoving);
+            var poison = p.CapturePoisons()[0]; int paralysis = p.ParalysisRemainingFrames;
+            b.Pause(BattlePauseReason.User); for (int f = 0; f < 20; f++) b.TickFrame(17); b.Resume(BattlePauseReason.User);
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); b.OpenCustomScreen(new MockRandomProvider());
+            for (int f = 0; f < 20; f++) b.TickFrame(17);
+            Assert.AreEqual(paralysis, p.ParalysisRemainingFrames); Assert.AreEqual(poison.RemainingUnits, p.CapturePoisons()[0].RemainingUnits);
+            Assert.AreEqual(poison.NextDamageUnits, p.CapturePoisons()[0].NextDamageUnits); b.CustomScreen.Close();
+            Assert.DoesNotThrow(() => p.RestorePoisons(p.CapturePoisons()));
+            Assert.AreEqual(paralysis, p.ParalysisRemainingFrames, "毒の復元は麻痺を変更しない");
+            if (clearPoison) {
+                p.ClearPoisons(); b.TickFrame(17);
+                Assert.IsEmpty(p.CapturePoisons()); Assert.AreEqual(paralysis - 1, p.ParalysisRemainingFrames);
+            } else {
+                p.ClearParalysis(); b.TickFrame(17, new Olca.Core.Logic.Integration.LogicalInput { Horizontal = -1 });
+                Assert.IsFalse(p.IsParalyzed); Assert.IsTrue(b.PlayerMovement.IsNormalMoving);
+                Assert.AreEqual(poison.RemainingUnits - 50, p.CapturePoisons()[0].RemainingUnits);
+            }
+        }
+
+        [Test]
+        public void 併存の更新は描画三十六十百二十と追いつきで同じトレースになる()
+        {
+            List<string> Trace(int fps) {
+                var p = new PlayerCharacter(100, new Vector2Int(2, 0)); var b = CoexistingStatusBattle(p, true);
+                var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace = new List<string>(); long wall = 0;
+                void Tick(long frame, int ms) {
+                    if (frame == 10) b.Pause(BattlePauseReason.User);
+                    if (frame == 20) b.Resume(BattlePauseReason.User);
+                    if (frame == 30) { b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); b.OpenCustomScreen(new MockRandomProvider()); }
+                    if (frame == 40) b.CustomScreen.Close();
+                    b.TickFrame(ms); var poison = p.CapturePoisons()[0];
+                    trace.Add(frame + ":" + p.CurrentHp + ":" + p.ParalysisRemainingFrames + ":" + poison.RemainingUnits + ":" + poison.NextDamageUnits);
+                }
+                if (fps == 0) { clock.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond * 3 / 2); clock.Drain(Tick); }
+                else for (int sample = 1; clock.Frame < 90; sample++) { long next = (long)sample * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps; clock.Accumulate(next - wall); wall = next; clock.Drain(Tick); }
+                return trace.GetRange(0, 90);
+            }
+            var expected = Trace(60); CollectionAssert.AreEqual(expected, Trace(30)); CollectionAssert.AreEqual(expected, Trace(120)); CollectionAssert.AreEqual(expected, Trace(0));
+        }
+
         [Test]
         public void プレイヤー毒の保存は独立コピーでms端数も復元し重複や破損を拒否する()
         {
