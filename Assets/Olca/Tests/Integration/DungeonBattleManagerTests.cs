@@ -2492,6 +2492,112 @@ namespace Olca.Tests.Integration
             panels.ApplyOnEnterEffect(p,p.GridPosition);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(PanelType.Normal,field.GetPanelType(p.GridPosition));
             Assert.AreEqual(ElementType.Fire,p.ActiveElement);
         }
+        [Test]
+        public void トークン交換所の通算制限は帰還しても保持し更新制限だけを戻す()
+        {
+            var c=StartSelection();ExchangeProfile(c,30);var session=(ClearReturnSession)Get(c,"clearReturnSession");
+            var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            var products=new[]{new TokenExchangeProduct("life",card,3,1,ExchangeLimit.Lifetime,1),new TokenExchangeProduct("round",card,3,1,ExchangeLimit.PerRefresh,1)};
+            Assert.IsTrue(session.EnsureExchange(products,new TokenExchangeProduct[0],0,new MockRandomProvider()));
+            string old=session.Snapshot.ExchangeStock.RoundId;
+            Assert.IsTrue(session.PurchaseExchange(System.Guid.NewGuid().ToString("N"),old,"life"));Assert.IsTrue(session.PurchaseExchange(System.Guid.NewGuid().ToString("N"),old,"round"));
+            var malformed=session.Snapshot;malformed.ExchangeTotals[0].Count++;Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(malformed));
+            malformed=session.Snapshot;malformed.ExchangeStock.Offers[0].Purchased=0;Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(malformed));
+            KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");
+            Assert.IsNull(c.PersistentProgress.ExchangeStock);Assert.IsTrue(session.EnsureExchange(products,new TokenExchangeProduct[0],0,new MockRandomProvider()));
+            var next=session.Snapshot;Assert.IsFalse(ClearReturnSession.CanExchange(next,next.ExchangeStock.Offers[0]));Assert.IsTrue(ClearReturnSession.CanExchange(next,next.ExchangeStock.Offers[1]));
+            Assert.AreEqual(24,next.Tokens);Assert.AreEqual(2,next.Owned.Single().Count);
+        }
+        private void ExchangeProfile(Olca.Application.Dungeon.DungeonBattleController c,long tokens,OwnedCardCount[] owned=null)
+        {
+            var p=c.PersistentProgress;long revision=p.Revision;p.Tokens=tokens;if(owned!=null)p.Owned=owned;
+            p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(((Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore")).TryWrite(revision,p,out var error),error);
+            Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).Reload());
+        }
+        [Test]
+        public void トークン交換所の通常商品表示取消資源不足は通貨所持や保存済み在庫を変更しない()
+        {
+            var c=StartSelection();KeyboardButton(c,"OpenTokenExchange");var p=c.PersistentProgress;
+            Assert.AreEqual(3,p.ExchangeStock.Offers.Length);Assert.AreEqual(2,p.ExchangeStock.Offers.Count(o=>o.Random));
+            Assert.AreEqual(3,p.ExchangeStock.Offers.Select(o=>o.Id).Distinct().Count());
+            Assert.IsTrue(p.ExchangeStock.Offers.All(o=>o.Price==o.OverflowTokens*3));
+            KeyboardButton(c,"ExchangeOffer_card-sword");Assert.IsFalse(SelectionButton(c,"ConfirmTokenExchange").interactable);
+            Call(c,"StartNextDeparture");Assert.IsNull(c.PersistentProgress.NextDeparture);
+            KeyboardButton(c,"CancelTokenExchange");KeyboardButton(c,"CloseTokenExchange");KeyboardButton(c,"OpenTokenExchange");
+            Assert.AreEqual(p.Revision,c.PersistentProgress.Revision);Assert.AreEqual(0,c.PersistentProgress.Tokens);Assert.IsEmpty(c.PersistentProgress.Owned);
+            CollectionAssert.AreEqual(p.ExchangeStock.Offers.Select(o=>o.Id),c.PersistentProgress.ExchangeStock.Offers.Select(o=>o.Id));
+        }
+        [TestCase(null)] [TestCase("before")] [TestCase("after")]
+        public void トークン交換所は支払所持領収書を同時保存し失敗再試行再起動と重複要求で二重交換しない(string fault)
+        {
+            var c=StartSelection();ExchangeProfile(c,10);KeyboardButton(c,"OpenTokenExchange");var before=c.PersistentProgress;
+            var io=new KeyboardFaultIo{Fault=fault};Set(Get(c,"clearReturnStore"),"io",io);
+            KeyboardButton(c,"ExchangeOffer_card-sword");string request=(string)Get(c,"exchangeRequestId");string round=before.ExchangeStock.RoundId;
+            KeyboardButton(c,"ConfirmTokenExchange");
+            if(fault=="before"){
+                Assert.AreEqual(10,c.PersistentProgress.Tokens);Assert.IsEmpty(c.PersistentProgress.Owned);
+                Assert.IsFalse(SelectionButton(c,"CloseTokenExchange").interactable);
+                var crashed=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory));Assert.AreEqual(10,crashed.Snapshot.Tokens);
+                io.Fault=null;KeyboardButton(c,"RetryTokenExchange");
+            }
+            var after=c.PersistentProgress;Assert.AreEqual(7,after.Tokens);Assert.AreEqual(1,after.Owned.Single().Count);Assert.AreEqual(1,after.ExchangeReceipts.Length);
+            var session=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory));
+            Assert.IsTrue(session.PurchaseExchange(request,round,"card-sword"),session.Error);Assert.AreEqual(after.Revision,session.Snapshot.Revision);
+            Assert.IsFalse(session.PurchaseExchange(request,round,"card-bomb"));Assert.AreEqual(7,session.Snapshot.Tokens);
+            Assert.AreEqual(1,session.Snapshot.Owned.Single().Count);Assert.AreEqual(1,session.Snapshot.ExchangeTotals.Single().Count);
+            KeyboardButton(c,"ConfirmTokenExchange");Assert.AreEqual(after.Revision,c.PersistentProgress.Revision);
+            var copy=after.Copy();copy.ExchangeStock.Offers[0].Price=99;Assert.AreEqual(3,c.PersistentProgress.ExchangeStock.Offers[0].Price);
+        }
+        [Test]
+        public void トークン交換所の在庫保存失敗も同じ抽選を保持し再開時に再抽選しない()
+        {
+            var c=StartSelection();var io=new KeyboardFaultIo{Fault="before"};Set(Get(c,"clearReturnStore"),"io",io);
+            KeyboardButton(c,"OpenTokenExchange");Assert.IsNull(c.PersistentProgress.ExchangeStock);Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).HasPendingSave);
+            io.Fault=null;KeyboardButton(c,"RetryTokenExchange");var p=c.PersistentProgress;Assert.AreEqual(3,p.ExchangeStock.Offers.Length);
+            var session=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory));
+            Assert.IsTrue(session.EnsureExchange(null,null,-1,null),"既存ラウンドを再抽選/現在定義で置換しない");
+            Assert.AreEqual(p.Revision,session.Snapshot.Revision);CollectionAssert.AreEqual(p.ExchangeStock.Offers.Select(o=>o.Id),session.Snapshot.ExchangeStock.Offers.Select(o=>o.Id));
+        }
+        [Test]
+        public void トークン交換所の所持上限は超過変換して必ず純減し任意売却は追加しない()
+        {
+            var c=StartSelection();ExchangeProfile(c,10,new[]{new OwnedCardCount{Id="sword",Name="ソード",Rarity=CardRarity.Normal,Level=ExceedLevel.Normal,Count=4}});
+            KeyboardButton(c,"OpenTokenExchange");KeyboardButton(c,"ExchangeOffer_card-sword");KeyboardButton(c,"ConfirmTokenExchange");
+            Assert.AreEqual(8,c.PersistentProgress.Tokens);Assert.AreEqual(4,c.PersistentProgress.Owned.Single().Count);
+            Assert.AreEqual(3,c.PersistentProgress.ExchangeReceipts.Single().Paid);Assert.AreEqual(1,c.PersistentProgress.ExchangeReceipts.Single().OverflowTokens);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void トークン交換所のランダム在庫は全帰還で更新し中断再開や失敗保存では更新しない(int outcome)
+        {
+            var c=StartSelection();ExchangeProfile(c,30);KeyboardButton(c,"OpenTokenExchange");var old=c.PersistentProgress.ExchangeStock;
+            var random=old.Offers.First(o=>o.Random);KeyboardButton(c,"ExchangeOffer_"+random.Id);KeyboardButton(c,"ConfirmTokenExchange");
+            Assert.IsFalse(SelectionButton(c,"ExchangeOffer_"+random.Id).interactable);
+            KeyboardButton(c,"CloseTokenExchange");KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);
+            if(outcome==0){Win(c);Model(c).SelectCardReward(null);KeyboardButton(c,"ConfirmCarryHome");
+                var io=new KeyboardFaultIo{Fault="before"};Set(Get(c,"clearReturnStore"),"io",io);KeyboardButton(c,"ConfirmReturn");
+                Assert.IsNotNull(c.PersistentProgress.ExchangeStock);io.Fault=null;KeyboardButton(c,"RetryClearReturn");}
+            else if(outcome==1){c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");}
+            else Model(c).CurrentBattle.Player.TakeDamage(100000,affectsPoise:false);
+            Assert.AreEqual(ClearReturnStage.Returned,c.PersistentProgress.Flow.Stage);Assert.IsNull(c.PersistentProgress.ExchangeStock);
+            KeyboardButton(c,"OpenTokenExchange");var next=c.PersistentProgress;Assert.AreEqual(next.Flow.RunId,next.ExchangeStock.RoundId);Assert.AreNotEqual(old.RoundId,next.ExchangeStock.RoundId);
+            Assert.IsTrue(next.ExchangeStock.Offers.All(o=>o.Purchased==0));Assert.AreEqual(1,next.ExchangeTotals.Single().Count);
+            Assert.AreEqual(27,next.Tokens); // ダンジョン通貨とは別の永続資源
+        }
+        [TestCase(ExchangeLimit.Lifetime)] [TestCase(ExchangeLimit.PerRefresh)]
+        public void トークン交換所の商品別制限と不正価格空プール旧省略を検証する(ExchangeLimit limit)
+        {
+            var c=StartSelection();ExchangeProfile(c,10);var session=(ClearReturnSession)Get(c,"clearReturnSession");
+            var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            Assert.Throws<System.ArgumentException>(()=>new TokenExchangeProduct("bad",card,1,1));
+            Assert.Throws<System.ArgumentException>(()=>new TokenExchangeProduct("bad",card,3,1,limit,0));
+            var product=new TokenExchangeProduct("limited",card,3,1,limit,1);
+            Assert.IsFalse(session.EnsureExchange(new[]{product},new[]{product},1,new MockRandomProvider()));
+            Assert.IsTrue(session.EnsureExchange(new[]{product},new TokenExchangeProduct[0],0,new MockRandomProvider()),session.Error);
+            string round=session.Snapshot.ExchangeStock.RoundId;Assert.IsTrue(session.PurchaseExchange(System.Guid.NewGuid().ToString("N"),round,"limited"));
+            Assert.IsFalse(session.PurchaseExchange(System.Guid.NewGuid().ToString("N"),round,"limited"));Assert.AreEqual(7,session.Snapshot.Tokens);
+            var old=new ClearReturnProfile();ClearReturnProfile.Validate(old);Assert.IsNull(old.ExchangeStock);Assert.IsNull(old.ExchangeReceipts);
+            var invalid=session.Snapshot;invalid.ExchangeStock.Offers[0].Price=0;Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(invalid));
+        }
         private static DepartureStyleDefinition[] StyleFixtures() => new[] {
             DepartureStyleDefinition.Basic,
             new DepartureStyleDefinition("fixture-fire", "既存攻撃の外部設定fixture", "selection-a", new TransformationAttackDefinition(ElementType.Fire, 150, 250, 30, 12)),
