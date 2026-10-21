@@ -76,11 +76,58 @@ namespace Olca.Presentation.CustomScreen
 
         private CustomScreenSystem customScreen;
         private TransformationSelectionState transformations;
+        private readonly List<Button> transformationButtons = new List<Button>();
+        private void RefreshTransformationButtons()
+        {
+            int count = transformations?.AvailableDefinitions.Count ?? 0;
+            while (transformationButtons.Count > count) {
+                var last = transformationButtons[transformationButtons.Count - 1];
+                transformationButtons.RemoveAt(transformationButtons.Count - 1); Destroy(last.gameObject);
+            }
+            while (transformationButtons.Count < count && confirmButton != null) {
+                int index = transformationButtons.Count;
+                var obj = Instantiate(confirmButton.gameObject, confirmButton.transform.parent);
+                obj.name = "TransformationChoice" + index;
+                var button = obj.GetComponent<Button>(); button.onClick = new Button.ButtonClickedEvent();
+                button.navigation = new Navigation { mode = Navigation.Mode.None };
+                button.onClick.AddListener(() => {
+                    if (Olca.Unity.GameplayPause.InputBlocked || handAnimating || customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
+                    var state = transformations; var id = state.AvailableDefinitions[index].Id;
+                    System.Action select = () => {
+                        if (this != null && ReferenceEquals(state, transformations) && !Olca.Unity.GameplayPause.InputBlocked) state.TryPreview(id);
+                    };
+                    if (queueConfirmation == null) select(); else queueConfirmation(pointerClickTimestamp(), select);
+                });
+                var rect = (RectTransform)obj.transform;
+                rect.sizeDelta = new Vector2(230f, 64f);
+                rect.anchoredPosition = ((RectTransform)confirmButton.transform).anchoredPosition + new Vector2(110f + (index % 2) * 250f, 550f + (index / 2) * 76f);
+                var label = obj.GetComponentInChildren<Text>();
+                if (label != null) { label.fontSize=28;label.resizeTextForBestFit=true;label.resizeTextMinSize=16;label.resizeTextMaxSize=28; }
+                transformationButtons.Add(button);
+            }
+            for (int i=0;i<transformationButtons.Count;i++) {
+                var button=transformationButtons[i];var definition=transformations.AvailableDefinitions[i];
+                bool visible=customScreen != null && customScreen.IsOpen && !customScreen.IsConfirming;
+                button.gameObject.SetActive(visible);
+                button.interactable=visible && !handAnimating && !transformations.IsUsed(definition.Id) && !Olca.Unity.GameplayPause.InputBlocked;
+                var label=button.GetComponentInChildren<Text>();
+                if(label!=null)label.text=$"変身 {i+1}  手札+{definition.HandSizeBonus}" + (transformations.IsUsed(definition.Id)?" 使用済み":transformations.PendingId==definition.Id?" 選択中":"");
+            }
+        }
+        private void OnHandChanged()
+        {
+            if(customScreen==null || !customScreen.IsOpen || customScreen.IsConfirming)return;
+            customizeSelectedCards.Clear();
+            if(customizeModeView!=null)customizeModeView.Exit();
+            if(customizeModeOverlay!=null)customizeModeOverlay.gameObject.SetActive(false);
+            RefreshHandCardViews(); RefreshSelection();
+        }
         public void BindTransformations(TransformationSelectionState transformations)
         {
             if (this.transformations != null) this.transformations.OnPreviewChanged -= RefreshSelection;
             this.transformations = transformations;
             if (transformations != null) transformations.OnPreviewChanged += RefreshSelection;
+            RefreshTransformationButtons();
         }
 
         private void RefreshSelection()
@@ -91,6 +138,7 @@ namespace Olca.Presentation.CustomScreen
             UpdateConfirmButton();
             UpdateCostDisplay();
             UpdateSelectedCardDisplay();
+            RefreshTransformationButtons();
         }
         private System.Action<long, System.Action> queueConfirmation;
         private System.Func<long> pointerClickTimestamp;
@@ -124,6 +172,7 @@ namespace Olca.Presentation.CustomScreen
             if (this.customScreen != null)
             {
                 this.customScreen.OnScreenOpened -= OnScreenOpened;
+                this.customScreen.OnHandChanged -= OnHandChanged;
                 this.customScreen.OnConfirmed -= OnConfirmed;
                 confirmButton.onClick.RemoveListener(OnConfirmClicked);
                 this.customScreen.OnExceeded -= OnCustomizeOperationCompleted;
@@ -154,6 +203,7 @@ namespace Olca.Presentation.CustomScreen
 
             // イベント購読
             customScreen.OnScreenOpened += OnScreenOpened;
+            customScreen.OnHandChanged += OnHandChanged;
             customScreen.OnConfirmed += OnConfirmed;
 
             // カーソル初期化
@@ -187,6 +237,7 @@ namespace Olca.Presentation.CustomScreen
         private void Update()
         {
             UpdateUndoButton();
+            RefreshTransformationButtons();
             // 未初期化またはカスタム画面が開いていない場合は入力を受け付けない
             if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
 
@@ -775,6 +826,12 @@ namespace Olca.Presentation.CustomScreen
         {
             if (cardPositionMarkers == null || index < 0 || index >= cardPositionMarkers.Length)
             {
+                if (index >= 0 && cardPositionMarkers != null && cardPositionMarkers.Length >= 6) {
+                    var first = ((RectTransform)cardPositionMarkers[0]).anchoredPosition;
+                    var column = ((RectTransform)cardPositionMarkers[1]).anchoredPosition - first;
+                    var rowStep = ((RectTransform)cardPositionMarkers[5]).anchoredPosition - first;
+                    return first + column * (index % 5) + rowStep * (index / 5);
+                }
                 // フォールバック: マーカーが設定されていない場合は手動計算
                 Debug.LogWarning($"CardPositionMarker[{index}] が設定されていません。デフォルト位置を使用します。");
                 int row = index / 5;

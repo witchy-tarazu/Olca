@@ -36,6 +36,93 @@ namespace Olca.Tests.Battle
         }
 
 
+        private BattleSystem HandBonusBattle(out Deck deck, int bonus = 2)
+        {
+            deck = new Deck(Enumerable.Range(0,20).Select(i => new Card("fixture-"+i,"検証"+i,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,1,"検証")).ToList());
+            var battle = new BattleSystem(player,new List<Enemy>{new Enemy("e","検証",1000,ElementType.None,new Vector2Int(5,0))},deck);
+            battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("large",ElementResistances.Neutral,ElementType.Fire,bonus),new TransformationDefenseDefinition("small",ElementResistances.Neutral,ElementType.Water,1)});
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());return battle;
+        }
+        [Test]
+        public void 変身追加ドローは選択分を二重計上せず取消再選択でも同じ個体を同順に引く()
+        {
+            var b=HandBonusBattle(out var deck);var screen=b.CustomScreen;var state=b.Transformations;
+            var before=screen.CurrentHand.ToArray();screen.TrySelectCard(before[0]);
+            Assert.IsTrue(state.TryPreview("large"));Assert.IsEmpty(screen.SelectedCards);
+            Assert.AreEqual(12,screen.MaxHandSize);Assert.AreEqual(12,screen.CurrentHand.Count);Assert.AreEqual(8,deck.RemainingCount);
+            var extra=screen.CurrentHand.Where(c=>!before.Contains(c)).ToArray();
+            screen.TrySelectCard(extra[0]);Assert.IsTrue(state.TryPreview("large"));Assert.AreEqual(12,screen.CurrentHand.Count+screen.SelectedCards.Count);
+            Assert.IsTrue(state.TryCancelPending());Assert.AreEqual("large",state.PendingId);
+            Assert.IsTrue(state.TryCancelPending());Assert.IsNull(state.PendingId);Assert.AreEqual(10,screen.MaxHandSize);Assert.AreEqual(10,screen.CurrentHand.Count);Assert.AreEqual(10,deck.RemainingCount);
+            Assert.IsTrue(state.TryPreview("large"));CollectionAssert.AreEqual(extra,screen.CurrentHand.Where(c=>!before.Contains(c)));
+            Assert.IsTrue(state.TryPreview("small"));Assert.AreEqual(11,screen.CurrentHand.Count);Assert.AreEqual(9,deck.RemainingCount);
+            Assert.IsTrue(state.TryCancelPending());Assert.AreEqual(10,deck.RemainingCount);
+            state.TryPreview("large");CollectionAssert.AreEqual(extra,screen.CurrentHand.Where(c=>!before.Contains(c)));
+        }
+        [Test]
+        public void 確定した追加分は取消再試行や上限低下で失わず使用済みを保持する()
+        {
+            var b=HandBonusBattle(out var deck);var s=b.CustomScreen;var t=b.Transformations;t.TryPreview("large");
+            var extra=s.CurrentHand.Last();s.TrySelectCard(extra);s.Confirm();
+            Assert.AreEqual(12,s.MaxHandSize);Assert.AreEqual(11,s.CurrentHand.Count);Assert.AreEqual(1,s.AvailableCards.Count);Assert.AreEqual(8,deck.RemainingCount);
+            s.CancelConfirmation();s.Confirm();Assert.AreEqual(8,deck.RemainingCount);Assert.AreEqual(1,t.UsedIds.Count);
+            s.Close();b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());
+            Assert.AreEqual(12,s.CurrentHand.Count);Assert.AreEqual(7,deck.RemainingCount);
+            t.TryPreview("small");Assert.AreEqual(11,s.MaxHandSize);Assert.AreEqual(12,s.CurrentHand.Count);Assert.AreEqual(7,deck.RemainingCount);
+            t.TryCancelPending();Assert.AreEqual(12,s.MaxHandSize);Assert.AreEqual("large",t.ActiveId);
+            t.TryPreview("small");s.Confirm();Assert.AreEqual(2,t.UsedIds.Count);Assert.AreEqual(11,s.MaxHandSize);Assert.AreEqual(12,s.CurrentHand.Count);
+            player.EndTransformationDefense();Assert.AreEqual(10,s.MaxHandSize);Assert.AreEqual(12,s.CurrentHand.Count);Assert.IsNull(t.ActiveId);Assert.AreEqual(2,t.UsedIds.Count);
+        }
+        [Test]
+        public void 変身期限切れは開き直しの補充前に上限を戻し超過分を捨てない()
+        {
+            var b=HandBonusBattle(out var deck);var s=b.CustomScreen;b.Transformations.TryPreview("large");s.Confirm();
+            for(int i=0;i<2;i++){s.Close();b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());s.Confirm();}
+            Assert.AreEqual(1,player.RemainingTransformationPhases);s.Close();
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());
+            Assert.IsNull(b.Transformations.ActiveId);Assert.AreEqual(10,s.MaxHandSize);Assert.AreEqual(12,s.CurrentHand.Count);Assert.AreEqual(8,deck.RemainingCount);
+        }
+        [Test]
+        public void 未確定画面閉鎖と強制解除は追加分だけ返し元手札を保持する()
+        {
+            var b=HandBonusBattle(out var deck);var s=b.CustomScreen;b.Transformations.TryPreview("large");
+            s.TrySelectCard(s.CurrentHand.First());s.TrySelectCard(s.CurrentHand.Last());s.Close();
+            Assert.AreEqual(10,s.CurrentHand.Count);Assert.AreEqual(10,deck.RemainingCount);Assert.IsEmpty(b.Transformations.UsedIds);
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());b.Transformations.TryPreview("large");s.Confirm();
+            s.Close();b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());
+            b.Transformations.TryPreview("small");player.TakeDamage(1,attackElement:ElementType.Fire);
+            Assert.IsNull(b.Transformations.PendingId);Assert.IsNull(b.Transformations.ActiveId);Assert.AreEqual(10,s.MaxHandSize);Assert.AreEqual(12,s.CurrentHand.Count);Assert.IsTrue(b.Transformations.IsUsed("large"));
+        }
+        [Test]
+        public void 変身手札加算の負値と実効上限のoverflowは部分変更を起こさない()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new TransformationDefenseDefinition("x",ElementResistances.Neutral,ElementType.Fire,-1));
+            var b=HandBonusBattle(out var deck,int.MaxValue);var first=b.CustomScreen.CurrentHand[0];b.CustomScreen.TrySelectCard(first);
+            Assert.Throws<System.OverflowException>(()=>b.Transformations.TryPreview("large"));Assert.AreEqual(10,b.CustomScreen.MaxHandSize);Assert.AreEqual(10,deck.RemainingCount);Assert.AreSame(first,b.CustomScreen.SelectedCards[0]);Assert.IsNull(b.Transformations.PendingId);
+        }
+
+        [Test]
+        public void 追加ドロー由来の連鎖加工だけ取消し無関係な加工と元の山札個体を保持する()
+        {
+            Card Card(string id)=>new Card(id,id,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,1,"検証");
+            var cards=new[]{"a","b","c","d","e","f"}.Select(Card).ToList();var deck=new Deck(cards);
+            var factory=new MockCardFactory();foreach(var id in new[]{"x","y","z"})factory.Register(id,Card(id));
+            var recipes=new MockFusionRecipeProvider();recipes.Register("x","e","a");recipes.Register("y","x","f");recipes.Register("z","c","d");
+            var screen=new CustomScreenSystem(deck,maxHandSize:4,fusionSystem:new FusionSystem(recipes,factory));
+            using(var state=new TransformationSelectionState(player,screen)) {
+                state.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,2)});
+                screen.Open(new Card[0],new MockRandomProvider());state.TryPreview("fixture");
+                var x=screen.ExecuteFusion(new[]{cards[4],cards[0]});Assert.IsTrue(x.IsSuccess);
+                var y=screen.ExecuteFusion(new[]{x.ResultCard,cards[5]});Assert.IsTrue(y.IsSuccess);
+                var z=screen.ExecuteFusion(new[]{cards[2],cards[3]});Assert.IsTrue(z.IsSuccess);
+                Assert.IsTrue(state.TryCancelPending());
+                CollectionAssert.AreEquivalent(new[]{"a","b","z"},screen.CurrentHand.Select(c=>c.Id));Assert.AreSame(z.ResultCard,screen.CurrentHand.Single(c=>c.Id=="z"));
+                Assert.AreEqual(2,deck.RemainingCount);Assert.AreEqual(1,screen.CustomizationUndoCount);
+                state.TryPreview("fixture");var extras=screen.CurrentHand.Where(c=>c.Id=="e"||c.Id=="f").ToArray();
+                CollectionAssert.AreEqual(new[]{cards[4],cards[5]},extras);Assert.AreEqual(0,deck.RemainingCount);
+            }
+        }
+
         private BattleSystem CreateTransformationBattle(int secondFireResistance = 100)
         {
             var cards = new List<Card> {

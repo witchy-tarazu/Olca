@@ -11,6 +11,7 @@ namespace Olca.Core.Domain
     public class Deck
     {
         private readonly List<Card> cards;
+        private readonly List<Card> returnedDraws = new List<Card>();
         private readonly List<Card> drawnCards; // 既にドローしたカード
 
         /// <summary>デッキ内のカード総数</summary>
@@ -66,6 +67,7 @@ namespace Olca.Core.Domain
                 Card discardedCard = cards[index];
                 cards.RemoveAt(index);
                 drawnCards.Remove(discardedCard);
+                returnedDraws.Remove(discardedCard);
             }
 
             return discardCount;
@@ -93,15 +95,26 @@ namespace Olca.Core.Domain
             for (int i = 0; i < actualDrawCount; i++)
             {
                 // ランダムにカードを選択
-                int index = random.Range(0, availableCards.Count);
-                Card drawnCard = availableCards[index];
+                // 取消で戻した追加分を先に引き直し、乱数の再抽選にしない。
+                Card drawnCard;
+                if (returnedDraws.Count > 0) { drawnCard = returnedDraws[0]; returnedDraws.RemoveAt(0); }
+                else drawnCard = availableCards[random.Range(0, availableCards.Count)];
 
                 result.Add(drawnCard);
                 drawnCards.Add(drawnCard);
-                availableCards.RemoveAt(index);
+                availableCards.Remove(drawnCard);
             }
 
             return result;
+        }
+
+        /// <summary>未確定の追加ドローだけを元の抽選順へ返す。</summary>
+        internal void ReturnPreviewDraws(IReadOnlyList<Card> returned)
+        {
+            if (returned.Distinct().Count() != returned.Count || returned.Any(c => !drawnCards.Contains(c)))
+                throw new InvalidOperationException("追加ドローの復元対象が不正です");
+            foreach (var card in returned) drawnCards.Remove(card);
+            returnedDraws.InsertRange(0, returned);
         }
 
         /// <summary>
@@ -111,7 +124,7 @@ namespace Olca.Core.Domain
         {
             if (random == null) throw new ArgumentNullException(nameof(random));
 
-            drawnCards.Clear();
+            drawnCards.Clear(); returnedDraws.Clear();
 
             // Fisher-Yatesシャッフル
             for (int i = cards.Count - 1; i > 0; i--)
@@ -141,14 +154,14 @@ namespace Olca.Core.Domain
             var restored = firstHand.ToList();
             if (restored.Distinct().Count() != restored.Count || restored.Any(card => !cards.Contains(card)))
                 throw new ArgumentException("初回手札とデッキ個体が一致しません");
-            drawnCards.Clear();
+            drawnCards.Clear(); returnedDraws.Clear();
             drawnCards.AddRange(restored);
         }
 
         /// <summary>ドロー履歴をリセット（再度すべてのカードをドロー可能にする）</summary>
         public void ResetDrawHistory()
         {
-            drawnCards.Clear();
+            drawnCards.Clear(); returnedDraws.Clear();
         }
 
         /// <summary>

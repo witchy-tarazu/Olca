@@ -172,15 +172,18 @@ namespace Olca.Core.Domain
     public sealed class TransformationDefenseDefinition
     {
         public string Id { get; }
+        public int HandSizeBonus { get; }
         public ElementResistances Resistances { get; }
         public TransformationWeakness Weakness { get; }
         public ElementType BreakElement => Weakness.Element;
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement)
-            : this(id, resistances, new TransformationWeakness(breakElement)) { }
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty)
-            : this(id, resistances, new TransformationWeakness(breakProperty)) { }
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness)
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement, int handSizeBonus = 0)
+            : this(id, resistances, new TransformationWeakness(breakElement), handSizeBonus) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty, int handSizeBonus = 0)
+            : this(id, resistances, new TransformationWeakness(breakProperty), handSizeBonus) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness, int handSizeBonus = 0)
         {
+            if (handSizeBonus < 0) throw new System.ArgumentOutOfRangeException(nameof(handSizeBonus));
+            HandSizeBonus = handSizeBonus;
             if (string.IsNullOrWhiteSpace(id)) throw new System.ArgumentException("変身IDが必要です", nameof(id));
             Id = id;
             Resistances = resistances ?? throw new System.ArgumentNullException(nameof(resistances));

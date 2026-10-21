@@ -112,6 +112,7 @@ namespace Olca.Core.Logic.Battle
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
+            customScreen.OnOpening += OnTransformationPhaseOpening;
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => !IsPaused && !IsGameOver && cardUsage.InFlightCard == null && !player.IsActionPrevented);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
@@ -143,7 +144,6 @@ namespace Olca.Core.Logic.Battle
                     onHit: target => { if (!target.IsDead) target.SetInvincible(DefaultHitInvincibilityMs); }) });
 
             // カスタム画面イベントの購読
-            customScreen.OnScreenOpened += OnTransformationPhaseOpened;
             customScreen.OnConfirmed += OnCustomScreenConfirmed;
             customScreen.OnScreenClosed += OnCustomScreenClosed;
 
@@ -443,14 +443,14 @@ namespace Olca.Core.Logic.Battle
                 return;
             }
 
+            if (customScreen.IsOpen) return;
             // 未使用カードを取得してカスタム画面に渡す
             var remainingCards = cardUsage.GetRemainingCards();
             customScreen.Open(remainingCards, random);
             Pause();
         }
 
-        // 開き直しが実際に成立した時だけ、確定済み変身の残回数を進める。
-        private void OnTransformationPhaseOpened(List<Card> hand)
+        private void OnTransformationPhaseOpening()
         {
             if (!IsGameOver) player.AdvanceTransformationPhase();
         }
@@ -602,13 +602,13 @@ namespace Olca.Core.Logic.Battle
             player.ClearPoiseRecovery();
             player.SetAura(0);
             player.EndTransformationDefense();
+            customScreen.OnOpening -= OnTransformationPhaseOpening;
             Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
             player.OnDeath -= OnPlayerDeath;
             player.OnStaggered -= OnPlayerStaggered;
             playerMovement.InterruptNormalMove();
-            customScreen.OnScreenOpened -= OnTransformationPhaseOpened;
             customScreen.OnConfirmed -= OnCustomScreenConfirmed;
             customScreen.OnScreenClosed -= OnCustomScreenClosed;
             enemies.RemoveAll(enemy => enemy.IsSummoned);
