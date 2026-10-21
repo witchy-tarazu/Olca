@@ -124,47 +124,89 @@ namespace Olca.Core.Logic.Dungeon
         public float PlayerPosition => playerMovement.CurrentPosition;
         public int NormalMovementSpeedMilliPerSecond => playerMovement.NormalSpeedMilliPerSecond;
         public void ConfigureNormalMovementSpeed(int value) => playerMovement.ConfigureNormalSpeed(value);
-        public float PlayerHeight => playerMovement.Height;
+        public float PlayerHeight => IsTerrainRecovering ? terrainFallHeight : playerMovement.Height;
         public bool IsJumping => playerMovement.IsJumping;
         public bool IsDashJumping => playerMovement.IsDashJumping;
         public float JumpProgress => playerMovement.JumpProgress;
         public bool IsDashing => playerMovement.IsDashing;
         /// <summary>描画間の座標差によらない自動前進の有効状態。移動量や更新頻度は変更しない。</summary>
         public bool IsExplorationMoving => !IsInBattle && !IsDungeonCleared && !IsFloorCompleted
-            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead && !IsObstacleStopped;
+            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead && !IsObstacleStopped && !IsTerrainRecovering;
         public PlayerCharacter Player => playerCharacter;
         /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
         public DungeonMap Map => map;
-        private int? terrainContactCell;
+        private int? terrainContactCell, dashHoleCell;
+        private long terrainFallUnits;
+        private int terrainFallCell;
+        private float terrainFallHeight;
+        public bool IsTerrainRecovering { get; private set; }
+        public bool IsTerrainDescending => IsTerrainRecovering && terrainFallUnits<600;
+        private void LeaveTerrainContact()
+        {
+            if(terrainContactCell.HasValue&&map.GetTerrainType(terrainContactCell.Value)==PanelType.Cracked)
+                map.SetTerrainType(terrainContactCell.Value,PanelType.Hole);
+            terrainContactCell=null;
+        }
+        private void BeginTerrainFall(int cell,long position)
+        {
+            IsTerrainRecovering=true;terrainFallCell=cell;terrainFallUnits=0;terrainFallHeight=0;dashHoleCell=null;
+            playerMovement.ResetAirborneMovement();playerMovement.SetPositionMilli(position);
+            playerCharacter.TakeDamage(map.GetTerrain(cell)?.FallDamage??10,affectsPoise:false);
+        }
+        private void TickTerrainFall(long units)
+        {
+            long previous=terrainFallUnits;terrainFallUnits=Math.Min(1500,terrainFallUnits+Math.Max(0,units));
+            if(previous<600&&terrainFallUnits>=600){
+                // 少し手前から後方を優先。敵・障害物・選択画面のあるセルには復帰しない。
+                int safe=-1;
+                for(int i=Math.Max(0,terrainFallCell-2);i>=0;i--)
+                    if(IsSafeRecoveryCell(i)&&map.GetTerrainType(i)!=PanelType.Hole){safe=i;break;}
+                if(safe<0)for(int i=0;i<map.TotalCellCount;i++)if(IsSafeRecoveryCell(i)&&map.GetTerrainType(i)!=PanelType.Hole){safe=i;break;}
+                if(safe<0)throw new InvalidOperationException("復帰可能な空セルがありません");
+                map.SetTerrainType(safe,PanelType.Normal);playerMovement.SetPositionMilli(safe*1000L);terrainContactCell=safe;
+            }
+            terrainFallHeight=terrainFallUnits<600?-1.6f*terrainFallUnits/600f:1.6f*(1500-terrainFallUnits)/900f;
+            if(terrainFallUnits>=1500){IsTerrainRecovering=false;terrainFallHeight=0;}
+        }
+        private bool IsSafeRecoveryCell(int cell)=>map.GetCell(cell)?.Type==CellType.Empty&&!map.Visits.Any(v=>v.Cell==cell);
         internal int? CheckpointTerrainContact => map.ExplorationTerrain.Count>0?terrainContactCell:null;
         private void ApplyTerrainSweep(PlayerMovement.MovementStep step,long from,long to,ref bool airReset)
         {
             if(map.ExplorationTerrain.Count==0)return;
-            if(!playerCharacter.TerrainState.ReceivesPanelEffects){terrainContactCell=null;return;}
+            if(!playerCharacter.TerrainState.ReceivesPanelEffects){terrainContactCell=null;dashHoleCell=null;return;}
             if(step.WasJumping&&step.JumpTimeFrames<30){
-                if(!airReset){terrainContactCell=null;airReset=true;}
+                if(!airReset){LeaveTerrainContact();dashHoleCell=null;airReset=true;}
                 if(step.DurationFrames<=0)return;
                 double landing=(30-step.JumpTimeFrames)/step.DurationFrames;
                 if(landing>1)return;
                 long position=step.PositionAt(landing);if(to<position)return;from=Math.Max(from,position);
             }
             for(int cell=(int)Math.Max(0,from/1000);cell<=Math.Min(map.TotalCellCount-1,to/1000);cell++){
-                ApplyTerrainContact(cell);
+                ApplyTerrainContact(cell,step.IsDashing&&!step.WasDashJumping,Math.Max(from,cell*1000L));
+                if(IsTerrainRecovering)return;
             }
         }
-        private void ApplyTerrainContact(int cell)
+        private void ApplyTerrainContact(int cell,bool groundDash=false,long? position=null)
         {
-            if(map.ExplorationTerrain.Count==0||!playerCharacter.TerrainState.ReceivesPanelEffects||terrainContactCell==cell)return;
-            terrainContactCell=cell;var terrain=map.GetTerrain(cell);if(terrain==null)return;
+            if(map.ExplorationTerrain.Count==0||!playerCharacter.TerrainState.ReceivesPanelEffects)return;
+            bool same=terrainContactCell==cell;
+            if(!same){LeaveTerrainContact();terrainContactCell=cell;}
+            var type=map.GetTerrainType(cell);
+            if(type==PanelType.Hole){
+                if(groundDash&&(!dashHoleCell.HasValue||dashHoleCell==cell)){dashHoleCell=cell;return;}
+                BeginTerrainFall(cell,position??cell*1000L);return;
+            }
+            dashHoleCell=null;if(same)return;
+            var terrain=map.GetTerrain(cell);if(terrain==null)return;
             var element=playerCharacter.ActiveElement;
-            if((terrain.Type==PanelType.Magma&&element==ElementType.Fire)||(terrain.Type==PanelType.Grass&&element==ElementType.Earth))playerCharacter.Heal(terrain.Heal);
-            else if(terrain.Type==PanelType.Magma)playerCharacter.TakeDamage(terrain.Damage,affectsPoise:false);
+            if((type==PanelType.Magma&&element==ElementType.Fire)||(type==PanelType.Grass&&element==ElementType.Earth))playerCharacter.Heal(terrain.Heal);
+            else if(type==PanelType.Magma)playerCharacter.TakeDamage(terrain.Damage,affectsPoise:false);
         }
         private void InitializeBattleTerrain(BattleSystem battle,int origin)
         {
             for(int x=0;x<BattleField.GRID_WIDTH;x++){
                 var terrain=map.GetTerrain(origin+x);
-                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),terrain.Type);
+                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),map.GetTerrainType(origin+x));
             }
         }
         private readonly bool hasFieldItems;
@@ -225,7 +267,7 @@ namespace Olca.Core.Logic.Dungeon
             obstacleSystem = new ObstacleSystem(logger);
             playerCharacter = player;
             if(config.ExplorationTerrain.Any(t=>t.Type==PanelType.Ice))
-                playerMovement.ConfigureIce(map.TotalCellCount,cell=>map.GetTerrain(cell)?.Type==PanelType.Ice,()=>player.TerrainState.ReceivesPanelEffects);
+                playerMovement.ConfigureIce(map.TotalCellCount,cell=>map.GetTerrainType(cell)==PanelType.Ice,()=>player.TerrainState.ReceivesPanelEffects);
             player.FreezeDepartureStyle();
             randomProvider = random;
             this.logger = logger;
@@ -250,7 +292,7 @@ namespace Olca.Core.Logic.Dungeon
                 if (restoration != null)
                 {
                     checkpoints.Adopt(restoration); restoredBoundary = restoration.Snapshot;
-                    terrainContactCell=restoredBoundary.TerrainContactCell;
+                    terrainContactCell=restoredBoundary.TerrainContactCell;map.RestoreTerrainChanges(restoredBoundary.TerrainChanges);
                     Currency = restoredBoundary.Currency;
                     playerMovement.SetPositionMilli(restoredBoundary.PositionMilli);
                     processedObstacleCells.UnionWith(restoredBoundary.ProcessedObstacleCells ?? new int[0]);
@@ -335,6 +377,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (activeVisit!=null || processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
+            if(IsTerrainRecovering){TickTerrainFall(logicalFrame?50:Math.Max(0,deltaTimeMs)*3L);return;}
             processingTick = true; explorationHpUpdated=false;
             obstacleVisualUnits += logicalFrame ? 50 : Math.Max(0,deltaTimeMs) * 3L;
             if (playerCharacter.HasPoisonState || IsObstacleStopped || hasFieldItems || map.ExplorationTerrain.Count>0) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
@@ -368,11 +411,12 @@ namespace Olca.Core.Logic.Dungeon
                 foreach (var contact in contacts)
                 {
                     ApplyTerrainSweep(step,terrainFrom,contact.Position,ref terrainAirReset);terrainFrom=contact.Position;
+                    if(IsTerrainRecovering)return;
                     playerMovement.ApplyStep(step, contact.Position);
                     if (contact.Cell.Obstacle != null) CheckObstacles(contact.Cell);
                     else if(contact.Cell.Item!=null){if(collectedItemCells.Add(contact.Cell.Index))playerCharacter.Heal(contact.Cell.Item.Heal);}
                     else if(visits!=null&&visits.Any(v=>v.Cell==contact.Cell.Index&&!v.Closed)) {
-                        if(map.ExplorationTerrain.Count>0){playerMovement.ResetAirborneMovement();ApplyTerrainContact(contact.Cell.Index);}
+                        if(map.ExplorationTerrain.Count>0){playerMovement.ResetAirborneMovement();ApplyTerrainContact(contact.Cell.Index);if(IsTerrainRecovering)return;}
                         CommitExplorationHp();if(playerCharacter.IsDead)return;
                         playerMovement.ResetAirborneMovement();playerMovement.Pause();activeVisit=visits.Single(v=>v.Cell==contact.Cell.Index);return;
                     }
@@ -383,6 +427,7 @@ namespace Olca.Core.Logic.Dungeon
                         encounter != encounterRevision) return;
                 }
                 ApplyTerrainSweep(step,terrainFrom,step.End,ref terrainAirReset);
+                if(IsTerrainRecovering)return;
                 if (hasNextFloor && finalBoss == null && step.End >= (long)map.TotalCellCount * 1000)
                 {
                     // 旧保存形式の位置範囲を維持し、終端の直前を完了境界として保存する。
@@ -399,7 +444,7 @@ namespace Olca.Core.Logic.Dungeon
             finally {
                 CommitExplorationHp(); processingTick = false;
                 var contact=pendingPoisonFrameContact; pendingPoisonFrameContact=null;
-                if (explorationHpUpdated && playerCharacter.IsDead) HandleExplorationDeath();
+                if (explorationHpUpdated && playerCharacter.IsDead) {IsTerrainRecovering=false;terrainFallHeight=0;HandleExplorationDeath();}
                 else if (contact!=null) OnEnemyContact(contact);
             }
         }
@@ -411,8 +456,14 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void Jump()
         {
-            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || playerCharacter.IsDead) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || IsTerrainRecovering || playerCharacter.IsDead) return;
+            bool wasJumping=playerMovement.IsJumping;
             playerMovement.Jump();
+            if(!wasJumping&&playerMovement.IsJumping&&playerCharacter.TerrainState.ReceivesPanelEffects){
+                int cell=(int)playerMovement.CurrentPosition;
+                if(map.GetTerrainType(cell)==PanelType.Cracked)map.SetTerrainType(cell,PanelType.Hole);
+                terrainContactCell=null;dashHoleCell=null;
+            }
             logger.LogInfo("[Dungeon] ジャンプ！");
         }
 
@@ -421,7 +472,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
-            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || playerCharacter.IsDead) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || IsTerrainRecovering || playerCharacter.IsDead) return;
             playerMovement.StartDash();
         }
 
@@ -974,7 +1025,7 @@ namespace Olca.Core.Logic.Dungeon
             { BlockCheckpoint(error); return; }
             var plan = snapshot.Battle;
             if(plan.ItemRewardHasNextFloor.HasValue&&plan.ItemRewardHasNextFloor.Value!=hasNextFloor){BlockCheckpoint("アイテム報酬計画の階層条件が不一致です");return;}
-            terrainContactCell=snapshot.TerrainContactCell;
+            terrainContactCell=snapshot.TerrainContactCell;map.RestoreTerrainChanges(snapshot.TerrainChanges);
             checkpointSession.Adopt(restored);
             cardRewardSystem.GetCurrentDeck().RestoreCheckpointOrder(restored.Deck.GetAllCards(), restored.FirstHand);
             cardRewardSystem.RestoreObtained(restored.Obtained);
@@ -1089,7 +1140,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly Dictionary<int,FieldItem> items = new Dictionary<int,FieldItem>();
         internal bool HasFieldItems => items.Count>0;
         internal IReadOnlyList<ExplorationTerrainCell> ExplorationTerrain { get; private set; }
-        private static string TerrainHash(IEnumerable<ExplorationTerrainCell> terrain)=>CheckpointValues.Hash(w=>{foreach(var t in terrain){w.Write(t.Cell);w.Write((int)t.Type);w.Write(t.Heal);w.Write(t.Damage);}});
+        private static string TerrainHash(IEnumerable<ExplorationTerrainCell> terrain)=>CheckpointValues.Hash(w=>{foreach(var t in terrain){w.Write(t.Cell);w.Write((int)t.Type);w.Write(t.Heal);w.Write(t.Damage);if(t.Type==PanelType.Cracked||t.Type==PanelType.Hole)w.Write(t.FallDamage);}});
         // 既存の障害物なし/即時ダメージ保存は版1/2を維持。破棄型を含む定義だけ版3。
         internal IReadOnlyList<DungeonVisitDefinition> Visits { get; private set; }
         internal IReadOnlyList<int> StrongEnemyCells { get; private set; }
@@ -1103,7 +1154,8 @@ namespace Olca.Core.Logic.Dungeon
         }
         private static string ItemSettingsHash(IEnumerable<int> strong,IReadOnlyList<ItemRewardEntry> rewards,int chance)=>CheckpointValues.Hash(w=>{foreach(int i in strong.OrderBy(i=>i))w.Write(i);w.Write("pool");w.Write(chance);foreach(var entry in rewards){w.Write(entry.Item.Id);w.Write(entry.Item.Name);w.Write(entry.Item.Heal);w.Write(entry.Weight);}});
 
-        public int SchemaVersion => ExplorationTerrain.Count>0 ? 5 : HasFieldItems ? 4 : obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
+        internal bool HasFallTerrain => ExplorationTerrain.Any(t=>t.Type==PanelType.Cracked||t.Type==PanelType.Hole);
+        public int SchemaVersion => HasFallTerrain ? 6 : ExplorationTerrain.Count>0 ? 5 : HasFieldItems ? 4 : obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
         internal void ValidateProcessedObstacles(CheckpointDto dto)
         {
             if (SchemaVersion == 1)
@@ -1113,14 +1165,14 @@ namespace Olca.Core.Logic.Dungeon
             }
             var processed = dto.ProcessedObstacleCells;
             CheckpointValues.Require(processed != null && processed.Distinct().Count() == processed.Length &&
-                processed.All(i => obstacles.ContainsKey(i) && i <= dto.PositionMilli / 1000) &&
+                processed.All(i => obstacles.ContainsKey(i) && (HasFallTerrain || i <= dto.PositionMilli / 1000)) &&
                 (dto.Boundary != CheckpointBoundary.Departure || processed.Length == 0), "障害物の通過状態が不整合です");
         }
         internal void ValidateCollectedItems(CheckpointDto dto)
         {
             var collected=dto.CollectedItemCells;
             if(!HasFieldItems){CheckpointValues.Require(collected==null||collected.Length==0,"未定義の取得状態です");return;}
-            CheckpointValues.Require(collected!=null&&collected.Distinct().Count()==collected.Length&&collected.All(i=>items.ContainsKey(i)&&i<=dto.PositionMilli/1000)&&
+            CheckpointValues.Require(collected!=null&&collected.Distinct().Count()==collected.Length&&collected.All(i=>items.ContainsKey(i)&&(HasFallTerrain||i<=dto.PositionMilli/1000))&&
                 (dto.Boundary!=CheckpointBoundary.Departure||collected.Length==0),"アイテム取得状態が不整合です");
         }
         private static bool SupportedItem(MapCell cell)=>cell.Type==CellType.Item&&cell.Item!=null&&cell.Height==0&&cell.Enemy==null&&cell.Obstacle==null;
@@ -1462,6 +1514,15 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
                 definitions.ValidateProcessedObstacles(d);
                 definitions.ValidateCollectedItems(d);
+                var changes=d.TerrainChanges;
+                CheckpointValues.Require(definitions.HasFallTerrain?changes!=null:changes==null||changes.Length==0,"地形変化の保存版が不整合です");
+                if(changes!=null){
+                    CheckpointValues.Require(changes.All(t=>t!=null)&&changes.Select(t=>t.Cell).Distinct().Count()==changes.Length,"地形変化が重複/欠落しています");
+                    foreach(var t in changes){var original=definitions.ExplorationTerrain.FirstOrDefault(v=>v.Cell==t.Cell);
+                        CheckpointValues.Require(t.Cell>=0&&t.Cell<definitions.CellCount&&original!=null&&
+                            ((t.Type==PanelType.Normal&&original.Type!=PanelType.Hole)||(t.Type==PanelType.Hole&&original.Type==PanelType.Cracked)),"未対応の地形変化です");}
+                    CheckpointValues.Require(d.Boundary!=CheckpointBoundary.Departure||changes.Length==0,"出撃境界に地形変化があります");
+                }
                 CheckpointValues.Require(!d.TerrainContactCell.HasValue || (definitions.ExplorationTerrain.Count>0&&d.TerrainContactCell.Value==d.PositionMilli/1000&&d.Boundary!=CheckpointBoundary.Departure),"接地済みセルが不整合です");
                 CheckpointValues.Require(d.Currency >= 0, "通貨が負値です");
                 if(definitions.Visits.Count==0)CheckpointValues.Require(d.Visits==null,"未定義の停止地点です");
@@ -1685,6 +1746,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         internal CheckpointDto Capture(DungeonSystem dungeon, CheckpointBoundary boundary, Card extra = null)
         {
+            if(dungeon.IsTerrainRecovering)throw new ArgumentException("落下復帰途中は保存できません");
             if (dungeon.Player.HasPendingHpFrame || (dungeon.CurrentBattle != null && dungeon.CurrentBattle.Enemies.Any(e => e.HasPendingHpFrame)))
                 throw new ArgumentException("未確定HPを含むフレーム中は保存できません");
             if (dungeon.CurrentBattle?.PlayerMovement.IsNormalMoving == true)
@@ -1712,6 +1774,7 @@ namespace Olca.Core.Logic.Dungeon
                 SchemaVersion = Definitions.SchemaVersion,
                 ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
                 TerrainContactCell=dungeon.CheckpointTerrainContact,
+                TerrainChanges=Definitions.HasFallTerrain?dungeon.Map.CaptureTerrainChanges():null,
                 CollectedItemCells = Definitions.HasFieldItems ? dungeon.CheckpointCollectedItems : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
@@ -1801,7 +1864,7 @@ namespace Olca.Core.Logic.Dungeon
             next.PositionMilli = 0; next.Player.GridX = next.Player.GridY = 0; next.Battle = null;
             next.Visits=DungeonSystem.PlanVisits(floor.Visits,next.RunId);
             next.ProcessedObstacleCells = floor.SchemaVersion >= 2 ? new int[0] : null;
-            next.TerrainContactCell=null;
+            next.TerrainContactCell=null;next.TerrainChanges=floor.HasFallTerrain?Array.Empty<CheckpointTerrainStateDto>():null;
             next.CollectedItemCells = floor.HasFieldItems ? new int[0] : null;
             next.Enemies = floor.Enemies.Select(pair => new CheckpointEnemyDto {
                 CellIndex = pair.Key, EnemyId = pair.Value.EnemyId, Hp = pair.Value.MaxHp,

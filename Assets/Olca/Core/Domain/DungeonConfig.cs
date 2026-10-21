@@ -39,6 +39,9 @@ namespace Olca.Core.Domain
                 throw new System.ArgumentException("探索地形セルが不正/重複です");
             Visits=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(visits??System.Array.Empty<DungeonVisitDefinition>()));
             if(System.Linq.Enumerable.Any(Visits,v=>v==null||v.Cell>=totalCellCount-1||MapCells[v.Cell].Type!=CellType.Empty)||System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(Visits,v=>v.Cell)))!=Visits.Count)throw new System.ArgumentException("停止地点は重複しない空セルへ配置してください");
+            if(System.Linq.Enumerable.Any(ExplorationTerrain,t=>t.Type==PanelType.Cracked||t.Type==PanelType.Hole)&&
+                !System.Linq.Enumerable.Any(MapCells,c=>c!=null&&c.Type==CellType.Empty&&!System.Linq.Enumerable.Any(Visits,v=>v.Cell==c.Index)&&!System.Linq.Enumerable.Any(ExplorationTerrain,t=>t.Cell==c.Index&&(t.Type==PanelType.Hole||t.Type==PanelType.Cracked))))
+                throw new System.ArgumentException("落下地形には復帰可能な空セルが必要です");
         }
 
         /// <summary>
@@ -189,10 +192,12 @@ namespace Olca.Core.Domain
         public int[] ProcessedObstacleCells;
         public int[] CollectedItemCells; // アイテムを含む版4のみ。旧省略/nullはアイテムなし。
         public DungeonVisitDto[] Visits; // 旧省略/nullは停止地点なし
+        public CheckpointTerrainStateDto[] TerrainChanges; // 版6のみ。定義から変化した地形。
         public int? TerrainContactCell; // 探索地形のある版5だけ。直前の接地済みセル。
         public CheckpointBattleDto Battle;
         public CheckpointDto Copy() => new CheckpointDto {
             TerrainContactCell = TerrainContactCell,
+            TerrainChanges = TerrainChanges==null?null:System.Array.ConvertAll(TerrainChanges,t=>t==null?null:new CheckpointTerrainStateDto{Cell=t.Cell,Type=t.Type}),
             Visits = Visits==null?null:System.Array.ConvertAll(Visits,v=>v?.Copy()),
             CollectedItemCells = CollectedItemCells==null?null:(int[])CollectedItemCells.Clone(),
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
@@ -259,3 +264,5 @@ namespace Olca.Core.Domain
     }
 
 }
+
+namespace Olca.Core.Domain { public sealed class CheckpointTerrainStateDto { public int Cell; public PanelType Type; } }

@@ -1114,6 +1114,10 @@ namespace Olca.Application.Dungeon
             switch (manager.CurrentPhase)
             {
                 case GamePhase.Dungeon:
+                    if(manager.Dungeon.IsTerrainRecovering){
+                        if(dashStartPosition>=0f){dashStartPosition=-1f;dashCooldownRemaining=LogicalFrameClock.DurationFrames(dashCooldown);}
+                        return;
+                    }
                     if (input.JumpButtonDown) manager.Jump();
 
                     // ダッシュ: 押した瞬間に発動し、指定マス数移動したら終了

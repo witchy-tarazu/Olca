@@ -106,11 +106,12 @@ namespace Olca.Core.Domain
         public PanelType Type { get; }
         public int Heal { get; }
         public int Damage { get; }
-        public ExplorationTerrainCell(int cell, PanelType type, int heal = 5, int magmaDamage = 5)
+        public int FallDamage { get; }
+        public ExplorationTerrainCell(int cell, PanelType type, int heal = 5, int magmaDamage = 5, int fallDamage = 10)
         {
-            if (cell < 0 || (type != PanelType.Grass && type != PanelType.Magma && type != PanelType.Ice) || heal < 0 || magmaDamage < 0)
+            if (cell < 0 || (type != PanelType.Grass && type != PanelType.Magma && type != PanelType.Ice && type != PanelType.Cracked && type != PanelType.Hole) || heal < 0 || magmaDamage < 0 || fallDamage < 0)
                 throw new System.ArgumentException("既存の探索地形と固定量は有効な値が必要です");
-            Cell=cell;Type=type;Heal=type==PanelType.Ice?0:heal;Damage=type==PanelType.Magma?magmaDamage:0;
+            Cell=cell;Type=type;Heal=type==PanelType.Grass||type==PanelType.Magma?heal:0;Damage=type==PanelType.Magma?magmaDamage:0;FallDamage=fallDamage;
         }
     }
 }

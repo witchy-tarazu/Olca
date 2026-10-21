@@ -351,7 +351,8 @@ namespace Olca.Presentation.Field
         {
             if(!isActiveAndEnabled||dungeonSystem==null){ClearTerrainVisuals();return;}
             foreach(var terrain in dungeonSystem.Map.ExplorationTerrain){
-                bool visible=currentBattle==null&&Mathf.Abs(terrain.Cell-dungeonSystem.PlayerPosition)<6;
+                var type=dungeonSystem.Map.GetTerrainType(terrain.Cell);
+                bool visible=type!=PanelType.Normal&&currentBattle==null&&Mathf.Abs(terrain.Cell-dungeonSystem.PlayerPosition)<6;
                 if(!terrainVisuals.TryGetValue(terrain.Cell,out var root)){
                     if(!visible)continue;
                     if(obstacleWhiteSprite==null)obstacleWhiteSprite=CreateWhiteSprite();
@@ -361,6 +362,9 @@ namespace Olca.Presentation.Field
                     var sr=root.AddComponent<SpriteRenderer>();sr.sprite=obstacleWhiteSprite;sr.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;sr.sortingOrder=1;
                     sr.color=terrain.Type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):terrain.Type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);terrainVisuals.Add(terrain.Cell,root);
                 }
+                var renderer=root.GetComponent<SpriteRenderer>();
+                renderer.color=type==PanelType.Hole?new Color(.02f,.04f,.08f,.95f):type==PanelType.Cracked?new Color(1f,.7f,.2f,.8f):type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);
+                root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(type==PanelType.Hole?.16f:.06f),1);
                 root.SetActive(visible);
             }
         }
@@ -836,9 +840,9 @@ namespace Olca.Presentation.Field
             }
             RestoreObstaclePose();
             if (contactPoseActive && contactPoseSprite != null) { SetPlayerSprite(contactPoseSprite); return; }
-            int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && dungeonSystem.IsJumping
+            int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && (dungeonSystem.IsJumping||dungeonSystem.IsTerrainRecovering)
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
-                dungeonSystem?.JumpProgress ?? 0f);
+                dungeonSystem?.IsTerrainRecovering==true?.8f:dungeonSystem?.JumpProgress ?? 0f);
             // 接敵後の宙返り中はダッシュフラグが残る場合があるため、
             // バトル中でないこともダッシュ表示の条件にする。
             bool isDashing = dungeonSystem != null

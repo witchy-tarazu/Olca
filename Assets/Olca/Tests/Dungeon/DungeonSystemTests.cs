@@ -1994,3 +1994,116 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+namespace Olca.Tests.Dungeon
+{
+    public class ExplorationFallTests
+    {
+        private sealed class FaultStore:ICheckpointStore {
+            public readonly MemoryCheckpointStore Inner;public bool Fail;
+            public FaultStore(CheckpointDefinitions defs){Inner=new MemoryCheckpointStore(defs);}
+            public CheckpointDto Read()=>Inner.Read();
+            public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="fall-fixture";return false;}return Inner.TryWrite(d,out error);}
+        }
+        private static DungeonBattleManager Start(ExplorationTerrainCell[] terrain,out DungeonCheckpointSession session,out FaultStore store,int hp=100,bool heal=false,int itemCell=0)
+        {
+            var m=DungeonConfig.CreateTestDungeon(30,100,29);
+            if(heal)m.MapCells[itemCell]=new MapCell(itemCell,new FieldItem("heal","既存回復",20));
+            var map=new DungeonConfig(m.DungeonId,m.DungeonName,30,m.MapCells,visits:new[]{new DungeonVisitDefinition(10,false,new[]{new DungeonVisitOption("heal",0,heal:1)},1)},explorationTerrain:terrain);
+            var defs=DungeonCheckpointSession.CreateDefault(map,new Deck()).Definitions;store=new FaultStore(defs);session=new DungeonCheckpointSession(defs,store);
+            var p=new PlayerCharacter(100);p.TakeDamage(100-hp);return new DungeonBattleManager(map,p,new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        }
+        private static PlayerMovement Movement(DungeonSystem d)=>(PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+        private static void Recover(DungeonSystem d){for(int i=0;i<30;i++)d.TickFrame();Assert.IsFalse(d.IsTerrainRecovering);}
+        [Test]
+        public void ヒビは進入で割れず通常離脱と離陸で永続する穴へ変わる()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out _,out _).Dungeon;
+            d.TickFrame();Assert.AreEqual(PanelType.Cracked,d.Map.GetTerrainType(0));d.Tick(200);Assert.AreEqual(PanelType.Hole,d.Map.GetTerrainType(0));
+            for(int i=0;i<100;i++)d.TickFrame();Assert.AreEqual(PanelType.Hole,d.Map.GetTerrainType(0));
+            var air=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out _,out _).Dungeon;air.Jump();Assert.AreEqual(PanelType.Hole,air.Map.GetTerrainType(0));air.TickFrame();Assert.IsFalse(air.IsTerrainRecovering);
+        }
+        [Test]
+        public void フロートは連続穴とヒビを無効化し能力消失後の接地だけ落下する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(1,PanelType.Hole),new ExplorationTerrainCell(2,PanelType.Hole)},out _,out _).Dungeon;
+            d.Player.TerrainState.IsFloating=true;d.Tick(300);Assert.AreEqual(100,d.Player.CurrentHp);Assert.AreEqual(PanelType.Cracked,d.Map.GetTerrainType(0));
+            Movement(d).SetPosition(2);d.Player.TerrainState.IsFloating=false;d.TickFrame();Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(90,d.Player.CurrentHp);
+        }
+        [Test]
+        public void 落下は一度だけ被害を与え停止中は時計を止め安全地点を通常化して復帰する()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(2,PanelType.Grass),new ExplorationTerrainCell(4,PanelType.Hole)},out _,out _);var d=g.Dungeon;
+            d.Tick(600);Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(90,d.Player.CurrentHp);float pos=d.PlayerPosition;d.Jump();d.StartDash();Assert.IsFalse(d.IsJumping||d.IsDashing);
+            d.TickFrame();float height=d.PlayerHeight;long clock=d.ObstacleVisualFrame;g.SetUserPaused(true);for(int i=0;i<100;i++)g.TickFrame(17);
+            Assert.AreEqual(height,d.PlayerHeight);Assert.AreEqual(pos,d.PlayerPosition);Assert.AreEqual(clock,d.ObstacleVisualFrame);g.SetUserPaused(false);
+            for(int i=0;i<11;i++)d.TickFrame();Assert.AreEqual(2,d.PlayerPosition);Assert.AreEqual(PanelType.Normal,d.Map.GetTerrainType(2));Assert.Greater(d.PlayerHeight,0);
+            for(int i=0;i<18;i++)d.TickFrame();Assert.IsFalse(d.IsTerrainRecovering);Assert.AreEqual(90,d.Player.CurrentHp);d.TickFrame();Assert.Greater(d.PlayerPosition,2);
+        }
+        [Test]
+        public void ダッシュは単穴だけ通れ連続二セル目または穴上の終了で落ち消費を戻さない()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole),new ExplorationTerrainCell(2,PanelType.Hole)},out _,out _).Dungeon;d.StartDash();d.Tick(120);
+            Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(2,d.PlayerPosition);Assert.IsFalse(d.IsDashing);Assert.AreEqual(90,d.Player.CurrentHp);
+            var single=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole)},out _,out _).Dungeon;single.StartDash();single.Tick(120);Assert.IsFalse(single.IsTerrainRecovering);Assert.AreEqual(100,single.Player.CurrentHp);
+            var ended=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole)},out _,out _).Dungeon;ended.StartDash();ended.Tick(60);ended.StopDash();ended.TickFrame();Assert.IsTrue(ended.IsTerrainRecovering);
+        }
+        [Test]
+        public void ジャンプ中は穴を越え着地点が穴ならダッシュジャンプでも落下する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Hole)},out _,out _).Dungeon;d.Jump();d.Tick(400);Assert.IsFalse(d.IsTerrainRecovering);Assert.AreEqual(100,d.Player.CurrentHp);
+            var landing=Start(Enumerable.Range(0,15).Select(i=>new ExplorationTerrainCell(i,PanelType.Hole)).ToArray(),out _,out _).Dungeon;landing.StartDash();landing.Jump();landing.Tick(600);Assert.IsTrue(landing.IsTerrainRecovering);Assert.AreEqual(90,landing.Player.CurrentHp);
+        }
+        [Test]
+        public void 復帰中は毒と表示時計を止め死亡時は復帰せず終端保存する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Hole)},out _,out _).Dungeon;d.Player.ApplyPoison("existing",new StatusEffect(StatusEffectType.Poison,10000,1),60);d.TickFrame();long clock=d.ObstacleVisualFrame;int hp=d.Player.CurrentHp;Recover(d);Assert.AreEqual(hp,d.Player.CurrentHp);Assert.AreEqual(clock,d.ObstacleVisualFrame);
+            var dead=Start(new[]{new ExplorationTerrainCell(0,PanelType.Hole)},out _,out var store,10).Dungeon;dead.TickFrame();Assert.IsTrue(dead.Player.IsDead);Assert.IsFalse(dead.IsTerrainRecovering);Assert.AreEqual(CheckpointBoundary.Terminal,store.Read().Boundary);dead.Tick(10000);Assert.AreEqual(0,dead.Player.CurrentHp);
+        }
+        [Test]
+        public void 同フレームの取得回復と落下被害を合算し途中死亡を起こさない()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole)},out _,out _,5,true).Dungeon;d.Tick(200);Assert.AreEqual(15,d.Player.CurrentHp);Assert.IsTrue(d.IsTerrainRecovering);Assert.IsFalse(d.Player.IsDead);
+        }
+        [Test]
+        public void 保存失敗は前境界を保持し再試行後は地形とHPだけ復元して落下を再生しない()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store);var d=g.Dungeon;
+            d.Tick(600);Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(100,store.Read().Player.Hp);Assert.IsEmpty(store.Read().TerrainChanges);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var prior,out var error),error);Assert.AreEqual(100,prior.Player.CurrentHp);
+            Recover(d);Movement(d).SetPosition(9);d.Tick(200);Assert.IsNotNull(d.ActiveVisit);store.Fail=true;Assert.IsFalse(d.ExitVisit());Assert.IsTrue(d.IsCheckpointBlocked);Assert.AreEqual(100,store.Read().Player.Hp);
+            store.Fail=false;Assert.IsTrue(d.RetryCheckpoint());Assert.AreEqual(90,store.Read().Player.Hp);Assert.AreEqual(6,store.Read().SchemaVersion);Assert.AreEqual(PanelType.Hole,store.Read().TerrainChanges.Single(t=>t.Cell==0).Type);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out error),error);
+            var loaded=new DungeonSystem(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);loaded.TickFrame();Assert.AreEqual(90,loaded.Player.CurrentHp);Assert.IsFalse(loaded.IsTerrainRecovering);Assert.AreEqual(PanelType.Hole,loaded.Map.GetTerrainType(0));
+            var bad=store.Read();bad.TerrainChanges[0].Type=PanelType.Magma;Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));Assert.AreEqual(PanelType.Hole,store.Read().TerrainChanges[0].Type);
+        }
+        [Test]
+        public void 中断は落下途中を保存せず直前境界へ戻して地形とHPをまとめて巻き戻す()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(2,PanelType.Hole)},out var session,out var store);var d=g.Dungeon;d.Tick(300);Assert.IsTrue(d.IsTerrainRecovering);
+            Assert.IsTrue(g.SuspendForCheckpoint());for(int i=0;i<100;i++)g.TickFrame(17);Assert.AreEqual(90,d.Player.CurrentHp);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out var error),error);var loaded=new DungeonSystem(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);loaded.ActivateCheckpoint();Assert.AreEqual(0,loaded.PlayerPosition);Assert.AreEqual(100,loaded.Player.CurrentHp);Assert.AreEqual(PanelType.Cracked,loaded.Map.GetTerrainType(0));Assert.IsFalse(loaded.IsTerrainRecovering);
+        }
+        [Test]
+        public void 復帰可能な非穴セルのない定義と永続穴の上書き保存は拒否する()
+        {
+            var m=DungeonConfig.CreateTestDungeon(4,100,3);
+            Assert.Throws<System.ArgumentException>(()=>new DungeonConfig(m.DungeonId,m.DungeonName,4,m.MapCells,explorationTerrain:Enumerable.Range(0,3).Select(i=>new ExplorationTerrainCell(i,PanelType.Hole)).ToArray()));
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store).Dungeon;d.Tick(600);Recover(d);Movement(d).SetPosition(9);d.Tick(200);Assert.IsNotNull(d.ActiveVisit);Assert.IsTrue(d.ExitVisit());var bad=store.Read();bad.TerrainChanges=new[]{new CheckpointTerrainStateDto{Cell=4,Type=PanelType.Normal}};Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void 地形変更は実ファイル保存から候補の再抽選なしで復元する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out var session,out var store).Dungeon;d.Tick(1400);Assert.IsNotNull(d.ActiveVisit);Assert.IsTrue(d.ExitVisit());
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-fall-"+System.Guid.NewGuid().ToString("N"));
+            try{var file=new Olca.Unity.FileCheckpointStore(session.Definitions,dir);Assert.IsTrue(file.TryWrite(store.Read(),out var error),error);var saved=file.Read();Assert.AreEqual(PanelType.Hole,saved.TerrainChanges.Single().Type);Assert.IsTrue(CheckpointCodec.TryRestore(saved,session.Definitions,out _,out error),error);}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [Test]
+        public void 落下前の取得済み履歴は復帰先より先でも保存と再開に保持する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store,100,true,3).Dungeon;d.Tick(600);Recover(d);Assert.IsTrue(d.IsItemCollected(3));Assert.AreEqual(2,d.PlayerPosition);
+            var capture=(CheckpointDto)typeof(DungeonCheckpointSession).GetMethod("Capture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(session,new object[]{d,CheckpointBoundary.RewardCompleted,null});
+            Assert.Greater(capture.CollectedItemCells.Single(),capture.PositionMilli/1000);Assert.IsTrue(CheckpointCodec.TryRestore(capture,session.Definitions,out _,out var error),error);
+        }
+    }
+}
