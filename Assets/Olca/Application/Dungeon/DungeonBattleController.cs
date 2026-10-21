@@ -1199,8 +1199,18 @@ namespace Olca.Application.Dungeon
 
         // ==================== 初期デッキ ====================
 
+        private IReadOnlyDictionary<string, PlayerAttackTiming> configuredCardTimings;
+        /// <summary>出撃デッキ生成前の製品時間データ。保存済み定義を起動後に書き換えない。</summary>
+        public void ConfigureCardAttackData(IReadOnlyDictionary<string, PlayerAttackTiming> timings)
+        {
+            if (manager != null || configuredDepartureDeck != null) throw new System.InvalidOperationException("時間定義は編成・攻略開始前に設定してください");
+            if (timings == null) throw new System.ArgumentNullException(nameof(timings));
+            // 全件を検証してから公開し、外部辞書の変更を引き継がない。
+            _ = new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: timings);
+            configuredCardTimings = timings.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
         private SimpleCardFactory CreateCardFactory()
-            => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage));
+            => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 
         private Deck CreateInitialDeck() => CreateDepartureDeck(legacyPoise: false);
         private Deck CreateDepartureDeck(bool legacyPoise)

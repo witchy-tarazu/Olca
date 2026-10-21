@@ -147,6 +147,7 @@ namespace Olca.Core.Logic.Battle
             try {
                 if (!card.IsInstantEffect) {
                     if (timing != null) await battleSystem.WaitForActionFramesAsync(timing.StartupFrames, ct);
+                    else if (card.StartupFrames.HasValue) await battleSystem.WaitForActionFramesAsync(card.StartupFrames.Value, ct);
                     else if (card.StartupTime > 0) await battleSystem.WaitForActionAsync(card.StartupTime, ct);
                 }
                 ct.ThrowIfCancellationRequested();
@@ -156,8 +157,9 @@ namespace Olca.Core.Logic.Battle
                 else effect?.Execute(context);
                 resolved = true;
                 if (!card.IsInstantEffect) {
-                    battleSystem.SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing?.CancelAfterFrames);
+                    battleSystem.SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing != null ? timing.CancelAfterFrames : card.RecoveryCancelAfterFrames);
                     if (timing != null) await battleSystem.WaitForActionFramesAsync(timing.RecoveryFrames, ct);
+                    else if (card.RecoveryFrames.HasValue) await battleSystem.WaitForActionFramesAsync(card.RecoveryFrames.Value, ct);
                     else if (card.RecoveryTime > 0) await battleSystem.WaitForActionAsync(card.RecoveryTime, ct);
                 }
             } catch (OperationCanceledException) when (resolved) { /* 発生済みの効果は消さず使用済み。 */ }

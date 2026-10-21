@@ -83,6 +83,15 @@ namespace Olca.Core.Domain
 
         /// <summary>後隙時間（秒） - ヒット判定後、行動可能になるまでの時間</summary>
         public float RecoveryTime { get; }
+        public int? StartupFrames { get; private set; }
+        public int? RecoveryFrames { get; private set; }
+        public int? RecoveryCancelAfterFrames { get; private set; }
+        public Card WithAttackTiming(PlayerAttackTiming timing)
+        {
+            if (timing == null) throw new System.ArgumentNullException(nameof(timing));
+            var copy = Clone(); copy.StartupFrames = timing.StartupFrames; copy.RecoveryFrames = timing.RecoveryFrames;
+            copy.RecoveryCancelAfterFrames = timing.CancelAfterFrames; return copy;
+        }
 
         /// <summary>派生効果中も硬直を継続するか</summary>
         public bool ExtendRecoveryDuringDerivative { get; }
@@ -151,8 +160,15 @@ namespace Olca.Core.Domain
             bool extendRecoveryDuringDerivative = false,
             bool isInstantEffect = false,
             ExceedLevel exceedLevel = ExceedLevel.Normal,
-            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0)
+            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int? startupFrames = null, int? recoveryFrames = null, int? recoveryCancelAfterFrames = null)
         {
+            if (float.IsNaN(startupTime) || float.IsInfinity(startupTime) || startupTime < 0 ||
+                float.IsNaN(recoveryTime) || float.IsInfinity(recoveryTime) || recoveryTime < 0)
+                throw new System.ArgumentOutOfRangeException("前後隙の秒値は有限の非負値が必要です");
+            double recoveryLimit = recoveryFrames.HasValue ? recoveryFrames.Value : System.Math.Ceiling(recoveryTime * 60d - 0.00001d);
+            if (startupFrames < 0 || recoveryFrames < 0 || recoveryCancelAfterFrames < 0 || recoveryCancelAfterFrames > recoveryLimit)
+                throw new System.ArgumentOutOfRangeException("前後隙とキャンセル開始は有効なフレーム数が必要です");
+            StartupFrames = startupFrames; RecoveryFrames = recoveryFrames; RecoveryCancelAfterFrames = recoveryCancelAfterFrames;
             if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
             if (hitInvincibilityMs < 0) throw new System.ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             PoiseDamage = poiseDamage; HitInvincibilityMs = hitInvincibilityMs;
@@ -202,7 +218,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs
+                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames
             )
             {
                 TuningCount = TuningCount + 1,
@@ -225,7 +241,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs
+                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames
             ) { IsEffectCopy = true };
         }
 
@@ -295,7 +311,8 @@ namespace Olca.Core.Domain
                 master.RecoveryTime,
                 master.ExtendRecoveryDuringDerivative,
                 master.IsInstantEffect,
-                subCategory: master.SubCategory, properties: master.Properties, poiseDamage: master.PoiseDamage, hitInvincibilityMs: master.HitInvincibilityMs
+                subCategory: master.SubCategory, properties: master.Properties, poiseDamage: master.PoiseDamage, hitInvincibilityMs: master.HitInvincibilityMs,
+                startupFrames: master.StartupFrames, recoveryFrames: master.RecoveryFrames, recoveryCancelAfterFrames: master.RecoveryCancelAfterFrames
             );
         }
 

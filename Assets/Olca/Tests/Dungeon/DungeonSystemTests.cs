@@ -104,16 +104,19 @@ namespace Olca.Tests.Dungeon
             var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-hand-bonus-"+System.Guid.NewGuid().ToString("N"));
             try {
                 var map=DungeonConfig.CreateTestDungeon(20,30,3);
-                var deck=new Deck(Enumerable.Range(0,20).Select(_=>CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal)).ToList());
+                var deck=new Deck(Enumerable.Range(0,20).Select(_=>CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal).WithAttackTiming(new PlayerAttackTiming(3,12,6))).ToList());
                 var defaults=DungeonCheckpointSession.CreateDefault(map,deck);var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory);var session=new DungeonCheckpointSession(defaults.Definitions,store);
                 var game=new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
                 for(int f=0;f<300&&game.CurrentBattle==null;f++)game.TickFrame(17);
                 Assert.IsNotNull(game.CurrentBattle);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
-                void Configure(BattleSystem b){b.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,2,new[]{new TransformationCardConversion("sword",CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal))},attack:new TransformationAttackDefinition(ElementType.Fire,chargeFrames:6))});b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());}
-                Configure(game.CurrentBattle);game.CurrentBattle.Transformations.TryPreview("fixture");Assert.AreEqual(12,game.CurrentBattle.CustomScreen.CurrentHand.Count);Assert.IsTrue(game.CurrentBattle.CustomScreen.CurrentHand.All(c=>c.Id=="heal"));game.CurrentBattle.CustomScreen.Confirm();Assert.IsTrue(game.CurrentBattle.Transformations.IsUsed("fixture"));
+                void Configure(BattleSystem b){b.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,2,new[]{new TransformationCardConversion("sword",CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal).WithAttackTiming(new PlayerAttackTiming(4,8,2)))},attack:new TransformationAttackDefinition(ElementType.Fire,chargeFrames:6))});b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());}
+                Configure(game.CurrentBattle);game.CurrentBattle.Transformations.TryPreview("fixture");Assert.AreEqual(12,game.CurrentBattle.CustomScreen.CurrentHand.Count);Assert.IsTrue(game.CurrentBattle.CustomScreen.CurrentHand.All(c=>c.Id=="heal"&&c.StartupFrames==4&&c.RecoveryCancelAfterFrames==2));game.CurrentBattle.CustomScreen.Confirm();Assert.IsTrue(game.CurrentBattle.Transformations.IsUsed("fixture"));
                 game.CurrentBattle.CustomScreen.Close();var attackInput=new Olca.Application.Battle.BasicAttackInputState();
                 for(int f=0;f<6;f++)attackInput.Tick(game.CurrentBattle,new LogicalInput{BasicAttackButtonDown=f==0,BasicAttackButton=true},60,12);
                 Assert.AreEqual(6,attackInput.ChargeFrames);
+                var changedDeck=new Deck(deck.GetAllCards().Select(c=>c.WithAttackTiming(new PlayerAttackTiming(3,12,7))).ToList());
+                var changed=DungeonCheckpointSession.CreateDefault(map,changedDeck);
+                Assert.IsFalse(CheckpointCodec.TryRestore(store.Read(),changed.Definitions,out _,out _),"同IDでも明示した窓が異なる定義へ解釈し直さない");
                 Assert.IsTrue(game.SuspendForCheckpoint());CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
                 for(int repeat=0;repeat<2;repeat++) {
                     var reopened=new DungeonCheckpointSession(defaults.Definitions,new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory));
@@ -122,9 +125,9 @@ namespace Olca.Tests.Dungeon
                     attackInput.Tick(resumed.CurrentBattle,new LogicalInput{BasicAttackButtonUp=true},60,12);
                     Assert.AreEqual(0,attackInput.ChargeFrames);Assert.IsFalse(attackInput.IsCharging);Assert.IsNull(resumed.CurrentBattle.Transformations.ActiveAttack);
                     var screen=resumed.CurrentBattle.CustomScreen;
-                    Assert.AreEqual(10,screen.CurrentHand.Count);Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="sword"));Assert.AreEqual(10,screen.MaxHandSize);Assert.IsEmpty(resumed.CurrentBattle.Transformations.UsedIds);
+                    Assert.AreEqual(10,screen.CurrentHand.Count);Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="sword"&&c.StartupFrames==3&&c.RecoveryCancelAfterFrames==6));Assert.AreEqual(10,screen.MaxHandSize);Assert.IsEmpty(resumed.CurrentBattle.Transformations.UsedIds);
                     resumed.CurrentBattle.Transformations.TryPreview("fixture");Assert.AreEqual(12,screen.CurrentHand.Count);Assert.AreEqual(12,screen.CurrentHand.Distinct().Count());Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="heal"));
-                    resumed.CurrentBattle.Transformations.TryCancelPending();Assert.AreEqual(10,screen.CurrentHand.Count);Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="sword"));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));resumed.SuspendForCheckpoint();
+                    resumed.CurrentBattle.Transformations.TryCancelPending();Assert.AreEqual(10,screen.CurrentHand.Count);Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="sword"&&c.StartupFrames==3&&c.RecoveryCancelAfterFrames==6));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));resumed.SuspendForCheckpoint();
                 }
             }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
         }

@@ -1156,6 +1156,12 @@ namespace Olca.Core.Logic.Dungeon
             w.Write(c.StartupTime); w.Write(c.RecoveryTime); w.Write(c.ExtendRecoveryDuringDerivative); w.Write(c.IsInstantEffect);
             w.Write((int)c.ExceedLevel); Modifier(w, c.Modifier); Modifier(w, c.GetTuningBaseModifier()); Grant(w, c.TuningDefinition);
             w.Write(c.TuningCount); foreach (var grant in c.TuningHistory) Grant(w, grant);
+            if (c.StartupFrames.HasValue || c.RecoveryFrames.HasValue || c.RecoveryCancelAfterFrames.HasValue) {
+                w.Write("card-action-frames-v1");
+                foreach (var value in new[] { c.StartupFrames, c.RecoveryFrames, c.RecoveryCancelAfterFrames }) {
+                    w.Write(value.HasValue); if (value.HasValue) w.Write(value.Value);
+                }
+            }
             // 未指定の既存定義hashは維持し、明示された効果種別の不一致を検出する。
             if (c.SubCategory != CardSubCategory.None) { w.Write("subcategory"); w.Write((int)c.SubCategory); }
             // 性質未指定の旧定義は同じbytes/hash。明示した性質だけ追加照合する。

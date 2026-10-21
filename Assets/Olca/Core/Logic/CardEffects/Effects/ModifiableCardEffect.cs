@@ -39,15 +39,19 @@ namespace Olca.Core.Logic.CardEffects.Effects
             bool effectResolved = false;
             try
             {
-                if (includeTimings && !card.IsInstantEffect && card.StartupTime > 0)
-                    await context.Battle.WaitForActionAsync(card.StartupTime, ct);
+                if (includeTimings && !card.IsInstantEffect) {
+                    if (card.StartupFrames.HasValue) await context.Battle.WaitForActionFramesAsync(card.StartupFrames.Value, ct);
+                    else if (card.StartupTime > 0) await context.Battle.WaitForActionAsync(card.StartupTime, ct);
+                }
 
                 ct.ThrowIfCancellationRequested();
                 ExecuteCardEffect(context);
                 effectResolved = true;
 
-                if (includeTimings && !card.IsInstantEffect && card.RecoveryTime > 0)
-                    await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
+                if (includeTimings && !card.IsInstantEffect) {
+                    if (card.RecoveryFrames.HasValue) await context.Battle.WaitForActionFramesAsync(card.RecoveryFrames.Value, ct);
+                    else if (card.RecoveryTime > 0) await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
+                }
             }
             catch (OperationCanceledException) when (effectResolved)
             {
@@ -55,76 +59,31 @@ namespace Olca.Core.Logic.CardEffects.Effects
             }
         }
 
+        private static DelayedEffect CreateTimingDelay(DelayedEffectType type, int? frames, float seconds)
+            => frames.HasValue ? DelayedEffect.InFrames(type, frames.Value) : new DelayedEffect(type, (int)(seconds * 1000f));
+
         public void Execute(BattleContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
-
             var card = context.UsedCard;
             foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
-
-            // 暗転系カードは前隙・後隙なしで即座に発動
-            if (card.IsInstantEffect)
+            if (card.IsInstantEffect) { ExecuteCardEffect(context); return; }
+            void Resolve()
             {
                 ExecuteCardEffect(context);
-                return;
-            }
-
-            // 前隙がある場合は遅延登録
-            if (card.StartupTime > 0)
-            {
-                // 前隙遅延効果を登録
-                var startupEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Startup, (int)(card.StartupTime * 1000f))
-                {
-                    ExecuteAction = () =>
-                    {
-                        // 前隙終了後にヒット判定（ダメージ処理）
-                        ExecuteCardEffect(context);
-
-                        // 後隙がある場合は遅延登録
-                        if (card.RecoveryTime > 0)
-                        {
-                            var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, (int)(card.RecoveryTime * 1000f))
-                            {
-                                ExecuteAction = () =>
-                                {
-                                    // 後隙終了（行動可能になる）
-#if UNITY_EDITOR || DEBUG
-                                    System.Diagnostics.Debug.WriteLine($"[ModifiableCardEffect] 後隙終了: {card.Name}");
-#endif
-                                }
-                            };
-                            context.Battle.DelayedEffects.RegisterDelayedEffect(recoveryEffect);
-                        }
-                    }
-                };
-                context.Battle.DelayedEffects.RegisterDelayedEffect(startupEffect);
-            }
-            else
-            {
-                // 前隙がない場合は即座に発動
-                ExecuteCardEffect(context);
-
-                // 後隙がある場合は遅延登録
-                if (card.RecoveryTime > 0)
-                {
-                    var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, (int)(card.RecoveryTime * 1000f))
-                    {
-                        ExecuteAction = () =>
-                        {
-                            // 後隙終了（行動可能になる）
-#if UNITY_EDITOR || DEBUG
-                            System.Diagnostics.Debug.WriteLine($"[ModifiableCardEffect] 後隙終了: {card.Name}");
-#endif
-                        }
-                    };
-                    context.Battle.DelayedEffects.RegisterDelayedEffect(recoveryEffect);
+                if (card.RecoveryFrames.HasValue ? card.RecoveryFrames.Value > 0 : card.RecoveryTime > 0) {
+                    var recovery = CreateTimingDelay(DelayedEffectType.Recovery, card.RecoveryFrames, card.RecoveryTime);
+                    recovery.ExecuteAction = () => { };
+                    context.Battle.DelayedEffects.RegisterDelayedEffect(recovery);
                 }
             }
+            if (card.StartupFrames.HasValue ? card.StartupFrames.Value > 0 : card.StartupTime > 0) {
+                var startup = CreateTimingDelay(DelayedEffectType.Startup, card.StartupFrames, card.StartupTime);
+                startup.ExecuteAction = Resolve;
+                context.Battle.DelayedEffects.RegisterDelayedEffect(startup);
+            } else Resolve();
         }
 
-        /// <summary>
-        /// カード効果の実行（前隙後のヒット判定・ダメージ処理）
-        /// </summary>
         private void ExecuteCardEffect(BattleContext context)
         {
             var card = context.UsedCard;

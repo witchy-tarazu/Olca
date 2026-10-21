@@ -69,6 +69,12 @@ namespace Olca.Core.Logic.Battle
             CancelOnHole = false; // 未使用
         }
 
+        internal static DelayedEffect InFrames(DelayedEffectType type, int frames)
+        {
+            if (frames < 0) throw new ArgumentOutOfRangeException(nameof(frames));
+            var effect = new DelayedEffect(type, 0); effect.remaining.SetFrames(frames); return effect;
+        }
+
         /// <summary>
         /// 効果を実行
         /// </summary>

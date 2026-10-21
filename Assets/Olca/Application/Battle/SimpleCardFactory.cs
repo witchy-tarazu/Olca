@@ -36,7 +36,7 @@ namespace Olca.Application.Battle
 
         public SimpleCardFactory() : this(null, false) { }
 
-        public SimpleCardFactory(CardPoiseSettings poise = null, bool legacyPoise = false)
+        public SimpleCardFactory(CardPoiseSettings poise = null, bool legacyPoise = false, IReadOnlyDictionary<string, PlayerAttackTiming> cardTimings = null)
         {
             poise ??= new CardPoiseSettings();
             catalog = new Dictionary<string, Card>
@@ -59,6 +59,12 @@ namespace Olca.Application.Battle
                 [FireSword] = new Card(FireSword, "ファイアソード", 2, CardRarity.Limited, CardCategory.Attack,
                     ElementType.Fire, CardSeries.Sword, 60, "前方1マス炎属性攻撃（ソード＋ボムの融合）", poiseDamage: legacyPoise ? (int?)null : poise.FireSword),
             };
+            if (cardTimings != null)
+                foreach (var entry in cardTimings) {
+                    if (entry.Key == null || entry.Value == null || !catalog.ContainsKey(entry.Key))
+                        throw new System.ArgumentException("既存カードIDと時間定義が必要です", nameof(cardTimings));
+                    catalog[entry.Key] = catalog[entry.Key].WithAttackTiming(entry.Value);
+                }
         }
 
         /// <summary>
@@ -111,7 +117,10 @@ namespace Olca.Application.Battle
                 series: baseCard.Series,
                 power: exceededPower,
                 description: $"{baseCard.Description}（超越{levelSuffix}）",
-                exceedLevel: nextLevel, subCategory: baseCard.SubCategory, properties: baseCard.Properties, poiseDamage: baseCard.PoiseDamage, hitInvincibilityMs: baseCard.HitInvincibilityMs);
+                exceedLevel: nextLevel, subCategory: baseCard.SubCategory, properties: baseCard.Properties, poiseDamage: baseCard.PoiseDamage, hitInvincibilityMs: baseCard.HitInvincibilityMs,
+                startupTime: baseCard.StartupTime, recoveryTime: baseCard.RecoveryTime,
+                extendRecoveryDuringDerivative: baseCard.ExtendRecoveryDuringDerivative, isInstantEffect: baseCard.IsInstantEffect,
+                startupFrames: baseCard.StartupFrames, recoveryFrames: baseCard.RecoveryFrames, recoveryCancelAfterFrames: baseCard.RecoveryCancelAfterFrames);
         }
     }
 }

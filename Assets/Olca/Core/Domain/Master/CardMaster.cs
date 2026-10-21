@@ -91,6 +91,11 @@ namespace Olca.Core.Domain.Master
         /// この時間中、プレイヤーは移動や他のカード使用ができない
         /// </summary>
         public float RecoveryTime { get; set; }
+        /// <summary>明示フレーム値。省略時は既存秒値をそのまま使用する。</summary>
+        public int? StartupFrames { get; set; }
+        public int? RecoveryFrames { get; set; }
+        /// <summary>後隙開始からの受付開始。省略時は後隙を短縮しない。</summary>
+        public int? RecoveryCancelAfterFrames { get; set; }
 
         /// <summary>
         /// 派生効果中も硬直を継続するか

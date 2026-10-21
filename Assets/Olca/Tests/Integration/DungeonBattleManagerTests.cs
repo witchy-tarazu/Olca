@@ -3733,6 +3733,20 @@ namespace Olca.Tests.Integration
             var expected=Trace(60);CollectionAssert.AreEqual(expected,Trace(30));CollectionAssert.AreEqual(expected,Trace(120));CollectionAssert.AreEqual(expected,Trace(0));
         }
 
+        [Test]
+        public void マスター個別時間は実カード受付へ入り外部戦闘上書きなしで窓から次動作へ移る()
+        {
+            SetupTiming();var master=new Olca.Core.Domain.Master.CardMaster{Id="data",Name="検証",Category=CardCategory.Attack,Series=SeriesType.Canon,Power=20,StartupTime=9,RecoveryTime=9,StartupFrames=3,RecoveryFrames=12,RecoveryCancelAfterFrames=6};
+            var card=Card.FromMaster(master);battle.CardUsage.EnqueueCards(new List<Card>{card,card.Clone()});var task=battle.CardUsage.TryUseCurrentCardAsync().Preserve();TimingStep();TimingStep();Assert.AreEqual(200,target.CurrentHp);TimingStep();Assert.AreEqual(180,target.CurrentHp);
+            for(int i=0;i<5;i++)TimingStep();Assert.IsFalse(battle.CanCancelPlayerRecovery);TimingStep();Assert.IsTrue(battle.CanCancelPlayerRecovery);TimingStep(Tap());Assert.IsTrue(task.GetAwaiter().GetResult());Assert.AreEqual(1,battle.CardUsage.RemainingCount);TimingStep();TimingStep();Assert.AreEqual(169,target.CurrentHp);
+        }
+        [Test]
+        public void 取消開始だけ明示しても旧秒値をフレームへ丸め直さず即時指定は前後隙を省く()
+        {
+            SetupTiming();var card=new Card("seconds","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,20,"検証",startupTime:.011f,recoveryTime:.101f,recoveryCancelAfterFrames:6);battle.CardUsage.EnqueueCards(new List<Card>{card});var task=battle.CardUsage.TryUseCurrentCardAsync().Preserve();battle.Tick(10);Assert.AreEqual(200,target.CurrentHp);battle.Tick(1);Assert.AreEqual(180,target.CurrentHp);battle.Tick(100);Assert.IsTrue(battle.HasPlayerAction);battle.Tick(1);Assert.IsTrue(task.GetAwaiter().GetResult());Assert.IsFalse(battle.HasPlayerAction);
+            SetupTiming();var instant=new Card("instant","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,20,"検証",isInstantEffect:true,startupFrames:3,recoveryFrames:12,recoveryCancelAfterFrames:6);battle.CardUsage.EnqueueCards(new List<Card>{instant});Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());Assert.AreEqual(180,target.CurrentHp);Assert.IsFalse(battle.HasPlayerAction);
+        }
+
         private void SetupForm(bool confirm = true)
         {
             target=new Enemy("target","検証",200,ElementType.None,new Vector2Int(2,0),resistances:new ElementResistances(fire:50,water:50));
