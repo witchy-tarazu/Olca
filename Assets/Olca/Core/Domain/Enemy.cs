@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Olca.Core.Domain
 {
@@ -177,9 +178,10 @@ namespace Olca.Core.Domain
         private readonly ElementType element;
         private Vector2Int gridPosition;
         private FrameCountdown stunTimer;
-        private StatusEffect activeStatusEffect;
+        private readonly Dictionary<StatusEffectType, StatusEffect> statuses = new Dictionary<StatusEffectType, StatusEffect>();
+        private StatusEffectType lastStatusType;
         private bool statusFrameOpen, frameParalyzed, pendingPoisonRefresh;
-        private StatusEffect pendingStatus;
+        private readonly Dictionary<StatusEffectType, StatusEffect> pendingStatuses = new Dictionary<StatusEffectType, StatusEffect>();
         private readonly System.Collections.Generic.HashSet<StatusEffectType> pendingStatusClears = new System.Collections.Generic.HashSet<StatusEffectType>();
         internal void BeginStatusFrame()
         {
@@ -191,23 +193,22 @@ namespace Olca.Core.Domain
         {
             if (!statusFrameOpen) return;
             statusFrameOpen = false;
-            if (!IsDead && pendingStatus != null && !pendingStatusClears.Contains(pendingStatus.Type))
-                ApplyStatusImmediately(pendingStatus, pendingPoisonRefresh);
-            if (activeStatusEffect != null && pendingStatusClears.Contains(activeStatusEffect.Type))
-            { activeStatusEffect = null; poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
+            if (!IsDead)
+                foreach (var status in pendingStatuses.Values)
+                    if (!pendingStatusClears.Contains(status.Type)) ApplyStatusImmediately(status, pendingPoisonRefresh);
+            foreach (var type in pendingStatusClears) RemoveStatus(type);
             CancelStatusFrame();
         }
         internal void CancelStatusFrame()
         {
-            statusFrameOpen = false; pendingStatus = null; pendingPoisonRefresh = false;
+            statusFrameOpen = false; pendingStatuses.Clear(); pendingPoisonRefresh = false;
             pendingStatusClears.Clear();
         }
         /// <summary>論理フレーム中の解除は後段で確定し、同種の未有効付与も取り消す。</summary>
         public void ClearStatus(StatusEffectType type)
         {
             if (statusFrameOpen) { pendingStatusClears.Add(type); return; }
-            if (activeStatusEffect?.Type != type) return;
-            activeStatusEffect = null; poisonDamageRemainder = 0; poisonFrameRemainder = 0;
+            RemoveStatus(type);
         }
         private long poisonDamageRemainder; // ダメージ×ミリ秒の1000未満の端数
 
@@ -243,16 +244,25 @@ namespace Olca.Core.Domain
         /// <summary>残スタン時間（ミリ秒）</summary>
         public int StunDurationMs => Math.Max(stunTimer.Milliseconds, staggerTimer.Milliseconds);
 
-        /// <summary>現在の状態異常</summary>
-        public StatusEffect ActiveStatus => activeStatusEffect;
+        /// <summary>互換表示用の代表状態。行動判定にはGetStatusで対象種を参照する。</summary>
+        public StatusEffect ActiveStatus {
+            get {
+                var last = GetStatus(lastStatusType);
+                if (last != null) return last;
+                foreach (StatusEffectType type in Enum.GetValues(typeof(StatusEffectType))) {
+                    var status = GetStatus(type);
+                    if (status != null) return status;
+                }
+                return null;
+            }
+        }
+        public StatusEffect GetStatus(StatusEffectType type) => statuses.TryGetValue(type, out var status) ? status : null;
 
-        /// <summary>麻痺中か</summary>
-        public bool IsParalyzed => statusFrameOpen ? frameParalyzed :
-            activeStatusEffect?.Type == StatusEffectType.Paralyze && activeStatusEffect.RemainingMs > 0;
+        /// <summary>麻痺中か。フレーム途中の付与・解除では序盤の判定を変えない。</summary>
+        public bool IsParalyzed => statusFrameOpen ? frameParalyzed : GetStatus(StatusEffectType.Paralyze)?.RemainingMs > 0;
 
         /// <summary>毒状態か</summary>
-        public bool IsPoisoned => activeStatusEffect?.Type == StatusEffectType.Poison
-                               && activeStatusEffect.RemainingMs > 0;
+        public bool IsPoisoned => GetStatus(StatusEffectType.Poison)?.RemainingMs > 0;
 
         /// <summary>HP割合（0.0～1.0）</summary>
         public float HpRatio => maxHp > 0 ? (float)currentHp / maxHp : 0f;
@@ -400,7 +410,7 @@ namespace Olca.Core.Domain
         public void TickStunFrame() { stunTimer.TickFrame(); staggerTimer.TickFrame(); }
 
         /// <summary>
-        /// 状態異常を付与する（既存の状態異常は上書き）
+        /// 状態異常を付与する（同種だけ更新し、異種は独立保持）
         /// </summary>
         /// <param name="status">付与する状態異常</param>
         public void ApplyStatus(StatusEffect status)
@@ -408,82 +418,69 @@ namespace Olca.Core.Domain
             if (status == null) throw new ArgumentNullException(nameof(status));
             status = status.WithTargetResistance(StatusResistances.Get(status.Type));
             // 時間耐性で無効化・0フレームになった付与は、既存状態と毒積算に触れない。
-            if (IsDead || status.RemainingFrames <= 0) return;
+            if (IsDead || status.Type == StatusEffectType.None || status.RemainingFrames <= 0) return;
             if (statusFrameOpen)
             {
-                pendingStatus = status;
-                pendingPoisonRefresh = activeStatusEffect?.Type == StatusEffectType.Poison
-                    && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison;
+                pendingStatuses[status.Type] = status;
+                if (status.Type == StatusEffectType.Poison && GetStatus(status.Type)?.RemainingFrames > 0)
+                    pendingPoisonRefresh = true;
                 return;
             }
             ApplyStatusImmediately(status);
         }
         private void ApplyStatusImmediately(StatusEffect status, bool preservePoison = false)
         {
-            bool refreshPoison = preservePoison || (activeStatusEffect?.Type == StatusEffectType.Poison
-                && activeStatusEffect.RemainingFrames > 0 && status.Type == StatusEffectType.Poison);
-            activeStatusEffect = status;
-            // 同じ毒の再付与は時間だけ更新し、次のダメージへ向かう積算を失わない。
-            if (!refreshPoison) { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
+            if (status.Type == StatusEffectType.Poison) {
+                bool refreshPoison = preservePoison || GetStatus(status.Type)?.RemainingFrames > 0;
+                // 麻痺など別種の付与・解除では毒の積算に触れない。
+                if (!refreshPoison) { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
+            }
+            statuses[status.Type] = status;
+            lastStatusType = status.Type;
+        }
+        private void RemoveStatus(StatusEffectType type, bool preservePoison = false)
+        {
+            statuses.Remove(type);
+            if (type == StatusEffectType.Poison && !preservePoison)
+            { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
         }
 
-        /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。他の状態の持越し規則は変更しない。</summary>
+        /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。</summary>
         internal void ClearBattleParalysis()
         {
-            if (pendingStatus?.Type == StatusEffectType.Paralyze) pendingStatus = null;
-            if (activeStatusEffect?.Type != StatusEffectType.Paralyze) return;
-            activeStatusEffect = null;
-            poisonDamageRemainder = 0; poisonFrameRemainder = 0;
+            pendingStatuses.Remove(StatusEffectType.Paralyze);
+            RemoveStatus(StatusEffectType.Paralyze);
         }
 
-        /// <summary>
-        /// 状態異常の時間をカウントダウンする（毎ティック呼び出す）
-        /// </summary>
-        /// <param name="elapsedMs">経過時間（ミリ秒）</param>
-        /// <returns>有効な残時間に対する毒ダメージ量（毒以外は0）</returns>
         private long poisonFrameRemainder;
+        /// <summary>既存の毎秒毒量を維持し、各状態の時間を独立して進める。</summary>
         public int TickStatusFrame()
         {
-            if (activeStatusEffect == null) return 0;
             int damage = 0;
-            if (activeStatusEffect.RemainingFrames > 0 && activeStatusEffect.Type == StatusEffectType.Poison)
-            {
-                // 現行の毎秒量を維持。未定義の毒の間隔・製品値はここで新設しない。
-                poisonFrameRemainder += activeStatusEffect.DamagePerTick;
-                damage = (int)(poisonFrameRemainder / 60); poisonFrameRemainder %= 60;
-            }
-            // 終了フレームのダメージを計算してから解除する。
-            if (activeStatusEffect.TickFrame())
-            {
-                activeStatusEffect = null;
-                if (!pendingPoisonRefresh) poisonFrameRemainder = 0;
+            foreach (var status in new List<StatusEffect>(statuses.Values)) {
+                if (status.RemainingFrames > 0 && status.Type == StatusEffectType.Poison) {
+                    poisonFrameRemainder += status.DamagePerTick;
+                    damage = (int)(poisonFrameRemainder / 60); poisonFrameRemainder %= 60;
+                }
+                // 終了フレームのダメージを計上してから解除。同フレーム再付与は積算を継承。
+                if (status.TickFrame()) RemoveStatus(status.Type, pendingPoisonRefresh);
             }
             return damage;
         }
 
         public int TickStatus(int elapsedMs)
         {
-            if (activeStatusEffect == null || elapsedMs <= 0) return 0;
-
-            int activeMs = Math.Min(elapsedMs, Math.Max(0, activeStatusEffect.RemainingMs));
-
-            int poisonDamage = 0;
-            if (activeStatusEffect.Type == StatusEffectType.Poison)
-            {
-                // 既存の1秒あたりの量を維持し、フレームごとの整数切捨てを避ける。
-                long accumulated = poisonDamageRemainder + (long)activeStatusEffect.DamagePerTick * activeMs;
-                poisonDamage = (int)(accumulated / 1000);
-                poisonDamageRemainder = accumulated % 1000;
+            if (elapsedMs <= 0) return 0;
+            int damage = 0;
+            foreach (var status in new List<StatusEffect>(statuses.Values)) {
+                int activeMs = Math.Min(elapsedMs, Math.Max(0, status.RemainingMs));
+                if (status.Type == StatusEffectType.Poison) {
+                    long accumulated = poisonDamageRemainder + (long)status.DamagePerTick * activeMs;
+                    damage = (int)(accumulated / 1000); poisonDamageRemainder = accumulated % 1000;
+                }
+                if (status.Tick(activeMs)) RemoveStatus(status.Type, pendingPoisonRefresh);
             }
-
-            bool expired = activeStatusEffect.Tick(activeMs);
-            if (expired)
-            {
-                activeStatusEffect = null;
-                poisonDamageRemainder = 0; poisonFrameRemainder = 0;
-            }
-
-            return poisonDamage;
+            return damage;
         }
 
         /// <summary>

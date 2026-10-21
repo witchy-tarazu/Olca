@@ -228,13 +228,13 @@ namespace Olca.Tests.CardEffects
         }
 
         [Test]
-        public void 状態異常は上書きされる()
+        public void 異種の状態異常は併存する()
         {
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze, 3000));
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 5000, 5));
 
-            Assert.IsFalse(enemy.IsParalyzed, "麻痺は消えているはず");
-            Assert.IsTrue(enemy.IsPoisoned, "毒が上書きされているはず");
+            Assert.IsTrue(enemy.IsParalyzed, "毒付与で麻痺を失わない");
+            Assert.IsTrue(enemy.IsPoisoned, "麻痺中も毒を保持する");
         }
 
         [Test]
@@ -402,14 +402,15 @@ namespace Olca.Tests.CardEffects
         [TestCase(StatusEffectType.Poison)]
         [TestCase(StatusEffectType.Paralyze)]
         [TestCase(StatusEffectType.None)]
-        public void 同じ毒は積算を引き継ぎ別状態への上書きは古い積算を捨てる(StatusEffectType replacement)
+        public void 同じ毒の更新も別状態の付与も既存毒の積算を失わない(StatusEffectType replacement)
         {
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, 3));
             Assert.AreEqual(0, enemy.TickStatus(333));
             enemy.ApplyStatus(new StatusEffect(replacement, 1000, 3));
-            Assert.AreEqual(replacement == StatusEffectType.Poison ? 1 : 0, enemy.TickStatus(1));
-            Assert.AreEqual(replacement == StatusEffectType.Poison ? 2 : 0, enemy.TickStatus(999));
-            Assert.IsNull(enemy.ActiveStatus);
+            Assert.AreEqual(1, enemy.TickStatus(1));
+            Assert.AreEqual(2, enemy.TickStatus(999));
+            Assert.AreEqual(replacement != StatusEffectType.Poison, enemy.IsPoisoned);
+            Assert.IsFalse(enemy.IsParalyzed, "追加した麻痺だけ期限切れになる");
         }
 
         [Test]
@@ -634,6 +635,90 @@ namespace Olca.Tests.CardEffects
             Assert.Throws<System.ArgumentOutOfRangeException>(() =>
                 new StatusEffect(StatusEffectType.Poison, 1000, durationResistancePercent: -1));
         }
+        [TestCase(false, false)] [TestCase(true, false)]
+        [TestCase(false, true)] [TestCase(true, true)]
+        public void 通常カードの複数状態付与は順序によらず保持され停止再開と個別解除を維持する(bool poisonFirst, bool clearPoison)
+        {
+            var modifier = new CardModifier();
+            var poison = new AdditionalEffect { EffectType=AdditionalEffectType.Poison, Trigger=DerivativeTrigger.OnDamage, Duration=2f, Power=60 };
+            var paralysis = new AdditionalEffect { EffectType=AdditionalEffectType.Paralyze, Trigger=DerivativeTrigger.OnDamage, Duration=1f };
+            modifier.AdditionalEffects.Add(poisonFirst ? poison : paralysis);
+            modifier.AdditionalEffects.Add(poisonFirst ? paralysis : poison);
+            var card = new Card("fixture-coexist", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Canon, 1, "検証", DamageTargetType.Single, modifier: modifier);
+            battle.RunLogicalFrame(() => {
+                battle.CardUsage.EnqueueCards(new List<Card> { card });
+                Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+                Assert.IsFalse(enemy.IsParalyzed, "同フレーム途中に麻痺を有効化しない");
+                battle.TickFrame(17);
+            });
+            Assert.IsTrue(enemy.IsParalyzed); Assert.IsTrue(enemy.IsPoisoned);
+            Assert.AreEqual(120, enemy.GetStatus(StatusEffectType.Poison).RemainingFrames);
+            Assert.AreEqual(60, enemy.GetStatus(StatusEffectType.Paralyze).RemainingFrames);
+            int hp = enemy.CurrentHp;
+            for (int i=0;i<6;i++) battle.TickFrame(17);
+            Assert.AreEqual(hp-6, enemy.CurrentHp, "麻痺でも毒は進行する");
+            battle.Pause(BattlePauseReason.User);
+            for(int i=0;i<20;i++) battle.TickFrame(17);
+            battle.Resume(BattlePauseReason.User);
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); battle.OpenCustomScreen(new MockRandomProvider());
+            for(int i=0;i<20;i++) battle.TickFrame(17);
+            Assert.AreEqual(114, enemy.GetStatus(StatusEffectType.Poison).RemainingFrames);
+            Assert.AreEqual(54, enemy.GetStatus(StatusEffectType.Paralyze).RemainingFrames);
+            battle.CustomScreen.Close();
+            var cleared = clearPoison ? StatusEffectType.Poison : StatusEffectType.Paralyze;
+            battle.RunLogicalFrame(() => {
+                enemy.ClearStatus(cleared); enemy.ApplyStatus(new StatusEffect(cleared,1000,60));
+                battle.TickFrame(17);
+            });
+            Assert.IsNull(enemy.GetStatus(cleared), "同フレーム再付与より後段解除を優先する");
+            Assert.AreEqual(hp-7, enemy.CurrentHp, "解除フレームにも毒を反映する");
+            var retained = clearPoison ? StatusEffectType.Paralyze : StatusEffectType.Poison;
+            Assert.AreEqual(clearPoison ? 53 : 113, enemy.GetStatus(retained).RemainingFrames);
+            battle.TickFrame(17);
+            Assert.AreEqual(hp-(clearPoison ? 7 : 8), enemy.CurrentHp);
+        }
+
+        [Test]
+        public void 併存からの戦闘終了は麻痺だけ解除し毒と別種に触れない()
+        {
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison,2000,3));
+            Assert.AreEqual(0,enemy.TickStatus(333));
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,2000));
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Blind,2000));
+            battle.Player.TakeDamage(9999);
+            Assert.IsTrue(battle.IsGameOver); Assert.IsFalse(enemy.IsParalyzed);
+            Assert.IsTrue(enemy.IsPoisoned); Assert.IsNotNull(enemy.GetStatus(StatusEffectType.Blind));
+            Assert.AreEqual(1,enemy.TickStatus(1), "戦闘終了解除で毒の端数を消さない");
+        }
+
+        [Test]
+        public void 敵併存状態の論理トレースは描画速度と追いつきに依存しない()
+        {
+            List<string> Trace(int fps) {
+                var e=new Enemy("fixture","検証",1000,ElementType.None,new Vector2Int(3,0));
+                var b=new BattleSystem(new PlayerCharacter(100),new List<Enemy>{e},new Deck());
+                e.ApplyStatus(new StatusEffect(StatusEffectType.Poison,2000,3));
+                e.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));
+                var clock=new Olca.Core.Logic.Integration.LogicalFrameClock(); var trace=new List<string>();long wall=0;
+                void Tick(long f,int ms) {
+                    if(f==10)b.Pause(BattlePauseReason.User); if(f==20)b.Resume(BattlePauseReason.User);
+                    if(f==30){b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());}
+                    if(f==40)b.CustomScreen.Close();
+                    b.RunLogicalFrame(()=>{
+                        if(f==50)e.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,500));
+                        if(f==60)e.ClearStatus(StatusEffectType.Paralyze);
+                        b.TickFrame(ms);
+                    });
+                    trace.Add(f+":"+e.CurrentHp+":"+e.GetStatus(StatusEffectType.Poison)?.RemainingFrames+":"+e.GetStatus(StatusEffectType.Paralyze)?.RemainingFrames);
+                }
+                if(fps==0){clock.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond*3/2);clock.Drain(Tick);}
+                else for(int i=1;clock.Frame<90;i++){long next=(long)i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Tick);}
+                return trace.GetRange(0,90);
+            }
+            var expected=Trace(60); CollectionAssert.AreEqual(expected,Trace(30));CollectionAssert.AreEqual(expected,Trace(120));CollectionAssert.AreEqual(expected,Trace(0));
+        }
+
     }
 }
 
