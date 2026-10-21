@@ -27,7 +27,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         }
 
         /// <summary>
-        /// 使用動作だけを待機する。発射済みの投擲・派生効果は独立して進行する。
+        /// 使用動作を待機する。指定された派生前後隙は追跡し、発射済み投擲は独立して進行する。
         /// </summary>
         public UniTask ExecuteAsync(BattleContext context, CancellationToken ct) => ExecuteAsync(context, ct, true);
         internal async UniTask ExecuteAsync(BattleContext context, CancellationToken ct, bool includeTimings)
@@ -49,6 +49,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 effectResolved = true;
 
                 if (includeTimings && !card.IsInstantEffect) {
+                    if (card.ExtendRecoveryDuringDerivative) await context.WaitForDerivativesAsync(ct);
                     if (card.RecoveryFrames.HasValue) await context.Battle.WaitForActionFramesAsync(card.RecoveryFrames.Value, ct);
                     else if (card.RecoveryTime > 0) await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
                 }
@@ -74,13 +75,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 if (card.RecoveryFrames.HasValue ? card.RecoveryFrames.Value > 0 : card.RecoveryTime > 0) {
                     var recovery = CreateTimingDelay(DelayedEffectType.Recovery, card.RecoveryFrames, card.RecoveryTime);
                     recovery.ExecuteAction = () => { };
-                    context.Battle.DelayedEffects.RegisterDelayedEffect(recovery);
+                    context.RegisterActionDelay(recovery);
                 }
             }
             if (card.StartupFrames.HasValue ? card.StartupFrames.Value > 0 : card.StartupTime > 0) {
                 var startup = CreateTimingDelay(DelayedEffectType.Startup, card.StartupFrames, card.StartupTime);
                 startup.ExecuteAction = Resolve;
-                context.Battle.DelayedEffects.RegisterDelayedEffect(startup);
+                context.RegisterActionDelay(startup);
             } else Resolve();
         }
 
@@ -745,6 +746,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 #endif
                     // チェインカード用の新しいBattleContextを作成
                     var chainContext = new BattleContext(context.Battle, chainCard);
+                    chainContext.InheritDerivatives(context);
 
                     // ヒットした敵の位置を一時的なプレイヤー位置として設定
                     chainContext.TemporaryPlayerPosition = target.GridPosition;
@@ -768,6 +770,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 // プレイヤー位置から発動: 元の位置を基準に発動
                 // 自分自身を再発動する場合はhitTargetsの数だけ実行しない（1回だけ実行）
                 var chainContext = new BattleContext(context.Battle, chainCard);
+                chainContext.InheritDerivatives(context);
 
                 // 多段の派生でも、実プレイヤーではなく直前のカードの発動位置を継承する。
                 chainContext.TemporaryPlayerPosition = context.GetEffectivePlayerPosition();

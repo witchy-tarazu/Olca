@@ -47,6 +47,13 @@ namespace Olca.Core.Logic.Battle
         /// <summary>キャンセル時に実行する処理（オプション）</summary>
         public Action OnCancelled { get; set; }
 
+        // 実行・落下・戦闘終了のいずれでも、所有している動作待機を一度だけ解除する。
+        internal Action OnFinished { get; set; }
+        internal void Finish()
+        {
+            var finish = OnFinished; OnFinished = null; finish?.Invoke();
+        }
+
         /// <summary>
         /// コンストラクタ（投擲物用）- ミリ秒版
         /// </summary>

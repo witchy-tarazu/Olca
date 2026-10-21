@@ -157,6 +157,7 @@ namespace Olca.Core.Logic.Battle
                 else effect?.Execute(context);
                 resolved = true;
                 if (!card.IsInstantEffect) {
+                    if (card.ExtendRecoveryDuringDerivative) await context.WaitForDerivativesAsync(ct);
                     battleSystem.SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing != null ? timing.CancelAfterFrames : card.RecoveryCancelAfterFrames);
                     if (timing != null) await battleSystem.WaitForActionFramesAsync(timing.RecoveryFrames, ct);
                     else if (card.RecoveryFrames.HasValue) await battleSystem.WaitForActionFramesAsync(card.RecoveryFrames.Value, ct);
