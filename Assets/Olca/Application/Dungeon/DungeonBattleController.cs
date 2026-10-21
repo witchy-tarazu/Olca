@@ -806,7 +806,7 @@ namespace Olca.Application.Dungeon
         private bool ActivateNextDeparture(out string error)
         {
             error = null; var plan = clearReturnSession.Snapshot.NextDeparture;
-            var choice = plan == null ? null : dungeonChoices.SingleOrDefault(c => c.Key == plan.DefinitionKey);
+            var choice = plan == null ? null : dungeonChoices.Concat(knownLegacyDungeons).FirstOrDefault(c => c.Key == plan.DefinitionKey && ValidateDeparture(plan.Start,c,out _));
             if (choice == null || !ValidateDeparture(plan.Start, choice, out error)) {
                 error = error ?? "次回出撃の定義が一致しません。既存保存は変更していません。"; return false;
             }
@@ -831,7 +831,7 @@ namespace Olca.Application.Dungeon
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
-            floorDefinitions = choice.Floors; nextDepartureDefinitions = choice.Single; selectedDungeon = dungeonChoices.IndexOf(choice);
+            floorDefinitions = choice.Floors; nextDepartureDefinitions = choice.Single; selectedDungeon = System.Math.Max(0,dungeonChoices.IndexOf(choice));
             initialHub = false; dungeonSelectionOpen = false; floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
             clearReturnVisible = false; clearReturnError = null; nonClearReturnRequest = null; clearReturnView.gameObject.SetActive(false); checkpointOverlay.SetActive(false);
             ReplaceManager(next, session); return true;
@@ -847,9 +847,34 @@ namespace Olca.Application.Dungeon
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
         private DungeonConfig CreateDefaultDungeon(bool legacy = false)
+        {
+            var map=CreateDefaultDungeonWithoutVisits(legacy);if(legacy)return map;
+            var first=map.MapCells.FirstOrDefault(c=>c.Type==CellType.Enemy);if(first==null)return map;
+            int shop=first.Index+2, recovery=first.Index+4;
+            if(recovery>=map.TotalCellCount-1||map.MapCells[shop].Type!=CellType.Empty||map.MapCells[recovery].Type!=CellType.Empty)return map;
+            var factory=CreateCardFactory();
+            var visits=new[]{new DungeonVisitDefinition(shop,true,new[]{
+                new DungeonVisitOption("sword",10,factory.CreateById(SimpleCardFactory.Sword)),
+                new DungeonVisitOption("bomb",10,factory.CreateById(SimpleCardFactory.Bomb)),
+                new DungeonVisitOption("heal",10,factory.CreateById(SimpleCardFactory.Heal))},2),
+                new DungeonVisitDefinition(recovery,false,new[]{new DungeonVisitOption("recover",0,heal:factory.CreateById(SimpleCardFactory.Heal).Power)},1)};
+            return new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,map.MapCells,map.InitialDeckSize,visits);
+        }
+        private DungeonConfig CreateDefaultDungeonWithoutVisits(bool legacy = false)
             => DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell,
                 enemyPoise: legacy ? null : new EnemyPoiseDefinition(normalEnemyPoise, battleStaggerFrames, enemyPoiseRecoveryFrames),
                 bossPoise: legacy ? null : new EnemyPoiseDefinition(bossEnemyPoise, battleStaggerFrames, enemyPoiseRecoveryFrames));
+        private readonly List<DungeonChoice> knownLegacyDungeons=new List<DungeonChoice>();
+        private void RegisterLegacyDeparture(Deck initialDeck)
+        {
+            var plan=clearReturnSession.Snapshot.NextDeparture;if(plan==null||configuredDungeon!=null||floorDefinitions!=null)return;
+            foreach(var map in new[]{CreateDefaultDungeonWithoutVisits(),CreateDefaultDungeonWithoutVisits(true)})
+                foreach(var deck in new[]{initialDeck,CreateDepartureDeck(true)}) {
+                    var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
+                    if(plan.DefinitionKey==defs.MapHash&&!knownLegacyDungeons.Any(c=>c.Key==defs.MapHash)&&CheckpointCodec.TryRestore(plan.Start,defs,out _,out _))
+                        knownLegacyDungeons.Add(new DungeonChoice{Single=defs});
+                }
+        }
 
         private void Start()
         {
@@ -891,6 +916,7 @@ namespace Olca.Application.Dungeon
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
 
             var initialDeck = CreateInitialDeck();
+            RegisterLegacyDeparture(initialDeck);
             if (floorDefinitions != null)
             {
                 floorStore = new FloorSequenceFileStore(floorDefinitions, ActiveCheckpointDirectory);
@@ -907,7 +933,7 @@ namespace Olca.Application.Dungeon
                 {
                     // マップ/カードそれぞれの既知の旧定義だけを完全検証する。保存は書き換えない。
                     var maps = configuredDungeon == null
-                        ? new[] { dungeonConfig, CreateDefaultDungeon(legacy: true) } : new[] { dungeonConfig };
+                        ? new[] { dungeonConfig, CreateDefaultDungeonWithoutVisits(), CreateDefaultDungeonWithoutVisits(true) } : new[] { dungeonConfig };
                     var decks = new[] { initialDeck, CreateDepartureDeck(legacyPoise: true) };
                     bool matched = false;
                     foreach (var map in maps)

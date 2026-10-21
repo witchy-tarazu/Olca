@@ -2446,7 +2446,7 @@ namespace Olca.Tests.Integration
             objects.Clear();
             if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
         }
-        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null, System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = null)
+        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null, System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = null, bool production = false)
         {
             var host = new UnityEngine.GameObject("floor-controller-fixture"); host.SetActive(false); objects.Add(host);
             var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
@@ -2459,9 +2459,9 @@ namespace Olca.Tests.Integration
             }
             if (definitions != null) controller.ConfigureFloorSequence(definitions);
             // 既存の単マップ試験は明示設定で従来の直接起動契約を検証する。選択画面は別の通常UI試験へ分離。
-            if (definitions == null && Get(controller,"configuredDungeon") == null && Get(controller,"dungeonChoices") == null &&
+            if (!production && definitions == null && Get(controller,"configuredDungeon") == null && Get(controller,"dungeonChoices") == null &&
                 (!System.IO.Directory.Exists(directory) || !System.IO.Directory.EnumerateFiles(directory,"*.json").Any()))
-                controller.ConfigureDungeon((DungeonConfig)controller.GetType().GetMethod("CreateDefaultDungeon",Hidden).Invoke(controller,new object[]{false}));
+                controller.ConfigureDungeon((DungeonConfig)controller.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(controller,new object[]{false}));
             var view = host.AddComponent<Olca.Presentation.Field.GameFieldView>(); Set(controller, "gameFieldView", view);
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
@@ -2507,6 +2507,42 @@ namespace Olca.Tests.Integration
             Assert.IsNull(c.PersistentProgress.ExchangeStock);Assert.IsTrue(session.EnsureExchange(products,new TokenExchangeProduct[0],0,new MockRandomProvider()));
             var next=session.Snapshot;Assert.IsFalse(ClearReturnSession.CanExchange(next,next.ExchangeStock.Offers[0]));Assert.IsTrue(ClearReturnSession.CanExchange(next,next.ExchangeStock.Offers[1]));
             Assert.AreEqual(24,next.Tokens);Assert.AreEqual(2,next.Owned.Single().Count);
+        }
+        [Test]
+        public void 標準旧保存で配置追加のない短いマップは同じhashの新旧カード候補を完全検証して選ぶ()
+        {
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> config=c=>{Set(c,"dungeonCellCount",5);Set(c,"firstEnemyCell",10);};
+            var c=Start(production:true,configure:config);var map=(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{false});
+            var deck=(Deck)c.GetType().GetMethod("CreateDepartureDeck",Hidden).Invoke(c,new object[]{true});var old=DungeonCheckpointSession.CreateDefault(map,deck);
+            new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:old);
+            Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).PrepareNextDeparture(old.Store.Read(),old.Definitions.MapHash));
+            c=Start(production:true,configure:config);Assert.IsFalse((bool)Get(c,"clearReturnVisible"));Assert.AreEqual(0,Model(c).Dungeon.Map.Visits.Count);
+            Assert.AreEqual(old.Store.Read().RunId,((DungeonCheckpointSession)Get(c,"memoryCheckpoints")).Store.Read().RunId);
+        }
+        private Olca.Application.Dungeon.DungeonBattleController StartStandard() => Start(production:true,configure:c=>{Set(c,"dungeonCellCount",100);Set(c,"firstEnemyCell",50);Set(c,"enemySpacing",30);});
+        [Test]
+        public void 標準製品マップは初戦後の空セルだけにショップと既存回復を配置し初期資源を増やさない()
+        {
+            var c=StartStandard();KeyboardButton(c,"ConfirmDungeonSelection");var d=Model(c).Dungeon;
+            CollectionAssert.AreEqual(new[]{52,54},d.Map.Visits.Select(v=>v.Cell));Assert.IsTrue(d.Map.Visits[0].IsShop);Assert.IsFalse(d.Map.Visits[1].IsShop);
+            Assert.AreEqual(2,d.Map.Visits[0].Slots);Assert.IsTrue(d.Map.Visits[0].Options.All(o=>o.Price==10));Assert.AreEqual(20,d.Map.Visits[1].Options.Single().Heal);
+            Assert.AreEqual(50,d.Map.GetCell(50).Enemy.MaxHp);Assert.AreEqual(100,d.Player.CurrentHp);Assert.AreEqual(0,d.Currency);Assert.AreEqual(0,c.PersistentProgress.Tokens);
+            var start=c.PersistentProgress.NextDeparture.Start;Assert.AreEqual(2,start.Visits.Length);Assert.IsTrue(start.Visits.All(v=>!v.Closed));
+        }
+        [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
+        public void 標準旧保存と旧出撃計画は旧マップで再開し帰還後の次回だけ新配置を使う(bool legacy,bool existingFile)
+        {
+            var c=StartStandard();var map=(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{legacy});
+            var deck=(Deck)c.GetType().GetMethod("CreateDepartureDeck",Hidden).Invoke(c,new object[]{legacy});var memory=DungeonCheckpointSession.CreateDefault(map,deck);
+            new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:memory);var old=memory.Store.Read();
+            var progress=(ClearReturnSession)Get(c,"clearReturnSession");Assert.IsTrue(progress.PrepareNextDeparture(old,memory.Definitions.MapHash),progress.Error);
+            var folder=System.IO.Path.Combine(directory,"runs",old.RunId);var file=new Olca.Unity.FileCheckpointStore(memory.Definitions,folder);
+            if(existingFile)Assert.IsTrue(file.TryWrite(old,out var error),error);
+            c=StartStandard();if((bool)Get(c,"awaitingCheckpointChoice"))Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
+            Assert.AreEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(0,Model(c).Dungeon.Map.Visits.Count);
+            var bytes=System.IO.File.ReadAllBytes(file.ActivePath);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");KeyboardButton(c,"NextDeparture");
+            CollectionAssert.AreEqual(new[]{52,54},Model(c).Dungeon.Map.Visits.Select(v=>v.Cell));Assert.AreNotEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);
+            CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(file.ActivePath));Assert.AreEqual(0,c.PersistentProgress.Tokens);
         }
         private void ExchangeProfile(Olca.Application.Dungeon.DungeonBattleController c,long tokens,OwnedCardCount[] owned=null)
         {
