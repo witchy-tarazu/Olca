@@ -221,14 +221,30 @@ namespace Olca.Core.Domain
         public int ChargedPowerPercent { get; }
         public int ChargeFrames { get; }
         public int IntervalFrames { get; }
+        public PlayerAttackTiming Timing { get; }
         public TransformationAttackDefinition(ElementType element, int normalPowerPercent = 100,
-            int chargedPowerPercent = 200, int chargeFrames = 60, int intervalFrames = 12)
+            int chargedPowerPercent = 200, int chargeFrames = 60, int intervalFrames = 12, PlayerAttackTiming timing = null)
         {
             if (!System.Enum.IsDefined(typeof(ElementType), element)) throw new System.ArgumentOutOfRangeException(nameof(element));
             if (normalPowerPercent < 0 || chargedPowerPercent < 0 || chargeFrames < 1 || intervalFrames < 1)
                 throw new System.ArgumentOutOfRangeException("攻撃率は非負、期間は正の論理フレーム数が必要です");
             Element = element; NormalPowerPercent = normalPowerPercent; ChargedPowerPercent = chargedPowerPercent;
-            ChargeFrames = chargeFrames; IntervalFrames = intervalFrames;
+            ChargeFrames = chargeFrames; IntervalFrames = intervalFrames; Timing = timing;
+        }
+    }
+
+    public enum PlayerAttackPhase { None, Startup, Executing, Recovery }
+    /// <summary>論理フレーム指定の前後隙。未指定のキャンセル窓は終了まで受付不可。</summary>
+    public sealed class PlayerAttackTiming
+    {
+        public int StartupFrames { get; }
+        public int RecoveryFrames { get; }
+        public int? CancelAfterFrames { get; }
+        public PlayerAttackTiming(int startupFrames = 0, int recoveryFrames = 0, int? cancelAfterFrames = null)
+        {
+            if (startupFrames < 0 || recoveryFrames < 0 || cancelAfterFrames < 0 || cancelAfterFrames > recoveryFrames)
+                throw new System.ArgumentOutOfRangeException("前後隙とキャンセル開始は有効な論理フレーム数が必要です");
+            StartupFrames = startupFrames; RecoveryFrames = recoveryFrames; CancelAfterFrames = cancelAfterFrames;
         }
     }
 

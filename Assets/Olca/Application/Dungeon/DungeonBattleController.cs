@@ -116,7 +116,7 @@ namespace Olca.Application.Dungeon
         }
         private bool TouchCardAvailable => manager?.CurrentPhase==GamePhase.Battle && battleFieldReady && !manager.CurrentBattle.IsPaused &&
             !IsUserPaused && !GameplayPause.InputBlocked && !clearReturnVisible && !collectionOpen && !manager.CurrentBattle.CardUsage.IsEmpty &&
-            manager.CurrentBattle.CardUsage.InFlightCard==null && !manager.CurrentBattle.Player.IsActionPrevented && !manager.CurrentBattle.PlayerMovement.IsNormalMoving;
+            manager.CurrentBattle.CardUsage.CanUseCurrentCard && !manager.CurrentBattle.Player.IsActionPrevented && !manager.CurrentBattle.PlayerMovement.IsNormalMoving;
         private void QueueTouchCard()
         {
             if(!TouchCardAvailable)return;
@@ -140,7 +140,7 @@ namespace Olca.Application.Dungeon
         private void OnApplicationPause(bool paused) { if(paused)ResetTouchInput(); }
         private bool queuedBasicAttackTap;
         private bool BasicAttackUiAvailable => manager?.CurrentPhase == GamePhase.Battle && !IsUserPaused && !GameplayPause.InputBlocked &&
-            !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && basicAttackInput.CooldownFrames == 0;
+            !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && (basicAttackInput.CooldownFrames == 0 || manager.CurrentBattle.CanCancelPlayerRecovery);
         private void QueueBasicAttackFromUi()
         {
             if (!BasicAttackUiAvailable || basicAttackInput.IsCharging || uiAttackHeld) return;
@@ -967,6 +967,7 @@ namespace Olca.Application.Dungeon
         {
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
+            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(0, 12, 6));
             battleFieldReady = false;
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);

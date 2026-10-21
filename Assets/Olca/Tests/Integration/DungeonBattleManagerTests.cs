@@ -3665,6 +3665,74 @@ namespace Olca.Tests.Integration
         }
         private void Step(LogicalInput input=null)=>state.Tick(battle,input??new LogicalInput(),60,12);
         private static LogicalInput Tap(bool card=false)=>new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true,CardUseButtonDown=card};
+        private void SetupTiming()
+        { SetupBattle();battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(3,12,6));foreach(var e in battle.Enemies)e.ApplyStun(60000); }
+        private void TimingStep(LogicalInput input=null)
+        {
+            var value=input??new LogicalInput();battle.RunLogicalFrame(()=>{
+                Step(value);if(value.CardUseButtonDown)battle.CardUsage.TryUseCurrentCardAsync().Forget();battle.TickFrame(17,value);
+            });
+        }
+        private static Card TimedCard(string id, CardModifier modifier=null)=>new Card(id,id,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,20,"検証",Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,modifier:modifier);
+        [Test]
+        public void 固有攻撃の前隙で未発生かつ後隙で移動を止め窓以降だけ新前隙へ入る()
+        {
+            SetupTiming();TimingStep(Tap());Assert.AreEqual(200,target.CurrentHp);Assert.AreEqual(PlayerAttackPhase.Startup,battle.PlayerActionPhase);
+            TimingStep();TimingStep();Assert.AreEqual(189,target.CurrentHp);Assert.AreEqual(PlayerAttackPhase.Recovery,battle.PlayerActionPhase);
+            TimingStep(new LogicalInput{Horizontal=-1});Assert.AreEqual(1,battle.Player.GridPosition.X);Assert.IsFalse(battle.PlayerMovement.CanMove);
+            for(int i=0;i<4;i++)TimingStep(Tap());Assert.AreEqual(189,target.CurrentHp);Assert.IsFalse(battle.CanCancelPlayerRecovery);
+            TimingStep();Assert.IsTrue(battle.CanCancelPlayerRecovery);Assert.IsFalse(battle.TryPlayerBasicAttackForward(),"即時互換APIから動作を飛び越えない");TimingStep(Tap());Assert.AreEqual(PlayerAttackPhase.Startup,battle.PlayerActionPhase);
+            Assert.AreEqual(189,target.CurrentHp);TimingStep();TimingStep();Assert.AreEqual(178,target.CurrentHp);
+            for(int i=0;i<15;i++)TimingStep();Assert.IsFalse(battle.HasPlayerAction);Assert.AreEqual(178,target.CurrentHp,"拒否した連打を後から予約しない");
+        }
+        [Test]
+        public void カード後隙から固有攻撃へ移ると旧カードを一度消費し新前隙を最初から数える()
+        {
+            SetupTiming();var c=TimedCard("a");battle.ConfigureCardAttackTiming("a",new PlayerAttackTiming(2,10,3));battle.CardUsage.EnqueueCards(new List<Card>{c,TimedCard("b")});
+            int used=0;battle.CardUsage.OnCardUsed+=_=>used++;var task=battle.CardUsage.TryUseCurrentCardAsync().Preserve();
+            TimingStep();Assert.AreEqual(200,target.CurrentHp);TimingStep();Assert.AreEqual(180,target.CurrentHp);Assert.AreEqual(PlayerAttackPhase.Recovery,battle.PlayerActionPhase);
+            TimingStep(Tap());Assert.AreEqual(180,target.CurrentHp);Assert.AreEqual(0,used);TimingStep();TimingStep();Assert.IsTrue(battle.CanCancelPlayerRecovery);
+            TimingStep(Tap());Assert.IsTrue(task.GetAwaiter().GetResult());Assert.AreEqual(1,used);Assert.IsNull(battle.CardUsage.InFlightCard);Assert.AreEqual(PlayerAttackPhase.Startup,battle.PlayerActionPhase);
+            TimingStep();TimingStep();Assert.AreEqual(169,target.CurrentHp);Assert.AreEqual(1,battle.CardUsage.RemainingCount);Assert.AreEqual(1,used);
+        }
+        [Test]
+        public void 固有後隙とカード後隙のキャンセル窓で同時入力はカードを優先する()
+        {
+            SetupTiming();foreach(var id in new[]{"a","b"})battle.ConfigureCardAttackTiming(id,new PlayerAttackTiming(2,10,3));battle.CardUsage.EnqueueCards(new List<Card>{TimedCard("a"),TimedCard("b")});
+            TimingStep(Tap());TimingStep();TimingStep();for(int i=0;i<6;i++)TimingStep();Assert.IsTrue(battle.CanCancelPlayerRecovery);
+            TimingStep(Tap(true));Assert.AreEqual(PlayerAttackPhase.Startup,battle.PlayerActionPhase);Assert.AreEqual("a",battle.CardUsage.InFlightCard.Id);TimingStep();Assert.AreEqual(169,target.CurrentHp);
+            for(int i=0;i<3;i++)TimingStep();TimingStep(Tap(true));Assert.AreEqual("b",battle.CardUsage.InFlightCard.Id);Assert.AreEqual(PlayerAttackPhase.Startup,battle.PlayerActionPhase);TimingStep();Assert.AreEqual(149,target.CurrentHp);
+            for(int i=0;i<12;i++)TimingStep();Assert.AreEqual(149,target.CurrentHp);Assert.IsFalse(battle.HasPlayerAction);
+        }
+        [Test]
+        public void 前隙と後隙は停止復帰で二重経過せず麻痺や変身切替の旧前隙を発生させない()
+        {
+            SetupTiming();TimingStep(Tap());battle.Pause(BattlePauseReason.User);for(int i=0;i<10;i++)TimingStep();Assert.AreEqual(200,target.CurrentHp);
+            battle.Resume(BattlePauseReason.User);TimingStep();Assert.AreEqual(200,target.CurrentHp);TimingStep();Assert.AreEqual(189,target.CurrentHp);
+            battle.Pause(BattlePauseReason.CustomScreen);for(int i=0;i<10;i++)TimingStep();Assert.AreEqual(0,battle.RecoveryElapsedFrames);battle.Resume(BattlePauseReason.CustomScreen);
+            for(int i=0;i<12;i++)TimingStep();Assert.IsFalse(battle.HasPlayerAction);
+            SetupTiming();TimingStep(Tap());battle.Player.ApplyParalysis(3);for(int i=0;i<10;i++)TimingStep();Assert.AreEqual(200,target.CurrentHp);Assert.IsFalse(battle.HasPlayerAction);
+            SetupTiming();battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("new",ElementResistances.Neutral,ElementType.Water,attack:new TransformationAttackDefinition(ElementType.Fire,timing:new PlayerAttackTiming(2,8,4)))});
+            TimingStep(Tap());battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());battle.Transformations.TryPreview("new");battle.CustomScreen.Confirm();TimingStep();battle.CustomScreen.Close();for(int i=0;i<5;i++)TimingStep();Assert.AreEqual(200,target.CurrentHp);Assert.IsFalse(battle.HasPlayerAction);
+        }
+        [Test]
+        public void 後隙キャンセルで発射済み投擲を消さず再実行もせず有効な窓だけを設定できる()
+        {
+            SetupTiming();var modifier=new CardModifier();modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.DelayedProjectile,Trigger=DerivativeTrigger.Immediate,DelayTime=.3f,TargetOffset=new Vector2Int(1,0)});
+            var card=TimedCard("projectile",modifier);battle.ConfigureCardAttackTiming(card.Id,new PlayerAttackTiming(0,12,3));battle.CardUsage.EnqueueCards(new List<Card>{card});var task=battle.CardUsage.TryUseCurrentCardAsync().Preserve();
+            Assert.AreEqual(1,battle.DelayedEffects.ActiveEffectCount);for(int i=0;i<3;i++)TimingStep();TimingStep(Tap());Assert.IsTrue(task.GetAwaiter().GetResult());Assert.AreEqual(1,battle.DelayedEffects.ActiveEffectCount);
+            for(int i=0;i<20;i++)TimingStep();Assert.AreEqual(169,target.CurrentHp);Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);Assert.IsTrue(battle.CardUsage.IsEmpty);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new PlayerAttackTiming(0,6,7));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new PlayerAttackTiming(-1,6,0));
+        }
+        [Test]
+        public void 前後隙とカード窓の通常入力トレースは描画三十六十百二十と追いつきで一致する()
+        {
+            List<string> Trace(int fps){SetupTiming();battle.ConfigureCardAttackTiming("a",new PlayerAttackTiming(2,10,3));battle.CardUsage.EnqueueCards(new List<Card>{TimedCard("a"),TimedCard("a")});var clock=new LogicalFrameClock();var trace=new List<string>();long wall=0;
+                void Tick(long f,int ms){if(f==40)battle.Pause(BattlePauseReason.User);if(f==50)battle.Resume(BattlePauseReason.User);TimingStep(f==1||f==20?Tap():f==10||f==35?Tap(true):new LogicalInput());trace.Add(f+":"+target.CurrentHp+":"+battle.PlayerActionPhase+":"+battle.RecoveryElapsedFrames+":"+battle.CardUsage.RemainingCount+":"+state.ChargeFrames);}
+                if(fps==0){clock.Accumulate(LogicalFrameClock.WallTicksPerSecond*3/2);clock.Drain(Tick);}else for(int i=1;clock.Frame<90;i++){long next=(long)i*LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Tick);}return trace.Take(90).ToList();}
+            var expected=Trace(60);CollectionAssert.AreEqual(expected,Trace(30));CollectionAssert.AreEqual(expected,Trace(120));CollectionAssert.AreEqual(expected,Trace(0));
+        }
+
         private void SetupForm(bool confirm = true)
         {
             target=new Enemy("target","検証",200,ElementType.None,new Vector2Int(2,0),resistances:new ElementResistances(fire:50,water:50));

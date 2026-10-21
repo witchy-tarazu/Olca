@@ -70,6 +70,7 @@ namespace Olca.Application.Battle
             {
                 currentBattle.CustomGauge.OnGaugeFull -= OnGaugeFull;
                 currentBattle.CustomScreen.OnConfirmed -= OnLogicalConfirmed;
+                currentBattle.CancelBasicAction();
                 currentBattle.CardUsage.Clear();
                 // バトル終了時にカスタム画面が開きっぱなしの場合は強制クローズ
                 // （確定アニメーション中にバトルが終了した際、Close()が呼ばれないケースへの対処）
@@ -112,7 +113,7 @@ namespace Olca.Application.Battle
             var battle = currentBattle;
             int version = sessionVersion;
             if (battle == null || battle.IsGameOver || battle.IsPaused || battle.CustomScreen.IsOpen
-                || battle.CardUsage.IsEmpty || battle.CardUsage.InFlightCard != null) return false;
+                || battle.CardUsage.IsEmpty || !battle.CardUsage.CanUseCurrentCard) return false;
             try
             {
                 bool consumed = await battle.CardUsage.TryUseCurrentCardAsync();
@@ -206,7 +207,7 @@ namespace Olca.Application.Battle
         public int CooldownFrames { get; private set; }
         public void CancelCharge() { armed = resumePending = false; ChargeFrames = 0; }
         public void Suspend() { if (armed) { armed = false; resumePending = true; } }
-        public void Reset() { current = null; form = null; CancelCharge(); CooldownFrames = 0; }
+        public void Reset() { current?.CancelBasicAction(); current = null; form = null; CancelCharge(); CooldownFrames = 0; }
         public void Tick(Olca.Core.Logic.Battle.BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input,
             int chargeFrames, int intervalFrames, int chargeMultiplier = 2)
         {
@@ -216,17 +217,19 @@ namespace Olca.Application.Battle
             var attack = battle.Transformations.ActiveAttack;
             chargeFrames = attack?.ChargeFrames ?? chargeFrames;
             intervalFrames = attack?.IntervalFrames ?? intervalFrames;
-            if (form != battle.Transformations.ActiveId) { CancelCharge(); form = battle.Transformations.ActiveId; }
+            if (form != battle.Transformations.ActiveId) { CancelCharge(); battle.CancelBasicStartupForFormChange(); form = battle.Transformations.ActiveId; }
             if (!battle.IsPaused && CooldownFrames > 0) CooldownFrames--;
             if (input.CardUseButtonDown) { CancelCharge(); return; }
-            if (battle.IsGameOver || battle.Player.IsDead || battle.Player.IsActionPrevented || battle.CardUsage.InFlightCard != null)
+            if (battle.IsGameOver || battle.Player.IsDead || battle.Player.IsActionPrevented || (battle.CardUsage.InFlightCard != null && !battle.CanCancelPlayerRecovery))
             { CancelCharge(); return; }
             // カスタム/ポーズは量だけ保持。復帰時の自動解放で発射せず、新しい押下で再開する。
             if (battle.IsPaused || input.CustomScreenButtonDown) { Suspend(); return; }
             if (resumePending && !input.BasicAttackButtonDown) return;
             if (input.BasicAttackButtonDown && !armed)
             {
-                if (CooldownFrames > 0) { CancelCharge(); return; }
+                bool cancelRecovery = battle.CanCancelPlayerRecovery;
+                if ((CooldownFrames > 0 && !cancelRecovery) || !battle.TryPreparePlayerAttack()) { CancelCharge(); return; }
+                if (cancelRecovery) CooldownFrames = 0;
                 armed = true; resumePending = false;
             }
             if (armed && input.BasicAttackButton) ChargeFrames = System.Math.Min(chargeFrames, ChargeFrames + 1);
@@ -235,7 +238,7 @@ namespace Olca.Application.Battle
                 bool fire = armed && CooldownFrames == 0 && battle.CanPlayerBasicAttack;
                 bool charged = ChargeFrames >= chargeFrames;
                 CancelCharge();
-                if (fire) { CooldownFrames = intervalFrames; battle.TryPlayerBasicAttackForward(charged, chargeMultiplier); }
+                if (fire) { CooldownFrames = intervalFrames; battle.TryStartPlayerBasicAttack(charged, chargeMultiplier); }
             }
             else if (!input.BasicAttackButton) CancelCharge();
         }

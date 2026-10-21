@@ -29,7 +29,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 使用動作だけを待機する。発射済みの投擲・派生効果は独立して進行する。
         /// </summary>
-        public async UniTask ExecuteAsync(BattleContext context, CancellationToken ct)
+        public UniTask ExecuteAsync(BattleContext context, CancellationToken ct) => ExecuteAsync(context, ct, true);
+        internal async UniTask ExecuteAsync(BattleContext context, CancellationToken ct, bool includeTimings)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             ct.ThrowIfCancellationRequested();
@@ -38,14 +39,14 @@ namespace Olca.Core.Logic.CardEffects.Effects
             bool effectResolved = false;
             try
             {
-                if (!card.IsInstantEffect && card.StartupTime > 0)
+                if (includeTimings && !card.IsInstantEffect && card.StartupTime > 0)
                     await context.Battle.WaitForActionAsync(card.StartupTime, ct);
 
                 ct.ThrowIfCancellationRequested();
                 ExecuteCardEffect(context);
                 effectResolved = true;
 
-                if (!card.IsInstantEffect && card.RecoveryTime > 0)
+                if (includeTimings && !card.IsInstantEffect && card.RecoveryTime > 0)
                     await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
             }
             catch (OperationCanceledException) when (effectResolved)
