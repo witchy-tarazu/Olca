@@ -342,6 +342,57 @@ namespace Olca.Presentation.Field
         private Color playerNormalColor;
         private float playerHitElapsed = -1f;
 
+        private readonly Dictionary<DelayedEffect, GameObject> bombVisuals = new Dictionary<DelayedEffect, GameObject>();
+        private void ClearBombVisuals()
+        {
+            foreach (var root in bombVisuals.Values) {
+                if (root == null) continue;
+                root.SetActive(false);
+                if (UnityEngine.Application.isPlaying) Destroy(root); else DestroyImmediate(root);
+            }
+            bombVisuals.Clear();
+        }
+        private void RefreshBombVisuals()
+        {
+            if (!isActiveAndEnabled || currentBattle == null || currentBattle.IsGameOver || battleGridView == null) { ClearBombVisuals(); return; }
+            var active = currentBattle.DelayedEffects.GetActiveEffects();
+            foreach (var effect in active) {
+                if (effect.BlastRadius != 1 || !effect.SourcePosition.HasValue || bombVisuals.ContainsKey(effect)) continue;
+                if (obstacleWhiteSprite == null) obstacleWhiteSprite = CreateWhiteSprite();
+                var root = new GameObject("BombProjectile"); root.transform.SetParent(transform, false);
+                for (int i=0;i<4;i++) {
+                    var part=new GameObject(i==0?"Body":"Blast"+(i-1));part.transform.SetParent(root.transform,false);
+                    var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.3f,1f,1f,.85f);
+                    renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=6;
+                }
+                bombVisuals.Add(effect,root);
+            }
+            foreach (var pair in bombVisuals.ToArray()) {
+                var effect=pair.Key;var root=pair.Value;bool flying=active.Contains(effect);
+                long elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
+                bool blast=!flying&&effect.WasExecuted&&elapsed>=0&&elapsed<6;
+                if (!flying&&!blast) {
+                    root.SetActive(false); if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
+                }
+                var body=root.transform.GetChild(0);body.gameObject.SetActive(flying);
+                float targetX=battleGridView.GridIndexToWorldX(effect.TargetPosition.X);
+                float ground=battleGridView.GroundY;
+                if(flying){
+                    float t=effect.Progress;float startX=battleGridView.GridIndexToWorldX(effect.SourcePosition.Value.X);
+                    body.position=new Vector3(Mathf.Lerp(startX,targetX,t),ground+LogicalToWorld(.45f+4f*t*(1f-t)*1.4f),0);
+                    body.localScale=Vector3.one*LogicalToWorld(.18f);body.rotation=Quaternion.Euler(0,0,45);
+                }
+                for(int i=0;i<3;i++){
+                    var part=root.transform.GetChild(i+1);int x=effect.TargetPosition.X+i-1;
+                    part.gameObject.SetActive(blast&&x>=0&&x<BattleField.GRID_WIDTH);
+                    if(!part.gameObject.activeSelf)continue;
+                    part.position=new Vector3(battleGridView.GridIndexToWorldX(x),ground+LogicalToWorld(.38f),0);
+                    part.localScale=new Vector3(LogicalToWorld(.82f),LogicalToWorld(.18f),1);
+                    part.GetComponent<SpriteRenderer>().color=new Color(.4f,1f,1f,.75f*(1f-elapsed/6f));
+                }
+            }
+        }
+
         private DungeonSystem dungeonSystem;
         private BattleSystem currentBattle; // バトル中のプレイヤー座標更新用
         private readonly List<WorldEnemyView> enemyViews = new List<WorldEnemyView>();
@@ -425,9 +476,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
@@ -493,7 +545,7 @@ namespace Olca.Presentation.Field
         {
             UpdateCameraFraming();
             RefreshObstacleVisuals(); RefreshVisitVisuals();
-            RefreshEnemyPerception();
+            RefreshEnemyPerception(); RefreshBombVisuals();
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
@@ -565,6 +617,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleStarted(BattleSystem battle, float contactPositionX)
         {
+            ClearBombVisuals();
             if (currentBattle != null)
             {
                 currentBattle.OnSummonAdded -= OnSummonAdded;
@@ -606,6 +659,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleEnded()
         {
+            ClearBombVisuals();
             SetBattleMoveVisibility(true);
             StopPlayerDamageFeedback();
             if (currentBattle != null)

@@ -105,7 +105,9 @@ namespace Olca.Core.Logic.CardEffects
                     // 攻撃カードは ModifiableCardEffect を使用
                     // CardMasterの TargetType に基づいて攻撃範囲を決定
                     // Modifier の追加効果（スプレッド、貫通、多段ヒット等）が自動適用される
-                    return new ModifiableCardEffect(ResolveAttackTarget(card));
+                    return new ModifiableCardEffect(ResolveAttackTarget(card), productBomb:
+                        card.Id == "bomb" && card.Series == CardSeries.Bomb && card.TargetType == DamageTargetType.Single &&
+                        !card.Modifier.AdditionalEffects.Exists(e => e.EffectType == AdditionalEffectType.DelayedProjectile));
 
                 case CardCategory.Defense:
                     // 明示された小カテゴリを優先し、未指定の旧定義だけID判定を維持する。

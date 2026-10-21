@@ -21,9 +21,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
     {
         private readonly DamageTargetType baseTargetType;
 
-        public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single)
+        private readonly bool productBomb;
+        private readonly Vector2Int? explosionCenter;
+        public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single, bool productBomb = false)
         {
-            this.baseTargetType = targetType;
+            this.baseTargetType = targetType; this.productBomb = productBomb;
         }
 
         /// <summary>
@@ -85,9 +87,36 @@ namespace Olca.Core.Logic.CardEffects.Effects
             } else Resolve();
         }
 
+        private ModifiableCardEffect(Vector2Int center)
+        {
+            baseTargetType = DamageTargetType.All; explosionCenter = center;
+        }
+        private void RegisterProductBomb(BattleContext context)
+        {
+            var origin = context.GetEffectivePlayerPosition();
+            var target = new Vector2Int(origin.X + 3, origin.Y);
+            // 投擲物そのものは無害。既存Powerは着弾時の3マス爆風へ一度だけ渡す。
+            var delayed = new Battle.DelayedEffect(1500, target, true) { SourcePosition = origin, BlastRadius = 1 };
+            delayed.ExecuteAction = () => {
+                if (!context.Field.IsInBounds(target)) return;
+                var blastContext = new BattleContext(context.Battle, context.UsedCard) { TemporaryPlayerPosition = target, CardDatabase = context.CardDatabase };
+                new ModifiableCardEffect(target).ExecuteCardEffect(blastContext);
+                for (int x = target.X - 1; x <= target.X + 1; x++) {
+                    var position = new Vector2Int(x, target.Y);
+                    if (!context.Field.IsInBounds(position)) continue;
+                    var obstacle = context.Field.GetObstacle(position);
+                    if (obstacle == null) continue;
+                    obstacle.TakeDamage(context.UsedCard.GetFinalPower());
+                    if (obstacle.IsDestroyed) context.Field.RemoveObstacle(position);
+                }
+            };
+            context.Battle.DelayedEffects.RegisterDelayedEffect(delayed);
+        }
+
         private void ExecuteCardEffect(BattleContext context)
         {
             var card = context.UsedCard;
+            if (productBomb) { RegisterProductBomb(context); return; }
             foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             var modifier = card.Modifier;
 
@@ -241,6 +270,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
             var aliveEnemies = context.Battle.GetAliveEnemies();
             var targets = new List<Enemy>();
 
+            if (explosionCenter.HasValue) {
+                var center = explosionCenter.Value;
+                return aliveEnemies.Where(e => e.GridPosition.Y == center.Y && System.Math.Abs(e.GridPosition.X - center.X) <= 1).ToList();
+            }
             if (aliveEnemies.Count == 0) return targets;
 
             switch (targetType)
@@ -275,6 +308,14 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// </summary>
         private IEnumerable<Vector2Int> GetBaseHitPanels(BattleContext context, List<Enemy> targets)
         {
+            if (explosionCenter.HasValue) {
+                var center = explosionCenter.Value;
+                for (int x = center.X - 1; x <= center.X + 1; x++) {
+                    var position = new Vector2Int(x, center.Y);
+                    if (context.Field.IsInBounds(position)) yield return position;
+                }
+                yield break;
+            }
             int range = baseTargetType == DamageTargetType.FrontTile ? 1 :
                 baseTargetType == DamageTargetType.FrontTwoTiles ? 2 :
                 baseTargetType == DamageTargetType.FrontThreeTiles ? 3 : 0;

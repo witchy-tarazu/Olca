@@ -3054,10 +3054,14 @@ namespace Olca.Tests.Integration
             var exceeded = factory.CreateExceeded(card, ExceedLevel.Lv1);
             Assert.AreEqual((int)(power * 1.5f), exceeded.Power); Assert.AreEqual(impact, exceeded.PoiseDamage);
             Assert.AreEqual(impact, card.Clone().PoiseDamage); Assert.AreEqual(0, card.HitInvincibilityMs);
-            enemy.MoveTo(new Vector2Int(battle.Player.GridPosition.X + 1, battle.Player.GridPosition.Y));
+            enemy.MoveTo(new Vector2Int(battle.Player.GridPosition.X + (id == "bomb" ? 3 : 1), battle.Player.GridPosition.Y));
             battle.Player.SetInvincible(100000); battle.Resume(BattlePauseReason.CustomScreen);
             battle.CardUsage.EnqueueCards(new List<Card> { card });
             battle.RunLogicalFrame(() => Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()));
+            if(id == "bomb") {
+                Assert.AreEqual(200,enemy.CurrentHp);
+                for(int f=0;f<90;f++)battle.TickFrame(17);
+            }
             Assert.AreEqual(200 - power, enemy.CurrentHp); Assert.AreEqual(impact, enemy.AccumulatedPoiseDamage);
         }
 

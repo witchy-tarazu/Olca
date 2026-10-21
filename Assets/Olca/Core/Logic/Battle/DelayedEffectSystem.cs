@@ -57,11 +57,12 @@ namespace Olca.Core.Logic.Battle
                 {
                     // コールバック内の戦闘終了でClearされるため、実行前に取り除く。
                     activeEffects.RemoveAt(i);
+                    effect.CompletedFrame = battleSystem.LogicalFrame;
                     try {
                     // 投擲物タイプの場合のみ穴パネルチェック
                     if (effect.EffectType == DelayedEffectType.Projectile &&
                         effect.CancelOnHole &&
-                        battleSystem.Field.IsHole(effect.TargetPosition))
+                        (!battleSystem.Field.IsInBounds(effect.TargetPosition) || battleSystem.Field.IsHole(effect.TargetPosition)))
                     {
 #if UNITY_EDITOR || DEBUG
                         System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] 穴パネルに落下してキャンセル: {effect.TargetPosition}");
@@ -78,6 +79,7 @@ namespace Olca.Core.Logic.Battle
                         System.Diagnostics.Debug.WriteLine($"[DelayedEffectSystem] {effectTypeName}");
 #endif
                         // 効果を実行
+                        effect.WasExecuted = true;
                         effect.Execute();
                     }
                     } finally { effect.Finish(); }

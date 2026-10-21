@@ -29,6 +29,12 @@ namespace Olca.Core.Logic.Battle
         private FrameCountdown remaining;
         public int RemainingTimeMs { get => remaining.Milliseconds; set => remaining.SetMilliseconds(value); }
         internal long RegisteredFrame { get; set; }
+        public int InitialTimeMs { get; private set; }
+        public Vector2Int? SourcePosition { get; internal set; }
+        public int BlastRadius { get; internal set; }
+        public bool WasExecuted { get; internal set; }
+        public long CompletedFrame { get; internal set; } = -1;
+        public float Progress => InitialTimeMs <= 0 ? 1f : Math.Max(0f, Math.Min(1f, 1f - (float)RemainingTimeMs / InitialTimeMs));
         internal void Tick(int milliseconds) => remaining.Tick(milliseconds);
         internal void TickFrame() => remaining.TickFrame();
 
@@ -59,7 +65,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public DelayedEffect(int delayTimeMs, Vector2Int targetPosition, bool cancelOnHole = true)
         {
-            RemainingTimeMs = delayTimeMs;
+            InitialTimeMs = delayTimeMs; RemainingTimeMs = delayTimeMs;
             EffectType = DelayedEffectType.Projectile;
             TargetPosition = targetPosition;
             CancelOnHole = cancelOnHole;
@@ -71,7 +77,7 @@ namespace Olca.Core.Logic.Battle
         public DelayedEffect(DelayedEffectType effectType, int delayTimeMs)
         {
             EffectType = effectType;
-            RemainingTimeMs = delayTimeMs;
+            InitialTimeMs = delayTimeMs; RemainingTimeMs = delayTimeMs;
             TargetPosition = new Vector2Int(0, 0); // 未使用
             CancelOnHole = false; // 未使用
         }
