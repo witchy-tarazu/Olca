@@ -627,7 +627,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     break;
 
                 case AdditionalEffectType.Blind:
-                    // 盲目: 命中率低下状態を付与
+                    // 盲目: 相手の位置を視認できない状態を付与
                     foreach (var t in targets)
                     {
                         if (!t.IsDead)

@@ -966,7 +966,10 @@ namespace Olca.Core.Logic.Dungeon
                     // 中立の既存定義hashは維持し、設定済み耐性だけを定義照合に含める。
                     if (!e.Resistances.IsNeutral) { w.Write("resistances"); w.Write(e.Resistances.Fire); w.Write(e.Resistances.Water); w.Write(e.Resistances.Wind); w.Write(e.Resistances.Earth); }
                     // 未設定の旧マップhashは維持。設定値だけを保存復帰時の定義照合へ含める。
-                    if (!e.StatusResistances.IsNeutral) { w.Write("timed-status-resistances"); w.Write(e.StatusResistances.Poison); w.Write(e.StatusResistances.Paralyze); }
+                    if (e.StatusResistances.Poison != 0 || e.StatusResistances.Paralyze != 0) { w.Write("timed-status-resistances"); w.Write(e.StatusResistances.Poison); w.Write(e.StatusResistances.Paralyze); }
+                    if (e.StatusResistances.Confusion != 0 || e.StatusResistances.Blind != 0) {
+                        w.Write("perception-status-resistances-v1"); w.Write(e.StatusResistances.Confusion); w.Write(e.StatusResistances.Blind);
+                    }
                     if (e.PoiseDefinition != null) { w.Write("enemy-poise"); w.Write(e.PoiseDefinition.Maximum); w.Write(e.PoiseDefinition.StaggerFrames);
                         if (e.PoiseDefinition.RecoveryDelayFrames.HasValue) { w.Write("poise-recovery"); w.Write(e.PoiseDefinition.RecoveryDelayFrames.Value); } }
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);

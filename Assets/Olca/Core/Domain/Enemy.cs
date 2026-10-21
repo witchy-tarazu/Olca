@@ -180,7 +180,7 @@ namespace Olca.Core.Domain
         private FrameCountdown stunTimer;
         private readonly Dictionary<StatusEffectType, StatusEffect> statuses = new Dictionary<StatusEffectType, StatusEffect>();
         private StatusEffectType lastStatusType;
-        private bool statusFrameOpen, frameParalyzed;
+        private bool statusFrameOpen, frameParalyzed, frameConfused, frameBlind;
         private sealed class PoisonSlot
         {
             internal StatusEffect Status;
@@ -215,7 +215,7 @@ namespace Olca.Core.Domain
         internal void BeginStatusFrame()
         {
             if (statusFrameOpen) return;
-            frameParalyzed = IsParalyzed;
+            frameParalyzed = IsParalyzed; frameConfused = IsConfused; frameBlind = IsBlind;
             foreach (var slot in poisons.Values) slot.WasActive = slot.Status.RemainingFrames > 0;
             statusFrameOpen = true;
         }
@@ -304,6 +304,10 @@ namespace Olca.Core.Domain
 
         /// <summary>麻痺中か。フレーム途中の付与・解除では序盤の判定を変えない。</summary>
         public bool IsParalyzed => statusFrameOpen ? frameParalyzed : GetStatus(StatusEffectType.Paralyze)?.RemainingMs > 0;
+
+        /// <summary>操作反転と視認可否も、付与/解除フレーム中は開始時の状態を使う。</summary>
+        public bool IsConfused => statusFrameOpen ? frameConfused : GetStatus(StatusEffectType.Confusion)?.RemainingFrames > 0;
+        public bool IsBlind => statusFrameOpen ? frameBlind : GetStatus(StatusEffectType.Blind)?.RemainingFrames > 0;
 
         /// <summary>毒状態か</summary>
         public bool IsPoisoned => GetStatus(StatusEffectType.Poison)?.RemainingMs > 0;
@@ -461,7 +465,8 @@ namespace Olca.Core.Domain
         {
             if (status == null) throw new ArgumentNullException(nameof(status));
             status = status.WithTargetResistance(StatusResistances.Get(status.Type));
-            if (status.Type == StatusEffectType.Poison && status.PoisonIntervalFrames.HasValue) status = status.Copy();
+            if ((status.Type == StatusEffectType.Poison && status.PoisonIntervalFrames.HasValue) ||
+                status.Type == StatusEffectType.Confusion || status.Type == StatusEffectType.Blind) status = status.Copy();
             // 時間耐性で無効化・0フレームになった付与は、既存状態と毒積算に触れない。
             if (IsDead || status.Type == StatusEffectType.None || status.RemainingFrames <= 0) return;
             if (statusFrameOpen)

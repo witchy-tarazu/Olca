@@ -14,32 +14,35 @@ namespace Olca.Core.Domain
         Blind,      // 盲目
     }
 
-    /// <summary>既存の時間制の毒・麻痺に対する軽減率。属性耐性とは独立する。</summary>
+    /// <summary>時間制の状態異常に対する軽減率。属性耐性とは独立する。</summary>
     public sealed class TimedStatusResistances
     {
         public static readonly TimedStatusResistances Neutral = new TimedStatusResistances();
         public int Poison { get; }
         public int Paralyze { get; }
-        public bool IsNeutral => Poison == 0 && Paralyze == 0;
-        public TimedStatusResistances(int poison = 0, int paralyze = 0)
+        public int Confusion { get; }
+        public int Blind { get; }
+        public bool IsNeutral => Poison == 0 && Paralyze == 0 && Confusion == 0 && Blind == 0;
+        public TimedStatusResistances(int poison = 0, int paralyze = 0, int confusion = 0, int blind = 0)
         {
-            if (poison < 0 || paralyze < 0) throw new ArgumentOutOfRangeException("状態異常耐性は非負です");
-            Poison = poison; Paralyze = paralyze;
+            if (poison < 0 || paralyze < 0 || confusion < 0 || blind < 0) throw new ArgumentOutOfRangeException("状態異常耐性は非負です");
+            Poison = poison; Paralyze = paralyze; Confusion = confusion; Blind = blind;
         }
         public int Get(StatusEffectType type) => type == StatusEffectType.Poison ? Poison
-            : type == StatusEffectType.Paralyze ? Paralyze : 0;
+            : type == StatusEffectType.Paralyze ? Paralyze : type == StatusEffectType.Confusion ? Confusion : type == StatusEffectType.Blind ? Blind : 0;
         public bool HasSameValues(TimedStatusResistances other)
-            => other != null && Poison == other.Poison && Paralyze == other.Paralyze;
+            => other != null && Poison == other.Poison && Paralyze == other.Paralyze && Confusion == other.Confusion && Blind == other.Blind;
         public static TimedStatusResistances Combine(params TimedStatusResistances[] values)
         {
             if (values == null) throw new ArgumentNullException(nameof(values));
-            long poison = 0, paralyze = 0;
+            long poison = 0, paralyze = 0, confusion = 0, blind = 0;
             foreach (var value in values)
             {
                 if (value == null) throw new ArgumentNullException(nameof(values));
-                poison += value.Poison; paralyze += value.Paralyze;
+                poison += value.Poison; paralyze += value.Paralyze; confusion += value.Confusion; blind += value.Blind;
             }
-            return new TimedStatusResistances((int)Math.Min(int.MaxValue, poison), (int)Math.Min(int.MaxValue, paralyze));
+            return new TimedStatusResistances((int)Math.Min(int.MaxValue, poison), (int)Math.Min(int.MaxValue, paralyze),
+                (int)Math.Min(int.MaxValue, confusion), (int)Math.Min(int.MaxValue, blind));
         }
     }
 
