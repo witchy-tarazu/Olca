@@ -224,17 +224,31 @@ namespace Olca.Core.Logic.Dungeon
         internal DungeonVisitDto[] CaptureVisits()=>visits?.Select(v=>v.Copy()).ToArray();
         internal static DungeonVisitDto[] PlanVisits(IReadOnlyList<DungeonVisitDefinition> definitions,string runId) => definitions.Count==0?null:definitions.Select(d=>new DungeonVisitDto{
             Cell=d.Cell,Options=Enumerable.Range(0,d.Options.Count).OrderBy(i=>CheckpointValues.Hash(w=>{w.Write(runId);w.Write(d.Hash);w.Write(d.Options[i].Id);} ),StringComparer.Ordinal).Take(d.Slots).ToArray(),Purchased=new bool[d.Slots]}).ToArray();
-        public bool ChooseVisit(int slot)
+        private bool TryGetVisitOption(int slot, out DungeonVisitOption option)
         {
+            option = null;
             if(activeVisit==null||IsCheckpointBlocked||checkpointSuspended||activeVisit.Closed||slot<0||slot>=activeVisit.Options.Length||activeVisit.Purchased[slot]||(!ActiveVisit.IsShop&&activeVisit.Purchased.Any(x=>x)))return false;
-            var option=ActiveVisit.Options[activeVisit.Options[slot]];if(Currency<option.Price)return false;
+            option=ActiveVisit.Options[activeVisit.Options[slot]];return true;
+        }
+        public int VisitRemovalCount(int slot) => TryGetVisitOption(slot,out var option) ? Math.Min(option.RemoveCount,GetCurrentDeck().TotalCount) : 0;
+        public bool CanChooseVisit(int slot) => TryGetVisitOption(slot,out var option) && Currency>=option.Price && (option.RemoveCount==0 || GetCurrentDeck().TotalCount>0);
+        public bool CanExitVisit => activeVisit!=null && !IsCheckpointBlocked && !checkpointSuspended &&
+            (ActiveVisit.IsShop || ActiveVisit.AllowDecline || activeVisit.Purchased.Any(x=>x) ||
+             (GetCurrentDeck().TotalCount==0 && ActiveVisit.Options.All(o=>o.RemoveCount>0)));
+        public bool ChooseVisit(int slot, IReadOnlyList<Card> removalTargets=null)
+        {
+            if(!CanChooseVisit(slot)||!TryGetVisitOption(slot,out var option))return false;
+            if(option.RemoveCount>0) {
+                // 代金と対象は同じ確定操作が所有する。元の所持/獲得履歴には触れない。
+                if(removalTargets==null||removalTargets.Count!=VisitRemovalCount(slot)||!GetCurrentDeck().TryRemoveCards(removalTargets))return false;
+            } else if(removalTargets!=null&&removalTargets.Count>0)return false;
             Currency-=option.Price;activeVisit.Purchased[slot]=true;
-            if(option.Card!=null)cardRewardSystem.SelectCard(option.Card);else playerCharacter.Heal(option.Heal);
+            if(option.Card!=null)cardRewardSystem.SelectCard(option.Card);else if(option.Heal>0)playerCharacter.Heal(option.Heal);
             return true;
         }
         public bool ExitVisit()
         {
-            if(activeVisit==null||IsCheckpointBlocked||checkpointSuspended)return false;
+            if(!CanExitVisit)return false;
             activeVisit.Closed=true;
             try{StageCheckpoint(checkpointSession.Capture(this,CheckpointBoundary.RewardCompleted),()=>{activeVisit=null;playerMovement.Resume();});return !IsCheckpointBlocked;}
             catch(ArgumentException e){BlockCheckpoint(e.Message);return false;}

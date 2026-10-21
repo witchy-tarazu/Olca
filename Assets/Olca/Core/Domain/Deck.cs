@@ -51,6 +51,19 @@ namespace Olca.Core.Domain
             cards.AddRange(cardsToAdd);
         }
 
+        /// <summary>指定された攻略中の個体だけを一度に削除する。入力不正なら何も変更しない。</summary>
+        public bool TryRemoveCards(IReadOnlyList<Card> targets)
+        {
+            // 対象がこのデッキの読取Viewでも、削除中に列挙元を変更しない。
+            var selected = targets?.ToArray();
+            if (selected == null || selected.Length == 0 || selected.Any(c => c == null || !cards.Contains(c)) ||
+                selected.Distinct().Count() != selected.Length) return false;
+            foreach (var card in selected) {
+                cards.Remove(card); drawnCards.Remove(card); returnedDraws.Remove(card);
+            }
+            return true;
+        }
+
         /// <summary>
         /// デッキ全体からランダムにカードを破棄する（ドロー済みカードも対象）。
         /// 要求枚数が総数を超える場合は、存在する枚数まで破棄する。

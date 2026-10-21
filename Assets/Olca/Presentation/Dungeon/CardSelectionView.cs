@@ -290,7 +290,7 @@ namespace Olca.Presentation.Dungeon
             if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
         }
                         public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
-            Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit)
+            Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true)
         {
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("DungeonVisitContents",typeof(RectTransform));content.transform.SetParent(transform,false);
@@ -301,7 +301,27 @@ namespace Olca.Presentation.Dungeon
             Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,-280,1750,100,24);
             Button("ConfirmVisit","選択を確定",-560,-440,520,72,confirmVisit).interactable=!blocked&&canConfirm;
             Button("CancelVisit","選択取消",0,-440,520,72,cancelVisit).interactable=!blocked&&selected>=0;
-            Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit).interactable=!blocked;
+            Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit).interactable=!blocked&&canExit;
+        }
+
+        private int removalPage;
+        public void RenderVisitRemoval(string title,string[] names,bool[] selected,int needed,long price,bool blocked,bool canConfirm,
+            Action<int> choose,Action confirm,Action cancel,Action pause)
+        {
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("VisitRemovalContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("RemovalTitle",title,0,435,1450,90,32);Button("PauseVisit","ポーズ",780,480,260,60,pause);
+            const int rows=6;int pages=System.Math.Max(1,(names.Length+rows-1)/rows);removalPage=System.Math.Min(removalPage,pages-1);
+            for(int row=0;row<rows&&removalPage*rows+row<names.Length;row++){
+                int index=removalPage*rows+row;
+                Button("RemovalCard_"+index,(selected[index]?"［選択中］ ":"")+names[index],0,285-row*78,1750,68,()=>choose(index)).interactable=!blocked;
+            }
+            Button("RemovalPrevious","前",-430,-240,450,55,()=>{removalPage--;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}).interactable=!blocked&&removalPage>0;
+            Button("RemovalNext","次",430,-240,450,55,()=>{removalPage++;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}).interactable=!blocked&&removalPage<pages-1;
+            Text("RemovalHelp",$"{removalPage+1}/{pages}ページ / {System.Array.FindAll(selected,x=>x).Length}/{needed}枚選択\n確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-340,1750,110,25);
+            Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-460,800,72,confirm).interactable=!blocked&&canConfirm;
+            Button("CancelVisitRemoval","確定せず戻る",430,-460,800,72,cancel).interactable=!blocked;
         }
 
         private int exchangePage;

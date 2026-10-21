@@ -846,17 +846,20 @@ namespace Olca.Application.Dungeon
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
-        private DungeonConfig CreateDefaultDungeon(bool legacy = false)
+        private DungeonConfig CreateDefaultDungeon(bool legacy = false) => CreateDefaultDungeonVisits(legacy, false);
+        private DungeonConfig CreateDefaultDungeonVisits(bool legacy, bool withoutRemoval)
         {
             var map=CreateDefaultDungeonWithoutVisits(legacy);if(legacy)return map;
             var first=map.MapCells.FirstOrDefault(c=>c.Type==CellType.Enemy);if(first==null)return map;
             int shop=first.Index+2, recovery=first.Index+4;
             if(recovery>=map.TotalCellCount-1||map.MapCells[shop].Type!=CellType.Empty||map.MapCells[recovery].Type!=CellType.Empty)return map;
             var factory=CreateCardFactory();
-            var visits=new[]{new DungeonVisitDefinition(shop,true,new[]{
+            var products=new List<DungeonVisitOption>{
                 new DungeonVisitOption("sword",10,factory.CreateById(SimpleCardFactory.Sword)),
                 new DungeonVisitOption("bomb",10,factory.CreateById(SimpleCardFactory.Bomb)),
-                new DungeonVisitOption("heal",10,factory.CreateById(SimpleCardFactory.Heal))},2),
+                new DungeonVisitOption("heal",10,factory.CreateById(SimpleCardFactory.Heal))};
+            if(!withoutRemoval)products.Add(new DungeonVisitOption("remove-one",10,removeCount:1));
+            var visits=new[]{new DungeonVisitDefinition(shop,true,products,withoutRemoval?2:3),
                 new DungeonVisitDefinition(recovery,false,new[]{new DungeonVisitOption("recover",0,heal:factory.CreateById(SimpleCardFactory.Heal).Power)},1)};
             return new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,map.MapCells,map.InitialDeckSize,visits);
         }
@@ -868,7 +871,7 @@ namespace Olca.Application.Dungeon
         private void RegisterLegacyDeparture(Deck initialDeck)
         {
             var plan=clearReturnSession.Snapshot.NextDeparture;if(plan==null||configuredDungeon!=null||floorDefinitions!=null)return;
-            foreach(var map in new[]{CreateDefaultDungeonWithoutVisits(),CreateDefaultDungeonWithoutVisits(true)})
+            foreach(var map in new[]{CreateDefaultDungeonVisits(false,true),CreateDefaultDungeonWithoutVisits(),CreateDefaultDungeonWithoutVisits(true)})
                 foreach(var deck in new[]{initialDeck,CreateDepartureDeck(true)}) {
                     var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
                     if(plan.DefinitionKey==defs.MapHash&&!knownLegacyDungeons.Any(c=>c.Key==defs.MapHash)&&CheckpointCodec.TryRestore(plan.Start,defs,out _,out _))
@@ -933,7 +936,7 @@ namespace Olca.Application.Dungeon
                 {
                     // マップ/カードそれぞれの既知の旧定義だけを完全検証する。保存は書き換えない。
                     var maps = configuredDungeon == null
-                        ? new[] { dungeonConfig, CreateDefaultDungeonWithoutVisits(), CreateDefaultDungeonWithoutVisits(true) } : new[] { dungeonConfig };
+                        ? new[] { dungeonConfig, CreateDefaultDungeonVisits(false,true), CreateDefaultDungeonWithoutVisits(), CreateDefaultDungeonWithoutVisits(true) } : new[] { dungeonConfig };
                     var decks = new[] { initialDeck, CreateDepartureDeck(legacyPoise: true) };
                     bool matched = false;
                     foreach (var map in maps)
@@ -996,24 +999,39 @@ namespace Olca.Application.Dungeon
         // EventSystemとViewのUpdateで受けたクリックを、同じ描画フレームの論理処理へ渡す。
                 private int? renderedVisitCell;
         private int selectedVisit = -1;
+        private bool selectingVisitRemoval;
+        private readonly HashSet<Card> visitRemovalTargets = new HashSet<Card>();
+        private void ResetVisitSelection() { selectedVisit=-1;selectingVisitRemoval=false;visitRemovalTargets.Clear(); }
         private void RefreshDungeonVisit()
         {
-            if(manager.Dungeon.ActiveVisit==null){if(renderedVisitCell.HasValue&&!clearReturnVisible)clearReturnView.gameObject.SetActive(false);renderedVisitCell=null;selectedVisit=-1;return;}
+            if(manager.Dungeon.ActiveVisit==null){if(renderedVisitCell.HasValue&&!clearReturnVisible)clearReturnView.gameObject.SetActive(false);renderedVisitCell=null;ResetVisitSelection();return;}
             if(IsUserPaused){clearReturnView.gameObject.SetActive(false);return;}
-            if(renderedVisitCell!=manager.Dungeon.ActiveVisit.Cell||!clearReturnView.gameObject.activeSelf){selectedVisit=-1;logicalLoop.ReleaseInput();ShowDungeonVisit();}
+            if(renderedVisitCell!=manager.Dungeon.ActiveVisit.Cell||!clearReturnView.gameObject.activeSelf){ResetVisitSelection();logicalLoop.ReleaseInput();ShowDungeonVisit();}
         }
         private void ShowDungeonVisit()
         {
             var d=manager.Dungeon;var definition=d.ActiveVisit;var state=d.ActiveVisitState;if(definition==null)return;
             renderedVisitCell=definition.Cell;
-            var enabled=state.Purchased.Select(p=>!p&&(definition.IsShop||!state.Purchased.Any(x=>x))).ToArray();
+            if(selectingVisitRemoval && selectedVisit>=0 && selectedVisit<state.Options.Length) {
+                var option=definition.Options[state.Options[selectedVisit]];var cards=d.GetCurrentDeck().GetAllCards().ToArray();
+                visitRemovalTargets.RemoveWhere(c=>!cards.Contains(c));int needed=d.VisitRemovalCount(selectedVisit);
+                var labels=cards.Select((c,i)=>$"カード {i+1}: {c.Name}{new string('★',(int)c.ExceedLevel)} / コスト {c.GetFinalCost()} / 威力 {c.GetFinalPower()}"+(d.GetObtainedCards().Contains(c)?" ［攻略中取得・持帰り履歴は保持］":" ［持込・永続所持は保持］")).ToArray();
+                clearReturnView.RenderVisitRemoval("攻略中カード削除 / 所持 "+d.Currency+" 通貨",labels,cards.Select(c=>visitRemovalTargets.Contains(c)).ToArray(),needed,option.Price,d.IsCheckpointBlocked,
+                    needed>0&&visitRemovalTargets.Count==needed&&d.CanChooseVisit(selectedVisit),
+                    i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon)||i<0||i>=cards.Length)return;var card=cards[i];if(!visitRemovalTargets.Remove(card)&&visitRemovalTargets.Count<needed)visitRemovalTargets.Add(card);ShowDungeonVisit();},
+                    ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ChooseVisit(selectedVisit,cards.Where(c=>visitRemovalTargets.Contains(c)).ToArray());ResetVisitSelection();ShowDungeonVisit();},
+                    ()=>{ResetVisitSelection();ShowDungeonVisit();},()=>SetUserPaused(true));return;
+            }
+            var enabled=state.Purchased.Select((p,i)=>!p&&(definition.IsShop||!state.Purchased.Any(x=>x))&&(definition.Options[state.Options[i]].RemoveCount==0||d.GetCurrentDeck().TotalCount>0)).ToArray();
             var names=state.Options.Select((n,i)=>(state.Purchased[i]?"［済］ ":"")+definition.Options[n].Label+" / "+definition.Options[n].Price+" 通貨").ToArray();
-            bool can=selectedVisit>=0&&enabled[selectedVisit]&&d.Currency>=definition.Options[state.Options[selectedVisit]].Price;
+            bool can=selectedVisit>=0&&selectedVisit<enabled.Length&&enabled[selectedVisit]&&d.CanChooseVisit(selectedVisit);
             clearReturnView.RenderDungeonVisit((definition.IsShop?"ダンジョンショップ":"イベント")+" / 所持 "+d.Currency+" 通貨",names,enabled,selectedVisit,d.IsCheckpointBlocked,can,
-                i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon))return;selectedVisit=i;ShowDungeonVisit();},
-                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ChooseVisit(selectedVisit);selectedVisit=-1;ShowDungeonVisit();},
-                ()=>{selectedVisit=-1;ShowDungeonVisit();},
-                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true));
+                i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon))return;ResetVisitSelection();selectedVisit=i;ShowDungeonVisit();},
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;
+                    if(selectedVisit>=0&&selectedVisit<state.Options.Length&&definition.Options[state.Options[selectedVisit]].RemoveCount>0&&d.CanChooseVisit(selectedVisit))selectingVisitRemoval=true;
+                    else{d.ChooseVisit(selectedVisit);ResetVisitSelection();}ShowDungeonVisit();},
+                ()=>{ResetVisitSelection();ShowDungeonVisit();},
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true),d.CanExitVisit);
         }
 
         private void LateUpdate()

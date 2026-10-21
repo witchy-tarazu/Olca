@@ -2525,21 +2525,22 @@ namespace Olca.Tests.Integration
         {
             var c=StartStandard();KeyboardButton(c,"ConfirmDungeonSelection");var d=Model(c).Dungeon;
             CollectionAssert.AreEqual(new[]{52,54},d.Map.Visits.Select(v=>v.Cell));Assert.IsTrue(d.Map.Visits[0].IsShop);Assert.IsFalse(d.Map.Visits[1].IsShop);
-            Assert.AreEqual(2,d.Map.Visits[0].Slots);Assert.IsTrue(d.Map.Visits[0].Options.All(o=>o.Price==10));Assert.AreEqual(20,d.Map.Visits[1].Options.Single().Heal);
+            Assert.AreEqual(3,d.Map.Visits[0].Slots);Assert.AreEqual(1,d.Map.Visits[0].Options.Count(o=>o.RemoveCount==1));Assert.IsTrue(d.Map.Visits[0].Options.All(o=>o.Price==10));Assert.AreEqual(20,d.Map.Visits[1].Options.Single().Heal);
             Assert.AreEqual(50,d.Map.GetCell(50).Enemy.MaxHp);Assert.AreEqual(100,d.Player.CurrentHp);Assert.AreEqual(0,d.Currency);Assert.AreEqual(0,c.PersistentProgress.Tokens);
             var start=c.PersistentProgress.NextDeparture.Start;Assert.AreEqual(2,start.Visits.Length);Assert.IsTrue(start.Visits.All(v=>!v.Closed));
         }
-        [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
-        public void 標準旧保存と旧出撃計画は旧マップで再開し帰還後の次回だけ新配置を使う(bool legacy,bool existingFile)
+        [TestCase(false,false,false)][TestCase(false,true,false)][TestCase(true,false,false)][TestCase(true,true,false)]
+        [TestCase(false,false,true)][TestCase(false,true,true)]
+        public void 標準旧保存と旧出撃計画は旧マップで再開し帰還後の次回だけ新配置を使う(bool legacy,bool existingFile,bool oldVisits)
         {
-            var c=StartStandard();var map=(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{legacy});
+            var c=StartStandard();var map=oldVisits?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonVisits",Hidden).Invoke(c,new object[]{false,true}):(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{legacy});
             var deck=(Deck)c.GetType().GetMethod("CreateDepartureDeck",Hidden).Invoke(c,new object[]{legacy});var memory=DungeonCheckpointSession.CreateDefault(map,deck);
             new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:memory);var old=memory.Store.Read();
             var progress=(ClearReturnSession)Get(c,"clearReturnSession");Assert.IsTrue(progress.PrepareNextDeparture(old,memory.Definitions.MapHash),progress.Error);
             var folder=System.IO.Path.Combine(directory,"runs",old.RunId);var file=new Olca.Unity.FileCheckpointStore(memory.Definitions,folder);
             if(existingFile)Assert.IsTrue(file.TryWrite(old,out var error),error);
             c=StartStandard();if((bool)Get(c,"awaitingCheckpointChoice"))Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
-            Assert.AreEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(0,Model(c).Dungeon.Map.Visits.Count);
+            Assert.AreEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(oldVisits?2:0,Model(c).Dungeon.Map.Visits.Count);if(oldVisits)Assert.AreEqual(2,Model(c).Dungeon.Map.Visits[0].Slots);
             var bytes=System.IO.File.ReadAllBytes(file.ActivePath);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");KeyboardButton(c,"NextDeparture");
             CollectionAssert.AreEqual(new[]{52,54},Model(c).Dungeon.Map.Visits.Select(v=>v.Cell));Assert.AreNotEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);
             CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(file.ActivePath));Assert.AreEqual(0,c.PersistentProgress.Tokens);
@@ -4308,6 +4309,81 @@ namespace Olca.Tests.Integration
             var game=Start(true,out var session,out var store);var copy=store.Read();copy.Visits=null;Assert.IsFalse(CheckpointCodec.TryRestore(copy,session.Definitions,out _,out _));
             var same=session.Definitions.CreateInitialMap();Assert.AreEqual(1,same.Visits.Count);Assert.AreEqual(session.Definitions.MapHash,new CheckpointDefinitions("fixed-runtime-v1",same).MapHash);
         }
+        private static DungeonBattleManager Removal(bool shop,int count,int size,bool decline,out DungeonCheckpointSession session,out FaultStore store,out Deck original,bool obtained=true)
+        {
+            var baseMap=DungeonConfig.CreateTestDungeon(8,100,7);
+            var map=new DungeonConfig(baseMap.DungeonId,baseMap.DungeonName,8,baseMap.MapCells,visits:new[]{new DungeonVisitDefinition(2,shop,new[]{new DungeonVisitOption("remove",shop?10:0,removeCount:count)},1,decline)});
+            original=new Deck(Enumerable.Range(0,size).Select(_=>new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")).ToList());
+            var seed=DungeonCheckpointSession.CreateDefault(map,original);new DungeonBattleManager(map,new PlayerCharacter(100),original,new MockRandomProvider(),new MockLogger(),checkpoints:seed);
+            var dto=seed.Store.Read();dto.Currency=20;if(obtained&&size>0)dto.ObtainedOrder=new[]{dto.DeckOrder[0]};
+            Assert.IsTrue(CheckpointCodec.TryRestore(dto,seed.Definitions,out var restored,out var error),error);
+            store=new FaultStore(seed.Definitions);Assert.IsTrue(store.TryWrite(dto,out error),error);session=new DungeonCheckpointSession(seed.Definitions,store);
+            return new DungeonBattleManager(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);
+        }
+        [TestCase(true)][TestCase(false)]
+        public void 削除は選択個体だけを除き同名別個体と持込原本と取得履歴を保持する(bool shop)
+        {
+            var game=Removal(shop,1,3,true,out var session,out var store,out var original);Enter(game);var d=game.Dungeon;var cards=d.GetCurrentDeck().GetAllCards().ToArray();long seq=store.Read().Sequence;
+            Assert.IsFalse(d.ChooseVisit(0));Assert.AreEqual(20,d.Currency);Assert.IsFalse(d.ChooseVisit(0,new[]{cards[0].Clone()}));
+            Assert.IsTrue(d.ChooseVisit(0,new[]{cards[0]}));Assert.IsFalse(d.ChooseVisit(0,new[]{cards[1]}));
+            CollectionAssert.AreEqual(cards.Skip(1),d.GetCurrentDeck().GetAllCards());Assert.AreSame(cards[0],d.GetObtainedCards().Single());Assert.AreEqual(3,original.TotalCount);
+            Assert.AreEqual(shop?10:20,d.Currency);Assert.AreEqual(seq,store.Read().Sequence);Assert.IsTrue(d.ExitVisit());
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var state,out var error),error);
+            Assert.AreEqual(2,state.Deck.TotalCount);Assert.AreEqual(1,state.Obtained.Count);Assert.IsFalse(state.Deck.GetAllCards().Contains(state.Obtained[0]));Assert.AreEqual(3,state.Snapshot.Cards.Length);
+        }
+        [TestCase(2)][TestCase(10)]
+        public void 削除枚数は実在枚数へ丸め重複と不足選択を拒否しゼロ枚まで削除できる(int count)
+        {
+            var game=Removal(true,count,2,true,out _,out _,out _);Enter(game);var d=game.Dungeon;var cards=d.GetCurrentDeck().GetAllCards().ToArray();
+            Assert.AreEqual(2,d.VisitRemovalCount(0));Assert.IsFalse(d.ChooseVisit(0,new[]{cards[0]}));Assert.IsFalse(d.ChooseVisit(0,new[]{cards[0],cards[0]}));Assert.AreEqual(20,d.Currency);
+            d.GetCurrentDeck().DrawCards(2,new MockRandomProvider());Assert.IsTrue(d.ChooseVisit(0,d.GetCurrentDeck().GetAllCards()),"同じデッキの読取Viewを対象にしても列挙中に壊れない");Assert.AreEqual(0,d.GetCurrentDeck().TotalCount);Assert.AreEqual(0,d.GetCurrentDeck().RemainingCount);Assert.IsTrue(d.ExitVisit());
+        }
+        [TestCase(true)][TestCase(false)]
+        public void 空デッキの削除は支払わず必須イベントも対象なしなら退出できる(bool shop)
+        {
+            var game=Removal(shop,1,0,shop,out _,out var store,out _);Enter(game);var d=game.Dungeon;
+            Assert.IsFalse(d.CanChooseVisit(0));Assert.IsFalse(d.ChooseVisit(0,new Card[0]));Assert.AreEqual(20,d.Currency);Assert.IsTrue(d.CanExitVisit);Assert.IsTrue(d.ExitVisit());Assert.AreEqual(20,store.Read().Currency);
+        }
+        [Test]
+        public void 辞退不可の削除イベントは未選択では退出せず確定後だけ退出する()
+        {
+            var game=Removal(false,1,2,false,out _,out _,out _);Enter(game);var d=game.Dungeon;Assert.IsFalse(d.CanExitVisit);Assert.IsFalse(d.ExitVisit());
+            Assert.IsFalse(d.ChooseVisit(0));Assert.IsTrue(d.ChooseVisit(0,new[]{d.GetCurrentDeck().GetAllCards()[0]}));Assert.IsTrue(d.ExitVisit());
+        }
+        [Test]
+        public void 削除の保存失敗は同じ削除結果を再試行し保存前再開は支払と削除を戻す()
+        {
+            var game=Removal(true,1,2,true,out var session,out var store,out _);Enter(game);var d=game.Dungeon;var target=d.GetObtainedCards().Single();Assert.IsTrue(d.ChooseVisit(0,new[]{target}));store.Fail=true;
+            Assert.IsFalse(d.ExitVisit());Assert.IsTrue(d.IsCheckpointBlocked);Assert.IsFalse(d.ChooseVisit(0,new[]{d.GetCurrentDeck().GetAllCards()[0]}));
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var before,out var error),error);Assert.AreEqual(2,before.Deck.TotalCount);Assert.AreEqual(20,before.Snapshot.Currency);Assert.IsTrue(before.Deck.GetAllCards().Contains(before.Obtained.Single()));
+            store.Fail=false;store.During=()=>Assert.IsFalse(d.ChooseVisit(0,new[]{target}));Assert.IsTrue(game.RetryCheckpoint());store.During=null;Assert.IsFalse(game.RetryCheckpoint());
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var after,out error),error);Assert.AreEqual(1,after.Deck.TotalCount);Assert.AreEqual(10,after.Snapshot.Currency);Assert.AreEqual(1,after.Obtained.Count);Assert.IsFalse(after.Deck.GetAllCards().Contains(after.Obtained.Single()));
+        }
+        [TestCase("before")][TestCase("after")]
+        public void 削除の実ファイル保存前後エラーと再開で代金も個体も二重適用しない(string fault)
+        {
+            Removal(true,1,2,true,out var originalSession,out var seed,out _);var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-removal-"+System.Guid.NewGuid().ToString("N"));
+            try{var io=new ExitIo();var disk=new Olca.Unity.FileCheckpointStore(originalSession.Definitions,directory,io);Assert.IsTrue(disk.TryWrite(seed.Read(),out var error),error);
+                Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(originalSession.Definitions,disk),new MockRandomProvider(),new MockLogger(),out var game,out error),error);
+                game.Dungeon.ActivateCheckpoint();Enter(game);var d=game.Dungeon;Assert.IsTrue(d.ChooseVisit(0,new[]{d.GetObtainedCards().Single()}));io.Fault=fault;bool saved=d.ExitVisit();if(!saved){Assert.IsTrue(d.IsCheckpointBlocked);io.Fault=null;Assert.IsTrue(game.RetryCheckpoint());}
+                var reopened=new Olca.Unity.FileCheckpointStore(originalSession.Definitions,directory);Assert.IsTrue(CheckpointCodec.TryRestore(reopened.Read(),originalSession.Definitions,out var state,out error),error);
+                Assert.AreEqual(1,state.Deck.TotalCount);Assert.AreEqual(10,state.Snapshot.Currency);Assert.AreEqual(1,state.Obtained.Count);Assert.IsTrue(state.Snapshot.Visits[0].Closed);
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+        [Test]
+        public void ショップで削除した取得個体は最終クリアの持帰り選択と永続獲得まで残る()
+        {
+            var game=Removal(true,2,2,true,out var session,out var store,out _);Enter(game);var d=game.Dungeon;Assert.IsTrue(d.ChooseVisit(0,d.GetCurrentDeck().GetAllCards().ToArray()));Assert.IsTrue(d.ExitVisit());
+            for(int i=0;i<200&&game.CurrentBattle==null;i++)game.TickFrame(17);Assert.IsNotNull(game.CurrentBattle);
+            foreach(var enemy in game.CurrentBattle.Enemies.ToArray())enemy.TakeDamage(enemy.MaxHp,ElementType.None);
+            for(int i=0;i<10&&game.CurrentPhase==GamePhase.Battle;i++)game.TickFrame(17);
+            if(game.CurrentPhase==GamePhase.CardReward)game.SelectCardReward(null);if(d.PendingCurrencyReward>0)game.SelectCurrencyReward(false);
+            Assert.AreEqual(CheckpointBoundary.Terminal,store.Read().Boundary);Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var terminal,out var error),error);Assert.AreEqual(0,terminal.Deck.TotalCount);Assert.AreEqual(1,terminal.Obtained.Count);
+            var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-removal-return-"+System.Guid.NewGuid().ToString("N"));
+            try{var flow=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(directory));Assert.IsTrue(flow.Begin(terminal,"removal",new ClearReturnSettings()),flow.Error);Assert.AreEqual(1,flow.Snapshot.Flow.Candidates.Length);Assert.IsTrue(flow.Toggle(0));Assert.IsTrue(flow.ConfirmSelection());Assert.IsTrue(flow.ConfirmReturn());Assert.AreEqual(1,flow.Snapshot.Owned.Single().Count);}
+            finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+
         private static DungeonConfig Map(bool shop) {
             var m=DungeonConfig.CreateTestDungeon(8,100,7);var factory=new Olca.Application.Battle.SimpleCardFactory();
             var options=shop?new[]{new DungeonVisitOption("sword",10,factory.CreateById("sword")),new DungeonVisitOption("bomb",10,factory.CreateById("bomb"))}:

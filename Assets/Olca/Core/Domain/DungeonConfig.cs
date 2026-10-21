@@ -200,33 +200,35 @@ namespace Olca.Core.Domain
             FormatVersion = FormatVersion, RouteId = RouteId, Revision = Revision, RouteHash = RouteHash,
             FloorIndex = FloorIndex, State = State?.Copy() };
     }
-    /// <summary>既存カード/回復処理だけを登録する探索停止地点。イベント内容は製品データで指定する。</summary>
+    /// <summary>既存カード・回復・攻略中カード削除を登録する探索停止地点。イベント内容は製品データで指定する。</summary>
     public sealed class DungeonVisitOption
     {
         public string Id { get; }
         public long Price { get; }
         public int Heal { get; }
+        public int RemoveCount { get; }
         private readonly Card card;
         public Card Card => card?.Clone();
-        public string Label => card?.Name ?? "HP回復 " + Heal;
-        public DungeonVisitOption(string id,long price,Card card=null,int heal=0) {
-            if(string.IsNullOrWhiteSpace(id)||price<0||heal<0||(card==null)==(heal==0))throw new System.ArgumentException("既存カードまたは正の回復量が必要です");
-            Id=id;Price=price;this.card=card?.Clone();Heal=heal;
+        public string Label => card?.Name ?? (RemoveCount > 0 ? "カード削除 " + RemoveCount + "枚（現在枚数まで）" : "HP回復 " + Heal);
+        public DungeonVisitOption(string id,long price,Card card=null,int heal=0,int removeCount=0) {
+            if(string.IsNullOrWhiteSpace(id)||price<0||heal<0||removeCount<0||((card!=null?1:0)+(heal>0?1:0)+(removeCount>0?1:0)!=1))throw new System.ArgumentException("カード・回復・削除のいずれか一つが必要です");
+            Id=id;Price=price;this.card=card?.Clone();Heal=heal;RemoveCount=removeCount;
         }
     }
     public sealed class DungeonVisitDefinition
     {
         public int Cell { get; }
         public bool IsShop { get; }
+        public bool AllowDecline { get; }
         public int Slots { get; }
         public IReadOnlyList<DungeonVisitOption> Options { get; }
-        public DungeonVisitDefinition(int cell,bool shop,IReadOnlyList<DungeonVisitOption> options,int slots) {
-            if(cell<1||options==null||slots<1||slots>options.Count||System.Linq.Enumerable.Any(options,o=>o==null)||
+        public DungeonVisitDefinition(int cell,bool shop,IReadOnlyList<DungeonVisitOption> options,int slots,bool allowDecline=true) {
+            if((shop&&!allowDecline)||cell<1||options==null||slots<1||slots>options.Count||System.Linq.Enumerable.Any(options,o=>o==null)||
                 System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(options,o=>o.Id)))!=options.Count ||
                 (shop&&System.Linq.Enumerable.Any(options,o=>o.Price<=0))||(!shop&&slots!=options.Count))throw new System.ArgumentException("停止地点の候補/枠が不正です");
-            Cell=cell;IsShop=shop;Slots=slots;Options=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(options));
+            Cell=cell;IsShop=shop;Slots=slots;AllowDecline=allowDecline;Options=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(options));
         }
-        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));}});
+        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));if(o.RemoveCount>0){w.Write("visit-remove-v1");w.Write(o.RemoveCount);}}if(!AllowDecline)w.Write("visit-required-v1");});
     }
     public enum DungeonVisitDisplayState { Ready, Active, Used, Closed }
     public sealed class DungeonVisitDto
