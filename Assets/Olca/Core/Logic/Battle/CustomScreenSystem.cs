@@ -701,6 +701,7 @@ namespace Olca.Core.Logic.Battle
                 else
                     currentHand.Add(result.ResultCard);
                 RecordCustomization(history, result.ResultCard);
+                OnFusionExecuted?.Invoke(materials.ToArray(),result.ResultCard);
                 OnFused?.Invoke(result.ResultCard);
             }
             return result;
@@ -720,6 +721,7 @@ namespace Olca.Core.Logic.Battle
         /// 融合成功時のイベント
         /// </summary>
         public event Action<Card> OnFused;
+        public event Action<IReadOnlyList<Card>,Card> OnFusionExecuted;
 
         /// <summary>
         /// カスタム画面を開いた時のイベント

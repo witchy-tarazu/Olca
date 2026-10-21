@@ -500,6 +500,41 @@ namespace Olca.Application.Dungeon
             basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, QueueBasicAttackHoldFromUi, CancelBasicAttackFromUi);
             basicAttackHud.InitializeExploration(font,()=>QueueExplorationFromUi(true),()=>QueueExplorationFromUi(false),QueueTouchCard);
             basicAttackHud.gameObject.SetActive(false);
+            var collectionPanel=new GameObject("CardCollectionPanel",typeof(RectTransform));collectionPanel.transform.SetParent(pauseCanvas.transform,false);
+            cardCollectionView=collectionPanel.AddComponent<ClearReturnView>();cardCollectionView.Initialize(font,null,null,null,null);
+            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,455));
+            ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
+            cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
+            cardCollectionButton.gameObject.SetActive(false);
+        }
+        private ClearReturnView cardCollectionView;
+        private UnityEngine.UI.Button cardCollectionButton;
+        private bool cardCollectionOpen, collectionWasPaused;
+        private void OpenCardCollection()
+        {
+            if(cardCollectionOpen||manager==null||!clearReturnSession.Ready)return;
+            cardCollectionOpen=true;collectionWasPaused=IsUserPaused;SetUserPaused(true);pauseOverlay.SetActive(false);
+            clearReturnSession.EnsureCollection();ShowCardCollection();
+        }
+        private void ShowCardCollection()
+        {
+            var p=clearReturnSession.Snapshot;var factory=CreateCardFactory();var cards=factory.CollectionCards;
+            var rows=cards.Select(c=>CollectionDisplay.CardText(p,c)).Concat((p.DiscoveredCards??System.Array.Empty<DiscoveredCard>())
+                .Where(c=>!cards.Any(d=>d.Id==c.Id&&d.ExceedLevel==c.Level)).Select(c=>c.Name+"　登録済み（詳細定義未登録）")).ToArray();
+            cardCollectionView.RenderCollection(rows,new SimpleFusionRecipeProvider().CollectionRecipes.Select(r=>CollectionDisplay.RecipeText(p,r)).ToArray(),
+                clearReturnSession.HasPendingSave,clearReturnSession.Error,CloseCardCollection,()=>{clearReturnSession.Retry();ShowCardCollection();});
+            cardCollectionView.transform.SetAsLastSibling();
+        }
+        private void CloseCardCollection()
+        {
+            if(clearReturnSession.HasPendingSave)return;
+            cardCollectionView.gameObject.SetActive(false);cardCollectionOpen=false;SetUserPaused(collectionWasPaused);
+            pauseOverlay.SetActive(collectionWasPaused);
+        }
+        private void RecordFusionDiscovery(IReadOnlyList<Card> materials,Card output)
+        {
+            var recipe=new SimpleFusionRecipeProvider().CollectionRecipes.FirstOrDefault(r=>r.Matches(materials,output));
+            if(recipe!=null&&!clearReturnSession.RecordFusion(recipe.Id))OpenCardCollection();
         }
         private ClearReturnFileStore clearReturnStore;
         private ClearReturnSession clearReturnSession;
@@ -933,7 +968,7 @@ namespace Olca.Application.Dungeon
                 throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
             ReturnSettings().Validate();
             clearReturnStore = clearReturnStore ?? new ClearReturnFileStore(ProgressDirectory);
-            clearReturnSession = new ClearReturnSession(clearReturnStore);
+            clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider().CollectionRecipes);
             progressStartupBlocked = !clearReturnSession.Ready;
             int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
@@ -1186,6 +1221,8 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!cardCollectionOpen && (IsUserPaused||clearReturnVisible));
+                if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
             gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
@@ -1236,6 +1273,7 @@ namespace Olca.Application.Dungeon
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             if (!battle.CustomScreen.IsOpen) battle.OpenCustomScreen(randomProvider);
+            battle.CustomScreen.OnFusionExecuted += (materials,output)=>{if(ReferenceEquals(manager?.CurrentBattle,battle)&&!manager.IsSuspended)RecordFusionDiscovery(materials,output);};
             battleSession?.Attach(battle);
             TransitionToBattleAsync(battle, contactInfo).Forget();
         }

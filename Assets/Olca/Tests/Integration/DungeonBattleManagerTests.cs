@@ -2577,6 +2577,26 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(20,c.PersistentProgress.Owned.Sum(o=>o.Count));
         }
 
+        [TestCase(false)][TestCase(true)]
+        public void 図鑑の融合成功は通常Controllerから保存し失敗時だけ履歴再試行を表示する(bool fail)
+        {
+            float oldScale=UnityEngine.Time.timeScale;
+            try {
+            var c=Start();ToBattle(c);var cs=Model(c).CurrentBattle.CustomScreen;
+            if(!cs.IsOpen){Model(c).CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);Model(c).CurrentBattle.OpenCustomScreen(new MockRandomProvider());}
+            var sword=cs.CurrentHand.First(x=>x.Id=="sword");var bomb=cs.CurrentHand.First(x=>x.Id=="bomb");
+            var io=new StarterFaultIo{Fail=fail};Set(Get(c,"clearReturnStore"),"io",io);
+            Assert.IsTrue(cs.ExecuteFusion(new[]{sword,bomb}).IsSuccess);
+            Assert.AreEqual(fail,(bool)Get(c,"cardCollectionOpen"));
+            if(fail){Assert.IsTrue(c.IsUserPaused);Assert.IsFalse(SelectionButton(c,"CloseCardCollection").interactable);io.Fail=false;KeyboardButton(c,"RetryCardCollection");KeyboardButton(c,"CloseCardCollection");}
+            Assert.AreEqual(1,c.PersistentProgress.RevealedRecipes.Length);Assert.IsEmpty(c.PersistentProgress.Owned);
+            Assert.IsEmpty(c.PersistentProgress.DiscoveredCards);Assert.IsTrue(cs.TryUndoCustomization());Assert.AreEqual(1,c.PersistentProgress.RevealedRecipes.Length);
+            } finally {
+                UnityEngine.Time.timeScale=oldScale;Olca.Unity.GameplayPause.SetPaused(false);
+                Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            }
+        }
+
         private Olca.Application.Dungeon.DungeonBattleController StartStandard() => Start(production:true,configure:c=>{Set(c,"dungeonCellCount",100);Set(c,"firstEnemyCell",50);Set(c,"enemySpacing",30);});
         [Test]
         public void 標準製品マップは初戦後の空セルだけにショップと既存回復を配置し初期資源を増やさない()
@@ -4003,6 +4023,66 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(session.DeleteDeck(original.Id));Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));
         }
 
+        private static CollectionRecipe[] CollectionRecipes() => new[]{
+            new CollectionRecipe("one",new[]{"sword","bomb"},"fire_sword"),
+            new CollectionRecipe("special",new[]{"shield","heal"},"fire_sword")};
+        [Test]
+        public void 図鑑はスターターを登録し未入手のカード性能とレシピ素材を公開しない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var session=new ClearReturnSession(Store(),CollectionRecipes());
+            Assert.IsTrue(session.InitializeStarter(f.CreateStarterDeck().GetAllCards()));var p=session.Snapshot;
+            Assert.AreEqual(5,p.DiscoveredCards.Length);Assert.IsEmpty(p.RevealedRecipes);
+            Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(p,f.CreateById("fire_sword")));
+            Assert.AreEqual("？？？　未公開レシピ",CollectionDisplay.RecipeText(p,CollectionRecipes()[0]));
+            Assert.IsFalse(f.CollectionCards.Any(c=>c.ExceedLevel==ExceedLevel.Lv3));
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 図鑑は攻略取得や破棄履歴だけでは登録せず持帰り確定時だけ全レシピを公開する(bool carry)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var session=new ClearReturnSession(Store(),CollectionRecipes());
+            Assert.IsTrue(session.Begin(Terminal(f.CreateById("fire_sword")),"collection",new ClearReturnSettings()));
+            Assert.IsEmpty(session.Snapshot.DiscoveredCards);Assert.IsEmpty(session.Snapshot.RevealedRecipes);
+            if(carry)Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());
+            Assert.AreEqual(carry?1:0,session.Snapshot.DiscoveredCards.Length);Assert.AreEqual(carry?2:0,session.Snapshot.RevealedRecipes.Length);
+            if(carry){var text=CollectionDisplay.RecipeText(session.Snapshot,CollectionRecipes()[0]);StringAssert.Contains("？？？ ＋ ？？？",text);StringAssert.Contains("ファイアソード",text);}
+        }
+        [Test]
+        public void 図鑑の融合実行取消と保存失敗再試行はカード入手と独立する()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var io=new FaultIo{Before=true};var session=new ClearReturnSession(Store(io),CollectionRecipes());
+            var sword=f.CreateById("sword");var bomb=f.CreateById("bomb");var deck=new Deck(new List<Card>{sword,bomb});
+            var cs=new CustomScreenSystem(deck,fusionSystem:new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(),f));
+            int events=0;cs.OnFusionExecuted+=(input,output)=>{events++;Assert.IsTrue(CollectionRecipes()[0].Matches(input,output));Assert.IsFalse(session.RecordFusion("one"));};
+            cs.Open(new Card[0],new MockRandomProvider());Assert.IsTrue(cs.PreviewCustomization(new[]{sword,bomb}).CanExecute);Assert.AreEqual(0,events);
+            Assert.IsTrue(cs.ExecuteFusion(new[]{sword,bomb}).IsSuccess);Assert.AreEqual(1,events);Assert.IsTrue(session.HasPendingSave);
+            Assert.IsEmpty(session.Snapshot.RevealedRecipes??new string[0]);Assert.IsTrue(cs.TryUndoCustomization());Assert.AreEqual(2,cs.CurrentHand.Count);
+            io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual("one",session.Snapshot.RevealedRecipes.Single());Assert.IsEmpty(session.Snapshot.Owned);
+            Assert.IsEmpty(session.Snapshot.DiscoveredCards);StringAssert.DoesNotContain("ソード",CollectionDisplay.RecipeText(session.Snapshot,CollectionRecipes()[0]));
+            session=new ClearReturnSession(Store(),CollectionRecipes());Assert.IsTrue(session.EnsureCollection());Assert.AreEqual("one",session.Snapshot.RevealedRecipes.Single());
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 図鑑の旧所持移行は資源不変で保存失敗を再試行し所持ゼロでも履歴を維持する(bool fail)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var card=f.CreateById("fire_sword");var store=Store();
+            var old=new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Tokens=17,
+                Owned=new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Level=card.ExceedLevel,Rarity=card.Rarity,Count=1}}};
+            Assert.IsTrue(store.TryWrite(0,old,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+            var io=new FaultIo{Before=fail};var session=new ClearReturnSession(Store(io),CollectionRecipes());Assert.AreEqual(!fail,session.EnsureCollection());
+            if(fail){CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(17,session.Snapshot.Tokens);io.Before=false;Assert.IsTrue(session.Retry());}
+            Assert.AreEqual(17,session.Snapshot.Tokens);Assert.AreEqual(1,session.Snapshot.Owned.Single().Count);Assert.AreEqual(2,session.Snapshot.RevealedRecipes.Length);
+            var revision=session.Snapshot.Revision;Assert.IsTrue(session.EnsureCollection());Assert.AreEqual(revision,session.Snapshot.Revision);
+            var p=session.Snapshot;p.Owned=new OwnedCardCount[0];p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(revision,p,out error),error);
+            session=new ClearReturnSession(Store(),CollectionRecipes());Assert.IsTrue(session.EnsureCollection());Assert.AreEqual("ファイアソード",CollectionDisplay.Name(session.Snapshot,"fire_sword"));Assert.AreEqual(17,session.Snapshot.Tokens);
+        }
+        [Test]
+        public void 図鑑の購入登録は支払と同じ保存で確定し再受領では増えない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var store=Store();Assert.IsTrue(store.TryWrite(0,new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Tokens=10},out var error),error);
+            var session=new ClearReturnSession(store,CollectionRecipes());Assert.IsTrue(session.EnsureExchange(new[]{new TokenExchangeProduct("fire",f.CreateById("fire_sword"),3,1)},new TokenExchangeProduct[0],0,new MockRandomProvider()));
+            var round=session.Snapshot.ExchangeStock.RoundId;var request=System.Guid.NewGuid().ToString("N");Assert.IsTrue(session.PurchaseExchange(request,round,"fire"));
+            Assert.AreEqual(7,session.Snapshot.Tokens);Assert.AreEqual(1,session.Snapshot.DiscoveredCards.Length);Assert.AreEqual(2,session.Snapshot.RevealedRecipes.Length);
+            Assert.IsTrue(session.PurchaseExchange(request,round,"fire"));Assert.AreEqual(7,session.Snapshot.Tokens);Assert.AreEqual(1,session.Snapshot.Owned.Single().Count);
+        }
         private Olca.Unity.ClearReturnFileStore Store(FaultIo io = null) => new Olca.Unity.ClearReturnFileStore(directory, io);
         [Test]
         public void 複数レベルで節目を越える経験値は保存再試行と再開で二重成長せず帰還後だけ反映する()

@@ -207,6 +207,25 @@ namespace Olca.Presentation.Dungeon
             gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
         }
+        private int collectionPage;
+        private bool recipesTab;
+        public void RenderCollection(string[] cards,string[] recipes,bool pending,string error,Action close,Action retrySave)
+        {
+            if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("CardCollectionContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
+            Text("CollectionStatus",error??"永続入手で登録。融合の公開履歴はカード入手と別に保存します。",0,360,1700,80,24);
+            Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave);});
+            Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave);});
+            var rows=recipesTab?recipes:cards;const int perPage=4;int pages=Math.Max(1,(rows.Length+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
+            for(int n=0;n<perPage&&collectionPage*perPage+n<rows.Length;n++)Text("CollectionRow_"+n,rows[collectionPage*perPage+n],0,155-n*110,1740,100,25);
+            Button("PreviousCollectionPage","前へ",-430,-330,500,60,()=>{collectionPage--;RenderCollection(cards,recipes,pending,error,close,retrySave);}).interactable=collectionPage>0;
+            Button("NextCollectionPage","次へ",430,-330,500,60,()=>{collectionPage++;RenderCollection(cards,recipes,pending,error,close,retrySave);}).interactable=collectionPage+1<pages;
+            Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
+            Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
+            if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-515,850,55,retrySave);
+        }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;

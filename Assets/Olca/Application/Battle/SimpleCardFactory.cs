@@ -1,5 +1,6 @@
 using Olca.Core.Logic.CardEffects;
 using System.Collections.Generic;
+using System.Linq;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
 
@@ -40,6 +41,9 @@ namespace Olca.Application.Battle
                 new Dictionary<int, CardModifier> { [1] = new CardModifier { BonusDamage = 10 } }) });
 
         /// <summary>固定スターターの仮構成。通常5種を各4枚、予備なし。</summary>
+        public IReadOnlyList<Card> CollectionCards => catalog.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone())
+            .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone())).ToArray();
+
         public Deck CreateStarterDeck()
         {
             var cards=new List<Card>();
