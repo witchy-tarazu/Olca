@@ -1727,3 +1727,70 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class EnemyDashContactTests
+    {
+        private static DungeonConfig Map(EnemyDashContactDefinition definition=null,bool boss=true,int enemyHp=200)
+        {var m=DungeonConfig.CreateTestDungeon(5,30,4);m.MapCells[4]=new MapCell(4,new Enemy(boss?"boss":"foe","旧dash",enemyHp,ElementType.None,new Vector2Int(4,0),dashContact:definition));return m;}
+        private static DungeonBattleManager Game(DungeonConfig map,DungeonCheckpointSession session=null,int hp=100)
+            =>new DungeonBattleManager(map,new PlayerCharacter(hp),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        private static void Contact(DungeonBattleManager g,bool dash,bool jump=false)
+        {if(dash)g.StartDash();if(jump)g.Jump();for(int i=0;i<120&&g.CurrentBattle==null&&!g.Dungeon.IsCheckpointBlocked;i++)g.TickFrame(17);}
+        [TestCase(DashContactOutcome.InitialDamage,23,false)] [TestCase(DashContactOutcome.Stun,45,false)] [TestCase(DashContactOutcome.FirstStrike,0,false)] [TestCase(DashContactOutcome.PlayerDamage,7,false)]
+        [TestCase(DashContactOutcome.InitialDamage,23,true)] [TestCase(DashContactOutcome.Stun,45,true)] [TestCase(DashContactOutcome.FirstStrike,0,true)] [TestCase(DashContactOutcome.PlayerDamage,7,true)]
+        public void 通常接触は適用せずダッシュだけ接触先の個別結果を一度適用する(DashContactOutcome outcome,int value,bool dash)
+        {
+            var g=Game(Map(new EnemyDashContactDefinition(outcome,value)));int starts=0;ContactInfo info=null;g.OnBattleStarted+=(_,c)=>{starts++;info=c;};Contact(g,dash);Assert.IsNotNull(g.CurrentBattle);var e=g.CurrentBattle.Enemies[0];Assert.AreEqual(dash,info.IsDashContact);Assert.AreEqual(dash,(bool)info.DashEffect.HasValue);Assert.AreEqual(dash?(int?)value:null,info.DashValue);
+            Assert.AreEqual(dash&&outcome==DashContactOutcome.PlayerDamage?100-value:100,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(dash&&outcome==DashContactOutcome.InitialDamage?200-value:200,e.CurrentHp);Assert.AreEqual(dash&&outcome==DashContactOutcome.Stun,e.IsStunned);if(dash&&outcome==DashContactOutcome.FirstStrike)Assert.IsTrue(g.CurrentBattle.CustomGauge.IsFull);
+            int hp=g.CurrentBattle.Player.CurrentHp,ehp=e.CurrentHp;g.SetUserPaused(true);for(int i=0;i<20;i++)g.TickFrame(17);g.Dungeon.StartBattle(info);g.ActivateCheckpoint();for(int i=0;i<20;i++)g.TickFrame(17);Assert.AreEqual(1,starts);Assert.AreEqual(hp,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(ehp,e.CurrentHp);g.SetUserPaused(false);
+            if(dash&&outcome==DashContactOutcome.Stun){g.CurrentBattle.CustomScreen.Close();for(int i=0;i<value-1;i++)g.TickFrame(17);Assert.IsTrue(e.IsStunned);g.TickFrame(17);Assert.IsFalse(e.IsStunned);}
+        }
+        [TestCase(DashContactOutcome.InitialDamage,23)] [TestCase(DashContactOutcome.Stun,45)] [TestCase(DashContactOutcome.FirstStrike,0)] [TestCase(DashContactOutcome.PlayerDamage,7)]
+        public void 開始前保存からの新規モデル再開は同じ初撃を再現し重複しない(DashContactOutcome outcome,int value)
+        {
+            var map=Map(new EnemyDashContactDefinition(outcome,value));var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());var store=new MemoryCheckpointStore(initial.Definitions);var session=new DungeonCheckpointSession(initial.Definitions,store);var g=Game(map,session);Contact(g,true);Assert.IsNotNull(g.CurrentBattle,g.Dungeon.CheckpointError);var snapshot=store.Read();Assert.AreEqual(value,snapshot.Battle.DashValue);Assert.AreEqual((int)outcome,snapshot.Battle.DashEffect);Assert.AreEqual(100,snapshot.Player.Hp);Assert.AreEqual(200,snapshot.Enemies[0].Hp);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);Assert.IsTrue(g.SuspendForCheckpoint());restored.ActivateCheckpoint();restored.ActivateCheckpoint();Assert.AreEqual(g.CurrentBattle.Player.CurrentHp,restored.CurrentBattle.Player.CurrentHp);Assert.AreEqual(g.CurrentBattle.Enemies[0].CurrentHp,restored.CurrentBattle.Enemies[0].CurrentHp);Assert.AreEqual(outcome==DashContactOutcome.Stun,restored.CurrentBattle.Enemies[0].IsStunned);Assert.AreEqual(snapshot.Sequence,store.Read().Sequence);CollectionAssert.AreEqual(snapshot.Battle.FirstHand,store.Read().Battle.FirstHand);CollectionAssert.AreEqual(snapshot.Battle.RewardCandidates,store.Read().Battle.RewardCandidates);
+            var invalid=snapshot.Copy();invalid.Battle.DashValue=value+1;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,initial.Definitions,out _,out _));invalid=snapshot.Copy();invalid.Battle.DashValue=null;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,initial.Definitions,out _,out _));invalid=snapshot.Copy();invalid.Battle.DashContact=false;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,initial.Definitions,out _,out _));
+            var fresh=initial.Definitions.CreateInitialMap().MapCells[4].Enemy;Assert.IsTrue(fresh.DashContact.HasSameValues(new EnemyDashContactDefinition(outcome,value)));Assert.AreEqual(200,fresh.CurrentHp);
+        }
+        private sealed class FailingStore:ICheckpointStore
+        {private readonly MemoryCheckpointStore inner;public bool Fail;public FailingStore(CheckpointDefinitions d){inner=new MemoryCheckpointStore(d);}public CheckpointDto Read()=>inner.Read();public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="fixture failure";return false;}return inner.TryWrite(d,out error);}}
+        [Test]
+        public void 開始保存失敗中は初撃せず再試行後に一度だけ発生する()
+        {
+            var map=Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7));var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());var store=new FailingStore(initial.Definitions);var session=new DungeonCheckpointSession(initial.Definitions,store);var g=Game(map,session);long seq=store.Read().Sequence;store.Fail=true;int starts=0;g.OnBattleStarted+=(_,__)=>starts++;Contact(g,true);Assert.IsTrue(g.Dungeon.IsCheckpointBlocked);Assert.IsNull(g.CurrentBattle);Assert.AreEqual(100,g.Dungeon.Player.CurrentHp);Assert.AreEqual(seq,store.Read().Sequence);for(int i=0;i<100;i++)g.TickFrame(17);Assert.IsFalse(g.RetryCheckpoint());Assert.AreEqual(0,starts);store.Fail=false;Assert.IsTrue(g.RetryCheckpoint());Assert.AreEqual(93,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(1,starts);Assert.IsFalse(g.RetryCheckpoint());g.ActivateCheckpoint();Assert.AreEqual(93,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(1,starts);
+        }
+        [Test]
+        public void 接触先の定義を巻込へ一度適用し巻込先の別定義を重ねない()
+        {
+            var cells=new System.Collections.Generic.List<MapCell>();for(int i=0;i<8;i++)cells.Add(new MapCell(i));cells[4]=new MapCell(4,new Enemy("a","接触",200,ElementType.None,new Vector2Int(4,0),dashContact:new EnemyDashContactDefinition(DashContactOutcome.InitialDamage,23)));cells[5]=new MapCell(5,new Enemy("b","巻込",200,ElementType.None,new Vector2Int(5,0),dashContact:new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,9)));var g=Game(new DungeonConfig("mixed","混在",8,cells));Contact(g,true);Assert.AreEqual(2,g.CurrentBattle.Enemies.Count);Assert.IsTrue(g.CurrentBattle.Enemies.All(e=>e.CurrentHp==177));Assert.AreEqual(100,g.CurrentBattle.Player.CurrentHp);
+        }
+        [Test]
+        public void 空中接触はダッシュ結果を使わず非ボスのジャンプ回避も維持する()
+        {
+            var g=Game(Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7)));Contact(g,true,true);Assert.IsNotNull(g.CurrentBattle);Assert.AreEqual(100,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(200,g.CurrentBattle.Enemies[0].CurrentHp);
+            g=Game(Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7),false));g.StartDash();g.Jump();for(int i=0;i<40;i++)g.TickFrame(17);Assert.IsNull(g.CurrentBattle);Assert.AreEqual(100,g.Dungeon.Player.CurrentHp);
+        }
+        [TestCase(false,false)] [TestCase(true,false)] [TestCase(false,true)] [TestCase(true,true)]
+        public void 致死の初撃でも開始通知と終了通知を一度だけ行う(bool playerDamage,bool checkpoints)
+        {
+            var def=new EnemyDashContactDefinition(playerDamage?DashContactOutcome.PlayerDamage:DashContactOutcome.InitialDamage,300);var map=Map(def);DungeonCheckpointSession session=checkpoints?DungeonCheckpointSession.CreateDefault(map,new Deck()):null;var g=Game(map,session);int starts=0,ends=0;BattleSystem started=null;g.OnBattleStarted+=(b,__)=>{starts++;started=b;};g.OnBattleEnded+=()=>ends++;Contact(g,true);Assert.IsNotNull(started);Assert.IsTrue(started.IsGameOver);if(playerDamage&&checkpoints)Assert.AreEqual(CheckpointBoundary.Terminal,session.Store.Read().Boundary);Assert.AreEqual(1,starts);Assert.AreEqual(1,ends);for(int i=0;i<5;i++)g.TickFrame(17);Assert.AreEqual(1,ends);
+        }
+        [Test]
+        public void 未設定の旧hashと初撃値を保ち不正設定や不整合の新値だけ拒否する()
+        {
+            var map=Map();var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());Assert.AreEqual("FD6B09962EE734F318E3FC8905339460CBB37E720D5FAFD732E88CDE71665090",initial.Definitions.MapHash);var store=new MemoryCheckpointStore(initial.Definitions);var session=new DungeonCheckpointSession(initial.Definitions,store);var g=Game(map,session);Contact(g,true);Assert.AreEqual(185,g.CurrentBattle.Enemies[0].CurrentHp);Assert.IsNull(store.Read().Battle.DashValue);var copy=store.Read().Copy();copy.Battle.DashValue=15;Assert.IsFalse(CheckpointCodec.TryRestore(copy,initial.Definitions,out _,out _));Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);g.SuspendForCheckpoint();restored.ActivateCheckpoint();Assert.AreEqual(185,restored.CurrentBattle.Enemies[0].CurrentHp);
+            Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition((DashContactOutcome)99,0));Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,-1));Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition(DashContactOutcome.Stun,0));Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition(DashContactOutcome.FirstStrike,1));Assert.AreNotEqual(initial.Definitions.MapHash,DungeonCheckpointSession.CreateDefault(Map(new EnemyDashContactDefinition(DashContactOutcome.InitialDamage,15)),new Deck()).Definitions.MapHash);
+        }
+        [Test]
+        public void 敵別初撃と接触位置は描画fpsや追いつき処理で変化しない()
+        {
+            System.Collections.Generic.List<string> Trace(int fps){var g=Game(Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7)));g.StartDash();var c=new LogicalFrameClock();var result=new System.Collections.Generic.List<string>();long wall=0;void Tick(long f,int ms){if(f==2)g.SetUserPaused(true);if(f==6)g.SetUserPaused(false);g.TickFrame(ms);result.Add(g.CurrentPhase+":"+g.Dungeon.PlayerPosition+":"+g.Dungeon.Player.CurrentHp+":"+g.CurrentBattle?.Enemies[0].CurrentHp);}if(fps==0){c.Accumulate(LogicalFrameClock.WallTicksPerSecond);c.Drain(Tick);}else for(int i=1;c.Frame<60;i++){long t=(long)i*LogicalFrameClock.WallTicksPerSecond/fps;c.Accumulate(t-wall);wall=t;c.Drain(Tick);}return result;}
+            CollectionAssert.AreEqual(Trace(60),Trace(30));CollectionAssert.AreEqual(Trace(60),Trace(120));CollectionAssert.AreEqual(Trace(60),Trace(0));
+        }
+    }
+}

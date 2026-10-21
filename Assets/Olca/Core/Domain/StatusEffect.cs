@@ -254,6 +254,7 @@ namespace Olca.Core.Domain
         public int Frames => (int)((remaining + 49) / 50);
         public void SetFrames(int value) => remaining = System.Math.Max(0L, value * 50L);
         public void SetMilliseconds(int value) => remaining = System.Math.Max(0L, value * 3L);
+        public void ExtendFrames(int value) => remaining = System.Math.Max(remaining, value * 50L);
         public void ExtendMilliseconds(int value) => remaining = System.Math.Max(remaining, value * 3L);
         public void Tick(int milliseconds) => remaining = System.Math.Max(0, remaining - milliseconds * 3L);
         public void TickFrame() => remaining = System.Math.Max(0, remaining - 50);

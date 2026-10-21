@@ -139,6 +139,7 @@ namespace Olca.Core.Domain
         public int[] CurrencyAmounts; // 旧保存の欠落は通貨報酬0として扱う。
         public bool DashContact;
         public int? DashEffect;
+        public int? DashValue; // nullは旧保存の15ダメージ/180フレーム等を維持
         public float GridOriginX;
         public int HandLimit;
         public string[] FirstHand = new string[0];
@@ -147,7 +148,7 @@ namespace Olca.Core.Domain
         public CheckpointBattleDto Copy() => new CheckpointBattleDto {
             CurrencyAmounts = CurrencyAmounts == null ? null : (int[])CurrencyAmounts.Clone(),
             ContactCell = ContactCell, ParticipantCells = ParticipantCells == null ? null : (int[])ParticipantCells.Clone(),
-            DashContact = DashContact, DashEffect = DashEffect, GridOriginX = GridOriginX, HandLimit = HandLimit,
+            DashContact = DashContact, DashEffect = DashEffect, DashValue = DashValue, GridOriginX = GridOriginX, HandLimit = HandLimit,
             FirstHand = FirstHand == null ? null : (string[])FirstHand.Clone(), RewardOffered = RewardOffered,
             RewardCandidates = RewardCandidates == null ? null : (string[])RewardCandidates.Clone() };
     }

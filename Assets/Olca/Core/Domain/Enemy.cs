@@ -3,6 +3,23 @@ using System.Collections.Generic;
 
 namespace Olca.Core.Domain
 {
+    // 既存保存の0/1/2を維持し、プレイヤー被害だけを末尾に加える。
+    public enum DashContactOutcome { InitialDamage=0, Stun=1, FirstStrike=2, PlayerDamage=3 }
+    /// <summary>接触先が持つ単一の初撃定義。StunのValueだけ論理フレーム、他はダメージ量。</summary>
+    public sealed class EnemyDashContactDefinition
+    {
+        public DashContactOutcome Outcome { get; }
+        public int Value { get; }
+        public EnemyDashContactDefinition(DashContactOutcome outcome,int value)
+        {
+            if(!Enum.IsDefined(typeof(DashContactOutcome),outcome)||value<0||
+                (outcome==DashContactOutcome.Stun&&value==0)||(outcome==DashContactOutcome.FirstStrike&&value!=0))
+                throw new ArgumentException("ダッシュ接敵の種別と非負量、スタンの正のフレームが必要です");
+            Outcome=outcome;Value=value;
+        }
+        public bool HasSameValues(EnemyDashContactDefinition other)=>other!=null&&Outcome==other.Outcome&&Value==other.Value;
+    }
+
     /// <summary>外部指定の回復待ち。フレーム内の被弾と期限成立を終端で調停する。</summary>
     internal sealed class PoiseRecoveryState
     {
@@ -275,6 +292,7 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>スタン中か</summary>
+        public EnemyDashContactDefinition DashContact { get; }
         public bool IsStunned => stunTimer.IsActive || staggerTimer.IsActive;
 
         /// <summary>残スタン時間（ミリ秒）</summary>
@@ -327,8 +345,9 @@ namespace Olca.Core.Domain
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null)
+        public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null, EnemyDashContactDefinition dashContact = null)
         {
+            DashContact = dashContact;
             PoiseDefinition = poiseDefinition; Poise = poiseDefinition?.Maximum;
             poiseRecovery.Configure(poiseDefinition?.RecoveryDelayFrames);
             Resistances = resistances ?? ElementResistances.Neutral;
@@ -440,6 +459,8 @@ namespace Olca.Core.Domain
         /// 既存のスタン時間より長い場合のみ上書き
         /// </summary>
         /// <param name="durationMs">スタン持続時間（ミリ秒）</param>
+        public void ApplyStunFrames(int frames)
+        {if(frames>0)stunTimer.ExtendFrames(frames);}
         public void ApplyStun(int durationMs)
         {
             if (durationMs <= 0) return;

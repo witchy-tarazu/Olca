@@ -12,6 +12,7 @@ namespace Olca.Core.Logic.Dungeon
         public Enemy Enemy { get; set; }
         public bool IsDashContact { get; set; }
         public ActionSystem.DashContactEffect? DashEffect { get; set; }
+        public int? DashValue { get; set; }
         /// <summary>接触時のプレイヤー世界X座標（バトルグリッド配置の起点）</summary>
         public float ContactPositionX { get; set; }
         /// <summary>接触した敵のダンジョンセルインデックス</summary>
