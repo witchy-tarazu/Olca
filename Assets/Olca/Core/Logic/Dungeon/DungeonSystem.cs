@@ -69,6 +69,13 @@ namespace Olca.Core.Logic.Dungeon
         // ========== 障害物通過済み管理 ==========
         private readonly HashSet<int> processedObstacleCells = new HashSet<int>();
 
+        // 表示専用の論理時計。ゲーム判定/保存/乱数はこの値を参照しない。
+        private long obstacleVisualUnits;
+        private readonly Dictionary<int,long> obstacleFadeFrames = new Dictionary<int,long>();
+        private int? activeObstacleCell;
+        public long ObstacleVisualFrame => obstacleVisualUnits / 50;
+        public int? ActiveObstacleCell => IsObstacleStopped ? activeObstacleCell : null;
+        public long? GetObstacleFadeStartFrame(int cell) => obstacleFadeFrames.TryGetValue(cell,out var frame) ? frame : (long?)null;
         private ObstacleControl activeObstacleControl;
         private long obstacleRemainingUnits, obstacleNextDamageUnits;
         public bool IsObstacleStopped => !playerCharacter.IsDead && activeObstacleControl != null;
@@ -76,7 +83,10 @@ namespace Olca.Core.Logic.Dungeon
         public int ObstacleStopRemainingFrames => IsObstacleStopped ? (int)((obstacleRemainingUnits + 49) / 50) : 0;
         public int ObstacleStopElapsedFrames => IsObstacleStopped ? activeObstacleControl.DurationFrames - ObstacleStopRemainingFrames : 0;
         public bool IsObstacleConsumed(int cell) => processedObstacleCells.Contains(cell);
-        private void ClearObstacleControl() { activeObstacleControl = null; obstacleRemainingUnits = obstacleNextDamageUnits = 0; }
+        private void ClearObstacleControl() {
+            if (activeObstacleCell.HasValue) obstacleFadeFrames[activeObstacleCell.Value] = ObstacleVisualFrame;
+            activeObstacleCell = null; activeObstacleControl = null; obstacleRemainingUnits = obstacleNextDamageUnits = 0;
+        }
         private void TickObstacleControl(long units)
         {
             long elapsed = Math.Min(units, obstacleRemainingUnits);
@@ -215,6 +225,7 @@ namespace Olca.Core.Logic.Dungeon
             if (processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
             processingTick = true; explorationHpUpdated=false;
+            obstacleVisualUnits += logicalFrame ? 50 : Math.Max(0,deltaTimeMs) * 3L;
             if (playerCharacter.HasPoisonState || IsObstacleStopped) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
             try
             {
@@ -706,11 +717,12 @@ namespace Olca.Core.Logic.Dungeon
             {
                 // 接触した時点で処理済みとしてマーク（回避成功・失敗に関わらず）
                 processedObstacleCells.Add(currentCell.Index);
+                obstacleFadeFrames[currentCell.Index] = ObstacleVisualFrame;
 
                 if (!result.IsAvoided)
                 {
                     // ペナルティ適用
-                    ApplyObstaclePenalty(result.Obstacle);
+                    ApplyObstaclePenalty(result.Obstacle,currentCell.Index);
                 }
             }
         }
@@ -718,12 +730,12 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>
         /// 障害物ペナルティを適用
         /// </summary>
-        private void ApplyObstaclePenalty(Obstacle obstacle)
+        private void ApplyObstaclePenalty(Obstacle obstacle,int cell)
         {
             var penaltyInfo = obstacleSystem.CreatePenaltyInfo(obstacle);
             if (obstacle.Control != null) {
                 if (!explorationHpFrame) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
-                activeObstacleControl = obstacle.Control;
+                activeObstacleCell = cell; activeObstacleControl = obstacle.Control;
                 obstacleRemainingUnits = obstacle.Control.DurationFrames * 50L;
                 obstacleNextDamageUnits = obstacle.Control.DamageIntervalFrames * 50L;
                 playerMovement.ResetAirborneMovement(); // ダッシュ消費は返さず、その場で地上停止する。

@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Linq;
 using Olca.Core.Logic.Dungeon;
 using Olca.Core.Domain;
 using Olca.Tests.Mocks;
@@ -212,6 +213,52 @@ namespace Olca.Tests.Dungeon
         {
             System.Collections.Generic.List<string> Trace(int fps){var g=Game(new ObstacleControl(20,true,2,3));var result=new System.Collections.Generic.List<string>();var c=new Olca.Core.Logic.Integration.LogicalFrameClock();long wall=0;void Frame(long f,int ms){if(f==15)g.SetUserPaused(true);if(f==20)g.SetUserPaused(false);g.TickFrame(ms);result.Add(g.Dungeon.PlayerPosition+":"+g.Dungeon.Player.CurrentHp+":"+g.Dungeon.ObstacleStopRemainingFrames);}if(fps==0){c.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond);c.Drain(Frame);}else for(int i=1;c.Frame<60;i++){long t=(long)i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;c.Accumulate(t-wall);wall=t;c.Drain(Frame);}return result;}
             CollectionAssert.AreEqual(Trace(60),Trace(30));CollectionAssert.AreEqual(Trace(60),Trace(120));CollectionAssert.AreEqual(Trace(60),Trace(0));
+        }
+    }
+}
+
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class ObstacleVisualLifecycleTests
+    {
+        private UnityEngine.GameObject root,cameraObject;
+        private UnityEngine.Camera camera;
+        private Olca.Presentation.Field.GameFieldView view;
+        private Olca.Core.Logic.Integration.DungeonBattleManager game;
+        private void Setup(ObstacleControl control=null)
+        {
+            var cells=new System.Collections.Generic.List<MapCell>();for(int i=0;i<20;i++)cells.Add(new MapCell(i));
+            cells[2]=new MapCell(2,new Obstacle("visual","表示",0,control));cells[8]=new MapCell(8,Obstacle.CreateCardDiscardObstacle("card","破棄",1));
+            game=new Olca.Core.Logic.Integration.DungeonBattleManager(new DungeonConfig("visual","表示",20,cells),new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger());
+            cameraObject=new UnityEngine.GameObject("VisualTestCamera");camera=cameraObject.AddComponent<UnityEngine.Camera>();camera.orthographic=true;camera.aspect=16f/9;camera.transform.position=new UnityEngine.Vector3(0,0,-10);
+            root=new UnityEngine.GameObject("VisualTestRoot");view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();typeof(Olca.Presentation.Field.GameFieldView).GetField("fieldCamera",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(view,camera);view.Initialize(game.Dungeon);
+        }
+        private UnityEngine.Transform Cell(int cell)=>root.transform.Find("ObstacleCell_"+cell);
+        private void Tick(int frames){for(int i=0;i<frames;i++)game.TickFrame(17);view.RefreshObstacleVisuals();}
+        [TearDown]public void Cleanup(){if(root!=null)UnityEngine.Object.DestroyImmediate(root);if(cameraObject!=null)UnityEngine.Object.DestroyImmediate(cameraObject);}
+        [Test]
+        public void 画面内だけ生成しセル範囲と接触端を示しカメラ再入場でも二重表示しない()
+        {
+            Setup();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));var marker=Cell(2).Find("Contact");Assert.That(marker.position.x,Is.EqualTo(2.02f).Within(.001));var area=Cell(2).Find("Area").GetComponent<UnityEngine.SpriteRenderer>();Assert.LessOrEqual(area.bounds.max.x,3);Assert.GreaterOrEqual(area.bounds.min.x,2);Assert.Less(area.color.a,.2);
+            for(int i=0;i<5;i++)view.RefreshObstacleVisuals();Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(r=>r.name=="Contact"));camera.transform.position=new UnityEngine.Vector3(9,0,-10);view.RefreshObstacleVisuals();Assert.IsNull(Cell(2));Assert.IsNotNull(Cell(8));camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);view.RefreshObstacleVisuals();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));
+        }
+        [Test]
+        public void 接触消滅は論理時計で進み描画だけとポーズ中には進まない()
+        {
+            Setup();for(int i=0;i<60&&!game.Dungeon.IsObstacleConsumed(2);i++)Tick(1);var renderer=Cell(2).Find("Contact").GetComponent<UnityEngine.SpriteRenderer>();var color=renderer.color;long frame=game.Dungeon.ObstacleVisualFrame;for(int i=0;i<100;i++)view.RefreshObstacleVisuals();Assert.AreEqual(color,renderer.color);Assert.AreEqual(frame,game.Dungeon.ObstacleVisualFrame);
+            game.SetUserPaused(true);Tick(50);Assert.AreEqual(color,renderer.color);game.SetUserPaused(false);Tick(6);Assert.That(renderer.color.a,Is.EqualTo(color.a*.5f).Within(.001));Tick(6);Assert.IsNull(Cell(2));camera.transform.position=new UnityEngine.Vector3(9,0,-10);view.RefreshObstacleVisuals();camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);view.RefreshObstacleVisuals();Assert.IsNull(Cell(2),"消費済みセルの消滅を再生しない");
+        }
+        [Test]
+        public void 拘束中は危険表示を保持し解除から消滅し再初期化や無効化で残像を残さない()
+        {
+            Setup(new ObstacleControl(18,true,1,6));for(int i=0;i<60&&!game.Dungeon.IsRestrained;i++)Tick(1);Assert.AreEqual(2,game.Dungeon.ActiveObstacleCell);Tick(13);Assert.IsNotNull(Cell(2));var renderer=Cell(2).Find("Contact").GetComponent<UnityEngine.SpriteRenderer>();Assert.Greater(renderer.color.r,renderer.color.g);view.Initialize(game.Dungeon);Assert.IsNotNull(Cell(2));Tick(5);Assert.IsFalse(game.Dungeon.IsRestrained);Assert.AreEqual(game.Dungeon.ObstacleVisualFrame,game.Dungeon.GetObstacleFadeStartFrame(2));Tick(12);Assert.IsNull(Cell(2));view.Initialize(game.Dungeon);Assert.IsNull(Cell(2));view.enabled=false;Assert.IsNull(Cell(2));view.enabled=true;Assert.IsNull(Cell(2));
+        }
+        [Test]
+        public void 新しいモデルへの交換は古い定義と演出を破棄して一度だけ生成する()
+        {
+            Setup();var old=Cell(2).gameObject;var cells=new System.Collections.Generic.List<MapCell>();for(int i=0;i<20;i++)cells.Add(new MapCell(i));cells[2]=new MapCell(2,Obstacle.CreateCardDiscardObstacle("new","新定義",0));var replacement=new DungeonSystem(new DungeonConfig("new","新",20,cells),new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger());view.Initialize(replacement);Assert.IsTrue(old==null);Assert.IsNotNull(Cell(2).Find("CardA"));Assert.IsNull(Cell(2).Find("Warning"));Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(r=>r.name=="Contact"));
         }
     }
 }
