@@ -328,14 +328,42 @@ namespace Olca.Tests.CardEffects
             Assert.AreEqual(withAttack, battle.IsGameOver);
         }
 
-        [TestCase(0, false)][TestCase(100, true)]
-        public void バリアの耐久計算を変えても変身弱点の既存解除条件を維持する(int resistance, bool remains)
+        [TestCase(0)][TestCase(100)]
+        public void バリアで完全防御した弱点攻撃は変身を解除しない(int resistance)
         {
             player.BeginTransformationDefense(new ElementResistances(fire: resistance), ElementType.Fire);
             player.SetBarrier(20);
             Assert.IsFalse(player.TryTakeDamage(10, attackElement: ElementType.Fire));
             Assert.AreEqual(10, player.BarrierHp); Assert.AreEqual(100, player.CurrentHp);
-            Assert.AreEqual(remains, player.HasTransformationDefense);
+            Assert.IsTrue(player.HasTransformationDefense);
+        }
+
+        [TestCase(false, false)] [TestCase(true, false)]
+        [TestCase(false, true)] [TestCase(true, true)]
+        public void 敵攻撃の弱点ヒットはバリア消滅フレームまで変身を保ち次フレームに一度だけ解除する(bool propertyWeakness, bool wind)
+        {
+            var weakness = propertyWeakness ? new TransformationWeakness(AttackProperty.Sword) : new TransformationWeakness(ElementType.Fire);
+            battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("guarded-form", new ElementResistances(fire: 50), weakness) });
+            battle.CustomScreen.Open(new Card[0], new MockRandomProvider());
+            Assert.IsTrue(battle.Transformations.TryPreview("guarded-form"));
+            battle.CustomScreen.Confirm(); battle.CustomScreen.Close();
+            Assert.AreEqual("guarded-form", battle.Transformations.ActiveId);
+            player.SetBarrier(1); int ended = 0, effects = 0;
+            player.OnTransformationDefenseEnded += () => ended++;
+            var properties = AttackProperty.Sword | (wind ? AttackProperty.Wind : AttackProperty.None);
+            var attack = new BasicAttackAction(10, 100, ElementType.Fire, properties, 7, p => effects++);
+            var context = new AIContext(battle.Enemies[0], player, battle.Field, new MockRandomProvider(), new MockLogger());
+            battle.RunLogicalFrame(() => { attack.Execute(context); attack.Execute(context); });
+            Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, player.BarrierHp);
+            Assert.IsTrue(player.HasTransformationDefense); Assert.AreEqual("guarded-form", battle.Transformations.ActiveId);
+            Assert.AreEqual(0, ended); Assert.AreEqual(0, effects); Assert.AreEqual(0, player.AccumulatedDamage);
+            battle.RunLogicalFrame(() => attack.Execute(context));
+            Assert.AreEqual(95, player.CurrentHp, "解除を起こす攻撃は変身中の耐性を使う");
+            Assert.IsFalse(player.HasTransformationDefense); Assert.IsNull(battle.Transformations.ActiveId);
+            Assert.AreEqual(1, ended); Assert.AreEqual(1, effects);
+            Assert.IsTrue(battle.Transformations.IsUsed("guarded-form"));
+            battle.RunLogicalFrame(() => attack.Execute(context));
+            Assert.AreEqual(85, player.CurrentHp); Assert.AreEqual(1, ended);
         }
 
         [Test]
