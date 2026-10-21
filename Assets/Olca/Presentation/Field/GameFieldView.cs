@@ -242,6 +242,14 @@ namespace Olca.Presentation.Field
             foreach(var cell in new List<int>(obstacleVisuals.Keys))if(!retained.Contains(cell))RemoveObstacleVisual(cell);
         }
 
+        public void RefreshEnemyPerception()
+        {
+            bool blind=currentBattle!=null && !currentBattle.IsGameOver && currentBattle.Player.IsBlind;
+            foreach(var view in enemyViews)if(view!=null)view.SetHiddenByBlindness(blind);
+        }
+        private void RestoreEnemyPerception()
+        {foreach(var view in enemyViews)if(view!=null)view.SetHiddenByBlindness(false);}
+
         private PlayerCharacter damageTrackedPlayer;
         private int previousPlayerHp;
         private CancellationTokenSource playerDamageCts;
@@ -332,7 +340,7 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals();
         }
 
-        private void OnDisable() { ClearObstacleVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { RestoreEnemyPerception(); ClearObstacleVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
             ClearObstacleVisuals();
@@ -350,6 +358,7 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
+            RestoreEnemyPerception();
             ClearObstacleVisuals();
             ApplyCharacterDisplayOffset();
             dungeonSystem = dungeon;
@@ -399,6 +408,7 @@ namespace Olca.Presentation.Field
         {
             UpdateCameraFraming();
             RefreshObstacleVisuals();
+            RefreshEnemyPerception();
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
@@ -584,6 +594,7 @@ namespace Olca.Presentation.Field
             }
 
             battleGridView?.Refresh();
+            RefreshEnemyPerception();
             foreach (var view in enemyViews)
                 view?.Refresh();
             // ControllerとViewのLateUpdate順に依存せず、更新済みの論理状態で同じ描画を確定する。

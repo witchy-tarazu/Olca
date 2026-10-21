@@ -34,6 +34,26 @@ namespace Olca.Presentation.Field
         /// <summary>アニメーション中フラグ。trueの間 Refresh は位置を更新しない。</summary>
         public void SetPositionAnimating(bool value) { positionAnimating = value; }
 
+        private bool hiddenByBlindness;
+        private readonly System.Collections.Generic.Dictionary<Renderer,bool> blindRendererStates = new System.Collections.Generic.Dictionary<Renderer,bool>();
+        public bool IsHiddenByBlindness => hiddenByBlindness;
+        /// <summary>AI/購読/当たり判定を止めず、敵本体と名前/HPのRendererだけ遮蔽する。</summary>
+        public void SetHiddenByBlindness(bool hidden)
+        {
+            hiddenByBlindness=hidden;
+            if(hidden){
+                foreach(var renderer in GetComponentsInChildren<Renderer>(true)){
+                    if(!blindRendererStates.ContainsKey(renderer))blindRendererStates.Add(renderer,renderer.forceRenderingOff);
+                    renderer.forceRenderingOff=true;
+                }
+            }else{
+                foreach(var pair in blindRendererStates)if(pair.Key!=null)pair.Key.forceRenderingOff=pair.Value;
+                blindRendererStates.Clear();
+            }
+            damageNumberPool?.SetOwnerVisible(this,!hidden);
+        }
+        private void OnDisable(){SetHiddenByBlindness(false);}
+
         private void Awake()
         {
             destroyCts = new CancellationTokenSource();
@@ -44,12 +64,15 @@ namespace Olca.Presentation.Field
         /// <summary>ダメージ数値プールを設定する（GameFieldView から呼ぶ）</summary>
         public void SetDamageNumberPool(WorldDamageNumberPool pool)
         {
+            damageNumberPool?.SetOwnerVisible(this,true);
             damageNumberPool = pool;
+            damageNumberPool?.SetOwnerVisible(this,!hiddenByBlindness);
         }
 
         /// <summary>ダンジョン配置時に呼ぶ</summary>
         public void Initialize(Enemy enemy, float dungeonX)
         {
+            SetHiddenByBlindness(false);
             this.enemy = enemy;
             this.dungeonWorldX = dungeonX;
             this.gridView = null;
@@ -100,6 +123,7 @@ namespace Olca.Presentation.Field
         /// <summary>バトル終了時 - ダンジョン座標モードに戻す。撃破済みの敵は非表示にする。</summary>
         public void OnBattleEnded()
         {
+            SetHiddenByBlindness(false);
             gridView = null;
             enemyView?.HideHp();
             if (hiddenForBattle)
@@ -207,9 +231,9 @@ namespace Olca.Presentation.Field
 
         private void ShowWorldDamageNumber(int damage)
         {
-            if (damageNumberPool == null) return;
+            if (damageNumberPool == null || hiddenByBlindness) return;
             var position = transform.position + new Vector3(0f, 0.6f, -0.5f);
-            damageNumberPool.ShowDamage(damage, position, destroyCts.Token);
+            damageNumberPool.ShowOwnedDamage(damage, position, destroyCts.Token,this);
         }
 
         // ==================== 座標計算 ====================
@@ -225,6 +249,7 @@ namespace Olca.Presentation.Field
 
         private void OnDestroy()
         {
+            SetHiddenByBlindness(false);
             destroyCts?.Cancel();
             destroyCts?.Dispose();
         }

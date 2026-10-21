@@ -175,11 +175,45 @@ namespace Olca.Core.Domain
         {if(logical)confusionTimer.TickFrame();else confusionTimer.Tick(ms);}
         internal void EndConfusionFrame(bool advance)
         {
-            if(IsDead){ResetConfusion();return;}
+            if(IsDead){ResetConfusion(); ResetBlindness();return;}
             if(advance)CommitConfusionChanges();confusionFrameOpen=frameConfused=false;
         }
         internal void ResetConfusion()
         {confusionTimer.SetFrames(0);pendingConfusionFrames=null;confusionFrameOpen=frameConfused=clearConfusionPending=false;}
+
+        private FrameCountdown blindnessTimer;
+        private int? pendingBlindnessFrames;
+        private bool blindnessFrameOpen, frameBlind, clearBlindnessPending;
+        public int BlindRemainingFrames => blindnessTimer.Frames;
+        public bool IsBlind => !IsDead && (blindnessFrameOpen ? frameBlind : blindnessTimer.IsActive);
+        internal bool HasBlindnessState => blindnessTimer.IsActive || pendingBlindnessFrames.HasValue || clearBlindnessPending || frameBlind;
+        /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
+        public void ApplyBlindness(int durationFrames, int durationResistancePercent = 0)
+        {
+            if (durationFrames <= 0 || durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
+            int frames=(int)((long)durationFrames*(100-Math.Min(100,durationResistancePercent))/100);
+            if(IsDead || frames==0)return;
+            pendingBlindnessFrames=frames;
+            if(!blindnessFrameOpen)clearBlindnessPending=false;
+        }
+        public void ClearBlindness(){pendingBlindnessFrames=null;clearBlindnessPending=true;}
+        private void CommitBlindnessChanges()
+        {
+            if(clearBlindnessPending)blindnessTimer.SetFrames(0);
+            else if(pendingBlindnessFrames.HasValue)blindnessTimer.SetFrames(pendingBlindnessFrames.Value);
+            pendingBlindnessFrames=null;clearBlindnessPending=false;
+        }
+        internal void BeginBlindnessFrame(bool advance)
+        {if(advance)CommitBlindnessChanges();blindnessFrameOpen=true;frameBlind=blindnessTimer.IsActive;}
+        internal void TickBlindness(int ms,bool logical)
+        {if(logical)blindnessTimer.TickFrame();else blindnessTimer.Tick(ms);}
+        internal void EndBlindnessFrame(bool advance)
+        {
+            if(IsDead){ResetBlindness();return;}
+            if(advance)CommitBlindnessChanges();blindnessFrameOpen=frameBlind=false;
+        }
+        internal void ResetBlindness()
+        {blindnessTimer.SetFrames(0);pendingBlindnessFrames=null;blindnessFrameOpen=frameBlind=clearBlindnessPending=false;}
 
         private int pendingInvincibilityMs;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
@@ -207,7 +241,7 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             foreach(var state in poisons.Values) { state.EndFrame(); if (IsDead) state.Reset(); }
-            if (IsDead) { ResetParalysis(); ResetConfusion(); }
+            if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); }
             // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
             if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;
             else if (pendingConcentrateMultiplier.HasValue) nextCardMultiplier = pendingConcentrateMultiplier.Value;
@@ -236,7 +270,7 @@ namespace Olca.Core.Domain
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) { ResetParalysis(); ResetConfusion(); OnDeath?.Invoke(); }
+            if (died) { ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -395,7 +429,7 @@ namespace Olca.Core.Domain
                 else
                 {
                     currentHp = Math.Max(0, currentHp - damage);
-                    if (IsDead) { ResetParalysis(); ResetConfusion(); }
+                    if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
@@ -428,7 +462,7 @@ namespace Olca.Core.Domain
 
                 if (!frameHp.Active && IsDead)
                 {
-                    ResetParalysis(); ResetConfusion(); OnDeath?.Invoke();
+                    ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke();
                 }
                 return true;
             }
@@ -447,7 +481,7 @@ namespace Olca.Core.Domain
             if (frameHp.Active) { frameHp.Damage(damage); return; }
             currentHp = Math.Max(0, currentHp - damage);
             OnHpChanged?.Invoke(currentHp, maxHp);
-            if (IsDead) { ResetParalysis(); ResetConfusion(); OnDeath?.Invoke(); }
+            if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
 
         /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>

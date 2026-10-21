@@ -449,3 +449,69 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class PlayerBlindnessTests
+    {
+        private PlayerCharacter player;private Enemy keeper;private BattleSystem battle;
+        private void Setup(){player=new PlayerCharacter(100,new Vector2Int(2,0));keeper=new Enemy("keeper","検証",500,ElementType.None,new Vector2Int(5,0));battle=new BattleSystem(player,new List<Enemy>{keeper},new Deck());}
+        private void Frames(int count){for(int i=0;i<count;i++)battle.TickFrame(17);}
+        [Test]
+        public void 既存敵攻撃onHitで付与し盲目中も通常カードの命中とダメージを変更しない()
+        {
+            Setup();var enemy=new Enemy("source","検証",500,ElementType.None,new Vector2Int(3,0),isSummoned:true);battle.AddSummon(enemy,new List<IEnemyAIAction>{new BasicAttackAction(1,100000,poiseDamage:0,onHit:p=>p.ApplyBlindness(60))});battle.TickFrame(17);Assert.AreEqual(99,player.CurrentHp);Assert.IsTrue(player.IsBlind);Assert.AreEqual(60,player.BlindRemainingFrames);Assert.IsFalse(player.IsActionPrevented);
+            var card=new Card("test","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,10,"通常命中");battle.CardUsage.EnqueueCards(new List<Card>{card});Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());Assert.AreEqual(490,enemy.CurrentHp);
+        }
+        [Test]
+        public void 付与解除と期限はフレーム境界で確定し操作方向を変えない()
+        {
+            Setup();battle.RunLogicalFrame(()=>{player.ApplyBlindness(60);Assert.IsFalse(player.IsBlind);battle.TickFrame(17);});Assert.IsTrue(player.IsBlind);Assert.AreEqual(60,player.BlindRemainingFrames);
+            battle.RunLogicalFrame(()=>{player.ClearBlindness();battle.TickFrame(17);Assert.IsTrue(player.IsBlind);});Assert.IsFalse(player.IsBlind);
+            battle.RunLogicalFrame(()=>{player.ApplyBlindness(60);player.ClearBlindness();battle.TickFrame(17);});Assert.IsFalse(player.IsBlind);
+            player.ApplyBlindness(1);battle.RunLogicalFrame(()=>{battle.TickFrame(17,new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});Assert.IsTrue(player.IsBlind);});Assert.IsFalse(player.IsBlind);Assert.AreEqual(new Vector2Int(3,0),battle.PlayerMovement.NormalMoveTo);
+        }
+        [Test]
+        public void 期間耐性と同種更新は量を持たず無効付与で既存状態を消さない()
+        {
+            Setup();player.ApplyBlindness(60,50);battle.TickFrame(17);Assert.AreEqual(29,player.BlindRemainingFrames);player.ApplyBlindness(60,100);battle.TickFrame(17);Assert.AreEqual(28,player.BlindRemainingFrames);battle.RunLogicalFrame(()=>player.ApplyBlindness(120));Assert.AreEqual(120,player.BlindRemainingFrames);Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ApplyBlindness(0));Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ApplyBlindness(1,-1));
+        }
+        [Test]
+        public void 盲目混乱麻痺毒を独立所有し個別解除で他状態を失わない()
+        {
+            Setup();player.ApplyBlindness(60);player.ApplyConfusion(60);player.ApplyParalysis(60);player.ApplyPoison("external",new StatusEffect(StatusEffectType.Poison,1000,1),60);battle.TickFrame(17);Assert.IsTrue(player.IsBlind);Assert.IsTrue(player.IsConfused);Assert.IsTrue(player.IsParalyzed);player.ClearBlindness();battle.TickFrame(17);Assert.IsFalse(player.IsBlind);Assert.IsTrue(player.IsConfused);Assert.IsTrue(player.IsParalyzed);Assert.AreEqual(1,player.CapturePoisons().Length);player.ApplyBlindness(60);player.ClearConfusion();player.ClearParalysis();battle.TickFrame(17);Assert.IsTrue(player.IsBlind);Assert.IsFalse(player.IsConfused);Assert.IsFalse(player.IsParalyzed);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ポーズとカスタムは盲目時間を保持し復帰は残りから進む(bool custom)
+        {
+            Setup();player.ApplyBlindness(6);battle.TickFrame(17);if(custom){battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());}else battle.Pause(BattlePauseReason.User);Frames(120);Assert.IsTrue(player.IsBlind);Assert.AreEqual(5,player.BlindRemainingFrames);if(custom)battle.CustomScreen.Close();else battle.Resume(BattlePauseReason.User);Frames(5);Assert.IsFalse(player.IsBlind);Assert.AreEqual(0,player.BlindRemainingFrames);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 勝敗は有効と予約を破棄して次戦へ持ち越さない(bool defeat)
+        {
+            Setup();player.ApplyBlindness(60);battle.TickFrame(17);battle.RunLogicalFrame(()=>{player.ApplyBlindness(120);if(defeat)player.TakeDamage(1000);else keeper.TakeDamage(1000,ElementType.None);});Assert.IsTrue(battle.IsGameOver);Assert.IsFalse(player.IsBlind);Assert.AreEqual(0,player.BlindRemainingFrames);
+        }
+        [Test]
+        public void チェックポイント再開は途中盲目と予約を保存せず開始状態へ戻る()
+        {
+            var map=DungeonConfig.CreateTestDungeon(8,30,7);var defaults=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck());var store=new Olca.Core.Logic.Dungeon.MemoryCheckpointStore(defaults.Definitions);var session=new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions,store);var g=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);for(int i=0;i<100&&g.CurrentBattle==null;i++)g.TickFrame(17);var b=g.CurrentBattle;Assert.IsNotNull(b);b.CustomScreen.Close();b.Player.ApplyBlindness(60);b.TickFrame(17);var sequence=store.Read().Sequence;Assert.IsTrue(b.Player.IsBlind);Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);Assert.IsTrue(g.SuspendForCheckpoint());Assert.IsFalse(b.Player.IsBlind);restored.ActivateCheckpoint();Assert.IsFalse(restored.CurrentBattle.Player.IsBlind);Assert.AreEqual(0,restored.CurrentBattle.Player.BlindRemainingFrames);Assert.AreEqual(sequence,store.Read().Sequence);
+        }
+        [Test]
+        public void 敵Rendererと補助表示だけを隠し復帰で元の非表示状態も維持する()
+        {
+            Setup();var cells=new List<MapCell>();for(int i=0;i<6;i++)cells.Add(new MapCell(i));cells[5]=new MapCell(5,keeper);var dungeon=new Olca.Core.Logic.Dungeon.DungeonSystem(new DungeonConfig("view","表示",6,cells),player,new Deck(),new MockRandomProvider(),new MockLogger());var root=new UnityEngine.GameObject("BlindViewTest");var ui=new UnityEngine.GameObject("OtherUI");
+            try{var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();view.Initialize(dungeon);view.OnBattleStarted(battle,0);var enemy=view.GetEnemyView(keeper);Assert.IsNotNull(enemy);var body=enemy.GetComponent<UnityEngine.SpriteRenderer>();var name=new UnityEngine.GameObject("EnemyHint",typeof(UnityEngine.TextMesh));name.transform.SetParent(enemy.transform);var hint=name.GetComponent<UnityEngine.MeshRenderer>();var other=ui.AddComponent<UnityEngine.SpriteRenderer>();var prehidden=new UnityEngine.GameObject("AlreadyHidden",typeof(UnityEngine.SpriteRenderer));prehidden.transform.SetParent(enemy.transform);var pre=prehidden.GetComponent<UnityEngine.SpriteRenderer>();pre.forceRenderingOff=true;
+                player.ApplyBlindness(60);battle.TickFrame(17);view.RefreshEnemyPerception();Assert.IsTrue(enemy.gameObject.activeSelf);Assert.IsTrue(body.forceRenderingOff);Assert.IsTrue(hint.forceRenderingOff);Assert.IsFalse(other.forceRenderingOff);Assert.IsTrue(name.activeSelf);var later=new UnityEngine.GameObject("LaterHint",typeof(UnityEngine.SpriteRenderer));later.transform.SetParent(enemy.transform);view.RefreshEnemyPerception();Assert.IsTrue(later.GetComponent<UnityEngine.SpriteRenderer>().forceRenderingOff);
+                player.ClearBlindness();battle.TickFrame(17);view.RefreshEnemyPerception();Assert.IsFalse(body.forceRenderingOff);Assert.IsFalse(hint.forceRenderingOff);Assert.IsTrue(pre.forceRenderingOff);Assert.IsFalse(later.GetComponent<UnityEngine.SpriteRenderer>().forceRenderingOff);player.ApplyBlindness(60);battle.TickFrame(17);view.RefreshEnemyPerception();typeof(Olca.Presentation.Field.GameFieldView).GetMethod("OnDisable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);Assert.IsFalse(body.forceRenderingOff);view.RefreshEnemyPerception();Assert.IsTrue(body.forceRenderingOff);view.OnBattleEnded();Assert.IsFalse(body.forceRenderingOff);Assert.IsFalse(other.forceRenderingOff);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(ui);}
+        }
+        [Test]
+        public void 盲目と混乱の期間トレースは描画fpsと追いつきで同じになる()
+        {
+            List<string> Trace(int fps){Setup();player.ApplyBlindness(30);player.ApplyConfusion(40);var c=new Olca.Core.Logic.Integration.LogicalFrameClock();var result=new List<string>();long wall=0;void Tick(long f,int ms){if(f==10)battle.Pause(BattlePauseReason.User);if(f==15)battle.Resume(BattlePauseReason.User);battle.TickFrame(ms);result.Add(player.IsBlind+":"+player.BlindRemainingFrames+":"+player.IsConfused+":"+player.CurrentHp);}if(fps==0){c.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond);c.Drain(Tick);}else for(int i=1;c.Frame<60;i++){long t=(long)i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;c.Accumulate(t-wall);wall=t;c.Drain(Tick);}return result;}
+            CollectionAssert.AreEqual(Trace(60),Trace(30));CollectionAssert.AreEqual(Trace(60),Trace(120));CollectionAssert.AreEqual(Trace(60),Trace(0));
+        }
+    }
+}
