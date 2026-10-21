@@ -167,6 +167,7 @@ namespace Olca.Core.Logic.Dungeon
             cardRewardSystem = new CardRewardSystem(initialDeck, random, rewardPool);
             obstacleSystem = new ObstacleSystem(logger);
             playerCharacter = player;
+            player.FreezeDepartureStyle();
             randomProvider = random;
             this.logger = logger;
             this.exceedSystem = exceedSystem;
@@ -1260,6 +1261,7 @@ namespace Olca.Core.Logic.Dungeon
             Map = definitions.RestoreMap(enemies);
             var p = dto.Player;
             Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames, p.PoiseRecoveryFrames);
+            Player.SetDepartureStyle(p.Style?.Restore() ?? DepartureStyleDefinition.Basic);
             Player.SetElementResistances(new ElementResistances(p.FireResistance, p.WaterResistance, p.WindResistance, p.EarthResistance));
             Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             Player.RestorePoisons(p.Poisons);
@@ -1524,7 +1526,7 @@ namespace Olca.Core.Logic.Dungeon
                 ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
-                Player = new CheckpointPlayerDto { Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
+                Player = new CheckpointPlayerDto { Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
                     Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
                     WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),

@@ -214,7 +214,7 @@ namespace Olca.Application.Battle
             if (chargeFrames < 1 || intervalFrames < 1 || chargeMultiplier < 1) throw new System.ArgumentOutOfRangeException();
             if (!ReferenceEquals(current, battle)) { Reset(); current = battle; form = battle?.Transformations.ActiveId; }
             if (battle == null) return;
-            var attack = battle.Transformations.ActiveAttack;
+            var attack = battle.ActivePlayerAttack;
             chargeFrames = attack?.ChargeFrames ?? chargeFrames;
             intervalFrames = attack?.IntervalFrames ?? intervalFrames;
             if (form != battle.Transformations.ActiveId) { CancelCharge(); battle.CancelBasicStartupForFormChange(); form = battle.Transformations.ActiveId; }

@@ -10,6 +10,17 @@ namespace Olca.Core.Domain
     {
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
+        public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
+        private bool departureStyleFixed;
+        internal void FreezeDepartureStyle() => departureStyleFixed = true;
+        internal Func<ElementType?> BattleElement;
+        public ElementType ActiveElement => BattleElement?.Invoke() ?? DepartureStyle.Attack?.Element ?? ElementType.None;
+        /// <summary>新規出撃または保存復元時に一度だけ固定する。戦闘中の切替は一時変身が所有する。</summary>
+        public void SetDepartureStyle(DepartureStyleDefinition style)
+        {
+            if (departureStyleFixed) throw new InvalidOperationException("攻略中のスタイルは変更できません");
+            DepartureStyle = style ?? throw new ArgumentNullException(nameof(style)); departureStyleFixed = true;
+        }
 
         public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
         public ElementResistances ActiveResistances => previewTransformationResistances ?? transformationResistances ?? Resistances;

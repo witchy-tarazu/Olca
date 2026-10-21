@@ -14,6 +14,8 @@ namespace Olca.Core.Logic.Battle
     public class BattleSystem
     {
         private readonly PlayerCharacter player;
+        public TransformationAttackDefinition ActivePlayerAttack => Transformations.ActiveAttack ?? player.DepartureStyle.Attack;
+        public ElementType ActivePlayerElement => ActivePlayerAttack?.Element ?? ElementType.None;
         private readonly List<Enemy> enemies;
         private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
         private readonly Dictionary<Enemy, Action<Vector2Int>> enemyPositionHandlers = new Dictionary<Enemy, Action<Vector2Int>>();
@@ -127,7 +129,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (fallbackChargeMultiplier < 1) throw new ArgumentOutOfRangeException(nameof(fallbackChargeMultiplier));
             if (!TryPreparePlayerAttack()) return false;
-            var attack = Transformations.ActiveAttack;
+            var attack = ActivePlayerAttack;
             long percent = attack != null ? (charged ? attack.ChargedPowerPercent : attack.NormalPowerPercent) : charged ? 100L * fallbackChargeMultiplier : 100;
             var timing = attack?.Timing ?? basicTiming;
             ResolveBasicActionAsync(percent, timing, Transformations.ActiveId).Forget();
@@ -200,6 +202,7 @@ namespace Olca.Core.Logic.Battle
             player.OnPositionChanged += OnPlayerPositionChanged;
 
             // プレイヤー死亡時の処理
+            player.BattleElement = () => ActivePlayerAttack?.Element;
             player.IsOnGrass = () => battleField.GetPanelType(player.GridPosition) == PanelType.Grass;
             player.OnDamageProcessingStarted += BeginResolution;
             player.OnDamageProcessingCompleted += EndResolution;
@@ -439,7 +442,7 @@ namespace Olca.Core.Logic.Battle
         /// プレイヤーの基本攻撃
         /// </summary>
         public void PlayerBasicAttack(Enemy target)
-        { if (!HasPlayerAction) ApplyPlayerBasicAttack(target, Transformations.ActiveAttack?.NormalPowerPercent ?? 100); }
+        { if (!HasPlayerAction) ApplyPlayerBasicAttack(target, ActivePlayerAttack?.NormalPowerPercent ?? 100); }
         private void ApplyPlayerBasicAttack(Enemy target, long powerPercent)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
@@ -450,7 +453,7 @@ namespace Olca.Core.Logic.Battle
             try
             {
                 int damage = (int)Math.Min(int.MaxValue, (decimal)player.AttackPower * powerPercent / 100);
-                target.TakeDamage(damage, Transformations.ActiveAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
+                target.TakeDamage(damage, ActivePlayerAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
                 OnPlayerAttack?.Invoke(target, damage);
@@ -465,13 +468,13 @@ namespace Olca.Core.Logic.Battle
         public bool TryPlayerBasicAttackForward(int multiplier = 1)
         {
             if (multiplier < 1) throw new ArgumentOutOfRangeException(nameof(multiplier));
-            long percent = (long)(Transformations.ActiveAttack?.NormalPowerPercent ?? 100) * multiplier;
+            long percent = (long)(ActivePlayerAttack?.NormalPowerPercent ?? 100) * multiplier;
             return TryPlayerBasicAttackForwardWithPercent(percent);
         }
         public bool TryPlayerBasicAttackForward(bool charged, int fallbackChargeMultiplier = 2)
         {
             if (fallbackChargeMultiplier < 1) throw new ArgumentOutOfRangeException(nameof(fallbackChargeMultiplier));
-            var attack = Transformations.ActiveAttack;
+            var attack = ActivePlayerAttack;
             long percent = attack != null ? (charged ? attack.ChargedPowerPercent : attack.NormalPowerPercent)
                 : charged ? 100L * fallbackChargeMultiplier : 100;
             return TryPlayerBasicAttackForwardWithPercent(percent);
@@ -697,6 +700,7 @@ namespace Olca.Core.Logic.Battle
             battleField.SetOccupancyQuery(null);
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
+            player.BattleElement = null;
             player.ClearInvincibility();
             player.ClearStagger();
             player.ResetParalysis();

@@ -357,16 +357,18 @@ namespace Olca.Core.Domain
         public NextDepartureData NextDeparture;
         public SavedDepartureDeck[] SavedDecks = new SavedDepartureDeck[0];
         public string EquippedDeckId;
+        public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public ClearReturnProfile Copy() => new ClearReturnProfile {
             Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
-            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId,
+            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId,
             SavedDecks=(SavedDecks??new SavedDepartureDeck[0]).Select(d=>d?.Copy()).ToArray() };
         public static void Validate(ClearReturnProfile p)
         {
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
+            if (p.SelectedStyleId != null && string.IsNullOrWhiteSpace(p.SelectedStyleId)) throw new ArgumentException("選択スタイルIDが不正です");
             if (p.Owned.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name) || c.Count < 1 || c.Count > 4 ||
                 !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.Level)) ||
                 p.Owned.GroupBy(c => (c.Id, c.Level)).Any(g => g.Count() > 1) ||
@@ -548,6 +550,15 @@ namespace Olca.Core.Domain
             var next = current.Copy();
             next.NextDeparture = new NextDepartureData { ParentRunId = parent, DefinitionKey = definitionKey, Start = start?.Copy() };
             return Stage(next);
+        }
+        public bool SelectDepartureStyle(DepartureStyleDefinition style)
+        {
+            if (!Available() || (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned) ||
+                current.NextDeparture?.ParentRunId == (current.Flow?.RunId ?? NextDepartureData.InitialParent)) return Fail("拠点でスタイルを選択してください");
+            if (style == null || !style.IsUnlocked(current)) return Fail("未解放のスタイルです");
+            string id = style.Id == DepartureStyleDefinition.BasicId ? null : style.Id;
+            if (current.SelectedStyleId == id) { Error = null; return true; }
+            var next = current.Copy(); next.SelectedStyleId = id; return Stage(next);
         }
         private bool DeckEditingAvailable() => Available() && current.Flow?.Stage==ClearReturnStage.Returned && current.NextDeparture?.ParentRunId!=current.Flow.RunId;
         public bool SaveDeck(string id,string name,IReadOnlyList<SavedDeckCard> cards)

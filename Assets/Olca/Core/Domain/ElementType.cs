@@ -248,4 +248,46 @@ namespace Olca.Core.Domain
         }
     }
 
+    /// <summary>出撃前に登録する既存スタイル。解放は変身と別で、保存済みのクリア履歴から判定する。</summary>
+    public sealed class DepartureStyleDefinition
+    {
+        public const string BasicId = "basic";
+        public static DepartureStyleDefinition Basic { get; } = new DepartureStyleDefinition(BasicId, "基本 / 無属性", null);
+        public string Id { get; }
+        public string Name { get; }
+        public string RequiredClear { get; }
+        public TransformationAttackDefinition Attack { get; }
+        public DepartureStyleDefinition(string id, string name, string requiredClear, TransformationAttackDefinition attack = null)
+        {
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name) || (requiredClear != null && string.IsNullOrWhiteSpace(requiredClear)))
+                throw new System.ArgumentException("スタイルID・名称・解放条件が不正です");
+            if (id == BasicId && (requiredClear != null || attack != null)) throw new System.ArgumentException("基本スタイルは既存の無属性攻撃を維持します");
+            Id = id; Name = name; RequiredClear = requiredClear; Attack = attack;
+        }
+        public bool IsUnlocked(ClearReturnProfile profile) => RequiredClear == null || System.Array.IndexOf(profile?.ClearedDungeons ?? System.Array.Empty<string>(), RequiredClear) >= 0;
+        public DepartureStyleDto Capture() => new DepartureStyleDto { Id = Id, Name = Name, Element = Attack?.Element ?? ElementType.None,
+            HasAttack = Attack != null, NormalPercent = Attack?.NormalPowerPercent ?? 100, ChargedPercent = Attack?.ChargedPowerPercent ?? 200,
+            ChargeFrames = Attack?.ChargeFrames ?? 60, IntervalFrames = Attack?.IntervalFrames ?? 12,
+            HasTiming = Attack?.Timing != null, StartupFrames = Attack?.Timing?.StartupFrames ?? 0,
+            RecoveryFrames = Attack?.Timing?.RecoveryFrames ?? 0, CancelAfterFrames = Attack?.Timing?.CancelAfterFrames };
+    }
+    // 攻略開始時点の値を固定し、ロード時に現在の登録値へ差し替えない。
+    public sealed class DepartureStyleDto
+    {
+        public string Id, Name;
+        public ElementType Element;
+        public bool HasAttack, HasTiming;
+        public int NormalPercent, ChargedPercent, ChargeFrames, IntervalFrames, StartupFrames, RecoveryFrames;
+        public int? CancelAfterFrames;
+        public DepartureStyleDto Copy() => (DepartureStyleDto)MemberwiseClone();
+        public DepartureStyleDefinition Restore()
+        {
+            if (!System.Enum.IsDefined(typeof(ElementType), Element) || (!HasAttack && (Element != ElementType.None || HasTiming)))
+                throw new System.ArgumentException("スタイル属性・攻撃定義が不正です");
+            var timing = new PlayerAttackTiming(StartupFrames, RecoveryFrames, CancelAfterFrames);
+            return new DepartureStyleDefinition(Id, Name, null, HasAttack ? new TransformationAttackDefinition(Element, NormalPercent,
+                ChargedPercent, ChargeFrames, IntervalFrames, HasTiming ? timing : null) : null);
+        }
+    }
+
 }

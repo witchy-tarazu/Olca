@@ -111,6 +111,7 @@ namespace Olca.Core.Domain
 
     public sealed class CheckpointPlayerDto
     {
+        public DepartureStyleDto Style; // 旧省略/nullは既存の基本スタイル
         public int Hp, MaxHp, AttackPower, Poise;
         public int? PoiseRecoveryFrames; // 旧保存の省略/nullは自然回復未設定。残り時間ではなく定義
         public PlayerPoisonDto[] Poisons; // 旧保存の省略/nullは毒なし
@@ -120,6 +121,7 @@ namespace Olca.Core.Domain
         public int GridX, GridY;
         public CheckpointPlayerDto Copy() {
             var copy=(CheckpointPlayerDto)MemberwiseClone();
+            copy.Style=Style?.Copy();
             copy.Poisons=Poisons==null ? null : System.Array.ConvertAll(Poisons,p=>p?.Copy()); return copy;
         }
     }

@@ -81,7 +81,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ApplyMagmaPlayerDamage(PlayerCharacter player)
         {
-            if (player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(MAGMA_DAMAGE, affectsPoise: false)
+            if (player.ActiveElement != ElementType.Fire && player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(MAGMA_DAMAGE, affectsPoise: false)
                 && !player.IsDead) player.SetInvincible(hitInvincibilityMs);
         }
 

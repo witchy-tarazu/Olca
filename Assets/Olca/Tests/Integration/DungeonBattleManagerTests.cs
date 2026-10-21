@@ -2473,6 +2473,116 @@ namespace Olca.Tests.Integration
             for (int i = 0; i < 120 && Model(controller).CurrentBattle == null; i++) Tick(controller);
             Assert.IsNotNull(Model(controller).CurrentBattle);
         }
+        [Test]
+        public void 出撃スタイルの保存コピーは独立し登録値変更で既存攻略を変更しない()
+        {
+            var c=StartStyles(true);KeyboardButton(c,"SelectDepartureStyle");KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"ConfirmStyleSelection");KeyboardButton(c,"ConfirmDungeonSelection");
+            var plan=c.PersistentProgress.NextDeparture;var dto=plan.Start.Copy();dto.Player.Style.NormalPercent=1;
+            Assert.AreEqual(150,c.PersistentProgress.NextDeparture.Start.Player.Style.NormalPercent);
+            Set(c,"departureStyles",new[]{DepartureStyleDefinition.Basic,new DepartureStyleDefinition("fixture-fire","更新後fixture",null,new TransformationAttackDefinition(ElementType.Water,50,100,120))});
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
+            Assert.AreEqual(ElementType.Fire,Model(c).Dungeon.Player.ActiveElement);Assert.AreEqual(150,Model(c).Dungeon.Player.DepartureStyle.Attack.NormalPowerPercent);
+            Assert.AreEqual(plan.Start.RunId,c.PersistentProgress.NextDeparture.Start.RunId);
+        }
+        [Test]
+        public void 出撃スタイルの火属性はマグマで被害を受けず変身属性は別に優先する()
+        {
+            var p=new PlayerCharacter(100);p.SetDepartureStyle(StyleFixtures()[1]);
+            var field=new BattleField();var panels=new PanelEffectSystem(field,new MockLogger());field.ChangePanelType(p.GridPosition,PanelType.Magma);
+            panels.ApplyOnEnterEffect(p,p.GridPosition);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(PanelType.Normal,field.GetPanelType(p.GridPosition));
+            Assert.AreEqual(ElementType.Fire,p.ActiveElement);
+        }
+        private static DepartureStyleDefinition[] StyleFixtures() => new[] {
+            DepartureStyleDefinition.Basic,
+            new DepartureStyleDefinition("fixture-fire", "既存攻撃の外部設定fixture", "selection-a", new TransformationAttackDefinition(ElementType.Fire, 150, 250, 30, 12)),
+            new DepartureStyleDefinition("fixture-water", "未解放fixture", "selection-b", new TransformationAttackDefinition(ElementType.Water)) };
+        private Olca.Application.Dungeon.DungeonBattleController StartStyles(bool unlocked = false)
+        {
+            var c = StartSelection();
+            // 試験用登録だけを差し込む。製品のスタイル追加ではない。
+            Set(c, "departureStyles", StyleFixtures());
+            if (unlocked) {
+                var p = c.PersistentProgress; long revision = p.Revision;
+                p.ClearedDungeons = new[] { "selection-a" }; p.Revision++; p.CommitId = System.Guid.NewGuid().ToString("N");
+                Assert.IsTrue(((Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore")).TryWrite(revision,p,out var error),error);
+                Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).Reload());
+            }
+            return c;
+        }
+        [Test]
+        public void 出撃スタイルの初期値未解放表示と取消は出撃や保存を行わない()
+        {
+            var c=StartStyles(); long revision=c.PersistentProgress.Revision;
+            KeyboardButton(c,"SelectDepartureStyle"); Assert.IsTrue(SelectionButton(c,"StyleChoice_0").interactable);
+            Assert.IsFalse(SelectionButton(c,"StyleChoice_1").interactable); Assert.IsFalse(SelectionButton(c,"StyleChoice_2").interactable);
+            KeyboardButton(c,"StyleChoice_1"); Assert.AreEqual(0,Get(c,"styleDraft"));
+            KeyboardButton(c,"CancelStyleSelection"); Assert.AreEqual(revision,c.PersistentProgress.Revision); Assert.IsNull(c.PersistentProgress.NextDeparture);
+            KeyboardButton(c,"SelectDepartureStyle"); KeyboardButton(c,"ConfirmStyleSelection");
+            Assert.AreEqual(revision,c.PersistentProgress.Revision); Assert.IsNull(c.PersistentProgress.SelectedStyleId);
+            Assert.IsTrue(SelectionButton(c,"DungeonChoice_0").interactable);
+        }
+        [TestCase(null)] [TestCase("before")] [TestCase("after")]
+        public void 出撃スタイルは解放履歴から選択保存し失敗時に旧値を保ち同一候補を再試行する(string fault)
+        {
+            var c=StartStyles(true); var io=new KeyboardFaultIo{Fault=fault};
+            Set(Get(c,"clearReturnStore"),"io",io); long revision=c.PersistentProgress.Revision;
+            KeyboardButton(c,"SelectDepartureStyle"); Assert.IsTrue(SelectionButton(c,"StyleChoice_1").interactable);
+            Assert.IsFalse(SelectionButton(c,"StyleChoice_2").interactable);
+            KeyboardButton(c,"StyleChoice_1"); KeyboardButton(c,"CancelStyleSelection"); Assert.IsNull(c.PersistentProgress.SelectedStyleId);
+            KeyboardButton(c,"SelectDepartureStyle"); KeyboardButton(c,"StyleChoice_1"); KeyboardButton(c,"ConfirmStyleSelection");
+            if(fault=="before") {
+                Assert.IsNull(c.PersistentProgress.SelectedStyleId); Assert.AreEqual(revision,c.PersistentProgress.Revision);
+                Assert.IsFalse(SelectionButton(c,"StyleChoice_0").interactable);
+                Call(c,"StartNextDeparture"); Assert.IsNull(c.PersistentProgress.NextDeparture);
+                var old=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory)); Assert.IsNull(old.Snapshot.SelectedStyleId);
+                io.Fault=null; KeyboardButton(c,"RetryStyleDeparture");
+            }
+            Assert.AreEqual("fixture-fire",c.PersistentProgress.SelectedStyleId); Assert.AreEqual(revision+1,c.PersistentProgress.Revision);
+            var reopened=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory));
+            Assert.AreEqual("fixture-fire",reopened.Snapshot.SelectedStyleId); Assert.IsEmpty(reopened.Snapshot.Receipts);
+            KeyboardButton(c,"DungeonChoice_1"); KeyboardButton(c,"ConfirmDungeonSelection");
+            Assert.AreEqual("selection-b",((FloorSequenceDefinitions)Get(c,"floorDefinitions")).RouteId);
+            var style=Model(c).Dungeon.Player.DepartureStyle; Assert.AreEqual("fixture-fire",style.Id);
+            Assert.AreEqual(ElementType.Fire,Model(c).Dungeon.Player.ActiveElement);
+            Assert.Throws<System.InvalidOperationException>(()=>Model(c).Dungeon.Player.SetDepartureStyle(DepartureStyleDefinition.Basic));
+            string run=c.PersistentProgress.NextDeparture.Start.RunId;
+            Assert.AreEqual("fixture-fire",c.PersistentProgress.NextDeparture.Start.Player.Style.Id);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error); Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);
+            Assert.AreEqual(150,Model(c).Dungeon.Player.DepartureStyle.Attack.NormalPowerPercent);
+            Call(c,"OpenStyleSelection"); Assert.IsFalse((bool)Get(c,"styleSelectionOpen"));
+        }
+        [Test]
+        public void 出撃スタイルの旧保存省略は基本へ復元し不正な攻撃定義を拒否する()
+        {
+            var c=StartSelection();KeyboardButton(c,"ConfirmDungeonSelection"); var dto=c.PersistentProgress.NextDeparture.Start;
+            Assert.IsNull(dto.Player.Style); Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
+            Assert.AreEqual(DepartureStyleDefinition.BasicId,Model(c).Dungeon.Player.DepartureStyle.Id);
+            var style=StyleFixtures()[1].Capture();style.ChargeFrames=0;dto.Player.Style=style;
+            Assert.IsFalse(((FloorSequenceDefinitions)Get(c,"floorDefinitions")).TryRestore(new FloorSequenceCheckpointDto{
+                RouteId="selection-a",Revision="v1",RouteHash=((FloorSequenceDefinitions)Get(c,"floorDefinitions")).RouteHash,FloorIndex=0,State=dto},out _,out error));
+            style=StyleFixtures()[1].Capture();style.Id="basic";Assert.Throws<System.ArgumentException>(()=>style.Restore());
+            Assert.Throws<System.InvalidOperationException>(()=>c.ConfigureDepartureStyles(StyleFixtures()));
+        }
+        [Test]
+        public void 出撃スタイルは通常固有攻撃とタメへ反映し変身終了時に戻る()
+        {
+            var c=StartStyles(true); KeyboardButton(c,"SelectDepartureStyle");KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"ConfirmStyleSelection");KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);
+            var battle=Model(c).CurrentBattle; var enemy=battle.Enemies[0];enemy.ApplyStun(100000);
+            battle.Player.MoveTo(new Vector2Int(enemy.GridPosition.X-1,enemy.GridPosition.Y));
+            battle.Resume(BattlePauseReason.CustomScreen);
+            var input=new Olca.Application.Battle.BasicAttackInputState();
+            input.Tick(battle,new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true},60,12);
+            input.Tick(battle,new LogicalInput{BasicAttackButtonUp=true},60,12);
+            Assert.AreEqual(185,enemy.CurrentHp); // レベル共通攻撃10の150%
+            for(int i=0;i<40;i++)battle.TickFrame(17); input.Reset();
+            for(int i=0;i<30;i++)input.Tick(battle,new LogicalInput{BasicAttackButtonDown=i==0,BasicAttackButton=true},60,12);
+            input.Tick(battle,new LogicalInput{BasicAttackButtonUp=true},60,12);
+            Assert.AreEqual(160,enemy.CurrentHp); // スタイル固有の30フレーム/250%
+            var form=new TransformationDefenseDefinition("fixture-form",ElementResistances.Neutral,ElementType.Earth,attack:new TransformationAttackDefinition(ElementType.Water,80));
+            battle.Transformations.Configure(new[]{form});if(!battle.CustomScreen.IsOpen)battle.CustomScreen.Open(System.Array.Empty<Card>(),new MockRandomProvider());Assert.IsTrue(battle.Transformations.TryPreview("fixture-form"));
+            battle.CustomScreen.Confirm();Assert.AreEqual(ElementType.Water,battle.ActivePlayerElement);
+            battle.Player.EndTransformationDefense();Assert.AreEqual(ElementType.Fire,battle.ActivePlayerElement);Assert.AreEqual("fixture-fire",battle.Player.DepartureStyle.Id);
+        }
         private Olca.Application.Dungeon.DungeonBattleController StartSelection(bool debug = false)
         {
             definitions = null;
