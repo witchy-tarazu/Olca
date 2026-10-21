@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using Olca.Core.Domain;
@@ -51,6 +52,39 @@ namespace Olca.Tests
                 typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,empty);
                 typeof(CustomScreenView).GetMethod("InitializeInputHand",flags).Invoke(view,new object[]{new List<Card>()});Assert.IsTrue(cursor.IsOnConfirmButton);
                 view.ConfigureLogicalConfirmation((time,action)=>action(),()=>0);view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput{MenuDecideButtonDown=true});Assert.IsTrue(empty.IsConfirming);
+            } finally { Object.DestroyImmediate(root); }
+        }
+
+        [TestCase(0, false)]
+        [TestCase(2, true)]
+        public void キー移動後の静止ポインタークリックは同じ個体へカーソルと次の決定を揃える(int target, bool selected)
+        {
+            var root = new GameObject("PointerKeyboardSelection", typeof(RectTransform));
+            try {
+                // 同じIDでも異なるカード個体。選択によるCurrentHandの詰め直しに依存しない。
+                var cards = new List<Card> { Create("same", CardSeries.Sword), Create("same", CardSeries.Sword), Create("same", CardSeries.Sword) };
+                var model = new CustomScreenSystem(new Deck(cards));
+                model.Open(new Card[0], new MockRandomProvider(0));
+                var order = new List<Card>(model.CurrentHand);
+                var view = root.AddComponent<CustomScreenView>();
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CustomScreenView).GetField("customScreen", flags).SetValue(view, model);
+                typeof(CustomScreenView).GetField("costDisplay", flags).SetValue(view, root.AddComponent<Text>());
+                var cursor = new CustomScreenCursor();
+                typeof(CustomScreenView).GetField("cursor", flags).SetValue(view, cursor);
+                typeof(CustomScreenView).GetMethod("InitializeInputHand", flags).Invoke(view, new object[] { order });
+                view.ConfigureLogicalConfirmation((time, action) => action(), () => 0);
+                if (selected) view.OnCardClicked(order[target]);
+                cursor.MoveToCard((target + 1) % order.Count);
+
+                // 再入場のPointerEnterがないクリックでも操作位置を更新する。
+                view.OnCardClicked(order[target]);
+                Assert.AreEqual(target, cursor.CurrentIndex);
+                Assert.AreEqual(!selected, model.SelectedCards.Contains(order[target]));
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuDecideButtonDown = true });
+                Assert.AreEqual(selected, model.SelectedCards.Contains(order[target]));
+                foreach (var card in order)
+                    if (!ReferenceEquals(card, order[target])) Assert.IsFalse(model.SelectedCards.Contains(card));
             } finally { Object.DestroyImmediate(root); }
         }
 

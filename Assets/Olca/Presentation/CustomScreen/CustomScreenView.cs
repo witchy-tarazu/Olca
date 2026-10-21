@@ -853,6 +853,12 @@ namespace Olca.Presentation.CustomScreen
                 return;
             }
 
+            // ポインターが静止したままキー操作から戻っても、クリックした個体へ操作位置を揃える。
+            // 選択で詰め直されるCurrentHandではなく、画面を開いた時の固定順を使う。
+            int clickedIndex = inputHand.IndexOf(card);
+            if (cursor != null && clickedIndex >= 0 && cursor.CurrentIndex != clickedIndex)
+                cursor.MoveToCard(clickedIndex);
+
             // 通常モード: カード選択トグル
             if (customScreen.SelectedCards.Any(c => c == card))
             {
