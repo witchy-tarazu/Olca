@@ -253,7 +253,7 @@ namespace Olca.Presentation.Field
             if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
         }
 
-        private void OnDisable() { SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
             UnbindPlayerDamage();
@@ -557,8 +557,25 @@ namespace Olca.Presentation.Field
         public static int SelectJumpAnimationPhase(bool jumping, float progress)
             => !jumping ? 0 : progress < 14f / 30f ? 1 : progress <= 16f / 30f ? 2 : 3;
 
+        private bool obstaclePoseActive, obstacleAnimatorWasEnabled;
+        private void RestoreObstaclePose()
+        {
+            if (!obstaclePoseActive) return;
+            obstaclePoseActive = false;
+            if (playerAnimator != null) playerAnimator.enabled = obstacleAnimatorWasEnabled;
+        }
         private void UpdatePlayerSprite()
         {
+            if (dungeonSystem != null && dungeonSystem.IsObstacleStopped && !dungeonSystem.IsInBattle) {
+                if (!obstaclePoseActive) { obstaclePoseActive = true; obstacleAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled; }
+                if (playerAnimator != null) playerAnimator.enabled = false;
+                // 既存ののけぞりSpriteだけを使う。未設定時はidleで停止し、専用素材完成とは扱わない。
+                var frames = contactKnockbackSprites;
+                SetPlayerSprite(frames != null && frames.Length > 0
+                    ? frames[System.Math.Min(frames.Length - 1, dungeonSystem.ObstacleStopElapsedFrames / 6)] : idlePlayerSprite);
+                return;
+            }
+            RestoreObstaclePose();
             if (contactPoseActive && contactPoseSprite != null) { SetPlayerSprite(contactPoseSprite); return; }
             int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && dungeonSystem.IsJumping
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,

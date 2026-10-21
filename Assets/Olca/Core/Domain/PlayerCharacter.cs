@@ -405,6 +405,17 @@ namespace Olca.Core.Domain
             }
         }
 
+        /// <summary>拘束障害物の確定量。被弾無敵・防御・強靭度を経由せず、毒のHP1制限も付けない。</summary>
+        internal void TakeObstacleDamage(int damage)
+        {
+            if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
+            if (IsDead || damage == 0) return;
+            if (frameHp.Active) { frameHp.Damage(damage); return; }
+            currentHp = Math.Max(0, currentHp - damage);
+            OnHpChanged?.Invoke(currentHp, maxHp);
+            if (IsDead) { ResetParalysis(); OnDeath?.Invoke(); }
+        }
+
         /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>
         public void TakePoisonDamage(int damage)
         {

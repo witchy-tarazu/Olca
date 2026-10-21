@@ -959,7 +959,7 @@ namespace Olca.Application.Dungeon
                         }
                     }
 
-                    if (dashCooldownRemaining > 0f && !manager.Dungeon.IsDashJumping)
+                    if (dashCooldownRemaining > 0f && !manager.Dungeon.IsDashJumping && !manager.Dungeon.IsObstacleStopped)
                         dashCooldownRemaining--;
                     break;
 

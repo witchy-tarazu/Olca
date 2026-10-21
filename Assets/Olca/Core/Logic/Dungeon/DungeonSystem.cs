@@ -69,6 +69,27 @@ namespace Olca.Core.Logic.Dungeon
         // ========== 障害物通過済み管理 ==========
         private readonly HashSet<int> processedObstacleCells = new HashSet<int>();
 
+        private ObstacleControl activeObstacleControl;
+        private long obstacleRemainingUnits, obstacleNextDamageUnits;
+        public bool IsObstacleStopped => !playerCharacter.IsDead && activeObstacleControl != null;
+        public bool IsRestrained => IsObstacleStopped && activeObstacleControl.IsRestraint;
+        public int ObstacleStopRemainingFrames => IsObstacleStopped ? (int)((obstacleRemainingUnits + 49) / 50) : 0;
+        public int ObstacleStopElapsedFrames => IsObstacleStopped ? activeObstacleControl.DurationFrames - ObstacleStopRemainingFrames : 0;
+        public bool IsObstacleConsumed(int cell) => processedObstacleCells.Contains(cell);
+        private void ClearObstacleControl() { activeObstacleControl = null; obstacleRemainingUnits = obstacleNextDamageUnits = 0; }
+        private void TickObstacleControl(long units)
+        {
+            long elapsed = Math.Min(units, obstacleRemainingUnits);
+            if (activeObstacleControl.DamagePerPulse > 0 && elapsed >= obstacleNextDamageUnits) {
+                long interval = activeObstacleControl.DamageIntervalFrames * 50L;
+                long pulses = 1 + (elapsed - obstacleNextDamageUnits) / interval;
+                playerCharacter.TakeObstacleDamage((int)Math.Min(int.MaxValue, pulses * activeObstacleControl.DamagePerPulse));
+                obstacleNextDamageUnits = interval - (elapsed - obstacleNextDamageUnits) % interval;
+            } else obstacleNextDamageUnits -= elapsed;
+            obstacleRemainingUnits -= elapsed;
+            if (obstacleRemainingUnits <= 0) ClearObstacleControl();
+        }
+
         // ========== プロパティ ==========
         public float PlayerPosition => playerMovement.CurrentPosition;
         public int NormalMovementSpeedMilliPerSecond => playerMovement.NormalSpeedMilliPerSecond;
@@ -80,7 +101,7 @@ namespace Olca.Core.Logic.Dungeon
         public bool IsDashing => playerMovement.IsDashing;
         /// <summary>描画間の座標差によらない自動前進の有効状態。移動量や更新頻度は変更しない。</summary>
         public bool IsExplorationMoving => !IsInBattle && !IsDungeonCleared && !IsFloorCompleted
-            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead;
+            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead && !IsObstacleStopped;
         public PlayerCharacter Player => playerCharacter;
         /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
         public DungeonMap Map => map;
@@ -173,13 +194,16 @@ namespace Olca.Core.Logic.Dungeon
         /// 毎フレーム更新 - 整数ベース版
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
-        private bool explorationHpFrame;
+        private bool explorationHpFrame, explorationHpUpdated;
+        private readonly List<PenaltyInfo> pendingObstaclePenalties = new List<PenaltyInfo>();
         private ContactInfo pendingPoisonFrameContact;
         private void CommitExplorationHp()
         {
             if (!explorationHpFrame) return;
-            explorationHpFrame=false;
+            explorationHpFrame=false; explorationHpUpdated=true;
             playerCharacter.CommitHpFrame(); playerCharacter.PublishHpFrame();
+            var notices = pendingObstaclePenalties.ToArray(); pendingObstaclePenalties.Clear();
+            foreach (var penalty in notices) OnObstaclePenalty?.Invoke(penalty);
         }
         private bool processingTick;
         private int encounterRevision;
@@ -190,12 +214,12 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
-            processingTick = true;
-            bool resolvePoisonHp=playerCharacter.HasPoisonState;
-            if (resolvePoisonHp) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
+            processingTick = true; explorationHpUpdated=false;
+            if (playerCharacter.HasPoisonState || IsObstacleStopped) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
             try
             {
-                if (explorationHpFrame) playerCharacter.TickPoisons(deltaTimeMs, logicalFrame);
+                playerCharacter.TickPoisons(deltaTimeMs, logicalFrame);
+                if (IsObstacleStopped) { TickObstacleControl(logicalFrame ? 50 : Math.Max(0, deltaTimeMs) * 3L); return; }
                 var step = logicalFrame ? playerMovement.PreviewFrame() : playerMovement.PreviewStep(deltaTimeMs);
                 int control = playerMovement.ControlRevision, encounter = encounterRevision;
                 var contacts = new List<ContactSystem.SweptContact>();
@@ -221,7 +245,7 @@ namespace Olca.Core.Logic.Dungeon
                     else if (contactSystem.NotifyContact(contact.Cell, playerMovement)) return;
                     // 通知先で開始・終了・再開が同期実行されても、残りの移動を持ち越さない。
                     if (playerCharacter.CurrentHp <= 0 || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked ||
-                        checkpointSuspended || playerMovement.IsPaused || control != playerMovement.ControlRevision ||
+                        checkpointSuspended || playerMovement.IsPaused || IsObstacleStopped || control != playerMovement.ControlRevision ||
                         encounter != encounterRevision) return;
                 }
                 if (hasNextFloor && finalBoss == null && step.End >= (long)map.TotalCellCount * 1000)
@@ -240,7 +264,7 @@ namespace Olca.Core.Logic.Dungeon
             finally {
                 CommitExplorationHp(); processingTick = false;
                 var contact=pendingPoisonFrameContact; pendingPoisonFrameContact=null;
-                if (resolvePoisonHp && playerCharacter.IsDead) HandleExplorationDeath();
+                if (explorationHpUpdated && playerCharacter.IsDead) HandleExplorationDeath();
                 else if (contact!=null) OnEnemyContact(contact);
             }
         }
@@ -252,7 +276,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void Jump()
         {
-            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || playerCharacter.IsDead) return;
             playerMovement.Jump();
             logger.LogInfo("[Dungeon] ジャンプ！");
         }
@@ -262,7 +286,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
-            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || playerCharacter.IsDead) return;
             playerMovement.StartDash();
         }
 
@@ -300,7 +324,7 @@ namespace Olca.Core.Logic.Dungeon
         /// <param name="contactInfo">接敵情報</param>
         public void StartBattle(ContactInfo contactInfo)
         {
-            if (IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended || playerCharacter.CurrentHp <= 0) return;
+            if (IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || playerCharacter.CurrentHp <= 0) return;
             playerCharacter.ResetPoisonIntervals();
             encounterRevision++;
             if (checkpointSession != null) { PlanCheckpointBattle(contactInfo); return; }
@@ -697,6 +721,13 @@ namespace Olca.Core.Logic.Dungeon
         private void ApplyObstaclePenalty(Obstacle obstacle)
         {
             var penaltyInfo = obstacleSystem.CreatePenaltyInfo(obstacle);
+            if (obstacle.Control != null) {
+                if (!explorationHpFrame) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
+                activeObstacleControl = obstacle.Control;
+                obstacleRemainingUnits = obstacle.Control.DurationFrames * 50L;
+                obstacleNextDamageUnits = obstacle.Control.DamageIntervalFrames * 50L;
+                playerMovement.ResetAirborneMovement(); // ダッシュ消費は返さず、その場で地上停止する。
+            }
 
             if (penaltyInfo.PenaltyType == ObstaclePenaltyType.CardDiscard)
             {
@@ -716,12 +747,14 @@ namespace Olca.Core.Logic.Dungeon
             }
 
             // 外部通知から再入されても、確定済みのHP・デッキが観測されるようにする。
-            OnObstaclePenalty?.Invoke(penaltyInfo);
+            if (explorationHpFrame) pendingObstaclePenalties.Add(penaltyInfo);
+            else OnObstaclePenalty?.Invoke(penaltyInfo);
             if (!explorationHpFrame) HandleExplorationDeath();
         }
         private void HandleExplorationDeath()
         {
             if (!playerCharacter.IsDead || IsCheckpointBlocked || checkpointSuspended) return;
+            ClearObstacleControl();
             DiscardRunCurrency();
             if (checkpointSession == null) OnDungeonFailed?.Invoke();
             else {
@@ -825,6 +858,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         public void SuspendForCheckpoint()
         {
+            ClearObstacleControl();
             checkpointSuspended = true; playerMovement.Pause();
             currentBattle?.AbandonForCheckpoint();
             contactSystem.OnEnemyContact -= OnEnemyContact;
@@ -918,8 +952,8 @@ namespace Olca.Core.Logic.Dungeon
             (cell.Obstacle.PenaltyType == ObstaclePenaltyType.ImmediateDamage || cell.Obstacle.PenaltyType == ObstaclePenaltyType.CardDiscard) &&
             cell.Obstacle.PenaltyValue >= 0 && !string.IsNullOrWhiteSpace(cell.Obstacle.ObstacleId) && cell.Obstacle.StatusEffectId == null;
         private static Obstacle CopyObstacle(Obstacle value) => value.PenaltyType == ObstaclePenaltyType.CardDiscard
-            ? Obstacle.CreateCardDiscardObstacle(value.ObstacleId, value.Name, value.PenaltyValue)
-            : new Obstacle(value.ObstacleId, value.Name, value.PenaltyValue);
+            ? Obstacle.CreateCardDiscardObstacle(value.ObstacleId, value.Name, value.PenaltyValue, value.Control)
+            : new Obstacle(value.ObstacleId, value.Name, value.PenaltyValue, value.Control);
         private readonly string dungeonName;
         private readonly int initialDeckSize;
         internal IReadOnlyDictionary<int, Enemy> Enemies => enemies;
@@ -1152,7 +1186,10 @@ namespace Olca.Core.Logic.Dungeon
             }
         }
         internal static void WriteObstacle(System.IO.BinaryWriter writer, Obstacle obstacle)
-        { Text(writer, obstacle.ObstacleId); Text(writer, obstacle.Name); writer.Write((int)obstacle.PenaltyType); writer.Write(obstacle.PenaltyValue); Text(writer, obstacle.StatusEffectId); }
+        {
+            Text(writer, obstacle.ObstacleId); Text(writer, obstacle.Name); writer.Write((int)obstacle.PenaltyType); writer.Write(obstacle.PenaltyValue); Text(writer, obstacle.StatusEffectId);
+            if (obstacle.Control != null) { writer.Write("obstacle-control-v1"); writer.Write(obstacle.Control.DurationFrames); writer.Write(obstacle.Control.IsRestraint); writer.Write(obstacle.Control.DamagePerPulse); writer.Write(obstacle.Control.DamageIntervalFrames); }
+        }
         internal static string ObstacleHash(Obstacle obstacle) => Hash(writer => WriteObstacle(writer, obstacle));
         internal static string GrantHash(TuningGrantDefinition g) => Hash(w => Grant(w, g));
         internal static string CardHash(Card c) => Hash(w => {
