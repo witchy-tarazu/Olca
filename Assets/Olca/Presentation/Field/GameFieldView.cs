@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
@@ -520,6 +521,7 @@ namespace Olca.Presentation.Field
             foreach (var (cellIndex, enemy) in allEnemies)
             {
                 var view = CreateEnemyView(enemy, cellIndex);
+                view.SetStrongEnemy(dungeonSystem.Map.StrongEnemyCells.Contains(cellIndex));
                 enemyViews.Add(view);
             }
         }

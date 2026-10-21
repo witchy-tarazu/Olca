@@ -2526,21 +2526,26 @@ namespace Olca.Tests.Integration
             var c=StartStandard();KeyboardButton(c,"ConfirmDungeonSelection");var d=Model(c).Dungeon;
             CollectionAssert.AreEqual(new[]{52,54},d.Map.Visits.Select(v=>v.Cell));Assert.IsTrue(d.Map.Visits[0].IsShop);Assert.IsFalse(d.Map.Visits[1].IsShop);
             Assert.AreEqual(3,d.Map.Visits[0].Slots);Assert.AreEqual(1,d.Map.Visits[0].Options.Count(o=>o.RemoveCount==1));Assert.IsTrue(d.Map.Visits[0].Options.All(o=>o.Price==10));Assert.AreEqual(20,d.Map.Visits[1].Options.Single().Heal);
+            CollectionAssert.AreEqual(new[]{50},d.Map.StrongEnemyCells);
+            Assert.AreEqual(100,d.Map.ItemRewardChance);Assert.AreEqual(1,d.Map.ItemRewards.Count);
+            Assert.AreEqual(1,d.Map.ItemRewards[0].Weight);Assert.AreEqual(20,d.Map.ItemRewards[0].Item.Heal);
             Assert.AreEqual(20,d.Map.GetCell(51).Item.Heal);Assert.AreEqual(50,d.Map.GetCell(50).Enemy.MaxHp);Assert.AreEqual(100,d.Player.CurrentHp);Assert.AreEqual(0,d.Currency);Assert.AreEqual(0,c.PersistentProgress.Tokens);
             var start=c.PersistentProgress.NextDeparture.Start;Assert.AreEqual(2,start.Visits.Length);Assert.IsTrue(start.Visits.All(v=>!v.Closed));
         }
         [TestCase(false,false,0)][TestCase(false,true,0)][TestCase(true,false,0)][TestCase(true,true,0)]
         [TestCase(false,false,1)][TestCase(false,true,1)][TestCase(false,false,2)][TestCase(false,true,2)]
+        [TestCase(false,false,3)][TestCase(false,true,3)]
         public void 標準旧保存と旧出撃計画は旧マップで再開し帰還後の次回だけ新配置を使う(bool legacy,bool existingFile,int oldVisits)
         {
-            var c=StartStandard();var map=oldVisits>0?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonVisits",Hidden).Invoke(c,new object[]{false,oldVisits==1}):(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{legacy});
+            var c=StartStandard();var map=oldVisits==3?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutItemRewards",Hidden).Invoke(c,new object[]{false}):oldVisits>0?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonVisits",Hidden).Invoke(c,new object[]{false,oldVisits==1}):(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{legacy});
             var deck=(Deck)c.GetType().GetMethod("CreateDepartureDeck",Hidden).Invoke(c,new object[]{legacy});var memory=DungeonCheckpointSession.CreateDefault(map,deck);
             new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:memory);var old=memory.Store.Read();
             var progress=(ClearReturnSession)Get(c,"clearReturnSession");Assert.IsTrue(progress.PrepareNextDeparture(old,memory.Definitions.MapHash),progress.Error);
             var folder=System.IO.Path.Combine(directory,"runs",old.RunId);var file=new Olca.Unity.FileCheckpointStore(memory.Definitions,folder);
             if(existingFile)Assert.IsTrue(file.TryWrite(old,out var error),error);
             c=StartStandard();if((bool)Get(c,"awaitingCheckpointChoice"))Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
-            Assert.AreEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(oldVisits>0?2:0,Model(c).Dungeon.Map.Visits.Count);if(oldVisits>0)Assert.AreEqual(oldVisits==1?2:3,Model(c).Dungeon.Map.Visits[0].Slots);Assert.IsNull(Model(c).Dungeon.Map.GetCell(51).Item);
+            Assert.AreEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual(oldVisits>0?2:0,Model(c).Dungeon.Map.Visits.Count);if(oldVisits>0)Assert.AreEqual(oldVisits==1?2:3,Model(c).Dungeon.Map.Visits[0].Slots);if(oldVisits==3)Assert.AreEqual(20,Model(c).Dungeon.Map.GetCell(51).Item.Heal);else Assert.IsNull(Model(c).Dungeon.Map.GetCell(51).Item);
+            Assert.AreEqual(0,Model(c).Dungeon.Map.StrongEnemyCells.Count);Assert.AreEqual(0,Model(c).Dungeon.Map.ItemRewards.Count);
             var bytes=System.IO.File.ReadAllBytes(file.ActivePath);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");KeyboardButton(c,"NextDeparture");
             CollectionAssert.AreEqual(new[]{52,54},Model(c).Dungeon.Map.Visits.Select(v=>v.Cell));Assert.AreNotEqual(old.RunId,c.PersistentProgress.NextDeparture.Start.RunId);
             CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(file.ActivePath));Assert.AreEqual(0,c.PersistentProgress.Tokens);
@@ -4438,6 +4443,26 @@ namespace Olca.Tests.Integration
 {
     public class ItemBattleRewardTests
     {
+        [Test]
+        public void 強敵マークは固定一個で戦闘復帰と死亡および再初期化に追随する()
+        {
+            var go = new UnityEngine.GameObject("strong-marker-test");
+            try {
+                var view = go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
+                var enemy = new Enemy("enemy", "既存敵", 50, ElementType.None, new Vector2Int(2,0));
+                view.Initialize(enemy, 2f); view.SetStrongEnemy(true); view.SetStrongEnemy(true);
+                var marker = go.transform.Find("StrongEnemyMarker");
+                Assert.IsNotNull(marker); Assert.IsTrue(marker.gameObject.activeSelf); Assert.AreEqual(1, go.transform.childCount);
+                var position = marker.localPosition; var size = marker.localScale;
+                view.OnBattleStarted(null); Assert.IsFalse(marker.gameObject.activeSelf);
+                view.OnBattleEnded(); Assert.IsTrue(marker.gameObject.activeSelf);
+                Assert.AreEqual(position,marker.localPosition); Assert.AreEqual(size,marker.localScale);
+                enemy.TakeDamage(50,ElementType.None); view.OnBattleEnded(); Assert.IsFalse(marker.gameObject.activeSelf);
+                view.Initialize(new Enemy("normal","通常敵",50,ElementType.None,new Vector2Int(2,0)),2f);
+                Assert.IsFalse(marker.gameObject.activeSelf);
+            } finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
         private sealed class FaultStore:ICheckpointStore{
             public readonly MemoryCheckpointStore Inner;public bool Fail;public System.Action During;
             public FaultStore(CheckpointDefinitions defs){Inner=new MemoryCheckpointStore(defs);}

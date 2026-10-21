@@ -77,6 +77,7 @@ namespace Olca.Presentation.Field
             this.dungeonWorldX = dungeonX;
             this.gridView = null;
             this.previousHp = enemy.CurrentHp;
+            SetStrongEnemy(false);
 
             // Prefab 経由では Sprite がシリアライズされないためランタイムで生成
             var bodyRenderer = enemyView?.BodyRenderer;
@@ -85,6 +86,27 @@ namespace Olca.Presentation.Field
 
             enemyView?.Initialize(enemy);
             UpdatePosition();
+        }
+
+        private GameObject strongMarker;
+        private bool strongEnemy;
+        /// <summary>探索中の強敵だけ、頭上の固定ダイヤで接触前に区別する。</summary>
+        public void SetStrongEnemy(bool strong)
+        {
+            strongEnemy = strong;
+            if (strong && strongMarker == null)
+            {
+                strongMarker = new GameObject("StrongEnemyMarker");
+                strongMarker.transform.SetParent(transform, false);
+                strongMarker.transform.localPosition = new Vector3(0f, 1.65f, 0f);
+                strongMarker.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                strongMarker.transform.localScale = new Vector3(0.22f, 0.22f, 1f);
+                var renderer = strongMarker.AddComponent<SpriteRenderer>();
+                renderer.sprite = CreateWhiteSprite();
+                renderer.color = new Color(0.35f, 0.95f, 1f, 0.9f);
+                renderer.sortingOrder = 5;
+            }
+            if (strongMarker != null) strongMarker.SetActive(strong && gridView == null && enemy != null && !enemy.IsDead);
         }
 
         private static Sprite CreateWhiteSprite()
@@ -115,6 +137,7 @@ namespace Olca.Presentation.Field
                 gameObject.SetActive(false);
                 return;
             }
+            if (strongMarker != null) strongMarker.SetActive(false);
             gridView = grid;
             enemyView?.ShowHp();
             UpdatePosition();
@@ -125,6 +148,7 @@ namespace Olca.Presentation.Field
         {
             SetHiddenByBlindness(false);
             gridView = null;
+            SetStrongEnemy(strongEnemy);
             enemyView?.HideHp();
             if (hiddenForBattle)
             {
