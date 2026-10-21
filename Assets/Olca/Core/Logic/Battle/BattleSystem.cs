@@ -363,8 +363,8 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// プレイヤーの基本攻撃
         /// </summary>
-        public void PlayerBasicAttack(Enemy target) => ApplyPlayerBasicAttack(target, 1);
-        private void ApplyPlayerBasicAttack(Enemy target, int multiplier)
+        public void PlayerBasicAttack(Enemy target) => ApplyPlayerBasicAttack(target, Transformations.ActiveAttack?.NormalPowerPercent ?? 100);
+        private void ApplyPlayerBasicAttack(Enemy target, long powerPercent)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
@@ -373,8 +373,8 @@ namespace Olca.Core.Logic.Battle
             BeginResolution();
             try
             {
-                int damage = (int)Math.Min(int.MaxValue, (long)player.AttackPower * multiplier);
-                target.TakeDamage(damage, ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
+                int damage = (int)Math.Min(int.MaxValue, (decimal)player.AttackPower * powerPercent / 100);
+                target.TakeDamage(damage, Transformations.ActiveAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
                 OnPlayerAttack?.Invoke(target, damage);
@@ -388,10 +388,23 @@ namespace Olca.Core.Logic.Battle
         public bool TryPlayerBasicAttackForward(int multiplier = 1)
         {
             if (multiplier < 1) throw new ArgumentOutOfRangeException(nameof(multiplier));
+            long percent = (long)(Transformations.ActiveAttack?.NormalPowerPercent ?? 100) * multiplier;
+            return TryPlayerBasicAttackForwardWithPercent(percent);
+        }
+        public bool TryPlayerBasicAttackForward(bool charged, int fallbackChargeMultiplier = 2)
+        {
+            if (fallbackChargeMultiplier < 1) throw new ArgumentOutOfRangeException(nameof(fallbackChargeMultiplier));
+            var attack = Transformations.ActiveAttack;
+            long percent = attack != null ? (charged ? attack.ChargedPowerPercent : attack.NormalPowerPercent)
+                : charged ? 100L * fallbackChargeMultiplier : 100;
+            return TryPlayerBasicAttackForwardWithPercent(percent);
+        }
+        private bool TryPlayerBasicAttackForwardWithPercent(long powerPercent)
+        {
             if (!CanPlayerBasicAttack) return false;
             foreach (var enemy in enemies)
                 if (!enemy.IsDead && enemy.GridPosition.X == player.GridPosition.X + 1 && enemy.GridPosition.Y == player.GridPosition.Y) {
-                    ApplyPlayerBasicAttack(enemy, multiplier); return true;
+                    ApplyPlayerBasicAttack(enemy, powerPercent); return true;
                 }
             return false;
         }

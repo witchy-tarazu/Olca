@@ -173,20 +173,22 @@ namespace Olca.Core.Domain
     {
         public string Id { get; }
         public int HandSizeBonus { get; }
+        public TransformationAttackDefinition Attack { get; }
         private readonly System.Collections.Generic.Dictionary<string, TransformationCardConversion> cardConversions
             = new System.Collections.Generic.Dictionary<string, TransformationCardConversion>(System.StringComparer.Ordinal);
         internal Card ConvertHandCard(Card card) => cardConversions.TryGetValue(card.Id, out var rule) ? rule.CreateCard() : null;
         public ElementResistances Resistances { get; }
         public TransformationWeakness Weakness { get; }
         public ElementType BreakElement => Weakness.Element;
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null)
-            : this(id, resistances, new TransformationWeakness(breakElement), handSizeBonus, cardConversions) { }
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null)
-            : this(id, resistances, new TransformationWeakness(breakProperty), handSizeBonus, cardConversions) { }
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null)
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null, TransformationAttackDefinition attack = null)
+            : this(id, resistances, new TransformationWeakness(breakElement), handSizeBonus, cardConversions, attack) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null, TransformationAttackDefinition attack = null)
+            : this(id, resistances, new TransformationWeakness(breakProperty), handSizeBonus, cardConversions, attack) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null, TransformationAttackDefinition attack = null)
         {
             if (handSizeBonus < 0) throw new System.ArgumentOutOfRangeException(nameof(handSizeBonus));
             HandSizeBonus = handSizeBonus;
+            Attack = attack;
             foreach (var rule in cardConversions ?? System.Array.Empty<TransformationCardConversion>()) {
                 if (rule == null) throw new System.ArgumentException("変換定義がnullです", nameof(cardConversions));
                 this.cardConversions.Add(rule.SourceCardId, rule);
@@ -209,6 +211,25 @@ namespace Olca.Core.Domain
             template = (targetTemplate ?? throw new System.ArgumentNullException(nameof(targetTemplate))).Clone();
         }
         internal Card CreateCard() => template.Clone();
+    }
+
+    /// <summary>既存の前方1マス攻撃に渡す変身専用性能。製品値・専用モーションは持たない。</summary>
+    public sealed class TransformationAttackDefinition
+    {
+        public ElementType Element { get; }
+        public int NormalPowerPercent { get; }
+        public int ChargedPowerPercent { get; }
+        public int ChargeFrames { get; }
+        public int IntervalFrames { get; }
+        public TransformationAttackDefinition(ElementType element, int normalPowerPercent = 100,
+            int chargedPowerPercent = 200, int chargeFrames = 60, int intervalFrames = 12)
+        {
+            if (!System.Enum.IsDefined(typeof(ElementType), element)) throw new System.ArgumentOutOfRangeException(nameof(element));
+            if (normalPowerPercent < 0 || chargedPowerPercent < 0 || chargeFrames < 1 || intervalFrames < 1)
+                throw new System.ArgumentOutOfRangeException("攻撃率は非負、期間は正の論理フレーム数が必要です");
+            Element = element; NormalPowerPercent = normalPowerPercent; ChargedPowerPercent = chargedPowerPercent;
+            ChargeFrames = chargeFrames; IntervalFrames = intervalFrames;
+        }
     }
 
 }

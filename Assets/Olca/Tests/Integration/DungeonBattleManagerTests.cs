@@ -2866,8 +2866,8 @@ namespace Olca.Tests.Integration
             }
         }
 
-        [Test]
-        public void 実キーZと保存したリマップJの短押しは成長後の攻撃値を通常Controllerへ渡す()
+        [TestCase(false)] [TestCase(true)]
+        public void 実キーZと保存したリマップJの短押しは成長後の攻撃値を通常Controllerへ渡す(bool transformed)
         {
             var progress = new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress"));
             Assert.IsTrue(progress.TryWrite(0,new ClearReturnProfile { Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Experience=100,Level=2 },out var error),error);
@@ -2875,6 +2875,7 @@ namespace Olca.Tests.Integration
             battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
             var target=battle.Enemies[0];target.MoveTo(new Vector2Int(battle.Player.GridPosition.X+1,battle.Player.GridPosition.Y));
             Assert.AreEqual(11,battle.Player.AttackPower);
+            if(transformed){battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("remap",ElementResistances.Neutral,ElementType.Water,attack:new TransformationAttackDefinition(ElementType.Fire,chargedPowerPercent:250,chargeFrames:6))});battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());battle.Transformations.TryPreview("remap");battle.CustomScreen.Confirm();battle.CustomScreen.Close();}
             var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=(Olca.Unity.UnityInputProvider)Get(c,"inputProvider");
             void Tap(UnityEngine.InputSystem.Key key) {
                 var queue=new LogicalInputQueue();provider.CaptureTimestamped();
@@ -2897,7 +2898,7 @@ namespace Olca.Tests.Integration
                 hp=target.CurrentHp;for(int f=1;f<=60;f++)Tick(c,heldQueue.Take(f));
                 UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();
                 foreach(var e in provider.CaptureTimestamped())heldQueue.Enqueue(61,e.Input);
-                Tick(c,heldQueue.Take(61));Assert.AreEqual(hp-22,target.CurrentHp,"保存済みJの保持/解放を通常Controllerでタメ分岐する");
+                Tick(c,heldQueue.Take(61));Assert.AreEqual(hp-(transformed?27:22),target.CurrentHp,"保存済みJの保持/解放を通常Controllerでタメ分岐する");
                 Call(c,"RefreshBasicAttackHud");var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
                 Assert.IsTrue(hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Any(t=>t.text.Contains("[J]")));
                 c=StartCombatDefaults(18,180);Assert.AreEqual("J",c.GameplayKeyboardProfile.Bindings[("keyboard","battle","AttackPrimary")]);
@@ -3664,6 +3665,57 @@ namespace Olca.Tests.Integration
         }
         private void Step(LogicalInput input=null)=>state.Tick(battle,input??new LogicalInput(),60,12);
         private static LogicalInput Tap(bool card=false)=>new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true,CardUseButtonDown=card};
+        private void SetupForm(bool confirm = true)
+        {
+            target=new Enemy("target","検証",200,ElementType.None,new Vector2Int(2,0),resistances:new ElementResistances(fire:50,water:50));
+            battle=new Olca.Core.Logic.Battle.BattleSystem(new PlayerCharacter(500,new Vector2Int(1,0),attackPower:11),new List<Enemy>{target,new Enemy("keeper","検証",200,ElementType.None,new Vector2Int(5,0))},new Deck());
+            state=new Olca.Application.Battle.BasicAttackInputState();
+            battle.Transformations.Configure(new[]{
+                new TransformationDefenseDefinition("fire",ElementResistances.Neutral,ElementType.Water,attack:new TransformationAttackDefinition(ElementType.Fire,150,250,3,4)),
+                new TransformationDefenseDefinition("water",ElementResistances.Neutral,ElementType.Fire,attack:new TransformationAttackDefinition(ElementType.Water,100,300,4,6))});
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());
+            if(confirm){battle.Transformations.TryPreview("fire");battle.CustomScreen.Confirm();battle.CustomScreen.Close();}
+        }
+        [Test]
+        public void 変身攻撃はプレビューで未発動かつ確定後だけ固定属性と専用タメ閾値を使う()
+        {
+            SetupForm(false);var t=battle.Transformations;Assert.IsNull(t.ActiveAttack);t.TryPreview("fire");Assert.AreEqual(ElementType.Fire,t.PreviewAttack.Element);Step(Tap());Assert.AreEqual(200,target.CurrentHp);
+            t.TryCancelPending();Assert.IsNull(t.PreviewAttack);Assert.IsNull(t.ActiveAttack);
+            t.TryPreview("fire");battle.CustomScreen.Confirm();battle.CustomScreen.Close();Step(Tap());Assert.AreEqual(192,target.CurrentHp,"11×150%を整数化後に火耐性50を適用");Assert.AreEqual(4,state.CooldownFrames);
+            for(int i=0;i<4;i++)Step();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            Step(new LogicalInput{BasicAttackButton=true});Step(new LogicalInput{BasicAttackButton=true});Assert.AreEqual(3,state.ChargeFrames);Assert.AreEqual(192,target.CurrentHp);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(179,target.CurrentHp,"専用250%を使い呼出元の通常2倍で代用しない");Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(179,target.CurrentHp);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 変身の専用タメも停止中は保持し取消プレビューで元性能へ戻り新押下だけ再開する(bool custom)
+        {
+            SetupForm();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step(new LogicalInput{BasicAttackButton=true});
+            if(custom){battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());battle.Transformations.TryPreview("water");}
+            else battle.Pause(BattlePauseReason.User);
+            for(int f=0;f<10;f++)Step(new LogicalInput{BasicAttackButton=true});Assert.AreEqual(2,state.ChargeFrames);
+            if(custom){battle.Transformations.TryCancelPending();battle.CustomScreen.Close();}else battle.Resume(BattlePauseReason.User);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200,target.CurrentHp);Assert.AreEqual(2,state.ChargeFrames);
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(187,target.CurrentHp);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void タメ途中の確定切替と変身終了は旧量と解放を攻撃へ転用しない(bool end)
+        {
+            SetupForm();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step(new LogicalInput{BasicAttackButton=true});Step(new LogicalInput{BasicAttackButton=true});
+            if(end)battle.Player.EndTransformationDefense();else{
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());battle.Transformations.TryPreview("water");battle.CustomScreen.Confirm();Step(new LogicalInput{BasicAttackButton=true});battle.CustomScreen.Close();}
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(0,state.ChargeFrames);Assert.AreEqual(200,target.CurrentHp);Assert.IsFalse(state.IsCharging);
+            Step(Tap());Assert.AreEqual(end?189:195,target.CurrentHp);if(end)Assert.IsNull(battle.Transformations.ActiveAttack);else Assert.AreEqual(ElementType.Water,battle.Transformations.ActiveAttack.Element);
+        }
+        [Test]
+        public void 変身タメのカード優先と未設定互換は性能を二重適用せず大きな倍率も飽和する()
+        {
+            SetupForm();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step(new LogicalInput{BasicAttackButton=true});Step(new LogicalInput{BasicAttackButton=true,CardUseButtonDown=true});
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200,target.CurrentHp);Assert.AreEqual(0,state.ChargeFrames);
+            SetupBattle();Assert.IsTrue(battle.TryPlayerBasicAttackForward(int.MaxValue));Assert.IsTrue(target.IsDead,"既存倍率入口を百分率の上限で早期切捨てしない");
+            var defaults=new TransformationAttackDefinition(ElementType.Fire);Assert.AreEqual(100,defaults.NormalPowerPercent);Assert.AreEqual(200,defaults.ChargedPowerPercent);Assert.AreEqual(60,defaults.ChargeFrames);Assert.AreEqual(12,defaults.IntervalFrames);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new TransformationAttackDefinition((ElementType)999));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new TransformationAttackDefinition(ElementType.Fire,chargeFrames:0));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new TransformationAttackDefinition(ElementType.Fire,normalPowerPercent:-1));
+        }
+
         [TestCase(2,0,189)][TestCase(3,0,200)][TestCase(0,0,200)][TestCase(2,1,200)]
         public void 前方一マス同じ列の敵だけに成長後の無属性攻撃を適用する(int x,int y,int hp)
         {SetupBattle(x,y);Step(Tap());Assert.AreEqual(hp,target.CurrentHp);}
@@ -3709,10 +3761,11 @@ namespace Olca.Tests.Integration
             Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});state.CancelCharge();
             Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200,target.CurrentHp);
         }
-        [Test]
-        public void ポインター保持は同じタメ状態へ入り取消と別指を攻撃へ転用しない()
+        [TestCase(false)] [TestCase(true)]
+        public void ポインター保持は同じタメ状態へ入り取消と別指を攻撃へ転用しない(bool transformed)
         {
-            SetupBattle();var o=new UnityEngine.GameObject("hold-input");
+            SetupBattle();
+            if(transformed){battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("touch",ElementResistances.Neutral,ElementType.Water,attack:new TransformationAttackDefinition(ElementType.Fire,chargedPowerPercent:300,chargeFrames:6))});battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());battle.Transformations.TryPreview("touch");battle.CustomScreen.Confirm();battle.CustomScreen.Close();}var o=new UnityEngine.GameObject("hold-input");
             try {
                 var pointer=o.AddComponent<Olca.Presentation.Dungeon.BasicAttackTapButton>();
                 bool down=false,up=false,held=false;int submits=0;
@@ -3723,11 +3776,11 @@ namespace Olca.Tests.Integration
                 var other=new UnityEngine.EventSystems.PointerEventData(null){pointerId=2,eligibleForClick=true};
                 pointer.OnPointerUp(other);pointer.OnPointerClick(other);Assert.IsTrue(held);
                 pointer.OnPointerUp(data);pointer.OnPointerClick(data);Step(new LogicalInput{BasicAttackButtonUp=up});
-                Assert.AreEqual(178,target.CurrentHp);up=false;
+                Assert.AreEqual(transformed?167:178,target.CurrentHp);up=false;
                 for(int f=0;f<12;f++)Step();
                 pointer.OnPointerDown(data);Step(new LogicalInput{BasicAttackButtonDown=down,BasicAttackButton=held});
                 data.eligibleForClick=false;pointer.OnPointerUp(data);pointer.OnPointerClick(data);Step();
-                Assert.AreEqual(178,target.CurrentHp);Assert.AreEqual(0,state.ChargeFrames);
+                Assert.AreEqual(transformed?167:178,target.CurrentHp);Assert.AreEqual(0,state.ChargeFrames);
                 pointer.OnSubmit(null);Assert.AreEqual(1,submits);
             }finally{UnityEngine.Object.DestroyImmediate(o);}
         }

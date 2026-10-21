@@ -793,6 +793,8 @@ namespace Olca.Core.Logic.Battle
         public event Action OnPreviewChanged;
         public string PendingId => pending?.Id;
         public string ActiveId { get; private set; }
+        public TransformationAttackDefinition ActiveAttack => ActiveId != null && available.TryGetValue(ActiveId, out var definition) ? definition.Attack : null;
+        public TransformationAttackDefinition PreviewAttack => pending != null ? pending.Attack : ActiveAttack;
         public IReadOnlyList<string> UsedIds => used.OrderBy(id => id, StringComparer.Ordinal).ToArray();
         public bool IsUsed(string id) => id != null && used.Contains(id);
         public TransformationSelectionState(PlayerCharacter player, CustomScreenSystem screen)

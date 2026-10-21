@@ -194,7 +194,7 @@ namespace Olca.Application.Battle
 
 namespace Olca.Application.Battle
 {
-    // タメ性能未定義の間の暫定短押し入力。拘束中の入力を予約せず、カードを優先する。
+    // 短押し/タメと確定済み変身の性能を共通入力へ接続。拘束中に予約せずカードを優先する。
     public sealed class BasicAttackInputState
     {
         private Olca.Core.Logic.Battle.BattleSystem current;
@@ -213,6 +213,9 @@ namespace Olca.Application.Battle
             if (chargeFrames < 1 || intervalFrames < 1 || chargeMultiplier < 1) throw new System.ArgumentOutOfRangeException();
             if (!ReferenceEquals(current, battle)) { Reset(); current = battle; form = battle?.Transformations.ActiveId; }
             if (battle == null) return;
+            var attack = battle.Transformations.ActiveAttack;
+            chargeFrames = attack?.ChargeFrames ?? chargeFrames;
+            intervalFrames = attack?.IntervalFrames ?? intervalFrames;
             if (form != battle.Transformations.ActiveId) { CancelCharge(); form = battle.Transformations.ActiveId; }
             if (!battle.IsPaused && CooldownFrames > 0) CooldownFrames--;
             if (input.CardUseButtonDown) { CancelCharge(); return; }
@@ -230,9 +233,9 @@ namespace Olca.Application.Battle
             if (input.BasicAttackButtonUp && !input.BasicAttackButton)
             {
                 bool fire = armed && CooldownFrames == 0 && battle.CanPlayerBasicAttack;
-                int multiplier = ChargeFrames >= chargeFrames ? chargeMultiplier : 1;
+                bool charged = ChargeFrames >= chargeFrames;
                 CancelCharge();
-                if (fire) { CooldownFrames = intervalFrames; battle.TryPlayerBasicAttackForward(multiplier); }
+                if (fire) { CooldownFrames = intervalFrames; battle.TryPlayerBasicAttackForward(charged, chargeMultiplier); }
             }
             else if (!input.BasicAttackButton) CancelCharge();
         }
