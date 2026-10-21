@@ -1068,7 +1068,7 @@ namespace Olca.Presentation.Field
             this.font = font; this.save = save;
             var root = (RectTransform)transform;
             root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
-            gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(0.03f, 0.05f, 0.1f, 1f);
+            gameObject.AddComponent<UnityEngine.UI.Image>().color = Olca.Presentation.Dungeon.UiLook.Surface;
             MakeText("Title", "キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38);
             status = MakeText("Status", "", transform, new Vector2(0, 360), new Vector2(1740, 100), 26);
             var defaults = Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
@@ -1100,7 +1100,7 @@ namespace Olca.Presentation.Field
             resetConfirmation.transform.SetParent(transform, false);
             var rect = (RectTransform)resetConfirmation.transform;
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
-            resetConfirmation.GetComponent<UnityEngine.UI.Image>().color = new Color(0.02f, 0.03f, 0.06f, 0.98f);
+            resetConfirmation.GetComponent<UnityEngine.UI.Image>().color = Olca.Presentation.Dungeon.UiLook.Surface;
             MakeText("ResetQuestion", "初期配置へ戻しますか？\n保存・適用するまでは変更を破棄できます。", resetConfirmation.transform,
                 new Vector2(0, 100), new Vector2(1500, 150), 34);
             MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75))
@@ -1118,6 +1118,7 @@ namespace Olca.Presentation.Field
             applied = profile; edit = profile.BeginEdit(); listening = null;
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             resetConfirmation.SetActive(false); gameObject.SetActive(true);
+            transform.SetAsLastSibling(); // ポーズの遮蔽面より前へ出し、設定の操作を受け取る。
             Refresh("変更するキーを選んでください。同じ場面の割り当ては交換されます。");
         }
         public void BeginCapture((string Device, string Context, string Action) slot)
@@ -1172,7 +1173,7 @@ namespace Olca.Presentation.Field
         {
             var obj = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Text)); obj.transform.SetParent(parent, false);
             var view = obj.GetComponent<UnityEngine.UI.Text>(); view.text = text; view.font = font; view.fontSize = fontSize;
-            view.alignment = TextAnchor.MiddleCenter; view.raycastTarget = false;
+            view.alignment = TextAnchor.MiddleCenter; Olca.Presentation.Dungeon.UiLook.Label(view);
             view.rectTransform.anchorMin = view.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             view.rectTransform.anchoredPosition = position; view.rectTransform.sizeDelta = size; return view;
         }
@@ -1182,7 +1183,7 @@ namespace Olca.Presentation.Field
             var rect = (RectTransform)obj.transform; rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f); rect.anchoredPosition = position; rect.sizeDelta = size;
             obj.GetComponent<UnityEngine.UI.Image>().color = new Color(0.12f, 0.2f, 0.36f, 1f);
             var button = obj.GetComponent<UnityEngine.UI.Button>(); button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
-            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); return button;
+            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); Olca.Presentation.Dungeon.UiLook.Button(button); return button;
         }
     }
 }

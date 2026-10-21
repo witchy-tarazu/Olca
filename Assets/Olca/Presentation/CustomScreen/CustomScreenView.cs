@@ -27,9 +27,9 @@ namespace Olca.Presentation.CustomScreen
         public Sprite GetCardIcon(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.CustomIcon;
-            if(assigned!=null||(id!="sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"))return assigned;
+            if(assigned!=null||(id!="sword"&&id!="fire_sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"))return assigned;
             if(!generatedMiniIcons.TryGetValue(id,out var icon)||icon==null){
-                icon=id=="sword"?SwordMiniIcon.Create():SupportMiniIcon.Create(id);
+                icon=(id=="sword"||id=="fire_sword")?SwordMiniIcon.Create(id=="fire_sword"):SupportMiniIcon.Create(id);
                 generatedMiniIcons[id]=icon;
             }
             return icon;
