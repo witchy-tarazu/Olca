@@ -2092,6 +2092,14 @@ namespace Olca.Tests.Dungeon
             var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store).Dungeon;d.Tick(600);Recover(d);Movement(d).SetPosition(9);d.Tick(200);Assert.IsNotNull(d.ActiveVisit);Assert.IsTrue(d.ExitVisit());var bad=store.Read();bad.TerrainChanges=new[]{new CheckpointTerrainStateDto{Cell=4,Type=PanelType.Normal}};Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
         }
         [Test]
+        public void 戦闘開始と保存復帰はパネル固定量を定義から渡し戦闘中の消費を探索へ戻さない()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(25,PanelType.Grass,7),new ExplorationTerrainCell(26,PanelType.Magma,11,13)},out var session,out var store);var d=g.Dungeon;
+            d.StartBattle(new ContactInfo{Enemy=d.Map.GetCell(29).Enemy,EnemyCellIndex=29});var b=d.CurrentBattle;Assert.IsNotNull(b);Assert.AreEqual(7,b.Field.GetPanelValues(new Vector2Int(0,0)).Heal);Assert.AreEqual(13,b.Field.GetPanelValues(new Vector2Int(1,0)).Damage);
+            b.RunLogicalFrame(()=>b.Player.MoveTo(new Vector2Int(2,0)));b.RunLogicalFrame(()=>b.Player.MoveTo(new Vector2Int(1,0)));Assert.AreEqual(87,b.Player.CurrentHp);Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(new Vector2Int(1,0)));Assert.AreEqual(PanelType.Magma,d.Map.GetTerrainType(26));
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out var error),error);var loaded=new DungeonSystem(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);loaded.ActivateCheckpoint();Assert.AreEqual(100,loaded.Player.CurrentHp);Assert.AreEqual(13,loaded.CurrentBattle.Field.GetPanelValues(new Vector2Int(1,0)).Damage);Assert.AreEqual(PanelType.Magma,loaded.CurrentBattle.Field.GetPanelType(new Vector2Int(1,0)));
+        }
+        [Test]
         public void 地形変更は実ファイル保存から候補の再抽選なしで復元する()
         {
             var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out var session,out var store).Dungeon;d.Tick(1400);Assert.IsNotNull(d.ActiveVisit);Assert.IsTrue(d.ExitVisit());

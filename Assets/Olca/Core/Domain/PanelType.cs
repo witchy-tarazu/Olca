@@ -35,3 +35,19 @@ namespace Olca.Core.Domain
         Hole
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>各戦闘パネルの固定量。種類を上書きする際は未指定なら既存の5へ戻す。</summary>
+    public sealed class BattlePanelValues
+    {
+        public static readonly BattlePanelValues Default = new BattlePanelValues();
+        public int Heal { get; }
+        public int Damage { get; }
+        public BattlePanelValues(int heal=5,int damage=5)
+        {
+            if(heal<0||damage<0)throw new System.ArgumentOutOfRangeException("パネル量は0以上が必要です");
+            Heal=heal;Damage=damage;
+        }
+    }
+}

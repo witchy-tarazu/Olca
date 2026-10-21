@@ -239,6 +239,7 @@ namespace Olca.Core.Logic.Battle
                     // 一時ヒット座標だけの変更を新しい接地へ転用しない。
                     if (enteredLogicalPosition)
                     {
+                        panelEffects.OnCharacterMoved(player);
                         if (enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == logicalPosition))
                             panelEffects.ApplyOnEnemyEnterEffect(enemies, player, logicalPosition);
                         else panelEffects.ApplyOnEnterEffect(player, logicalPosition);
@@ -264,6 +265,7 @@ namespace Olca.Core.Logic.Battle
                     BeginResolution();
                     try
                     {
+                        panelEffects.OnCharacterMoved(enemy);
                         panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
                         panelEffects.ApplyOnEnemyEnterEffect(enemies, player, position);
                     }
@@ -362,7 +364,7 @@ namespace Olca.Core.Logic.Battle
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (IsPaused || IsGameOver) return;
-            if (statusFrameParticipants == null && (player.HasParalysisState || player.HasPoisonState || player.HasConfusionState || player.HasBlindnessState)) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
+            if (statusFrameParticipants == null && (player.HasParalysisState || player.HasPoisonState || player.HasConfusionState || player.HasBlindnessState || panelEffects.HasRecoveryPanels)) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
 
             // 追加登録・通知は即時だが、Tick途中の召喚へ過去の経過時間を渡さない。
             // 状態異常とAIは同じ開始時参加者だけを更新する。
@@ -379,7 +381,7 @@ namespace Olca.Core.Logic.Battle
 
                 // 入力遮断中も自動滑り・移動待機時間は進める。能動入力だけを分離する。
                 playerMovement.Tick(deltaTimeMs, input, enemies, logicalFrameTick);
-                panelEffects.Tick(deltaTimeMs, player);
+                panelEffects.Tick(deltaTimeMs, player, tickParticipants, logicalFrameTick);
 
                 // 遅延効果を更新（投擲物の着弾など）
                 delayedEffects.Update(deltaTimeMs, logicalFrameTick);
@@ -655,6 +657,7 @@ namespace Olca.Core.Logic.Battle
             // 戦闘限定バフは勝敗通知より前に解除し、同じプレイヤーを使う次戦へ残さない。
             player.SetConcentrateBuff(1f);
             player.SetBarrier(0);
+            panelEffects.Clear();
             player.TerrainState.Clear();
             foreach (var enemy in enemies)
             {
@@ -679,6 +682,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            panelEffects.Clear();
             foreach (var entry in enemyDeathHandlers)
             {
                 entry.Key.CancelStatusFrame();

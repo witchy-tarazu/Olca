@@ -2489,7 +2489,7 @@ namespace Olca.Tests.Integration
         {
             var p=new PlayerCharacter(100);p.SetDepartureStyle(StyleFixtures()[1]);
             var field=new BattleField();var panels=new PanelEffectSystem(field,new MockLogger());field.ChangePanelType(p.GridPosition,PanelType.Magma);
-            panels.ApplyOnEnterEffect(p,p.GridPosition);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(PanelType.Normal,field.GetPanelType(p.GridPosition));
+            panels.ApplyOnEnterEffect(p,p.GridPosition);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(PanelType.Magma,field.GetPanelType(p.GridPosition));
             Assert.AreEqual(ElementType.Fire,p.ActiveElement);
         }
         [Test]

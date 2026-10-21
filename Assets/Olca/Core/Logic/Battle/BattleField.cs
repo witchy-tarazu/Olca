@@ -43,6 +43,19 @@ namespace Olca.Core.Logic.Battle
         public const int GRID_HEIGHT = 1;
 
         private readonly PanelType[,] panels;
+        private readonly BattlePanelValues[,] panelValues = new BattlePanelValues[GRID_WIDTH,GRID_HEIGHT];
+        private readonly long[,] panelRevisions = new long[GRID_WIDTH,GRID_HEIGHT];
+        public BattlePanelValues GetPanelValues(Vector2Int position)
+        {
+            if(!IsInBounds(position))throw new ArgumentOutOfRangeException(nameof(position));
+            return panelValues[position.X,position.Y]??BattlePanelValues.Default;
+        }
+        internal long GetPanelRevision(Vector2Int position)=>panelRevisions[position.X,position.Y];
+        internal bool HasRecoveryPanels {
+            get {for(int x=0;x<GRID_WIDTH;x++)for(int y=0;y<GRID_HEIGHT;y++)
+                if((panels[x,y]==PanelType.Grass||panels[x,y]==PanelType.Magma)&&GetPanelValues(new Vector2Int(x,y)).Heal>0)return true;
+                return false;}
+        }
         private readonly bool[,] permanentHoles = new bool[GRID_WIDTH, GRID_HEIGHT];
         private Vector2Int? protectedPosition;
         private Func<Vector2Int, bool> occupancyQuery;
@@ -107,7 +120,7 @@ namespace Olca.Core.Logic.Battle
         /// パネルタイプを変更
         /// 占有位置または一時移動元が穴に変更されようとした場合、ヒビにする
         /// </summary>
-        public void ChangePanelType(Vector2Int position, PanelType type)
+        public void ChangePanelType(Vector2Int position, PanelType type, BattlePanelValues values = null)
         {
             if (!IsInBounds(position))
             {
@@ -130,6 +143,8 @@ namespace Olca.Core.Logic.Battle
             }
 
             panels[position.X, position.Y] = type;
+            panelValues[position.X,position.Y]=values??BattlePanelValues.Default;
+            panelRevisions[position.X,position.Y]++;
             OnPanelChanged?.Invoke(position, type);
         }
 
@@ -172,6 +187,7 @@ namespace Olca.Core.Logic.Battle
                 for (int y = 0; y < GRID_HEIGHT; y++)
                 {
                     panels[x, y] = permanentHoles[x, y] ? PanelType.Hole : PanelType.Normal;
+                    panelValues[x,y]=BattlePanelValues.Default;panelRevisions[x,y]++;
                 }
             }
         }

@@ -206,7 +206,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             for(int x=0;x<BattleField.GRID_WIDTH;x++){
                 var terrain=map.GetTerrain(origin+x);
-                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),map.GetTerrainType(origin+x));
+                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),map.GetTerrainType(origin+x),new BattlePanelValues(terrain.Heal,terrain.Damage));
             }
         }
         private readonly bool hasFieldItems;

@@ -669,3 +669,81 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+namespace Olca.Tests.Battle
+{
+    public class BattlePanelValuesTests
+    {
+        private static PlayerCharacter Player(ElementType element,int hp=50)
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));p.TakeDamage(100-hp);
+            if(element!=ElementType.None)p.SetDepartureStyle(new DepartureStyleDefinition("fixture-"+element,"既存属性fixture",null,new TransformationAttackDefinition(element)));
+            return p;
+        }
+        private static BattleSystem Battle(PlayerCharacter p)=>new BattleSystem(p,new System.Collections.Generic.List<Enemy>{new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0))},new Deck());
+        private static void Frames(BattleSystem b,int count){for(int i=0;i<count;i++)b.TickFrame(17);}
+        [Test]
+        public void 固定量は不変で未指定上書きとリセットでは既存値へ戻り永続穴には適用しない()
+        {
+            var at=new Vector2Int(1,0);var f=new BattleField(new[]{new Vector2Int(5,0)});
+            Assert.AreEqual(5,f.GetPanelValues(at).Damage);f.ChangePanelType(at,PanelType.Magma,new BattlePanelValues(7,13));Assert.AreEqual(13,f.GetPanelValues(at).Damage);
+            f.ChangePanelType(at,PanelType.Grass);Assert.AreEqual(5,f.GetPanelValues(at).Heal);f.ChangePanelType(at,PanelType.Grass,new BattlePanelValues(0,0));f.ResetAllPanels();Assert.AreEqual(5,f.GetPanelValues(at).Heal);
+            f.ChangePanelType(new Vector2Int(5,0),PanelType.Magma,new BattlePanelValues(7,13));Assert.AreEqual(PanelType.Hole,f.GetPanelType(new Vector2Int(5,0)));Assert.AreEqual(5,f.GetPanelValues(new Vector2Int(5,0)).Damage);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new BattlePanelValues(-1,5));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new BattlePanelValues(5,-1));
+        }
+        [Test]
+        public void パネル別被害は通常進入経路を通り既存の防御無敵消費と二重進入を保つ()
+        {
+            var p=Player(ElementType.None,100);var b=Battle(p);var two=new Vector2Int(2,0);var three=new Vector2Int(3,0);b.Field.ChangePanelType(two,PanelType.Magma,new BattlePanelValues(7,13));b.Field.ChangePanelType(three,PanelType.Magma,new BattlePanelValues(11,7));
+            b.RunLogicalFrame(()=>p.MoveTo(two));Assert.AreEqual(87,p.CurrentHp);b.RunLogicalFrame(()=>p.MoveTo(three));Assert.AreEqual(80,p.CurrentHp);Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(two));p.MoveTo(three);Assert.AreEqual(80,p.CurrentHp);
+            b.ConfigureDefaultHitInvincibility(600);b.Field.ChangePanelType(two,PanelType.Magma,new BattlePanelValues(0,9));b.RunLogicalFrame(()=>p.MoveTo(two));Assert.AreEqual(71,p.CurrentHp);Assert.IsTrue(p.IsInvincible);b.Field.ChangePanelType(three,PanelType.Magma,new BattlePanelValues(0,20));b.RunLogicalFrame(()=>p.MoveTo(three));Assert.AreEqual(71,p.CurrentHp);Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(three));
+        }
+        [TestCase(ElementType.Earth,PanelType.Grass,7)] [TestCase(ElementType.Fire,PanelType.Magma,11)]
+        public void 属性一致だけがパネル固定量を六十論理フレームごとに回復し停止中は間隔を保つ(ElementType element,PanelType type,int heal)
+        {
+            var p=Player(element);var b=Battle(p);b.Field.ChangePanelType(p.GridPosition,type,new BattlePanelValues(heal,13));Frames(b,59);Assert.AreEqual(50,p.CurrentHp);b.Pause();Frames(b,100);Assert.AreEqual(50,p.CurrentHp);b.Resume();Frames(b,1);Assert.AreEqual(50+heal,p.CurrentHp);Assert.AreEqual(type,b.Field.GetPanelType(p.GridPosition));
+        }
+        [Test]
+        public void 移動往復と上書きとフロートは回復間隔を独立にリセットする()
+        {
+            var p=Player(ElementType.Earth);var b=Battle(p);var at=p.GridPosition;b.Field.ChangePanelType(at,PanelType.Grass,new BattlePanelValues(7));Frames(b,59);
+            b.RunLogicalFrame(()=>{p.MoveTo(new Vector2Int(0,0));p.MoveTo(at);});Frames(b,1);Assert.AreEqual(50,p.CurrentHp);Frames(b,59);Assert.AreEqual(57,p.CurrentHp);
+            Frames(b,59);b.Field.ChangePanelType(at,PanelType.Grass,new BattlePanelValues(11));Frames(b,1);Assert.AreEqual(57,p.CurrentHp);Frames(b,59);Assert.AreEqual(68,p.CurrentHp);
+            Frames(b,59);p.TerrainState.IsFloating=true;Frames(b,1);p.TerrainState.IsFloating=false;Frames(b,59);Assert.AreEqual(68,p.CurrentHp);Frames(b,1);Assert.AreEqual(79,p.CurrentHp);
+        }
+        [Test]
+        public void 敵の同居は属性と浮遊を個別判定し回復量や間隔を共有しない()
+        {
+            var p=Player(ElementType.None);var at=new Vector2Int(4,0);var a=new Enemy("a","土A",100,ElementType.Earth,at);var c=new Enemy("c","土B",100,ElementType.Earth,at);var fire=new Enemy("f","火",100,ElementType.Fire,at);var floating=new Enemy("l","浮遊",100,ElementType.Earth,at);floating.TerrainState.IsFloating=true;
+            foreach(var e in new[]{a,c,fire,floating})e.TakeDamage(50,ElementType.None);var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{a,c,fire,floating},new Deck());b.Field.ChangePanelType(at,PanelType.Grass,new BattlePanelValues(9));Frames(b,60);Assert.AreEqual(59,a.CurrentHp);Assert.AreEqual(59,c.CurrentHp);Assert.AreEqual(50,fire.CurrentHp);Assert.AreEqual(50,floating.CurrentHp);Assert.AreEqual(50,p.CurrentHp);
+        }
+        [Test]
+        public void 火属性だけのマグマは残して回復し非火属性進入時は全員を判定後消費する()
+        {
+            var p=Player(ElementType.Fire);var at=new Vector2Int(3,0);var fire=new Enemy("fire","火",100,ElementType.Fire,at);fire.TakeDamage(50,ElementType.None);var mover=new Enemy("m","他",100,ElementType.None,new Vector2Int(5,0));var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{fire,mover},new Deck());b.Field.ChangePanelType(at,PanelType.Magma,new BattlePanelValues(7,13));b.RunLogicalFrame(()=>p.MoveTo(at));Assert.AreEqual(PanelType.Magma,b.Field.GetPanelType(at));Frames(b,60);Assert.AreEqual(57,p.CurrentHp);Assert.AreEqual(57,fire.CurrentHp);
+            b.RunLogicalFrame(()=>mover.MoveTo(at));Assert.AreEqual(87,mover.CurrentHp);Assert.AreEqual(57,fire.CurrentHp);Assert.AreEqual(57,p.CurrentHp);Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(at));Frames(b,60);Assert.AreEqual(57,fire.CurrentHp);
+        }
+        [Test]
+        public void 同居全員へ設定被害を固定してから消費し防御と同フレーム回復を維持する()
+        {
+            var p=Player(ElementType.Earth);var at=new Vector2Int(4,0);p.MoveTo(at);var mover=new Enemy("m","移動",100,ElementType.None,new Vector2Int(3,0));var ground=new Enemy("g","地上",100,ElementType.None,at);var fire=new Enemy("f","火",100,ElementType.Fire,at);var floating=new Enemy("l","浮遊",100,ElementType.None,at);floating.TerrainState.IsFloating=true;var barrier=new Enemy("b","防御",100,ElementType.None,at);barrier.SetBarrier(5);var immune=new Enemy("i","無敵",100,ElementType.None,at);immune.SetInvincible(1000);
+            var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{mover,ground,fire,floating,barrier,immune},new Deck());b.ConfigureDefaultHitInvincibility(600);b.Field.ChangePanelType(at,PanelType.Magma,new BattlePanelValues(7,13));int events=0;b.PanelEffects.OnPanelEffectApplied+=(_,__)=>events++;
+            b.RunLogicalFrame(()=>{mover.MoveTo(at);p.Heal(7);});Assert.AreEqual(87,mover.CurrentHp);Assert.AreEqual(87,ground.CurrentHp);Assert.AreEqual(100,fire.CurrentHp);Assert.AreEqual(100,floating.CurrentHp);Assert.AreEqual(100,barrier.CurrentHp);Assert.AreEqual(0,barrier.BarrierHp);Assert.AreEqual(100,immune.CurrentHp);Assert.AreEqual(44,p.CurrentHp);Assert.AreEqual(1,events);Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(at));
+        }
+        [Test]
+        public void 同フレーム満タンからの継続回復と毒は合算して早期切捨てしない()
+        {
+            var p=Player(ElementType.Earth,100);var b=Battle(p);b.Field.ChangePanelType(p.GridPosition,PanelType.Grass,new BattlePanelValues(7));p.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,10000,10),60);Frames(b,59);Assert.AreEqual(100,p.CurrentHp);Frames(b,1);Assert.AreEqual(97,p.CurrentHp);
+        }
+        [Test]
+        public void 旧ミリ秒入口も同じ周期とHP集計を使い終了後は回復しない()
+        {
+            var p=Player(ElementType.Earth);var b=Battle(p);b.Field.ChangePanelType(p.GridPosition,PanelType.Grass,new BattlePanelValues(7));b.Tick(500);b.Tick(500);Assert.AreEqual(57,p.CurrentHp);b.RunLogicalFrame(()=>p.TakeDamage(1000));Assert.IsTrue(b.IsGameOver);b.Tick(5000);Assert.AreEqual(0,p.CurrentHp);
+        }
+        [Test]
+        public void ゼロ量と非対応属性は回復もダメージ由来無敵も増やさない()
+        {
+            var p=Player(ElementType.Earth);var b=Battle(p);b.ConfigureDefaultHitInvincibility(600);var at=new Vector2Int(2,0);b.Field.ChangePanelType(at,PanelType.Magma,new BattlePanelValues(0,0));b.RunLogicalFrame(()=>p.MoveTo(at));Assert.AreEqual(50,p.CurrentHp);Assert.IsFalse(p.IsInvincible);b.Field.ChangePanelType(at,PanelType.Grass,new BattlePanelValues(0));Frames(b,60);Assert.AreEqual(50,p.CurrentHp);b.Field.ChangePanelType(at,PanelType.Magma,new BattlePanelValues(9));Frames(b,60);Assert.AreEqual(50,p.CurrentHp);
+        }
+    }
+}
