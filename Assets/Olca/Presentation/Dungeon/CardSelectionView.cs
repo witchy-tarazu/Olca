@@ -207,6 +207,25 @@ namespace Olca.Presentation.Dungeon
             gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
         }
+        private int collectionPage;
+        private bool recipesTab;
+        public void RenderCollection(string[] cards,string[] recipes,bool pending,string error,Action close,Action retrySave)
+        {
+            if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("CardCollectionContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
+            Text("CollectionStatus",error??"永続入手で登録。融合の公開履歴はカード入手と別に保存します。",0,360,1700,80,24);
+            Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave);});
+            Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave);});
+            var rows=recipesTab?recipes:cards;const int perPage=4;int pages=Math.Max(1,(rows.Length+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
+            for(int n=0;n<perPage&&collectionPage*perPage+n<rows.Length;n++)Text("CollectionRow_"+n,rows[collectionPage*perPage+n],0,155-n*110,1740,100,25);
+            Button("PreviousCollectionPage","前へ",-430,-330,500,60,()=>{collectionPage--;RenderCollection(cards,recipes,pending,error,close,retrySave);}).interactable=collectionPage>0;
+            Button("NextCollectionPage","次へ",430,-330,500,60,()=>{collectionPage++;RenderCollection(cards,recipes,pending,error,close,retrySave);}).interactable=collectionPage+1<pages;
+            Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
+            Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
+            if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-515,850,55,retrySave);
+        }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;
@@ -247,7 +266,7 @@ namespace Olca.Presentation.Dungeon
                 Text("OwnedTitle", "永続所持カード", 0, 180, 1500, 60, 28);
                 for (int row = 0; row < PageSize && page * PageSize + row < profile.Owned.Length; row++) {
                     var card = profile.Owned[page * PageSize + row];
-                    Text("OwnedCard_" + row, card.Name + new string('★', (int)card.Level) + $"　{card.Count}/4枚", 0, 105 - row * 49, 1500, 48, 26);
+                    Text("OwnedCard_" + row, OwnedDefinition.DisplayName(card) + $"　{card.Count}/4枚", 0, 105 - row * 49, 1500, 48, 26);
                 }
                 if (profile.Owned.Length == 0) Text("NoOwnedCards", "永続所持カードはまだありません。", 0, 50, 1500, 80, 28);
                 Pages(profile, flow, blocked, error, pages, collectionOnly);
@@ -336,7 +355,7 @@ namespace Olca.Presentation.Dungeon
             Text("ExchangeBalance",$"所持 {profile.Tokens} トークン / 永続所持へ交換\n"+(error??"ランダム商品は帰還時に更新。任意の再抽選はできません。"),0,345,1750,100,25);
             var offers=profile.ExchangeStock?.Offers??Array.Empty<ExchangeOfferData>();const int rows=5;int pages=Math.Max(1,(offers.Length+rows-1)/rows);exchangePage=Math.Min(exchangePage,pages-1);
             for(int row=0;row<rows&&exchangePage*rows+row<offers.Length;row++){
-                var item=offers[exchangePage*rows+row];int owned=profile.Owned.SingleOrDefault(c=>c.Id==item.CardId&&c.Level==item.Level)?.Count??0;
+                var item=offers[exchangePage*rows+row];var ownedMatches=profile.Owned.Where(c=>c.Id==item.CardId&&c.Level==item.Level&&c.Name==item.Name&&c.Rarity==item.Rarity&&(item.CardDefinitionHash==null||c.DefinitionHash==item.CardDefinitionHash)).ToArray();int owned=ownedMatches.Length==1?ownedMatches[0].Count:0;
                 long total=(profile.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>()).SingleOrDefault(t=>t.ProductId==item.Id)?.Count??0;
                 bool sold=item.Limit!=ExchangeLimit.Unlimited&&(item.Limit==ExchangeLimit.PerRefresh?item.Purchased:total)>=item.Maximum;
                 string limit=item.Limit==ExchangeLimit.Unlimited?"無制限":item.Limit==ExchangeLimit.PerRefresh?$"更新まで {item.Purchased}/{item.Maximum}":$"通算 {total}/{item.Maximum}";
@@ -380,7 +399,7 @@ namespace Olca.Presentation.Dungeon
         }
 
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
-            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null)
+            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null)
         {
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
@@ -401,9 +420,9 @@ namespace Olca.Presentation.Dungeon
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
-                int count = draft.Count(c => c.Id == owned.Id && c.ExceedLevel == owned.Level); float y = 160 - row * 75;
-                Text("DepartureCard_" + index, owned.Name + new string('★', (int)owned.Level) + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -260, y, 1100, 65, 25);
-                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, () => change(index, -1)).interactable = !pending && option != null && count > 0;
+                int count = draftKeys!=null?draftKeys.Count(k=>k==OwnedDefinition.Key(owned)):draft.Count(c=>OwnedDefinition.CardMatches(owned,c)); float y = 160 - row * 75;
+                Text("DepartureCard_" + index, OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -260, y, 1100, 65, 25);
+                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, () => change(index, -1)).interactable = !pending && count > 0;
                 Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, () => change(index, 1)).interactable = !pending && option != null && (save!=null||(count < owned.Count && draft.Count < 20));
             }
             if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Olca.Core.Domain;
 using Olca.Core.Interfaces;
 
 namespace Olca.Application.Battle
@@ -11,9 +13,14 @@ namespace Olca.Application.Battle
     {
         // レシピ: 素材ID一覧（順序不問） → 結果カードID
         private readonly List<(List<string> materials, string resultId)> recipes;
+        private readonly SimpleCardFactory cardFactory;
 
-        public SimpleFusionRecipeProvider()
+        public IReadOnlyList<CollectionRecipe> CollectionRecipes => recipes.Select(r=>new CollectionRecipe(
+            "special/v1/"+string.Join("+",r.materials.OrderBy(x=>x))+"/"+r.resultId,r.materials,r.resultId, materialCards:r.materials.Select(id=>cardFactory.CreateById(id)), resultCard:cardFactory.CreateById(r.resultId))).ToArray();
+
+        public SimpleFusionRecipeProvider(SimpleCardFactory cardFactory=null)
         {
+            this.cardFactory=cardFactory??new SimpleCardFactory();
             recipes = new List<(List<string>, string)>
             {
                 // ソード + ボム → ファイアソード

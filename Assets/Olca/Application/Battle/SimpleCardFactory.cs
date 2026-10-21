@@ -1,5 +1,6 @@
 using Olca.Core.Logic.CardEffects;
 using System.Collections.Generic;
+using System.Linq;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
 
@@ -38,6 +39,19 @@ namespace Olca.Application.Battle
         private static readonly TuningGrantDefinition StandardTuning = new TuningGrantDefinition(
             "product/tuning/power-v1", new[] { new TuningEffectDefinition("power", 1,
                 new Dictionary<int, CardModifier> { [1] = new CardModifier { BonusDamage = 10 } }) });
+
+        /// <summary>固定スターターの仮構成。通常5種を各4枚、予備なし。</summary>
+        public IReadOnlyList<Card> CollectionCards => catalog.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone())
+            .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
+            .Concat(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
+
+        public Deck CreateStarterDeck()
+        {
+            var cards=new List<Card>();
+            foreach(var id in new[]{Sword,Bomb,Heal,Shield,Tuning})
+                for(int n=0;n<4;n++)cards.Add(CreateById(id));
+            return new Deck(cards);
+        }
 
         public TuningGrantDefinition GetTuningDefinition(Card card)
             => card != null && card.Id == Tuning && card.Category == CardCategory.Tuning &&

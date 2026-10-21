@@ -1299,6 +1299,9 @@ namespace Olca.Core.Logic.Dungeon
             return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits,StrongEnemyCells,ItemRewards,ItemRewardChance,ExplorationTerrain);
         }
 
+        public IReadOnlyList<Card> CollectionDefinitions => cards.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3)
+            .GroupBy(c=>CheckpointValues.CardHash(c)).Select(g=>g.First().Clone()).ToArray();
+
         public void RegisterCard(string key, Card definition)
         {
             if (string.IsNullOrWhiteSpace(key) || definition == null || definition.TuningCount != 0 || definition.IsEffectCopy)
@@ -1307,11 +1310,11 @@ namespace Olca.Core.Logic.Dungeon
             cards.Add(key, definition.Clone());
         }
         /// <summary>既存の未加工定義だけを所持識別へ解決する。未定義/同じ識別の競合を補完しない。</summary>
-        public bool TryResolveOwnedCard(string id, ExceedLevel level, CardRarity rarity, string name, out Card card)
+        public bool TryResolveOwnedCard(string id, ExceedLevel level, CardRarity rarity, string name, out Card card,string definitionHash=null)
         {
             card = null;
             if (level == ExceedLevel.Lv3) return false;
-            var matches = cards.Values.Where(c => c.Id == id && c.ExceedLevel == level && c.Rarity == rarity && c.Name == name)
+            var matches = cards.Values.Where(c => c.Id == id && c.ExceedLevel == level && c.Rarity == rarity && c.Name == name && (definitionHash==null||CheckpointValues.CardHash(c)==definitionHash))
                 .GroupBy(c => CheckpointValues.CardHash(c)).Select(g => g.First()).ToArray();
             if (matches.Length != 1) return false;
             card = matches[0].Clone(); return true;
@@ -1830,8 +1833,8 @@ namespace Olca.Core.Logic.Dungeon
         public DungeonCheckpointSession CreateCheckpointSession(int index, FloorSequenceSession route)
             => new DungeonCheckpointSession(Floor(index), new FloorCheckpointStore(route, index, index + 1 < FloorCount));
 
-        public bool TryResolveOwnedCard(string id, ExceedLevel level, CardRarity rarity, string name, out Card card)
-            => Floor(0).TryResolveOwnedCard(id, level, rarity, name, out card);
+        public bool TryResolveOwnedCard(string id, ExceedLevel level, CardRarity rarity, string name, out Card card,string definitionHash=null)
+            => Floor(0).TryResolveOwnedCard(id, level, rarity, name, out card,definitionHash);
         public DungeonCheckpointSession CreateDepartureSession()
             => new DungeonCheckpointSession(Floor(0), new MemoryCheckpointStore(Floor(0)));
 
