@@ -296,7 +296,7 @@ namespace Olca.Core.Domain
     }
     public sealed class OwnedCardCount
     {
-        public string Id, Name;
+        public string Id, Name, DefinitionHash;
         public CardRarity Rarity;
         public ExceedLevel Level;
         public int Count;
@@ -335,7 +335,7 @@ namespace Olca.Core.Domain
     }
     public sealed class SavedDeckCard
     {
-        public string Id;
+        public string Id, DefinitionKey;
         public ExceedLevel Level;
         public SavedDeckCard Copy() => (SavedDeckCard)MemberwiseClone();
     }
@@ -348,15 +348,45 @@ namespace Olca.Core.Domain
         {
             error=null;
             if(saved?.Cards==null||saved.Cards.Any(c=>c==null)){error="デッキがありません";return false;}
-            var cards=new List<Card>();
+            var cards=new List<Card>();var used=new Dictionary<string,int>();
             foreach(var slot in saved.Cards){
-                var owned=profile.Owned.SingleOrDefault(o=>o.Id==slot.Id&&o.Level==slot.Level);
-                if(owned==null){error="未所持カードを装備できません";return false;}
+                var owned=OwnedDefinition.Resolve(profile,slot);
+                if(owned==null){error="未所持または定義が未特定のカードを装備できません";return false;}
+                string key=OwnedDefinition.Key(owned);used.TryGetValue(key,out int count);used[key]=count+1;
+                if(used[key]>owned.Count){error="登録定義の所持枚数が不足しています";return false;}
                 cards.Add(new Card(owned.Id,owned.Name,0,owned.Rarity,CardCategory.Attack,ElementType.None,CardSeries.None,0,"",exceedLevel:owned.Level));
             }
-            return DepartureDeckRules.TryCreate(cards,profile.Owned.ToDictionary(o=>(o.Id,o.Level),o=>o.Count),out _,out error);
+            return DepartureDeckRules.TryCreate(cards,OwnedDefinition.AggregateCounts(profile),out _,out error);
         }
     }
+    /// <summary>個体ではなく所持定義の識別。旧行はメタデータ付きの安定キーで保持する。</summary>
+    public static class OwnedDefinition
+    {
+        public static string Key(OwnedCardCount owned) => owned.DefinitionHash??("legacy/"+owned.Id.Length+":"+owned.Id+"/"+(int)owned.Level+"/"+(int)owned.Rarity+"/"+owned.Name);
+        public static OwnedCardCount Resolve(ClearReturnProfile profile,SavedDeckCard slot)
+        {
+            if(profile==null||slot==null)return null;
+            var matches=profile.Owned.Where(o=>o.Id==slot.Id&&o.Level==slot.Level&&(slot.DefinitionKey==null||Key(o)==slot.DefinitionKey)).ToArray();
+            return matches.Length==1?matches[0]:null;
+        }
+        public static Dictionary<(string Id,ExceedLevel Level),int> AggregateCounts(ClearReturnProfile p) => p.Owned.GroupBy(o=>(o.Id,o.Level)).ToDictionary(g=>g.Key,g=>g.Sum(o=>o.Count));
+        public static bool CardMatches(OwnedCardCount owned,Card card) => owned!=null&&card!=null&&owned.Id==card.Id&&owned.Level==card.ExceedLevel&&owned.Name==card.Name&&owned.Rarity==card.Rarity&&
+            (owned.DefinitionHash==null||owned.DefinitionHash==CollectionDisplay.DefinitionHash(card));
+        public static bool TryCreate(ClearReturnProfile profile,IReadOnlyList<Card> cards,IReadOnlyList<SavedDeckCard> slots,out Deck deck,out string error)
+        {
+            deck=null;
+            if(cards==null||slots==null||cards.Count!=slots.Count){error="定義付きカード参照が必要です";return false;}
+            if(!SavedDepartureDeck.TryValidateEquipped(profile,new SavedDepartureDeck{Cards=slots.ToArray()},out error))return false;
+            for(int n=0;n<cards.Count;n++)if(!CardMatches(Resolve(profile,slots[n]),cards[n])){error="所持と出撃カードの定義が一致しません";return false;}
+            return DepartureDeckRules.TryCreate(cards,AggregateCounts(profile),out deck,out error);
+        }
+        public static string DisplayName(OwnedCardCount card)
+        {
+            string suffix=new string('★',(int)card.Level);
+            return card.Name+(suffix.Length>0&&!card.Name.EndsWith(suffix)?suffix:"")+"　"+card.Rarity;
+        }
+    }
+
     public enum ExchangeLimit { Unlimited, PerRefresh, Lifetime }
     /// <summary>交換所の既存カード商品。単価は超過変換量より必ず高くする。</summary>
     public sealed class TokenExchangeProduct
@@ -447,8 +477,9 @@ namespace Olca.Core.Domain
                 throw new ArgumentException("図鑑履歴が不正です");
             if (p.SelectedStyleId != null && string.IsNullOrWhiteSpace(p.SelectedStyleId)) throw new ArgumentException("選択スタイルIDが不正です");
             if (p.Owned.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name) || c.Count < 1 || c.Count > 4 ||
-                !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.Level)) ||
-                p.Owned.GroupBy(c => (c.Id, c.Level)).Any(g => g.Count() > 1) ||
+                !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.Level) ||
+                (c.DefinitionHash!=null&&(c.DefinitionHash.Length!=64||!c.DefinitionHash.All(Uri.IsHexDigit)))) ||
+                p.Owned.GroupBy(OwnedDefinition.Key).Any(g => g.Count() > 1) ||
                 p.ClearedDungeons.Any(string.IsNullOrWhiteSpace) || p.ClearedDungeons.Distinct().Count() != p.ClearedDungeons.Length ||
                 p.Receipts.Any(r => r == null || string.IsNullOrWhiteSpace(r.RunId) || string.IsNullOrWhiteSpace(r.Fingerprint) || r.Experience < 0 || r.Tokens < 0 || !Enum.IsDefined(typeof(RunReturnOutcome), r.Outcome) ||
                     (r.Outcome != RunReturnOutcome.Cleared && (r.Experience != 0 || r.Tokens != 0))) ||
@@ -620,9 +651,9 @@ namespace Olca.Core.Domain
             if(!DepartureDeckRules.TryCreate(cards,counts,out _,out var error))return Fail(error);
             var next=current.Copy();
             next.Owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).Select(g=>new OwnedCardCount {
-                Id=g.Key.Id,Level=g.Key.ExceedLevel,Name=g.First().Name,Rarity=g.First().Rarity,Count=g.Count() }).ToArray();
+                Id=g.Key.Id,Level=g.Key.ExceedLevel,Name=g.First().Name,Rarity=g.First().Rarity,Count=g.Count(),DefinitionHash=CollectionDisplay.DefinitionHash(g.First()) }).ToArray();
             string id=Guid.NewGuid().ToString("N");
-            next.SavedDecks=new[]{new SavedDepartureDeck {Id=id,Name="スターター",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel}).ToArray()}};
+            next.SavedDecks=new[]{new SavedDepartureDeck {Id=id,Name="スターター",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(c)}).ToArray()}};
             next.EquippedDeckId=id;
             foreach(var card in cards)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,CollectionDisplay.DefinitionHash(card));
             return Stage(next);
@@ -634,6 +665,38 @@ namespace Olca.Core.Domain
         private static bool SameDiscovery(ClearReturnProfile a,ClearReturnProfile b) =>
             (a.DiscoveredCards??Array.Empty<DiscoveredCard>()).Select(c=>(c.Id,c.Level,c.Rarity,c.Name,c.DefinitionHash)).SequenceEqual(
                 (b.DiscoveredCards??Array.Empty<DiscoveredCard>()).Select(c=>(c.Id,c.Level,c.Rarity,c.Name,c.DefinitionHash)));
+        private void NormalizeOwned(ClearReturnProfile next)
+        {
+            foreach(var owned in next.Owned.Where(o=>o.DefinitionHash==null)) {
+                var matches=collectionDefinitions?.Where(c=>c.Id==owned.Id&&c.ExceedLevel==owned.Level&&c.Rarity==owned.Rarity&&c.Name==owned.Name)
+                    .Select(CollectionDisplay.DefinitionHash).Distinct().ToArray();
+                if(matches?.Length==1)owned.DefinitionHash=matches[0];
+            }
+            foreach(var deck in next.SavedDecks)foreach(var slot in deck.Cards) {
+                var before=OwnedDefinition.Resolve(current,slot);if(before==null)continue;
+                var matches=next.Owned.Where(o=>o.Id==before.Id&&o.Level==before.Level&&o.Rarity==before.Rarity&&o.Name==before.Name&&
+                    (before.DefinitionHash==null||before.DefinitionHash==o.DefinitionHash)).ToArray();
+                var after=matches.FirstOrDefault(o=>o.DefinitionHash==before.DefinitionHash)??(matches.Length==1?matches[0]:null);
+                if(after!=null)slot.DefinitionKey=OwnedDefinition.Key(after);
+            }
+        }
+        public bool EnsureOwnedDefinitions()
+        {
+            if(!Available())return Fail("所持定義の未保存処理を先に再試行してください");
+            var next=current.Copy();NormalizeOwned(next);
+            bool same=next.Owned.Select(OwnedDefinition.Key).SequenceEqual(current.Owned.Select(OwnedDefinition.Key))&&
+                next.SavedDecks.SelectMany(d=>d.Cards).Select(c=>c.DefinitionKey).SequenceEqual(current.SavedDecks.SelectMany(d=>d.Cards).Select(c=>c.DefinitionKey));
+            if(same){Error=null;return true;}return Stage(next);
+        }
+        private OwnedCardCount AcquisitionOwned(ClearReturnProfile next,string id,string name,CardRarity rarity,ExceedLevel level,string hash)
+        {
+            NormalizeOwned(next);
+            var exact=next.Owned.SingleOrDefault(o=>o.Id==id&&o.Level==level&&hash!=null&&o.DefinitionHash==hash);
+            if(exact!=null)return exact;
+            // 定義一覧のない旧APIは従来のメタデータ行を維持し、性能を推測して付け替えない。
+            var legacy=next.Owned.Where(o=>o.Id==id&&o.Level==level&&o.Name==name&&o.Rarity==rarity&&o.DefinitionHash==null).ToArray();
+            return legacy.Length==1&&(hash==null||collectionDefinitions==null)?legacy[0]:null;
+        }
         private static void Discover(ClearReturnProfile profile,string id,string name,CardRarity rarity,ExceedLevel level,string hash=null)
         {
             if(level==ExceedLevel.Lv3)return;
@@ -750,13 +813,14 @@ namespace Olca.Core.Domain
             if (current.Flow.Stage != ClearReturnStage.Choosing) { Error = null; return true; }
             try {
                 var next = current.Copy(); var f = next.Flow; ClearReturnProfile.ValidateSelection(f);
-                var owned = next.Owned.ToList(); long tokens = 0;
+                NormalizeOwned(next);var owned = next.Owned.ToList(); long tokens = 0;
                 foreach (int index in f.Selected) {
-                    var card = f.Candidates[index]; var entry = owned.SingleOrDefault(c => c.Id == card.Id && c.Level == card.Level);
+                    var card = f.Candidates[index]; var entry = AcquisitionOwned(next,card.Id,card.Name,card.Rarity,card.Level,card.ValueHash);
                     if(entry==null||entry.Count<4)Discover(next,card.Id,card.Name,card.Rarity,card.Level,card.ValueHash);
-                    if (entry == null) owned.Add(new OwnedCardCount { Id = card.Id, Name = card.Name, Rarity = card.Rarity, Level = card.Level, Count = 1 });
+                    if (entry == null) owned.Add(new OwnedCardCount { Id = card.Id, Name = card.Name, Rarity = card.Rarity, Level = card.Level, Count = 1, DefinitionHash=card.ValueHash });
                     else if (entry.Count < 4) entry.Count++;
                     else tokens = checked(tokens + card.OverflowTokens);
+                    next.Owned=owned.ToArray();
                 }
                 next.Owned = owned.ToArray(); next.Tokens = checked(next.Tokens + tokens); next.Experience = checked(next.Experience + f.ExperienceAward);
                 next.Level = Math.Max(next.Level, (int)Math.Min(f.Settings.MaximumLevel, checked(1 + next.Experience / f.Settings.ExperiencePerLevel)));
@@ -819,10 +883,10 @@ namespace Olca.Core.Domain
             if(stock==null || stock.RoundId!=roundId || !CanExchange(current,offer))return Fail("商品更新・売切れまたはトークン不足です");
             try {
                 var next=current.Copy();var item=next.ExchangeStock.Offers.Single(o=>o.Id==productId);
-                var owned=next.Owned.ToList();var card=owned.SingleOrDefault(c=>c.Id==item.CardId&&c.Level==item.Level);
+                var card=AcquisitionOwned(next,item.CardId,item.Name,item.Rarity,item.Level,item.CardDefinitionHash);var owned=next.Owned.ToList();
                 long overflow=0;
                 if(card==null||card.Count<4)Discover(next,item.CardId,item.Name,item.Rarity,item.Level,item.CardDefinitionHash);
-                if(card==null)owned.Add(new OwnedCardCount{Id=item.CardId,Name=item.Name,Rarity=item.Rarity,Level=item.Level,Count=1});
+                if(card==null)owned.Add(new OwnedCardCount{Id=item.CardId,Name=item.Name,Rarity=item.Rarity,Level=item.Level,Count=1,DefinitionHash=item.CardDefinitionHash});
                 else if(card.Name!=item.Name||card.Rarity!=item.Rarity) return Fail("既存所持と商品定義が一致しません");
                 else if(card.Count<4)card.Count++;else overflow=item.OverflowTokens;
                 next.Tokens=checked(next.Tokens-item.Price+overflow);next.Owned=owned.ToArray();item.Purchased=checked(item.Purchased+1);
@@ -851,9 +915,9 @@ namespace Olca.Core.Domain
                 var next=current.Copy();var decks=next.SavedDecks.ToList();var prior=decks.SingleOrDefault(d=>d.Id==id);
                 var saved=new SavedDepartureDeck{Id=id,Name=name?.Trim(),Cards=cards?.Select(c=>c?.Copy()).ToArray()};
                 if(saved.Cards==null||saved.Cards.Any(c=>c==null))return Fail("カード参照が不正です");
-                foreach(var group in saved.Cards.GroupBy(c=>(c.Id,c.Level)))
-                    if(!current.Owned.Any(o=>o.Id==group.Key.Id&&o.Level==group.Key.Level)&&group.Count()>(prior?.Cards.Count(c=>c.Id==group.Key.Id&&c.Level==group.Key.Level)??0))
-                        return Fail("未所持カードは新しく登録できません");
+                foreach(var group in saved.Cards.GroupBy(c=>(c.Id,c.Level,c.DefinitionKey)))
+                    if(OwnedDefinition.Resolve(current,group.First())==null&&group.Count()>(prior?.Cards.Count(c=>c.Id==group.Key.Id&&c.Level==group.Key.Level&&c.DefinitionKey==group.Key.DefinitionKey)??0))
+                        return Fail("未所持の別定義は新しく登録できません");
                 if(id==next.EquippedDeckId&&!SavedDepartureDeck.TryValidateEquipped(next,saved,out var error))return Fail(error);
                 if(prior!=null)decks.Remove(prior);decks.Add(saved);next.SavedDecks=decks.ToArray();return Stage(next);
             }catch(ArgumentException e){return Fail(e.Message);}
@@ -882,7 +946,7 @@ namespace Olca.Core.Domain
         }
         private bool Stage(ClearReturnProfile next)
         {
-            try { UpdateCollection(next); next.Revision = checked(current.Revision + 1); next.CommitId = Guid.NewGuid().ToString("N"); ClearReturnProfile.Validate(next); }
+            try { NormalizeOwned(next); UpdateCollection(next); next.Revision = checked(current.Revision + 1); next.CommitId = Guid.NewGuid().ToString("N"); ClearReturnProfile.Validate(next); }
             catch (Exception e) when (e is ArgumentException || e is OverflowException) { return Fail(e.Message); }
             pending = next.Copy(); return Retry();
         }

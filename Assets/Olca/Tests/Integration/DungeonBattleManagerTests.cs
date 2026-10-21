@@ -2597,6 +2597,18 @@ namespace Olca.Tests.Integration
             }
         }
 
+        [Test]
+        public void 旧帰還済み進行だけを再開しても仮の探索を保存せず帰還編成画面を表示する()
+        {
+            var parent=directory;var c=Start(configure:x=>x.ConfigureDungeon(DungeonConfig.CreateTestDungeon(5,30,4)));ToBattle(c);Model(c).SelectCardReward(Win(c)[0]);KeyboardButton(c,"ConfirmCarryHome");KeyboardButton(c,"ConfirmReturn");
+            var source=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(source.ActivePath);var snapshot=c.PersistentProgress;
+            try {directory=System.IO.Path.Combine(parent,"return-only");System.IO.Directory.CreateDirectory(System.IO.Path.Combine(directory,"progress"));System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory,"progress","progress.json"),bytes);
+                c=Start(configure:x=>x.ConfigureDungeon(DungeonConfig.CreateTestDungeon(5,30,4)));
+                Assert.IsTrue((bool)Get(c,"clearReturnVisible"));Assert.IsTrue(SelectionButton(c,"SavedDeckMenu").interactable);Assert.IsNull(c.PersistentProgress.NextDeparture);
+                CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(((Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore")).ActivePath));Assert.IsFalse(System.IO.File.Exists(System.IO.Path.Combine(directory,"active.json")));
+                Assert.AreEqual(snapshot.Owned.Sum(o=>o.Count),c.PersistentProgress.Owned.Sum(o=>o.Count));
+            } finally {directory=parent;}
+        }
         private Olca.Application.Dungeon.DungeonBattleController StartStandard() => Start(production:true,configure:c=>{Set(c,"dungeonCellCount",100);Set(c,"firstEnemyCell",50);Set(c,"enemySpacing",30);});
         [Test]
         public void 標準製品マップは初戦後の空セルだけにショップと既存回復を配置し初期資源を増やさない()
@@ -4132,8 +4144,8 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(session.EnsureCollection());Assert.IsNotNull(session.Snapshot.DiscoveredCards.Single().DefinitionHash);var revision=session.Snapshot.Revision;
             Assert.IsTrue(session.EnsureCollection());Assert.AreEqual(revision,session.Snapshot.Revision);
             var fallback=CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);Assert.IsTrue(session.Begin(Terminal(fallback),"overflow",new ClearReturnSettings()));
-            Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());Assert.AreEqual(4,session.Snapshot.Owned.Single().Count);Assert.AreEqual(1,session.Snapshot.Tokens);
-            Assert.IsFalse(CollectionDisplay.IsKnown(session.Snapshot,fallback,f.CollectionCards));
+            Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());Assert.AreEqual(2,session.Snapshot.Owned.Length);Assert.AreEqual(4,session.Snapshot.Owned.Single(o=>o.Name=="ヒール").Count);Assert.AreEqual(1,session.Snapshot.Owned.Single(o=>o.Name=="heal_card").Count);Assert.AreEqual(0,session.Snapshot.Tokens);
+            Assert.IsTrue(CollectionDisplay.IsKnown(session.Snapshot,fallback,f.CollectionCards));
         }
         [Test]
         public void 図鑑統合は現カタログから外れた同名旧定義の履歴を別定義の既知判定で消さない()
@@ -4144,6 +4156,54 @@ namespace Olca.Tests.Integration
                 new DiscoveredCard{Id=old.Id,Name=old.Name,Level=old.ExceedLevel,Rarity=old.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(old)}}};
             var rows=CollectionDisplay.CardRows(p,new[]{a,a.Clone()});Assert.AreEqual(2,rows.Length);StringAssert.Contains("詳細定義未特定",rows[1]);
             Assert.IsTrue(CollectionDisplay.IsKnown(p,a,new[]{a}));
+        }
+        [Test]
+        public void 定義別所持は同IDの回復と報酬攻撃を混ぜず旧デッキと新編成を保持する()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var defs=f.CollectionCards;var store=Store();var session=new ClearReturnSession(store,new Olca.Application.Battle.SimpleFusionRecipeProvider(f).CollectionRecipes,defs);
+            Assert.IsTrue(session.InitializeStarter(f.CreateStarterDeck().GetAllCards()));var original=session.Snapshot.SavedDecks.Single().Copy();
+            var reward=CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);Assert.IsTrue(session.Begin(Terminal(reward),"owned-def",new ClearReturnSettings()));Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            Assert.AreEqual(21,session.Snapshot.Owned.Sum(o=>o.Count));Assert.AreEqual(0,session.Snapshot.Tokens);
+            Assert.AreEqual(4,session.Snapshot.Owned.Single(o=>o.Name=="ヒール").Count);Assert.AreEqual(1,session.Snapshot.Owned.Single(o=>o.Name=="heal_card").Count);
+            var slots=original.Cards.Select(c=>c.Copy()).ToArray();slots[System.Array.FindIndex(slots,c=>c.Id=="heal")].DefinitionKey=CollectionDisplay.DefinitionHash(reward);
+            var id=System.Guid.NewGuid().ToString("N");Assert.IsTrue(session.SaveDeck(id,"報酬混在",slots),session.Error);Assert.IsTrue(session.EquipDeck(id),session.Error);
+            CollectionAssert.AreEqual(original.Cards.Select(c=>c.DefinitionKey),session.Snapshot.SavedDecks.Single(d=>d.Id==original.Id).Cards.Select(c=>c.DefinitionKey));
+            var p=session.Snapshot;long revision=p.Revision;p.Owned=p.Owned.Reverse().ToArray();p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(revision,p,out var error),error);
+            session=new ClearReturnSession(store,definitions:defs);var saved=session.Snapshot.SavedDecks.Single(d=>d.Id==id);var actual=saved.Cards.Select(slot=>defs.Single(c=>CollectionDisplay.DefinitionHash(c)==slot.DefinitionKey)).ToArray();
+            Assert.IsTrue(OwnedDefinition.TryCreate(session.Snapshot,actual,saved.Cards,out var deck,out error),error);
+            Assert.AreEqual(3,deck.GetAllCards().Count(c=>c.Name=="ヒール"));Assert.AreEqual(1,deck.GetAllCards().Count(c=>c.Name=="heal_card"));Assert.AreEqual(20,deck.GetAllCards().Distinct().Count());
+            slots[System.Array.FindIndex(slots,c=>c.Id=="heal"&&c.DefinitionKey!=CollectionDisplay.DefinitionHash(reward))].DefinitionKey=CollectionDisplay.DefinitionHash(reward);
+            Assert.IsFalse(SavedDepartureDeck.TryValidateEquipped(session.Snapshot,new SavedDepartureDeck{Cards=slots},out error));
+        }
+        [Test]
+        public void 定義別所持は同名異性能と上位段階を別スロットで解決し別定義の差替えを拒否する()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var a=f.CreateById("sword");var b=new Card(a.Id,a.Name,a.Cost,a.Rarity,a.Category,a.Element,a.Series,99,a.Description);var upper=f.CreateExceeded(a,ExceedLevel.Lv1);
+            var defs=f.CollectionCards.Concat(new[]{b}).ToArray();var store=Store();var session=new ClearReturnSession(store,definitions:defs);Assert.IsTrue(session.InitializeStarter(f.CreateStarterDeck().GetAllCards()));
+            var p=session.Snapshot;long rev=p.Revision;p.Owned=p.Owned.Concat(new[]{b,upper}.Select(c=>new OwnedCardCount{Id=c.Id,Name=c.Name,Rarity=c.Rarity,Level=c.ExceedLevel,Count=1,DefinitionHash=CollectionDisplay.DefinitionHash(c)})).ToArray();p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(rev,p,out var error),error);Assert.IsTrue(session.Reload());
+            var slots=p.SavedDecks.Single().Cards.Select(c=>c.Copy()).ToArray();var indices=slots.Select((c,n)=>new{c,n}).Where(x=>x.c.Id=="sword").Select(x=>x.n).ToArray();slots[indices[0]].DefinitionKey=CollectionDisplay.DefinitionHash(b);slots[indices[1]]=new SavedDeckCard{Id=upper.Id,Level=upper.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(upper)};
+            Assert.IsTrue(SavedDepartureDeck.TryValidateEquipped(session.Snapshot,new SavedDepartureDeck{Cards=slots},out error),error);
+            var cards=slots.Select(slot=>defs.Single(c=>CollectionDisplay.DefinitionHash(c)==slot.DefinitionKey)).ToArray();Assert.IsTrue(OwnedDefinition.TryCreate(session.Snapshot,cards,slots,out var deck,out error),error);Assert.AreEqual(1,deck.GetAllCards().Count(c=>c.Power==99));Assert.AreEqual(1,deck.GetAllCards().Count(c=>c.ExceedLevel==ExceedLevel.Lv1));
+            cards[indices[0]]=a;Assert.IsFalse(OwnedDefinition.TryCreate(session.Snapshot,cards,slots,out _,out error));Assert.AreEqual("ソード★　Normal",OwnedDefinition.DisplayName(p.Owned.Single(o=>o.Level==ExceedLevel.Lv1)));
+        }
+        [Test]
+        public void 定義別所持の旧20枚は一意補完と新別定義の受領を同時保存し失敗再試行でも枚数不変()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var store=Store();var seed=new ClearReturnSession(store);Assert.IsTrue(seed.InitializeStarter(f.CreateStarterDeck().GetAllCards()));var p=seed.Snapshot;long rev=p.Revision;
+            foreach(var o in p.Owned)o.DefinitionHash=null;foreach(var slot in p.SavedDecks.Single().Cards)slot.DefinitionKey=null;p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(rev,p,out var error),error);string deckId=p.EquippedDeckId;
+            var io=new FaultIo();var session=new ClearReturnSession(Store(io),definitions:f.CollectionCards);var reward=CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);Assert.IsTrue(session.Begin(Terminal(reward),"legacy-owned",new ClearReturnSettings()));Assert.IsTrue(session.Toggle(0));
+            var before=System.IO.File.ReadAllBytes(store.ActivePath);io.Before=true;Assert.IsFalse(session.ConfirmSelection());Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));
+            io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual(21,session.Snapshot.Owned.Sum(o=>o.Count));Assert.AreEqual(deckId,session.Snapshot.EquippedDeckId);Assert.IsTrue(session.Snapshot.SavedDecks.Single().Cards.All(slot=>slot.DefinitionKey!=null));
+            Assert.IsTrue(SavedDepartureDeck.TryValidateEquipped(session.Snapshot,session.Snapshot.SavedDecks.Single(),out error),error);Assert.IsFalse(session.HasPendingSave);
+        }
+        [Test]
+        public void 定義別所持は曖昧な旧行を分割せず旧スロットを安定キーへ固定する()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var a=f.CreateById("sword");var b=new Card(a.Id,a.Name,a.Cost,a.Rarity,a.Category,a.Element,a.Series,99,a.Description);var defs=f.CollectionCards.Concat(new[]{b}).ToArray();
+            var store=Store();var session=new ClearReturnSession(store);Assert.IsTrue(session.InitializeStarter(f.CreateStarterDeck().GetAllCards()));var p=session.Snapshot;long rev=p.Revision;foreach(var o in p.Owned)o.DefinitionHash=null;foreach(var c in p.SavedDecks[0].Cards)c.DefinitionKey=null;p.Revision++;p.CommitId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(store.TryWrite(rev,p,out var error),error);
+            session=new ClearReturnSession(store,definitions:defs);Assert.IsTrue(session.EnsureOwnedDefinitions());Assert.IsTrue(session.EnsureCollection());var legacy=session.Snapshot.Owned.Single(o=>o.Id=="sword");Assert.IsNull(legacy.DefinitionHash);Assert.AreEqual(4,legacy.Count);
+            Assert.IsTrue(session.Snapshot.SavedDecks[0].Cards.Where(c=>c.Id=="sword").All(c=>c.DefinitionKey==OwnedDefinition.Key(legacy)));Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));
+            session=new ClearReturnSession(store,definitions:defs);Assert.AreEqual(4,OwnedDefinition.Resolve(session.Snapshot,session.Snapshot.SavedDecks[0].Cards.First(c=>c.Id=="sword")).Count);
         }
         private Olca.Unity.ClearReturnFileStore Store(FaultIo io = null) => new Olca.Unity.ClearReturnFileStore(directory, io);
         [Test]
