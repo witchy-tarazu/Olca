@@ -77,9 +77,11 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 現在のカード（先頭のカード）を使用
         /// </summary>
+        public bool CanUseCurrentCard => !IsEmpty && (!isUsingCard || battleSystem.CanCancelPlayerRecovery) && battleSystem.CanPlayerBasicAttack;
+
         public bool TryUseCurrentCard()
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
+            if (IsEmpty || isUsingCard || battleSystem.HasPlayerAction || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -136,32 +138,32 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// カード効果を非同期で実行
         /// </summary>
-        private async UniTask ExecuteCardEffectAsync(Card card, CancellationToken ct)
+        private async UniTask ExecuteCardEffectAsync(Card card, object owner, CancellationToken ct)
         {
-            // 攻撃カードの使用時にだけ集中を消費し、今回の効果用コピーへ適用する。
             card = ApplyConcentrate(card);
-
-            // BattleContextを作成
             var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase };
-
-            // カード効果を取得して実行
-            var effect = CardEffectFactory.CreateEffect(card);
-            if (effect != null)
-            {
-                if (effect is IAsyncCardEffect asyncEffect)
-                {
-                    await asyncEffect.ExecuteAsync(context, ct);
+            var effect = CardEffectFactory.CreateEffect(card); var timing = battleSystem.CardTiming(card);
+            bool resolved = false;
+            try {
+                if (!card.IsInstantEffect) {
+                    if (timing != null) await battleSystem.WaitForActionFramesAsync(timing.StartupFrames, ct);
+                    else if (card.StartupFrames.HasValue) await battleSystem.WaitForActionFramesAsync(card.StartupFrames.Value, ct);
+                    else if (card.StartupTime > 0) await battleSystem.WaitForActionAsync(card.StartupTime, ct);
                 }
-                else
-                {
-                    effect.Execute(context);
+                ct.ThrowIfCancellationRequested();
+                battleSystem.SetPlayerActionPhase(owner, PlayerAttackPhase.Executing);
+                if (effect is Olca.Core.Logic.CardEffects.Effects.ModifiableCardEffect modifiable) await modifiable.ExecuteAsync(context, ct, false);
+                else if (effect is IAsyncCardEffect asyncEffect) await asyncEffect.ExecuteAsync(context, ct);
+                else effect?.Execute(context);
+                resolved = true;
+                if (!card.IsInstantEffect) {
+                    if (card.ExtendRecoveryDuringDerivative) await context.WaitForDerivativesAsync(ct);
+                    battleSystem.SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing != null ? timing.CancelAfterFrames : card.RecoveryCancelAfterFrames);
+                    if (timing != null) await battleSystem.WaitForActionFramesAsync(timing.RecoveryFrames, ct);
+                    else if (card.RecoveryFrames.HasValue) await battleSystem.WaitForActionFramesAsync(card.RecoveryFrames.Value, ct);
+                    else if (card.RecoveryTime > 0) await battleSystem.WaitForActionAsync(card.RecoveryTime, ct);
                 }
-                logger?.LogInfo($"カード効果実行: {card.Name}");
-            }
-            else
-            {
-                logger?.LogWarning($"カード効果が見つかりません: {card.Name}");
-            }
+            } catch (OperationCanceledException) when (resolved) { /* 発生済みの効果は消さず使用済み。 */ }
         }
 
         /// <summary>
@@ -169,7 +171,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public async UniTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
         {
-            if (IsEmpty || isUsingCard || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
+            if (!CanUseCurrentCard || !battleSystem.TryPreparePlayerAttack() || isUsingCard)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -184,6 +186,7 @@ namespace Olca.Core.Logic.Battle
             interruptedByReaction = false;
             var useCts = new CancellationTokenSource();
             currentCardCts = useCts;
+            var owner = battleSystem.BeginPlayerAction(false, () => useCts.Cancel());
 
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
                 ct,
@@ -192,7 +195,7 @@ namespace Olca.Core.Logic.Battle
             try
             {
                 // カード効果を実行
-                await ExecuteCardEffectAsync(card, linkedCts.Token);
+                await ExecuteCardEffectAsync(card, owner, linkedCts.Token);
 
                 return ConsumeAsyncCard(card, version);
             }
@@ -215,10 +218,10 @@ namespace Olca.Core.Logic.Battle
             {
                 linkedCts.Dispose();
                 useCts.Dispose();
-                currentCardCts = null;
-                isUsingCard = false;
-                inFlightCard = null;
-                interruptedByReaction = false;
+                battleSystem.EndPlayerAction(owner);
+                if (ReferenceEquals(currentCardCts, useCts)) {
+                    currentCardCts = null; isUsingCard = false; inFlightCard = null; interruptedByReaction = false;
+                }
             }
         }
 

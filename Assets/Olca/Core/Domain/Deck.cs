@@ -11,6 +11,7 @@ namespace Olca.Core.Domain
     public class Deck
     {
         private readonly List<Card> cards;
+        private readonly List<Card> returnedDraws = new List<Card>();
         private readonly List<Card> drawnCards; // 既にドローしたカード
 
         /// <summary>デッキ内のカード総数</summary>
@@ -50,6 +51,19 @@ namespace Olca.Core.Domain
             cards.AddRange(cardsToAdd);
         }
 
+        /// <summary>指定された攻略中の個体だけを一度に削除する。入力不正なら何も変更しない。</summary>
+        public bool TryRemoveCards(IReadOnlyList<Card> targets)
+        {
+            // 対象がこのデッキの読取Viewでも、削除中に列挙元を変更しない。
+            var selected = targets?.ToArray();
+            if (selected == null || selected.Length == 0 || selected.Any(c => c == null || !cards.Contains(c)) ||
+                selected.Distinct().Count() != selected.Length) return false;
+            foreach (var card in selected) {
+                cards.Remove(card); drawnCards.Remove(card); returnedDraws.Remove(card);
+            }
+            return true;
+        }
+
         /// <summary>
         /// デッキ全体からランダムにカードを破棄する（ドロー済みカードも対象）。
         /// 要求枚数が総数を超える場合は、存在する枚数まで破棄する。
@@ -66,6 +80,7 @@ namespace Olca.Core.Domain
                 Card discardedCard = cards[index];
                 cards.RemoveAt(index);
                 drawnCards.Remove(discardedCard);
+                returnedDraws.Remove(discardedCard);
             }
 
             return discardCount;
@@ -93,15 +108,26 @@ namespace Olca.Core.Domain
             for (int i = 0; i < actualDrawCount; i++)
             {
                 // ランダムにカードを選択
-                int index = random.Range(0, availableCards.Count);
-                Card drawnCard = availableCards[index];
+                // 取消で戻した追加分を先に引き直し、乱数の再抽選にしない。
+                Card drawnCard;
+                if (returnedDraws.Count > 0) { drawnCard = returnedDraws[0]; returnedDraws.RemoveAt(0); }
+                else drawnCard = availableCards[random.Range(0, availableCards.Count)];
 
                 result.Add(drawnCard);
                 drawnCards.Add(drawnCard);
-                availableCards.RemoveAt(index);
+                availableCards.Remove(drawnCard);
             }
 
             return result;
+        }
+
+        /// <summary>未確定の追加ドローだけを元の抽選順へ返す。</summary>
+        internal void ReturnPreviewDraws(IReadOnlyList<Card> returned)
+        {
+            if (returned.Distinct().Count() != returned.Count || returned.Any(c => !drawnCards.Contains(c)))
+                throw new InvalidOperationException("追加ドローの復元対象が不正です");
+            foreach (var card in returned) drawnCards.Remove(card);
+            returnedDraws.InsertRange(0, returned);
         }
 
         /// <summary>
@@ -111,7 +137,7 @@ namespace Olca.Core.Domain
         {
             if (random == null) throw new ArgumentNullException(nameof(random));
 
-            drawnCards.Clear();
+            drawnCards.Clear(); returnedDraws.Clear();
 
             // Fisher-Yatesシャッフル
             for (int i = cards.Count - 1; i > 0; i--)
@@ -141,14 +167,14 @@ namespace Olca.Core.Domain
             var restored = firstHand.ToList();
             if (restored.Distinct().Count() != restored.Count || restored.Any(card => !cards.Contains(card)))
                 throw new ArgumentException("初回手札とデッキ個体が一致しません");
-            drawnCards.Clear();
+            drawnCards.Clear(); returnedDraws.Clear();
             drawnCards.AddRange(restored);
         }
 
         /// <summary>ドロー履歴をリセット（再度すべてのカードをドロー可能にする）</summary>
         public void ResetDrawHistory()
         {
-            drawnCards.Clear();
+            drawnCards.Clear(); returnedDraws.Clear();
         }
 
         /// <summary>
@@ -302,6 +328,7 @@ namespace Olca.Core.Domain
     // 進行文書を先に確定し、別攻略ディレクトリへ同じ出撃スナップショットを再試行する。
     public sealed class NextDepartureData
     {
+        public const string InitialParent = "initial-departure-v1";
         public string ParentRunId, DefinitionKey;
         public CheckpointDto Start;
         public NextDepartureData Copy() => new NextDepartureData { ParentRunId = ParentRunId, DefinitionKey = DefinitionKey, Start = Start?.Copy() };
@@ -330,6 +357,57 @@ namespace Olca.Core.Domain
             return DepartureDeckRules.TryCreate(cards,profile.Owned.ToDictionary(o=>(o.Id,o.Level),o=>o.Count),out _,out error);
         }
     }
+    public enum ExchangeLimit { Unlimited, PerRefresh, Lifetime }
+    /// <summary>交換所の既存カード商品。単価は超過変換量より必ず高くする。</summary>
+    public sealed class TokenExchangeProduct
+    {
+        private readonly ExchangeOfferData data;
+        public string Id => data.Id;
+        public TokenExchangeProduct(string id, Card card, long price, long overflowTokens, ExchangeLimit limit = ExchangeLimit.Unlimited, int maximum = 0)
+        {
+            if (card == null) throw new ArgumentNullException(nameof(card));
+            data = new ExchangeOfferData { Id=id, CardId=card.Id, Name=card.Name, Rarity=card.Rarity, Level=card.ExceedLevel,
+                Price=price, OverflowTokens=overflowTokens, Limit=limit, Maximum=maximum };
+            ExchangeOfferData.Validate(data);
+        }
+        public ExchangeOfferData Capture() => data.Copy();
+    }
+    public sealed class ExchangeOfferData
+    {
+        public string Id, CardId, Name;
+        public CardRarity Rarity;
+        public ExceedLevel Level;
+        public long Price, OverflowTokens;
+        public ExchangeLimit Limit;
+        public int Maximum, Purchased;
+        public bool Random;
+        public ExchangeOfferData Copy() => (ExchangeOfferData)MemberwiseClone();
+        public static void Validate(ExchangeOfferData o)
+        {
+            if(o==null || string.IsNullOrWhiteSpace(o.Id) || string.IsNullOrWhiteSpace(o.CardId) || string.IsNullOrWhiteSpace(o.Name) ||
+                !Enum.IsDefined(typeof(CardRarity),o.Rarity) || !Enum.IsDefined(typeof(ExceedLevel),o.Level) || !Enum.IsDefined(typeof(ExchangeLimit),o.Limit) ||
+                o.OverflowTokens<=0 || o.Price<=o.OverflowTokens || o.Purchased<0 || (o.Limit==ExchangeLimit.Unlimited ? o.Maximum!=0 : o.Maximum<1) ||
+                (o.Limit==ExchangeLimit.PerRefresh && o.Purchased>o.Maximum)) throw new ArgumentException("交換商品の値・価格・回数制限が不正です");
+        }
+    }
+    public sealed class ExchangeStockData
+    {
+        public string RoundId;
+        public ExchangeOfferData[] Offers = Array.Empty<ExchangeOfferData>();
+        public ExchangeStockData Copy() => new ExchangeStockData { RoundId=RoundId, Offers=Offers?.Select(o=>o?.Copy()).ToArray() };
+    }
+    public sealed class ExchangePurchaseTotal
+    {
+        public string ProductId;
+        public long Count;
+        public ExchangePurchaseTotal Copy() => (ExchangePurchaseTotal)MemberwiseClone();
+    }
+    public sealed class ExchangeReceipt
+    {
+        public string RequestId, RoundId, ProductId;
+        public long Paid, OverflowTokens;
+        public ExchangeReceipt Copy() => (ExchangeReceipt)MemberwiseClone();
+    }
     public sealed class ClearReturnProfile
     {
         public int Version = 1;
@@ -343,16 +421,22 @@ namespace Olca.Core.Domain
         public NextDepartureData NextDeparture;
         public SavedDepartureDeck[] SavedDecks = new SavedDepartureDeck[0];
         public string EquippedDeckId;
+        public ExchangeStockData ExchangeStock;
+        public ExchangePurchaseTotal[] ExchangeTotals;
+        public ExchangeReceipt[] ExchangeReceipts;
+        public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public ClearReturnProfile Copy() => new ClearReturnProfile {
             Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
-            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId,
+            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, ExchangeStock=ExchangeStock?.Copy(),
+            ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
             SavedDecks=(SavedDecks??new SavedDepartureDeck[0]).Select(d=>d?.Copy()).ToArray() };
         public static void Validate(ClearReturnProfile p)
         {
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
+            if (p.SelectedStyleId != null && string.IsNullOrWhiteSpace(p.SelectedStyleId)) throw new ArgumentException("選択スタイルIDが不正です");
             if (p.Owned.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name) || c.Count < 1 || c.Count > 4 ||
                 !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.Level)) ||
                 p.Owned.GroupBy(c => (c.Id, c.Level)).Any(g => g.Count() > 1) ||
@@ -361,6 +445,16 @@ namespace Olca.Core.Domain
                     (r.Outcome != RunReturnOutcome.Cleared && (r.Experience != 0 || r.Tokens != 0))) ||
                 p.Receipts.Select(r => r.RunId).Distinct().Count() != p.Receipts.Length)
                 throw new ArgumentException("所持カードまたは受領履歴が不正です");
+            var stock=p.ExchangeStock;
+            if(stock!=null){if(string.IsNullOrWhiteSpace(stock.RoundId)||stock.Offers==null||stock.Offers.Any(o=>o==null)||stock.Offers.Select(o=>o.Id).Distinct().Count()!=stock.Offers.Length)
+                throw new ArgumentException("交換在庫が不正です");foreach(var offer in stock.Offers)ExchangeOfferData.Validate(offer);}
+            var totals=p.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>();var purchases=p.ExchangeReceipts??Array.Empty<ExchangeReceipt>();
+            if(totals.Any(t=>t==null||string.IsNullOrWhiteSpace(t.ProductId)||t.Count<1)||totals.Select(t=>t.ProductId).Distinct().Count()!=totals.Length||
+                purchases.Any(t=>t==null||!Guid.TryParseExact(t.RequestId,"N",out _)||string.IsNullOrWhiteSpace(t.RoundId)||string.IsNullOrWhiteSpace(t.ProductId)||t.Paid<=t.OverflowTokens||t.OverflowTokens<0)||
+                purchases.Select(t=>t.RequestId).Distinct().Count()!=purchases.Length)throw new ArgumentException("交換履歴が不正です");
+            if(totals.Any(t=>t.Count!=purchases.LongCount(x=>x.ProductId==t.ProductId)) || purchases.Any(x=>!totals.Any(t=>t.ProductId==x.ProductId)) ||
+                (stock!=null && stock.Offers.Any(o=>o.Purchased!=purchases.LongCount(x=>x.RoundId==stock.RoundId&&x.ProductId==o.Id))))
+                throw new ArgumentException("交換の回数と領収書が一致しません");
             var decks=p.SavedDecks??new SavedDepartureDeck[0];
             if(decks.Any(d=>d==null||!Guid.TryParseExact(d.Id,"N",out _)||string.IsNullOrWhiteSpace(d.Name)||d.Cards==null||
                 d.Cards.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||!Enum.IsDefined(typeof(ExceedLevel),c.Level)||c.Level==ExceedLevel.Lv3))||
@@ -372,7 +466,7 @@ namespace Olca.Core.Domain
                 n.Start == null || !Guid.TryParseExact(n.Start.RunId, "N", out _) || n.Start.RunId == n.ParentRunId ||
                 n.Start.Boundary != CheckpointBoundary.Departure || n.Start.Sequence != 1 || n.Start.PositionMilli != 0 ||
                 n.Start.Player == null || n.Start.Player.Hp != n.Start.Player.MaxHp || n.Start.ObtainedOrder == null || n.Start.ObtainedOrder.Length != 0 ||
-                !p.Receipts.Any(r => r.RunId == n.ParentRunId))) throw new ArgumentException("次回出撃計画が不正です");
+                !(p.Receipts.Any(r => r.RunId == n.ParentRunId) || (n.ParentRunId == NextDepartureData.InitialParent && (p.Flow == null || p.Flow?.RunId == n.Start.RunId))))) throw new ArgumentException("次回出撃計画が不正です");
             var f = p.Flow; if (f == null) return;
             if (string.IsNullOrWhiteSpace(f.RunId) || string.IsNullOrWhiteSpace(f.DungeonKey) || string.IsNullOrWhiteSpace(f.Fingerprint) ||
                 !Enum.IsDefined(typeof(ClearReturnStage), f.Stage) || !Enum.IsDefined(typeof(RunReturnOutcome), f.Outcome) || f.Candidates == null || f.Selected == null || f.Settings == null || f.ExperienceAward < 0 || f.TokenAward < 0)
@@ -482,6 +576,7 @@ namespace Olca.Core.Domain
                 next.Flow = new ClearReturnData { RunId = dto.RunId, DungeonKey = dungeonKey, Fingerprint = fingerprint,
                     Outcome = outcome, Stage = ClearReturnStage.Returned, Settings = settings.Copy(), NewLevel = next.Level,
                     ReturnedMaxHp = settings.MaxHp(next.Level), ReturnedAttack = settings.Attack(next.Level) };
+                next.ExchangeStock = null;
                 next.ReturnedHp = next.Flow.ReturnedMaxHp;
                 next.Receipts = next.Receipts.Concat(new[] { new ClearReceipt { RunId = dto.RunId, Fingerprint = fingerprint, Outcome = outcome } }).ToArray();
                 return Stage(next);
@@ -523,16 +618,76 @@ namespace Olca.Core.Domain
         {
             if (!Available() || current.Flow == null || current.Flow.Stage == ClearReturnStage.Choosing) return Fail("持ち帰りを先に確定してください");
             if (current.Flow.Stage == ClearReturnStage.Returned) { Error = null; return true; }
-            var next = current.Copy(); next.Flow.Stage = ClearReturnStage.Returned; next.ReturnedHp = next.Flow.ReturnedMaxHp; return Stage(next);
+            var next = current.Copy(); next.ExchangeStock = null; next.Flow.Stage = ClearReturnStage.Returned; next.ExchangeStock = null;
+                next.ReturnedHp = next.Flow.ReturnedMaxHp; return Stage(next);
         }
         public bool PrepareNextDeparture(CheckpointDto start, string definitionKey)
         {
-            if (!Available() || current.Flow?.Stage != ClearReturnStage.Returned) return Fail("帰還確定後に出撃してください");
+            if (!Available() || (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned)) return Fail("拠点で出撃してください");
+            string parent = current.Flow?.RunId ?? NextDepartureData.InitialParent;
             // 同じ帰還画面の再操作は、既に確定した攻略ID/能力/デッキを使う。
-            if (current.NextDeparture?.ParentRunId == current.Flow.RunId) { Error = null; return true; }
+            if (current.NextDeparture?.ParentRunId == parent) { Error = null; return true; }
             var next = current.Copy();
-            next.NextDeparture = new NextDepartureData { ParentRunId = current.Flow.RunId, DefinitionKey = definitionKey, Start = start?.Copy() };
+            next.NextDeparture = new NextDepartureData { ParentRunId = parent, DefinitionKey = definitionKey, Start = start?.Copy() };
             return Stage(next);
+        }
+                private bool ExchangeAvailable() => Available() && (current.Flow==null || current.Flow.Stage==ClearReturnStage.Returned) &&
+            current.NextDeparture?.ParentRunId != (current.Flow?.RunId ?? NextDepartureData.InitialParent);
+        public bool EnsureExchange(IReadOnlyList<TokenExchangeProduct> fixedProducts, IReadOnlyList<TokenExchangeProduct> randomProducts,
+            int randomSlots, Olca.Core.Interfaces.IRandomProvider random)
+        {
+            if(!ExchangeAvailable()) return Fail("拠点・保存完了後に交換所を開いてください");
+            string round=current.Flow?.RunId??NextDepartureData.InitialParent;
+            if(current.ExchangeStock?.RoundId==round){Error=null;return true;}
+            try {
+                if(fixedProducts==null || randomProducts==null || random==null || randomSlots<0 || randomSlots>randomProducts.Count ||
+                    fixedProducts.Concat(randomProducts).Any(p=>p==null) || fixedProducts.Concat(randomProducts).Select(p=>p.Id).Distinct().Count()!=fixedProducts.Count+randomProducts.Count)
+                    throw new ArgumentException("重複のない交換商品と有効な抽選枠が必要です");
+                var offers=fixedProducts.Select(p=>p.Capture()).ToList();var pool=randomProducts.ToList();
+                for(int i=0;i<randomSlots;i++){int index=random.Range(0,pool.Count);if(index<0||index>=pool.Count)throw new ArgumentException("乱数の範囲が不正です");
+                    var item=pool[index].Capture();item.Random=true;offers.Add(item);pool.RemoveAt(index);}
+                var next=current.Copy();next.ExchangeStock=new ExchangeStockData{RoundId=round,Offers=offers.ToArray()};return Stage(next);
+            }catch(ArgumentException e){return Fail(e.Message);}
+        }
+        public static bool CanExchange(ClearReturnProfile profile, ExchangeOfferData offer)
+        {
+            if(profile==null || offer==null || profile.Tokens<offer.Price)return false;
+            long total=(profile.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>()).SingleOrDefault(t=>t.ProductId==offer.Id)?.Count??0;
+            return offer.Limit==ExchangeLimit.Unlimited || (offer.Limit==ExchangeLimit.PerRefresh?offer.Purchased:total)<offer.Maximum;
+        }
+        /// <summary>要求IDは一度の確認操作が所有する。再送は同じ領収書を返し支払/獲得を繰り返さない。</summary>
+        public bool PurchaseExchange(string requestId, string roundId, string productId)
+        {
+            if(!ExchangeAvailable()) return Fail("拠点・保存完了後に交換してください");
+            if(!Guid.TryParseExact(requestId,"N",out _))return Fail("交換要求IDが不正です");
+            var receipt=(current.ExchangeReceipts??Array.Empty<ExchangeReceipt>()).SingleOrDefault(x=>x.RequestId==requestId);
+            if(receipt!=null)return receipt.RoundId==roundId&&receipt.ProductId==productId || Fail("交換要求IDの内容が一致しません");
+            var stock=current.ExchangeStock;var offer=stock?.Offers.SingleOrDefault(o=>o.Id==productId);
+            if(stock==null || stock.RoundId!=roundId || !CanExchange(current,offer))return Fail("商品更新・売切れまたはトークン不足です");
+            try {
+                var next=current.Copy();var item=next.ExchangeStock.Offers.Single(o=>o.Id==productId);
+                var owned=next.Owned.ToList();var card=owned.SingleOrDefault(c=>c.Id==item.CardId&&c.Level==item.Level);
+                long overflow=0;
+                if(card==null)owned.Add(new OwnedCardCount{Id=item.CardId,Name=item.Name,Rarity=item.Rarity,Level=item.Level,Count=1});
+                else if(card.Name!=item.Name||card.Rarity!=item.Rarity) return Fail("既存所持と商品定義が一致しません");
+                else if(card.Count<4)card.Count++;else overflow=item.OverflowTokens;
+                next.Tokens=checked(next.Tokens-item.Price+overflow);next.Owned=owned.ToArray();item.Purchased=checked(item.Purchased+1);
+                var totals=(next.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>()).ToList();var total=totals.SingleOrDefault(t=>t.ProductId==productId);
+                if(total==null)totals.Add(new ExchangePurchaseTotal{ProductId=productId,Count=1});else total.Count=checked(total.Count+1);
+                next.ExchangeTotals=totals.ToArray();next.ExchangeReceipts=(next.ExchangeReceipts??Array.Empty<ExchangeReceipt>()).Concat(new[]{
+                    new ExchangeReceipt{RequestId=requestId,RoundId=roundId,ProductId=productId,Paid=item.Price,OverflowTokens=overflow}}).ToArray();
+                return Stage(next);
+            }catch(OverflowException e){return Fail(e.Message);}
+        }
+
+        public bool SelectDepartureStyle(DepartureStyleDefinition style)
+        {
+            if (!Available() || (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned) ||
+                current.NextDeparture?.ParentRunId == (current.Flow?.RunId ?? NextDepartureData.InitialParent)) return Fail("拠点でスタイルを選択してください");
+            if (style == null || !style.IsUnlocked(current)) return Fail("未解放のスタイルです");
+            string id = style.Id == DepartureStyleDefinition.BasicId ? null : style.Id;
+            if (current.SelectedStyleId == id) { Error = null; return true; }
+            var next = current.Copy(); next.SelectedStyleId = id; return Stage(next);
         }
         private bool DeckEditingAvailable() => Available() && current.Flow?.Stage==ClearReturnStage.Returned && current.NextDeparture?.ParentRunId!=current.Flow.RunId;
         public bool SaveDeck(string id,string name,IReadOnlyList<SavedDeckCard> cards)
@@ -564,8 +719,13 @@ namespace Olca.Core.Domain
             var next=current.Copy();if(!next.SavedDecks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
             next.SavedDecks=next.SavedDecks.Where(d=>d.Id!=id).ToArray();return Stage(next);
         }
-        public PlayerCharacter ReturnedPlayer => current?.Flow?.Stage == ClearReturnStage.Returned
-            ? new PlayerCharacter(current.Flow.ReturnedMaxHp, attackPower: current.Flow.ReturnedAttack) : null;
+        public PlayerCharacter ReturnedPlayer {
+            get {
+                if(current?.Flow?.Stage!=ClearReturnStage.Returned)return null;
+                var player=new PlayerCharacter(current.Flow.ReturnedMaxHp,attackPower:current.Flow.ReturnedAttack);
+                player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(current.Level));return player;
+            }
+        }
         private bool Stage(ClearReturnProfile next)
         {
             try { next.Revision = checked(current.Revision + 1); next.CommitId = Guid.NewGuid().ToString("N"); ClearReturnProfile.Validate(next); }

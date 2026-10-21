@@ -26,6 +26,22 @@ namespace Olca.Core.Logic.Dungeon
         internal MovementStep LastStep => hasLastStep ? lastStep : PreviewStep(0);
         internal void ConsumeStep() => hasLastStep = false;
 
+        private Func<int,bool> iceAtCell;
+        private Func<bool> receivesTerrain;
+        private int terrainCellCount;
+        internal void ConfigureIce(int cellCount,Func<int,bool> ice,Func<bool> receives)
+        {
+            terrainCellCount=cellCount;iceAtCell=ice;receivesTerrain=receives;ControlChanged();
+        }
+        public long EffectiveSpeedMilliPerSecond => isDashing||isDashJumping?DASH_SPEED_MILLI_PER_SEC:
+            !isJumping&&(receivesTerrain?.Invoke()??false)&&(iceAtCell?.Invoke((int)(currentPositionMilli/1000))??false)?
+            (long)normalSpeedMilliPerSecond*3/2:normalSpeedMilliPerSecond;
+        internal readonly struct MovementSegment
+        {
+            public readonly long Start,End; public readonly double First,Last;
+            public MovementSegment(long start,long end,double first,double last){Start=start;End=end;First=first;Last=last;}
+        }
+
         // 区間は位置の既存精度（1/1000セル）のまま扱う。固定時間刻みへの分割はしない。
         internal readonly struct MovementStep
         {
@@ -33,15 +49,17 @@ namespace Olca.Core.Logic.Dungeon
             public readonly double DurationFrames;
             public readonly long EndRemainder;
             public readonly bool WasJumping, IsDashing, WasDashJumping;
+            private readonly MovementSegment[] segments;
             private readonly double speedChangeFraction;
             private readonly long speedChangePosition;
             public readonly double JumpTimeFrames;
             public readonly int StartHeightMilli;
-            public MovementStep(long start, long end, double durationFrames, bool jumping, bool dashing, double jumpTimeFrames, int height, long endRemainder, bool dashJumping, double changeFraction, long changePosition)
-            { Start = start; End = end; DurationFrames = durationFrames; EndRemainder = endRemainder; WasJumping = jumping; IsDashing = dashing; JumpTimeFrames = jumpTimeFrames; StartHeightMilli = height; WasDashJumping = dashJumping; speedChangeFraction = changeFraction; speedChangePosition = changePosition; }
+            public MovementStep(long start, long end, double durationFrames, bool jumping, bool dashing, double jumpTimeFrames, int height, long endRemainder, bool dashJumping, double changeFraction, long changePosition, MovementSegment[] segments=null)
+            { this.segments=segments; Start = start; End = end; DurationFrames = durationFrames; EndRemainder = endRemainder; WasJumping = jumping; IsDashing = dashing; JumpTimeFrames = jumpTimeFrames; StartHeightMilli = height; WasDashJumping = dashJumping; speedChangeFraction = changeFraction; speedChangePosition = changePosition; }
             // 着地で速度が変わる区間は、距離比ではなく前後それぞれの時間比へ戻す。
             public double Fraction(long position)
             {
+                if(segments!=null){foreach(var segment in segments)if(position>=segment.Start&&position<=segment.End)return segment.End==segment.Start?segment.First:segment.First+(segment.Last-segment.First)*(position-segment.Start)/(segment.End-segment.Start);return position>=End?1:0;}
                 if (speedChangeFraction > 0 && speedChangeFraction < 1 && End > Start)
                 {
                     if (position <= speedChangePosition && speedChangePosition > Start)
@@ -53,6 +71,7 @@ namespace Olca.Core.Logic.Dungeon
             }
             public long PositionAt(double fraction)
             {
+                if(segments!=null){foreach(var segment in segments)if(fraction<=segment.Last)return segment.Last==segment.First?segment.End:segment.Start+(long)Math.Round((segment.End-segment.Start)*(fraction-segment.First)/(segment.Last-segment.First));return End;}
                 if (speedChangeFraction > 0 && speedChangeFraction < 1 && End > Start)
                     return fraction <= speedChangeFraction
                         ? Start + (long)Math.Round((speedChangePosition - Start) * fraction / speedChangeFraction)
@@ -92,16 +111,43 @@ namespace Olca.Core.Logic.Dungeon
         private MovementStep PreviewTime(long timeUnits)
         {
             long elapsed = isPaused ? 0 : timeUnits;
+            if(iceAtCell!=null&&elapsed>0)return PreviewIceTime(elapsed);
             double accelerated = isDashing || isDashJumping ? elapsed : 0;
             if (isDashJumping && elapsed > 0)
                 accelerated = Math.Min(elapsed, Math.Max(0, (JUMP_DURATION_FRAMES - jumpTimerFrames) * 50));
-            long numerator = positionRemainder + BASE_SPEED_MILLI_PER_SEC * elapsed
-                + (long)Math.Round((DASH_SPEED_MILLI_PER_SEC - BASE_SPEED_MILLI_PER_SEC) * accelerated);
+            long numerator = positionRemainder + normalSpeedMilliPerSecond * elapsed
+                + (long)Math.Round((DASH_SPEED_MILLI_PER_SEC - normalSpeedMilliPerSecond) * accelerated);
             long landingPosition = currentPositionMilli + (positionRemainder + (long)Math.Round(DASH_SPEED_MILLI_PER_SEC * accelerated)) / 3000;
             return new MovementStep(currentPositionMilli, currentPositionMilli + numerator / 3000,
                 elapsed / 50d, isJumping, isDashing, jumpTimerFrames, heightMilli, numerator % 3000,
                 isDashJumping, elapsed == 0 ? 0 : accelerated / elapsed, landingPosition);
         }
+        private MovementStep PreviewIceTime(long elapsed)
+        {
+            // セル境界と着地時刻で区間を分け、接地中の氷だけへ倍率を適用する。
+            decimal position=currentPositionMilli*3000m+positionRemainder, passed=0;
+            var points=new List<MovementSegment>();
+            decimal landing=isJumping?Math.Max(0m,(decimal)(JUMP_DURATION_FRAMES-jumpTimerFrames)*50m):0m;
+            while(passed<elapsed){
+                int cell=(int)Math.Floor(position/3000000m);
+                bool air=isJumping&&passed<landing;
+                bool fast=isDashJumping?air:isDashing;
+                long speed=fast?DASH_SPEED_MILLI_PER_SEC:normalSpeedMilliPerSecond;
+                if(!fast&&!air&&(receivesTerrain?.Invoke()??false)&&iceAtCell(cell))speed=speed*3/2;
+                decimal boundary=(cell+1)*3000000m;
+                decimal spatial=cell>=terrainCellCount?decimal.MaxValue:(boundary-position)/speed;
+                decimal toLanding=air?landing-passed:decimal.MaxValue;
+                decimal duration=Math.Min(elapsed-passed,Math.Min(spatial,toLanding));
+                long start=(long)(position/3000m);decimal first=passed;
+                position+=speed*duration;passed+=duration;
+                if(duration==spatial)position=boundary;
+                if(duration==toLanding)passed=landing;
+                points.Add(new MovementSegment(start,(long)(position/3000m),(double)(first/elapsed),(double)(passed/elapsed)));
+            }
+            long precise=(long)position;
+            return new MovementStep(currentPositionMilli,precise/3000,elapsed/50d,isJumping,isDashing,jumpTimerFrames,heightMilli,precise%3000,isDashJumping,0,0,points.ToArray());
+        }
+
         internal void ApplyStep(MovementStep step, long position)
         {
             // 区間終端まで進んだ場合だけ余りを持ち越す。接触で打切った移動は再開後へ漏らさない。
@@ -111,7 +157,13 @@ namespace Olca.Core.Logic.Dungeon
             jumpTimerFrames = step.JumpTimeFrames; heightMilli = step.StartHeightMilli;
             if (isJumping) UpdateJump(step.DurationFrames * step.Fraction(position));
         }
-        private const int BASE_SPEED_MILLI_PER_SEC = 10000;  // 基本移動速度（ミリ単位/秒）= 10.0
+        private int normalSpeedMilliPerSecond = 10000;
+        public int NormalSpeedMilliPerSecond => normalSpeedMilliPerSecond;
+        public void ConfigureNormalSpeed(int value)
+        {
+            if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
+            normalSpeedMilliPerSecond = value; ControlChanged();
+        }
         private const int DASH_SPEED_MILLI_PER_SEC = 20000;  // ダッシュ速度（ミリ単位/秒）= 20.0
         private const int JUMP_DURATION_FRAMES = 30;           // ジャンプ時間（論理フレーム）= 0.5秒
         private const int JUMP_HEIGHT_MILLI = 1500;         // ジャンプの最大高さ（ミリ単位）= 1.5

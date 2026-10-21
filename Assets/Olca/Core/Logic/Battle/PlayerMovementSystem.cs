@@ -102,6 +102,8 @@ namespace Olca.Core.Logic.Battle
             Vector2Int direction = Vector2Int.Zero;
 
             float horizontal = input is IHorizontalTapInput tap && tap.HorizontalTap != 0 ? tap.HorizontalTap : input.Horizontal;
+            // リマップ/複数指の優先解決後、方向入力だけを一度反転する。滑り/強制移動には適用しない。
+            if (player.IsConfused) horizontal = -horizontal;
             if (horizontal > 0.5f) direction = new Vector2Int(1, 0); // 右
             else if (horizontal < -0.5f) direction = new Vector2Int(-1, 0); // 左
 

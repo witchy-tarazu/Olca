@@ -8,6 +8,53 @@ namespace Olca.Tests.Domain
     [TestFixture]
     public class CardMasterParseTests
     {
+        private static string TimingHash(Card card) => (string)typeof(Olca.Core.Logic.Dungeon.DungeonCheckpointSession).Assembly
+            .GetType("Olca.Core.Logic.Dungeon.CheckpointValues").GetMethod("CardHash",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic).Invoke(null,new object[]{card});
+        [Test]
+        public void 未指定の前後隙は旧秒値と既存製品ソードの保存ハッシュを維持する()
+        {
+            var master=new CardMaster{Id="legacy-time",Name="検証",Category=CardCategory.Attack,Series=SeriesType.Sword,StartupTime=.011f,RecoveryTime=.101f};
+            var card=Card.FromMaster(master);Assert.IsNull(card.StartupFrames);Assert.IsNull(card.RecoveryFrames);Assert.IsNull(card.RecoveryCancelAfterFrames);Assert.AreEqual(.011f,card.StartupTime);Assert.AreEqual(.101f,card.RecoveryTime);
+            var sword=new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            // 68b40a8で保存した未加工ソードの値。任意の省略フィールド追加で変えない。
+            Assert.AreEqual("1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",TimingHash(sword));
+            Assert.AreNotEqual(TimingHash(sword),TimingHash(sword.WithAttackTiming(new PlayerAttackTiming(0,0))));
+        }
+        [TestCase(-1,12,6)] [TestCase(3,-1,0)] [TestCase(3,12,-1)] [TestCase(3,12,13)]
+        public void 不正な製品時間はマスターからカードを公開する前に拒否する(int startup,int recovery,int cancel)
+        {
+            var master=new CardMaster{Id="bad",Category=CardCategory.Attack,Series=SeriesType.Sword,StartupFrames=startup,RecoveryFrames=recovery,RecoveryCancelAfterFrames=cancel,IsInstantEffect=true};
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>Card.FromMaster(master));
+        }
+        [Test]
+        public void 非有限秒値と後隙を超える取消を拒否し明示ゼロと省略を区別する()
+        {
+            var master=new CardMaster{Id="bad",Category=CardCategory.Attack,Series=SeriesType.Sword,StartupTime=float.NaN};Assert.Throws<System.ArgumentOutOfRangeException>(()=>Card.FromMaster(master));
+            master.StartupTime=0;master.RecoveryTime=float.PositiveInfinity;Assert.Throws<System.ArgumentOutOfRangeException>(()=>Card.FromMaster(master));
+            master.RecoveryTime=.1f;master.RecoveryCancelAfterFrames=7;Assert.Throws<System.ArgumentOutOfRangeException>(()=>Card.FromMaster(master));
+            master.RecoveryCancelAfterFrames=0;master.StartupTime=9;master.StartupFrames=0;master.RecoveryFrames=0;var zero=Card.FromMaster(master);Assert.AreEqual(0,zero.StartupFrames);Assert.AreEqual(9,zero.StartupTime);
+        }
+        [Test]
+        public void 製品時間は複製調律倍率派生超越で保持され外部辞書と対象テンプレートを共有しない()
+        {
+            var values=new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(3,12,6)}};
+            var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:values);values.Clear();var sword=factory.CreateById("sword");var tune=new Card("t","t",1,CardRarity.Normal,CardCategory.Tuning,ElementType.None,CardSeries.None,0,"検証");
+            foreach(var card in new[]{sword.Clone(),sword.ApplyTuning(tune),sword.WithPowerMultiplier(2),sword.CreateSelfChainCopy(50),factory.CreateExceeded(sword,ExceedLevel.Lv1)}){
+                Assert.AreEqual(3,card.StartupFrames);Assert.AreEqual(12,card.RecoveryFrames);Assert.AreEqual(6,card.RecoveryCancelAfterFrames);
+            }
+            Assert.IsNull(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword").StartupFrames);
+            Assert.Throws<System.ArgumentException>(()=>new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"missing",new PlayerAttackTiming()}}));
+            Assert.Throws<System.ArgumentException>(()=>new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",null}}));
+        }
+        [Test]
+        public void 融合は結果製品の時間を使い取消は元素材の時間へ戻す()
+        {
+            var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(3,12,6)},{"bomb",new PlayerAttackTiming(2,9,3)},{"fire_sword",new PlayerAttackTiming(8,16,5)}});
+            var sword=factory.CreateById("sword");var bomb=factory.CreateById("bomb");var screen=new Olca.Core.Logic.Battle.CustomScreenSystem(new Deck(new System.Collections.Generic.List<Card>{sword,bomb}),fusionSystem:new Olca.Core.Logic.Battle.FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(),factory));screen.Open(new Card[0],new Olca.Tests.Mocks.MockRandomProvider());
+            var fusion=screen.ExecuteFusion(new[]{sword,bomb});Assert.IsTrue(fusion.IsSuccess);Assert.AreEqual(8,fusion.ResultCard.StartupFrames);Assert.AreEqual(16,fusion.ResultCard.RecoveryFrames);Assert.AreEqual(5,fusion.ResultCard.RecoveryCancelAfterFrames);
+            Assert.IsTrue(screen.TryUndoCustomization());foreach(var card in screen.CurrentHand){Assert.AreEqual(card.Id=="sword"?3:2,card.StartupFrames);Assert.AreEqual(card.Id=="sword"?6:3,card.RecoveryCancelAfterFrames);}
+        }
+
         [TestCase(0)][TestCase(7)]
         public void 明示削り量はマスターと複製調律倍率派生超越でHP威力と独立して維持する(int impact)
         {
@@ -30,20 +77,20 @@ namespace Olca.Tests.Domain
             var master = new CardMaster { Id = "property", Name = "検証", Category = CardCategory.Attack,
                 Element = ElementType.Fire, Series = SeriesType.Sword, Power = 10 };
             Assert.AreEqual(AttackProperty.None, Card.FromMaster(master).Properties, "系統から性質を推測しない");
-            master.Properties = AttackProperty.Sword | AttackProperty.Break;
+            master.Properties = AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind;
             var card = Card.FromMaster(master);
             var material = new Card("t", "検証", 1, CardRarity.Normal, CardCategory.Tuning,
                 ElementType.None, CardSeries.None, 0, "検証", properties: AttackProperty.Break);
             foreach (var copy in new[] { card, card.Clone(), card.WithPowerMultiplier(2), card.CreateSelfChainCopy(50),
                 card.ApplyTuning(material), new Olca.Application.Battle.SimpleCardFactory().CreateExceeded(card, ExceedLevel.Lv1) })
             {
-                Assert.AreEqual(AttackProperty.Sword | AttackProperty.Break, copy.Properties);
+                Assert.AreEqual(AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind, copy.Properties);
                 Assert.AreEqual(ElementType.Fire, copy.Element);
             }
             var plain = new Card("p", "検証", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.None, CardSeries.Sword, 10, "検証");
             Assert.AreEqual(AttackProperty.None, plain.ApplyTuning(material).Properties, "素材の性質は追加仕様なしで付与しない");
-            master.Properties = (AttackProperty)4;
+            master.Properties = (AttackProperty)8;
             Assert.Throws<System.ArgumentOutOfRangeException>(() => Card.FromMaster(master));
         }
 

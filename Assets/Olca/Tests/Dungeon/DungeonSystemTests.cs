@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System.Linq;
 using Olca.Core.Logic.Dungeon;
+using Olca.Core.Logic.Integration;
 using Olca.Core.Logic.Battle;
 using Olca.Core.Domain;
 using Olca.Tests.Mocks;
@@ -57,6 +58,78 @@ namespace Olca.Tests.Dungeon
             foreach(var e in d.CurrentBattle.Enemies.ToArray())e.TakeDamage(99999,ElementType.None);
             Assert.IsFalse(d.IsInBattle);var end=p.CapturePoisons()[0];
             Assert.AreEqual(before.RemainingUnits,end.RemainingUnits);Assert.AreEqual(3000,end.NextDamageUnits);
+        }
+
+        [Test]
+        public void 併存戦闘の終了で麻痺だけ解除し毒を報酬保存と探索復帰へ持ち越す()
+        {
+            var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-coexisting-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
+                var deck = new Deck(new System.Collections.Generic.List<Card> { CardRewardSystem.CreateFallbackCard("sword", CardRarity.Normal) });
+                var defaults = DungeonCheckpointSession.CreateDefault(map, deck);
+                var files = new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory);
+                var session = new DungeonCheckpointSession(defaults.Definitions, files); var p = new PlayerCharacter(100);
+                var game = new Olca.Core.Logic.Integration.DungeonBattleManager(map, p, deck, new MockRandomProvider(), new MockLogger(), checkpoints: session);
+                p.ApplyPoison("fixture", new StatusEffect(StatusEffectType.Poison, 60000, 2), 60);
+                for (int f = 0; f < 300 && game.CurrentBattle == null; f++) game.TickFrame(17);
+                Assert.IsNotNull(game.CurrentBattle);
+                p.ApplyParalysis(6); game.TickFrame(17); Assert.IsTrue(p.IsParalyzed);
+                var before = p.CapturePoisons()[0];
+                Assert.AreEqual(CheckpointBoundary.BattleStart, files.Read().Boundary, "途中状態の保存境界を増やさない");
+                var battle = game.CurrentBattle;
+                battle.RunLogicalFrame(() => { foreach (var enemy in battle.Enemies.ToArray()) enemy.TakeDamage(99999, ElementType.None); });
+                if (game.CurrentPhase == GamePhase.CardReward) game.SelectCardReward(null);
+                Assert.AreEqual(GamePhase.Dungeon, game.CurrentPhase); Assert.IsFalse(p.IsParalyzed); Assert.AreEqual(0, p.ParalysisRemainingFrames);
+                Assert.AreEqual(before.RemainingUnits, p.CapturePoisons()[0].RemainingUnits);
+                Assert.AreEqual(3000, p.CapturePoisons()[0].NextDamageUnits);
+                var saved = files.Read(); Assert.AreEqual(CheckpointBoundary.RewardCompleted, saved.Boundary);
+                Assert.AreEqual(before.RemainingUnits, saved.Player.Poisons.Single().RemainingUnits);
+                var bytes = System.IO.File.ReadAllBytes(files.ActivePath);
+                Assert.IsTrue(game.SuspendForCheckpoint());
+                var reopened = new DungeonCheckpointSession(defaults.Definitions, new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory));
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(reopened, new MockRandomProvider(), new MockLogger(), out var resumed, out var error), error);
+                resumed.ActivateCheckpoint(); Assert.IsFalse(resumed.Dungeon.Player.IsParalyzed);
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(files.ActivePath));
+                Assert.AreEqual(before.RemainingUnits, resumed.Dungeon.Player.CapturePoisons()[0].RemainingUnits);
+                resumed.TickFrame(17);
+                Assert.AreEqual(before.RemainingUnits - 50, resumed.Dungeon.Player.CapturePoisons()[0].RemainingUnits);
+                Assert.AreEqual(2950, resumed.Dungeon.Player.CapturePoisons()[0].NextDamageUnits);
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [Test]
+        public void 変身追加ドロー後のファイル再開は戦闘開始手札へ戻り二重ドローしない()
+        {
+            var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-hand-bonus-"+System.Guid.NewGuid().ToString("N"));
+            try {
+                var map=DungeonConfig.CreateTestDungeon(20,30,3);
+                var deck=new Deck(Enumerable.Range(0,20).Select(_=>CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal).WithAttackTiming(new PlayerAttackTiming(3,12,6))).ToList());
+                var defaults=DungeonCheckpointSession.CreateDefault(map,deck);var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory);var session=new DungeonCheckpointSession(defaults.Definitions,store);
+                var game=new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
+                for(int f=0;f<300&&game.CurrentBattle==null;f++)game.TickFrame(17);
+                Assert.IsNotNull(game.CurrentBattle);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+                void Configure(BattleSystem b){b.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,2,new[]{new TransformationCardConversion("sword",CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal).WithAttackTiming(new PlayerAttackTiming(4,8,2)))},attack:new TransformationAttackDefinition(ElementType.Fire,chargeFrames:6))});b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());}
+                Configure(game.CurrentBattle);game.CurrentBattle.Transformations.TryPreview("fixture");Assert.AreEqual(12,game.CurrentBattle.CustomScreen.CurrentHand.Count);Assert.IsTrue(game.CurrentBattle.CustomScreen.CurrentHand.All(c=>c.Id=="heal"&&c.StartupFrames==4&&c.RecoveryCancelAfterFrames==2));game.CurrentBattle.CustomScreen.Confirm();Assert.IsTrue(game.CurrentBattle.Transformations.IsUsed("fixture"));
+                game.CurrentBattle.CustomScreen.Close();var attackInput=new Olca.Application.Battle.BasicAttackInputState();
+                for(int f=0;f<6;f++)attackInput.Tick(game.CurrentBattle,new LogicalInput{BasicAttackButtonDown=f==0,BasicAttackButton=true},60,12);
+                Assert.AreEqual(6,attackInput.ChargeFrames);
+                var changedDeck=new Deck(deck.GetAllCards().Select(c=>c.WithAttackTiming(new PlayerAttackTiming(3,12,7))).ToList());
+                var changed=DungeonCheckpointSession.CreateDefault(map,changedDeck);
+                Assert.IsFalse(CheckpointCodec.TryRestore(store.Read(),changed.Definitions,out _,out _),"同IDでも明示した窓が異なる定義へ解釈し直さない");
+                Assert.IsTrue(game.SuspendForCheckpoint());CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+                for(int repeat=0;repeat<2;repeat++) {
+                    var reopened=new DungeonCheckpointSession(defaults.Definitions,new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory));
+                    Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(reopened,new MockRandomProvider(),new MockLogger(),out var resumed,out var error),error);resumed.ActivateCheckpoint();
+                    Configure(resumed.CurrentBattle);
+                    attackInput.Tick(resumed.CurrentBattle,new LogicalInput{BasicAttackButtonUp=true},60,12);
+                    Assert.AreEqual(0,attackInput.ChargeFrames);Assert.IsFalse(attackInput.IsCharging);Assert.IsNull(resumed.CurrentBattle.Transformations.ActiveAttack);
+                    var screen=resumed.CurrentBattle.CustomScreen;
+                    Assert.AreEqual(10,screen.CurrentHand.Count);Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="sword"&&c.StartupFrames==3&&c.RecoveryCancelAfterFrames==6));Assert.AreEqual(10,screen.MaxHandSize);Assert.IsEmpty(resumed.CurrentBattle.Transformations.UsedIds);
+                    resumed.CurrentBattle.Transformations.TryPreview("fixture");Assert.AreEqual(12,screen.CurrentHand.Count);Assert.AreEqual(12,screen.CurrentHand.Distinct().Count());Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="heal"));
+                    resumed.CurrentBattle.Transformations.TryCancelPending();Assert.AreEqual(10,screen.CurrentHand.Count);Assert.IsTrue(screen.CurrentHand.All(c=>c.Id=="sword"&&c.StartupFrames==3&&c.RecoveryCancelAfterFrames==6));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));resumed.SuspendForCheckpoint();
+                }
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
         }
 
         private MockRandomProvider mockRandom;
@@ -1191,6 +1264,8 @@ namespace Olca.Tests.Dungeon
         [TestCase(AttackProperty.None)]
         [TestCase(AttackProperty.Sword)]
         [TestCase(AttackProperty.Sword | AttackProperty.Break)]
+        [TestCase(AttackProperty.Wind)]
+        [TestCase(AttackProperty.Wind | AttackProperty.Break)]
         public void 攻撃性質の保存復帰は個体順序と獲得参照を維持し別性質定義を拒否する(AttackProperty properties)
         {
             Card Make(AttackProperty value) => new Card("sword", "同名", 2, CardRarity.Normal, CardCategory.Attack,
@@ -1247,6 +1322,82 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(93,restored.Player.CurrentHp);
             departure.Player.FireResistance=101;
             Assert.IsFalse(CheckpointCodec.TryRestore(departure,definitions,out _,out _));
+        }
+
+        [TestCase("wallet")] [TestCase("amount")] [TestCase("count")]
+        public void 不正な通貨財布と戦闘開始額を復帰で拒否する(string invalid)
+        {
+            var snapshot = FindPlan(true).Snapshot;
+            if (invalid == "wallet") snapshot.Currency = -1;
+            if (invalid == "amount") snapshot.Battle.CurrencyAmounts = new[] { -1 };
+            if (invalid == "count") snapshot.Battle.CurrencyAmounts = new int[0];
+            Assert.IsFalse(CheckpointCodec.TryRestore(snapshot, definitions, out _, out _));
+        }
+
+        [Test]
+        public void 重み付き戦闘開始計画は保存後の重み変更でも候補を再抽選しない()
+        {
+            bool saved = false;
+            var cards = new[] { "sword", "heal", "shield", "fire", "ice" }
+                .Select(id => CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal)).ToList();
+            var pool = new Olca.Tests.Mocks.SimpleCardPool(cards, c => {
+                Assert.IsFalse(saved, "保存復帰では重みを参照しない");
+                return c.Id == "heal" ? 10 : c.Id == "fire" ? 0 : 1;
+            });
+            CheckpointBattlePlan plan = null;
+            for (int seed = 0; seed < 100; seed++)
+            {
+                Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure, Encounter(), definitions, seed, pool,
+                    c => "reward/v1/" + c.Id, out plan, out var error), error);
+                if (plan.Snapshot.Battle.RewardOffered) break;
+            }
+            Assert.IsTrue(plan.Snapshot.Battle.RewardOffered);
+            var snapshot = plan.Snapshot;
+            var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-weighted-" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var store = new Olca.Unity.FileCheckpointStore(definitions, directory);
+                Assert.IsTrue(store.TryWrite(snapshot, out var error), error); saved = true;
+                var bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+                var reopened = new Olca.Unity.FileCheckpointStore(definitions, directory);
+                Assert.IsTrue(CheckpointCodec.TryRestore(reopened.Read(), definitions, out var restored, out error), error);
+                Assert.AreEqual(3, restored.RewardCandidates.Count);
+                Assert.IsFalse(restored.RewardCandidates.Any(c => c.Id == "fire"));
+                CollectionAssert.AreEqual(snapshot.Battle.RewardCandidates, restored.Snapshot.Battle.RewardCandidates);
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+            }
+            finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 部分一致IDの新規通常報酬と旧保存一候補を再抽選せず復帰する(bool legacy)
+        {
+            map.MapCells[3] = new MapCell(3, new Enemy("miniboss", "通常敵", 50, ElementType.None, new Vector2Int(3, 0)));
+            var updated = new CheckpointDefinitions("fixture-v1", map);
+            updated.RegisterCard("standard/v1/sword", standard);
+            updated.RegisterCard("fallback/v1/sword", fallback);
+            foreach (string id in new[] { "sword", "heal", "shield", "fire", "ice" })
+                updated.RegisterCard("reward/v1/" + id, CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal));
+            var oldReward = CardRewardSystem.CreateFallbackCard("sword", CardRarity.Limited);
+            updated.RegisterCard("legacy/boss/sword", oldReward);
+            departure.MapHash = updated.MapHash; departure.Enemies[0].EnemyId = "miniboss";
+            definitions = updated;
+            var snapshot = FindPlan(legacy).Snapshot;
+            if (legacy)
+            {
+                var keep = snapshot.Battle.RewardCandidates[0];
+                var remove = snapshot.Battle.RewardCandidates.Skip(1).ToArray();
+                snapshot.Battle.RewardCandidates = new[] { keep };
+                snapshot.Cards = snapshot.Cards.Where(c => !remove.Contains(c.InstanceId))
+                    .Select(c => c.InstanceId == keep ? definitions.CaptureCard(keep, "legacy/boss/sword", oldReward) : c).ToArray();
+            }
+            var store = new MemoryCheckpointStore(definitions);
+            Assert.IsTrue(store.TryWrite(snapshot, out var error), error);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), definitions, out var restored, out error), error);
+            CollectionAssert.AreEqual(snapshot.Battle.RewardCandidates, restored.Snapshot.Battle.RewardCandidates);
+            Assert.AreEqual(legacy ? 1 : 0, restored.RewardCandidates.Count);
+            if (legacy) Assert.AreEqual(CardRarity.Limited, restored.RewardCandidates[0].Rarity);
         }
 
         private CheckpointBattleDto Encounter() => new CheckpointBattleDto {
@@ -1573,6 +1724,394 @@ namespace Olca.Tests.Dungeon
             var game = Create(EnemyCell(5)); game.Jump();
             foreach (int ms in partition == 0 ? new[] { 1000 } : new[] { 17, 111, 33, 239, 100, 500 }) game.Tick(ms);
             Assert.IsTrue(game.IsInBattle); Assert.That(game.PlayerPosition, Is.InRange(4.458f, 4.460f));
+        }
+    }
+}
+
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class EnemyDashContactTests
+    {
+        private static DungeonConfig Map(EnemyDashContactDefinition definition=null,bool boss=true,int enemyHp=200)
+        {var m=DungeonConfig.CreateTestDungeon(5,30,4);m.MapCells[4]=new MapCell(4,new Enemy(boss?"boss":"foe","旧dash",enemyHp,ElementType.None,new Vector2Int(4,0),dashContact:definition));return m;}
+        private static DungeonBattleManager Game(DungeonConfig map,DungeonCheckpointSession session=null,int hp=100)
+            =>new DungeonBattleManager(map,new PlayerCharacter(hp),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        private static void Contact(DungeonBattleManager g,bool dash,bool jump=false)
+        {if(dash)g.StartDash();if(jump)g.Jump();for(int i=0;i<120&&g.CurrentBattle==null&&!g.Dungeon.IsCheckpointBlocked;i++)g.TickFrame(17);}
+        [TestCase(DashContactOutcome.InitialDamage,23,false)] [TestCase(DashContactOutcome.Stun,45,false)] [TestCase(DashContactOutcome.FirstStrike,0,false)] [TestCase(DashContactOutcome.PlayerDamage,7,false)]
+        [TestCase(DashContactOutcome.InitialDamage,23,true)] [TestCase(DashContactOutcome.Stun,45,true)] [TestCase(DashContactOutcome.FirstStrike,0,true)] [TestCase(DashContactOutcome.PlayerDamage,7,true)]
+        public void 通常接触は適用せずダッシュだけ接触先の個別結果を一度適用する(DashContactOutcome outcome,int value,bool dash)
+        {
+            var g=Game(Map(new EnemyDashContactDefinition(outcome,value)));int starts=0;ContactInfo info=null;g.OnBattleStarted+=(_,c)=>{starts++;info=c;};Contact(g,dash);Assert.IsNotNull(g.CurrentBattle);var e=g.CurrentBattle.Enemies[0];Assert.AreEqual(dash,info.IsDashContact);Assert.AreEqual(dash,(bool)info.DashEffect.HasValue);Assert.AreEqual(dash?(int?)value:null,info.DashValue);
+            Assert.AreEqual(dash&&outcome==DashContactOutcome.PlayerDamage?100-value:100,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(dash&&outcome==DashContactOutcome.InitialDamage?200-value:200,e.CurrentHp);Assert.AreEqual(dash&&outcome==DashContactOutcome.Stun,e.IsStunned);if(dash&&outcome==DashContactOutcome.FirstStrike)Assert.IsTrue(g.CurrentBattle.CustomGauge.IsFull);
+            int hp=g.CurrentBattle.Player.CurrentHp,ehp=e.CurrentHp;g.SetUserPaused(true);for(int i=0;i<20;i++)g.TickFrame(17);g.Dungeon.StartBattle(info);g.ActivateCheckpoint();for(int i=0;i<20;i++)g.TickFrame(17);Assert.AreEqual(1,starts);Assert.AreEqual(hp,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(ehp,e.CurrentHp);g.SetUserPaused(false);
+            if(dash&&outcome==DashContactOutcome.Stun){g.CurrentBattle.CustomScreen.Close();for(int i=0;i<value-1;i++)g.TickFrame(17);Assert.IsTrue(e.IsStunned);g.TickFrame(17);Assert.IsFalse(e.IsStunned);}
+        }
+        [TestCase(DashContactOutcome.InitialDamage,23)] [TestCase(DashContactOutcome.Stun,45)] [TestCase(DashContactOutcome.FirstStrike,0)] [TestCase(DashContactOutcome.PlayerDamage,7)]
+        public void 開始前保存からの新規モデル再開は同じ初撃を再現し重複しない(DashContactOutcome outcome,int value)
+        {
+            var map=Map(new EnemyDashContactDefinition(outcome,value));var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());var store=new MemoryCheckpointStore(initial.Definitions);var session=new DungeonCheckpointSession(initial.Definitions,store);var g=Game(map,session);Contact(g,true);Assert.IsNotNull(g.CurrentBattle,g.Dungeon.CheckpointError);var snapshot=store.Read();Assert.AreEqual(value,snapshot.Battle.DashValue);Assert.AreEqual((int)outcome,snapshot.Battle.DashEffect);Assert.AreEqual(100,snapshot.Player.Hp);Assert.AreEqual(200,snapshot.Enemies[0].Hp);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);Assert.IsTrue(g.SuspendForCheckpoint());restored.ActivateCheckpoint();restored.ActivateCheckpoint();Assert.AreEqual(g.CurrentBattle.Player.CurrentHp,restored.CurrentBattle.Player.CurrentHp);Assert.AreEqual(g.CurrentBattle.Enemies[0].CurrentHp,restored.CurrentBattle.Enemies[0].CurrentHp);Assert.AreEqual(outcome==DashContactOutcome.Stun,restored.CurrentBattle.Enemies[0].IsStunned);Assert.AreEqual(snapshot.Sequence,store.Read().Sequence);CollectionAssert.AreEqual(snapshot.Battle.FirstHand,store.Read().Battle.FirstHand);CollectionAssert.AreEqual(snapshot.Battle.RewardCandidates,store.Read().Battle.RewardCandidates);
+            var invalid=snapshot.Copy();invalid.Battle.DashValue=value+1;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,initial.Definitions,out _,out _));invalid=snapshot.Copy();invalid.Battle.DashValue=null;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,initial.Definitions,out _,out _));invalid=snapshot.Copy();invalid.Battle.DashContact=false;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,initial.Definitions,out _,out _));
+            var fresh=initial.Definitions.CreateInitialMap().MapCells[4].Enemy;Assert.IsTrue(fresh.DashContact.HasSameValues(new EnemyDashContactDefinition(outcome,value)));Assert.AreEqual(200,fresh.CurrentHp);
+        }
+        private sealed class FailingStore:ICheckpointStore
+        {private readonly MemoryCheckpointStore inner;public bool Fail;public FailingStore(CheckpointDefinitions d){inner=new MemoryCheckpointStore(d);}public CheckpointDto Read()=>inner.Read();public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="fixture failure";return false;}return inner.TryWrite(d,out error);}}
+        [Test]
+        public void 開始保存失敗中は初撃せず再試行後に一度だけ発生する()
+        {
+            var map=Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7));var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());var store=new FailingStore(initial.Definitions);var session=new DungeonCheckpointSession(initial.Definitions,store);var g=Game(map,session);long seq=store.Read().Sequence;store.Fail=true;int starts=0;g.OnBattleStarted+=(_,__)=>starts++;Contact(g,true);Assert.IsTrue(g.Dungeon.IsCheckpointBlocked);Assert.IsNull(g.CurrentBattle);Assert.AreEqual(100,g.Dungeon.Player.CurrentHp);Assert.AreEqual(seq,store.Read().Sequence);for(int i=0;i<100;i++)g.TickFrame(17);Assert.IsFalse(g.RetryCheckpoint());Assert.AreEqual(0,starts);store.Fail=false;Assert.IsTrue(g.RetryCheckpoint());Assert.AreEqual(93,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(1,starts);Assert.IsFalse(g.RetryCheckpoint());g.ActivateCheckpoint();Assert.AreEqual(93,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(1,starts);
+        }
+        [Test]
+        public void 接触先の定義を巻込へ一度適用し巻込先の別定義を重ねない()
+        {
+            var cells=new System.Collections.Generic.List<MapCell>();for(int i=0;i<8;i++)cells.Add(new MapCell(i));cells[4]=new MapCell(4,new Enemy("a","接触",200,ElementType.None,new Vector2Int(4,0),dashContact:new EnemyDashContactDefinition(DashContactOutcome.InitialDamage,23)));cells[5]=new MapCell(5,new Enemy("b","巻込",200,ElementType.None,new Vector2Int(5,0),dashContact:new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,9)));var g=Game(new DungeonConfig("mixed","混在",8,cells));Contact(g,true);Assert.AreEqual(2,g.CurrentBattle.Enemies.Count);Assert.IsTrue(g.CurrentBattle.Enemies.All(e=>e.CurrentHp==177));Assert.AreEqual(100,g.CurrentBattle.Player.CurrentHp);
+        }
+        [Test]
+        public void 空中接触はダッシュ結果を使わず非ボスのジャンプ回避も維持する()
+        {
+            var g=Game(Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7)));Contact(g,true,true);Assert.IsNotNull(g.CurrentBattle);Assert.AreEqual(100,g.CurrentBattle.Player.CurrentHp);Assert.AreEqual(200,g.CurrentBattle.Enemies[0].CurrentHp);
+            g=Game(Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7),false));g.StartDash();g.Jump();for(int i=0;i<40;i++)g.TickFrame(17);Assert.IsNull(g.CurrentBattle);Assert.AreEqual(100,g.Dungeon.Player.CurrentHp);
+        }
+        [TestCase(false,false)] [TestCase(true,false)] [TestCase(false,true)] [TestCase(true,true)]
+        public void 致死の初撃でも開始通知と終了通知を一度だけ行う(bool playerDamage,bool checkpoints)
+        {
+            var def=new EnemyDashContactDefinition(playerDamage?DashContactOutcome.PlayerDamage:DashContactOutcome.InitialDamage,300);var map=Map(def);DungeonCheckpointSession session=checkpoints?DungeonCheckpointSession.CreateDefault(map,new Deck()):null;var g=Game(map,session);int starts=0,ends=0;BattleSystem started=null;g.OnBattleStarted+=(b,__)=>{starts++;started=b;};g.OnBattleEnded+=()=>ends++;Contact(g,true);Assert.IsNotNull(started);Assert.IsTrue(started.IsGameOver);if(playerDamage&&checkpoints)Assert.AreEqual(CheckpointBoundary.Terminal,session.Store.Read().Boundary);Assert.AreEqual(1,starts);Assert.AreEqual(1,ends);for(int i=0;i<5;i++)g.TickFrame(17);Assert.AreEqual(1,ends);
+        }
+        [Test]
+        public void 未設定の旧hashと初撃値を保ち不正設定や不整合の新値だけ拒否する()
+        {
+            var map=Map();var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());Assert.AreEqual("FD6B09962EE734F318E3FC8905339460CBB37E720D5FAFD732E88CDE71665090",initial.Definitions.MapHash);var store=new MemoryCheckpointStore(initial.Definitions);var session=new DungeonCheckpointSession(initial.Definitions,store);var g=Game(map,session);Contact(g,true);Assert.AreEqual(185,g.CurrentBattle.Enemies[0].CurrentHp);Assert.IsNull(store.Read().Battle.DashValue);var copy=store.Read().Copy();copy.Battle.DashValue=15;Assert.IsFalse(CheckpointCodec.TryRestore(copy,initial.Definitions,out _,out _));Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);g.SuspendForCheckpoint();restored.ActivateCheckpoint();Assert.AreEqual(185,restored.CurrentBattle.Enemies[0].CurrentHp);
+            Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition((DashContactOutcome)99,0));Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,-1));Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition(DashContactOutcome.Stun,0));Assert.Throws<System.ArgumentException>(()=>new EnemyDashContactDefinition(DashContactOutcome.FirstStrike,1));Assert.AreNotEqual(initial.Definitions.MapHash,DungeonCheckpointSession.CreateDefault(Map(new EnemyDashContactDefinition(DashContactOutcome.InitialDamage,15)),new Deck()).Definitions.MapHash);
+        }
+        [Test]
+        public void 敵別初撃と接触位置は描画fpsや追いつき処理で変化しない()
+        {
+            System.Collections.Generic.List<string> Trace(int fps){var g=Game(Map(new EnemyDashContactDefinition(DashContactOutcome.PlayerDamage,7)));g.StartDash();var c=new LogicalFrameClock();var result=new System.Collections.Generic.List<string>();long wall=0;void Tick(long f,int ms){if(f==2)g.SetUserPaused(true);if(f==6)g.SetUserPaused(false);g.TickFrame(ms);result.Add(g.CurrentPhase+":"+g.Dungeon.PlayerPosition+":"+g.Dungeon.Player.CurrentHp+":"+g.CurrentBattle?.Enemies[0].CurrentHp);}if(fps==0){c.Accumulate(LogicalFrameClock.WallTicksPerSecond);c.Drain(Tick);}else for(int i=1;c.Frame<60;i++){long t=(long)i*LogicalFrameClock.WallTicksPerSecond/fps;c.Accumulate(t-wall);wall=t;c.Drain(Tick);}return result;}
+            CollectionAssert.AreEqual(Trace(60),Trace(30));CollectionAssert.AreEqual(Trace(60),Trace(120));CollectionAssert.AreEqual(Trace(60),Trace(0));
+        }
+    }
+}
+
+namespace Olca.Tests.Dungeon
+{
+    public class FieldItemFlowTests
+    {
+        private sealed class FaultStore : ICheckpointStore {
+            public readonly MemoryCheckpointStore Inner;public bool Fail;
+            public FaultStore(CheckpointDefinitions definitions){Inner=new MemoryCheckpointStore(definitions);}
+            public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="field fixture save failure";return false;}return Inner.TryWrite(d,out error);}
+            public CheckpointDto Read()=>Inner.Read();
+        }
+        private sealed class FaultIo : Olca.Unity.CheckpointFileIo {
+            public string Fault;
+            public override void Replace(string temporary,string destination,string backup){if(Fault=="before")throw new System.IO.IOException("field fixture before");base.Replace(temporary,destination,backup);if(Fault=="after")throw new System.IO.IOException("field fixture after");}
+        }
+        private static DungeonBattleManager Start(int hp,out DungeonCheckpointSession session,out FaultStore store,bool spike=false,int[] at=null)
+        {
+            var baseMap=DungeonConfig.CreateTestDungeon(8,100,7);foreach(int i in at??new[]{1,2})baseMap.MapCells[i]=new MapCell(i,new FieldItem("heal","ヒール",20));
+            if(spike)baseMap.MapCells[3]=new MapCell(3,new Obstacle("existing-spike","既存トゲ",30));
+            var map=new DungeonConfig(baseMap.DungeonId,baseMap.DungeonName,8,baseMap.MapCells,visits:new[]{new DungeonVisitDefinition(4,false,new[]{new DungeonVisitOption("heal",0,heal:1)},1)});
+            var defaults=DungeonCheckpointSession.CreateDefault(map,new Deck());store=new FaultStore(defaults.Definitions);session=new DungeonCheckpointSession(defaults.Definitions,store);
+            var player=new PlayerCharacter(100);if(hp<100)player.TakeDamage(100-hp);
+            return new DungeonBattleManager(map,player,new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        }
+        [TestCase(60,100)][TestCase(100,100)]
+        public void 複数接触は満タンでも一回ずつ消費し境界保存前にHPと取得を進め直さない(int hp,int expected)
+        {
+            var game=Start(hp,out var session,out var store);var d=game.Dungeon;long seq=store.Read().Sequence;d.Tick(1000);
+            Assert.AreEqual(expected,d.Player.CurrentHp);Assert.IsTrue(d.IsItemCollected(1));Assert.IsTrue(d.IsItemCollected(2));Assert.IsNotNull(d.ActiveVisit);
+            for(int i=0;i<10;i++)d.Tick(1000);Assert.AreEqual(expected,d.Player.CurrentHp);Assert.AreEqual(seq,store.Read().Sequence);Assert.IsEmpty(store.Read().CollectedItemCells);
+            Assert.IsTrue(d.ExitVisit());CollectionAssert.AreEqual(new[]{1,2},store.Read().CollectedItemCells);Assert.AreEqual(4,store.Read().SchemaVersion);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out var error),error);Assert.AreEqual(expected,restored.Player.CurrentHp);Assert.IsNotNull(restored.Map.MapCells[1].Item);
+            var copied=store.Read().Copy();copied.CollectedItemCells[0]=99;Assert.AreEqual(1,store.Read().CollectedItemCells[0]);
+        }
+        [Test]
+        public void 同フレームの複数回復と障害物ダメージは合算し途中の過回復と死亡を確定しない()
+        {
+            var game=Start(5,out _,out _,spike:true);game.Dungeon.Tick(1000);
+            Assert.AreEqual(15,game.Dungeon.Player.CurrentHp);Assert.IsFalse(game.Dungeon.Player.IsDead);Assert.IsNotNull(game.Dungeon.ActiveVisit);
+        }
+        [Test]
+        public void 同フレームの毒と取得回復も既存HP集計へ一度だけ渡す()
+        {
+            var game=Start(5,out _,out _,at:new[]{0});var d=game.Dungeon;d.Player.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,10000,10),60);d.Tick(1000);
+            Assert.AreEqual(15,d.Player.CurrentHp);Assert.IsTrue(d.IsItemCollected(0));Assert.IsFalse(d.Player.IsDead);
+        }
+        [Test]
+        public void ポーズと停止選択は取得を進めず復帰後の取得済み地点は再処理しない()
+        {
+            var game=Start(60,out _,out _);game.SetUserPaused(true);for(int i=0;i<100;i++)game.TickFrame(17);Assert.AreEqual(60,game.Dungeon.Player.CurrentHp);Assert.IsFalse(game.Dungeon.IsItemCollected(1));
+            game.SetUserPaused(false);for(int i=0;i<100&&game.Dungeon.ActiveVisit==null;i++)game.TickFrame(17);Assert.AreEqual(100,game.Dungeon.Player.CurrentHp);Assert.IsTrue(game.Dungeon.IsItemCollected(1));
+            float pos=game.Dungeon.PlayerPosition;game.SetUserPaused(true);for(int i=0;i<50;i++)game.TickFrame(17);game.SetUserPaused(false);for(int i=0;i<50;i++)game.TickFrame(17);Assert.AreEqual(pos,game.Dungeon.PlayerPosition);Assert.AreEqual(100,game.Dungeon.Player.CurrentHp);
+        }
+        [Test]
+        public void ジャンプ中に地上から離れたセルの回復を遠隔取得しない()
+        {
+            var game=Start(60,out _,out _,at:new[]{1});game.Dungeon.Jump();for(int i=0;i<30&&game.Dungeon.PlayerPosition<2;i++)game.TickFrame(17);
+            Assert.IsFalse(game.Dungeon.IsItemCollected(1));Assert.AreEqual(60,game.Dungeon.Player.CurrentHp);
+        }
+        [Test]
+        public void 保存失敗と旧地点ロードはHPと取得列を一緒に扱い再試行で二重回復しない()
+        {
+            var game=Start(60,out var session,out var store);var d=game.Dungeon;d.Tick(1000);store.Fail=true;Assert.IsFalse(d.ExitVisit());Assert.IsTrue(d.IsCheckpointBlocked);
+            for(int i=0;i<10;i++)d.Tick(1000);Assert.AreEqual(100,d.Player.CurrentHp);Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var before,out var error),error);Assert.AreEqual(60,before.Player.CurrentHp);Assert.IsEmpty(before.Snapshot.CollectedItemCells);
+            store.Fail=false;Assert.IsTrue(game.RetryCheckpoint());Assert.IsFalse(game.RetryCheckpoint());Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,store),new MockRandomProvider(),new MockLogger(),out var resumed,out error),error);
+            resumed.Dungeon.ActivateCheckpoint();for(int i=0;i<3;i++)resumed.TickFrame(17);Assert.AreEqual(100,resumed.Dungeon.Player.CurrentHp);Assert.IsTrue(resumed.Dungeon.IsItemCollected(1));Assert.IsTrue(resumed.Dungeon.IsItemCollected(2));
+        }
+        [TestCase("before")][TestCase("after")]
+        public void 実ファイル保存前後のエラーと再起動でも保存済み取得とHPを一度だけ復元する(string fault)
+        {
+            Start(60,out var original,out var seed);var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-field-"+System.Guid.NewGuid().ToString("N"));
+            try{var io=new FaultIo();var disk=new Olca.Unity.FileCheckpointStore(original.Definitions,directory,io);Assert.IsTrue(disk.TryWrite(seed.Read(),out var error),error);
+                Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(original.Definitions,disk),new MockRandomProvider(),new MockLogger(),out var game,out error),error);game.Dungeon.ActivateCheckpoint();game.Dungeon.Tick(1000);io.Fault=fault;
+                if(!game.Dungeon.ExitVisit()){Assert.IsTrue(game.Dungeon.IsCheckpointBlocked);io.Fault=null;Assert.IsTrue(game.RetryCheckpoint());}
+                var reopened=new Olca.Unity.FileCheckpointStore(original.Definitions,directory);Assert.IsTrue(CheckpointCodec.TryRestore(reopened.Read(),original.Definitions,out var result,out error),error);Assert.AreEqual(100,result.Player.CurrentHp);CollectionAssert.AreEqual(new[]{1,2},result.Snapshot.CollectedItemCells);
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+        [TestCase("missing")][TestCase("duplicate")][TestCase("unknown")][TestCase("ahead")][TestCase("version")][TestCase("departure")]
+        public void 不正取得列と版を拒否する(string kind)
+        {
+            var game=Start(60,out var session,out var store);game.Dungeon.Tick(1000);Assert.IsTrue(game.Dungeon.ExitVisit());var bad=store.Read();
+            if(kind=="missing")bad.CollectedItemCells=null;if(kind=="duplicate")bad.CollectedItemCells=new[]{1,1};if(kind=="unknown")bad.CollectedItemCells=new[]{99};if(kind=="ahead"){bad.PositionMilli=0;bad.CollectedItemCells=new[]{2};}if(kind=="version")bad.SchemaVersion=1;if(kind=="departure")bad.Boundary=CheckpointBoundary.Departure;
+            Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void 画面内表示は取得後と無効化とモデル交換で消え描画では回復しない()
+        {
+            var game=Start(60,out _,out _);var root=new UnityEngine.GameObject("FieldItemVisualTest");var cameraObject=new UnityEngine.GameObject("FieldItemCamera");
+            try{var camera=cameraObject.AddComponent<UnityEngine.Camera>();camera.orthographic=true;camera.orthographicSize=3;camera.aspect=1;camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);
+                var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;view.GetType().GetField("fieldCamera",flags).SetValue(view,camera);view.Initialize(game.Dungeon);
+                Assert.IsNotNull(root.transform.Find("FieldHealCell_1"));for(int i=0;i<100;i++)view.RefreshFieldItemVisuals();Assert.AreEqual(60,game.Dungeon.Player.CurrentHp);Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(x=>x.name=="HealVertical"&&x.transform.parent.name=="FieldHealCell_1"));
+                game.Dungeon.Tick(1000);view.RefreshFieldItemVisuals();Assert.IsNull(root.transform.Find("FieldHealCell_1"));Assert.IsNull(root.transform.Find("FieldHealCell_2"));
+                var replacement=Start(60,out _,out _);view.Initialize(replacement.Dungeon);Assert.IsNotNull(root.transform.Find("FieldHealCell_1"));view.enabled=false;view.GetType().GetMethod("OnDisable",flags).Invoke(view,null);view.RefreshFieldItemVisuals();Assert.IsNull(root.transform.Find("FieldHealCell_1"));
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(cameraObject);}
+        }
+    }
+}
+
+namespace Olca.Tests.Dungeon
+{
+    public class ExplorationGroundTests
+    {
+        private sealed class FaultStore:ICheckpointStore {
+            public readonly MemoryCheckpointStore Inner;public bool Fail;
+            public FaultStore(CheckpointDefinitions d){Inner=new MemoryCheckpointStore(d);}
+            public CheckpointDto Read()=>Inner.Read();
+            public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="ground-save-fixture";return false;}return Inner.TryWrite(d,out error);}
+        }
+        private static DungeonBattleManager Start(ElementType element,ExplorationTerrainCell[] terrain,out DungeonCheckpointSession session,out FaultStore store,int hp=60,bool spike=false)
+        {
+            var m=DungeonConfig.CreateTestDungeon(30,100,29);if(spike)m.MapCells[0]=new MapCell(0,new Obstacle("spike","既存トゲ",10));
+            var map=new DungeonConfig(m.DungeonId,m.DungeonName,30,m.MapCells,visits:new[]{new DungeonVisitDefinition(10,false,new[]{new DungeonVisitOption("existing-heal",0,heal:1)},1)},explorationTerrain:terrain);
+            var defs=DungeonCheckpointSession.CreateDefault(map,new Deck()).Definitions;store=new FaultStore(defs);session=new DungeonCheckpointSession(defs,store);
+            var p=new PlayerCharacter(100);p.TakeDamage(100-hp);
+            if(element!=ElementType.None)p.SetDepartureStyle(new DepartureStyleDefinition("fixture-"+element,"属性検証fixture",null,new TransformationAttackDefinition(element)));
+            return new DungeonBattleManager(map,p,new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        }
+        private static PlayerMovement Movement(DungeonSystem d)=>(PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+        [TestCase(ElementType.Fire,PanelType.Magma,65)][TestCase(ElementType.Earth,PanelType.Grass,65)]
+        [TestCase(ElementType.None,PanelType.Grass,60)][TestCase(ElementType.None,PanelType.Magma,55)][TestCase(ElementType.Earth,PanelType.Magma,55)]
+        public void 属性に応じた接地効果は同じセルで繰り返さず踏み直し時だけ再適用する(ElementType element,PanelType type,int hp)
+        {
+            var g=Start(element,new[]{new ExplorationTerrainCell(0,type)},out _,out _);var d=g.Dungeon;
+            d.TickFrame();Assert.AreEqual(hp,d.Player.CurrentHp);for(int i=0;i<4;i++)d.TickFrame();Assert.AreEqual(hp,d.Player.CurrentHp);
+            d.TickFrame();Movement(d).SetPosition(0);d.TickFrame();Assert.AreEqual(hp+(hp-60),d.Player.CurrentHp);
+        }
+        [Test]
+        public void 満タンとフロートとポーズは継続回復や二重処理を作らない()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(0,PanelType.Magma)},out _,out _,100);var d=g.Dungeon;
+            d.TickFrame();d.Player.TakeDamage(10);d.TickFrame();Assert.AreEqual(90,d.Player.CurrentHp);
+            g.SetUserPaused(true);for(int i=0;i<60;i++)g.TickFrame(17);Assert.AreEqual(90,d.Player.CurrentHp);g.SetUserPaused(false);g.TickFrame(17);Assert.AreEqual(90,d.Player.CurrentHp);
+            var other=Start(ElementType.None,new[]{new ExplorationTerrainCell(0,PanelType.Magma)},out _,out _).Dungeon;
+            other.Player.TerrainState.IsFloating=true;other.TickFrame();Assert.AreEqual(60,other.Player.CurrentHp);
+            other.Player.TerrainState.IsFloating=false;other.TickFrame();Assert.AreEqual(55,other.Player.CurrentHp);
+        }
+        [TestCase(false,5)][TestCase(true,10)]
+        public void ジャンプ中は通過セルを避け着地セルだけ一回回復する(bool dash,int landing)
+        {
+            var terrain=Enumerable.Range(0,landing+1).Select(i=>new ExplorationTerrainCell(i,PanelType.Grass)).ToArray();
+            var d=Start(ElementType.Earth,terrain,out _,out _).Dungeon;if(dash)d.StartDash();d.Jump();
+            for(int i=0;i<29;i++)d.TickFrame();Assert.AreEqual(60,d.Player.CurrentHp);
+            d.TickFrame();Assert.AreEqual(65,d.Player.CurrentHp);Assert.AreEqual(landing,(int)d.PlayerPosition);
+        }
+        [Test]
+        public void ダッシュで異なる草むらマグマへ進んでも各セルは一回で地形を消費しない()
+        {
+            var d=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(0,PanelType.Magma),new ExplorationTerrainCell(1,PanelType.Grass),new ExplorationTerrainCell(2,PanelType.Magma)},out _,out _).Dungeon;
+            d.StartDash();for(int i=0;i<8;i++)d.TickFrame();Assert.AreEqual(70,d.Player.CurrentHp);
+            Assert.AreEqual(PanelType.Magma,d.Map.GetTerrain(0).Type);Assert.AreEqual(PanelType.Grass,d.Map.GetTerrain(1).Type);
+        }
+        [Test]
+        public void 毒と地形回復とトゲは同フレームに合算し満タンで先に切り詰めない()
+        {
+            var d=Start(ElementType.Earth,new[]{new ExplorationTerrainCell(0,PanelType.Grass)},out _,out _,100,true).Dungeon;
+            d.Player.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,10000,10),1);d.TickFrame();Assert.AreEqual(85,d.Player.CurrentHp);
+            var dead=Start(ElementType.Earth,new[]{new ExplorationTerrainCell(0,PanelType.Grass)},out _,out _,5,true).Dungeon;int notices=0;dead.OnDungeonFailed+=()=>notices++;
+            dead.TickFrame();Assert.AreEqual(0,dead.Player.CurrentHp);Assert.IsTrue(dead.Player.IsDead);dead.TickFrame();Assert.AreEqual(1,notices);
+        }
+        [Test]
+        public void 接地済みセルの保存復帰と保存失敗再試行は同じ回復を受け直さない()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(10,PanelType.Magma)},out var session,out var store);var d=g.Dungeon;
+            d.Tick(1000);Assert.IsNotNull(d.ActiveVisit);Assert.AreEqual(65,d.Player.CurrentHp);store.Fail=true;Assert.IsFalse(d.ExitVisit());
+            d.TickFrame();Assert.AreEqual(65,d.Player.CurrentHp);store.Fail=false;Assert.IsTrue(g.RetryCheckpoint());
+            Assert.AreEqual(5,store.Read().SchemaVersion);Assert.AreEqual(10,store.Read().TerrainContactCell);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var resumed,out var error),error);
+            resumed.ActivateCheckpoint();resumed.TickFrame(17);Assert.AreEqual(65,resumed.Dungeon.Player.CurrentHp);
+            var bad=store.Read();bad.TerrainContactCell=9;Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void 新しい階層では接地記録を空にし新規セルの回復を一回だけ受ける()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(0,PanelType.Magma)},out var session,out _);g.Dungeon.TickFrame();
+            var captured=(CheckpointDto)typeof(DungeonCheckpointSession).GetMethod("Capture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(session,new object[]{g.Dungeon,CheckpointBoundary.RewardCompleted,null});
+            var map=session.Definitions.CreateInitialMap();var floors=new FloorSequenceDefinitions("fixture-ground","v1",new[]{map,map},new Deck());
+            var next=(CheckpointDto)typeof(FloorSequenceDefinitions).GetMethod("NextStart",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(floors,new object[]{1,captured});
+            Assert.IsNull(next.TerrainContactCell);Assert.AreEqual(CheckpointBoundary.Departure,next.Boundary);
+        }
+        [Test]
+        public void 接敵時に地形種類を引き継ぎ戦闘中の変更を探索や再開へ持ち越さない()
+        {
+            var m=DungeonConfig.CreateTestDungeon(20,100,5);var map=new DungeonConfig(m.DungeonId,m.DungeonName,20,m.MapCells,explorationTerrain:new[]{new ExplorationTerrainCell(3,PanelType.Grass)});
+            var session=DungeonCheckpointSession.CreateDefault(map,new Deck());var g=new DungeonBattleManager(map,new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+            g.Dungeon.Tick(1000);Assert.IsNotNull(g.CurrentBattle);Assert.AreEqual(PanelType.Grass,g.CurrentBattle.Field.GetPanelType(new Vector2Int(2,0)));
+            g.CurrentBattle.Field.ChangePanelType(new Vector2Int(2,0),PanelType.Normal);Assert.AreEqual(PanelType.Grass,g.Dungeon.Map.GetTerrain(3).Type);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
+            restored.ActivateCheckpoint();restored.TickFrame(17);Assert.AreEqual(PanelType.Grass,restored.CurrentBattle.Field.GetPanelType(new Vector2Int(2,0)));
+        }
+        [Test]
+        public void 地形ありのファイル保存と読込は定義と接地記録を保持し旧地形なし版を変えない()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(10,PanelType.Magma)},out var session,out _);g.Dungeon.Tick(1000);Assert.IsTrue(g.Dungeon.ExitVisit());
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-ground-"+System.Guid.NewGuid().ToString("N"));
+            try{var file=new Olca.Unity.FileCheckpointStore(session.Definitions,dir);Assert.IsTrue(file.TryWrite(session.Store.Read(),out var error),error);var saved=file.Read();Assert.AreEqual(10,saved.TerrainContactCell);Assert.IsTrue(CheckpointCodec.TryRestore(saved,session.Definitions,out var restored,out error),error);Assert.AreEqual(1,restored.Map.ExplorationTerrain.Count);Assert.AreEqual(65,restored.Player.CurrentHp);}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+            var old=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(),new Deck());Assert.AreEqual(1,old.Definitions.SchemaVersion);
+            Assert.Throws<System.ArgumentException>(()=>new DungeonConfig("invalid","重複",2,new System.Collections.Generic.List<MapCell>{new MapCell(0),new MapCell(1)},explorationTerrain:new[]{new ExplorationTerrainCell(0,PanelType.Grass),new ExplorationTerrainCell(0,PanelType.Magma)}));
+        }
+    }
+}
+
+namespace Olca.Tests.Dungeon
+{
+    public class ExplorationFallTests
+    {
+        private sealed class FaultStore:ICheckpointStore {
+            public readonly MemoryCheckpointStore Inner;public bool Fail;
+            public FaultStore(CheckpointDefinitions defs){Inner=new MemoryCheckpointStore(defs);}
+            public CheckpointDto Read()=>Inner.Read();
+            public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="fall-fixture";return false;}return Inner.TryWrite(d,out error);}
+        }
+        private static DungeonBattleManager Start(ExplorationTerrainCell[] terrain,out DungeonCheckpointSession session,out FaultStore store,int hp=100,bool heal=false,int itemCell=0)
+        {
+            var m=DungeonConfig.CreateTestDungeon(30,100,29);
+            if(heal)m.MapCells[itemCell]=new MapCell(itemCell,new FieldItem("heal","既存回復",20));
+            var map=new DungeonConfig(m.DungeonId,m.DungeonName,30,m.MapCells,visits:new[]{new DungeonVisitDefinition(10,false,new[]{new DungeonVisitOption("heal",0,heal:1)},1)},explorationTerrain:terrain);
+            var defs=DungeonCheckpointSession.CreateDefault(map,new Deck()).Definitions;store=new FaultStore(defs);session=new DungeonCheckpointSession(defs,store);
+            var p=new PlayerCharacter(100);p.TakeDamage(100-hp);return new DungeonBattleManager(map,p,new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        }
+        private static PlayerMovement Movement(DungeonSystem d)=>(PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+        private static void Recover(DungeonSystem d){for(int i=0;i<30;i++)d.TickFrame();Assert.IsFalse(d.IsTerrainRecovering);}
+        [Test]
+        public void ヒビは進入で割れず通常離脱と離陸で永続する穴へ変わる()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out _,out _).Dungeon;
+            d.TickFrame();Assert.AreEqual(PanelType.Cracked,d.Map.GetTerrainType(0));d.Tick(200);Assert.AreEqual(PanelType.Hole,d.Map.GetTerrainType(0));
+            for(int i=0;i<100;i++)d.TickFrame();Assert.AreEqual(PanelType.Hole,d.Map.GetTerrainType(0));
+            var air=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out _,out _).Dungeon;air.Jump();Assert.AreEqual(PanelType.Hole,air.Map.GetTerrainType(0));air.TickFrame();Assert.IsFalse(air.IsTerrainRecovering);
+        }
+        [Test]
+        public void フロートは連続穴とヒビを無効化し能力消失後の接地だけ落下する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(1,PanelType.Hole),new ExplorationTerrainCell(2,PanelType.Hole)},out _,out _).Dungeon;
+            d.Player.TerrainState.IsFloating=true;d.Tick(300);Assert.AreEqual(100,d.Player.CurrentHp);Assert.AreEqual(PanelType.Cracked,d.Map.GetTerrainType(0));
+            Movement(d).SetPosition(2);d.Player.TerrainState.IsFloating=false;d.TickFrame();Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(90,d.Player.CurrentHp);
+        }
+        [Test]
+        public void 落下は一度だけ被害を与え停止中は時計を止め安全地点を通常化して復帰する()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(2,PanelType.Grass),new ExplorationTerrainCell(4,PanelType.Hole)},out _,out _);var d=g.Dungeon;
+            d.Tick(600);Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(90,d.Player.CurrentHp);float pos=d.PlayerPosition;d.Jump();d.StartDash();Assert.IsFalse(d.IsJumping||d.IsDashing);
+            d.TickFrame();float height=d.PlayerHeight;long clock=d.ObstacleVisualFrame;g.SetUserPaused(true);for(int i=0;i<100;i++)g.TickFrame(17);
+            Assert.AreEqual(height,d.PlayerHeight);Assert.AreEqual(pos,d.PlayerPosition);Assert.AreEqual(clock,d.ObstacleVisualFrame);g.SetUserPaused(false);
+            for(int i=0;i<11;i++)d.TickFrame();Assert.AreEqual(2,d.PlayerPosition);Assert.AreEqual(PanelType.Normal,d.Map.GetTerrainType(2));Assert.Greater(d.PlayerHeight,0);
+            for(int i=0;i<18;i++)d.TickFrame();Assert.IsFalse(d.IsTerrainRecovering);Assert.AreEqual(90,d.Player.CurrentHp);d.TickFrame();Assert.Greater(d.PlayerPosition,2);
+        }
+        [Test]
+        public void ダッシュは単穴だけ通れ連続二セル目または穴上の終了で落ち消費を戻さない()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole),new ExplorationTerrainCell(2,PanelType.Hole)},out _,out _).Dungeon;d.StartDash();d.Tick(120);
+            Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(2,d.PlayerPosition);Assert.IsFalse(d.IsDashing);Assert.AreEqual(90,d.Player.CurrentHp);
+            var single=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole)},out _,out _).Dungeon;single.StartDash();single.Tick(120);Assert.IsFalse(single.IsTerrainRecovering);Assert.AreEqual(100,single.Player.CurrentHp);
+            var ended=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole)},out _,out _).Dungeon;ended.StartDash();ended.Tick(60);ended.StopDash();ended.TickFrame();Assert.IsTrue(ended.IsTerrainRecovering);
+        }
+        [Test]
+        public void ジャンプ中は穴を越え着地点が穴ならダッシュジャンプでも落下する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Hole)},out _,out _).Dungeon;d.Jump();d.Tick(400);Assert.IsFalse(d.IsTerrainRecovering);Assert.AreEqual(100,d.Player.CurrentHp);
+            var landing=Start(Enumerable.Range(0,15).Select(i=>new ExplorationTerrainCell(i,PanelType.Hole)).ToArray(),out _,out _).Dungeon;landing.StartDash();landing.Jump();landing.Tick(600);Assert.IsTrue(landing.IsTerrainRecovering);Assert.AreEqual(90,landing.Player.CurrentHp);
+        }
+        [Test]
+        public void 復帰中は毒と表示時計を止め死亡時は復帰せず終端保存する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Hole)},out _,out _).Dungeon;d.Player.ApplyPoison("existing",new StatusEffect(StatusEffectType.Poison,10000,1),60);d.TickFrame();long clock=d.ObstacleVisualFrame;int hp=d.Player.CurrentHp;Recover(d);Assert.AreEqual(hp,d.Player.CurrentHp);Assert.AreEqual(clock,d.ObstacleVisualFrame);
+            var dead=Start(new[]{new ExplorationTerrainCell(0,PanelType.Hole)},out _,out var store,10).Dungeon;dead.TickFrame();Assert.IsTrue(dead.Player.IsDead);Assert.IsFalse(dead.IsTerrainRecovering);Assert.AreEqual(CheckpointBoundary.Terminal,store.Read().Boundary);dead.Tick(10000);Assert.AreEqual(0,dead.Player.CurrentHp);
+        }
+        [Test]
+        public void 同フレームの取得回復と落下被害を合算し途中死亡を起こさない()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(1,PanelType.Hole)},out _,out _,5,true).Dungeon;d.Tick(200);Assert.AreEqual(15,d.Player.CurrentHp);Assert.IsTrue(d.IsTerrainRecovering);Assert.IsFalse(d.Player.IsDead);
+        }
+        [Test]
+        public void 保存失敗は前境界を保持し再試行後は地形とHPだけ復元して落下を再生しない()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store);var d=g.Dungeon;
+            d.Tick(600);Assert.IsTrue(d.IsTerrainRecovering);Assert.AreEqual(100,store.Read().Player.Hp);Assert.IsEmpty(store.Read().TerrainChanges);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var prior,out var error),error);Assert.AreEqual(100,prior.Player.CurrentHp);
+            Recover(d);Movement(d).SetPosition(9);d.Tick(200);Assert.IsNotNull(d.ActiveVisit);store.Fail=true;Assert.IsFalse(d.ExitVisit());Assert.IsTrue(d.IsCheckpointBlocked);Assert.AreEqual(100,store.Read().Player.Hp);
+            store.Fail=false;Assert.IsTrue(d.RetryCheckpoint());Assert.AreEqual(90,store.Read().Player.Hp);Assert.AreEqual(6,store.Read().SchemaVersion);Assert.AreEqual(PanelType.Hole,store.Read().TerrainChanges.Single(t=>t.Cell==0).Type);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out error),error);
+            var loaded=new DungeonSystem(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);loaded.TickFrame();Assert.AreEqual(90,loaded.Player.CurrentHp);Assert.IsFalse(loaded.IsTerrainRecovering);Assert.AreEqual(PanelType.Hole,loaded.Map.GetTerrainType(0));
+            var bad=store.Read();bad.TerrainChanges[0].Type=PanelType.Magma;Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));Assert.AreEqual(PanelType.Hole,store.Read().TerrainChanges[0].Type);
+        }
+        [Test]
+        public void 中断は落下途中を保存せず直前境界へ戻して地形とHPをまとめて巻き戻す()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(2,PanelType.Hole)},out var session,out var store);var d=g.Dungeon;d.Tick(300);Assert.IsTrue(d.IsTerrainRecovering);
+            Assert.IsTrue(g.SuspendForCheckpoint());for(int i=0;i<100;i++)g.TickFrame(17);Assert.AreEqual(90,d.Player.CurrentHp);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out var error),error);var loaded=new DungeonSystem(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);loaded.ActivateCheckpoint();Assert.AreEqual(0,loaded.PlayerPosition);Assert.AreEqual(100,loaded.Player.CurrentHp);Assert.AreEqual(PanelType.Cracked,loaded.Map.GetTerrainType(0));Assert.IsFalse(loaded.IsTerrainRecovering);
+        }
+        [Test]
+        public void 復帰可能な非穴セルのない定義と永続穴の上書き保存は拒否する()
+        {
+            var m=DungeonConfig.CreateTestDungeon(4,100,3);
+            Assert.Throws<System.ArgumentException>(()=>new DungeonConfig(m.DungeonId,m.DungeonName,4,m.MapCells,explorationTerrain:Enumerable.Range(0,3).Select(i=>new ExplorationTerrainCell(i,PanelType.Hole)).ToArray()));
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked),new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store).Dungeon;d.Tick(600);Recover(d);Movement(d).SetPosition(9);d.Tick(200);Assert.IsNotNull(d.ActiveVisit);Assert.IsTrue(d.ExitVisit());var bad=store.Read();bad.TerrainChanges=new[]{new CheckpointTerrainStateDto{Cell=4,Type=PanelType.Normal}};Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void 戦闘開始と保存復帰はパネル固定量を定義から渡し戦闘中の消費を探索へ戻さない()
+        {
+            var g=Start(new[]{new ExplorationTerrainCell(25,PanelType.Grass,7),new ExplorationTerrainCell(26,PanelType.Magma,11,13)},out var session,out var store);var d=g.Dungeon;
+            d.StartBattle(new ContactInfo{Enemy=d.Map.GetCell(29).Enemy,EnemyCellIndex=29});var b=d.CurrentBattle;Assert.IsNotNull(b);Assert.AreEqual(7,b.Field.GetPanelValues(new Vector2Int(0,0)).Heal);Assert.AreEqual(13,b.Field.GetPanelValues(new Vector2Int(1,0)).Damage);
+            b.RunLogicalFrame(()=>b.Player.MoveTo(new Vector2Int(2,0)));b.RunLogicalFrame(()=>b.Player.MoveTo(new Vector2Int(1,0)));Assert.AreEqual(87,b.Player.CurrentHp);Assert.AreEqual(PanelType.Normal,b.Field.GetPanelType(new Vector2Int(1,0)));Assert.AreEqual(PanelType.Magma,d.Map.GetTerrainType(26));
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var restored,out var error),error);var loaded=new DungeonSystem(restored.Map,restored.Player,restored.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:restored);loaded.ActivateCheckpoint();Assert.AreEqual(100,loaded.Player.CurrentHp);Assert.AreEqual(13,loaded.CurrentBattle.Field.GetPanelValues(new Vector2Int(1,0)).Damage);Assert.AreEqual(PanelType.Magma,loaded.CurrentBattle.Field.GetPanelType(new Vector2Int(1,0)));
+        }
+        [Test]
+        public void 地形変更は実ファイル保存から候補の再抽選なしで復元する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(0,PanelType.Cracked)},out var session,out var store).Dungeon;d.Tick(1400);Assert.IsNotNull(d.ActiveVisit);Assert.IsTrue(d.ExitVisit());
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-fall-"+System.Guid.NewGuid().ToString("N"));
+            try{var file=new Olca.Unity.FileCheckpointStore(session.Definitions,dir);Assert.IsTrue(file.TryWrite(store.Read(),out var error),error);var saved=file.Read();Assert.AreEqual(PanelType.Hole,saved.TerrainChanges.Single().Type);Assert.IsTrue(CheckpointCodec.TryRestore(saved,session.Definitions,out _,out error),error);}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [Test]
+        public void 落下前の取得済み履歴は復帰先より先でも保存と再開に保持する()
+        {
+            var d=Start(new[]{new ExplorationTerrainCell(4,PanelType.Hole)},out var session,out var store,100,true,3).Dungeon;d.Tick(600);Recover(d);Assert.IsTrue(d.IsItemCollected(3));Assert.AreEqual(2,d.PlayerPosition);
+            var capture=(CheckpointDto)typeof(DungeonCheckpointSession).GetMethod("Capture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(session,new object[]{d,CheckpointBoundary.RewardCompleted,null});
+            Assert.Greater(capture.CollectedItemCells.Single(),capture.PositionMilli/1000);Assert.IsTrue(CheckpointCodec.TryRestore(capture,session.Definitions,out _,out var error),error);
         }
     }
 }

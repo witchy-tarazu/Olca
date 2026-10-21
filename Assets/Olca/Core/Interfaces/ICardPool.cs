@@ -22,4 +22,12 @@ namespace Olca.Core.Interfaces
         /// </summary>
         IReadOnlyList<Card> GetCandidates(CardRarity rarity);
     }
+    /// <summary>
+    /// 報酬候補の任意の重み設定。未実装の既存プールは各候補の重み1として扱う。
+    /// 同じID・段階には同じ値を返す。0は対象外、負値は不正。
+    /// </summary>
+    public interface IWeightedCardPool : ICardPool
+    {
+        int GetWeight(Card card);
+    }
 }

@@ -19,7 +19,12 @@ namespace Olca.Core.Logic.Battle
         private int hitInvincibilityMs;
         internal void ConfigureHitInvincibility(int durationMs) => hitInvincibilityMs = durationMs;
 
-        private const int MAGMA_DAMAGE = 5; // マグマダメージ量
+        public const int RecoveryIntervalFrames = 60; // 継続回復の暫定周期。描画時間は使わない。
+        private sealed class RecoveryClock { public Vector2Int Position; public long Revision, Units; }
+        private readonly Dictionary<object,RecoveryClock> recoveryClocks = new Dictionary<object,RecoveryClock>();
+        internal bool HasRecoveryPanels => field.HasRecoveryPanels;
+        internal void Clear() => recoveryClocks.Clear();
+        internal void OnCharacterMoved(object character)=>recoveryClocks.Remove(character);
 
         /// <summary>
         /// コンストラクタ
@@ -34,12 +39,27 @@ namespace Olca.Core.Logic.Battle
         /// パネル効果を更新（毎フレーム呼び出す）- 整数ベース版
         /// </summary>
         /// <remarks>
-        /// 現在は継続効果がないため、このメソッドは何もしません。
-        /// 将来的に継続効果が追加される場合はここで処理します。
+        /// 属性一致の非フロート対象だけを周期回復する。停止の判断はBattleSystemが所有する。
         /// </remarks>
-        public void Tick(int deltaTimeMs, PlayerCharacter player)
+        public void Tick(int deltaTimeMs, PlayerCharacter player) => Tick(deltaTimeMs,player,Array.Empty<Enemy>(),false);
+        internal void Tick(int deltaTimeMs,PlayerCharacter player,IReadOnlyList<Enemy> enemies,bool logicalFrame)
         {
-            // 現在は継続効果なし
+            long units=logicalFrame?50:Math.Max(0,deltaTimeMs)*3L;
+            var active=new HashSet<object>();
+            if(player!=null){active.Add(player);TickRecovery(player,player.GetLogicalPosition(),player.ActiveElement,player.TerrainState,player.IsDead,player.Heal,units);}
+            foreach(var enemy in enemies){active.Add(enemy);TickRecovery(enemy,enemy.GridPosition,enemy.Element,enemy.TerrainState,enemy.IsDead,enemy.Heal,units);}
+            foreach(var key in recoveryClocks.Keys.Where(k=>!active.Contains(k)).ToArray())recoveryClocks.Remove(key);
+        }
+        private void TickRecovery(object owner,Vector2Int position,ElementType element,BattleTerrainState terrain,bool dead,Action<int> heal,long units)
+        {
+            if(dead||!terrain.ReceivesPanelEffects||!field.IsInBounds(position)){recoveryClocks.Remove(owner);return;}
+            var type=field.GetPanelType(position);var values=field.GetPanelValues(position);
+            if(values.Heal==0||!((type==PanelType.Grass&&element==ElementType.Earth)||(type==PanelType.Magma&&element==ElementType.Fire))){recoveryClocks.Remove(owner);return;}
+            long revision=field.GetPanelRevision(position);
+            if(!recoveryClocks.TryGetValue(owner,out var clock)||clock.Position!=position||clock.Revision!=revision)
+                recoveryClocks[owner]=clock=new RecoveryClock{Position=position,Revision=revision};
+            clock.Units+=units;long pulses=clock.Units/(RecoveryIntervalFrames*50L);clock.Units%=RecoveryIntervalFrames*50L;
+            if(pulses>0)heal((int)Math.Min(int.MaxValue,pulses*values.Heal));
         }
 
         /// <summary>
@@ -68,20 +88,24 @@ namespace Olca.Core.Logic.Battle
         {
             if (field.GetPanelType(position) != PanelType.Magma) return;
             var occupants = enemies.Where(e => !e.IsDead && e.GridPosition == position).ToArray();
+            int damage=field.GetPanelValues(position).Damage;
             if (occupants.Length == 0) return;
+            // 火属性だけが乗るマグマは継続回復のため維持する。非火属性の消費条件は既存のまま。
+            bool playerPresent=player!=null&&!player.IsDead&&player.GetLogicalPosition()==position;
+            if(occupants.All(e=>e.Element==ElementType.Fire)&&(!playerPresent||player.ActiveElement==ElementType.Fire))return;
             // ダメージ通知による死亡・占有変更に影響されないよう対象を先に固定する。
             foreach (var enemy in occupants)
-                if (enemy.Element != ElementType.Fire && enemy.TerrainState.ReceivesPanelEffects)
-                    enemy.TakeDamage(MAGMA_DAMAGE, ElementType.None, poiseDamage: 0, hitInvincibilityMs: hitInvincibilityMs);
-            if (player != null && !player.IsDead && player.GridPosition == position)
-                ApplyMagmaPlayerDamage(player);
+                if (damage>0 && enemy.Element != ElementType.Fire && enemy.TerrainState.ReceivesPanelEffects)
+                    enemy.TakeDamage(damage, ElementType.None, poiseDamage: 0, hitInvincibilityMs: hitInvincibilityMs);
+            if (playerPresent)
+                ApplyMagmaPlayerDamage(player,damage);
             field.ChangePanelType(position, PanelType.Normal);
             OnPanelEffectApplied?.Invoke(position, PanelType.Magma);
         }
 
-        private void ApplyMagmaPlayerDamage(PlayerCharacter player)
+        private void ApplyMagmaPlayerDamage(PlayerCharacter player,int damage)
         {
-            if (player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(MAGMA_DAMAGE, affectsPoise: false)
+            if (damage>0 && player.ActiveElement != ElementType.Fire && player.TerrainState.ReceivesPanelEffects && player.TryTakeDamage(damage, affectsPoise: false)
                 && !player.IsDead) player.SetInvincible(hitInvincibilityMs);
         }
 
@@ -120,11 +144,11 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void ApplyMagmaDamage(PlayerCharacter player, Vector2Int position)
         {
-            if (player.IsDead) return;
+            if (player.IsDead || player.ActiveElement==ElementType.Fire) return;
 
             // 消費条件は既存のまま、浮遊者をダメージ対象から除外する。
             int hpBefore = player.CurrentHp;
-            ApplyMagmaPlayerDamage(player);
+            ApplyMagmaPlayerDamage(player,field.GetPanelValues(position).Damage);
             field.ChangePanelType(position, PanelType.Normal);
             logger?.LogInfo($"Magmaパネルで{hpBefore - player.CurrentHp}ダメージ、通常パネルに変化: {position}");
             OnPanelEffectApplied?.Invoke(position, PanelType.Magma);

@@ -1,3 +1,4 @@
+using Olca.Core.Logic.Integration;
 using NUnit.Framework;
 using Olca.Core.Logic.Dungeon;
 
@@ -6,6 +7,39 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class PlayerMovementTests
     {
+        [TestCase(false)] [TestCase(true)]
+        public void 通常シーン用の減速値はダッシュ速度とジャンプ期間を変えず固定時間で進む(bool dash)
+        {
+            var p=new PlayerMovement();p.ConfigureNormalSpeed(8000);if(dash)p.StartDash();
+            for(int n=0;n<60;n++)p.Update(n%3==0?16:17);
+            Assert.AreEqual(dash?20000:8000,p.CurrentPositionMilli);
+            var jump=new PlayerMovement();jump.ConfigureNormalSpeed(8000);jump.Jump();jump.Update(250);
+            Assert.IsTrue(jump.IsJumping);Assert.AreEqual(1500,jump.HeightMilli);jump.Update(250);
+            Assert.IsFalse(jump.IsJumping);Assert.AreEqual(0,jump.HeightMilli);Assert.AreEqual(4000,jump.CurrentPositionMilli);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>p.ConfigureNormalSpeed(0));
+        }
+
+        [TestCase(9)] [TestCase(12)]
+        public void 戦闘移動は中間を隠して移動前後に表示しSpriteの形と色を変えない(int frames)
+        {
+            var root=new UnityEngine.GameObject("battle-blink");root.SetActive(false);
+            var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var sr=root.AddComponent<UnityEngine.SpriteRenderer>();
+            var texture=new UnityEngine.Texture2D(8,16);var sprite=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,8,16),UnityEngine.Vector2.zero);
+            sr.sprite=sprite;sr.color=new UnityEngine.Color(.6f,.7f,.8f,1);root.transform.localScale=new UnityEngine.Vector3(-1,1,1);
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Presentation.Field.GameFieldView).GetField("playerSprite",flags).SetValue(view,sr);
+            var apply=typeof(Olca.Presentation.Field.GameFieldView).GetMethod("SetBattleMoveVisibility",flags);
+            try{
+                for(int f=1;f<=frames;f++){
+                    bool visible=Olca.Presentation.Field.GameFieldView.IsBattleMoveVisible(true,(float)f/frames);
+                    apply.Invoke(view,new object[]{visible});
+                    if(f==Olca.Core.Logic.Battle.NormalMoveTiming.Midpoint(frames))Assert.IsFalse(sr.enabled,"占有切替時は消失中");
+                    Assert.AreSame(sprite,sr.sprite);Assert.AreEqual(new UnityEngine.Vector3(-1,1,1),root.transform.localScale);Assert.AreEqual(new UnityEngine.Color(.6f,.7f,.8f,1),sr.color);
+                }
+                Assert.IsTrue(sr.enabled);apply.Invoke(view,new object[]{false});apply.Invoke(view,new object[]{true});Assert.IsTrue(sr.enabled);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(texture);}
+        }
+
         [TestCase(false)][TestCase(true)]
         public void ノックバック姿勢は順番を守り終了時に元の表示状態を復元する(bool enabled)
         {
@@ -246,5 +280,76 @@ namespace Olca.Tests.Dungeon
         public void 高さ75パーセントでも滞空30フレームと通常ダッシュ飛距離を保つ(int fps,bool stall,bool dash)
         { CollectionAssert.AreEqual(HeightTrace(60,false,dash),HeightTrace(fps,stall,dash)); }
 
+    }
+}
+
+namespace Olca.Tests.Dungeon
+{
+    public class ExplorationIceTests
+    {
+        private static PlayerMovement Move(DungeonSystem d)=>(PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+        private static DungeonBattleManager Start(out DungeonCheckpointSession session, int[] ice=null,bool visit=false)
+        {
+            var m=Olca.Core.Domain.DungeonConfig.CreateTestDungeon(30,100,29);
+            var terrain=System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(ice??new[]{1},i=>new Olca.Core.Domain.ExplorationTerrainCell(i,Olca.Core.Domain.PanelType.Ice)));
+            var map=new Olca.Core.Domain.DungeonConfig(m.DungeonId,m.DungeonName,30,m.MapCells,
+                visits:visit?new[]{new Olca.Core.Domain.DungeonVisitDefinition(6,false,new[]{new Olca.Core.Domain.DungeonVisitOption("existing",0,heal:1)},1)}:null,explorationTerrain:terrain);
+            session=DungeonCheckpointSession.CreateDefault(map,new Olca.Core.Domain.Deck());
+            var game=new DungeonBattleManager(map,new Olca.Core.Domain.PlayerCharacter(100),new Olca.Core.Domain.Deck(),new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger(),checkpoints:session);
+            game.Dungeon.ConfigureNormalMovementSpeed(8000);
+            return game;
+        }
+        [NUnit.Framework.Test]
+        public void 氷の境界を跨ぐ同じフレーム内で加速開始と終了を処理する()
+        {
+            var d=Start(out _).Dungeon;var m=Move(d);
+            for(int i=0;i<7;i++)d.TickFrame();NUnit.Framework.Assert.AreEqual(933,m.CurrentPositionMilli);
+            d.TickFrame();NUnit.Framework.Assert.AreEqual(1100,m.CurrentPositionMilli);NUnit.Framework.Assert.AreEqual(12000,m.EffectiveSpeedMilliPerSecond);
+            for(int i=0;i<4;i++)d.TickFrame();NUnit.Framework.Assert.AreEqual(1900,m.CurrentPositionMilli);
+            d.TickFrame();NUnit.Framework.Assert.AreEqual(2066,m.CurrentPositionMilli);NUnit.Framework.Assert.AreEqual(8000,m.EffectiveSpeedMilliPerSecond);
+            NUnit.Framework.Assert.AreEqual(8000,m.NormalSpeedMilliPerSecond);
+        }
+        [NUnit.Framework.TestCase(false)][NUnit.Framework.TestCase(true)]
+        public void ジャンプ中とフロート中は氷加速せず着地後だけ有効になる(bool floating)
+        {
+            var d=Start(out _,System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0,20))).Dungeon;var m=Move(d);
+            if(floating)d.Player.TerrainState.IsFloating=true;else d.Jump();
+            for(int i=0;i<30;i++)d.TickFrame();NUnit.Framework.Assert.AreEqual(4000,m.CurrentPositionMilli);
+            if(floating)d.Player.TerrainState.IsFloating=false;
+            d.TickFrame();NUnit.Framework.Assert.AreEqual(4200,m.CurrentPositionMilli);
+        }
+        [NUnit.Framework.Test]
+        public void 氷上ダッシュとダッシュジャンプは既存速度のままで着地後は通常氷速度へ戻る()
+        {
+            var d=Start(out _,System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0,20))).Dungeon;var m=Move(d);
+            d.StartDash();for(int i=0;i<3;i++)d.TickFrame();NUnit.Framework.Assert.AreEqual(1000,m.CurrentPositionMilli);
+            d.Jump();for(int i=0;i<30;i++)d.TickFrame();NUnit.Framework.Assert.AreEqual(11000,m.CurrentPositionMilli);NUnit.Framework.Assert.IsFalse(m.IsDashing);
+            d.TickFrame();NUnit.Framework.Assert.AreEqual(11200,m.CurrentPositionMilli);
+        }
+        [NUnit.Framework.Test]
+        public void 氷の停止復帰と大きな旧ms区間は残効バフや通過漏れを作らない()
+        {
+            var g=Start(out _);var m=Move(g.Dungeon);for(int i=0;i<8;i++)g.TickFrame(17);
+            g.SetUserPaused(true);for(int i=0;i<60;i++)g.TickFrame(17);NUnit.Framework.Assert.AreEqual(1100,m.CurrentPositionMilli);
+            g.SetUserPaused(false);g.TickFrame(17);NUnit.Framework.Assert.AreEqual(1300,m.CurrentPositionMilli);
+            var batch=Start(out _).Dungeon;batch.Tick(1000);var frame=Start(out _).Dungeon;for(int i=0;i<60;i++)frame.TickFrame();
+            NUnit.Framework.Assert.AreEqual(Move(batch).CurrentPositionMilli,Move(frame).CurrentPositionMilli);NUnit.Framework.Assert.AreEqual(8333,Move(frame).CurrentPositionMilli);
+        }
+        [NUnit.Framework.Test]
+        public void 氷のジャンプ着地時刻と停止地点の順序を区間時間から求める()
+        {
+            var d=Start(out _,System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0,20)),true).Dungeon;d.Jump();d.Tick(1000);
+            NUnit.Framework.Assert.IsNotNull(d.ActiveVisit);NUnit.Framework.Assert.AreEqual(6000,Move(d).CurrentPositionMilli);NUnit.Framework.Assert.IsFalse(Move(d).IsJumping);NUnit.Framework.Assert.AreEqual(100,d.Player.CurrentHp);
+        }
+        [NUnit.Framework.Test]
+        public void 氷上の退出保存と再開は位置から速度を復元し通常セルへバフを残さない()
+        {
+            var g=Start(out var session,System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(2,8)),true);g.Dungeon.Tick(1000);
+            NUnit.Framework.Assert.IsNotNull(g.Dungeon.ActiveVisit);NUnit.Framework.Assert.IsTrue(g.Dungeon.ExitVisit());
+            NUnit.Framework.Assert.AreEqual(5,session.Store.Read().SchemaVersion);NUnit.Framework.Assert.AreEqual(6,session.Store.Read().TerrainContactCell);
+            NUnit.Framework.Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger(),out var resumed,out var error),error);
+            resumed.Dungeon.ConfigureNormalMovementSpeed(8000);resumed.ActivateCheckpoint();resumed.TickFrame(17);NUnit.Framework.Assert.AreEqual(6200,Move(resumed.Dungeon).CurrentPositionMilli);
+            Move(resumed.Dungeon).SetPosition(10);resumed.TickFrame(17);NUnit.Framework.Assert.AreEqual(10133,Move(resumed.Dungeon).CurrentPositionMilli);NUnit.Framework.Assert.AreEqual(8000,Move(resumed.Dungeon).EffectiveSpeedMilliPerSecond);
+        }
     }
 }

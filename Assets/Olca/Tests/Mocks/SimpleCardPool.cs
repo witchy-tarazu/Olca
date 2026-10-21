@@ -9,13 +9,15 @@ namespace Olca.Tests.Mocks
     /// テスト用のシンプルなカードプール
     /// 指定されたカードリストからランダムに取得する
     /// </summary>
-    public class SimpleCardPool : ICardPool
+    public class SimpleCardPool : IWeightedCardPool
     {
         private readonly List<Card> cards;
+        private readonly System.Func<Card, int> weight;
 
-        public SimpleCardPool(List<Card> cards)
+        public SimpleCardPool(List<Card> cards, System.Func<Card, int> weight = null)
         {
             this.cards = cards ?? new List<Card>();
+            this.weight = weight;
         }
 
         /// <summary>
@@ -31,6 +33,8 @@ namespace Olca.Tests.Mocks
             int index = random.Range(0, pool.Count);
             return pool[index];
         }
+        public int GetWeight(Card card) => weight?.Invoke(card) ?? 1;
+
         public IReadOnlyList<Card> GetCandidates(CardRarity rarity)
         {
             var filtered = cards.Where(c => c != null && c.Rarity == rarity).ToList();

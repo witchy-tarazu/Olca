@@ -25,6 +25,18 @@ namespace Olca.Presentation.Effects
 
         private CancellationTokenSource clearCts = new CancellationTokenSource();
         private bool isDestroyed;
+        private readonly Dictionary<WorldDamageNumberView,object> owners = new Dictionary<WorldDamageNumberView,object>();
+        private readonly HashSet<object> hiddenOwners = new HashSet<object>();
+        /// <summary>敵に属する数値だけ抑止する。解除時に古い数値は再表示しない。</summary>
+        public void SetOwnerVisible(object owner,bool visible)
+        {
+            if(owner==null)return;
+            if(visible){hiddenOwners.Remove(owner);return;}
+            hiddenOwners.Add(owner);
+            foreach(var pair in owners)if(ReferenceEquals(pair.Value,owner)&&pair.Key!=null)pair.Key.gameObject.SetActive(false);
+        }
+        public void ShowOwnedDamage(int damage,Vector3 position,CancellationToken ct,object owner)
+            => ShowOwnedDamageAsync(damage,position,ct,owner).Forget();
 
         private void Awake()
         {
@@ -46,11 +58,14 @@ namespace Olca.Presentation.Effects
             ShowDamageAsync(damage, worldPosition, ct).Forget();
         }
 
-        private async UniTask ShowDamageAsync(int damage, Vector3 worldPosition, CancellationToken ct)
+        private UniTask ShowDamageAsync(int damage, Vector3 worldPosition, CancellationToken ct)
+            => ShowOwnedDamageAsync(damage,worldPosition,ct,null);
+        private async UniTask ShowOwnedDamageAsync(int damage,Vector3 worldPosition,CancellationToken ct,object owner)
         {
-            if (isDestroyed) return;
+            if (isDestroyed || (owner!=null && hiddenOwners.Contains(owner))) return;
             var instance = Get();
             if (instance == null) return;
+            owners[instance]=owner;
 
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, clearCts.Token);
             try
@@ -90,6 +105,7 @@ namespace Olca.Presentation.Effects
         {
             // 完了済みの貸出だけを一度返却する。破棄済みViewも管理対象から除く。
             if (ReferenceEquals(instance, null) || !activeInstances.Remove(instance)) return;
+            owners.Remove(instance);
             if (instance == null || isDestroyed) return;
             instance.gameObject.SetActive(false);
             pool.Enqueue(instance);
@@ -132,6 +148,7 @@ namespace Olca.Presentation.Effects
             foreach (var instance in activeInstances) DestroyInstance(instance);
             foreach (var instance in pool) DestroyInstance(instance);
             activeInstances.Clear();
+            owners.Clear();hiddenOwners.Clear();
             pool.Clear();
         }
 

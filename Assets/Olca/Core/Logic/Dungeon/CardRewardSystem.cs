@@ -43,7 +43,7 @@ namespace Olca.Core.Logic.Dungeon
             if (defeatedEnemy == null) return false;
 
             // ボスは100%ドロップ
-            if (defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss"))
+            if (defeatedEnemy.EnemyId == "boss")
             {
                 return true;
             }
@@ -63,73 +63,70 @@ namespace Olca.Core.Logic.Dungeon
                 if (TryGenerateConfiguredChoices(defeatedEnemy, out var configured)) return configured;
                 throw new InvalidOperationException("報酬プールの有効候補が不足しています。通常は異なる3候補、ボスは1候補以上が必要です。");
             }
-            var choices = new List<Card>();
-
-            // ボスの場合は1枚のみ（高レアリティ）
-            if (defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss"))
-            {
-                Card bossCard = GenerateCard(CardRarity.Limited);  // ボスからはリミテッド
-                choices.Add(bossCard);
-            }
-            // 通常敵の場合は3枚（ノーマル中心）
-            else
-            {
-                // プール未設定の通常報酬も同じカードを重複させない。
-                // 抽選ごとに候補を除き、固定乱数でも再抽選ループを発生させない。
-                var remaining = new List<string>(FallbackCardIds);
-                for (int i = 0; i < REWARD_CHOICE_COUNT; i++)
-                {
-                    int index = random.Range(0, remaining.Count);
-                    choices.Add(CreateFallbackCard(remaining[index], CardRarity.Normal));
-                    remaining.RemoveAt(index);
-                }
-            }
-
+            bool boss = defeatedEnemy.EnemyId == "boss";
+            var definitions = new List<Card>();
+            foreach (string id in FallbackCardIds)
+                definitions.Add(CreateFallbackCard(id, boss ? CardRarity.Limited : CardRarity.Normal));
+            // 通常シーンの未設定プールも同じ重み付き抽選へ通す。旧値と乱数呼出し順は維持。
+            TryDrawChoices(definitions, null, boss ? 1 : REWARD_CHOICE_COUNT, out var choices);
             return choices;
         }
 
         /// <summary>
-        /// 設定済み候補から重複なしで抽選する。候補不足時は乱数を消費せず失敗する。
-        /// 現行の均等抽選基盤。製品プールの重み付き抽選は別途設定が必要。
+        /// 設定済み候補から重み付き・重複なしで抽選する。
+        /// 重み未指定は1。候補不足・不正重み・合計上限超過は乱数を消費せず失敗する。
         /// </summary>
         public bool TryGenerateConfiguredChoices(Enemy defeatedEnemy, out List<Card> choices)
         {
             choices = new List<Card>();
             if (cardPool == null || defeatedEnemy == null) return false;
-            bool boss = defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss");
-            var definitions = cardPool.GetCandidates(boss ? CardRarity.Limited : CardRarity.Normal);
+            bool boss = defeatedEnemy.EnemyId == "boss";
+            return TryDrawChoices(cardPool.GetCandidates(boss ? CardRarity.Limited : CardRarity.Normal),
+                cardPool as IWeightedCardPool, boss ? 1 : REWARD_CHOICE_COUNT, out choices,
+                REWARD_CHOICE_COUNT);
+        }
+
+        private bool TryDrawChoices(IReadOnlyList<Card> definitions, IWeightedCardPool weightedPool,
+            int minimum, out List<Card> choices, int maximum = 0)
+        {
+            choices = new List<Card>();
             var candidates = new List<Card>();
-            var seen = new HashSet<(string, ExceedLevel)>();
+            var weights = new List<int>();
+            var seen = new Dictionary<(string, ExceedLevel), int>();
+            long total = 0;
             if (definitions != null)
             {
                 foreach (var card in definitions)
                 {
-                    if (card != null && !string.IsNullOrEmpty(card.Id) && seen.Add((card.Id, card.ExceedLevel)))
-                        candidates.Add(card);
+                    if (card == null || string.IsNullOrEmpty(card.Id)) continue;
+                    int weight = weightedPool?.GetWeight(card) ?? 1;
+                    if (weight < 0) return false;
+                    var key = (card.Id, card.ExceedLevel);
+                    if (seen.TryGetValue(key, out int previous))
+                    {
+                        // 重複登録で確率を増やさない。競合する重みは設定誤りとして拒否。
+                        if (previous != weight) return false;
+                        continue;
+                    }
+                    seen.Add(key, weight);
+                    if (weight == 0) continue;
+                    total += weight;
+                    if (total > int.MaxValue) return false;
+                    candidates.Add(card); weights.Add(weight);
                 }
             }
-            if (candidates.Count < (boss ? 1 : REWARD_CHOICE_COUNT)) return false;
-            int count = boss ? Math.Min(REWARD_CHOICE_COUNT, candidates.Count) : REWARD_CHOICE_COUNT;
+            if (candidates.Count < minimum) return false;
+            int count = maximum == 0 ? minimum : Math.Min(maximum, candidates.Count);
             for (int i = 0; i < count; i++)
             {
-                int index = random.Range(0, candidates.Count);
+                int roll = random.Range(0, (int)total);
+                int index = 0;
+                while (roll >= weights[index]) { roll -= weights[index]; index++; }
                 choices.Add(candidates[index].Clone());
-                candidates.RemoveAt(index);
+                total -= weights[index];
+                candidates.RemoveAt(index); weights.RemoveAt(index);
             }
             return true;
-        }
-
-        /// <summary>
-        /// カードを生成する
-        /// カードプールが設定されている場合はそこから取得し、なければフォールバックカードを生成する
-        /// </summary>
-        private Card GenerateCard(CardRarity targetRarity)
-        {
-            // フォールバック: カードプール未設定時はダミーカードを生成
-            int randomIndex = random.Range(0, FallbackCardIds.Length);
-            string cardId = FallbackCardIds[randomIndex];
-
-            return CreateFallbackCard(cardId, targetRarity);
         }
 
         public static Card CreateFallbackCard(string cardId, CardRarity targetRarity)
@@ -216,4 +213,29 @@ namespace Olca.Core.Logic.Dungeon
         }
     }
 
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>既存アイテム効果の抽選重み。製品の新しい種類は作らない。</summary>
+    public sealed class ItemRewardEntry
+    {
+        public FieldItem Item { get; }
+        public int Weight { get; }
+        public ItemRewardEntry(FieldItem item,int weight=1){if(item==null||weight<0)throw new System.ArgumentException("アイテム/重みが不正です");Item=item;Weight=weight;}
+        public static void Validate(System.Collections.Generic.IReadOnlyList<ItemRewardEntry> pool)
+        {
+            if(pool==null)throw new System.ArgumentNullException(nameof(pool));
+            var seen=new System.Collections.Generic.HashSet<string>();long total=0;
+            foreach(var entry in pool){if(entry==null||!seen.Add(entry.Item.Id))throw new System.ArgumentException("アイテム候補の欠落/重複です");total+=entry.Weight;if(total>int.MaxValue)throw new System.ArgumentException("重み合計が上限を超えています");}
+        }
+        public static int? Pick(System.Collections.Generic.IReadOnlyList<ItemRewardEntry> pool,int chance,Olca.Core.Interfaces.IRandomProvider random)
+        {
+            if(random==null)throw new System.ArgumentNullException(nameof(random));
+            Validate(pool);if(chance<0||chance>100)throw new System.ArgumentOutOfRangeException(nameof(chance));
+            int total=0;foreach(var entry in pool)total+=entry.Weight;if(total==0||chance==0)return null;
+            if(chance<100&&random.Range(0,100)>=chance)return null;
+            int roll=random.Range(0,total);for(int i=0;i<pool.Count;i++){if(roll<pool[i].Weight)return i;roll-=pool[i].Weight;}return null;
+        }
+    }
 }

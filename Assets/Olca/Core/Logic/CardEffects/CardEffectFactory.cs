@@ -71,6 +71,16 @@ namespace Olca.Core.Logic.CardEffects
         /// staticメソッド: カードから効果を生成
         /// CardMasterの情報に基づいて適切な効果クラスを自動生成
         /// </summary>
+        // コードカタログの旧保存はTargetType.Singleを保持しているため、値/hashを変えず
+        // 既存2種の既定効果だけを、明記された前方1マスへ接続する。明示範囲は優先する。
+        private static DamageTargetType ResolveAttackTarget(Card card)
+        {
+            if (card.TargetType == DamageTargetType.Single && card.Series == CardSeries.Sword &&
+                (card.Id == "sword" || card.Id == "fire_sword"))
+                return DamageTargetType.FrontTile;
+            return card.TargetType;
+        }
+
         public static ICardEffect CreateEffect(Card card)
         {
             if (card == null) return new NullEffect();
@@ -95,7 +105,9 @@ namespace Olca.Core.Logic.CardEffects
                     // 攻撃カードは ModifiableCardEffect を使用
                     // CardMasterの TargetType に基づいて攻撃範囲を決定
                     // Modifier の追加効果（スプレッド、貫通、多段ヒット等）が自動適用される
-                    return new ModifiableCardEffect(card.TargetType);
+                    return new ModifiableCardEffect(ResolveAttackTarget(card), productBomb:
+                        card.Id == "bomb" && card.Series == CardSeries.Bomb && card.TargetType == DamageTargetType.Single &&
+                        !card.Modifier.AdditionalEffects.Exists(e => e.EffectType == AdditionalEffectType.DelayedProjectile));
 
                 case CardCategory.Defense:
                     // 明示された小カテゴリを優先し、未指定の旧定義だけID判定を維持する。

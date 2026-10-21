@@ -38,6 +38,78 @@ namespace Olca.Tests.CardEffects
             cardDatabase = new MockCardDatabase();
         }
 
+        private Card ProductBomb() => new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb");
+        private void Frames(int n) { for(int i=0;i<n;i++) battle.TickFrame(i%2==0?1:1000); }
+        [Test]
+        public void 製品ボムは90論理フレーム後に固定着弾マスの前後へ一度だけ爆発する()
+        {
+            var bomb=ProductBomb();CardEffectFactory.CreateEffect(bomb).Execute(new BattleContext(battle,bomb));
+            Assert.AreEqual(1,battle.DelayedEffects.ActiveEffectCount);var shot=battle.DelayedEffects.GetActiveEffects()[0];
+            Assert.AreEqual(new Vector2Int(5,0),shot.TargetPosition);Assert.AreEqual(new Vector2Int(2,0),shot.SourcePosition.Value);
+            Assert.AreEqual(1500,shot.InitialTimeMs);Assert.AreEqual(1,shot.BlastRadius);Assert.IsFalse(battle.HasPlayerAction);
+            Frames(89);Assert.AreEqual(100,enemies[1].CurrentHp);Assert.Less(shot.Progress,1f);
+            player.MoveTo(new Vector2Int(0,0));Frames(1);
+            Assert.AreEqual(100,enemies[0].CurrentHp);Assert.AreEqual(60,enemies[1].CurrentHp);Assert.AreEqual(60,enemies[2].CurrentHp);
+            Assert.IsTrue(shot.WasExecuted);Assert.AreEqual(90,shot.CompletedFrame);Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);
+            Frames(10);Assert.AreEqual(60,enemies[1].CurrentHp);Assert.AreEqual(40,bomb.Power);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 製品ボムは着弾時の穴と途中で生じた穴で爆風も消す(bool duringFlight)
+        {
+            enemies[2].MoveTo(new Vector2Int(1,0));var bomb=ProductBomb();
+            if(!duringFlight)battle.Field.ChangePanelType(new Vector2Int(5,0),PanelType.Hole);
+            CardEffectFactory.CreateEffect(bomb).Execute(new BattleContext(battle,bomb));var shot=battle.DelayedEffects.GetActiveEffects()[0];
+            Frames(45);if(duringFlight)battle.Field.ChangePanelType(new Vector2Int(5,0),PanelType.Hole);
+            Frames(45);Assert.AreEqual(100,enemies[1].CurrentHp);Assert.IsFalse(shot.WasExecuted);Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);
+        }
+        [Test]
+        public void 製品ボムは停止中に進まず対象消滅後も着弾位置の障害物を判定する()
+        {
+            var bomb=ProductBomb();CardEffectFactory.CreateEffect(bomb).Execute(new BattleContext(battle,bomb));var shot=battle.DelayedEffects.GetActiveEffects()[0];
+            Frames(20);int remaining=shot.RemainingTimeMs;float progress=shot.Progress;
+            battle.Pause(BattlePauseReason.User);Frames(100);Assert.AreEqual(remaining,shot.RemainingTimeMs);Assert.AreEqual(progress,shot.Progress);
+            battle.Resume(BattlePauseReason.User);enemies[2].TakeDamage(100,ElementType.None);
+            var landing=new FieldObstacle("landing",30);var path=new FieldObstacle("path",30);
+            battle.Field.PlaceObstacle(new Vector2Int(4,0),landing);battle.Field.PlaceObstacle(new Vector2Int(3,0),path);
+            Frames(70);Assert.AreEqual(60,enemies[1].CurrentHp);Assert.IsTrue(landing.IsDestroyed);Assert.IsFalse(battle.Field.HasObstacle(new Vector2Int(4,0)));
+            Assert.AreEqual(30,path.Hp);Assert.AreEqual(0,enemies[2].CurrentHp);
+        }
+        [Test]
+        public void 製品ボムの発射前中断は不発で発射後の硬直中断は投擲を消さない()
+        {
+            var bomb=ProductBomb().WithAttackTiming(new PlayerAttackTiming(3,12,0));battle.CardUsage.EnqueueCards(new List<Card>{bomb});
+            var before=battle.CardUsage.TryUseCurrentCardAsync();Frames(2);battle.CardUsage.InterruptCurrentCard();Frames(100);
+            Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);Assert.AreEqual(100,enemies[1].CurrentHp);
+            battle.CardUsage.EnqueueCards(new List<Card>{bomb});var after=battle.CardUsage.TryUseCurrentCardAsync();Frames(3);
+            Assert.AreEqual(1,battle.DelayedEffects.ActiveEffectCount);battle.CardUsage.InterruptCurrentCard();Assert.AreEqual(1,battle.DelayedEffects.ActiveEffectCount);
+            Frames(90);Assert.AreEqual(60,enemies[1].CurrentHp);Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);
+        }
+        [Test]
+        public void 製品ボムの複数投擲と戦闘終了解除は他の投擲へ干渉しない()
+        {
+            var bomb=ProductBomb();var effect=CardEffectFactory.CreateEffect(bomb);effect.Execute(new BattleContext(battle,bomb));effect.Execute(new BattleContext(battle,bomb));
+            Assert.AreEqual(2,battle.DelayedEffects.ActiveEffectCount);Frames(90);Assert.AreEqual(20,enemies[1].CurrentHp);
+            effect.Execute(new BattleContext(battle,bomb));var pending=battle.DelayedEffects.GetActiveEffects()[0];
+            foreach(var e in enemies)if(!e.IsDead)e.TakeDamage(100,ElementType.None);
+            Assert.IsTrue(battle.IsGameOver);Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);Assert.IsFalse(pending.WasExecuted);
+        }
+        [Test]
+        public void 製品ボムの調律威力とヒット時派生は着弾時だけ爆風対象へ適用する()
+        {
+            var bomb=ProductBomb();bomb.Modifier.BonusDamage=10;
+            bomb.Modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.PanelIce,Trigger=DerivativeTrigger.OnHit});
+            CardEffectFactory.CreateEffect(bomb).Execute(new BattleContext(battle,bomb));Frames(89);
+            Assert.AreEqual(100,enemies[1].CurrentHp);Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(new Vector2Int(4,0)));
+            Frames(1);Assert.AreEqual(50,enemies[1].CurrentHp);Assert.AreEqual(50,enemies[2].CurrentHp);
+            Assert.AreEqual(PanelType.Ice,battle.Field.GetPanelType(new Vector2Int(4,0)));Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(new Vector2Int(3,0)));
+        }
+        [Test]
+        public void 製品ボムは範囲外へ着弾しても境界へ吸着せず無効になる()
+        {
+            player.MoveTo(new Vector2Int(3,0));var bomb=ProductBomb();CardEffectFactory.CreateEffect(bomb).Execute(new BattleContext(battle,bomb));var shot=battle.DelayedEffects.GetActiveEffects()[0];
+            Assert.AreEqual(6,shot.TargetPosition.X);Frames(90);Assert.IsFalse(shot.WasExecuted);Assert.AreEqual(100,enemies[2].CurrentHp);
+        }
+
         [Test]
         public void 遅延投擲効果が登録される()
         {

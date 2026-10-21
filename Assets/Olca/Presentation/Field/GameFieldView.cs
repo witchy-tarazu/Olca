@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
@@ -79,6 +80,17 @@ namespace Olca.Presentation.Field
 
         private int appliedJumpPhase;
         private bool isMoving;
+        private bool battleMoveHidden, battleMoveRendererWasEnabled;
+        public static bool IsBattleMoveVisible(bool moving, float progress)
+            => !moving || progress < .2f || progress >= .8f;
+        private void SetBattleMoveVisibility(bool visible)
+        {
+            if (playerSprite == null) return;
+            if (!visible && !battleMoveHidden) { battleMoveRendererWasEnabled = playerSprite.enabled; battleMoveHidden = true; }
+            if (battleMoveHidden) playerSprite.enabled = visible && battleMoveRendererWasEnabled;
+            if (visible) battleMoveHidden = false;
+        }
+
 
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
@@ -153,12 +165,260 @@ namespace Olca.Presentation.Field
             return null;
         }
 
+        private readonly Dictionary<int,GameObject> fieldItemVisuals=new Dictionary<int,GameObject>();
+        private void RemoveFieldItemVisual(int cell)
+        {
+            if(!fieldItemVisuals.TryGetValue(cell,out var root))return;fieldItemVisuals.Remove(cell);
+            if(root==null)return;root.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);
+        }
+        private void ClearFieldItemVisuals(){foreach(var cell in new List<int>(fieldItemVisuals.Keys))RemoveFieldItemVisual(cell);}
+        /// <summary>未取得の画面内アイテムだけを表示する。取得後は即時に消し、描画で効果を適用しない。</summary>
+        public void RefreshFieldItemVisuals()
+        {
+            if(!isActiveAndEnabled||dungeonSystem==null||fieldCamera==null||dungeonSystem.IsInBattle||dungeonSystem.IsDungeonCleared||dungeonSystem.IsFloorCompleted||dungeonSystem.Player.IsDead){ClearFieldItemVisuals();return;}
+            float distance=Mathf.Abs(fieldCamera.transform.position.z),a=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x,b=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;
+            var retained=new HashSet<int>();
+            for(int i=0;i<dungeonSystem.Map.TotalCellCount;i++){
+                var cell=dungeonSystem.Map.GetCell(i);if(cell?.Item==null||dungeonSystem.IsItemCollected(i))continue;
+                float x=LogicalToWorld(i+.5f),half=LogicalToWorld(.2f);if(x-half<Mathf.Min(a,b)||x+half>Mathf.Max(a,b))continue;
+                retained.Add(i);if(fieldItemVisuals.ContainsKey(i))continue;
+                if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
+                var root=new GameObject("FieldHealCell_"+i);root.transform.SetParent(transform,false);root.transform.position=new Vector3(x,CharacterDisplayOffsetY+LogicalToWorld(.45f),0);fieldItemVisuals.Add(i,root);
+                void Part(string name,float px,float py,float w,float h,float alpha){var go=new GameObject(name);go.transform.SetParent(root.transform,false);go.transform.localPosition=new Vector3(LogicalToWorld(px),LogicalToWorld(py),0);go.transform.localScale=new Vector3(LogicalToWorld(w),LogicalToWorld(h),1);var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.35f,1f,.7f,alpha);renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;}
+                Part("Face",0,0,.34f,.34f,.08f);Part("Top",0,.17f,.34f,.014f,.6f);Part("Bottom",0,-.17f,.34f,.014f,.6f);Part("Left",-.17f,0,.014f,.34f,.6f);Part("Right",.17f,0,.014f,.34f,.6f);Part("HealHorizontal",0,0,.24f,.055f,1);Part("HealVertical",0,0,.055f,.24f,1);
+            }
+            foreach(var cell in new List<int>(fieldItemVisuals.Keys))if(!retained.Contains(cell))RemoveFieldItemVisual(cell);
+        }
+
+        private sealed class VisitVisual
+        {
+            public GameObject Root,Near,Check;
+            public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts=new List<(SpriteRenderer,float)>();
+        }
+        private readonly Dictionary<int,VisitVisual> visitVisuals=new Dictionary<int,VisitVisual>();
+        private void RemoveVisitVisual(int cell)
+        {
+            if(!visitVisuals.TryGetValue(cell,out var visual))return;visitVisuals.Remove(cell);
+            if(visual.Root==null)return;visual.Root.SetActive(false);
+            if(UnityEngine.Application.isPlaying)Destroy(visual.Root);else DestroyImmediate(visual.Root);
+        }
+        private void ClearVisitVisuals(){ClearFieldItemVisuals();foreach(var cell in new List<int>(visitVisuals.Keys))RemoveVisitVisual(cell);}
+        private VisitVisual CreateVisitVisual(DungeonVisitDefinition definition)
+        {
+            if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
+            var visual=new VisitVisual{Root=new GameObject("VisitCell_"+definition.Cell)};visual.Root.transform.SetParent(transform,false);
+            visual.Root.transform.position=new Vector3(LogicalToWorld(definition.Cell+.5f),CharacterDisplayOffsetY+LogicalToWorld(1.65f),0);
+            void Part(string name,float x,float y,float width,float height,float alpha,Transform parent=null,float angle=0){
+                var go=new GameObject(name);go.transform.SetParent(parent??visual.Root.transform,false);go.transform.localPosition=new Vector3(LogicalToWorld(x),LogicalToWorld(y),0);
+                go.transform.localScale=new Vector3(LogicalToWorld(width),LogicalToWorld(height),1);go.transform.localRotation=Quaternion.Euler(0,0,angle);
+                var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;
+                renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;visual.Parts.Add((renderer,alpha));
+            }
+            Part("Face",0,0,.46f,.4f,.08f);Part("Top",0,.2f,.46f,.014f,.9f);Part("Bottom",0,-.2f,.46f,.014f,.9f);
+            Part("Left",-.23f,0,.014f,.4f,.9f);Part("Right",.23f,0,.014f,.4f,.9f);
+            if(definition.IsShop){
+                Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
+                Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+            }else{Part("RecoveryHorizontal",0,0,.25f,.055f,1);Part("RecoveryVertical",0,0,.055f,.25f,1);}
+            visual.Near=new GameObject("Near");visual.Near.transform.SetParent(visual.Root.transform,false);
+            Part("ArrowLeft",-.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,-35);Part("ArrowRight",.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,35);
+            visual.Check=new GameObject("Check");visual.Check.transform.SetParent(visual.Root.transform,false);
+            Part("CheckShort",-.05f,-.29f,.1f,.025f,1,visual.Check.transform,-45);Part("CheckLong",.04f,-.27f,.19f,.025f,1,visual.Check.transform,45);
+            return visual;
+        }
+        /// <summary>画面内の既存停止地点だけを表示。時間・ゲーム状態・保存を変更しない。</summary>
+        public void RefreshVisitVisuals()
+        {
+            RefreshFieldItemVisuals();
+            if(!isActiveAndEnabled||dungeonSystem==null||fieldCamera==null||dungeonSystem.IsInBattle||dungeonSystem.IsDungeonCleared||dungeonSystem.IsFloorCompleted||dungeonSystem.Player.IsDead){ClearVisitVisuals();return;}
+            float distance=Mathf.Abs(fieldCamera.transform.position.z);
+            float a=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x,b=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;
+            float left=Mathf.Min(a,b),right=Mathf.Max(a,b);var retained=new HashSet<int>();
+            foreach(var definition in dungeonSystem.Map.Visits){
+                float center=LogicalToWorld(definition.Cell+.5f),half=LogicalToWorld(.24f);if(center-half<left||center+half>right)continue;
+                var state=dungeonSystem.GetVisitDisplayState(definition.Cell);if(!state.HasValue)continue;
+                if(!visitVisuals.TryGetValue(definition.Cell,out var visual)){visual=CreateVisitVisual(definition);visitVisuals.Add(definition.Cell,visual);}retained.Add(definition.Cell);
+                bool done=state==DungeonVisitDisplayState.Closed||state==DungeonVisitDisplayState.Used;
+                bool near=!done&&definition.Cell-dungeonSystem.PlayerPosition>=0&&definition.Cell-dungeonSystem.PlayerPosition<=2;
+                visual.Near.SetActive(near&&state==DungeonVisitDisplayState.Ready);visual.Check.SetActive(done);
+                var tint=done?new Color(.48f,.61f,.65f):definition.IsShop?new Color(.25f,.85f,.95f):new Color(.35f,1f,.7f);
+                if(state==DungeonVisitDisplayState.Active)tint=Color.Lerp(tint,Color.white,.55f);
+                float opacity=done?.45f:near||state==DungeonVisitDisplayState.Active?1:.62f;
+                foreach(var part in visual.Parts){var color=tint;color.a=part.Alpha*opacity;part.Renderer.color=color;}
+            }
+            foreach(var cell in new List<int>(visitVisuals.Keys))if(!retained.Contains(cell))RemoveVisitVisual(cell);
+        }
+
+        private sealed class ObstacleVisual
+        {
+            public GameObject Root; public Obstacle Definition;
+            public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts = new List<(SpriteRenderer,float)>();
+        }
+        private readonly Dictionary<int,ObstacleVisual> obstacleVisuals = new Dictionary<int,ObstacleVisual>();
+        private Sprite obstacleWhiteSprite;
+        public const int ObstacleFadeDurationFrames = 12;
+        private void RemoveObstacleVisual(int cell)
+        {
+            if (!obstacleVisuals.TryGetValue(cell,out var visual)) return;
+            obstacleVisuals.Remove(cell);
+            if (visual.Root == null) return;
+            visual.Root.SetActive(false);
+            if (UnityEngine.Application.isPlaying) Destroy(visual.Root); else DestroyImmediate(visual.Root);
+        }
+        private void ClearObstacleVisuals()
+        { foreach (var cell in new List<int>(obstacleVisuals.Keys)) RemoveObstacleVisual(cell); }
+        private ObstacleVisual CreateObstacleVisual(int cell,Obstacle definition,float height)
+        {
+            if (obstacleWhiteSprite == null) { obstacleWhiteSprite = CreateWhiteSprite(); obstacleWhiteSprite.name="ObstaclePrimitive"; }
+            var visual = new ObstacleVisual { Root=new GameObject("ObstacleCell_"+cell), Definition=definition };
+            visual.Root.transform.SetParent(transform,false);
+            visual.Root.transform.position = new Vector3(LogicalToWorld(cell),CharacterDisplayOffsetY+LogicalToWorld(height),0);
+            void Part(string name,float x,float y,float width,float h,float alpha)
+            {
+                var go=new GameObject(name);go.transform.SetParent(visual.Root.transform,false);
+                go.transform.localPosition=new Vector3(LogicalToWorld(x),LogicalToWorld(y),0);
+                go.transform.localScale=new Vector3(LogicalToWorld(width),LogicalToWorld(h),1);
+                var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;
+                renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;
+                renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;
+                visual.Parts.Add((renderer,alpha));
+            }
+            // 幅は論理セル内。左端が既存接触位置、薄い面は占有セルだけを示す。
+            Part("Area",.5f,.22f,.92f,.34f,.10f);
+            Part("Lower",.5f,.05f,.96f,.018f,.85f);Part("Upper",.5f,.39f,.96f,.018f,.7f);
+            Part("Contact",.02f,.25f,.025f,.48f,1f);Part("FarEdge",.98f,.22f,.018f,.34f,.7f);
+            if (definition.PenaltyType==ObstaclePenaltyType.CardDiscard) {
+                Part("CardA",.46f,.23f,.16f,.13f,.8f);Part("CardB",.54f,.29f,.16f,.13f,.55f);
+            } else if (definition.PenaltyType==ObstaclePenaltyType.StatusEffect) {
+                Part("StatusHorizontal",.5f,.25f,.18f,.04f,.95f);Part("StatusVertical",.5f,.25f,.04f,.18f,.95f);
+            } else { Part("Warning",.5f,.29f,.04f,.13f,1);Part("Dot",.5f,.17f,.04f,.04f,1); }
+            return visual;
+        }
+        /// <summary>読み取り専用モデルから描画を同期。表示完了を判定/消費の条件にしない。</summary>
+        public void RefreshObstacleVisuals()
+        {
+            if (dungeonSystem==null || fieldCamera==null || dungeonSystem.IsInBattle || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.Player.IsDead) { ClearObstacleVisuals(); ClearVisitVisuals();return; }
+            float distance=Mathf.Abs(fieldCamera.transform.position.z);
+            float left=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x;
+            float right=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;
+            int first=Mathf.Max(0,Mathf.FloorToInt(Mathf.Min(left,right)/CellSize));
+            int last=Mathf.Min(dungeonSystem.Map.TotalCellCount-1,Mathf.CeilToInt(Mathf.Max(left,right)/CellSize)-1);
+            var retained=new HashSet<int>();
+            for(int cell=first;cell<=last;cell++) {
+                var model=dungeonSystem.Map.GetCell(cell);if(model?.Obstacle==null)continue;
+                bool active=dungeonSystem.ActiveObstacleCell==cell;
+                bool consumed=dungeonSystem.IsObstacleConsumed(cell);
+                obstacleVisuals.TryGetValue(cell,out var visual);
+                if(visual!=null && !ReferenceEquals(visual.Definition,model.Obstacle)){RemoveObstacleVisual(cell);visual=null;}
+                // 読込済み/再入場した消費済みセルには消滅演出を再生成しない。
+                if(visual==null && consumed && !active)continue;
+                float opacity=1;
+                if(consumed && !active) {
+                    var start=dungeonSystem.GetObstacleFadeStartFrame(cell);
+                    opacity=start.HasValue?Mathf.Clamp01(1-(dungeonSystem.ObstacleVisualFrame-start.Value)/(float)ObstacleFadeDurationFrames):0;
+                    if(opacity<=0)continue;
+                }
+                if(visual==null){visual=CreateObstacleVisual(cell,model.Obstacle,model.Height);obstacleVisuals.Add(cell,visual);}
+                retained.Add(cell);
+                Color tint=active?new Color(.91f,.3f,.3f):model.Obstacle.PenaltyType==ObstaclePenaltyType.CardDiscard?new Color(.2f,.85f,.95f):model.Obstacle.PenaltyType==ObstaclePenaltyType.StatusEffect?new Color(.7f,.5f,1):new Color(1,.65f,.15f);
+                float pulse=active && dungeonSystem.ObstacleVisualFrame%30<15?.8f:1;
+                foreach(var part in visual.Parts){var color=tint;color.a=part.Alpha*opacity*pulse;part.Renderer.color=color;}
+            }
+            foreach(var cell in new List<int>(obstacleVisuals.Keys))if(!retained.Contains(cell))RemoveObstacleVisual(cell);
+        }
+
+        public void RefreshEnemyPerception()
+        {
+            bool blind=currentBattle!=null && !currentBattle.IsGameOver && currentBattle.Player.IsBlind;
+            foreach(var view in enemyViews)if(view!=null)view.SetHiddenByBlindness(blind);
+        }
+        private void RestoreEnemyPerception()
+        {foreach(var view in enemyViews)if(view!=null)view.SetHiddenByBlindness(false);}
+
         private PlayerCharacter damageTrackedPlayer;
         private int previousPlayerHp;
         private CancellationTokenSource playerDamageCts;
         private Vector3 playerNormalScale;
         private Color playerNormalColor;
         private float playerHitElapsed = -1f;
+
+        private readonly Dictionary<int,GameObject> terrainVisuals=new Dictionary<int,GameObject>();
+        private void ClearTerrainVisuals()
+        {
+            foreach(var go in terrainVisuals.Values){if(go==null)continue;go.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(go);else DestroyImmediate(go);}terrainVisuals.Clear();
+        }
+        private void RefreshTerrainVisuals()
+        {
+            if(!isActiveAndEnabled||dungeonSystem==null){ClearTerrainVisuals();return;}
+            foreach(var terrain in dungeonSystem.Map.ExplorationTerrain){
+                var type=dungeonSystem.Map.GetTerrainType(terrain.Cell);
+                bool visible=type!=PanelType.Normal&&currentBattle==null&&Mathf.Abs(terrain.Cell-dungeonSystem.PlayerPosition)<6;
+                if(!terrainVisuals.TryGetValue(terrain.Cell,out var root)){
+                    if(!visible)continue;
+                    if(obstacleWhiteSprite==null)obstacleWhiteSprite=CreateWhiteSprite();
+                    root=new GameObject("ExplorationTerrain_"+terrain.Cell);root.transform.SetParent(transform,false);
+                    root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f,0);
+                    root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(.06f),1);
+                    var sr=root.AddComponent<SpriteRenderer>();sr.sprite=obstacleWhiteSprite;sr.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;sr.sortingOrder=1;
+                    sr.color=terrain.Type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):terrain.Type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);terrainVisuals.Add(terrain.Cell,root);
+                }
+                var renderer=root.GetComponent<SpriteRenderer>();
+                renderer.color=type==PanelType.Hole?new Color(.02f,.04f,.08f,.95f):type==PanelType.Cracked?new Color(1f,.7f,.2f,.8f):type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);
+                root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(type==PanelType.Hole?.16f:.06f),1);
+                root.SetActive(visible);
+            }
+        }
+
+        private readonly Dictionary<DelayedEffect, GameObject> bombVisuals = new Dictionary<DelayedEffect, GameObject>();
+        private void ClearBombVisuals()
+        {
+            foreach (var root in bombVisuals.Values) {
+                if (root == null) continue;
+                root.SetActive(false);
+                if (UnityEngine.Application.isPlaying) Destroy(root); else DestroyImmediate(root);
+            }
+            bombVisuals.Clear();
+        }
+        private void RefreshBombVisuals()
+        {
+            if (!isActiveAndEnabled || currentBattle == null || currentBattle.IsGameOver || battleGridView == null) { ClearBombVisuals(); return; }
+            var active = currentBattle.DelayedEffects.GetActiveEffects();
+            foreach (var effect in active) {
+                if (effect.BlastRadius != 1 || !effect.SourcePosition.HasValue || bombVisuals.ContainsKey(effect)) continue;
+                if (obstacleWhiteSprite == null) obstacleWhiteSprite = CreateWhiteSprite();
+                var root = new GameObject("BombProjectile"); root.transform.SetParent(transform, false);
+                for (int i=0;i<4;i++) {
+                    var part=new GameObject(i==0?"Body":"Blast"+(i-1));part.transform.SetParent(root.transform,false);
+                    var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.3f,1f,1f,.85f);
+                    renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=6;
+                }
+                bombVisuals.Add(effect,root);
+            }
+            foreach (var pair in bombVisuals.ToArray()) {
+                var effect=pair.Key;var root=pair.Value;bool flying=active.Contains(effect);
+                long elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
+                bool blast=!flying&&effect.WasExecuted&&elapsed>=0&&elapsed<6;
+                if (!flying&&!blast) {
+                    root.SetActive(false); if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
+                }
+                var body=root.transform.GetChild(0);body.gameObject.SetActive(flying);
+                float targetX=battleGridView.GridIndexToWorldX(effect.TargetPosition.X);
+                float ground=battleGridView.GroundY;
+                if(flying){
+                    float t=effect.Progress;float startX=battleGridView.GridIndexToWorldX(effect.SourcePosition.Value.X);
+                    body.position=new Vector3(Mathf.Lerp(startX,targetX,t),ground+LogicalToWorld(.45f+4f*t*(1f-t)*1.4f),0);
+                    body.localScale=Vector3.one*LogicalToWorld(.18f);body.rotation=Quaternion.Euler(0,0,45);
+                }
+                for(int i=0;i<3;i++){
+                    var part=root.transform.GetChild(i+1);int x=effect.TargetPosition.X+i-1;
+                    part.gameObject.SetActive(blast&&x>=0&&x<BattleField.GRID_WIDTH);
+                    if(!part.gameObject.activeSelf)continue;
+                    part.position=new Vector3(battleGridView.GridIndexToWorldX(x),ground+LogicalToWorld(.38f),0);
+                    part.localScale=new Vector3(LogicalToWorld(.82f),LogicalToWorld(.18f),1);
+                    part.GetComponent<SpriteRenderer>().color=new Color(.4f,1f,1f,.75f*(1f-elapsed/6f));
+                }
+            }
+        }
 
         private DungeonSystem dungeonSystem;
         private BattleSystem currentBattle; // バトル中のプレイヤー座標更新用
@@ -240,11 +500,15 @@ namespace Olca.Presentation.Field
         private void OnEnable()
         {
             if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
+            RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() => UnbindPlayerDamage();
+        private void OnDisable() { ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            ClearTerrainVisuals(); ClearBombVisuals();
+            ClearObstacleVisuals(); ClearVisitVisuals();
+            if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
             if (currentBattle != null)
             {
@@ -258,6 +522,8 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
+            RestoreEnemyPerception();
+            ClearTerrainVisuals(); ClearObstacleVisuals(); ClearVisitVisuals();
             ApplyCharacterDisplayOffset();
             dungeonSystem = dungeon;
             BindPlayerDamage(dungeon?.Player);
@@ -285,6 +551,7 @@ namespace Olca.Presentation.Field
 
             // マップ上の全敵スプライトを生成
             PlaceAllEnemySprites();
+            RefreshObstacleVisuals(); RefreshVisitVisuals();
             UpdatePlayerSprite();
         }
 
@@ -304,6 +571,8 @@ namespace Olca.Presentation.Field
         private void LateUpdate()
         {
             UpdateCameraFraming();
+            RefreshObstacleVisuals(); RefreshVisitVisuals();
+            RefreshEnemyPerception(); RefreshBombVisuals(); RefreshTerrainVisuals();
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
@@ -331,6 +600,7 @@ namespace Olca.Presentation.Field
             foreach (var (cellIndex, enemy) in allEnemies)
             {
                 var view = CreateEnemyView(enemy, cellIndex);
+                view.SetStrongEnemy(dungeonSystem.Map.StrongEnemyCells.Contains(cellIndex));
                 enemyViews.Add(view);
             }
         }
@@ -374,6 +644,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleStarted(BattleSystem battle, float contactPositionX)
         {
+            ClearBombVisuals();
             if (currentBattle != null)
             {
                 currentBattle.OnSummonAdded -= OnSummonAdded;
@@ -415,6 +686,8 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleEnded()
         {
+            ClearBombVisuals();
+            SetBattleMoveVisibility(true);
             StopPlayerDamageFeedback();
             if (currentBattle != null)
             {
@@ -461,6 +734,7 @@ namespace Olca.Presentation.Field
             UpdatePlayerSprite();
             if (cameraFollowEnabled) UpdateCamera();
             UpdateEnemyViews();
+            RefreshVisitVisuals();
         }
 
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>
@@ -470,10 +744,9 @@ namespace Olca.Presentation.Field
             if (playerTransform != null && battleGridView != null && currentBattle != null)
             {
                 var movement = currentBattle.PlayerMovement;
-                float worldX = movement.IsNormalMoving
-                    ? Mathf.Lerp(battleGridView.GridIndexToWorldX(movement.NormalMoveFrom.X),
-                        battleGridView.GridIndexToWorldX(movement.NormalMoveTo.X), movement.NormalMoveProgress)
-                    : battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
+                // 消失中に、モデルが中間フレームで確定した座標へ切り替える。走行補間は使わない。
+                float worldX = battleGridView.GridIndexToWorldX(currentBattle.Player.GridPosition.X);
+                SetBattleMoveVisibility(IsBattleMoveVisible(movement.IsNormalMoving, movement.NormalMoveProgress));
                 playerTransform.position = new Vector3(worldX, playerTransform.position.y, 0f);
             }
 
@@ -489,6 +762,7 @@ namespace Olca.Presentation.Field
             }
 
             battleGridView?.Refresh();
+            RefreshEnemyPerception();
             foreach (var view in enemyViews)
                 view?.Refresh();
             // ControllerとViewのLateUpdate順に依存せず、更新済みの論理状態で同じ描画を確定する。
@@ -546,12 +820,29 @@ namespace Olca.Presentation.Field
         public static int SelectJumpAnimationPhase(bool jumping, float progress)
             => !jumping ? 0 : progress < 14f / 30f ? 1 : progress <= 16f / 30f ? 2 : 3;
 
+        private bool obstaclePoseActive, obstacleAnimatorWasEnabled;
+        private void RestoreObstaclePose()
+        {
+            if (!obstaclePoseActive) return;
+            obstaclePoseActive = false;
+            if (playerAnimator != null) playerAnimator.enabled = obstacleAnimatorWasEnabled;
+        }
         private void UpdatePlayerSprite()
         {
+            if (dungeonSystem != null && dungeonSystem.IsObstacleStopped && !dungeonSystem.IsInBattle) {
+                if (!obstaclePoseActive) { obstaclePoseActive = true; obstacleAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled; }
+                if (playerAnimator != null) playerAnimator.enabled = false;
+                // 既存ののけぞりSpriteだけを使う。未設定時はidleで停止し、専用素材完成とは扱わない。
+                var frames = contactKnockbackSprites;
+                SetPlayerSprite(frames != null && frames.Length > 0
+                    ? frames[System.Math.Min(frames.Length - 1, dungeonSystem.ObstacleStopElapsedFrames / 6)] : idlePlayerSprite);
+                return;
+            }
+            RestoreObstaclePose();
             if (contactPoseActive && contactPoseSprite != null) { SetPlayerSprite(contactPoseSprite); return; }
-            int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && dungeonSystem.IsJumping
+            int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && (dungeonSystem.IsJumping||dungeonSystem.IsTerrainRecovering)
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
-                dungeonSystem?.JumpProgress ?? 0f);
+                dungeonSystem?.IsTerrainRecovering==true?.8f:dungeonSystem?.JumpProgress ?? 0f);
             // 接敵後の宙返り中はダッシュフラグが残る場合があるため、
             // バトル中でないこともダッシュ表示の条件にする。
             bool isDashing = dungeonSystem != null
@@ -588,10 +879,8 @@ namespace Olca.Presentation.Field
         {
             // 60Hz論理更新のない描画フレームも自動前進は継続中。
             // 座標差0や描画DeltaTimeでの速度推定を停止判定に使わない。
-            bool battleMoving = currentBattle?.PlayerMovement.IsNormalMoving == true && !currentBattle.IsPaused;
-            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (battleMoving ||
-                (dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
-                && dungeonSystem.PlayerHeight <= 0.001f));
+            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (currentBattle == null && dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
+                && dungeonSystem.PlayerHeight <= 0.001f);
         }
 
         private void SetPlayerSprite(Sprite sprite)

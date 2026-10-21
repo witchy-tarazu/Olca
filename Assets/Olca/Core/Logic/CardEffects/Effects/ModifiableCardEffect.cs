@@ -21,15 +21,18 @@ namespace Olca.Core.Logic.CardEffects.Effects
     {
         private readonly DamageTargetType baseTargetType;
 
-        public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single)
+        private readonly bool productBomb;
+        private readonly Vector2Int? explosionCenter;
+        public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single, bool productBomb = false)
         {
-            this.baseTargetType = targetType;
+            this.baseTargetType = targetType; this.productBomb = productBomb;
         }
 
         /// <summary>
-        /// 使用動作だけを待機する。発射済みの投擲・派生効果は独立して進行する。
+        /// 使用動作を待機する。指定された派生前後隙は追跡し、発射済み投擲は独立して進行する。
         /// </summary>
-        public async UniTask ExecuteAsync(BattleContext context, CancellationToken ct)
+        public UniTask ExecuteAsync(BattleContext context, CancellationToken ct) => ExecuteAsync(context, ct, true);
+        internal async UniTask ExecuteAsync(BattleContext context, CancellationToken ct, bool includeTimings)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             ct.ThrowIfCancellationRequested();
@@ -38,15 +41,20 @@ namespace Olca.Core.Logic.CardEffects.Effects
             bool effectResolved = false;
             try
             {
-                if (!card.IsInstantEffect && card.StartupTime > 0)
-                    await context.Battle.WaitForActionAsync(card.StartupTime, ct);
+                if (includeTimings && !card.IsInstantEffect) {
+                    if (card.StartupFrames.HasValue) await context.Battle.WaitForActionFramesAsync(card.StartupFrames.Value, ct);
+                    else if (card.StartupTime > 0) await context.Battle.WaitForActionAsync(card.StartupTime, ct);
+                }
 
                 ct.ThrowIfCancellationRequested();
                 ExecuteCardEffect(context);
                 effectResolved = true;
 
-                if (!card.IsInstantEffect && card.RecoveryTime > 0)
-                    await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
+                if (includeTimings && !card.IsInstantEffect) {
+                    if (card.ExtendRecoveryDuringDerivative) await context.WaitForDerivativesAsync(ct);
+                    if (card.RecoveryFrames.HasValue) await context.Battle.WaitForActionFramesAsync(card.RecoveryFrames.Value, ct);
+                    else if (card.RecoveryTime > 0) await context.Battle.WaitForActionAsync(card.RecoveryTime, ct);
+                }
             }
             catch (OperationCanceledException) when (effectResolved)
             {
@@ -54,79 +62,61 @@ namespace Olca.Core.Logic.CardEffects.Effects
             }
         }
 
+        private static DelayedEffect CreateTimingDelay(DelayedEffectType type, int? frames, float seconds)
+            => frames.HasValue ? DelayedEffect.InFrames(type, frames.Value) : new DelayedEffect(type, (int)(seconds * 1000f));
+
         public void Execute(BattleContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
-
             var card = context.UsedCard;
             foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
-
-            // 暗転系カードは前隙・後隙なしで即座に発動
-            if (card.IsInstantEffect)
+            if (card.IsInstantEffect) { ExecuteCardEffect(context); return; }
+            void Resolve()
             {
                 ExecuteCardEffect(context);
-                return;
-            }
-
-            // 前隙がある場合は遅延登録
-            if (card.StartupTime > 0)
-            {
-                // 前隙遅延効果を登録
-                var startupEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Startup, (int)(card.StartupTime * 1000f))
-                {
-                    ExecuteAction = () =>
-                    {
-                        // 前隙終了後にヒット判定（ダメージ処理）
-                        ExecuteCardEffect(context);
-
-                        // 後隙がある場合は遅延登録
-                        if (card.RecoveryTime > 0)
-                        {
-                            var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, (int)(card.RecoveryTime * 1000f))
-                            {
-                                ExecuteAction = () =>
-                                {
-                                    // 後隙終了（行動可能になる）
-#if UNITY_EDITOR || DEBUG
-                                    System.Diagnostics.Debug.WriteLine($"[ModifiableCardEffect] 後隙終了: {card.Name}");
-#endif
-                                }
-                            };
-                            context.Battle.DelayedEffects.RegisterDelayedEffect(recoveryEffect);
-                        }
-                    }
-                };
-                context.Battle.DelayedEffects.RegisterDelayedEffect(startupEffect);
-            }
-            else
-            {
-                // 前隙がない場合は即座に発動
-                ExecuteCardEffect(context);
-
-                // 後隙がある場合は遅延登録
-                if (card.RecoveryTime > 0)
-                {
-                    var recoveryEffect = new Battle.DelayedEffect(Battle.DelayedEffectType.Recovery, (int)(card.RecoveryTime * 1000f))
-                    {
-                        ExecuteAction = () =>
-                        {
-                            // 後隙終了（行動可能になる）
-#if UNITY_EDITOR || DEBUG
-                            System.Diagnostics.Debug.WriteLine($"[ModifiableCardEffect] 後隙終了: {card.Name}");
-#endif
-                        }
-                    };
-                    context.Battle.DelayedEffects.RegisterDelayedEffect(recoveryEffect);
+                if (card.RecoveryFrames.HasValue ? card.RecoveryFrames.Value > 0 : card.RecoveryTime > 0) {
+                    var recovery = CreateTimingDelay(DelayedEffectType.Recovery, card.RecoveryFrames, card.RecoveryTime);
+                    recovery.ExecuteAction = () => { };
+                    context.RegisterActionDelay(recovery);
                 }
             }
+            if (card.StartupFrames.HasValue ? card.StartupFrames.Value > 0 : card.StartupTime > 0) {
+                var startup = CreateTimingDelay(DelayedEffectType.Startup, card.StartupFrames, card.StartupTime);
+                startup.ExecuteAction = Resolve;
+                context.RegisterActionDelay(startup);
+            } else Resolve();
         }
 
-        /// <summary>
-        /// カード効果の実行（前隙後のヒット判定・ダメージ処理）
-        /// </summary>
+        private ModifiableCardEffect(Vector2Int center)
+        {
+            baseTargetType = DamageTargetType.All; explosionCenter = center;
+        }
+        private void RegisterProductBomb(BattleContext context)
+        {
+            var origin = context.GetEffectivePlayerPosition();
+            var target = new Vector2Int(origin.X + 3, origin.Y);
+            // 投擲物そのものは無害。既存Powerは着弾時の3マス爆風へ一度だけ渡す。
+            var delayed = new Battle.DelayedEffect(1500, target, true) { SourcePosition = origin, BlastRadius = 1 };
+            delayed.ExecuteAction = () => {
+                if (!context.Field.IsInBounds(target)) return;
+                var blastContext = new BattleContext(context.Battle, context.UsedCard) { TemporaryPlayerPosition = target, CardDatabase = context.CardDatabase };
+                new ModifiableCardEffect(target).ExecuteCardEffect(blastContext);
+                for (int x = target.X - 1; x <= target.X + 1; x++) {
+                    var position = new Vector2Int(x, target.Y);
+                    if (!context.Field.IsInBounds(position)) continue;
+                    var obstacle = context.Field.GetObstacle(position);
+                    if (obstacle == null) continue;
+                    obstacle.TakeDamage(context.UsedCard.GetFinalPower());
+                    if (obstacle.IsDestroyed) context.Field.RemoveObstacle(position);
+                }
+            };
+            context.Battle.DelayedEffects.RegisterDelayedEffect(delayed);
+        }
+
         private void ExecuteCardEffect(BattleContext context)
         {
             var card = context.UsedCard;
+            if (productBomb) { RegisterProductBomb(context); return; }
             foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             var modifier = card.Modifier;
 
@@ -280,6 +270,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
             var aliveEnemies = context.Battle.GetAliveEnemies();
             var targets = new List<Enemy>();
 
+            if (explosionCenter.HasValue) {
+                var center = explosionCenter.Value;
+                return aliveEnemies.Where(e => e.GridPosition.Y == center.Y && System.Math.Abs(e.GridPosition.X - center.X) <= 1).ToList();
+            }
             if (aliveEnemies.Count == 0) return targets;
 
             switch (targetType)
@@ -314,6 +308,14 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// </summary>
         private IEnumerable<Vector2Int> GetBaseHitPanels(BattleContext context, List<Enemy> targets)
         {
+            if (explosionCenter.HasValue) {
+                var center = explosionCenter.Value;
+                for (int x = center.X - 1; x <= center.X + 1; x++) {
+                    var position = new Vector2Int(x, center.Y);
+                    if (context.Field.IsInBounds(position)) yield return position;
+                }
+                yield break;
+            }
             int range = baseTargetType == DamageTargetType.FrontTile ? 1 :
                 baseTargetType == DamageTargetType.FrontTwoTiles ? 2 :
                 baseTargetType == DamageTargetType.FrontThreeTiles ? 3 : 0;
@@ -646,8 +648,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         if (!t.IsDead)
                         {
                             int durationMs = effect.Duration > 0 ? (int)(effect.Duration * 1000) : 5000;
-                            int damagePerTick = effect.Power > 0 ? effect.Power : 5;
-                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Poison, durationMs, damagePerTick));
+                            int damagePerTick = effect.PoisonIntervalFrames.HasValue ? effect.Power : effect.Power > 0 ? effect.Power : 5;
+                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Poison, durationMs, damagePerTick,
+                                poisonKind: effect.PoisonKind, poisonIntervalFrames: effect.PoisonIntervalFrames));
                         }
                     }
                     break;
@@ -665,7 +668,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     break;
 
                 case AdditionalEffectType.Blind:
-                    // 盲目: 命中率低下状態を付与
+                    // 盲目: 相手の位置を視認できない状態を付与
                     foreach (var t in targets)
                     {
                         if (!t.IsDead)
@@ -785,6 +788,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 #endif
                     // チェインカード用の新しいBattleContextを作成
                     var chainContext = new BattleContext(context.Battle, chainCard);
+                    chainContext.InheritDerivatives(context);
 
                     // ヒットした敵の位置を一時的なプレイヤー位置として設定
                     chainContext.TemporaryPlayerPosition = target.GridPosition;
@@ -808,6 +812,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 // プレイヤー位置から発動: 元の位置を基準に発動
                 // 自分自身を再発動する場合はhitTargetsの数だけ実行しない（1回だけ実行）
                 var chainContext = new BattleContext(context.Battle, chainCard);
+                chainContext.InheritDerivatives(context);
 
                 // 多段の派生でも、実プレイヤーではなく直前のカードの発動位置を継承する。
                 chainContext.TemporaryPlayerPosition = context.GetEffectivePlayerPosition();

@@ -14,7 +14,8 @@ namespace Olca.Core.Logic.Dungeon
         {
             InitialDamage,  // 初期ダメージ
             Stun,           // スタン
-            FirstStrike     // 先制攻撃
+            FirstStrike,    // 先制攻撃
+            PlayerDamage    // 接触先の定義によるプレイヤー被害
         }
 
         public bool CanDash { get; private set; } = true;
@@ -24,10 +25,17 @@ namespace Olca.Core.Logic.Dungeon
         /// ダッシュ接敵時の効果を取得
         /// </summary>
         /// <returns></returns>
-        public DashContactEffect GetDashEffect()
+        public DashContactEffect GetDashEffect(Enemy enemy = null)
         {
-            // TODO: キャラクター能力に応じて変更
-            return DashContactEffect.InitialDamage;
+            return enemy?.DashContact!=null?(DashContactEffect)enemy.DashContact.Outcome:DashContactEffect.InitialDamage;
+        }
+
+        internal static EnemyDashContactDefinition ResolveDashDefinition(DashContactEffect effect,int? value)
+        {
+            if(value.HasValue)return new EnemyDashContactDefinition((DashContactOutcome)effect,value.Value);
+            int legacy=effect==DashContactEffect.InitialDamage?15:effect==DashContactEffect.Stun?180:
+                effect==DashContactEffect.FirstStrike?0:throw new System.ArgumentException("新しい初撃には値の保存が必要です");
+            return new EnemyDashContactDefinition((DashContactOutcome)effect,value??legacy);
         }
 
         /// <summary>

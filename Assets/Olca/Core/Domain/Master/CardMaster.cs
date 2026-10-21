@@ -91,6 +91,11 @@ namespace Olca.Core.Domain.Master
         /// この時間中、プレイヤーは移動や他のカード使用ができない
         /// </summary>
         public float RecoveryTime { get; set; }
+        /// <summary>明示フレーム値。省略時は既存秒値をそのまま使用する。</summary>
+        public int? StartupFrames { get; set; }
+        public int? RecoveryFrames { get; set; }
+        /// <summary>後隙開始からの受付開始。省略時は後隙を短縮しない。</summary>
+        public int? RecoveryCancelAfterFrames { get; set; }
 
         /// <summary>
         /// 派生効果中も硬直を継続するか
@@ -133,6 +138,8 @@ namespace Olca.Core.Domain.Master
         /// 状態異常の持続時間など
         /// </summary>
         public float AdditionalEffectDuration { get; set; }
+        public string PoisonKind { get; set; } = "poison";
+        public int? PoisonIntervalFrames { get; set; }
 
         /// <summary>
         /// ヒット回数（多段ヒット、チェイン回数など）

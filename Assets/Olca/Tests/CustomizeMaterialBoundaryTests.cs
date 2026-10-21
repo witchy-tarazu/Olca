@@ -254,4 +254,105 @@ namespace Olca.Tests
             CollectionAssert.AreEqual(new[] { a, b, bomb }, model.CurrentHand);
         }
     }
+    public class ProductCustomizationDefinitionTests
+    {
+        private sealed class Store : Olca.Core.Logic.Dungeon.ICheckpointStore
+        {
+            private readonly Olca.Core.Logic.Dungeon.MemoryCheckpointStore inner;
+            public bool Fail;
+            public Store(Olca.Core.Logic.Dungeon.CheckpointDefinitions definitions) { inner=new Olca.Core.Logic.Dungeon.MemoryCheckpointStore(definitions); }
+            public Olca.Core.Domain.CheckpointDto Read()=>inner.Read();
+            public bool TryWrite(Olca.Core.Domain.CheckpointDto dto,out string error) { if(Fail){error="保存失敗fixture";return false;}return inner.TryWrite(dto,out error); }
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 加工後の保存失敗と復帰は加工前の戦闘開始構成を保つ(bool tune)
+        {
+            var f=new SimpleCardFactory();var map=Olca.Core.Domain.DungeonConfig.CreateTestDungeon(20,30,3);
+            var deck=new Deck(new List<Card>{f.CreateById("sword"),f.CreateById("sword"),f.CreateById("tuning")});
+            var defs=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
+            var store=new Store(defs);var session=new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defs,store);
+            var random=new MockRandomProvider(0);var logger=new MockLogger();
+            var game=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,random,logger,
+                new ExceedSystem(f),new TuningSystem(f.GetTuningDefinition),checkpoints:session,cardDatabase:f);
+            for(int n=0;n<20&&game.CurrentBattle==null;n++)game.Tick(50);
+            Assert.IsNotNull(game.CurrentBattle);game.CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            game.CurrentBattle.OpenCustomScreen(random);var cs=game.CurrentBattle.CustomScreen;
+            var a=cs.CurrentHand.First(c=>c.Id=="sword");var b=cs.CurrentHand.First(c=>tune?c.Id=="tuning":c.Id=="sword"&&!object.ReferenceEquals(c,a));
+            Assert.IsTrue(cs.ExecuteCustomization(new[]{a,b}).CanExecute);var sequence=store.Read().Sequence;
+            store.Fail=true;foreach(var e in game.CurrentBattle.Enemies.ToArray())e.TakeDamage(e.MaxHp,ElementType.None);
+            game.SelectCardReward(null);game.SelectCurrencyReward(false);
+            Assert.IsTrue(game.Dungeon.IsCheckpointBlocked);Assert.AreEqual(sequence,store.Read().Sequence);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(
+                new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defs,store),random,logger,out var reopened,out var error,
+                new ExceedSystem(f),new TuningSystem(f.GetTuningDefinition),cardDatabase:f),error);
+            reopened.ActivateCheckpoint();var restored=reopened.CurrentBattle.CustomScreen;
+            if(!restored.IsOpen){reopened.CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);reopened.CurrentBattle.OpenCustomScreen(random);}
+            Assert.AreEqual(3,restored.CurrentHand.Count);Assert.AreEqual(2,restored.CurrentHand.Count(c=>c.Id=="sword"));
+            Assert.IsTrue(restored.CurrentHand.All(c=>c.TuningCount==0&&c.ExceedLevel==ExceedLevel.Normal));
+            store.Fail=false;Assert.IsTrue(game.RetryCheckpoint());Assert.AreEqual(3,game.Dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        [Test]
+        public void 調律は同名個体を区別して消費し取消で元の構成と値へ戻る()
+        {
+            var f = new SimpleCardFactory(); var a = f.CreateById("sword"); var b = f.CreateById("sword");
+            var t = f.CreateById("tuning"); var deck = new Deck(new List<Card>{a,b,t});
+            var cs = new CustomScreenSystem(deck, tuningSystem: new TuningSystem(f.GetTuningDefinition));
+            cs.Open(new Card[0], new MockRandomProvider(0));
+            var preview = cs.PreviewCustomization(new[]{t,a}); Assert.IsTrue(preview.CanExecute);
+            Assert.AreEqual(40, preview.ResultCard.GetFinalPower()); Assert.AreEqual(3,cs.CurrentHand.Count);
+            var result = cs.ExecuteTuning(a,t).ResultCard;
+            Assert.IsNotNull(result); Assert.AreEqual(2,cs.CurrentHand.Count); Assert.Contains(b,cs.CurrentHand.ToList());
+            Assert.IsFalse(cs.ExecuteTuning(a,t).IsSuccess); Assert.AreEqual(30,b.GetFinalPower());
+            Assert.IsTrue(cs.TryUndoCustomization()); Assert.AreEqual(2,cs.CurrentHand.Count(c=>c.Id=="sword"));
+            Assert.AreEqual(1,cs.CurrentHand.Count(c=>c.Id=="tuning"));
+            Assert.AreEqual(3,cs.CurrentHand.Distinct().Count()); Assert.AreEqual(30,a.GetFinalPower());
+            Assert.AreEqual(0,a.TuningCount); Assert.IsFalse(cs.TryUndoCustomization());
+        }
+
+        [Test]
+        public void 調律は総回数に応じて加算し上位生成では標準状態へ戻る()
+        {
+            var f = new SimpleCardFactory(); var tuning = new TuningSystem(f.GetTuningDefinition);
+            var a = f.CreateById("sword"); var material = f.CreateById("tuning");
+            var first=tuning.Execute(a,material).ResultCard; var second=tuning.Execute(first,material).ResultCard;
+            Assert.AreEqual(50,second.GetFinalPower()); Assert.AreEqual(2,second.TuningCount);
+            Assert.AreEqual(1,second.GetFinalCost()); Assert.AreEqual(a.Element,second.Element);
+            var upper=f.CreateExceeded(second,ExceedLevel.Lv1); Assert.AreEqual(45,upper.GetFinalPower());
+            Assert.AreEqual(0,upper.TuningCount); Assert.AreEqual(30,a.GetFinalPower());
+            Assert.IsNull(f.GetTuningDefinition(f.CreateById("bomb")));
+        }
+
+        [TestCase(ExceedLevel.Normal,ExceedLevel.Lv1,45)]
+        [TestCase(ExceedLevel.Lv1,ExceedLevel.Lv2,60)]
+        [TestCase(ExceedLevel.Lv2,ExceedLevel.Lv3,90)]
+        public void ソード上位定義は元の加工値によらず固定値と固有名を参照する(ExceedLevel before,ExceedLevel after,int power)
+        {
+            var f=new SimpleCardFactory();var normal=f.CreateById("sword");
+            var a=before==ExceedLevel.Normal?normal:f.CreateExceeded(normal,before);
+            a.Modifier.BonusDamage=999; Assert.IsTrue(f.HasExceededDefinition(a,after));
+            var result=new ExceedSystem(f).Execute(a,a.Clone()).ResultCard;
+            Assert.AreEqual(power,result.GetFinalPower()); Assert.AreNotEqual(a.Name,result.Name);
+            Assert.AreEqual(a.Series,result.Series); Assert.AreEqual(after,result.ExceedLevel);
+            Assert.AreEqual(0,result.Modifier.BonusDamage); Assert.AreEqual(0,result.TuningCount);
+            Assert.IsFalse(f.HasExceededDefinition(f.CreateById("bomb"),ExceedLevel.Lv1));
+            Assert.IsFalse(f.HasExceededDefinition(normal,ExceedLevel.Lv3));
+        }
+
+        [Test]
+        public void 超越確定の素材消費と取消は元の二個体を復元する()
+        {
+            var f=new SimpleCardFactory();var a=f.CreateById("sword");var b=f.CreateById("sword");
+            var deck=new Deck(new List<Card>{a,b});var cs=new CustomScreenSystem(deck,exceedSystem:new ExceedSystem(f));
+            cs.Open(new Card[0],new MockRandomProvider(0));var preview=cs.PreviewCustomization(new[]{a,b});
+            Assert.IsTrue(preview.CanExecute);Assert.AreEqual(2,cs.CurrentHand.Count);
+            var result=cs.ExecuteExceed(a,b);Assert.IsTrue(result.IsSuccess);Assert.AreEqual(1,cs.CurrentHand.Count);
+            Assert.IsFalse(cs.ExecuteExceed(a,b).IsSuccess);Assert.IsTrue(cs.TryUndoCustomization());
+            Assert.AreEqual(2,cs.CurrentHand.Count(c=>c.Id=="sword"&&c.Power==30&&c.ExceedLevel==ExceedLevel.Normal));
+            Assert.AreEqual(2,cs.CurrentHand.Distinct().Count());
+            Assert.AreEqual(2,deck.GetAllCards().Count);Assert.AreEqual(30,a.Power);
+        }
+    }
+
 }

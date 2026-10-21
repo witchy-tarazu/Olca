@@ -165,107 +165,12 @@ var poisonArrow = new Card(
 
 ---
 
-## 3. 実装の注意点
+## 3. 現在の実行接続（2026-10-21）
 
-### 3.1. ModifiableCardEffectでの派生処理
+通常入力はCardUsageSystem.TryUseCurrentCardAsyncを通る。ModifiableCardEffectはOnHit/OnDamage等を既存経路で実行し、BattleContextが同じ使用から発生したチェインの前後隙を追跡する。子・孫・並列の最終後隙を待ち、ExtendRecoveryDuringDerivative=trueの元カードだけ、その後に自分の後隙とキャンセル窓を開始する。falseでは既存の独立効果を待たない。未指定の秒値、個別フレーム値、製品既定値は変更しない。
 
-現在の `ModifiableCardEffect.cs` では、`AdditionalEffect` を即座に適用していますが、
-新仕様に対応するためには以下の変更が必要です：
+投擲の飛翔と着弾後の派生は別寿命。全体仕様§7/カード効果仕様6.4に従い、発射済み効果を待たず元の後隙終了で次の行動が可能。暗転系は前後隙待機を省略する。通常APIでは発生後の中断は使用済みとし、登録済みの派生を取消さず旧動作の制限だけを解除する。新しい動作は旧コールバックの完了に影響されない。
 
-```csharp
-// 【TODO】将来的な実装
-private void ApplyAdditionalEffect(
-    BattleContext context,
-    AdditionalEffect effect,
-    ref List<Enemy> targets,
-    int damage,
-    ElementType element)
-{
-    switch (effect.Trigger)
-    {
-        case DerivativeTrigger.Immediate:
-            // 即座に発動
-            ExecuteEffect(effect, context, targets, damage, element);
-            break;
+DelayedEffectSystemは実行・穴落下・Clearで寿命を一度だけ終了し、例外時もfinallyで解放する。時計は既存60Hz論理フレームを使い、ポーズ/カスタムでは進行しない。描画のTime.deltaTimeによる別の硬直タイマーは使用しない。同期Executeは従来の直接効果入口であり、通常入力の行動制限を新設するものではない。
 
-        case DerivativeTrigger.OnHit:
-            // ヒット時に派生（敵に命中した後に発動）
-            context.RegisterOnHitCallback(() =>
-            {
-                ExecuteEffect(effect, context, targets, damage, element);
-            });
-            break;
-
-        case DerivativeTrigger.OnDamage:
-            // ダメージ時に派生（ダメージを与えた後に発動）
-            context.RegisterOnDamageCallback((damagedEnemy) =>
-            {
-                ApplyStatusEffect(effect, damagedEnemy);
-            });
-            break;
-    }
-}
-```
-
-### 3.2. 硬直時間の制御
-
-**Application層** (BattleController等) で硬直時間を管理する必要があります：
-
-```csharp
-public class BattleController : MonoBehaviour
-{
-    private float recoveryTimer = 0f;
-    private bool isRecovering = false;
-
-    public void UseCard(Card card)
-    {
-        // カード効果を実行
-        var effect = CardEffectFactory.CreateEffect(card);
-        effect.Execute(battleContext);
-
-        // 硬直時間を設定
-        recoveryTimer = card.RecoveryTime;
-        isRecovering = true;
-
-        // 派生効果中の硬直を考慮
-        if (card.ExtendRecoveryDuringDerivative)
-        {
-            // 派生効果の終了を監視して硬直時間を延長
-            // TODO: 実装
-        }
-    }
-
-    private void Update()
-    {
-        if (isRecovering)
-        {
-            recoveryTimer -= Time.deltaTime;
-            if (recoveryTimer <= 0f)
-            {
-                isRecovering = false;
-                // 硬直解除
-            }
-        }
-    }
-}
-```
-
----
-
-## 4. まとめ
-
-### 実装済み
-- ✅ CardMasterに `RecoveryTime` と `ExtendRecoveryDuringDerivative` を追加
-- ✅ Cardクラスに硬直時間プロパティを追加
-- ✅ AdditionalEffectに `DerivativeTrigger` を追加
-- ✅ AdditionalEffectTypeに状態異常とパネル変化を追加
-
-### 今後の実装予定
-- ⏳ ModifiableCardEffectでの派生効果の実装（OnHit/OnDamage分岐）
-- ⏳ Application層での硬直時間制御
-- ⏳ 状態異常システム（麻痺、毒、混乱、盲目）の実装
-- ⏳ BattleContextへのコールバック機能追加
-
----
-
-更新日: 2026-01-03
+保存形式は変更せずBattleStartへ戻る。旧戦闘の待機/遅延を新戦闘へ持ち越さない。検証結果と仮判断・GUI範囲はPlanning/暫定実装一覧.md末尾を参照。新しい連続技や製品の付与元は今回追加していない。

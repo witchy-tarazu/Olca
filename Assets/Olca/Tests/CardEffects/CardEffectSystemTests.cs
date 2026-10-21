@@ -37,6 +37,36 @@ namespace Olca.Tests.CardEffects
             battle = new BattleSystem(player, enemies, deck, logger: logger);
         }
 
+        [TestCase("sword")][TestCase("fire_sword")]
+        public void 製品ソードは遠方に飛ばず発動位置の隣接マスだけに命中する(string id)
+        {
+            var factory=new Olca.Application.Battle.SimpleCardFactory();
+            var card=factory.CreateById(id);var originalTarget=card.TargetType;
+            var effect=CardEffectFactory.CreateEffect(card);
+            player.MoveTo(new Vector2Int(1,0));
+            effect.Execute(new BattleContext(battle,card));
+            Assert.AreEqual(50,enemies[0].CurrentHp);Assert.AreEqual(60,enemies[1].CurrentHp);
+            player.MoveTo(new Vector2Int(2,0));effect.Execute(new BattleContext(battle,card));
+            Assert.AreEqual(System.Math.Max(0,50-card.Power),enemies[0].CurrentHp);
+            Assert.AreEqual(60,enemies[1].CurrentHp);Assert.AreEqual(originalTarget,card.TargetType);
+        }
+        [Test]
+        public void ソードの明示範囲と通常射撃の既定値を上書きしない()
+        {
+            player.MoveTo(new Vector2Int(1,0));
+            var explicitSword=new Card("sword","明示ソード",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,10,"明示2マス",DamageTargetType.FrontTwoTiles);
+            CardEffectFactory.CreateEffect(explicitSword).Execute(new BattleContext(battle,explicitSword));Assert.AreEqual(40,enemies[0].CurrentHp);
+            var cannon=new Card("cannon","射撃",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,10,"単体射撃");
+            CardEffectFactory.CreateEffect(cannon).Execute(new BattleContext(battle,cannon));Assert.AreEqual(30,enemies[0].CurrentHp);
+        }
+        [TestCase(ExceedLevel.Lv1)][TestCase(ExceedLevel.Lv2)][TestCase(ExceedLevel.Lv3)]
+        public void 超越ソードも既存IDで前方1マスを維持する(ExceedLevel level)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var card=f.CreateExceeded(f.CreateById("sword"),level);
+            player.MoveTo(new Vector2Int(1,0));CardEffectFactory.CreateEffect(card).Execute(new BattleContext(battle,card));
+            Assert.AreEqual(50,enemies[0].CurrentHp);
+        }
+
         [Test]
         public void ModifiableCardEffectで単体攻撃できる()
         {

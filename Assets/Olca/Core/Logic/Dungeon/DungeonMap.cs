@@ -11,10 +11,30 @@ namespace Olca.Core.Logic.Dungeon
     public class DungeonMap
     {
         private readonly List<MapCell> cells;
+        public IReadOnlyList<DungeonVisitDefinition> Visits { get; }
+        public IReadOnlyList<int> StrongEnemyCells { get; }
+        public IReadOnlyList<ItemRewardEntry> ItemRewards { get; }
+        public int ItemRewardChance { get; }
+        public IReadOnlyList<ExplorationTerrainCell> ExplorationTerrain { get; }
+        public ExplorationTerrainCell GetTerrain(int cell) => ExplorationTerrain.FirstOrDefault(t=>t.Cell==cell);
+        private readonly Dictionary<int,PanelType> terrainChanges = new Dictionary<int,PanelType>();
+        public PanelType GetTerrainType(int cell) => terrainChanges.TryGetValue(cell,out var type)?type:GetTerrain(cell)?.Type??PanelType.Normal;
+        internal void SetTerrainType(int cell,PanelType type)
+        {
+            if(cell<0||cell>=TotalCellCount)throw new ArgumentOutOfRangeException(nameof(cell));
+            if(type==(GetTerrain(cell)?.Type??PanelType.Normal))terrainChanges.Remove(cell);else terrainChanges[cell]=type;
+        }
+        internal CheckpointTerrainStateDto[] CaptureTerrainChanges()=>terrainChanges.OrderBy(t=>t.Key).Select(t=>new CheckpointTerrainStateDto{Cell=t.Key,Type=t.Value}).ToArray();
+        internal void RestoreTerrainChanges(CheckpointTerrainStateDto[] changes)
+        {
+            terrainChanges.Clear();foreach(var t in changes??Array.Empty<CheckpointTerrainStateDto>())SetTerrainType(t.Cell,t.Type);
+        }
         private readonly int totalCellCount;
 
         public DungeonMap(DungeonConfig config)
         {
+            ExplorationTerrain=config.ExplorationTerrain;
+            Visits=config.Visits;StrongEnemyCells=config.StrongEnemyCells;ItemRewards=config.ItemRewards;ItemRewardChance=config.ItemRewardChance;
             cells = new List<MapCell>(config.MapCells);
             totalCellCount = config.TotalCellCount;
         }

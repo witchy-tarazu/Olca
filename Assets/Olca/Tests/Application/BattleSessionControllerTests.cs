@@ -83,6 +83,47 @@ namespace Olca.Tests.Application
             return (session, battleView, customScreenView, logger);
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 風カードは通常入力実行と停止復帰を経て防御を剥がす(bool aura)
+        {
+            var battle = CreateBattleSystem(); var target = battle.Enemies[0];
+            target.MoveTo(new Vector2Int(1, 0)); target.ApplyStun(60000);
+            var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            if (aura) target.SetAura(10000); else target.SetBarrier(10000);
+            var card = new Card("wind-fixture", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.Sword, 1, "検証", properties: AttackProperty.Wind);
+            int used = 0; battle.CardUsage.OnCardUsed += c => used++;
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            for (int frame = 1; frame <= 240 && used == 0; frame++)
+                session.ProcessLogicalFrame(() => {
+                    if (frame == 1) session.UseCardFromInput();
+                    if (frame == 2) battle.Pause(BattlePauseReason.User);
+                    if (frame == 6) battle.Resume(BattlePauseReason.User);
+                    battle.TickFrame(17);
+                });
+            Assert.AreEqual(1, used); Assert.AreEqual(50, target.CurrentHp);
+            Assert.IsFalse(target.HasBarrier || target.HasAura); Assert.IsFalse(target.IsInvincible);
+            session.Detach();
+        }
+
+        [Test]
+        public void 選択枚数の四角はコストや残数でなく選択枚数だけ黄色になる()
+        {
+            var root=new UnityEngine.GameObject("selection-count");root.SetActive(false);var view=root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
+            var row=new UnityEngine.GameObject("SelectionIndicator",typeof(UnityEngine.RectTransform));row.transform.SetParent(root.transform,false);
+            var images=new UnityEngine.UI.Image[5];for(int i=0;i<5;i++){var o=new UnityEngine.GameObject("count"+i,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));o.transform.SetParent(row.transform,false);images[i]=o.GetComponent<UnityEngine.UI.Image>();images[i].rectTransform.anchoredPosition=new UnityEngine.Vector2(i*50,0);}
+            var a=new Card("a","A",3,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,10,"A");
+            var b=new Card("b","B",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,10,"B");
+            var screen=new Olca.Core.Logic.Battle.CustomScreenSystem(new Deck(new System.Collections.Generic.List<Card>{a,b}));
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("customScreen",flags).SetValue(view,screen);
+            var refresh=typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags);
+            void Check(int n){refresh.Invoke(view,null);for(int i=0;i<5;i++)Assert.AreEqual(i<n,images[i].color==UnityEngine.Color.yellow);}
+            try{screen.Open(System.Array.Empty<Card>(),new MockRandomProvider());Check(0);Assert.IsTrue(screen.TrySelectCard(a));Check(1);Assert.AreEqual(3,screen.GetTotalUsedCost());Assert.IsTrue(screen.TrySelectCard(b));Check(2);Assert.IsTrue(screen.TryDeselectCard(b));Check(1);screen.Confirm();Check(0);screen.CompleteClose();screen.Open(new System.Collections.Generic.List<Card>(screen.AvailableCards),new MockRandomProvider());Check(0);}
+            finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+
         [Test] public void 描画の閉じる処理が未完了でも論理期限で一度だけ戦闘を再開する()
         {
             var waiting = new TaskCompletionSource<bool>(); var view = new MockBattleView { CloseTask = waiting.Task };

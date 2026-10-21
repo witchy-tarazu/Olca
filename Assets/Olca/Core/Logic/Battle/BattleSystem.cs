@@ -14,6 +14,29 @@ namespace Olca.Core.Logic.Battle
     public class BattleSystem
     {
         private readonly PlayerCharacter player;
+        public TransformationAttackDefinition ActivePlayerAttack => Transformations.ActiveAttack ?? player.DepartureStyle.Attack;
+        public int BasicAttackRange => Transformations.ActiveId==null?1+(player.AttackGrowth?.RangeBonus??0):1;
+        private Enemy FindBasicAttackTarget()
+        {
+            Enemy nearest=null;
+            foreach(var enemy in enemies){
+                int distance=enemy.GridPosition.X-player.GridPosition.X;
+                if(!enemy.IsDead&&enemy.GridPosition.Y==player.GridPosition.Y&&distance>0&&distance<=BasicAttackRange&&
+                    (nearest==null||enemy.GridPosition.X<nearest.GridPosition.X))nearest=enemy;
+            }
+            return nearest;
+        }
+        public int ResolveBasicChargeFrames(int fallback)
+        {
+            int frames=ActivePlayerAttack?.ChargeFrames??fallback;
+            return Transformations.ActiveId==null?player.AttackGrowth?.ChargeFrames(frames)??frames:frames;
+        }
+        public int ResolveBasicIntervalFrames(int fallback)
+        {
+            int frames=ActivePlayerAttack?.IntervalFrames??fallback;
+            return Transformations.ActiveId==null?player.AttackGrowth?.IntervalFrames(frames)??frames:frames;
+        }
+        public ElementType ActivePlayerElement => ActivePlayerAttack?.Element ?? ElementType.None;
         private readonly List<Enemy> enemies;
         private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
         private readonly Dictionary<Enemy, Action<Vector2Int>> enemyPositionHandlers = new Dictionary<Enemy, Action<Vector2Int>>();
@@ -79,6 +102,75 @@ namespace Olca.Core.Logic.Battle
         /// <summary>遅延効果システム</summary>
         public DelayedEffectSystem DelayedEffects => delayedEffects;
 
+        private object playerActionOwner;
+        private Action cancelPlayerAction;
+        private bool basicAction;
+        private long recoveryStarted;
+        private int? recoveryCancelFrames;
+        public PlayerAttackPhase PlayerActionPhase { get; private set; }
+        public bool HasPlayerAction => playerActionOwner != null;
+        public bool CanCancelPlayerRecovery => PlayerActionPhase == PlayerAttackPhase.Recovery &&
+            recoveryCancelFrames.HasValue && actionTimeUnits - recoveryStarted >= recoveryCancelFrames.Value * 50L;
+        public int RecoveryElapsedFrames => PlayerActionPhase == PlayerAttackPhase.Recovery ? (int)((actionTimeUnits - recoveryStarted) / 50) : 0;
+        private PlayerAttackTiming basicTiming = new PlayerAttackTiming();
+        private readonly Dictionary<string, PlayerAttackTiming> cardTimings = new Dictionary<string, PlayerAttackTiming>();
+        public void ConfigureBasicAttackTiming(PlayerAttackTiming timing)
+        { if (HasPlayerAction) throw new InvalidOperationException("動作中は時間定義を変更できません"); basicTiming = timing ?? throw new ArgumentNullException(nameof(timing)); }
+        public void ConfigureCardAttackTiming(string id, PlayerAttackTiming timing)
+        { if (HasPlayerAction) throw new InvalidOperationException("動作中は時間定義を変更できません"); if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("カードIDが必要です"); cardTimings[id] = timing ?? throw new ArgumentNullException(nameof(timing)); }
+        internal PlayerAttackTiming CardTiming(Card card) => cardTimings.TryGetValue(card.Id, out var timing) ? timing : null;
+        internal object BeginPlayerAction(bool basic, Action cancel)
+        {
+            if (HasPlayerAction) throw new InvalidOperationException("行動は同時に開始できません");
+            playerActionOwner = new object(); basicAction = basic; cancelPlayerAction = cancel;
+            PlayerActionPhase = PlayerAttackPhase.Startup; return playerActionOwner;
+        }
+        internal void SetPlayerActionPhase(object owner, PlayerAttackPhase phase, int? cancelAfter = null)
+        {
+            if (!ReferenceEquals(owner, playerActionOwner)) return;
+            PlayerActionPhase = phase;
+            if (phase == PlayerAttackPhase.Recovery) { recoveryStarted = actionTimeUnits; recoveryCancelFrames = cancelAfter; }
+        }
+        internal void EndPlayerAction(object owner)
+        {
+            if (!ReferenceEquals(owner, playerActionOwner)) return;
+            playerActionOwner = null; cancelPlayerAction = null; PlayerActionPhase = PlayerAttackPhase.None; recoveryCancelFrames = null;
+        }
+        public bool TryPreparePlayerAttack()
+        {
+            if (!CanPlayerBasicAttack) return false;
+            if (HasPlayerAction) cancelPlayerAction?.Invoke();
+            return !HasPlayerAction;
+        }
+        public void CancelBasicAction() => InterruptBasicAction();
+        private void InterruptBasicAction() { if (basicAction && HasPlayerAction) cancelPlayerAction?.Invoke(); }
+        public void CancelBasicStartupForFormChange()
+        { if (PlayerActionPhase == PlayerAttackPhase.Startup) InterruptBasicAction(); }
+        public bool TryStartPlayerBasicAttack(bool charged, int fallbackChargeMultiplier = 2)
+        {
+            if (fallbackChargeMultiplier < 1) throw new ArgumentOutOfRangeException(nameof(fallbackChargeMultiplier));
+            if (!TryPreparePlayerAttack()) return false;
+            var attack = ActivePlayerAttack;
+            long percent = attack != null ? (charged ? attack.ChargedPowerPercent : attack.NormalPowerPercent) : charged ? 100L * fallbackChargeMultiplier : 100;
+            var timing = attack?.Timing ?? basicTiming;
+            ResolveBasicActionAsync(percent, timing, Transformations.ActiveId).Forget();
+            return true;
+        }
+        private async UniTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form)
+        {
+            var cts = new CancellationTokenSource(); var owner = BeginPlayerAction(true, () => cts.Cancel());
+            try {
+                await WaitForActionFramesAsync(timing.StartupFrames, cts.Token);
+                if (IsGameOver || player.IsActionPrevented || Transformations.ActiveId != form) return;
+                SetPlayerActionPhase(owner, PlayerAttackPhase.Executing);
+                var target=FindBasicAttackTarget();if(target!=null)ApplyPlayerBasicAttack(target,percent);
+                if (IsGameOver) return;
+                SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing.CancelAfterFrames);
+                await WaitForActionFramesAsync(timing.RecoveryFrames, cts.Token);
+            } catch (OperationCanceledException) { }
+            finally { EndPlayerAction(owner); cts.Dispose(); }
+        }
+
         /// <summary>バトル状態</summary>
         public BattleState State => state;
 
@@ -112,8 +204,9 @@ namespace Olca.Core.Logic.Battle
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
+            customScreen.OnOpening += OnTransformationPhaseOpening;
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
-            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => !IsPaused && !IsGameOver && cardUsage.InFlightCard == null && !player.IsActionPrevented);
+            this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => !IsPaused && !IsGameOver && !HasPlayerAction && cardUsage.InFlightCard == null && !player.IsActionPrevented);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
             this.delayedEffects = new DelayedEffectSystem(this);
@@ -129,6 +222,7 @@ namespace Olca.Core.Logic.Battle
             player.OnPositionChanged += OnPlayerPositionChanged;
 
             // プレイヤー死亡時の処理
+            player.BattleElement = () => ActivePlayerAttack?.Element;
             player.IsOnGrass = () => battleField.GetPanelType(player.GridPosition) == PanelType.Grass;
             player.OnDamageProcessingStarted += BeginResolution;
             player.OnDamageProcessingCompleted += EndResolution;
@@ -143,7 +237,6 @@ namespace Olca.Core.Logic.Battle
                     onHit: target => { if (!target.IsDead) target.SetInvincible(DefaultHitInvincibilityMs); }) });
 
             // カスタム画面イベントの購読
-            customScreen.OnScreenOpened += OnTransformationPhaseOpened;
             customScreen.OnConfirmed += OnCustomScreenConfirmed;
             customScreen.OnScreenClosed += OnCustomScreenClosed;
 
@@ -166,6 +259,7 @@ namespace Olca.Core.Logic.Battle
                     // 一時ヒット座標だけの変更を新しい接地へ転用しない。
                     if (enteredLogicalPosition)
                     {
+                        panelEffects.OnCharacterMoved(player);
                         if (enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == logicalPosition))
                             panelEffects.ApplyOnEnemyEnterEffect(enemies, player, logicalPosition);
                         else panelEffects.ApplyOnEnterEffect(player, logicalPosition);
@@ -191,6 +285,7 @@ namespace Olca.Core.Logic.Battle
                     BeginResolution();
                     try
                     {
+                        panelEffects.OnCharacterMoved(enemy);
                         panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
                         panelEffects.ApplyOnEnemyEnterEffect(enemies, player, position);
                     }
@@ -249,7 +344,9 @@ namespace Olca.Core.Logic.Battle
             foreach (var enemy in participants) { enemy.BeginStatusFrame(); enemy.BeginHpFrame(); }
             try
             {
-                if (player.BeginParalysisFrame(!IsPaused)) { cardUsage.InterruptCurrentCard(); playerMovement.InterruptNormalMove(); }
+                if (player.BeginParalysisFrame(!IsPaused)) { cardUsage.InterruptCurrentCard(); InterruptBasicAction(); playerMovement.InterruptNormalMove(); }
+                player.BeginConfusionFrame(!IsPaused);
+                player.BeginBlindnessFrame(!IsPaused);
                 action();
             }
             finally
@@ -259,6 +356,8 @@ namespace Olca.Core.Logic.Battle
                 // 全員のHPを確定してから通知し、勝敗と保存境界はその後に処理する。
                 player.CommitHpFrame();
                 player.EndParalysisFrame(!IsPaused);
+                player.EndConfusionFrame(!IsPaused);
+                player.EndBlindnessFrame(!IsPaused);
                 foreach (var enemy in committed) enemy.CommitHpFrame();
                 foreach (var enemy in committed)
                 {
@@ -285,7 +384,7 @@ namespace Olca.Core.Logic.Battle
         public void Tick(int deltaTimeMs, IInputProvider input = null)
         {
             if (IsPaused || IsGameOver) return;
-            if (statusFrameParticipants == null && (player.HasParalysisState || player.HasPoisonState)) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
+            if (statusFrameParticipants == null && (player.HasParalysisState || player.HasPoisonState || player.HasConfusionState || player.HasBlindnessState || panelEffects.HasRecoveryPanels)) { RunLogicalFrame(() => Tick(deltaTimeMs, input)); return; }
 
             // 追加登録・通知は即時だが、Tick途中の召喚へ過去の経過時間を渡さない。
             // 状態異常とAIは同じ開始時参加者だけを更新する。
@@ -302,7 +401,7 @@ namespace Olca.Core.Logic.Battle
 
                 // 入力遮断中も自動滑り・移動待機時間は進める。能動入力だけを分離する。
                 playerMovement.Tick(deltaTimeMs, input, enemies, logicalFrameTick);
-                panelEffects.Tick(deltaTimeMs, player);
+                panelEffects.Tick(deltaTimeMs, player, tickParticipants, logicalFrameTick);
 
                 // 遅延効果を更新（投擲物の着弾など）
                 delayedEffects.Update(deltaTimeMs, logicalFrameTick);
@@ -311,6 +410,8 @@ namespace Olca.Core.Logic.Battle
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
                 player.TickStagger(deltaTimeMs, logicalFrameTick);
                 player.TickParalysis(deltaTimeMs, logicalFrameTick);
+                player.TickConfusion(deltaTimeMs, logicalFrameTick);
+                player.TickBlindness(deltaTimeMs, logicalFrameTick);
                 player.TickPoisons(deltaTimeMs, logicalFrameTick);
                 player.TickProtection(deltaTimeMs, logicalFrameTick);
                 player.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
@@ -322,8 +423,7 @@ namespace Olca.Core.Logic.Battle
                     enemy.TickProtection(deltaTimeMs, logicalFrameTick);
                     enemy.TickInvincible(deltaTimeMs, logicalFrameTick);
                     enemy.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
-                    int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
-                    if (poisonDamage > 0) enemy.TakePoisonDamage(poisonDamage);
+                    enemy.TickStatusesAndApply(deltaTimeMs, logicalFrameTick);
                 }
 
                 // 敵のAI更新
@@ -364,6 +464,8 @@ namespace Olca.Core.Logic.Battle
         /// プレイヤーの基本攻撃
         /// </summary>
         public void PlayerBasicAttack(Enemy target)
+        { if (!HasPlayerAction) ApplyPlayerBasicAttack(target, ActivePlayerAttack?.NormalPowerPercent ?? 100); }
+        private void ApplyPlayerBasicAttack(Enemy target, long powerPercent)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
@@ -372,8 +474,8 @@ namespace Olca.Core.Logic.Battle
             BeginResolution();
             try
             {
-                int damage = player.AttackPower;
-                target.TakeDamage(damage, ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
+                int damage = (int)Math.Min(int.MaxValue, (decimal)player.AttackPower * powerPercent / 100);
+                target.TakeDamage(damage, ActivePlayerAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
                 OnPlayerAttack?.Invoke(target, damage);
@@ -381,17 +483,29 @@ namespace Olca.Core.Logic.Battle
             finally { EndResolution(); }
         }
 
-        // 暫定通常攻撃: 既存の右向きグリッドで前方1マスの先配置の生存敵1体。
-        public bool CanPlayerBasicAttack => !IsGameOver && !IsPaused && !player.IsDead && cardUsage.InFlightCard == null &&
+        // 暫定通常攻撃: 既存の右向きグリッドで前方射程内で最も近い生存敵1体。同居は配置順を維持する。
+        public bool CanPlayerBasicAttack => !IsGameOver && !IsPaused && !player.IsDead &&
+            (cardUsage.InFlightCard == null || CanCancelPlayerRecovery) && (!HasPlayerAction || CanCancelPlayerRecovery) &&
             !playerMovement.IsNormalMoving && !player.IsActionPrevented;
-        public bool TryPlayerBasicAttackForward()
+        public bool TryPlayerBasicAttackForward(int multiplier = 1)
         {
-            if (!CanPlayerBasicAttack) return false;
-            foreach (var enemy in enemies)
-                if (!enemy.IsDead && enemy.GridPosition.X == player.GridPosition.X + 1 && enemy.GridPosition.Y == player.GridPosition.Y) {
-                    PlayerBasicAttack(enemy); return true;
-                }
-            return false;
+            if (multiplier < 1) throw new ArgumentOutOfRangeException(nameof(multiplier));
+            long percent = (long)(ActivePlayerAttack?.NormalPowerPercent ?? 100) * multiplier;
+            return TryPlayerBasicAttackForwardWithPercent(percent);
+        }
+        public bool TryPlayerBasicAttackForward(bool charged, int fallbackChargeMultiplier = 2)
+        {
+            if (fallbackChargeMultiplier < 1) throw new ArgumentOutOfRangeException(nameof(fallbackChargeMultiplier));
+            var attack = ActivePlayerAttack;
+            long percent = attack != null ? (charged ? attack.ChargedPowerPercent : attack.NormalPowerPercent)
+                : charged ? 100L * fallbackChargeMultiplier : 100;
+            return TryPlayerBasicAttackForwardWithPercent(percent);
+        }
+        private bool TryPlayerBasicAttackForwardWithPercent(long powerPercent)
+        {
+            if (HasPlayerAction || !CanPlayerBasicAttack) return false;
+            var target=FindBasicAttackTarget();if(target==null)return false;
+            ApplyPlayerBasicAttack(target,powerPercent);return true;
         }
 
         private sealed class ActionWait
@@ -413,6 +527,16 @@ namespace Olca.Core.Logic.Battle
             var wait = new ActionWait {
                 Deadline = actionTimeUnits + Math.Max(1, (long)Math.Ceiling(seconds * 3000d - 0.0005d))
             };
+            actionWaits.Add(wait);
+            if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
+            return wait.Completion.Task;
+        }
+        internal UniTask WaitForActionFramesAsync(int frames, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
+            if (frames <= 0) return UniTask.CompletedTask;
+            var wait = new ActionWait { Deadline = actionTimeUnits + frames * 50L };
             actionWaits.Add(wait);
             if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
             return wait.Completion.Task;
@@ -441,14 +565,14 @@ namespace Olca.Core.Logic.Battle
                 return;
             }
 
+            if (customScreen.IsOpen) return;
             // 未使用カードを取得してカスタム画面に渡す
             var remainingCards = cardUsage.GetRemainingCards();
             customScreen.Open(remainingCards, random);
             Pause();
         }
 
-        // 開き直しが実際に成立した時だけ、確定済み変身の残回数を進める。
-        private void OnTransformationPhaseOpened(List<Card> hand)
+        private void OnTransformationPhaseOpening()
         {
             if (!IsGameOver) player.AdvanceTransformationPhase();
         }
@@ -502,6 +626,7 @@ namespace Olca.Core.Logic.Battle
         private void OnPlayerStaggered()
         {
             cardUsage.InterruptCurrentCard();
+            InterruptBasicAction();
             playerMovement.InterruptNormalMove();
             logger?.LogInfo("プレイヤーがのけぞり - カード効果を中断");
         }
@@ -549,6 +674,7 @@ namespace Olca.Core.Logic.Battle
             // 戦闘限定バフは勝敗通知より前に解除し、同じプレイヤーを使う次戦へ残さない。
             player.SetConcentrateBuff(1f);
             player.SetBarrier(0);
+            panelEffects.Clear();
             player.TerrainState.Clear();
             foreach (var enemy in enemies)
             {
@@ -573,6 +699,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            panelEffects.Clear();
             foreach (var entry in enemyDeathHandlers)
             {
                 entry.Key.CancelStatusFrame();
@@ -594,19 +721,23 @@ namespace Olca.Core.Logic.Battle
             battleField.SetOccupancyQuery(null);
             battleField.SetProtectedPosition(null);
             player.IsOnGrass = null;
+            player.BattleElement = null;
             player.ClearInvincibility();
             player.ClearStagger();
             player.ResetParalysis();
+            player.ResetConfusion();
+            player.ResetBlindness();
+            InterruptBasicAction();
             player.ClearPoiseRecovery();
             player.SetAura(0);
             player.EndTransformationDefense();
+            customScreen.OnOpening -= OnTransformationPhaseOpening;
             Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
             player.OnDeath -= OnPlayerDeath;
             player.OnStaggered -= OnPlayerStaggered;
             playerMovement.InterruptNormalMove();
-            customScreen.OnScreenOpened -= OnTransformationPhaseOpened;
             customScreen.OnConfirmed -= OnCustomScreenConfirmed;
             customScreen.OnScreenClosed -= OnCustomScreenClosed;
             enemies.RemoveAll(enemy => enemy.IsSummoned);

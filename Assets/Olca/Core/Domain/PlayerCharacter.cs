@@ -10,6 +10,23 @@ namespace Olca.Core.Domain
     {
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
+        public AttackMilestoneGrowth AttackGrowth { get; private set; }
+        public void SetAttackGrowth(AttackMilestoneGrowth growth)
+        {
+            if(departureStyleFixed||AttackGrowth!=null)throw new InvalidOperationException("攻略中の節目成長は変更できません");
+            AttackGrowth=growth??throw new ArgumentNullException(nameof(growth));
+        }
+        public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
+        private bool departureStyleFixed;
+        internal void FreezeDepartureStyle() => departureStyleFixed = true;
+        internal Func<ElementType?> BattleElement;
+        public ElementType ActiveElement => BattleElement?.Invoke() ?? DepartureStyle.Attack?.Element ?? ElementType.None;
+        /// <summary>新規出撃または保存復元時に一度だけ固定する。戦闘中の切替は一時変身が所有する。</summary>
+        public void SetDepartureStyle(DepartureStyleDefinition style)
+        {
+            if (departureStyleFixed) throw new InvalidOperationException("攻略中のスタイルは変更できません");
+            DepartureStyle = style ?? throw new ArgumentNullException(nameof(style)); departureStyleFixed = true;
+        }
 
         public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
         public ElementResistances ActiveResistances => previewTransformationResistances ?? transformationResistances ?? Resistances;
@@ -58,7 +75,6 @@ namespace Olca.Core.Domain
         public void ApplyPoison(string kind, StatusEffect effect, int intervalFrames)
         {
             if (string.IsNullOrWhiteSpace(kind)) throw new ArgumentException("毒種が必要です");
-            if (HasParalysisState) throw new NotSupportedException("プレイヤー毒と麻痺の共存は未確定です");
             if (IsDead) return;
             if (!poisons.TryGetValue(kind, out var state)) {
                 state = new TimedPoisonState();
@@ -76,7 +92,7 @@ namespace Olca.Core.Domain
         }
         public void RestorePoisons(PlayerPoisonDto[] values)
         {
-            if (frameHp.Active || HasParalysisState) throw new InvalidOperationException("状態更新中は毒を復元できません");
+            if (frameHp.Active) throw new InvalidOperationException("状態更新中は毒を復元できません");
             var restored = new Dictionary<string, TimedPoisonState>();
             foreach (var value in values ?? Array.Empty<PlayerPoisonDto>()) {
                 if (value == null) throw new ArgumentException("毒状態が欠落しています");
@@ -116,7 +132,6 @@ namespace Olca.Core.Domain
         {
             if (durationFrames <= 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
             if (IsDead) return;
-            if (HasPoisonState) throw new NotSupportedException("プレイヤー毒と麻痺の共存は未確定です");
             pendingParalysisFrames = durationFrames;
             // 既存の敵状態処理と同じく、フレーム内の解除予約を再付与で打ち消さない。
             if (!paralysisFrameOpen) clearParalysisPending = false;
@@ -149,6 +164,74 @@ namespace Olca.Core.Domain
             paralysisTimer.SetFrames(0); pendingParalysisFrames = null;
             paralysisFrameOpen = frameParalyzed = clearParalysisPending = paralysisInterruptPending = false;
         }
+        private FrameCountdown confusionTimer;
+        private int? pendingConfusionFrames;
+        private bool confusionFrameOpen, frameConfused, clearConfusionPending;
+        public int ConfusionRemainingFrames => confusionTimer.Frames;
+        public bool IsConfused => !IsDead && (confusionFrameOpen ? frameConfused : confusionTimer.IsActive);
+        internal bool HasConfusionState => confusionTimer.IsActive || pendingConfusionFrames.HasValue || clearConfusionPending || frameConfused;
+        /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
+        public void ApplyConfusion(int durationFrames, int durationResistancePercent = 0)
+        {
+            if (durationFrames <= 0 || durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
+            int frames=(int)((long)durationFrames*(100-Math.Min(100,durationResistancePercent))/100);
+            if(IsDead || frames==0)return;
+            pendingConfusionFrames=frames;
+            if(!confusionFrameOpen)clearConfusionPending=false;
+        }
+        public void ClearConfusion(){pendingConfusionFrames=null;clearConfusionPending=true;}
+        private void CommitConfusionChanges()
+        {
+            if(clearConfusionPending)confusionTimer.SetFrames(0);
+            else if(pendingConfusionFrames.HasValue)confusionTimer.SetFrames(pendingConfusionFrames.Value);
+            pendingConfusionFrames=null;clearConfusionPending=false;
+        }
+        internal void BeginConfusionFrame(bool advance)
+        {if(advance)CommitConfusionChanges();confusionFrameOpen=true;frameConfused=confusionTimer.IsActive;}
+        internal void TickConfusion(int ms,bool logical)
+        {if(logical)confusionTimer.TickFrame();else confusionTimer.Tick(ms);}
+        internal void EndConfusionFrame(bool advance)
+        {
+            if(IsDead){ResetConfusion(); ResetBlindness();return;}
+            if(advance)CommitConfusionChanges();confusionFrameOpen=frameConfused=false;
+        }
+        internal void ResetConfusion()
+        {confusionTimer.SetFrames(0);pendingConfusionFrames=null;confusionFrameOpen=frameConfused=clearConfusionPending=false;}
+
+        private FrameCountdown blindnessTimer;
+        private int? pendingBlindnessFrames;
+        private bool blindnessFrameOpen, frameBlind, clearBlindnessPending;
+        public int BlindRemainingFrames => blindnessTimer.Frames;
+        public bool IsBlind => !IsDead && (blindnessFrameOpen ? frameBlind : blindnessTimer.IsActive);
+        internal bool HasBlindnessState => blindnessTimer.IsActive || pendingBlindnessFrames.HasValue || clearBlindnessPending || frameBlind;
+        /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
+        public void ApplyBlindness(int durationFrames, int durationResistancePercent = 0)
+        {
+            if (durationFrames <= 0 || durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
+            int frames=(int)((long)durationFrames*(100-Math.Min(100,durationResistancePercent))/100);
+            if(IsDead || frames==0)return;
+            pendingBlindnessFrames=frames;
+            if(!blindnessFrameOpen)clearBlindnessPending=false;
+        }
+        public void ClearBlindness(){pendingBlindnessFrames=null;clearBlindnessPending=true;}
+        private void CommitBlindnessChanges()
+        {
+            if(clearBlindnessPending)blindnessTimer.SetFrames(0);
+            else if(pendingBlindnessFrames.HasValue)blindnessTimer.SetFrames(pendingBlindnessFrames.Value);
+            pendingBlindnessFrames=null;clearBlindnessPending=false;
+        }
+        internal void BeginBlindnessFrame(bool advance)
+        {if(advance)CommitBlindnessChanges();blindnessFrameOpen=true;frameBlind=blindnessTimer.IsActive;}
+        internal void TickBlindness(int ms,bool logical)
+        {if(logical)blindnessTimer.TickFrame();else blindnessTimer.Tick(ms);}
+        internal void EndBlindnessFrame(bool advance)
+        {
+            if(IsDead){ResetBlindness();return;}
+            if(advance)CommitBlindnessChanges();blindnessFrameOpen=frameBlind=false;
+        }
+        internal void ResetBlindness()
+        {blindnessTimer.SetFrames(0);pendingBlindnessFrames=null;blindnessFrameOpen=frameBlind=clearBlindnessPending=false;}
+
         private int pendingInvincibilityMs;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
         /// <summary>保存・戦闘をまたいで保持する外部定義。残り待ち時間は含めない。</summary>
@@ -175,7 +258,7 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             foreach(var state in poisons.Values) { state.EndFrame(); if (IsDead) state.Reset(); }
-            if (IsDead) ResetParalysis();
+            if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); }
             // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
             if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;
             else if (pendingConcentrateMultiplier.HasValue) nextCardMultiplier = pendingConcentrateMultiplier.Value;
@@ -204,7 +287,7 @@ namespace Olca.Core.Domain
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) { ResetParalysis(); OnDeath?.Invoke(); }
+            if (died) { ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -348,14 +431,14 @@ namespace Olca.Core.Domain
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
-                if (HasAura && protection.Block(damage, grass)) return false;
+                if (HasAura && protection.Block(damage, grass, attackProperties)) return false;
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
-                // 変身解除は既存の弱点規則を維持し、バリアの耐久計算とは分ける。
-                breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
                 // 元から威力0の状態専用ヒットはバリアを通過する。
-                if (HasBarrier && protection.Block(damage, grass)) return false;
+                if (HasBarrier && protection.Block(damage, grass, attackProperties)) return false;
+                // 完全防御した弱点ヒットでは解除しない。受理したヒットだけ変身中耐性で計算後に解除する。
+                breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 damage = bodyDamage;
                 if (originalDamage > 0 && damage == 0) return false; // 耐性無効は強靭度・付随効果へ進めない。
 
@@ -363,7 +446,7 @@ namespace Olca.Core.Domain
                 else
                 {
                     currentHp = Math.Max(0, currentHp - damage);
-                    if (IsDead) ResetParalysis();
+                    if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
@@ -396,7 +479,7 @@ namespace Olca.Core.Domain
 
                 if (!frameHp.Active && IsDead)
                 {
-                    ResetParalysis(); OnDeath?.Invoke();
+                    ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke();
                 }
                 return true;
             }
@@ -405,6 +488,17 @@ namespace Olca.Core.Domain
                 try { if (breakTransformation) EndTransformationDefense(); }
                 finally { OnDamageProcessingCompleted?.Invoke(); }
             }
+        }
+
+        /// <summary>拘束障害物の確定量。被弾無敵・防御・強靭度を経由せず、毒のHP1制限も付けない。</summary>
+        internal void TakeObstacleDamage(int damage)
+        {
+            if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
+            if (IsDead || damage == 0) return;
+            if (frameHp.Active) { frameHp.Damage(damage); return; }
+            currentHp = Math.Max(0, currentHp - damage);
+            OnHpChanged?.Invoke(currentHp, maxHp);
+            if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
 
         /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>

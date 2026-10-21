@@ -14,32 +14,35 @@ namespace Olca.Core.Domain
         Blind,      // 盲目
     }
 
-    /// <summary>既存の時間制の毒・麻痺に対する軽減率。属性耐性とは独立する。</summary>
+    /// <summary>時間制の状態異常に対する軽減率。属性耐性とは独立する。</summary>
     public sealed class TimedStatusResistances
     {
         public static readonly TimedStatusResistances Neutral = new TimedStatusResistances();
         public int Poison { get; }
         public int Paralyze { get; }
-        public bool IsNeutral => Poison == 0 && Paralyze == 0;
-        public TimedStatusResistances(int poison = 0, int paralyze = 0)
+        public int Confusion { get; }
+        public int Blind { get; }
+        public bool IsNeutral => Poison == 0 && Paralyze == 0 && Confusion == 0 && Blind == 0;
+        public TimedStatusResistances(int poison = 0, int paralyze = 0, int confusion = 0, int blind = 0)
         {
-            if (poison < 0 || paralyze < 0) throw new ArgumentOutOfRangeException("状態異常耐性は非負です");
-            Poison = poison; Paralyze = paralyze;
+            if (poison < 0 || paralyze < 0 || confusion < 0 || blind < 0) throw new ArgumentOutOfRangeException("状態異常耐性は非負です");
+            Poison = poison; Paralyze = paralyze; Confusion = confusion; Blind = blind;
         }
         public int Get(StatusEffectType type) => type == StatusEffectType.Poison ? Poison
-            : type == StatusEffectType.Paralyze ? Paralyze : 0;
+            : type == StatusEffectType.Paralyze ? Paralyze : type == StatusEffectType.Confusion ? Confusion : type == StatusEffectType.Blind ? Blind : 0;
         public bool HasSameValues(TimedStatusResistances other)
-            => other != null && Poison == other.Poison && Paralyze == other.Paralyze;
+            => other != null && Poison == other.Poison && Paralyze == other.Paralyze && Confusion == other.Confusion && Blind == other.Blind;
         public static TimedStatusResistances Combine(params TimedStatusResistances[] values)
         {
             if (values == null) throw new ArgumentNullException(nameof(values));
-            long poison = 0, paralyze = 0;
+            long poison = 0, paralyze = 0, confusion = 0, blind = 0;
             foreach (var value in values)
             {
                 if (value == null) throw new ArgumentNullException(nameof(values));
-                poison += value.Poison; paralyze += value.Paralyze;
+                poison += value.Poison; paralyze += value.Paralyze; confusion += value.Confusion; blind += value.Blind;
             }
-            return new TimedStatusResistances((int)Math.Min(int.MaxValue, poison), (int)Math.Min(int.MaxValue, paralyze));
+            return new TimedStatusResistances((int)Math.Min(int.MaxValue, poison), (int)Math.Min(int.MaxValue, paralyze),
+                (int)Math.Min(int.MaxValue, confusion), (int)Math.Min(int.MaxValue, blind));
         }
     }
 
@@ -172,9 +175,14 @@ namespace Olca.Core.Domain
 
         /// <summary>毒の場合の1ティックあたりのダメージ</summary>
         public int DamagePerTick { get; }
+        /// <summary>毒系共通耐性の下で独立更新する外部種別。未指定は旧毒。</summary>
+        public string PoisonKind { get; }
+        /// <summary>nullだけは旧毎秒量の互換入口。明示時は固定量の発生間隔。</summary>
+        public int? PoisonIntervalFrames { get; }
         private int originalFrames, initialReducedFrames, appliedResistance;
 
         // 生成側の既存軽減率とも加算する。共有された付与元を変更せず、対象ごとに独立させる。
+        internal StatusEffect Copy() => (StatusEffect)MemberwiseClone();
         internal StatusEffect WithTargetResistance(int resistance)
         {
             if (resistance == 0) return this;
@@ -193,10 +201,14 @@ namespace Olca.Core.Domain
         /// <param name="type">状態異常の種類</param>
         /// <param name="durationMs">持続時間（ミリ秒）</param>
         /// <param name="damagePerTick">毒ダメージ（ミリ秒ごと）。毒以外は0</param>
-        public StatusEffect(StatusEffectType type, int durationMs, int damagePerTick = 0, int durationResistancePercent = 0)
+        public StatusEffect(StatusEffectType type, int durationMs, int damagePerTick = 0, int durationResistancePercent = 0, string poisonKind = "poison", int? poisonIntervalFrames = null)
         {
             if (durationMs <= 0) throw new ArgumentException("持続時間は1以上である必要があります", nameof(durationMs));
             if (durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationResistancePercent));
+            if (type == StatusEffectType.Poison && (string.IsNullOrWhiteSpace(poisonKind) || poisonIntervalFrames <= 0 ||
+                (poisonKind != "poison" && !poisonIntervalFrames.HasValue) || damagePerTick < 0))
+                throw new ArgumentException("毒種と正の間隔・非負の固定量が必要です");
+            PoisonKind = poisonKind; PoisonIntervalFrames = poisonIntervalFrames;
             Type = type;
             long frames = ((long)durationMs * 60 + 999) / 1000;
             originalFrames = (int)frames;
@@ -242,6 +254,7 @@ namespace Olca.Core.Domain
         public int Frames => (int)((remaining + 49) / 50);
         public void SetFrames(int value) => remaining = System.Math.Max(0L, value * 50L);
         public void SetMilliseconds(int value) => remaining = System.Math.Max(0L, value * 3L);
+        public void ExtendFrames(int value) => remaining = System.Math.Max(remaining, value * 50L);
         public void ExtendMilliseconds(int value) => remaining = System.Math.Max(remaining, value * 3L);
         public void Tick(int milliseconds) => remaining = System.Math.Max(0, remaining - milliseconds * 3L);
         public void TickFrame() => remaining = System.Math.Max(0, remaining - 50);

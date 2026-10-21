@@ -151,6 +151,14 @@ namespace Olca.Tests
             Assert.AreEqual(0, parent.transform.childCount);
         }
 
+        [Test]
+        public async Task 所有者の遮蔽は敵数値だけを隠し解除で古い数値を再生しない()
+        {
+            object enemyOwner=new object();using var cts=new CancellationTokenSource();
+            Task Owned(int damage)=>((UniTask)Invoke("ShowOwnedDamageAsync",damage,Vector3.zero,cts.Token,enemyOwner)).AsTask();
+            var enemy=Owned(10);var player=Show(100,cts.Token);var enemyView=Active.Single(v=>v.GetComponent<TextMesh>().text=="10");var playerView=Active.Single(v=>v.GetComponent<TextMesh>().text=="100");pool.SetOwnerVisible(enemyOwner,false);Assert.IsFalse(enemyView.gameObject.activeSelf);Assert.IsTrue(playerView.gameObject.activeSelf);var rejected=Owned(20);Assert.IsTrue(rejected.IsCompleted);Assert.AreEqual(2,Active.Count);pool.SetOwnerVisible(enemyOwner,true);Assert.IsFalse(enemyView.gameObject.activeSelf);var next=Owned(30);Assert.IsTrue(Active.Single(v=>v.GetComponent<TextMesh>().text=="30").gameObject.activeSelf);Assert.IsTrue(playerView.gameObject.activeSelf);cts.Cancel();await Completed(Task.WhenAll(enemy,player,rejected,next));Assert.AreEqual(0,Active.Count);Assert.AreEqual(Waiting.Count,Waiting.Distinct().Count());
+        }
+
         private static async Task Completed(Task task)
         {
             Assert.AreSame(task, await Task.WhenAny(task, Task.Delay(3000)), "表示の終了待ちが完了しない");

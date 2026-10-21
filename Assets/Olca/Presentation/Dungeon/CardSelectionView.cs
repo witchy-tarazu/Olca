@@ -192,7 +192,7 @@ namespace Olca.Presentation.Dungeon
     {
         private Font font;
         private Action<int> toggle;
-        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture, savedDeckMenu;
+        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture, savedDeckMenu, selectDungeon, selectStyle, openExchange;
         private int savedDeckPage;
         private int departurePage;
         private GameObject content;
@@ -200,14 +200,14 @@ namespace Olca.Presentation.Dungeon
         private string lastRun;
         private ClearReturnStage? lastStage;
         private const int PageSize = 8;
-        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null, Action savedDeckMenu = null)
+        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null, Action savedDeckMenu = null, Action selectDungeon = null, Action selectStyle = null, Action openExchange = null)
         {
-            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;this.savedDeckMenu=savedDeckMenu;
+            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;this.savedDeckMenu=savedDeckMenu;this.selectDungeon=selectDungeon;this.selectStyle=selectStyle;this.openExchange=openExchange;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
         }
-        public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false)
+        public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;
             lastRun = flow?.RunId; lastStage = flow?.Stage;
@@ -254,12 +254,131 @@ namespace Olca.Presentation.Dungeon
                 if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, -420, 900, 75, closeCollection);
                 else {
                     if (editOwnedDeparture != null) Button("EditOwnedDeparture", "所持カードで出撃デッキを編成", -440, -420, 820, 75, editOwnedDeparture).interactable = !blocked;
-                    if (depart != null) Button("NextDeparture", profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃", 440, -420, 820, 75, depart).interactable = !blocked;
+                    if (depart != null) Button("NextDeparture", (dungeonName==null?"":dungeonName+"へ\n")+(profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃"), 440, -420, 820, 75, depart).interactable = !blocked;
                 }
             }
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",0,-510,800,58,savedDeckMenu);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",-645,-510,410,58,savedDeckMenu);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectDungeon!=null&&!blocked&&error==null)Button("SelectDungeon","ダンジョンを選択",645,-510,410,58,selectDungeon);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,-510,410,58,selectStyle);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,-510,410,58,openExchange);
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -510, 800, 58, retry);
         }
+        private int dungeonPage;
+        public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
+            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null)
+        {
+            if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
+            content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
+            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            gameObject.SetActive(true);
+            Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
+            Text("DungeonSelectionHelp", error ?? ("クリアに応じて次のダンジョンが解放されます。 / " + styleName), 0, 350, 1700, 80, 25);
+            const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
+            for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
+                int index = dungeonPage * rows + row;
+                var button = Button("DungeonChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
+                button.interactable = !blocked && unlocked[index];
+                if (selected == index) button.GetComponent<Image>().color = new Color(.12f, .42f, .47f, .82f);
+            }
+            Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, -285, 250, 60, 24);
+            Button("ConfirmDungeonSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
+            Button("CancelDungeonSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
+            if (chooseStyle != null && !blocked && error == null) Button("SelectDepartureStyle", "出撃スタイル", -430, -510, 800, 58, chooseStyle);
+            if (openTokenExchange != null && !blocked && error == null) Button("OpenTokenExchange", "トークン交換所", 430, -510, 800, 58, openTokenExchange);
+            if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
+        }
+                        public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
+            Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true)
+        {
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("DungeonVisitContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("VisitTitle",title,0,435,1450,90,32);
+            Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit);
+            for(int i=0;i<names.Length;i++){int slot=i;var button=Button("VisitOption_"+i,(selected==i?"［選択中］ ":"")+names[i],0,260-i*90,1700,76,()=>choose(slot));button.interactable=!blocked&&enabled[i];}
+            Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,-280,1750,100,24);
+            Button("ConfirmVisit","選択を確定",-560,-440,520,72,confirmVisit).interactable=!blocked&&canConfirm;
+            Button("CancelVisit","選択取消",0,-440,520,72,cancelVisit).interactable=!blocked&&selected>=0;
+            Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit).interactable=!blocked&&canExit;
+        }
+
+        private int removalPage;
+        public void RenderVisitRemoval(string title,string[] names,bool[] selected,int needed,long price,bool blocked,bool canConfirm,
+            Action<int> choose,Action confirm,Action cancel,Action pause)
+        {
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("VisitRemovalContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("RemovalTitle",title,0,435,1450,90,32);Button("PauseVisit","ポーズ",780,480,260,60,pause);
+            const int rows=6;int pages=System.Math.Max(1,(names.Length+rows-1)/rows);removalPage=System.Math.Min(removalPage,pages-1);
+            for(int row=0;row<rows&&removalPage*rows+row<names.Length;row++){
+                int index=removalPage*rows+row;
+                Button("RemovalCard_"+index,(selected[index]?"［選択中］ ":"")+names[index],0,285-row*78,1750,68,()=>choose(index)).interactable=!blocked;
+            }
+            Button("RemovalPrevious","前",-430,-240,450,55,()=>{removalPage--;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}).interactable=!blocked&&removalPage>0;
+            Button("RemovalNext","次",430,-240,450,55,()=>{removalPage++;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}).interactable=!blocked&&removalPage<pages-1;
+            Text("RemovalHelp",$"{removalPage+1}/{pages}ページ / {System.Array.FindAll(selected,x=>x).Length}/{needed}枚選択\n確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-340,1750,110,25);
+            Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-460,800,72,confirm).interactable=!blocked&&canConfirm;
+            Button("CancelVisitRemoval","確定せず戻る",430,-460,800,72,cancel).interactable=!blocked;
+        }
+
+        private int exchangePage;
+        public void RenderTokenExchange(ClearReturnProfile profile, string selected, bool blocked, string error,
+            Action<string> choose, Action buy, Action cancel, Action close, Action retrySave)
+        {
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("TokenExchangeContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            gameObject.SetActive(true);
+            Text("ExchangeTitle","トークン交換所",0,455,1700,80,36);
+            Text("ExchangeBalance",$"所持 {profile.Tokens} トークン / 永続所持へ交換\n"+(error??"ランダム商品は帰還時に更新。任意の再抽選はできません。"),0,345,1750,100,25);
+            var offers=profile.ExchangeStock?.Offers??Array.Empty<ExchangeOfferData>();const int rows=5;int pages=Math.Max(1,(offers.Length+rows-1)/rows);exchangePage=Math.Min(exchangePage,pages-1);
+            for(int row=0;row<rows&&exchangePage*rows+row<offers.Length;row++){
+                var item=offers[exchangePage*rows+row];int owned=profile.Owned.SingleOrDefault(c=>c.Id==item.CardId&&c.Level==item.Level)?.Count??0;
+                long total=(profile.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>()).SingleOrDefault(t=>t.ProductId==item.Id)?.Count??0;
+                bool sold=item.Limit!=ExchangeLimit.Unlimited&&(item.Limit==ExchangeLimit.PerRefresh?item.Purchased:total)>=item.Maximum;
+                string limit=item.Limit==ExchangeLimit.Unlimited?"無制限":item.Limit==ExchangeLimit.PerRefresh?$"更新まで {item.Purchased}/{item.Maximum}":$"通算 {total}/{item.Maximum}";
+                var b=Button("ExchangeOffer_"+item.Id,(selected==item.Id?"［選択中］ ":sold?"［売切れ］ ":"［選択］ ")+(item.Random?"ランダム ":"固定 ")+item.Name+new string('★',(int)item.Level)+$" / {item.Price} トークン / 所持{owned}/4 / "+limit,0,205-row*90,1730,76,()=>choose(item.Id));
+                b.interactable=!blocked&&!sold;if(selected==item.Id)b.GetComponent<Image>().color=new Color(.12f,.42f,.47f,.82f);
+            }
+            Button("PreviousExchangePage","前へ",-380,-270,260,60,()=>{exchangePage--;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage>0;
+            Button("NextExchangePage","次へ",380,-270,260,60,()=>{exchangePage++;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage+1<pages;
+            var choice=offers.SingleOrDefault(o=>o.Id==selected);
+            string help=choice==null?"商品を選んで確認してください。":$"{choice.Price} トークンを支払い1枚獲得。"+(profile.Owned.Any(c=>c.Id==choice.CardId&&c.Level==choice.Level&&c.Count==4)?$"所持上限のため{choice.OverflowTokens}トークンへ変換。":!ClearReturnSession.CanExchange(profile,choice)?"トークン不足または売切れ。":"");
+            Text("ExchangeConfirmation",help,0,-355,1750,75,24);
+            Button("ConfirmTokenExchange","交換を確定",-560,-440,520,72,buy).interactable=!blocked&&ClearReturnSession.CanExchange(profile,choice);
+            Button("CancelTokenExchange","選択取消",0,-440,520,72,cancel).interactable=!blocked&&selected!=null;
+            Button("CloseTokenExchange","拠点へ戻る",560,-440,520,72,close).interactable=!blocked;
+            if(error!=null||blocked)Button("RetryTokenExchange","保存を再試行",0,-525,800,55,retrySave);
+        }
+
+        private int stylePage;
+        public void RenderStyleSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
+            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave)
+        {
+            if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
+            content = new GameObject("StyleSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
+            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            gameObject.SetActive(true);
+            Text("StyleSelectionTitle", "出撃スタイル", 0, 455, 1700, 80, 36);
+            Text("StyleSelectionHelp", error ?? "攻略中は固定。属性と固有・タメ攻撃が変わります。", 0, 350, 1700, 80, 25);
+            const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); stylePage = Math.Min(stylePage, pages - 1);
+            for (int row = 0; row < rows && stylePage * rows + row < names.Length; row++) {
+                int index = stylePage * rows + row;
+                var button = Button("StyleChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
+                button.interactable = !blocked && unlocked[index];
+                if (selected == index) button.GetComponent<Image>().color = new Color(.12f, .42f, .47f, .82f);
+            }
+            Button("PreviousStylePage", "前へ", -380, -285, 260, 60, () => { stylePage--; RenderStyleSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && stylePage > 0;
+            Button("NextStylePage", "次へ", 380, -285, 260, 60, () => { stylePage++; RenderStyleSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && stylePage + 1 < pages;
+            Text("StylePage", $"{stylePage+1}/{pages}", 0, -285, 250, 60, 24);
+            Button("ConfirmStyleSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
+            Button("CancelStyleSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
+            if (error != null || blocked) Button("RetryStyleDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
+        }
+
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
             string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null)
         {
@@ -355,10 +474,11 @@ namespace Olca.Presentation.Dungeon
         private UnityEngine.UI.Text title, state;
         private UnityEngine.UI.Button button, jumpButton, dashButton, cardButton;
         private UnityEngine.GameObject exploration;
-        public void Initialize(UnityEngine.Font font, System.Action tap, System.Func<int> shortPressFrames)
+        private BasicAttackTapButton attackPointer;
+        public void Initialize(UnityEngine.Font font, System.Action tap, System.Action<bool> hold, System.Action cancel)
         {
-            var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = UnityEngine.Vector2.one;
-            rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,-200);
+            var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = new UnityEngine.Vector2(1,0);
+            rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,115);
             var face = gameObject.AddComponent<UnityEngine.UI.Image>(); face.color = new UnityEngine.Color(.04f,.11f,.16f,.87f); face.raycastTarget = false;
             var edge = gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
             UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
@@ -375,9 +495,10 @@ namespace Olca.Presentation.Dungeon
             var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,25); r.sizeDelta = new UnityEngine.Vector2(155,74);
             o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>();
             button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
-            var pointer = o.AddComponent<BasicAttackTapButton>(); pointer.Initialize(tap, System.Diagnostics.Stopwatch.GetTimestamp, shortPressFrames, System.Diagnostics.Stopwatch.Frequency); button.onClick.AddListener(pointer.Click);
+            attackPointer = o.AddComponent<BasicAttackTapButton>(); attackPointer.InitializeHold(hold, cancel, tap);
             var label = Label("BasicAttackLabel",0,0,155,74,26); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
         }
+        public void CancelAttackPointer() => attackPointer?.ClearPointer();
         public void InitializeExploration(UnityEngine.Font font, System.Action jump, System.Action dash, System.Action card)
         {
             exploration=new UnityEngine.GameObject("ExplorationTouchControls",typeof(UnityEngine.RectTransform));
@@ -417,14 +538,49 @@ namespace Olca.Presentation.Dungeon
 
 namespace Olca.Presentation.Dungeon
 {
-    public sealed class BasicAttackTapButton : UnityEngine.MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler
+    public sealed class BasicAttackTapButton : UnityEngine.MonoBehaviour,
+        UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler,
+        UnityEngine.EventSystems.IPointerClickHandler, UnityEngine.EventSystems.ISubmitHandler, UnityEngine.EventSystems.ICancelHandler
     {
-        private System.Action fire; private System.Func<long> timestamp; private System.Func<int> limit; private long frequency;
-        private bool pointer, accepted; private long start;
-        public void Initialize(System.Action fire, System.Func<long> timestamp, System.Func<int> limit, long frequency = 60) { this.fire=fire;this.timestamp=timestamp;this.limit=limit;this.frequency=frequency; }
-        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data) { pointer=true;accepted=false;start=timestamp(); }
-        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data) { accepted=(timestamp()-start)/(double)frequency < limit()/60.0; }
-        public void Click() { bool use=!pointer||accepted;pointer=false;accepted=false;if(use)fire(); }
-        private void OnDisable() { pointer=false;accepted=false; }
+        private System.Action fire, cancel;
+        private System.Action<bool> hold;
+        private System.Func<long> timestamp; private System.Func<int> limit; private long frequency;
+        private bool pointer, accepted, released;
+        private int pointerId; private long start;
+        // 旧タップ専用呼出しとの互換。通常HUDはInitializeHoldを使う。
+        public void Initialize(System.Action fire, System.Func<long> timestamp, System.Func<int> limit, long frequency = 60)
+        { this.fire=fire;this.timestamp=timestamp;this.limit=limit;this.frequency=frequency; }
+        public void InitializeHold(System.Action<bool> hold, System.Action cancel, System.Action submit)
+        { this.hold=hold;this.cancel=cancel;fire=submit; }
+        public void ClearPointer() { pointer = accepted = released = false; }
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if (pointer) return;
+            if (hold != null) {
+                var button = GetComponent<UnityEngine.UI.Button>();
+                if ((button != null && !button.IsInteractable()) || (data != null && !data.eligibleForClick)) return;
+                pointer = true; released = false; pointerId = data?.pointerId ?? -1; hold(true);
+            } else { pointer=true;accepted=false;start=timestamp(); }
+        }
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if (hold == null) { accepted=(timestamp()-start)/(double)frequency < limit()/60.0; return; }
+            if (!pointer || (data != null && data.pointerId != pointerId)) return;
+            if (data != null && !data.eligibleForClick) { CancelPointer(); return; }
+            // クリック成立まで解放を確定しない。領域外解放/OS取消は攻撃にしない。
+            released = true;
+        }
+        public void OnPointerClick(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if (hold == null) return;
+            if (!pointer || !released || (data != null && (data.pointerId != pointerId || !data.eligibleForClick))) return;
+            ClearPointer(); hold(false);
+        }
+        public void Click() { if (hold != null) return; bool use=!pointer||accepted;ClearPointer();if(use)fire(); }
+        public void OnSubmit(UnityEngine.EventSystems.BaseEventData data) { if (!pointer) fire?.Invoke(); }
+        public void OnCancel(UnityEngine.EventSystems.BaseEventData data) => CancelPointer();
+        private void CancelPointer() { bool active=pointer;ClearPointer();if(active)cancel?.Invoke(); }
+        private void LateUpdate() { if (hold != null && released) CancelPointer(); }
+        private void OnDisable() => CancelPointer();
     }
 }

@@ -14,6 +14,77 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class DungeonBattleManagerCardRewardTests
     {
+        private sealed class CurrencyFailIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Fail;
+            public override void WriteAndFlush(string path, byte[] bytes) {
+                if (Fail) throw new System.IO.IOException("通貨fixture保存失敗"); base.WriteAndFlush(path, bytes);
+            }
+        }
+        [TestCase(true, false)] [TestCase(false, false)] [TestCase(true, true)]
+        public void 通貨はカードと別に判断し保存成功で一度だけ確定して復帰する(bool receive, bool fail)
+        {
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-currency-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var map = DungeonConfig.CreateTestDungeon(20, 30, 3); var deck = CreateTestDeck();
+                var defaults = DungeonCheckpointSession.CreateDefault(map, deck); var io = new CurrencyFailIo();
+                var files = new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory, io);
+                var session = new DungeonCheckpointSession(defaults.Definitions, files);
+                var manager = new DungeonBattleManager(map, new PlayerCharacter(100), deck, new MockRandomProvider(), mockLogger, checkpoints: session);
+                manager.Dungeon.ConfigureCurrencyReward(7);
+                var battle = AdvanceToBattle(manager);
+                foreach (var enemy in battle.Enemies.ToArray()) enemy.TakeDamage(10000, ElementType.None);
+                if (manager.Dungeon.PendingCurrencyReward == 0) manager.SelectCardReward(null);
+                Assert.AreEqual(7, manager.Dungeon.PendingCurrencyReward); Assert.AreEqual(0, manager.Dungeon.Currency);
+                var original = System.IO.File.ReadAllBytes(files.ActivePath); io.Fail = fail;
+                manager.SelectCurrencyReward(receive); manager.SelectCurrencyReward(receive);
+                if (fail) {
+                    Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.AreEqual(0, manager.Dungeon.Currency);
+                    CollectionAssert.AreEqual(original, System.IO.File.ReadAllBytes(files.ActivePath));
+                    Assert.AreEqual(0, files.Read().Currency); Assert.AreEqual(CheckpointBoundary.BattleStart, files.Read().Boundary);
+                    io.Fail = false; Assert.IsTrue(manager.RetryCheckpoint()); Assert.IsFalse(manager.RetryCheckpoint());
+                }
+                Assert.AreEqual(receive ? 7 : 0, manager.Dungeon.Currency);
+                Assert.AreEqual(GamePhase.Dungeon, manager.CurrentPhase);
+                Assert.IsTrue(manager.SuspendForCheckpoint());
+                var reopened = new DungeonCheckpointSession(defaults.Definitions, new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory));
+                Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(reopened, new MockRandomProvider(), mockLogger, out var resumed, out var error), error);
+                resumed.ActivateCheckpoint(); resumed.SelectCurrencyReward(true);
+                Assert.AreEqual(receive ? 7 : 0, resumed.Dungeon.Currency);
+                Assert.AreEqual(0, resumed.Dungeon.PendingCurrencyReward);
+                resumed.Dungeon.ConfigureCurrencyReward(0);
+                var boss = resumed.Dungeon.Map.GetAllEnemies().Single(pair => pair.enemy.EnemyId == "boss");
+                resumed.Dungeon.StartBattle(new ContactInfo { Enemy = boss.enemy, EnemyCellIndex = boss.cellIndex });
+                if (fail) resumed.CurrentBattle.Player.TakeDamage(10000);
+                else {
+                    foreach (var enemy in resumed.CurrentBattle.Enemies.ToArray()) enemy.TakeDamage(10000, ElementType.None);
+                    resumed.SelectCardReward(null);
+                }
+                Assert.AreEqual(0, resumed.Dungeon.Currency); Assert.AreEqual(0, reopened.Store.Read().Currency);
+                Assert.AreEqual(CheckpointBoundary.Terminal, reopened.Store.Read().Boundary);
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
+        [Test]
+        public void 通貨定義は戦闘開始で固定し旧開始保存の欠落はゼロにする()
+        {
+            var map = DungeonConfig.CreateTestDungeon(20, 30, 3); var deck = CreateTestDeck();
+            var session = DungeonCheckpointSession.CreateDefault(map, deck);
+            var manager = new DungeonBattleManager(map, new PlayerCharacter(100), deck, new MockRandomProvider(), mockLogger, checkpoints: session);
+            manager.Dungeon.ConfigureCurrencyReward(7); AdvanceToBattle(manager);
+            var dto = session.Store.Read(); Assert.AreEqual(7, dto.Battle.CurrencyAmounts.Single());
+            manager.Dungeon.ConfigureCurrencyReward(99);
+            Assert.IsTrue(manager.SuspendForCheckpoint());
+            dto.Battle.CurrencyAmounts = null; dto.Currency = 0;
+            session = new DungeonCheckpointSession(session.Definitions, new MemoryCheckpointStore(session.Definitions));
+            Assert.IsTrue(session.Store.TryWrite(dto, out var error), error);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session, new MockRandomProvider(), mockLogger, out var old, out error), error);
+            old.Dungeon.ConfigureCurrencyReward(99); old.ActivateCheckpoint();
+            foreach (var enemy in old.CurrentBattle.Enemies.ToArray()) enemy.TakeDamage(10000, ElementType.None);
+            if (old.CurrentPhase == GamePhase.CardReward) old.SelectCardReward(null);
+            Assert.AreEqual(0, old.Dungeon.PendingCurrencyReward); Assert.AreEqual(0, old.Dungeon.Currency);
+        }
+
         private DungeonBattleManager OnceManager(CountingRewardRandom random)
         {
             var cells = new List<MapCell>();
@@ -366,14 +437,14 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(1, random.FloatCalls);
         }
 
-        [TestCase("boss")]
-        [TestCase("final_boss")]
-        public void ボス保証は高い乱数でも抽選を消費せず報酬を出す(string id)
+        [TestCase("boss", true, 0)]
+        [TestCase("final_boss", false, 1)]
+        public void ボス保証は完全一致だけで通常敵は抽選する(string id, bool expected, int calls)
         {
             var random = new CountingRewardRandom { Roll = 1f };
             var rewards = new CardRewardSystem(CreateTestDeck(), random);
-            Assert.IsTrue(rewards.ShouldDropCard(new Enemy(id, "ボス", 100, ElementType.None, new Vector2Int(9, 0))));
-            Assert.AreEqual(0, random.FloatCalls);
+            Assert.AreEqual(expected, rewards.ShouldDropCard(new Enemy(id, "ボス", 100, ElementType.None, new Vector2Int(9, 0))));
+            Assert.AreEqual(calls, random.FloatCalls);
         }
 
         [TestCase(0.4999f, true)]
@@ -421,9 +492,10 @@ namespace Olca.Tests.Dungeon
             for (int i = 0; i < 30; i++) cells.Add(new MapCell(i));
             cells[3] = new MapCell(3, new Enemy(boss ? "boss" : "slime", "敵", 50, ElementType.None, new Vector2Int(3, 0)));
             if (!boss) cells[29] = new MapCell(29, new Enemy("boss", "ボス", 100, ElementType.None, new Vector2Int(29, 0)));
+            int weightCalls = 0;
             var manager = new DungeonBattleManager(new DungeonConfig("pool", "注入検証", 30, cells),
                 new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger,
-                rewardPool: new SimpleCardPool(definitions));
+                rewardPool: new SimpleCardPool(definitions, c => { weightCalls++; return c.Id == "heal" ? 9 : 1; }));
             IReadOnlyList<Card> offered = null;
             manager.OnCardRewardPresented += cards => offered = cards;
             var battle = AdvanceToBattle(manager);
@@ -431,6 +503,7 @@ namespace Olca.Tests.Dungeon
             manager.Tick(0);
             Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
             CollectionAssert.AreEqual(definitions.Select(c => c.Id), offered.Select(c => c.Id));
+            Assert.AreEqual(definitions.Count, weightCalls, "通常Manager経路で重みを読み取る");
             int before = manager.Dungeon.GetCurrentDeck().TotalCount;
             var chosen = offered[0];
             manager.SelectCardReward(skip ? null : chosen);

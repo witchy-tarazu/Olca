@@ -49,8 +49,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool CanExecute(AIContext context)
         {
-            if (context.Self == null || context.Player == null) return false;
-            if (context.Player.IsDead) return false;
+            if (!context.HasVisiblePlayer) return false;
 
             // プレイヤーと隣接（距離1）していれば攻撃可能
             return context.GetDistanceToPlayer() == 1;
@@ -61,7 +60,14 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void Execute(AIContext context)
         {
-            if (context.Player == null) return;
+            if (!CanExecute(context)) return;
+            var direction = new Vector2Int(context.Player.GridPosition.X - context.Self.GridPosition.X,
+                context.Player.GridPosition.Y - context.Self.GridPosition.Y);
+            var resolved = context.ResolveDirectionalInput(direction);
+            if (resolved != direction) {
+                context.Logger?.LogInfo($"{context.Self.Name}の攻撃方向が反転して空振りした");
+                return; // 行動は実行済み。AI側の既存クールダウンは通常どおり開始する。
+            }
 
             if (context.Player.TryTakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage))
             {

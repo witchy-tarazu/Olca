@@ -37,12 +37,19 @@ namespace Olca.Core.Logic.Battle
             Logger = logger;
         }
 
+        /// <summary>盲目は相手位置の取得を止める。待機等の対象不要な行動は止めない。</summary>
+        public bool HasVisiblePlayer => Self != null && !Self.IsDead && Player != null && !Player.IsDead && !Self.IsBlind;
+
+        /// <summary>決定した方向入力を反転する。対象自体の所属・HP・座標は変更しない。</summary>
+        public Vector2Int ResolveDirectionalInput(Vector2Int direction)
+            => Self != null && Self.IsConfused ? new Vector2Int(-direction.X, -direction.Y) : direction;
+
         /// <summary>
         /// プレイヤーとの距離（マンハッタン距離）を取得
         /// </summary>
         public int GetDistanceToPlayer()
         {
-            if (Self == null || Player == null) return int.MaxValue;
+            if (!HasVisiblePlayer) return int.MaxValue;
             return Math.Abs(Player.GridPosition.X - Self.GridPosition.X) +
                    Math.Abs(Player.GridPosition.Y - Self.GridPosition.Y);
         }
@@ -52,7 +59,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool IsPlayerOnRight()
         {
-            if (Self == null || Player == null) return false;
+            if (!HasVisiblePlayer) return false;
             return Player.GridPosition.X > Self.GridPosition.X;
         }
 
@@ -61,7 +68,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool IsPlayerOnLeft()
         {
-            if (Self == null || Player == null) return false;
+            if (!HasVisiblePlayer) return false;
             return Player.GridPosition.X < Self.GridPosition.X;
         }
 
@@ -70,7 +77,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool IsPlayerAbove()
         {
-            if (Self == null || Player == null) return false;
+            if (!HasVisiblePlayer) return false;
             return Player.GridPosition.Y > Self.GridPosition.Y;
         }
 
@@ -79,7 +86,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public bool IsPlayerBelow()
         {
-            if (Self == null || Player == null) return false;
+            if (!HasVisiblePlayer) return false;
             return Player.GridPosition.Y < Self.GridPosition.Y;
         }
     }

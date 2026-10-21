@@ -342,3 +342,186 @@ namespace Olca.Tests.CardEffects
         }
     }
 }
+
+
+namespace Olca.Tests.CardEffects
+{
+    [TestFixture]
+    public class DerivativeRecoveryTests
+    {
+        private BattleSystem battle;
+        private Enemy enemy;
+        private MockCardDatabase database;
+        private static Card Card(string id, int start = 0, int recovery = 0, bool extend = false,
+            CardModifier modifier = null, bool instant = false) => new Card(id, id, 1, CardRarity.Normal,
+                CardCategory.Attack, ElementType.None, CardSeries.None, id == "parent" ? 1 : 7, "検証",
+                DamageTargetType.Single, modifier: modifier, startupFrames: start, recoveryFrames: recovery,
+                recoveryCancelAfterFrames: recovery > 0 ? 2 : (int?)null,
+                extendRecoveryDuringDerivative: extend, isInstantEffect: instant);
+        private static CardModifier Chain(params string[] ids)
+        {
+            var modifier = new CardModifier();
+            foreach (var id in ids) modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType = AdditionalEffectType.ChainCard, ChainCardId = id,
+                EffectOrigin = ChainEffectOrigin.PlayerPosition, Trigger = DerivativeTrigger.OnHit });
+            return modifier;
+        }
+        private void Setup(bool nested = false)
+        {
+            database = new MockCardDatabase();
+            database.AddCard(Card("child", 3, 4, modifier: nested ? Chain("grandchild") : null));
+            database.AddCard(Card("grandchild", 8, 3));
+            enemy = new Enemy("target", "検証", 500, ElementType.None, new Vector2Int(2, 0));
+            battle = new BattleSystem(new PlayerCharacter(500, new Vector2Int(1, 0)),
+                new List<Enemy> { enemy }, new Deck(), cardDatabase: database);
+            enemy.ApplyStun(60000);
+        }
+        private void Frames(int count) { for (int i = 0; i < count; i++) battle.TickFrame(17); }
+        private Cysharp.Threading.Tasks.UniTask<bool> Use(Card card)
+        {
+            battle.CardUsage.EnqueueCards(new List<Card> { card, Card("next", 2, 4) });
+            return battle.CardUsage.TryUseCurrentCardAsync().Preserve();
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 指定時だけ派生の最終後隙を待ってから親の後隙と窓を開始する(bool extend)
+        {
+            Setup(); var task = Use(Card("parent", recovery: 6, extend: extend, modifier: Chain("child")));
+            Assert.AreEqual(499, enemy.CurrentHp);
+            Assert.AreEqual(extend ? PlayerAttackPhase.Executing : PlayerAttackPhase.Recovery, battle.PlayerActionPhase);
+            Frames(3); Assert.AreEqual(492, enemy.CurrentHp);
+            Assert.AreEqual(extend ? 0 : 3, battle.RecoveryElapsedFrames);
+            Assert.AreEqual(!extend, battle.CanCancelPlayerRecovery);
+            Assert.IsFalse(battle.PlayerMovement.CanMove);
+            Frames(3);
+            if (!extend) { Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction); }
+            else {
+                Assert.IsFalse(task.Status.IsCompleted()); Assert.IsFalse(battle.TryStartPlayerBasicAttack(false));
+                Assert.IsFalse(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());
+                Frames(1); Assert.AreEqual(PlayerAttackPhase.Recovery, battle.PlayerActionPhase);
+                Assert.AreEqual(0, battle.RecoveryElapsedFrames); Frames(1); Assert.IsFalse(battle.CanCancelPlayerRecovery);
+                Frames(1); Assert.IsTrue(battle.CanCancelPlayerRecovery);
+                Assert.IsTrue(battle.TryStartPlayerBasicAttack(false)); Assert.IsTrue(task.GetAwaiter().GetResult());
+                Assert.AreEqual(482, enemy.CurrentHp);
+            }
+            Frames(10); Assert.AreEqual(extend ? 482 : 492, enemy.CurrentHp);
+        }
+        [Test]
+        public void 多重派生と孫の後隙をすべて数え無関係な遅延を待たない()
+        {
+            Setup(true); database.AddCard(Card("parallel", 1, 2));
+            battle.DelayedEffects.RegisterDelayedEffect(new DelayedEffect(DelayedEffectType.Recovery, 99999));
+            var task = Use(Card("parent", recovery: 6, extend: true, modifier: Chain("child", "parallel")));
+            Frames(13); Assert.AreEqual(PlayerAttackPhase.Executing, battle.PlayerActionPhase);
+            Assert.AreEqual(478, enemy.CurrentHp); Frames(1);
+            Assert.AreEqual(PlayerAttackPhase.Recovery, battle.PlayerActionPhase); Assert.AreEqual(0, battle.RecoveryElapsedFrames);
+            Frames(6); Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsTrue(battle.PlayerMovement.CanMove);
+            Assert.AreEqual(1, battle.DelayedEffects.ActiveEffectCount);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 停止と変身プレビュー確定は派生時計を増やさず再開時に一度だけ終了する(bool confirm)
+        {
+            Setup(); battle.Transformations.Configure(new[] { new TransformationDefenseDefinition("form", ElementResistances.Neutral, ElementType.Water) });
+            var task = Use(Card("parent", recovery: 6, extend: true, modifier: Chain("child")));
+            Frames(1); battle.Pause(BattlePauseReason.User); Frames(30); Assert.AreEqual(499, enemy.CurrentHp);
+            battle.Resume(BattlePauseReason.User); battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+            battle.OpenCustomScreen(new MockRandomProvider()); Assert.IsTrue(battle.Transformations.TryPreview("form"));
+            Frames(30); Assert.AreEqual(499, enemy.CurrentHp);
+            if (confirm) battle.CustomScreen.Confirm(); else battle.Transformations.TryCancelPending();
+            battle.CustomScreen.Close(); Frames(1); Assert.AreEqual(499, enemy.CurrentHp); Frames(1); Assert.AreEqual(492, enemy.CurrentHp);
+            Frames(4); Assert.AreEqual(PlayerAttackPhase.Recovery, battle.PlayerActionPhase); Frames(6);
+            Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void 中断とキュー切替は発生済み派生を残し旧完了が新動作を解除しない(int mode)
+        {
+            Setup(); int used = 0; battle.CardUsage.OnCardUsed += _ => used++;
+            var task = Use(Card("parent", recovery: 6, extend: true, modifier: Chain("child")));
+            if (mode == 0) battle.CardUsage.InterruptCurrentCard();
+            else if (mode == 1) battle.CardUsage.Clear();
+            else battle.Player.ApplyParalysis(2);
+            if (mode == 2) Frames(2);
+            Assert.IsFalse(battle.HasPlayerAction); Assert.AreEqual(mode != 1, task.GetAwaiter().GetResult());
+            Assert.AreEqual(mode == 1 ? 0 : 1, used);
+            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(10, 20));
+            Assert.IsTrue(battle.TryStartPlayerBasicAttack(false)); Frames(7);
+            Assert.AreEqual(492, enemy.CurrentHp); Assert.AreEqual(PlayerAttackPhase.Startup, battle.PlayerActionPhase);
+            Frames(3); Assert.AreEqual(482, enemy.CurrentHp); Frames(20); Assert.IsFalse(battle.HasPlayerAction);
+        }
+        [Test]
+        public void 遅延の明示破棄と例外と戦闘終了でも待機を残さない()
+        {
+            Setup(); var task = Use(Card("parent", extend: true, modifier: Chain("child")));
+            battle.DelayedEffects.Clear(); Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction);
+            Setup(); task = Use(Card("parent", extend: true, modifier: Chain("child")));
+            battle.DelayedEffects.GetActiveEffects()[0].ExecuteAction = () => throw new System.InvalidOperationException("検証用");
+            Frames(2); Assert.Throws<System.InvalidOperationException>(() => Frames(1));
+            Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction);
+            Setup(); task = Use(Card("parent", extend: true, modifier: Chain("child")));
+            battle.Player.TakeDamage(9999); Assert.IsFalse(task.GetAwaiter().GetResult());
+            Assert.IsFalse(battle.HasPlayerAction); Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 指定があっても投擲飛翔と着弾後の別派生は独立し穴落下でも拘束しない(bool hole)
+        {
+            Setup(); var modifier = new CardModifier(); modifier.AdditionalEffects.Add(new AdditionalEffect {
+                EffectType = AdditionalEffectType.DelayedProjectile, DelayTime = .5f, TargetOffset = new Vector2Int(2, 0),
+                ChainCardId = "child", Trigger = DerivativeTrigger.Immediate, CancelOnHole = true });
+            if (hole) battle.Field.ChangePanelType(new Vector2Int(3, 0), PanelType.Hole);
+            var task = Use(Card("parent", recovery: 6, extend: true, modifier: modifier)); Frames(6);
+            Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction);
+            Frames(24); Assert.AreEqual(hole ? 0 : 1, battle.DelayedEffects.ActiveEffectCount);
+            Frames(11); Assert.IsFalse(battle.HasPlayerAction); Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
+            Assert.AreEqual(500, enemy.CurrentHp, "着弾位置から前方に敵がいない子は命中しない");
+        }
+        [Test]
+        public void 暗転は派生待機も省き直接非同期効果は指定時に寿命を待つ()
+        {
+            Setup(); var card = Card("parent", recovery: 6, extend: true, modifier: Chain("child"), instant: true);
+            Assert.IsTrue(Use(card).GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction); Frames(7); Assert.AreEqual(492, enemy.CurrentHp);
+            Setup(); card = Card("parent", recovery: 6, extend: true, modifier: Chain("child"));
+            var direct = new ModifiableCardEffect().ExecuteAsync(new BattleContext(battle, card) { CardDatabase = database }, default).Preserve();
+            Frames(12); Assert.IsFalse(direct.Status.IsCompleted()); Frames(1); Assert.IsTrue(direct.Status.IsCompleted()); direct.GetAwaiter().GetResult();
+        }
+        [Test]
+        public void 派生途中のファイル保存再開は開始境界へ戻り旧待機と遅延を新戦闘へ持ち込まない()
+        {
+            Setup(); var root = Card("parent", recovery: 6, extend: true, modifier: Chain("child"));
+            var config = DungeonConfig.CreateTestDungeon(10);
+            config.MapCells[3] = new MapCell(3, new Enemy("boss", "検証", 500, ElementType.None, new Vector2Int(3, 0)));
+            var cards = new Deck(new List<Card> { root, root.Clone(), root.Clone(), root.Clone(), root.Clone() });
+            var defaults = Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(config, cards);
+            string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-derivative-" + System.Guid.NewGuid().ToString("N"));
+            try {
+                var store = new Olca.Unity.FileCheckpointStore(defaults.Definitions, directory);
+                var session = new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions, store);
+                var game = new Olca.Core.Logic.Integration.DungeonBattleManager(config, new PlayerCharacter(500), cards,
+                    new MockRandomProvider(), new MockLogger(), checkpoints: session, cardDatabase: database);
+                for (int f = 0; game.CurrentBattle == null && f < 100; f++) game.TickFrame(17);
+                Assert.IsNotNull(game.CurrentBattle); battle = game.CurrentBattle; enemy = battle.Enemies[0]; enemy.ApplyStun(60000);
+                battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); var task = Use(root); Frames(1);
+                Assert.AreEqual(PlayerAttackPhase.Executing, battle.PlayerActionPhase);
+                var bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+                Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(session, new MockRandomProvider(), new MockLogger(), out var restored, out var error, cardDatabase: database), error);
+                Assert.IsTrue(game.SuspendForCheckpoint()); restored.ActivateCheckpoint();
+                Assert.IsFalse(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction);
+                Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount); Frames(100);
+                Assert.IsFalse(restored.CurrentBattle.HasPlayerAction); Assert.AreEqual(0, restored.CurrentBattle.DelayedEffects.ActiveEffectCount);
+                Assert.AreEqual(500, restored.CurrentBattle.Enemies[0].CurrentHp);
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+            } finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+        [Test]
+        public void 派生の時計は描画頻度と追いつきに依存しない()
+        {
+            List<string> Trace(int fps) {
+                Setup(true); var task = Use(Card("parent", recovery: 6, extend: true, modifier: Chain("child")));
+                var trace = new List<string>(); var clock = new Olca.Core.Logic.Integration.LogicalFrameClock(); long wall = 0;
+                void Tick(long f, int ms) { if (f == 4) battle.Pause(BattlePauseReason.User); if (f == 9) battle.Resume(BattlePauseReason.User); battle.TickFrame(ms); trace.Add(enemy.CurrentHp + ":" + battle.PlayerActionPhase + ":" + battle.RecoveryElapsedFrames); }
+                if (fps == 0) { clock.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond); clock.Drain(Tick); }
+                else for (int i = 1; clock.Frame < 60; i++) { long next = (long)i * Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond / fps; clock.Accumulate(next - wall); wall = next; clock.Drain(Tick); }
+                Assert.IsTrue(task.GetAwaiter().GetResult()); return trace;
+            }
+            CollectionAssert.AreEqual(Trace(60), Trace(30)); CollectionAssert.AreEqual(Trace(60), Trace(120)); CollectionAssert.AreEqual(Trace(60), Trace(0));
+        }
+    }
+}

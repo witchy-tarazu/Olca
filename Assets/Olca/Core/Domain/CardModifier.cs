@@ -231,8 +231,13 @@ namespace Olca.Core.Domain
             get => hitInvincibilityStages == null ? null : (bool[])hitInvincibilityStages.Clone();
             set => hitInvincibilityStages = value == null ? null : (bool[])value.Clone();
         }
+        public string PoisonKind { get; set; } = "poison";
+        public int? PoisonIntervalFrames { get; set; }
         internal void ValidateHitInvincibilityStages()
         {
+            if (EffectType == AdditionalEffectType.Poison && (string.IsNullOrWhiteSpace(PoisonKind) || PoisonIntervalFrames <= 0 ||
+                (PoisonKind != "poison" && !PoisonIntervalFrames.HasValue) || (PoisonIntervalFrames.HasValue && Power < 0)))
+                throw new System.ArgumentException("毒種と正の間隔・非負の固定量が必要です");
             if (hitInvincibilityStages == null) return;
             if (EffectType != AdditionalEffectType.MultiHit || hitInvincibilityStages.Length != (HitCount > 0 ? HitCount : 3))
                 throw new System.ArgumentException("被弾無敵の段設定は多段効果のヒット数と一致させてください");

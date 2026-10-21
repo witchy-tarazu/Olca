@@ -29,6 +29,12 @@ namespace Olca.Core.Logic.Battle
         private FrameCountdown remaining;
         public int RemainingTimeMs { get => remaining.Milliseconds; set => remaining.SetMilliseconds(value); }
         internal long RegisteredFrame { get; set; }
+        public int InitialTimeMs { get; private set; }
+        public Vector2Int? SourcePosition { get; internal set; }
+        public int BlastRadius { get; internal set; }
+        public bool WasExecuted { get; internal set; }
+        public long CompletedFrame { get; internal set; } = -1;
+        public float Progress => InitialTimeMs <= 0 ? 1f : Math.Max(0f, Math.Min(1f, 1f - (float)RemainingTimeMs / InitialTimeMs));
         internal void Tick(int milliseconds) => remaining.Tick(milliseconds);
         internal void TickFrame() => remaining.TickFrame();
 
@@ -47,12 +53,19 @@ namespace Olca.Core.Logic.Battle
         /// <summary>キャンセル時に実行する処理（オプション）</summary>
         public Action OnCancelled { get; set; }
 
+        // 実行・落下・戦闘終了のいずれでも、所有している動作待機を一度だけ解除する。
+        internal Action OnFinished { get; set; }
+        internal void Finish()
+        {
+            var finish = OnFinished; OnFinished = null; finish?.Invoke();
+        }
+
         /// <summary>
         /// コンストラクタ（投擲物用）- ミリ秒版
         /// </summary>
         public DelayedEffect(int delayTimeMs, Vector2Int targetPosition, bool cancelOnHole = true)
         {
-            RemainingTimeMs = delayTimeMs;
+            InitialTimeMs = delayTimeMs; RemainingTimeMs = delayTimeMs;
             EffectType = DelayedEffectType.Projectile;
             TargetPosition = targetPosition;
             CancelOnHole = cancelOnHole;
@@ -64,9 +77,15 @@ namespace Olca.Core.Logic.Battle
         public DelayedEffect(DelayedEffectType effectType, int delayTimeMs)
         {
             EffectType = effectType;
-            RemainingTimeMs = delayTimeMs;
+            InitialTimeMs = delayTimeMs; RemainingTimeMs = delayTimeMs;
             TargetPosition = new Vector2Int(0, 0); // 未使用
             CancelOnHole = false; // 未使用
+        }
+
+        internal static DelayedEffect InFrames(DelayedEffectType type, int frames)
+        {
+            if (frames < 0) throw new ArgumentOutOfRangeException(nameof(frames));
+            var effect = new DelayedEffect(type, 0); effect.remaining.SetFrames(frames); return effect;
         }
 
         /// <summary>

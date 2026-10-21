@@ -49,6 +49,8 @@ namespace Olca.Application.Dungeon
         [SerializeField, Min(1)] private int battleStaggerFrames = 18;
         [Tooltip("既定AI攻撃・基本攻撃・マグマの被弾後無敵。仮値600ms。共通のけぞり時間より長く設定する。カードの個別設定は変更しない。")]
         [SerializeField, Min(1)] private int commonHitInvincibilityMs = 600;
+        [Tooltip("探索通常速度。旧10000から20%減速。ダッシュ速度/ジャンプ期間/戦闘移動時間は独立。") ]
+        [SerializeField, Min(1)] private int explorationNormalSpeedMilliPerSecond = 8000;
         [SerializeField, Min(0)] private int swordPoiseDamage = 15;
         [SerializeField, Min(0)] private int bombPoiseDamage = 20;
         [SerializeField, Min(0)] private int fireSwordPoiseDamage = 30;
@@ -96,12 +98,13 @@ namespace Olca.Application.Dungeon
         private int dashCooldownRemaining; // クールタイム残り論理フレーム
 
         [Header("基本攻撃の暫定調整（Planning/暫定実装一覧）")]
-        [SerializeField, Min(1)] private int basicAttackShortPressFrames = 30;
+        [SerializeField, Min(1)] private int basicAttackChargeFrames = 60;
+        [SerializeField, Min(1)] private int basicAttackChargeMultiplier = 2;
         [SerializeField, Min(1)] private int basicAttackIntervalFrames = 12;
         private readonly BasicAttackInputState basicAttackInput = new BasicAttackInputState();
         private BasicAttackHud basicAttackHud;
         private bool queuedTouchJump, queuedTouchDash, queuedTouchCard;
-        private bool ExplorationUiAvailable => manager?.CurrentPhase==GamePhase.Dungeon && !IsUserPaused && !GameplayPause.InputBlocked &&
+        private bool ExplorationUiAvailable => manager?.Dungeon.ActiveVisit==null && manager?.CurrentPhase==GamePhase.Dungeon && !IsUserPaused && !GameplayPause.InputBlocked &&
             !clearReturnVisible && !collectionOpen && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && manager.Dungeon.IsExplorationMoving;
         private void QueueExplorationFromUi(bool jump)
         {
@@ -113,7 +116,7 @@ namespace Olca.Application.Dungeon
         }
         private bool TouchCardAvailable => manager?.CurrentPhase==GamePhase.Battle && battleFieldReady && !manager.CurrentBattle.IsPaused &&
             !IsUserPaused && !GameplayPause.InputBlocked && !clearReturnVisible && !collectionOpen && !manager.CurrentBattle.CardUsage.IsEmpty &&
-            manager.CurrentBattle.CardUsage.InFlightCard==null && !manager.CurrentBattle.Player.IsActionPrevented && !manager.CurrentBattle.PlayerMovement.IsNormalMoving;
+            manager.CurrentBattle.CardUsage.CanUseCurrentCard && !manager.CurrentBattle.Player.IsActionPrevented && !manager.CurrentBattle.PlayerMovement.IsNormalMoving;
         private void QueueTouchCard()
         {
             if(!TouchCardAvailable)return;
@@ -125,25 +128,42 @@ namespace Olca.Application.Dungeon
                 !IsUserPaused && !GameplayPause.InputBlocked && !clearReturnVisible && !collectionOpen && !awaitingCheckpointChoice;
             if(inputProvider!=null&&inputProvider.SetTouchMovementEnabled(enabled)) { logicalLoop.ReleaseInput();inputProvider.QueueSnapshot(); }
         }
-        private void ResetTouchInput()
+        private bool uiAttackHeld, uiAttackDown, uiAttackUp;
+        private void ResetTouchInput(bool preserveCharge = false)
         {
             queuedTouchJump=queuedTouchDash=queuedTouchCard=false;
+            if (preserveCharge) basicAttackInput.Suspend(); else basicAttackInput.CancelCharge();
+            uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackHud?.CancelAttackPointer();
             queuedBasicAttackTap=false;TouchUiCancelGuard.CancelAll();logicalLoop.ReleaseInput();inputProvider?.QueueSnapshot();
         }
         private void OnApplicationFocus(bool focused) { if(!focused)ResetTouchInput(); }
         private void OnApplicationPause(bool paused) { if(paused)ResetTouchInput(); }
         private bool queuedBasicAttackTap;
         private bool BasicAttackUiAvailable => manager?.CurrentPhase == GamePhase.Battle && !IsUserPaused && !GameplayPause.InputBlocked &&
-            !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && basicAttackInput.CooldownFrames == 0;
+            !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && (basicAttackInput.CooldownFrames == 0 || manager.CurrentBattle.CanCancelPlayerRecovery);
         private void QueueBasicAttackFromUi()
         {
-            if (!BasicAttackUiAvailable) return;
+            if (!BasicAttackUiAvailable || basicAttackInput.IsCharging || uiAttackHeld) return;
             logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => queuedBasicAttackTap = true);
+        }
+        private void QueueBasicAttackHoldFromUi(bool held)
+        {
+            if (held && !BasicAttackUiAvailable) return;
+            logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => {
+                if (held) { uiAttackDown |= !uiAttackHeld; uiAttackHeld = true; }
+                else { uiAttackUp |= uiAttackHeld; uiAttackHeld = false; }
+            });
+        }
+        private void CancelBasicAttackFromUi()
+        {
+            logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => {
+                uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackInput.CancelCharge();
+            });
         }
         private void RefreshBasicAttackHud()
         {
             if (basicAttackHud == null) return;
-            bool visible = (manager?.CurrentPhase == GamePhase.Battle || manager?.CurrentPhase == GamePhase.Dungeon) && !clearReturnVisible && !collectionOpen &&
+            bool visible = manager?.Dungeon.ActiveVisit==null && (manager?.CurrentPhase == GamePhase.Battle || manager?.CurrentPhase == GamePhase.Dungeon) && !clearReturnVisible && !collectionOpen &&
                 (keyboardSettingsView == null || !keyboardSettingsView.gameObject.activeSelf);
             basicAttackHud.gameObject.SetActive(visible); if (!visible) return;
             if(manager.CurrentPhase==GamePhase.Dungeon) { basicAttackHud.RenderExploration(ExplorationUiAvailable); return; }
@@ -151,7 +171,7 @@ namespace Olca.Application.Dungeon
             string state = IsUserPaused ? "ポーズ中" : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中" :
                 battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中" :
                 battle.CardUsage.InFlightCard != null ? "カード使用中" : basicAttackInput.CooldownFrames > 0 ? "再使用待ち" :
-                GameplayPause.InputBlocked ? "キーを離してください" : "使用できます";
+                GameplayPause.InputBlocked ? "キーを離してください" : basicAttackInput.IsResumePending ? "再押下でタメ再開" : basicAttackInput.IsCharging ? $"タメ {basicAttackInput.ChargeFrames}/{battle.ResolveBasicChargeFrames(basicAttackChargeFrames)}" : "短押し / 長押しでタメ";
             basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable);
         }
         private bool battleFieldReady;
@@ -169,6 +189,121 @@ namespace Olca.Application.Dungeon
         private bool floorSwapPending;
         public int CurrentFloorIndex { get; private set; }
         public int FloorCount => floorDefinitions?.FloorCount ?? 1;
+
+        private sealed class DungeonChoice
+        {
+            public FloorSequenceDefinitions Floors;
+            public CheckpointDefinitions Single;
+            public string Id => Floors?.RouteId ?? Single.DungeonId;
+            public string Key => Floors?.RouteHash ?? Single.MapHash;
+            public string Label => Map().DungeonName + (Floors == null ? "" : " / " + Id);
+            public DungeonConfig Map() => Floors?.CreateInitialMap(0) ?? Single.CreateInitialMap();
+        }
+                private bool exchangeOpen;
+        private string exchangeSelectedId, exchangeRequestId, exchangeRound;
+        private void OpenTokenExchange()
+        {
+            if (!CanSelectDungeon || styleSelectionOpen || (dungeonSelectionOpen && !initialHub)) return;
+            exchangeOpen = true; exchangeSelectedId = exchangeRequestId = exchangeRound = null;
+            EnsureTokenExchange(); ShowTokenExchange();
+        }
+        private void EnsureTokenExchange()
+        {
+            var factory=CreateCardFactory();var settings=ReturnSettings();
+            TokenExchangeProduct Product(string id, bool random) {
+                var card=factory.CreateById(id);long overflow=settings.Tokens(card.Rarity,card.ExceedLevel);
+                return new TokenExchangeProduct("card-"+id,card,checked(overflow*3),overflow,random?ExchangeLimit.PerRefresh:ExchangeLimit.Unlimited,random?1:0);
+            }
+            clearReturnSession.EnsureExchange(new[]{Product(SimpleCardFactory.Sword,false)},
+                new[]{Product(SimpleCardFactory.Bomb,true),Product(SimpleCardFactory.Heal,true),Product(SimpleCardFactory.Shield,true)},2,randomProvider);
+        }
+        private void ShowTokenExchange()
+        {
+            var profile=clearReturnSession.Snapshot;
+            clearReturnView.RenderTokenExchange(profile, exchangeSelectedId,
+                !CanSelectDungeon, clearReturnSession.Error,
+                id => { if(!exchangeOpen || !CanSelectDungeon || profile.ExchangeStock==null || !profile.ExchangeStock.Offers.Any(o=>o.Id==id))return;
+                    exchangeSelectedId=id;exchangeRound=profile.ExchangeStock.RoundId;exchangeRequestId=System.Guid.NewGuid().ToString("N");ShowTokenExchange(); },
+                () => { if(!exchangeOpen || !CanSelectDungeon || exchangeSelectedId==null)return;
+                    if(clearReturnSession.PurchaseExchange(exchangeRequestId,exchangeRound,exchangeSelectedId)) exchangeSelectedId=exchangeRequestId=exchangeRound=null;
+                    ShowTokenExchange(); },
+                () => { if(!exchangeOpen || !CanSelectDungeon)return;exchangeSelectedId=exchangeRequestId=exchangeRound=null;ShowTokenExchange(); },
+                () => { if(!exchangeOpen || !CanSelectDungeon)return;exchangeOpen=false;if(initialHub)ShowDungeonSelection();else ShowClearReturn(); },
+                () => { if(!exchangeOpen)return;
+                    if(clearReturnSession.Retry()) {exchangeSelectedId=exchangeRequestId=exchangeRound=null;EnsureTokenExchange();}ShowTokenExchange(); });
+        }
+
+        private DepartureStyleDefinition[] departureStyles = { DepartureStyleDefinition.Basic };
+        private bool styleSelectionOpen;
+        private int styleDraft;
+        /// <summary>製品定義の登録口。基本以外の種類・数値はここで生成しない。</summary>
+        public void ConfigureDepartureStyles(IReadOnlyList<DepartureStyleDefinition> styles)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後のスタイル登録はできません");
+            if (styles == null || styles.Count == 0 || styles.Any(s => s == null) || styles.Select(s => s.Id).Distinct().Count() != styles.Count ||
+                !styles.Any(s => s.Id == DepartureStyleDefinition.BasicId)) throw new System.ArgumentException("基本を含む重複しないスタイル定義が必要です");
+            departureStyles = styles.ToArray();
+        }
+        private DepartureStyleDefinition SelectedStyle => departureStyles.SingleOrDefault(s => s.Id == (clearReturnSession.Snapshot.SelectedStyleId ?? DepartureStyleDefinition.BasicId));
+        private void OpenStyleSelection()
+        {
+            if (exchangeOpen || !CanSelectDungeon || dungeonSelectionOpen && !initialHub) return;
+            styleDraft = System.Array.FindIndex(departureStyles, s => s.Id == (clearReturnSession.Snapshot.SelectedStyleId ?? DepartureStyleDefinition.BasicId));
+            styleSelectionOpen = true; ShowStyleSelection();
+        }
+        private void ShowStyleSelection()
+        {
+            clearReturnView.RenderStyleSelection(departureStyles.Select(s => s.Name + " / " + (s.Attack?.Element.ToString() ?? "None") +
+                (s.RequiredClear == null ? "" : " / 解放: " + s.RequiredClear + "クリア")).ToArray(),
+                departureStyles.Select(s => s.IsUnlocked(clearReturnSession.Snapshot)).ToArray(), styleDraft,
+                i => { if (styleSelectionOpen && CanSelectDungeon && i >= 0 && i < departureStyles.Length && departureStyles[i].IsUnlocked(clearReturnSession.Snapshot)) { styleDraft = i; ShowStyleSelection(); } },
+                () => { if (!styleSelectionOpen || !CanSelectDungeon || styleDraft < 0 || styleDraft >= departureStyles.Length) return;
+                    if (!clearReturnSession.SelectDepartureStyle(departureStyles[styleDraft])) { ShowStyleSelection(); return; } CloseStyleSelection(); },
+                () => { if (styleSelectionOpen && CanSelectDungeon) CloseStyleSelection(); },
+                !CanSelectDungeon, clearReturnSession.Error, RetryStyleSelection);
+        }
+        private void CloseStyleSelection() { styleSelectionOpen = false; if (initialHub) ShowDungeonSelection(); else ShowClearReturn(); }
+        private void RetryStyleSelection()
+        {
+            if (!styleSelectionOpen) return;
+            if (clearReturnSession.Retry()) CloseStyleSelection(); else ShowStyleSelection();
+        }
+        private List<DungeonChoice> dungeonChoices;
+        private bool dungeonSelectionEnabled, initialHub, dungeonSelectionOpen, debugUnlockDungeons;
+        private int selectedDungeon, selectionBeforeOpen;
+        /// <summary>登録順に解放する既存定義。デバッグ全開放は保存したクリア履歴を書き換えない。</summary>
+        public void ConfigureDungeonSelection(IReadOnlyList<FloorSequenceDefinitions> choices, bool debugUnlockAll = false)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後はダンジョン一覧を変更できません");
+            if (choices == null || choices.Count == 0 || choices.Any(c => c == null) || choices.Select(c => c.RouteId).Distinct().Count() != choices.Count)
+                throw new System.ArgumentException("重複しない既存ダンジョン定義が必要です");
+            dungeonChoices = choices.Select(c => new DungeonChoice { Floors = c }).ToList();
+            dungeonSelectionEnabled = true; debugUnlockDungeons = debugUnlockAll; floorDefinitions = choices[0];
+        }
+        private bool DungeonUnlocked(int index) => index >= 0 && index < dungeonChoices.Count &&
+            (debugUnlockDungeons || index == 0 || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index].Id) || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index - 1].Id));
+        private bool CanSelectDungeon => clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+            !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
+            (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
+            clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
+        private void OpenDungeonSelection()
+        {
+            if (exchangeOpen || !CanSelectDungeon || styleSelectionOpen || !dungeonSelectionEnabled) return;
+            selectionBeforeOpen = selectedDungeon; dungeonSelectionOpen = true; ShowDungeonSelection();
+        }
+        private void ShowDungeonSelection()
+        {
+            clearReturnVisible = true; dungeonSelectionOpen = true;
+            clearReturnView.RenderDungeonSelection(dungeonChoices.Select(c => c.Label).ToArray(),
+                Enumerable.Range(0, dungeonChoices.Count).Select(DungeonUnlocked).ToArray(), selectedDungeon,
+                i => { if (!exchangeOpen && !styleSelectionOpen && dungeonSelectionOpen && CanSelectDungeon && DungeonUnlocked(i)) { selectedDungeon = i; ShowDungeonSelection(); } },
+                () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; dungeonSelectionOpen = false;
+                    if (initialHub) StartNextDeparture(); else ShowClearReturn(); },
+                () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
+                    if (initialHub) { dungeonSelectionOpen = true; ShowDungeonSelection(); } else ShowClearReturn(); },
+                !CanSelectDungeon, clearReturnError ?? clearReturnSession.Error, RetryClearReturn,
+                OpenStyleSelection, SelectedStyle?.Name ?? "未登録スタイル", OpenTokenExchange);
+        }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
         public void ConfigureFloorSequence(FloorSequenceDefinitions definitions)
@@ -250,8 +385,7 @@ namespace Olca.Application.Dungeon
             GameplayKeyboardSettingsError = null;
             gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             // 論理時計は継続し、旧割当の入力だけを捨てる。再開時は既存の全キー解放待ちを通る。
-            logicalLoop.ReleaseInput();
-            inputProvider.QueueSnapshot();
+            ResetTouchInput();
             return true;
         }
 
@@ -259,13 +393,13 @@ namespace Olca.Application.Dungeon
         {
             if (manager == null || manager.IsUserPaused == paused) return;
             logicalLoop.Observe(!manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
-            ResetTouchInput();
+            ResetTouchInput(preserveCharge: true);
             manager.SetUserPaused(paused);
             GameplayPause.SetPaused(paused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
             else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose(); }
             // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
-            if (pauseOverlay != null) pauseOverlay.SetActive(paused);
+            if (pauseOverlay != null) { pauseOverlay.SetActive(paused); if (paused) pauseOverlay.transform.SetAsLastSibling(); }
             inputProvider?.QueueSnapshot();
         }
 
@@ -292,6 +426,30 @@ namespace Olca.Application.Dungeon
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
                 return button;
             }
+            currencyOverlay = new GameObject("CurrencyRewardPanel", typeof(RectTransform), typeof(Image));
+            currencyOverlay.transform.SetParent(pauseCanvas.transform, false);
+            var currencyRect = (RectTransform)currencyOverlay.transform; currencyRect.anchorMin = Vector2.zero; currencyRect.anchorMax = Vector2.one; currencyRect.offsetMin = currencyRect.offsetMax = Vector2.zero;
+            currencyOverlay.GetComponent<Image>().color = new Color(.02f, .08f, .12f, .97f);
+            Text CurrencyText(string name, Transform parent, Vector2 anchor, Vector2 position, Vector2 size) {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Text)); obj.transform.SetParent(parent, false);
+                var text = obj.GetComponent<Text>(); text.font = font; text.fontSize = 30; text.color = Color.white; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
+                var r = text.rectTransform; r.anchorMin = r.anchorMax = anchor; r.anchoredPosition = position; r.sizeDelta = size; return text;
+            }
+            currencyRewardText = CurrencyText("CurrencyRewardText", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(0,100), new Vector2(1000,180));
+            receiveCurrencyButton = MakeButton("ReceiveCurrencyButton", "受け取る", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(-240,-80));
+            receiveCurrencyButton.onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(true); });
+            MakeButton("SkipCurrencyButton", "スキップ", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(240,-80)).onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(false); });
+            currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-160,-125), new Vector2(300,45));
+            MakeButton("PauseCurrencyReward","ポーズ",currencyOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
+            currencyOverlay.SetActive(false);
+            itemRewardOverlay=new GameObject("ItemRewardPanel",typeof(RectTransform),typeof(Image));itemRewardOverlay.transform.SetParent(pauseCanvas.transform,false);
+            var itemRect=(RectTransform)itemRewardOverlay.transform;itemRect.anchorMin=Vector2.zero;itemRect.anchorMax=Vector2.one;itemRect.offsetMin=itemRect.offsetMax=Vector2.zero;itemRewardOverlay.GetComponent<Image>().color=new Color(.02f,.08f,.12f,.97f);
+            itemRewardText=CurrencyText("ItemRewardText",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(0,100),new Vector2(1200,220));
+            MakeButton("ReceiveItemReward","受け取る",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(-240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(true);});
+            MakeButton("SkipItemReward","スキップ",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});
+            MakeButton("PauseItemReward","ポーズ",itemRewardOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
+            itemRewardOverlay.SetActive(false);
+
             MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-120, -60)).onClick.AddListener(() => SetUserPaused(true));
             pauseOverlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image)); pauseOverlay.transform.SetParent(pauseCanvas.transform, false);
             var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
@@ -307,7 +465,7 @@ namespace Olca.Application.Dungeon
             retreatConfirmation.GetComponent<Image>().color = new Color(.02f,.05f,.08f,.96f);
             var warning = new GameObject("RetreatWarning", typeof(RectTransform), typeof(Text)); warning.transform.SetParent(retreatConfirmation.transform, false);
             var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
-            wt.text = "撤退すると攻略中に獲得したカードをすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
+            wt.text = "撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
             wt.rectTransform.sizeDelta = new Vector2(1600,200); wt.rectTransform.anchoredPosition = new Vector2(0,150);
             MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100)).onClick.AddListener(ConfirmRetreat);
             MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100)).onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
@@ -337,9 +495,9 @@ namespace Olca.Application.Dungeon
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
-            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture, OpenSavedDeckMenu);
+            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture, OpenSavedDeckMenu, dungeonSelectionEnabled ? (System.Action)OpenDungeonSelection : null, OpenStyleSelection, OpenTokenExchange);
             var attackPanel = new GameObject("BasicAttackHud", typeof(RectTransform)); attackPanel.transform.SetParent(pauseCanvas.transform, false);
-            basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, () => basicAttackShortPressFrames);
+            basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, QueueBasicAttackHoldFromUi, CancelBasicAttackFromUi);
             basicAttackHud.InitializeExploration(font,()=>QueueExplorationFromUi(true),()=>QueueExplorationFromUi(false),QueueTouchCard);
             basicAttackHud.gameObject.SetActive(false);
         }
@@ -418,7 +576,7 @@ namespace Olca.Application.Dungeon
         private readonly List<Card> ownedDepartureDraft = new List<Card>();
         private Card[] ownedDepartureOptions;
         private string ownedDepartureError;
-        private bool CanEditOwnedDeparture => clearReturnVisible && !collectionOpen && !departureWriting && !progressStartupBlocked &&
+        private bool CanEditOwnedDeparture => !exchangeOpen && !styleSelectionOpen && clearReturnVisible && !collectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession.Ready && !clearReturnSession.HasPendingSave && clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId;
         private void OpenOwnedDeparture()
@@ -508,6 +666,9 @@ namespace Olca.Application.Dungeon
                 if (outcome == RunReturnOutcome.Retreated && !manager.IsSuspended && !manager.SuspendForCheckpoint()) return;
                 if (IsUserPaused) SetUserPaused(false);
                 transitionCts?.Cancel(); battleSession?.Detach(); cardSelectionView?.Hide();
+                manager.Dungeon.DiscardRunCurrency();
+                currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
+                itemRewardChoice?.TrySetCanceled();itemRewardOverlay?.SetActive(false);
                 pendingCardChoices = null; floorSwapPending = false; basicAttackInput.Reset(); queuedBasicAttackTap = false;
                 clearReturnError = null;
                 if (!clearReturnSession.EndWithoutRewards(source, key, ReturnSettings(), outcome) && !clearReturnSession.HasPendingSave) clearReturnError = clearReturnSession.Error;
@@ -547,15 +708,19 @@ namespace Olca.Application.Dungeon
         }
         private void ShowClearReturn()
         {
+            if (exchangeOpen) { ShowTokenExchange(); return; }
+            if (styleSelectionOpen) { ShowStyleSelection(); return; }
+            if (initialHub) { ShowDungeonSelection(); return; }
             clearReturnVisible = true; transitionCts?.Cancel(); retreatConfirmation?.SetActive(false);
             checkpointOverlay?.SetActive(false); pauseOverlay?.SetActive(false); keyboardSettingsView?.DiscardAndClose();
             clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.DisplayFlow,
                 !clearReturnSession.Ready || clearReturnSession.HasPendingSave || progressStartupBlocked || clearReturnError != null,
-                clearReturnError ?? clearReturnSession.Error);
+                clearReturnError ?? clearReturnSession.Error, dungeonName: (dungeonSelectionEnabled ? dungeonChoices[selectedDungeon].Label : "") + " / " + (SelectedStyle?.Name ?? "未登録スタイル"));
         }
         private void ResumeClearReturnIfNeeded()
         {
             if (!clearReturnSession.Ready) { ShowClearReturn(); return; }
+            if (initialHub) { clearReturnVisible = true; OpenDungeonSelection(); return; }
             if (clearReturnSession.Snapshot.NextDeparture != null && !awaitingCheckpointChoice && !HasIncompleteReturn) {
                 if (!ActivateNextDeparture(out var startError)) { clearReturnError = startError; ShowClearReturn(); }
                 return;
@@ -590,7 +755,8 @@ namespace Olca.Application.Dungeon
         private void RetryClearReturn()
         {
             if(savedDeckMenuOpen){clearReturnSession.Retry();if(!clearReturnSession.HasPendingSave){savedDeckDirty=false;editingSavedDeckId=null;ownedDepartureError=null;}ShowSavedDeckMenu();return;}
-            if (!clearReturnSession.Retry()) { ShowClearReturn(); return; }
+            if (!clearReturnSession.Retry()) { if (initialHub) ShowDungeonSelection(); else ShowClearReturn(); return; }
+            if (initialHub && clearReturnSession.Snapshot.NextDeparture != null) { if (!ActivateNextDeparture(out clearReturnError)) ShowDungeonSelection(); return; }
             if (!progressStartupBlocked && clearReturnSession.Snapshot.NextDeparture?.ParentRunId == clearReturnSession.Snapshot.Flow?.RunId &&
                 clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) {
                 if (!ActivateNextDeparture(out clearReturnError)) ShowClearReturn();
@@ -605,29 +771,34 @@ namespace Olca.Application.Dungeon
             ShowClearReturn();
         }
 
-        private string DepartureDefinitionKey(CheckpointDto start) => floorDefinitions?.RouteHash ?? nextDepartureDefinitions.MapHash;
         private void StartNextDeparture() => StartNextDepartureWithDeck(null);
         private void StartNextDepartureWithDeck(Deck ownedDeck)
         {
-            if (departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
-                clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned) return;
+            if (exchangeOpen || styleSelectionOpen || dungeonSelectionOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
+                (!initialHub && clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned)) return;
             departureWriting = true;
             try {
                 if (clearReturnSession.HasPendingSave) { ShowClearReturn(); return; }
-                if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId) {
-                    var map = floorDefinitions?.CreateInitialMap(0) ?? nextDepartureDefinitions.CreateInitialMap();
-                    if (floorDefinitions == null) map.ValidateFinalFloorForDeparture();
+                if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent)) {
+                    var choice = dungeonChoices[selectedDungeon];
+                    if (dungeonSelectionEnabled && !DungeonUnlocked(selectedDungeon)) { clearReturnError = "未解放のダンジョンです"; ShowClearReturn(); return; }
+                    var style = SelectedStyle;
+                    if (style == null || !style.IsUnlocked(clearReturnSession.Snapshot)) { clearReturnError = "未登録または未解放のスタイルです。保存を保持しています。"; ShowClearReturn(); return; }
+                    var map = choice.Map();
+                    if (choice.Floors == null) map.ValidateFinalFloorForDeparture();
                     Deck deck=ownedDeck;
                     if(deck==null&&clearReturnSession.Snapshot.EquippedDeckId!=null&&!TryResolveSavedDeck(SavedDecks.SingleOrDefault(d=>d.Id==clearReturnSession.Snapshot.EquippedDeckId),out deck,out clearReturnError)){ShowClearReturn();return;}
                     deck=deck??CreateInitialDeck();
                     // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
-                    var frozen = floorDefinitions?.CreateDepartureSession() ?? new DungeonCheckpointSession(nextDepartureDefinitions, new MemoryCheckpointStore(nextDepartureDefinitions));
+                    var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     var level = clearReturnSession.Snapshot.Level; var settings = ReturnSettings();
                     var player = new PlayerCharacter(settings.MaxHp(level), attackPower: settings.Attack(level),
                         staggerDurationFrames: battleStaggerFrames, poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
+                    player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));
+                    player.SetDepartureStyle(style);
                     new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen);
                     var start = frozen.Store.Read();
-                    if (!ValidateDeparture(start, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, DepartureDefinitionKey(start))) {
+                    if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key)) {
                         ShowClearReturn(); return;
                     }
                 }
@@ -636,53 +807,124 @@ namespace Olca.Application.Dungeon
               catch (System.OverflowException e) { clearReturnError = e.Message; ShowClearReturn(); }
             finally { departureWriting = false; }
         }
-        private bool ValidateDeparture(CheckpointDto start, out string error)
+        private bool ValidateDeparture(CheckpointDto start, DungeonChoice choice, out string error)
         {
-            if (floorDefinitions != null) return floorDefinitions.TryRestore(new FloorSequenceCheckpointDto {
-                RouteId = floorDefinitions.RouteId, Revision = floorDefinitions.Revision, RouteHash = floorDefinitions.RouteHash,
+            if (choice.Floors != null) return choice.Floors.TryRestore(new FloorSequenceCheckpointDto {
+                RouteId = choice.Floors.RouteId, Revision = choice.Floors.Revision, RouteHash = choice.Floors.RouteHash,
                 FloorIndex = 0, State = start }, out _, out error);
-            return CheckpointCodec.TryRestore(start, nextDepartureDefinitions, out _, out error);
+            return CheckpointCodec.TryRestore(start, choice.Single, out _, out error);
         }
         private bool ActivateNextDeparture(out string error)
         {
             error = null; var plan = clearReturnSession.Snapshot.NextDeparture;
-            if (plan == null || plan.DefinitionKey != DepartureDefinitionKey(plan.Start) || !ValidateDeparture(plan.Start, out error)) {
+            var choice = plan == null ? null : dungeonChoices.Concat(knownLegacyDungeons).FirstOrDefault(c => c.Key == plan.DefinitionKey && ValidateDeparture(plan.Start,c,out _));
+            if (choice == null || !ValidateDeparture(plan.Start, choice, out error)) {
                 error = error ?? "次回出撃の定義が一致しません。既存保存は変更していません。"; return false;
             }
             DungeonBattleManager next; DungeonCheckpointSession session; FloorSequenceSession route = null; FloorSequenceFileStore routeStore = null;
-            if (floorDefinitions != null) {
-                routeStore = new FloorSequenceFileStore(floorDefinitions, ActiveCheckpointDirectory, nextDepartureIo);
+            if (choice.Floors != null) {
+                routeStore = new FloorSequenceFileStore(choice.Floors, ActiveCheckpointDirectory, nextDepartureIo);
                 if (!routeStore.HasExistingData && !routeStore.TryWrite(new FloorSequenceCheckpointDto {
-                    RouteId = floorDefinitions.RouteId, Revision = floorDefinitions.Revision, RouteHash = floorDefinitions.RouteHash,
+                    RouteId = choice.Floors.RouteId, Revision = choice.Floors.Revision, RouteHash = choice.Floors.RouteHash,
                     FloorIndex = 0, State = plan.Start }, out error)) return false;
-                route = new FloorSequenceSession(floorDefinitions, routeStore);
+                route = new FloorSequenceSession(choice.Floors, routeStore);
                 if (!route.TryLoad(out error) || route.Current.State.Snapshot.RunId != plan.Start.RunId) { error = error ?? "攻略IDが一致しません"; return false; }
                 if (route.Current.State.Snapshot.Boundary == CheckpointBoundary.Terminal) { error = "終了済み攻略を上書きしません"; return false; }
-                next = CreateFloorManager(route, out session);
+                next = CreateFloorManager(route, out session, choice.Floors);
             } else {
-                var defs = nextDepartureDefinitions;
+                var defs = choice.Single;
                 var store = new FileCheckpointStore(defs, ActiveCheckpointDirectory, nextDepartureIo);
                 if (!store.HasExistingData && !store.TryWrite(plan.Start, out error)) return false;
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store); var f = CreateCardFactory();
                 if (!DungeonBattleManager.TryRestoreCheckpoint(session, randomProvider, logger, out next, out error,
-                    new ExceedSystem(f), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), f), f)) return false;
+                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(), f), f)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
-            floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
+            floorDefinitions = choice.Floors; nextDepartureDefinitions = choice.Single; selectedDungeon = System.Math.Max(0,dungeonChoices.IndexOf(choice));
+            initialHub = false; dungeonSelectionOpen = false; floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
             clearReturnVisible = false; clearReturnError = null; nonClearReturnRequest = null; clearReturnView.gameObject.SetActive(false); checkpointOverlay.SetActive(false);
             ReplaceManager(next, session); return true;
         }
 
         private CancellationTokenSource transitionCts;
+        [SerializeField, Min(0)] private int currencyPerEnemy = 10;
+        private GameObject currencyOverlay;
+        private GameObject itemRewardOverlay;
+        private Text itemRewardText;
+        private UniTaskCompletionSource<bool> itemRewardChoice;
+        private Text currencyRewardText, currencyBalanceText;
+        private Button receiveCurrencyButton;
+        private UniTaskCompletionSource<bool> currencyChoice;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
         private DungeonConfig CreateDefaultDungeon(bool legacy = false)
+        {
+            var map=CreateDefaultDungeonWithoutTerrain(legacy);
+            if(legacy)return map;
+            var first=map.MapCells.FirstOrDefault(c=>c.Type==CellType.Enemy);
+            if(first==null)return map;
+            int ice=first.Index+6;
+            if(ice+1>=map.TotalCellCount-1||Enumerable.Range(ice,2).Any(i=>map.MapCells[i].Type!=CellType.Empty||map.Visits.Any(v=>v.Cell==i)))return map;
+            // 回復イベントの後に、属性/被害の新定義が不要な既存氷だけを登録する。
+            return new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,map.MapCells,map.InitialDeckSize,
+                map.Visits,map.StrongEnemyCells,map.ItemRewards,map.ItemRewardChance,
+                new[]{new ExplorationTerrainCell(ice,PanelType.Ice),new ExplorationTerrainCell(ice+1,PanelType.Ice)});
+        }
+        private DungeonConfig CreateDefaultDungeonWithoutTerrain(bool legacy = false)
+        {
+            var map = CreateDefaultDungeonWithoutItemRewards(legacy);
+            if (legacy) return map;
+            var first = map.MapCells.FirstOrDefault(c => c.Type == CellType.Enemy && c.Enemy.EnemyId != "boss");
+            if (first == null) return map;
+            // 既存敵を強敵枠へ登録する。HP/AIは変更せず、回復量は既存Healを共用する。
+            var heal = CreateCardFactory().CreateById(SimpleCardFactory.Heal);
+            return new DungeonConfig(map.DungeonId, map.DungeonName, map.TotalCellCount, map.MapCells,
+                map.InitialDeckSize, map.Visits, new[] { first.Index },
+                new[] { new ItemRewardEntry(new FieldItem(heal.Id, heal.Name, heal.Power), 1) }, 100);
+        }
+        private DungeonConfig CreateDefaultDungeonWithoutItemRewards(bool legacy = false)
+        {
+            var map=CreateDefaultDungeonVisits(legacy,false);if(legacy||map.Visits.Count==0)return map;
+            var first=map.MapCells.FirstOrDefault(c=>c.Type==CellType.Enemy);if(first==null)return map;
+            int cell=first.Index+1;if(cell>=map.TotalCellCount-1||map.MapCells[cell].Type!=CellType.Empty)return map;
+            var heal=CreateCardFactory().CreateById(SimpleCardFactory.Heal);var cells=new List<MapCell>(map.MapCells);
+            cells[cell]=new MapCell(cell,new FieldItem(heal.Id,heal.Name,heal.Power));
+            return new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,cells,map.InitialDeckSize,map.Visits);
+        }
+        private DungeonConfig CreateDefaultDungeonVisits(bool legacy, bool withoutRemoval)
+        {
+            var map=CreateDefaultDungeonWithoutVisits(legacy);if(legacy)return map;
+            var first=map.MapCells.FirstOrDefault(c=>c.Type==CellType.Enemy);if(first==null)return map;
+            int shop=first.Index+2, recovery=first.Index+4;
+            if(recovery>=map.TotalCellCount-1||map.MapCells[shop].Type!=CellType.Empty||map.MapCells[recovery].Type!=CellType.Empty)return map;
+            var factory=CreateCardFactory();
+            var products=new List<DungeonVisitOption>{
+                new DungeonVisitOption("sword",10,factory.CreateById(SimpleCardFactory.Sword)),
+                new DungeonVisitOption("bomb",10,factory.CreateById(SimpleCardFactory.Bomb)),
+                new DungeonVisitOption("heal",10,factory.CreateById(SimpleCardFactory.Heal))};
+            if(!withoutRemoval)products.Add(new DungeonVisitOption("remove-one",10,removeCount:1));
+            var visits=new[]{new DungeonVisitDefinition(shop,true,products,withoutRemoval?2:3),
+                new DungeonVisitDefinition(recovery,false,new[]{new DungeonVisitOption("recover",0,heal:factory.CreateById(SimpleCardFactory.Heal).Power)},1)};
+            return new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,map.MapCells,map.InitialDeckSize,visits);
+        }
+        private DungeonConfig CreateDefaultDungeonWithoutVisits(bool legacy = false)
             => DungeonConfig.CreateTestDungeon(dungeonCellCount, enemySpacing, firstEnemyCell,
                 enemyPoise: legacy ? null : new EnemyPoiseDefinition(normalEnemyPoise, battleStaggerFrames, enemyPoiseRecoveryFrames),
                 bossPoise: legacy ? null : new EnemyPoiseDefinition(bossEnemyPoise, battleStaggerFrames, enemyPoiseRecoveryFrames));
+        private readonly List<DungeonChoice> knownLegacyDungeons=new List<DungeonChoice>();
+        private void RegisterLegacyDeparture(Deck initialDeck)
+        {
+            var plan=clearReturnSession.Snapshot.NextDeparture;if(plan==null||configuredDungeon!=null||floorDefinitions!=null)return;
+            foreach(var map in new[]{CreateDefaultDungeonWithoutTerrain(),CreateDefaultDungeonWithoutItemRewards(),CreateDefaultDungeonVisits(false,false),CreateDefaultDungeonVisits(false,true),CreateDefaultDungeonWithoutVisits(),CreateDefaultDungeonWithoutVisits(true)})
+                foreach(var deck in new[]{initialDeck,CreateDepartureDeck(true)}) {
+                    var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
+                    if(plan.DefinitionKey==defs.MapHash&&!knownLegacyDungeons.Any(c=>c.Key==defs.MapHash)&&CheckpointCodec.TryRestore(plan.Start,defs,out _,out _))
+                        knownLegacyDungeons.Add(new DungeonChoice{Single=defs});
+                }
+        }
 
         private void Start()
         {
@@ -703,6 +945,12 @@ namespace Olca.Application.Dungeon
             inputProvider.StartEventCapture();
             customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
+            dungeonSelectionEnabled |= configuredDungeon == null && floorDefinitions == null;
+            var savedPlan = clearReturnSession.Snapshot?.NextDeparture;
+            if (dungeonChoices != null && savedPlan != null) {
+                int found = dungeonChoices.FindIndex(c => c.Key == savedPlan.DefinitionKey);
+                if (found >= 0) { selectedDungeon = found; floorDefinitions = dungeonChoices[found].Floors; }
+            }
             var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
             var playerCharacter = new PlayerCharacter(
                 maxHp: ReturnSettings().MaxHp(persistentLevel),
@@ -711,13 +959,15 @@ namespace Olca.Application.Dungeon
                 staggerDurationFrames: battleStaggerFrames,
                 poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
 
+            playerCharacter.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(persistentLevel));
             var cardFactory = CreateCardFactory();
             var recipeProvider = new SimpleFusionRecipeProvider();
             var exceedSystem = new ExceedSystem(cardFactory);
-            var tuningSystem = new TuningSystem();
+            var tuningSystem = new TuningSystem(cardFactory.GetTuningDefinition);
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
 
             var initialDeck = CreateInitialDeck();
+            RegisterLegacyDeparture(initialDeck);
             if (floorDefinitions != null)
             {
                 floorStore = new FloorSequenceFileStore(floorDefinitions, ActiveCheckpointDirectory);
@@ -734,7 +984,7 @@ namespace Olca.Application.Dungeon
                 {
                     // マップ/カードそれぞれの既知の旧定義だけを完全検証する。保存は書き換えない。
                     var maps = configuredDungeon == null
-                        ? new[] { dungeonConfig, CreateDefaultDungeon(legacy: true) } : new[] { dungeonConfig };
+                        ? new[] { dungeonConfig, CreateDefaultDungeonWithoutTerrain(), CreateDefaultDungeonWithoutItemRewards(), CreateDefaultDungeonVisits(false,false), CreateDefaultDungeonVisits(false,true), CreateDefaultDungeonWithoutVisits(), CreateDefaultDungeonWithoutVisits(true) } : new[] { dungeonConfig };
                     var decks = new[] { initialDeck, CreateDepartureDeck(legacyPoise: true) };
                     bool matched = false;
                     foreach (var map in maps)
@@ -755,12 +1005,19 @@ namespace Olca.Application.Dungeon
                 // 旧保存には新規出撃条件を遡及適用しない。
                 if (!awaitingCheckpointChoice) dungeonConfig.ValidateFinalFloorForDeparture();
             }
+            if (dungeonChoices == null) dungeonChoices = new List<DungeonChoice> { new DungeonChoice { Floors = floorDefinitions, Single = nextDepartureDefinitions } };
+            initialHub = dungeonSelectionEnabled && clearReturnSession.Ready && clearReturnSession.Snapshot.Flow == null &&
+                savedPlan == null && !awaitingCheckpointChoice;
             manager = new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null ? null : memoryCheckpoints, cardDatabase: cardFactory,
+                fusionSystem: fusionSystem, checkpoints: initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
+                    ? (dungeonConfig.Visits.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
+
+            manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
+            manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -788,14 +1045,52 @@ namespace Olca.Application.Dungeon
         }
 
         // EventSystemとViewのUpdateで受けたクリックを、同じ描画フレームの論理処理へ渡す。
+                private int? renderedVisitCell;
+        private int selectedVisit = -1;
+        private bool selectingVisitRemoval;
+        private readonly HashSet<Card> visitRemovalTargets = new HashSet<Card>();
+        private void ResetVisitSelection() { selectedVisit=-1;selectingVisitRemoval=false;visitRemovalTargets.Clear(); }
+        private void RefreshDungeonVisit()
+        {
+            if(manager.Dungeon.ActiveVisit==null){if(renderedVisitCell.HasValue&&!clearReturnVisible)clearReturnView.gameObject.SetActive(false);renderedVisitCell=null;ResetVisitSelection();return;}
+            if(IsUserPaused){clearReturnView.gameObject.SetActive(false);return;}
+            if(renderedVisitCell!=manager.Dungeon.ActiveVisit.Cell||!clearReturnView.gameObject.activeSelf){ResetVisitSelection();logicalLoop.ReleaseInput();ShowDungeonVisit();}
+        }
+        private void ShowDungeonVisit()
+        {
+            var d=manager.Dungeon;var definition=d.ActiveVisit;var state=d.ActiveVisitState;if(definition==null)return;
+            renderedVisitCell=definition.Cell;
+            if(selectingVisitRemoval && selectedVisit>=0 && selectedVisit<state.Options.Length) {
+                var option=definition.Options[state.Options[selectedVisit]];var cards=d.GetCurrentDeck().GetAllCards().ToArray();
+                visitRemovalTargets.RemoveWhere(c=>!cards.Contains(c));int needed=d.VisitRemovalCount(selectedVisit);
+                var labels=cards.Select((c,i)=>$"カード {i+1}: {c.Name}{new string('★',(int)c.ExceedLevel)} / コスト {c.GetFinalCost()} / 威力 {c.GetFinalPower()}"+(d.GetObtainedCards().Contains(c)?" ［攻略中取得・持帰り履歴は保持］":" ［持込・永続所持は保持］")).ToArray();
+                clearReturnView.RenderVisitRemoval("攻略中カード削除 / 所持 "+d.Currency+" 通貨",labels,cards.Select(c=>visitRemovalTargets.Contains(c)).ToArray(),needed,option.Price,d.IsCheckpointBlocked,
+                    needed>0&&visitRemovalTargets.Count==needed&&d.CanChooseVisit(selectedVisit),
+                    i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon)||i<0||i>=cards.Length)return;var card=cards[i];if(!visitRemovalTargets.Remove(card)&&visitRemovalTargets.Count<needed)visitRemovalTargets.Add(card);ShowDungeonVisit();},
+                    ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ChooseVisit(selectedVisit,cards.Where(c=>visitRemovalTargets.Contains(c)).ToArray());ResetVisitSelection();ShowDungeonVisit();},
+                    ()=>{ResetVisitSelection();ShowDungeonVisit();},()=>SetUserPaused(true));return;
+            }
+            var enabled=state.Purchased.Select((p,i)=>!p&&(definition.IsShop||!state.Purchased.Any(x=>x))&&(definition.Options[state.Options[i]].RemoveCount==0||d.GetCurrentDeck().TotalCount>0)).ToArray();
+            var names=state.Options.Select((n,i)=>(state.Purchased[i]?"［済］ ":"")+definition.Options[n].Label+" / "+definition.Options[n].Price+" 通貨").ToArray();
+            bool can=selectedVisit>=0&&selectedVisit<enabled.Length&&enabled[selectedVisit]&&d.CanChooseVisit(selectedVisit);
+            clearReturnView.RenderDungeonVisit((definition.IsShop?"ダンジョンショップ":"イベント")+" / 所持 "+d.Currency+" 通貨",names,enabled,selectedVisit,d.IsCheckpointBlocked,can,
+                i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon))return;ResetVisitSelection();selectedVisit=i;ShowDungeonVisit();},
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;
+                    if(selectedVisit>=0&&selectedVisit<state.Options.Length&&definition.Options[state.Options[selectedVisit]].RemoveCount>0&&d.CanChooseVisit(selectedVisit))selectingVisitRemoval=true;
+                    else{d.ChooseVisit(selectedVisit);ResetVisitSelection();}ShowDungeonVisit();},
+                ()=>{ResetVisitSelection();ShowDungeonVisit();},
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true),d.CanExitVisit);
+        }
+
         private void LateUpdate()
         {
             if (manager == null) return;
             RefreshTouchContext();
-            bool active = !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
+            bool active = manager.Dungeon.ActiveVisit==null && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
             logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
-                () => manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused));
+                () => manager.Dungeon.ActiveVisit==null && (manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused)));
             ApplyPendingFloor();
+            RefreshDungeonVisit();
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
             RefreshBasicAttackHud();
@@ -803,12 +1098,19 @@ namespace Olca.Application.Dungeon
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
         {
-            if (GameplayPause.InputBlocked) { input = new LogicalInput(); queuedBasicAttackTap = false;queuedTouchJump=queuedTouchDash=queuedTouchCard=false; }
+            if (GameplayPause.InputBlocked) { basicAttackInput.Suspend(); uiAttackHeld = uiAttackDown = uiAttackUp = false; input = new LogicalInput(); queuedBasicAttackTap = false;queuedTouchJump=queuedTouchDash=queuedTouchCard=false; }
             if(queuedTouchJump||queuedTouchDash||queuedTouchCard) {
                 input=input.Copy();
                 if(manager.CurrentPhase==GamePhase.Dungeon) {input.JumpButtonDown|=queuedTouchJump;input.DashButtonDown|=queuedTouchDash;}
                 if(manager.CurrentPhase==GamePhase.Battle)input.CardUseButtonDown|=queuedTouchCard;
                 queuedTouchJump=queuedTouchDash=queuedTouchCard=false;
+            }
+            if (uiAttackHeld || uiAttackDown || uiAttackUp) {
+                input = input.Copy();
+                input.BasicAttackButtonDown |= uiAttackDown;
+                input.BasicAttackButton |= uiAttackHeld;
+                input.BasicAttackButtonUp = !input.BasicAttackButton && (input.BasicAttackButtonUp || uiAttackUp);
+                uiAttackDown = uiAttackUp = false;
             }
             if (queuedBasicAttackTap) { input = input.Copy(); input.BasicAttackButtonDown = input.BasicAttackButtonUp = true; input.BasicAttackButton = false; queuedBasicAttackTap = false; }
             void Process()
@@ -823,9 +1125,14 @@ namespace Olca.Application.Dungeon
 
         private void HandleInput(LogicalInput input, int deltaTimeMs)
         {
+            if(manager.Dungeon.ActiveVisit!=null)return;
             switch (manager.CurrentPhase)
             {
                 case GamePhase.Dungeon:
+                    if(manager.Dungeon.IsTerrainRecovering){
+                        if(dashStartPosition>=0f){dashStartPosition=-1f;dashCooldownRemaining=LogicalFrameClock.DurationFrames(dashCooldown);}
+                        return;
+                    }
                     if (input.JumpButtonDown) manager.Jump();
 
                     // ダッシュ: 押した瞬間に発動し、指定マス数移動したら終了
@@ -848,7 +1155,7 @@ namespace Olca.Application.Dungeon
                         }
                     }
 
-                    if (dashCooldownRemaining > 0f && !manager.Dungeon.IsDashJumping)
+                    if (dashCooldownRemaining > 0f && !manager.Dungeon.IsDashJumping && !manager.Dungeon.IsObstacleStopped)
                         dashCooldownRemaining--;
                     break;
 
@@ -857,7 +1164,7 @@ namespace Olca.Application.Dungeon
                     if (input.CustomScreenButtonDown)
                         battleSession?.TryOpenCustomScreen();
 
-                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackShortPressFrames, basicAttackIntervalFrames);
+                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackChargeFrames, basicAttackIntervalFrames, basicAttackChargeMultiplier);
                     // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
                     if (input.CardUseButtonDown)
                         battleSession?.UseCardFromInput();
@@ -871,6 +1178,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
+            if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
             gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             switch (manager.CurrentPhase)
@@ -915,6 +1223,7 @@ namespace Olca.Application.Dungeon
         {
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
+            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(0, 12, 6));
             battleFieldReady = false;
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
@@ -1059,7 +1368,7 @@ namespace Olca.Application.Dungeon
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(selectedCard); ScheduleExplorationResume(); } });
-                        while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
+                        while (manager.CurrentPhase == GamePhase.CardReward && manager.Dungeon.PendingItemReward==null && manager.Dungeon.PendingCurrencyReward == 0) await GameplayPause.NextFrame(ct);
                     }
                     else
                     {
@@ -1068,8 +1377,36 @@ namespace Olca.Application.Dungeon
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(null); ScheduleExplorationResume(); } });
-                        while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
+                        while (manager.CurrentPhase == GamePhase.CardReward && manager.Dungeon.PendingItemReward==null && manager.Dungeon.PendingCurrencyReward == 0) await GameplayPause.NextFrame(ct);
                     }
+                }
+
+                if(manager.Dungeon.PendingItemReward!=null)
+                {
+                    var item=manager.Dungeon.PendingItemReward;
+                    itemRewardChoice=new UniTaskCompletionSource<bool>();var choice=itemRewardChoice;
+                    itemRewardText.text=$"アイテム報酬: {item.Name}\nHP回復 {item.Heal} / 現在HP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\n満タンでも受取時に消費します";
+                    itemRewardOverlay.SetActive(true);itemRewardOverlay.transform.SetAsLastSibling();bool receive;
+                    try{using(ct.Register(()=>choice.TrySetCanceled(ct)))receive=await choice.Task;}
+                    finally{if(itemRewardOverlay!=null)itemRewardOverlay.SetActive(false);itemRewardChoice=null;}
+                    await GameplayPause.WaitAsync(ct);
+                    logicalLoop.Schedule(()=>{if(ReferenceEquals(manager,owner)){owner.SelectItemReward(receive);ScheduleExplorationResume();}});
+                    while(manager.CurrentPhase==GamePhase.CardReward&&manager.Dungeon.PendingCurrencyReward==0)await GameplayPause.NextFrame(ct);
+                }
+
+                if (manager.Dungeon.PendingCurrencyReward > 0)
+                {
+                    currencyChoice = new UniTaskCompletionSource<bool>();
+                    var choice = currencyChoice;
+                    currencyRewardText.text = $"通貨報酬: {manager.Dungeon.PendingCurrencyReward}\n所持: {manager.Dungeon.Currency}（攻略中のみ）";
+                    receiveCurrencyButton.interactable = manager.Dungeon.PendingCurrencyReward <= long.MaxValue - manager.Dungeon.Currency;
+                    currencyOverlay.SetActive(true); currencyOverlay.transform.SetAsLastSibling();
+                    bool receive;
+                    try { using (ct.Register(() => choice.TrySetCanceled(ct))) receive = await choice.Task; }
+                    finally { if (currencyOverlay != null) currencyOverlay.SetActive(false); currencyChoice = null; }
+                    await GameplayPause.WaitAsync(ct);
+                    logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCurrencyReward(receive); ScheduleExplorationResume(); } });
+                    while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
                 }
 
                 // 定位置（グリッド列1）へ復帰ジャンプ（ダッシュ宙返りと同じ放物線）
@@ -1131,8 +1468,18 @@ namespace Olca.Application.Dungeon
 
         // ==================== 初期デッキ ====================
 
+        private IReadOnlyDictionary<string, PlayerAttackTiming> configuredCardTimings;
+        /// <summary>出撃デッキ生成前の製品時間データ。保存済み定義を起動後に書き換えない。</summary>
+        public void ConfigureCardAttackData(IReadOnlyDictionary<string, PlayerAttackTiming> timings)
+        {
+            if (manager != null || configuredDepartureDeck != null) throw new System.InvalidOperationException("時間定義は編成・攻略開始前に設定してください");
+            if (timings == null) throw new System.ArgumentNullException(nameof(timings));
+            // 全件を検証してから公開し、外部辞書の変更を引き継がない。
+            _ = new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: timings);
+            configuredCardTimings = timings.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
         private SimpleCardFactory CreateCardFactory()
-            => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage));
+            => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 
         private Deck CreateInitialDeck() => CreateDepartureDeck(legacyPoise: false);
         private Deck CreateDepartureDeck(bool legacyPoise)
@@ -1199,15 +1546,16 @@ namespace Olca.Application.Dungeon
         }
         private void OnFloorCompleted() { floorSwapPending = true; }
 
-        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session)
+        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session, FloorSequenceDefinitions definitions = null)
         {
+            definitions = definitions ?? floorDefinitions;
             var state = route.Current.State;
-            session = floorDefinitions.CreateCheckpointSession(route.Current.FloorIndex, route);
+            session = definitions.CreateCheckpointSession(route.Current.FloorIndex, route);
             var factory = CreateCardFactory();
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
-                new ExceedSystem(factory), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
+                new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
-                hasNextFloor: route.Current.FloorIndex + 1 < floorDefinitions.FloorCount);
+                hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount);
         }
 
         private void ApplyPendingFloor()
@@ -1244,7 +1592,7 @@ namespace Olca.Application.Dungeon
                     ? new DungeonCheckpointSession(memoryCheckpoints.Definitions, new FileCheckpointStore(memoryCheckpoints.Definitions, file.DirectoryPath))
                     : memoryCheckpoints;
                 if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
-                    out restored, out error, new ExceedSystem(factory), new TuningSystem(),
+                    out restored, out error, new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition),
                     new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
             }
             if (clearReturnSession?.Snapshot?.Receipts.Any(r => r.RunId == candidate.RunId && r.Outcome != RunReturnOutcome.Cleared) == true)
@@ -1265,10 +1613,14 @@ namespace Olca.Application.Dungeon
             manager.OnDungeonClearCompleted -= OnDungeonCleared;
             manager.OnFloorCompleted -= OnFloorCompleted;
             pendingCardChoices = null; cardSelectionView?.Hide();
+            currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
+                itemRewardChoice?.TrySetCanceled();itemRewardOverlay?.SetActive(false);
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
             manager = restored;
+            manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
+            manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;
             ShowCheckpointStatus();
