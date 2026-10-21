@@ -136,6 +136,7 @@ namespace Olca.Core.Domain
     {
         public int ContactCell;
         public int[] ParticipantCells = new int[0];
+        public int[] CurrencyAmounts; // 旧保存の欠落は通貨報酬0として扱う。
         public bool DashContact;
         public int? DashEffect;
         public float GridOriginX;
@@ -144,6 +145,7 @@ namespace Olca.Core.Domain
         public bool RewardOffered;
         public string[] RewardCandidates = new string[0];
         public CheckpointBattleDto Copy() => new CheckpointBattleDto {
+            CurrencyAmounts = CurrencyAmounts == null ? null : (int[])CurrencyAmounts.Clone(),
             ContactCell = ContactCell, ParticipantCells = ParticipantCells == null ? null : (int[])ParticipantCells.Clone(),
             DashContact = DashContact, DashEffect = DashEffect, GridOriginX = GridOriginX, HandLimit = HandLimit,
             FirstHand = FirstHand == null ? null : (string[])FirstHand.Clone(), RewardOffered = RewardOffered,
@@ -155,6 +157,7 @@ namespace Olca.Core.Domain
         public int SchemaVersion = 1;
         public string DefinitionsRevision, DungeonId, MapHash, RunId;
         public long Sequence, PositionMilli;
+        public long Currency;
         public CheckpointBoundary Boundary;
         public CheckpointPlayerDto Player;
         public CheckpointCardDto[] Cards = new CheckpointCardDto[0];
@@ -167,7 +170,7 @@ namespace Olca.Core.Domain
         public CheckpointBattleDto Battle;
         public CheckpointDto Copy() => new CheckpointDto {
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
-            MapHash = MapHash, RunId = RunId, Sequence = Sequence, PositionMilli = PositionMilli, Boundary = Boundary,
+            MapHash = MapHash, RunId = RunId, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
             Player = Player?.Copy(), Cards = Cards == null ? null : System.Array.ConvertAll(Cards, c => c?.Copy()),
             DeckOrder = DeckOrder == null ? null : (string[])DeckOrder.Clone(),
             ObtainedOrder = ObtainedOrder == null ? null : (string[])ObtainedOrder.Clone(),

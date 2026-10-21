@@ -39,6 +39,32 @@ namespace Olca.Core.Logic.Dungeon
         // ========== 接敵情報保持 ==========
         private ContactInfo currentContactInfo;
         private List<Card> pendingRewardChoices;
+        private BattleCurrencyRewardSnapshot battleCurrency;
+        private int currencyPerEnemy;
+        private long earnedCurrency;
+        private Card currencyCardSelection;
+        public long Currency { get; private set; }
+        public long PendingCurrencyReward { get; private set; }
+        public void ConfigureCurrencyReward(int amount) {
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            currencyPerEnemy = amount;
+        }
+        public void DiscardRunCurrency() { Currency = 0; PendingCurrencyReward = 0; earnedCurrency = 0; }
+        private bool OfferCurrency(Card selected) {
+            if (earnedCurrency <= 0) return false;
+            currencyCardSelection = selected; PendingCurrencyReward = earnedCurrency; earnedCurrency = 0;
+            OnCurrencyRewardOffered?.Invoke(PendingCurrencyReward); return true;
+        }
+        public void SelectCurrencyReward(bool receive) {
+            if (checkpointSuspended || IsCheckpointBlocked || PendingCurrencyReward <= 0) return;
+            long amount = receive ? PendingCurrencyReward : 0;
+            if (amount > long.MaxValue - Currency) return;
+            var selected = currencyCardSelection;
+            PendingCurrencyReward = 0; currencyCardSelection = null;
+            if (checkpointSession != null) SaveCheckpointReward(selected, amount);
+            else { Currency = checked(Currency + amount); FinalizeLegacyCardReward(selected); }
+        }
+
 
         // ========== 障害物通過済み管理 ==========
         private readonly HashSet<int> processedObstacleCells = new HashSet<int>();
@@ -130,6 +156,7 @@ namespace Olca.Core.Logic.Dungeon
                 if (restoration != null)
                 {
                     checkpoints.Adopt(restoration); restoredBoundary = restoration.Snapshot;
+                    Currency = restoredBoundary.Currency;
                     playerMovement.SetPositionMilli(restoredBoundary.PositionMilli);
                     processedObstacleCells.UnionWith(restoredBoundary.ProcessedObstacleCells ?? new int[0]);
                     cardRewardSystem.RestoreObtained(restoration.Obtained);
@@ -306,6 +333,7 @@ namespace Olca.Core.Logic.Dungeon
 
             // バトルシステムを初期化
             // 注意: プレイヤーのHPはダンジョン探索中のまま（参照共有）
+            battleCurrency = new BattleCurrencyRewardSnapshot(enemies, e => currencyPerEnemy);
             currentBattle = new BattleSystem(
                 playerCharacter,
                 enemies,
@@ -472,6 +500,7 @@ namespace Olca.Core.Logic.Dungeon
 
             if (victory)
             {
+                earnedCurrency = battleCurrency?.GetDefeatedEnemyTotal() ?? 0;
                 logger.LogInfo("[Dungeon] バトル勝利");
 
                 // 外部からの勝利通知も従来どおり接敵主敵の撃破として扱う。
@@ -519,13 +548,13 @@ namespace Olca.Core.Logic.Dungeon
             }
             else
             {
+                DiscardRunCurrency();
                 logger.LogInfo("[Dungeon] バトル敗北 - ゲームオーバー");
                 OnDungeonFailed?.Invoke();
                 return;
             }
 
-            // ダンジョン再開
-            ReturnToDungeon();
+            if (!OfferCurrency(null)) ReturnToDungeon();
         }
 
         /// <summary>
@@ -537,13 +566,17 @@ namespace Olca.Core.Logic.Dungeon
             if (checkpointSession != null)
             {
                 if (pendingRewardChoices == null || (selectedCard != null && !pendingRewardChoices.Contains(selectedCard))) return;
-                SaveCheckpointReward(selectedCard); return;
+                pendingRewardChoices = null;
+                if (!OfferCurrency(selectedCard)) SaveCheckpointReward(selectedCard); return;
             }
             if (IsFloorCompleted || IsDungeonCleared || pendingRewardChoices == null) return;
             if (selectedCard != null && !pendingRewardChoices.Contains(selectedCard)) return;
 
-            // 獲得イベントからの再入より先に確定する。nullも一度だけのスキップ。
             pendingRewardChoices = null;
+            if (!OfferCurrency(selectedCard)) FinalizeLegacyCardReward(selectedCard);
+        }
+        private void FinalizeLegacyCardReward(Card selectedCard)
+        {
             if (selectedCard != null)
             {
                 cardRewardSystem.SelectCard(selectedCard);
@@ -589,6 +622,7 @@ namespace Olca.Core.Logic.Dungeon
             if (finalBoss != null ? finalBossDefeated : !hasNextFloor && !map.HasAnyEnemy())
             {
                 if (hasNextFloor) { CompleteFloor(); return; }
+                Currency = 0;
                 IsDungeonCleared = true;
                 logger.LogInfo("[Dungeon] クリア条件達成 - ダンジョンクリア！");
                 OnDungeonCleared?.Invoke();
@@ -688,6 +722,7 @@ namespace Olca.Core.Logic.Dungeon
         private void HandleExplorationDeath()
         {
             if (!playerCharacter.IsDead || IsCheckpointBlocked || checkpointSuspended) return;
+            DiscardRunCurrency();
             if (checkpointSession == null) OnDungeonFailed?.Invoke();
             else {
                 try { playerMovement.Pause(); StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), () => OnDungeonFailed?.Invoke()); }
@@ -738,6 +773,7 @@ namespace Olca.Core.Logic.Dungeon
                     state.GridX = i == 0 ? 4 : 3; state.GridY = 0;
                 }
                 var encounter = new CheckpointBattleDto { ContactCell = contact.EnemyCellIndex,
+                    CurrencyAmounts = participants.Select(e => e.IsSummoned ? 0 : currencyPerEnemy).ToArray(),
                     ParticipantCells = participants.Select(e => cells[e]).ToArray(), DashContact = contact.IsDashContact,
                     DashEffect = contact.DashEffect.HasValue ? (int?)contact.DashEffect.Value : null,
                     GridOriginX = contact.EnemyCellIndex - 4, HandLimit = new CustomScreenSystem(new Deck()).MaxHandSize };
@@ -770,6 +806,7 @@ namespace Olca.Core.Logic.Dungeon
                 DashEffect = plan.DashEffect.HasValue ? (ActionSystem.DashContactEffect?)plan.DashEffect.Value : null };
             plannedRewards = restored.RewardCandidates.ToList(); activeCheckpoint = snapshot.Copy(); pendingRewardChoices = null;
             IsInBattle = true; playerMovement.Pause();
+            battleCurrency = new BattleCurrencyRewardSnapshot(participants, e => plan.CurrencyAmounts == null ? 0 : plan.CurrencyAmounts[participants.IndexOf(e)]);
             currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
                 randomProvider, logger, exceedSystem, tuningSystem, fusionSystem, cardDatabase: cardDatabase);
             currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
@@ -799,11 +836,13 @@ namespace Olca.Core.Logic.Dungeon
             playerCharacter.ResetPoisonIntervals();
             if (!victory)
             {
+                DiscardRunCurrency();
                 try { StageCheckpoint(checkpointSession.Capture(this, CheckpointBoundary.Terminal), () => {
                     OnBattleEnd?.Invoke(BattleResult.Defeat); OnDungeonFailed?.Invoke(); }); }
                 catch (ArgumentException ex) { BlockCheckpoint(ex.Message); }
                 return;
             }
+            earnedCurrency = battleCurrency?.GetDefeatedEnemyTotal() ?? 0;
             finalBossDefeated = finalBoss != null && finalBoss.IsDead;
             OnBattleEnd?.Invoke(BattleResult.Victory);
             if (activeCheckpoint.Battle.RewardOffered)
@@ -811,9 +850,9 @@ namespace Olca.Core.Logic.Dungeon
                 pendingRewardChoices = new List<Card>(plannedRewards);
                 OnCardRewardOffered?.Invoke(new List<Card>(pendingRewardChoices));
             }
-            else SaveCheckpointReward(null);
+            else if (!OfferCurrency(null)) SaveCheckpointReward(null);
         }
-        private void SaveCheckpointReward(Card selected)
+        private void SaveCheckpointReward(Card selected, long currency = 0)
         {
             if (IsCheckpointBlocked || checkpointSuspended) return;
             try
@@ -821,7 +860,9 @@ namespace Olca.Core.Logic.Dungeon
                 bool cleared = finalBoss != null ? finalBossDefeated : !hasNextFloor && !map.GetAllEnemies().Any(pair => !pair.enemy.IsDead);
                 var boundary = cleared ? CheckpointBoundary.Terminal : CheckpointBoundary.RewardCompleted;
                 var snapshot = checkpointSession.Capture(this, boundary, selected);
+                snapshot.Currency = cleared && !hasNextFloor ? 0 : checked(Currency + currency);
                 StageCheckpoint(snapshot, () => {
+                    Currency = snapshot.Currency;
                     pendingRewardChoices = null;
                     if (selected != null) cardRewardSystem.SelectCard(selected);
                     foreach (var pair in map.GetAllEnemies().Where(pair => pair.enemy.IsDead).ToArray()) map.RemoveEnemy(pair.enemy);
@@ -834,6 +875,7 @@ namespace Olca.Core.Logic.Dungeon
         // ========== イベント ==========
         public event Action<ContactInfo> OnBattleStart;
         public event Action<BattleResult> OnBattleEnd;        // バトル終了（勝敗通知）
+        public event Action<long> OnCurrencyRewardOffered;
         public event Action<List<Card>> OnCardRewardOffered;  // カード選択画面表示
         public event Action OnReturnToDungeon;                // ダンジョン復帰
         public event Action<PenaltyInfo> OnObstaclePenalty;   // 障害物ペナルティ
@@ -1170,6 +1212,7 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointValues.Require(!string.IsNullOrWhiteSpace(d.RunId) && d.Sequence > 0 && Enum.IsDefined(typeof(CheckpointBoundary), d.Boundary), "保存境界が不正です");
                 CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
                 definitions.ValidateProcessedObstacles(d);
+                CheckpointValues.Require(d.Currency >= 0, "通貨が負値です");
                 var p = d.Player;
                 CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 && p.StaggerFrames >= 0 && (!p.PoiseRecoveryFrames.HasValue || p.PoiseRecoveryFrames > 0) &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
@@ -1221,6 +1264,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             CheckpointValues.Require(b != null && b.ParticipantCells != null && b.ParticipantCells.Length > 0 &&
                 b.ParticipantCells.Distinct().Count() == b.ParticipantCells.Length && b.ParticipantCells.Contains(b.ContactCell), "接敵情報が不完全です");
+            CheckpointValues.Require(b.CurrencyAmounts == null || (b.CurrencyAmounts.Length == b.ParticipantCells.Length && b.CurrencyAmounts.All(v => v >= 0)), "通貨報酬定義が不正です");
             CheckpointValues.Require(b.ParticipantCells.All(i => enemies.ContainsKey(i) && !enemies[i].IsDead && ValidGrid(enemies[i].GridPosition.X, enemies[i].GridPosition.Y)) && ValidGrid(p.GridX, p.GridY), "戦闘参加者が不正です");
             CheckpointValues.Require(CheckpointValues.Finite(b.GridOriginX) && b.HandLimit >= 0 &&
                 (!b.DashEffect.HasValue || (b.DashContact && Enum.IsDefined(typeof(ActionSystem.DashContactEffect), b.DashEffect.Value))), "戦闘開始値が不正です");
@@ -1400,7 +1444,7 @@ namespace Olca.Core.Logic.Dungeon
                 SchemaVersion = Definitions.SchemaVersion,
                 ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
-                RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli,
+                RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
                 Player = new CheckpointPlayerDto { Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
                     Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
                     WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },

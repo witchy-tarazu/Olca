@@ -81,6 +81,7 @@ namespace Olca.Core.Logic.Integration
                 OnFloorCompleted?.Invoke();
             };
             dungeonSystem.OnCardRewardOffered += OnCardRewardOfferedHandler;
+            dungeonSystem.OnCurrencyRewardOffered += _ => currentPhase = GamePhase.CardReward;
             dungeonSystem.OnReturnToDungeon += OnReturnedToDungeon;
 
             currentPhase = GamePhase.Dungeon;
@@ -201,6 +202,11 @@ namespace Olca.Core.Logic.Integration
         /// カード報酬を選択してダンジョンに戻る
         /// </summary>
         /// <param name="selectedCard">選択したカード（null でスキップ）</param>
+        public void SelectCurrencyReward(bool receive) {
+            if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked || currentPhase != GamePhase.CardReward) return;
+            dungeonSystem.SelectCurrencyReward(receive);
+        }
+
         public void SelectCardReward(Card selectedCard)
         {
             if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked) return;

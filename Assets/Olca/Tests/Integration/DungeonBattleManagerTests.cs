@@ -2469,10 +2469,31 @@ namespace Olca.Tests.Integration
             for (int i = 0; i < 120 && Model(controller).CurrentBattle == null; i++) Tick(controller);
             Assert.IsNotNull(Model(controller).CurrentBattle);
         }
+        [Test]
+        public void 通貨画面中のポーズは前面に表示し停止中の受取を拒否する()
+        {
+            var controller = Start();
+            var currency = (UnityEngine.GameObject)Get(controller, "currencyOverlay");
+            currency.SetActive(true); currency.transform.SetAsLastSibling();
+            var choice = new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>(); Set(controller, "currencyChoice", choice);
+            controller.SetUserPaused(true);
+            var pause = (UnityEngine.GameObject)Get(controller, "pauseOverlay");
+            Assert.IsTrue(pause.activeSelf); Assert.Greater(pause.transform.GetSiblingIndex(), currency.transform.GetSiblingIndex());
+            var button = currency.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b => b.name == "ReceiveCurrencyButton");
+            button.onClick.Invoke(); Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending, choice.Task.Status);
+            controller.SetUserPaused(false); Assert.IsFalse(pause.activeSelf); Assert.IsTrue(currency.activeSelf);
+            choice.TrySetResult(false); currency.SetActive(false);
+        }
+
         private static IReadOnlyList<Card> Win(Olca.Application.Dungeon.DungeonBattleController controller)
         {
             IReadOnlyList<Card> choices = null;
             var model = Model(controller); model.OnCardRewardPresented += cards => choices = cards;
+            // このfixtureは階層/帰還を検証するため、別枠の通貨を一度だけ受領する。
+            // GUI入力の検証ではなく、Coreの報酬判断を明示する試験操作。
+            System.Action<long> receiveCurrency = null;
+            receiveCurrency = amount => { model.Dungeon.OnCurrencyRewardOffered -= receiveCurrency; model.SelectCurrencyReward(true); };
+            model.Dungeon.OnCurrencyRewardOffered += receiveCurrency;
             foreach (var enemy in model.CurrentBattle.Enemies.ToArray())
                 if (!enemy.IsDead && !enemy.IsSummoned) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
             return choices;
@@ -2968,6 +2989,7 @@ namespace Olca.Tests.Integration
             var c=route?Start(new[]{map,DungeonConfig.CreateTestDungeon(5,30,4)}):Start(configure:setup);
             ReachNonClearBattle(c);var choices=Win(c);Assert.IsNotNull(choices);Model(c).SelectCardReward(choices[0]);
             Assert.AreEqual(1,Model(c).Dungeon.GetObtainedCards().Count);Assert.AreEqual(7,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+            Assert.Greater(Model(c).Dungeon.Currency, 0);
             var progress=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var before=System.IO.File.ReadAllBytes(progress.ActivePath);
             var io=new KeyboardFaultIo{Fault=fault=="before"||fault=="after"?fault:null};Set(progress,"io",io);
             if(outcome==RunReturnOutcome.Defeated){Model(c).ResumeAfterBattle();ReachNonClearBattle(c);Model(c).CurrentBattle.Player.TakeDamage(99999);}
@@ -2976,6 +2998,7 @@ namespace Olca.Tests.Integration
                 Assert.IsNull(c.PersistentProgress.Flow);Assert.AreEqual(1,c.PersistentProgress.Receipts.Length);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(progress.ActivePath));
                 Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).HasPendingSave);io.Fault=null;KeyboardButton(c,"RetryClearReturn");
             }
+            Assert.AreEqual(0, Model(c).Dungeon.Currency);
             var ended=c.PersistentProgress.Flow;Assert.IsNotNull(ended,((ClearReturnSession)Get(c,"clearReturnSession")).Error);Assert.AreEqual(outcome,ended.Outcome);
             Assert.AreEqual(ClearReturnStage.Returned,ended.Stage);Assert.IsEmpty(ended.Candidates);Assert.IsEmpty(ended.Selected);Assert.AreEqual(0,ended.ExperienceAward);Assert.AreEqual(0,ended.TokenAward);
             Assert.AreEqual(100,c.PersistentProgress.Experience);Assert.AreEqual(2,c.PersistentProgress.Level);Assert.AreEqual(17,c.PersistentProgress.Tokens);Assert.AreEqual(2,c.PersistentProgress.Owned.Single().Count);
@@ -2990,6 +3013,7 @@ namespace Olca.Tests.Integration
             if(fault=="child"){
                 c=Start(configure:x=>{if(!route)setup(x);Set(x,"nextDepartureIo",childIo);});childIo.Fault=null;KeyboardButton(c,"RetryClearReturn");Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);
             }
+            Assert.AreEqual(0, Model(c).Dungeon.Currency);
             Assert.AreEqual(6,Model(c).Dungeon.GetCurrentDeck().TotalCount);Assert.IsEmpty(Model(c).Dungeon.GetObtainedCards());Assert.AreEqual(105,Model(c).Dungeon.Player.CurrentHp);
             Assert.AreEqual(2,c.PersistentProgress.Receipts.Length);Assert.AreEqual(2,c.PersistentProgress.Owned.Single().Count);Assert.AreEqual(100,c.PersistentProgress.Experience);
             c=route?Start():Start(configure:setup);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);
@@ -3318,6 +3342,7 @@ namespace Olca.Tests.Integration
             io.Fail = false; Assert.IsTrue(controller.RetryMemoryCheckpoint());
             Assert.AreEqual(1, transfers); Assert.AreEqual(0, clears); Assert.AreEqual(1, controller.CurrentFloorIndex);
             var next = Model(controller); Assert.AreEqual(skip ? 0 : 1, next.Dungeon.GetObtainedCards().Count);
+            Assert.AreEqual(10, next.Dungeon.Currency); Assert.AreEqual(10, Store(controller).Read().State.Currency);
             Assert.AreEqual(6 + (skip ? 0 : 1), next.Dungeon.GetCurrentDeck().TotalCount);
             old.SelectCardReward(choices[0]); Assert.AreEqual(1, transfers);
             ToBattle(controller);
@@ -3330,6 +3355,7 @@ namespace Olca.Tests.Integration
             next.OnDungeonClearCompleted += _ => clears++;
             next.SelectCardReward(null); Tick(controller);
             Assert.AreEqual(GamePhase.DungeonCleared, next.CurrentPhase); Assert.AreEqual(1, clears);
+            Assert.AreEqual(0, next.Dungeon.Currency); Assert.AreEqual(0, Store(controller).Read().State.Currency);
             Assert.AreEqual(CheckpointBoundary.Terminal, Store(controller).Read().State.Boundary);
             Assert.AreEqual(1, Store(controller).Read().FloorIndex);
             next.SelectCardReward(finalChoices[0]); Tick(controller); Assert.AreEqual(1, clears);

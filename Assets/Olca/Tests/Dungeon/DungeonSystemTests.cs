@@ -1249,6 +1249,16 @@ namespace Olca.Tests.Dungeon
             Assert.IsFalse(CheckpointCodec.TryRestore(departure,definitions,out _,out _));
         }
 
+        [TestCase("wallet")] [TestCase("amount")] [TestCase("count")]
+        public void 不正な通貨財布と戦闘開始額を復帰で拒否する(string invalid)
+        {
+            var snapshot = FindPlan(true).Snapshot;
+            if (invalid == "wallet") snapshot.Currency = -1;
+            if (invalid == "amount") snapshot.Battle.CurrencyAmounts = new[] { -1 };
+            if (invalid == "count") snapshot.Battle.CurrencyAmounts = new int[0];
+            Assert.IsFalse(CheckpointCodec.TryRestore(snapshot, definitions, out _, out _));
+        }
+
         [Test]
         public void 重み付き戦闘開始計画は保存後の重み変更でも候補を再抽選しない()
         {

@@ -267,7 +267,7 @@ namespace Olca.Application.Dungeon
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
             else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose(); }
             // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
-            if (pauseOverlay != null) pauseOverlay.SetActive(paused);
+            if (pauseOverlay != null) { pauseOverlay.SetActive(paused); if (paused) pauseOverlay.transform.SetAsLastSibling(); }
             inputProvider?.QueueSnapshot();
         }
 
@@ -294,6 +294,21 @@ namespace Olca.Application.Dungeon
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
                 return button;
             }
+            currencyOverlay = new GameObject("CurrencyRewardPanel", typeof(RectTransform), typeof(Image));
+            currencyOverlay.transform.SetParent(pauseCanvas.transform, false);
+            var currencyRect = (RectTransform)currencyOverlay.transform; currencyRect.anchorMin = Vector2.zero; currencyRect.anchorMax = Vector2.one; currencyRect.offsetMin = currencyRect.offsetMax = Vector2.zero;
+            currencyOverlay.GetComponent<Image>().color = new Color(.02f, .08f, .12f, .97f);
+            Text CurrencyText(string name, Transform parent, Vector2 anchor, Vector2 position, Vector2 size) {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Text)); obj.transform.SetParent(parent, false);
+                var text = obj.GetComponent<Text>(); text.font = font; text.fontSize = 30; text.color = Color.white; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
+                var r = text.rectTransform; r.anchorMin = r.anchorMax = anchor; r.anchoredPosition = position; r.sizeDelta = size; return text;
+            }
+            currencyRewardText = CurrencyText("CurrencyRewardText", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(0,100), new Vector2(1000,180));
+            receiveCurrencyButton = MakeButton("ReceiveCurrencyButton", "受け取る", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(-240,-80));
+            receiveCurrencyButton.onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(true); });
+            MakeButton("SkipCurrencyButton", "スキップ", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(240,-80)).onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(false); });
+            currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-160,-125), new Vector2(300,45));
+            currencyOverlay.SetActive(false);
             MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-120, -60)).onClick.AddListener(() => SetUserPaused(true));
             pauseOverlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image)); pauseOverlay.transform.SetParent(pauseCanvas.transform, false);
             var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
@@ -309,7 +324,7 @@ namespace Olca.Application.Dungeon
             retreatConfirmation.GetComponent<Image>().color = new Color(.02f,.05f,.08f,.96f);
             var warning = new GameObject("RetreatWarning", typeof(RectTransform), typeof(Text)); warning.transform.SetParent(retreatConfirmation.transform, false);
             var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
-            wt.text = "撤退すると攻略中に獲得したカードをすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
+            wt.text = "撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
             wt.rectTransform.sizeDelta = new Vector2(1600,200); wt.rectTransform.anchoredPosition = new Vector2(0,150);
             MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100)).onClick.AddListener(ConfirmRetreat);
             MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100)).onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
@@ -510,6 +525,8 @@ namespace Olca.Application.Dungeon
                 if (outcome == RunReturnOutcome.Retreated && !manager.IsSuspended && !manager.SuspendForCheckpoint()) return;
                 if (IsUserPaused) SetUserPaused(false);
                 transitionCts?.Cancel(); battleSession?.Detach(); cardSelectionView?.Hide();
+                manager.Dungeon.DiscardRunCurrency();
+                currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
                 pendingCardChoices = null; floorSwapPending = false; basicAttackInput.Reset(); queuedBasicAttackTap = false;
                 clearReturnError = null;
                 if (!clearReturnSession.EndWithoutRewards(source, key, ReturnSettings(), outcome) && !clearReturnSession.HasPendingSave) clearReturnError = clearReturnSession.Error;
@@ -678,6 +695,11 @@ namespace Olca.Application.Dungeon
         }
 
         private CancellationTokenSource transitionCts;
+        [SerializeField, Min(0)] private int currencyPerEnemy = 10;
+        private GameObject currencyOverlay;
+        private Text currencyRewardText, currencyBalanceText;
+        private Button receiveCurrencyButton;
+        private UniTaskCompletionSource<bool> currencyChoice;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
@@ -765,6 +787,7 @@ namespace Olca.Application.Dungeon
                 hasNextFloor: !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
+            manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
 
             // イベント購読
             manager.OnBattleStarted += OnBattleStarted;
@@ -875,6 +898,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
+            if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
             gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             switch (manager.CurrentPhase)
@@ -1063,7 +1087,7 @@ namespace Olca.Application.Dungeon
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(selectedCard); ScheduleExplorationResume(); } });
-                        while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
+                        while (manager.CurrentPhase == GamePhase.CardReward && manager.Dungeon.PendingCurrencyReward == 0) await GameplayPause.NextFrame(ct);
                     }
                     else
                     {
@@ -1072,8 +1096,23 @@ namespace Olca.Application.Dungeon
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(null); ScheduleExplorationResume(); } });
-                        while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
+                        while (manager.CurrentPhase == GamePhase.CardReward && manager.Dungeon.PendingCurrencyReward == 0) await GameplayPause.NextFrame(ct);
                     }
+                }
+
+                if (manager.Dungeon.PendingCurrencyReward > 0)
+                {
+                    currencyChoice = new UniTaskCompletionSource<bool>();
+                    var choice = currencyChoice;
+                    currencyRewardText.text = $"通貨報酬: {manager.Dungeon.PendingCurrencyReward}\n所持: {manager.Dungeon.Currency}（攻略中のみ）";
+                    receiveCurrencyButton.interactable = manager.Dungeon.PendingCurrencyReward <= long.MaxValue - manager.Dungeon.Currency;
+                    currencyOverlay.SetActive(true); currencyOverlay.transform.SetAsLastSibling();
+                    bool receive;
+                    try { using (ct.Register(() => choice.TrySetCanceled(ct))) receive = await choice.Task; }
+                    finally { if (currencyOverlay != null) currencyOverlay.SetActive(false); currencyChoice = null; }
+                    await GameplayPause.WaitAsync(ct);
+                    logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCurrencyReward(receive); ScheduleExplorationResume(); } });
+                    while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
                 }
 
                 // 定位置（グリッド列1）へ復帰ジャンプ（ダッシュ宙返りと同じ放物線）
@@ -1269,11 +1308,13 @@ namespace Olca.Application.Dungeon
             manager.OnDungeonClearCompleted -= OnDungeonCleared;
             manager.OnFloorCompleted -= OnFloorCompleted;
             pendingCardChoices = null; cardSelectionView?.Hide();
+            currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
             manager = restored;
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
+            manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;
             ShowCheckpointStatus();
