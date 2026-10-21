@@ -348,14 +348,14 @@ namespace Olca.Core.Domain
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
-                if (HasAura && protection.Block(damage, grass)) return false;
+                if (HasAura && protection.Block(damage, grass, attackProperties)) return false;
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 // 変身解除は既存の弱点規則を維持し、バリアの耐久計算とは分ける。
                 breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
                 // 元から威力0の状態専用ヒットはバリアを通過する。
-                if (HasBarrier && protection.Block(damage, grass)) return false;
+                if (HasBarrier && protection.Block(damage, grass, attackProperties)) return false;
                 damage = bodyDamage;
                 if (originalDamage > 0 && damage == 0) return false; // 耐性無効は強靭度・付随効果へ進めない。
 

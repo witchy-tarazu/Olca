@@ -30,20 +30,20 @@ namespace Olca.Tests.Domain
             var master = new CardMaster { Id = "property", Name = "検証", Category = CardCategory.Attack,
                 Element = ElementType.Fire, Series = SeriesType.Sword, Power = 10 };
             Assert.AreEqual(AttackProperty.None, Card.FromMaster(master).Properties, "系統から性質を推測しない");
-            master.Properties = AttackProperty.Sword | AttackProperty.Break;
+            master.Properties = AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind;
             var card = Card.FromMaster(master);
             var material = new Card("t", "検証", 1, CardRarity.Normal, CardCategory.Tuning,
                 ElementType.None, CardSeries.None, 0, "検証", properties: AttackProperty.Break);
             foreach (var copy in new[] { card, card.Clone(), card.WithPowerMultiplier(2), card.CreateSelfChainCopy(50),
                 card.ApplyTuning(material), new Olca.Application.Battle.SimpleCardFactory().CreateExceeded(card, ExceedLevel.Lv1) })
             {
-                Assert.AreEqual(AttackProperty.Sword | AttackProperty.Break, copy.Properties);
+                Assert.AreEqual(AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind, copy.Properties);
                 Assert.AreEqual(ElementType.Fire, copy.Element);
             }
             var plain = new Card("p", "検証", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.None, CardSeries.Sword, 10, "検証");
             Assert.AreEqual(AttackProperty.None, plain.ApplyTuning(material).Properties, "素材の性質は追加仕様なしで付与しない");
-            master.Properties = (AttackProperty)4;
+            master.Properties = (AttackProperty)8;
             Assert.Throws<System.ArgumentOutOfRangeException>(() => Card.FromMaster(master));
         }
 

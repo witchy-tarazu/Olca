@@ -376,11 +376,11 @@ namespace Olca.Tests.Battle
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness(ElementType.None));
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness((ElementType)99));
             int changed = 0; player.OnHpChanged += (hp, max) => changed++;
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.TakeDamage(10, attackProperties: (AttackProperty)4));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.TakeDamage(10, attackProperties: (AttackProperty)8));
             Assert.AreEqual(0, changed); Assert.AreEqual(100, player.CurrentHp);
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => new BasicAttackAction(10, 100, attackProperties: (AttackProperty)4));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new BasicAttackAction(10, 100, attackProperties: (AttackProperty)8));
             var enemy = new Enemy("e", "検証", 100, ElementType.None, Vector2Int.Zero);
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => enemy.TakeDamage(10, ElementType.None, (AttackProperty)4));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => enemy.TakeDamage(10, ElementType.None, (AttackProperty)8));
             Assert.AreEqual(100, enemy.CurrentHp);
         }
 
@@ -398,6 +398,75 @@ namespace Olca.Tests.Battle
             effect.ExecuteAsync(new BattleContext(battle, card), System.Threading.CancellationToken.None).GetAwaiter().GetResult();
             Assert.AreEqual(100, enemy.CurrentHp); Assert.AreEqual(0, hits);
             Assert.AreEqual(Vector2Int.Zero, player.GridPosition); Assert.IsFalse(player.IsInTemporaryMove);
+        }
+
+        [TestCase(false, false, 0)] [TestCase(false, false, 1)]
+        [TestCase(false, true, 0)] [TestCase(false, true, 999)]
+        [TestCase(true, false, 0)] [TestCase(true, false, 1)]
+        [TestCase(true, true, 0)] [TestCase(true, true, 999)]
+        public void 風性質は威力と耐久値によらず終端で防御を剥がし同フレームを防ぐ(bool enemySide, bool aura, int power)
+        {
+            var enemy = new Enemy("e", "敵", 2000, ElementType.None, new Vector2Int(1, 0));
+            var battle = CreateBattle(enemy);
+            if (enemySide) { if (aura) enemy.SetAura(10000); else enemy.SetBarrier(10000); }
+            else { if (aura) player.SetAura(10000); else player.SetBarrier(10000); }
+            void Hit(int amount, AttackProperty property) {
+                if (enemySide) enemy.TakeDamage(amount, ElementType.Fire, property, amount > 0 ? 99 : 0);
+                else player.TakeDamage(amount, attackElement: ElementType.Fire, attackProperties: property, poiseDamage: amount > 0 ? 99 : 0);
+            }
+            battle.RunLogicalFrame(() => {
+                Hit(power, AttackProperty.Wind); Hit(1, AttackProperty.None);
+                Assert.IsTrue(enemySide ? enemy.HasBarrier || enemy.HasAura : player.HasBarrier || player.HasAura);
+            });
+            Assert.AreEqual(enemySide ? 2000 : 100, enemySide ? enemy.CurrentHp : player.CurrentHp);
+            Assert.IsFalse(enemySide ? enemy.HasBarrier || enemy.HasAura : player.HasBarrier || player.HasAura);
+            Assert.AreEqual(0, enemySide ? enemy.AccumulatedPoiseDamage : player.AccumulatedDamage);
+            battle.RunLogicalFrame(() => Hit(1, AttackProperty.None));
+            Assert.AreEqual(enemySide ? 1999 : 99, enemySide ? enemy.CurrentHp : player.CurrentHp);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 風属性だけでは剥がさずガードを通過した風性質だけが剥がす(bool aura)
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0));
+            var battle = CreateBattle(enemy);
+            if (aura) enemy.SetAura(10000); else enemy.SetBarrier(10000);
+            battle.RunLogicalFrame(() => enemy.TakeDamage(1, ElementType.Wind));
+            Assert.IsTrue(enemy.HasAura || enemy.HasBarrier);
+            enemy.Guard.Set(true, false);
+            battle.RunLogicalFrame(() => enemy.TakeDamage(1, ElementType.None, AttackProperty.Wind));
+            Assert.IsTrue(enemy.HasAura || enemy.HasBarrier);
+            battle.RunLogicalFrame(() => enemy.TakeDamage(1, ElementType.None, AttackProperty.Wind | AttackProperty.Break));
+            Assert.IsFalse(enemy.HasAura || enemy.HasBarrier); Assert.AreEqual(100, enemy.CurrentHp);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 敵の通常攻撃経路でも風性質がプレイヤー防御を剥がし付随効果と被弾無敵を発生させない(bool aura)
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0));
+            var battle = CreateBattle(enemy); int effects = 0;
+            if (aura) player.SetAura(10000); else player.SetBarrier(10000);
+            var attack = new BasicAttackAction(1, 100, attackProperties: AttackProperty.Wind,
+                poiseDamage: 30, onHit: p => effects++, hitInvincibilityMs: 600);
+            var context = new AIContext(enemy, player, battle.Field, new MockRandomProvider(), logger);
+            battle.RunLogicalFrame(() => attack.Execute(context));
+            Assert.AreEqual(100, player.CurrentHp); Assert.AreEqual(0, effects);
+            Assert.IsFalse(player.HasBarrier || player.HasAura); Assert.IsFalse(player.IsInvincible);
+            battle.RunLogicalFrame(() => attack.Execute(context));
+            Assert.AreEqual(99, player.CurrentHp); Assert.AreEqual(1, effects); Assert.IsTrue(player.IsInvincible);
+        }
+
+        [Test]
+        public void 無敵中の風性質は防御を剥がさない()
+        {
+            var enemy = new Enemy("e", "敵", 100, ElementType.None, new Vector2Int(1, 0));
+            var battle = CreateBattle(enemy); enemy.SetBarrier(1000); player.SetAura(1000);
+            enemy.SetInvincible(600); player.SetInvincible(600);
+            battle.RunLogicalFrame(() => {
+                enemy.TakeDamage(1, ElementType.None, AttackProperty.Wind);
+                player.TakeDamage(1, attackProperties: AttackProperty.Wind);
+            });
+            Assert.AreEqual(1000, enemy.BarrierHp); Assert.AreEqual(1000, player.AuraThreshold);
         }
 
         // ==================== Enemy.TakeDamage の属性相性テスト ====================

@@ -322,7 +322,7 @@ namespace Olca.Core.Domain
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // ガードを先に判定。通過したヒットだけ防御のフレーム合計へ入れる。
                 if (!poison && Guard.Blocks(damage, properties)) return;
-                if (!poison && protection.Block(damage, grass)) return;
+                if (!poison && protection.Block(damage, grass, properties)) return;
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
                 if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。

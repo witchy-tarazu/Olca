@@ -22,7 +22,7 @@ namespace Olca.Core.Domain
     }
     /// <summary>属性・カード系統とは独立した攻撃性質。明示した定義だけで使用する。</summary>
     [System.Flags]
-    public enum AttackProperty { None = 0, Sword = 1, Break = 2 }
+    public enum AttackProperty { None = 0, Sword = 1, Break = 2, Wind = 4 }
 
     /// <summary>外部指定のガード判定。発生元・期間・入力は所有しない。</summary>
     public sealed class BattleGuardState
@@ -69,9 +69,17 @@ namespace Olca.Core.Domain
             frameOpen = false; frameDamage = 0;
             if (expires || (BarrierHp == 0 && AuraThreshold == 0)) Clear();
         }
-        internal bool Block(int damage, bool grass)
+        internal bool Block(int damage, bool grass, AttackProperty properties = AttackProperty.None)
         {
-            if (damage <= 0 || (BarrierHp == 0 && AuraThreshold == 0)) return false;
+            if (BarrierHp == 0 && AuraThreshold == 0) return false;
+            if ((properties & AttackProperty.Wind) != 0)
+            {
+                // 剥離するフレームも防御を保持し、次フレームから本体へ通す。
+                if (frameOpen) expires = true; else Clear();
+                // 元から威力0の状態専用ヒットは従来どおり防御しない。
+                return damage > 0;
+            }
+            if (damage <= 0) return false;
             int adjusted = ElementResistances.Neutral.CalculateDamage(damage, ElementType.None, grass);
             if (frameOpen) frameDamage = System.Math.Min(int.MaxValue, frameDamage + adjusted);
             else
@@ -93,7 +101,7 @@ namespace Olca.Core.Domain
     {
         internal static void Validate(AttackProperty value)
         {
-            if ((value & ~(AttackProperty.Sword | AttackProperty.Break)) != 0)
+            if ((value & ~(AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind)) != 0)
                 throw new System.ArgumentOutOfRangeException(nameof(value), "未定義の攻撃性質です");
         }
     }

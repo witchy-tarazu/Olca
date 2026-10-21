@@ -83,6 +83,30 @@ namespace Olca.Tests.Application
             return (session, battleView, customScreenView, logger);
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 風カードは通常入力実行と停止復帰を経て防御を剥がす(bool aura)
+        {
+            var battle = CreateBattleSystem(); var target = battle.Enemies[0];
+            target.MoveTo(new Vector2Int(1, 0)); target.ApplyStun(60000);
+            var session = CreateSession().session; session.Attach(battle);
+            if (battle.CustomScreen.IsOpen) { battle.CustomScreen.Confirm(); battle.CustomScreen.Close(); }
+            if (aura) target.SetAura(10000); else target.SetBarrier(10000);
+            var card = new Card("wind-fixture", "検証", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.Fire, CardSeries.Sword, 1, "検証", properties: AttackProperty.Wind);
+            int used = 0; battle.CardUsage.OnCardUsed += c => used++;
+            battle.CardUsage.EnqueueCards(new List<Card> { card });
+            for (int frame = 1; frame <= 240 && used == 0; frame++)
+                session.ProcessLogicalFrame(() => {
+                    if (frame == 1) session.UseCardFromInput();
+                    if (frame == 2) battle.Pause(BattlePauseReason.User);
+                    if (frame == 6) battle.Resume(BattlePauseReason.User);
+                    battle.TickFrame(17);
+                });
+            Assert.AreEqual(1, used); Assert.AreEqual(50, target.CurrentHp);
+            Assert.IsFalse(target.HasBarrier || target.HasAura); Assert.IsFalse(target.IsInvincible);
+            session.Detach();
+        }
+
         [Test]
         public void 選択枚数の四角はコストや残数でなく選択枚数だけ黄色になる()
         {

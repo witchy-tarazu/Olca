@@ -1191,6 +1191,8 @@ namespace Olca.Tests.Dungeon
         [TestCase(AttackProperty.None)]
         [TestCase(AttackProperty.Sword)]
         [TestCase(AttackProperty.Sword | AttackProperty.Break)]
+        [TestCase(AttackProperty.Wind)]
+        [TestCase(AttackProperty.Wind | AttackProperty.Break)]
         public void 攻撃性質の保存復帰は個体順序と獲得参照を維持し別性質定義を拒否する(AttackProperty properties)
         {
             Card Make(AttackProperty value) => new Card("sword", "同名", 2, CardRarity.Normal, CardCategory.Attack,
