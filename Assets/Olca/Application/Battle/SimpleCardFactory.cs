@@ -22,7 +22,7 @@ namespace Olca.Application.Battle
         }
     }
 
-    public class SimpleCardFactory : ICardFactory, ICardDatabase
+    public class SimpleCardFactory : ICardFactory, ICardDatabase, IExceededCardDefinitionProvider
     {
         // カードID定数
         public const string Sword = "sword";
@@ -33,6 +33,19 @@ namespace Olca.Application.Battle
         public const string FireSword = "fire_sword";
 
         private readonly Dictionary<string, Card> catalog;
+        // 製品仮定義。既存カードの保存値は変えず、加工時だけ参照する。
+        private readonly Dictionary<ExceedLevel, Card> swordUpgrades = new Dictionary<ExceedLevel, Card>();
+        private static readonly TuningGrantDefinition StandardTuning = new TuningGrantDefinition(
+            "product/tuning/power-v1", new[] { new TuningEffectDefinition("power", 1,
+                new Dictionary<int, CardModifier> { [1] = new CardModifier { BonusDamage = 10 } }) });
+
+        public TuningGrantDefinition GetTuningDefinition(Card card)
+            => card != null && card.Id == Tuning && card.Category == CardCategory.Tuning &&
+                card.ExceedLevel == ExceedLevel.Normal ? StandardTuning : null;
+
+        public bool HasExceededDefinition(Card card, ExceedLevel nextLevel)
+            => card != null && card.Id == Sword && card.Series == CardSeries.Sword &&
+                nextLevel == (ExceedLevel)((int)card.ExceedLevel + 1) && swordUpgrades.ContainsKey(nextLevel);
 
         public SimpleCardFactory() : this(null, false) { }
 
@@ -65,6 +78,18 @@ namespace Olca.Application.Battle
                         throw new System.ArgumentException("既存カードIDと時間定義が必要です", nameof(cardTimings));
                     catalog[entry.Key] = catalog[entry.Key].WithAttackTiming(entry.Value);
                 }
+            // 旧互換の倍率生成とは分離した、同じシリーズの上位カード定義。
+            var sword = catalog[Sword];
+            foreach (var entry in new[] { (ExceedLevel.Lv1, 45, "ソード★"),
+                (ExceedLevel.Lv2, 60, "ソード★★"), (ExceedLevel.Lv3, 90, "ソード★★★") })
+                swordUpgrades.Add(entry.Item1, new Card(Sword, entry.Item3, sword.Cost, sword.Rarity,
+                    sword.Category, sword.Element, sword.Series, entry.Item2, sword.Description,
+                    exceedLevel: entry.Item1, subCategory: sword.SubCategory, properties: sword.Properties,
+                    poiseDamage: sword.PoiseDamage, hitInvincibilityMs: sword.HitInvincibilityMs,
+                    startupTime: sword.StartupTime, recoveryTime: sword.RecoveryTime,
+                    extendRecoveryDuringDerivative: sword.ExtendRecoveryDuringDerivative, isInstantEffect: sword.IsInstantEffect,
+                    startupFrames: sword.StartupFrames, recoveryFrames: sword.RecoveryFrames,
+                    recoveryCancelAfterFrames: sword.RecoveryCancelAfterFrames));
         }
 
         /// <summary>
@@ -87,6 +112,8 @@ namespace Olca.Application.Battle
         public Card CreateExceeded(Card baseCard, ExceedLevel nextLevel)
         {
             if (baseCard == null) return null;
+            if (baseCard.Id == Sword && swordUpgrades.TryGetValue(nextLevel, out var definition))
+                return definition.Clone();
 
             // 超越後の威力倍率: Lv1→×1.5, Lv2→×2.0, Lv3→×3.0
             float powerMultiplier = nextLevel switch

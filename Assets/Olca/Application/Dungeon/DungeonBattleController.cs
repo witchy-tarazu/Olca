@@ -838,7 +838,7 @@ namespace Olca.Application.Dungeon
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store); var f = CreateCardFactory();
                 if (!DungeonBattleManager.TryRestoreCheckpoint(session, randomProvider, logger, out next, out error,
-                    new ExceedSystem(f), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), f), f)) return false;
+                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(), f), f)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
@@ -963,7 +963,7 @@ namespace Olca.Application.Dungeon
             var cardFactory = CreateCardFactory();
             var recipeProvider = new SimpleFusionRecipeProvider();
             var exceedSystem = new ExceedSystem(cardFactory);
-            var tuningSystem = new TuningSystem();
+            var tuningSystem = new TuningSystem(cardFactory.GetTuningDefinition);
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
 
             var initialDeck = CreateInitialDeck();
@@ -1553,7 +1553,7 @@ namespace Olca.Application.Dungeon
             session = definitions.CreateCheckpointSession(route.Current.FloorIndex, route);
             var factory = CreateCardFactory();
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
-                new ExceedSystem(factory), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
+                new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
                 hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount);
         }
@@ -1592,7 +1592,7 @@ namespace Olca.Application.Dungeon
                     ? new DungeonCheckpointSession(memoryCheckpoints.Definitions, new FileCheckpointStore(memoryCheckpoints.Definitions, file.DirectoryPath))
                     : memoryCheckpoints;
                 if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
-                    out restored, out error, new ExceedSystem(factory), new TuningSystem(),
+                    out restored, out error, new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition),
                     new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
             }
             if (clearReturnSession?.Snapshot?.Receipts.Any(r => r.RunId == candidate.RunId && r.Outcome != RunReturnOutcome.Cleared) == true)

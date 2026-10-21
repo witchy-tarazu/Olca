@@ -1446,7 +1446,7 @@ namespace Olca.Tests.Integration
             Assert.Throws<System.ArgumentException>(() => DungeonCheckpointSession.CreateDefault(map, Deck()));
         }
         [TestCase("fusion")][TestCase("exceed")]
-        public void 通常融合と未定義超越は既定マップの保存を阻害しない(string operation)
+        public void 通常融合と登録済み超越は既定マップの保存を阻害しない(string operation)
         {
             var factory = new Olca.Application.Battle.SimpleCardFactory();
             var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
@@ -1459,8 +1459,8 @@ namespace Olca.Tests.Integration
             game.CurrentBattle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE); game.CurrentBattle.OpenCustomScreen(new MockRandomProvider());
             var materials = operation == "fusion" ? new[] { screen.CurrentHand.First(c => c.Id == "sword"), screen.CurrentHand.Single(c => c.Id == "bomb") } : screen.CurrentHand.Where(c => c.Id == "sword").ToArray();
             var result = screen.ExecuteCustomization(materials);
-            if (operation == "fusion") Assert.IsTrue(result.CanExecute, result.Reason);
-            else { Assert.IsFalse(result.CanExecute); StringAssert.Contains("未定義", result.Reason); }
+            Assert.IsTrue(result.CanExecute, result.Reason);
+            if (operation == "exceed") Assert.AreEqual(45, result.ResultCard.GetFinalPower());
             game.OnCardRewardPresented += _ => game.Dungeon.OnCardSelectionCompleted(null);
             foreach (var enemy in game.CurrentBattle.Enemies.ToArray()) enemy.TakeDamage(enemy.MaxHp, ElementType.None);
             Assert.IsFalse(game.Dungeon.IsCheckpointBlocked, game.Dungeon.CheckpointError);

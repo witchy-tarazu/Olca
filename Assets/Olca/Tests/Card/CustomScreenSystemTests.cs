@@ -197,7 +197,7 @@ namespace Olca.Tests.CardTests
         public void 未登録上位は既存ファクトリの仮性能をプレビューせず確定も素材を消費しない()
         {
             var factory = new Olca.Application.Battle.SimpleCardFactory();
-            var a = factory.CreateById("sword"); var b = a.Clone(); var deck = new Deck(new List<Card> { a, b });
+            var a = factory.CreateById("bomb"); var b = a.Clone(); var deck = new Deck(new List<Card> { a, b });
             var cs = new CustomScreenSystem(deck, exceedSystem: new ExceedSystem(factory)); cs.Open(new Card[0], random);
             var preview = cs.PreviewCustomization(new[] { a, b });
             Assert.AreEqual(CustomizationOperation.Exceed, preview.Operation);
