@@ -291,3 +291,30 @@ namespace Olca.Core.Domain
     }
 
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>出撃時に固定する節目成長。加算履歴を持たず、共通レベルから一度だけ解決する。</summary>
+    public sealed class AttackMilestoneGrowth
+    {
+        public int Level { get; }
+        public int ChargePercent { get; }
+        public int IntervalReduction { get; }
+        public int RangeBonus { get; }
+        public AttackMilestoneGrowth(int level,int chargePercent,int intervalReduction,int rangeBonus=0)
+        {
+            if(level<1||chargePercent<1||chargePercent>100||intervalReduction<0||rangeBonus<0||rangeBonus>4)throw new System.ArgumentException("節目成長の固定値が不正です");
+            Level=level;ChargePercent=chargePercent;IntervalReduction=intervalReduction;RangeBonus=rangeBonus;
+        }
+        public static AttackMilestoneGrowth ForLevel(int level)=>new AttackMilestoneGrowth(level,level>=10?80:level>=5?90:100,level>=10?2:level>=5?1:0,level>=10?1:0);
+        public int ChargeFrames(int frames)=>System.Math.Max(1,(int)((long)frames*ChargePercent/100));
+        public int IntervalFrames(int frames)=>System.Math.Max(1,frames-IntervalReduction);
+        public AttackMilestoneDto Capture()=>new AttackMilestoneDto{Level=Level,ChargePercent=ChargePercent,IntervalReduction=IntervalReduction,RangeBonus=RangeBonus};
+    }
+    public sealed class AttackMilestoneDto
+    {
+        public int Level,ChargePercent,IntervalReduction,RangeBonus;
+        public AttackMilestoneDto Copy()=>(AttackMilestoneDto)MemberwiseClone();
+        public AttackMilestoneGrowth Restore()=>new AttackMilestoneGrowth(Level,ChargePercent,IntervalReduction,RangeBonus);
+    }
+}

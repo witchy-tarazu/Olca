@@ -128,6 +128,7 @@ namespace Olca.Core.Domain
 
     public sealed class CheckpointPlayerDto
     {
+        public AttackMilestoneDto AttackGrowth; // 旧保存nullは速度/タメの成長なしを維持
         public DepartureStyleDto Style; // 旧省略/nullは既存の基本スタイル
         public int Hp, MaxHp, AttackPower, Poise;
         public int? PoiseRecoveryFrames; // 旧保存の省略/nullは自然回復未設定。残り時間ではなく定義
@@ -138,7 +139,7 @@ namespace Olca.Core.Domain
         public int GridX, GridY;
         public CheckpointPlayerDto Copy() {
             var copy=(CheckpointPlayerDto)MemberwiseClone();
-            copy.Style=Style?.Copy();
+            copy.Style=Style?.Copy();copy.AttackGrowth=AttackGrowth?.Copy();
             copy.Poisons=Poisons==null ? null : System.Array.ConvertAll(Poisons,p=>p?.Copy()); return copy;
         }
     }

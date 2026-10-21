@@ -3910,6 +3910,13 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(CheckpointCodec.TryRestore(session.Store.Read(), session.Definitions, out var result, out var error), error); return result;
         }
         private Olca.Unity.ClearReturnFileStore Store(FaultIo io = null) => new Olca.Unity.ClearReturnFileStore(directory, io);
+        [Test]
+        public void 複数レベルで節目を越える経験値は保存再試行と再開で二重成長せず帰還後だけ反映する()
+        {
+            var io=new FaultIo();var source=Terminal();var flow=new ClearReturnSession(Store(io));Assert.IsTrue(flow.Begin(source,"growth-fixture",new ClearReturnSettings{FirstClearExperience=900}));io.Before=true;Assert.IsFalse(flow.ConfirmSelection());Assert.AreEqual(1,flow.Snapshot.Level);Assert.AreEqual(0,flow.Snapshot.Experience);Assert.IsNull(source.Player.AttackGrowth);
+            io.Before=false;Assert.IsTrue(flow.Retry());flow=new ClearReturnSession(Store());Assert.AreEqual(10,flow.Snapshot.Level);Assert.AreEqual(900,flow.Snapshot.Experience);Assert.IsTrue(flow.ConfirmReturn());Assert.AreEqual(19,flow.ReturnedPlayer.AttackPower);Assert.AreEqual(48,flow.ReturnedPlayer.AttackGrowth.ChargeFrames(60));Assert.AreEqual(10,flow.ReturnedPlayer.AttackGrowth.IntervalFrames(12));
+            flow=new ClearReturnSession(Store());Assert.AreEqual(900,flow.Snapshot.Experience);Assert.AreEqual(10,flow.ReturnedPlayer.AttackGrowth.Level);flow.ConfirmReturn();Assert.AreEqual(900,flow.Snapshot.Experience);Assert.AreEqual(48,flow.ReturnedPlayer.AttackGrowth.ChargeFrames(60));
+        }
         [TestCase("begin")] [TestCase("toggle")] [TestCase("award")] [TestCase("return")]
         public void 各保存段階の失敗は現状態とファイルを保ち同一計画を再試行して一度だけ受領する(string step)
         {
@@ -4579,6 +4586,50 @@ namespace Olca.Tests.Integration
             var other=new FieldItem("fixture-heal","回復fixture",10);Assert.Throws<System.ArgumentException>(()=>ItemRewardEntry.Validate(new[]{new ItemRewardEntry(item,int.MaxValue),new ItemRewardEntry(other,1)}));
             Assert.IsNull(ItemRewardEntry.Pick(new ItemRewardEntry[0],100,new MockRandomProvider()));Assert.IsNull(ItemRewardEntry.Pick(new[]{new ItemRewardEntry(item,0)},100,new MockRandomProvider()));Assert.IsNull(ItemRewardEntry.Pick(new[]{new ItemRewardEntry(item)},0,new MockRandomProvider()));
             var pool=new[]{new ItemRewardEntry(item,1),new ItemRewardEntry(other,3)};Assert.AreEqual(0,ItemRewardEntry.Pick(pool,100,new MockRandomProvider(0)));Assert.AreEqual(1,ItemRewardEntry.Pick(pool,100,new MockRandomProvider(1)));Assert.AreEqual(1,ItemRewardEntry.Pick(pool,100,new MockRandomProvider(3)));
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    public class AttackMilestoneTests
+    {
+        [TestCase(1,60,12)][TestCase(4,60,12)][TestCase(5,54,11)][TestCase(9,54,11)][TestCase(10,48,10)][TestCase(99,48,10)]
+        public void 節目は共通レベルから一度だけ導出し複数レベルでも加算を重ねない(int level,int charge,int interval)
+        {
+            var g=AttackMilestoneGrowth.ForLevel(level);Assert.AreEqual(charge,g.ChargeFrames(60));Assert.AreEqual(interval,g.IntervalFrames(12));Assert.AreEqual(charge,g.ChargeFrames(60));Assert.AreEqual(1,g.ChargeFrames(1));Assert.AreEqual(1,g.IntervalFrames(1));
+        }
+        private static Olca.Core.Logic.Battle.BattleSystem Battle(int level,out Enemy enemy)
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0),attackPower:14);p.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));enemy=new Enemy("target","検証",500,ElementType.None,new Vector2Int(2,0));return new Olca.Core.Logic.Battle.BattleSystem(p,new List<Enemy>{enemy},new Deck());
+        }
+        [TestCase(9,false)] [TestCase(10,true)]
+        public void 節目射程は通常入力の発生位置から前方を判定し多重発動しない(int level,bool hits)
+        {
+            var b=Battle(level,out var e);e.MoveTo(new Vector2Int(3,0));var state=new Olca.Application.Battle.BasicAttackInputState();state.Tick(b,new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true},60,12);state.Tick(b,new LogicalInput{BasicAttackButtonUp=true},60,12);Assert.AreEqual(hits?486:500,e.CurrentHp);state.Tick(b,new LogicalInput{BasicAttackButtonUp=true},60,12);Assert.AreEqual(hits?486:500,e.CurrentHp);Assert.AreEqual(hits?2:1,b.BasicAttackRange);
+        }
+        [Test]
+        public void 通常入力は短縮したタメ閾値と間隔を使い二重解放しない()
+        {
+            var b=Battle(5,out var e);var state=new Olca.Application.Battle.BasicAttackInputState();
+            for(int i=0;i<54;i++)b.RunLogicalFrame(()=>state.Tick(b,new LogicalInput{BasicAttackButtonDown=i==0,BasicAttackButton=true},60,12));
+            Assert.AreEqual(54,state.ChargeFrames);b.RunLogicalFrame(()=>state.Tick(b,new LogicalInput{BasicAttackButtonUp=true},60,12));Assert.AreEqual(472,e.CurrentHp);Assert.AreEqual(11,state.CooldownFrames);state.Tick(b,new LogicalInput{BasicAttackButtonUp=true},60,12);Assert.AreEqual(472,e.CurrentHp);
+        }
+        [Test]
+        public void スタイルは共通節目を使い変身の専用時間はプレビュー取消確定終了で壊さない()
+        {
+            var b=Battle(10,out _);b.Transformations.Configure(new[]{new TransformationDefenseDefinition("form",ElementResistances.Neutral,ElementType.Water,attack:new TransformationAttackDefinition(ElementType.Fire,chargeFrames:3,intervalFrames:4))});b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.IsTrue(b.Transformations.TryPreview("form"));Assert.AreEqual(48,b.ResolveBasicChargeFrames(60));Assert.IsTrue(b.Transformations.TryCancelPending());Assert.AreEqual(10,b.ResolveBasicIntervalFrames(12));b.Transformations.TryPreview("form");b.CustomScreen.Confirm();b.CustomScreen.Close();Assert.AreEqual(3,b.ResolveBasicChargeFrames(60));Assert.AreEqual(4,b.ResolveBasicIntervalFrames(12));Assert.AreEqual(1,b.BasicAttackRange);b.Player.EndTransformationDefense();Assert.AreEqual(48,b.ResolveBasicChargeFrames(60));Assert.AreEqual(10,b.ResolveBasicIntervalFrames(12));
+        }
+        [Test]
+        public void 固有スタイルの元定義へ節目を適用し保存される元値を書き換えない()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));p.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(5));var attack=new TransformationAttackDefinition(ElementType.Earth,chargeFrames:30,intervalFrames:8);p.SetDepartureStyle(new DepartureStyleDefinition("fixture","検証",null,attack));var b=new Olca.Core.Logic.Battle.BattleSystem(p,new List<Enemy>{new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0))},new Deck());Assert.AreEqual(27,b.ResolveBasicChargeFrames(60));Assert.AreEqual(7,b.ResolveBasicIntervalFrames(12));Assert.AreEqual(30,attack.ChargeFrames);Assert.AreEqual(8,attack.IntervalFrames);
+        }
+        [Test]
+        public void 新規保存は節目の採用値を固定し旧省略は成長済みHP攻撃から推測しない()
+        {
+            var map=DungeonConfig.CreateTestDungeon(8,100,7);var deck=new Deck();var session=DungeonCheckpointSession.CreateDefault(map,deck);var p=new PlayerCharacter(145,attackPower:19);p.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(10));new DungeonBattleManager(map,p,deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);var dto=session.Store.Read();Assert.AreEqual(80,dto.Player.AttackGrowth.ChargePercent);var copy=dto.Copy();copy.Player.AttackGrowth.ChargePercent=1;Assert.AreEqual(80,session.Store.Read().Player.AttackGrowth.ChargePercent);Assert.IsTrue(CheckpointCodec.TryRestore(dto,session.Definitions,out var restored,out var error),error);Assert.AreEqual(48,restored.Player.AttackGrowth.ChargeFrames(60));Assert.Throws<System.InvalidOperationException>(()=>p.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(20)));
+            dto.Player.AttackGrowth=null;Assert.IsTrue(CheckpointCodec.TryRestore(dto,session.Definitions,out restored,out error),error);Assert.IsNull(restored.Player.AttackGrowth);var b=new Olca.Core.Logic.Battle.BattleSystem(restored.Player,new List<Enemy>{new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0))},new Deck());Assert.AreEqual(60,b.ResolveBasicChargeFrames(60));dto.Player.AttackGrowth=new AttackMilestoneDto{Level=10,ChargePercent=0,IntervalReduction=2};Assert.IsFalse(CheckpointCodec.TryRestore(dto,session.Definitions,out _,out _));
         }
     }
 }

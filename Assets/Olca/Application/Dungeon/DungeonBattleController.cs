@@ -171,7 +171,7 @@ namespace Olca.Application.Dungeon
             string state = IsUserPaused ? "ポーズ中" : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中" :
                 battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中" :
                 battle.CardUsage.InFlightCard != null ? "カード使用中" : basicAttackInput.CooldownFrames > 0 ? "再使用待ち" :
-                GameplayPause.InputBlocked ? "キーを離してください" : basicAttackInput.IsResumePending ? "再押下でタメ再開" : basicAttackInput.IsCharging ? $"タメ {basicAttackInput.ChargeFrames}/{basicAttackChargeFrames}" : "短押し / 長押しでタメ";
+                GameplayPause.InputBlocked ? "キーを離してください" : basicAttackInput.IsResumePending ? "再押下でタメ再開" : basicAttackInput.IsCharging ? $"タメ {basicAttackInput.ChargeFrames}/{battle.ResolveBasicChargeFrames(basicAttackChargeFrames)}" : "短押し / 長押しでタメ";
             basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable);
         }
         private bool battleFieldReady;
@@ -794,6 +794,7 @@ namespace Olca.Application.Dungeon
                     var level = clearReturnSession.Snapshot.Level; var settings = ReturnSettings();
                     var player = new PlayerCharacter(settings.MaxHp(level), attackPower: settings.Attack(level),
                         staggerDurationFrames: battleStaggerFrames, poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
+                    player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));
                     player.SetDepartureStyle(style);
                     new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen);
                     var start = frozen.Store.Read();
@@ -945,6 +946,7 @@ namespace Olca.Application.Dungeon
                 staggerDurationFrames: battleStaggerFrames,
                 poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
 
+            playerCharacter.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(persistentLevel));
             var cardFactory = CreateCardFactory();
             var recipeProvider = new SimpleFusionRecipeProvider();
             var exceedSystem = new ExceedSystem(cardFactory);

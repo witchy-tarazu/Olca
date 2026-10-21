@@ -719,8 +719,13 @@ namespace Olca.Core.Domain
             var next=current.Copy();if(!next.SavedDecks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
             next.SavedDecks=next.SavedDecks.Where(d=>d.Id!=id).ToArray();return Stage(next);
         }
-        public PlayerCharacter ReturnedPlayer => current?.Flow?.Stage == ClearReturnStage.Returned
-            ? new PlayerCharacter(current.Flow.ReturnedMaxHp, attackPower: current.Flow.ReturnedAttack) : null;
+        public PlayerCharacter ReturnedPlayer {
+            get {
+                if(current?.Flow?.Stage!=ClearReturnStage.Returned)return null;
+                var player=new PlayerCharacter(current.Flow.ReturnedMaxHp,attackPower:current.Flow.ReturnedAttack);
+                player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(current.Level));return player;
+            }
+        }
         private bool Stage(ClearReturnProfile next)
         {
             try { next.Revision = checked(current.Revision + 1); next.CommitId = Guid.NewGuid().ToString("N"); ClearReturnProfile.Validate(next); }

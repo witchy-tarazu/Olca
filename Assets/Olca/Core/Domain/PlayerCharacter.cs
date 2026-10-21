@@ -10,6 +10,12 @@ namespace Olca.Core.Domain
     {
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
+        public AttackMilestoneGrowth AttackGrowth { get; private set; }
+        public void SetAttackGrowth(AttackMilestoneGrowth growth)
+        {
+            if(departureStyleFixed||AttackGrowth!=null)throw new InvalidOperationException("攻略中の節目成長は変更できません");
+            AttackGrowth=growth??throw new ArgumentNullException(nameof(growth));
+        }
         public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
         private bool departureStyleFixed;
         internal void FreezeDepartureStyle() => departureStyleFixed = true;

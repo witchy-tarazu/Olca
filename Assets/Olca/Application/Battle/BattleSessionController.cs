@@ -214,9 +214,8 @@ namespace Olca.Application.Battle
             if (chargeFrames < 1 || intervalFrames < 1 || chargeMultiplier < 1) throw new System.ArgumentOutOfRangeException();
             if (!ReferenceEquals(current, battle)) { Reset(); current = battle; form = battle?.Transformations.ActiveId; }
             if (battle == null) return;
-            var attack = battle.ActivePlayerAttack;
-            chargeFrames = attack?.ChargeFrames ?? chargeFrames;
-            intervalFrames = attack?.IntervalFrames ?? intervalFrames;
+            chargeFrames = battle.ResolveBasicChargeFrames(chargeFrames);
+            intervalFrames = battle.ResolveBasicIntervalFrames(intervalFrames);
             if (form != battle.Transformations.ActiveId) { CancelCharge(); battle.CancelBasicStartupForFormChange(); form = battle.Transformations.ActiveId; }
             if (!battle.IsPaused && CooldownFrames > 0) CooldownFrames--;
             if (input.CardUseButtonDown) { CancelCharge(); return; }

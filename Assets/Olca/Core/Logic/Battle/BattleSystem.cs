@@ -15,6 +15,27 @@ namespace Olca.Core.Logic.Battle
     {
         private readonly PlayerCharacter player;
         public TransformationAttackDefinition ActivePlayerAttack => Transformations.ActiveAttack ?? player.DepartureStyle.Attack;
+        public int BasicAttackRange => Transformations.ActiveId==null?1+(player.AttackGrowth?.RangeBonus??0):1;
+        private Enemy FindBasicAttackTarget()
+        {
+            Enemy nearest=null;
+            foreach(var enemy in enemies){
+                int distance=enemy.GridPosition.X-player.GridPosition.X;
+                if(!enemy.IsDead&&enemy.GridPosition.Y==player.GridPosition.Y&&distance>0&&distance<=BasicAttackRange&&
+                    (nearest==null||enemy.GridPosition.X<nearest.GridPosition.X))nearest=enemy;
+            }
+            return nearest;
+        }
+        public int ResolveBasicChargeFrames(int fallback)
+        {
+            int frames=ActivePlayerAttack?.ChargeFrames??fallback;
+            return Transformations.ActiveId==null?player.AttackGrowth?.ChargeFrames(frames)??frames:frames;
+        }
+        public int ResolveBasicIntervalFrames(int fallback)
+        {
+            int frames=ActivePlayerAttack?.IntervalFrames??fallback;
+            return Transformations.ActiveId==null?player.AttackGrowth?.IntervalFrames(frames)??frames:frames;
+        }
         public ElementType ActivePlayerElement => ActivePlayerAttack?.Element ?? ElementType.None;
         private readonly List<Enemy> enemies;
         private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
@@ -142,8 +163,7 @@ namespace Olca.Core.Logic.Battle
                 await WaitForActionFramesAsync(timing.StartupFrames, cts.Token);
                 if (IsGameOver || player.IsActionPrevented || Transformations.ActiveId != form) return;
                 SetPlayerActionPhase(owner, PlayerAttackPhase.Executing);
-                foreach (var enemy in enemies)
-                    if (!enemy.IsDead && enemy.GridPosition.X == player.GridPosition.X + 1 && enemy.GridPosition.Y == player.GridPosition.Y) { ApplyPlayerBasicAttack(enemy, percent); break; }
+                var target=FindBasicAttackTarget();if(target!=null)ApplyPlayerBasicAttack(target,percent);
                 if (IsGameOver) return;
                 SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing.CancelAfterFrames);
                 await WaitForActionFramesAsync(timing.RecoveryFrames, cts.Token);
@@ -463,7 +483,7 @@ namespace Olca.Core.Logic.Battle
             finally { EndResolution(); }
         }
 
-        // 暫定通常攻撃: 既存の右向きグリッドで前方1マスの先配置の生存敵1体。
+        // 暫定通常攻撃: 既存の右向きグリッドで前方射程内で最も近い生存敵1体。同居は配置順を維持する。
         public bool CanPlayerBasicAttack => !IsGameOver && !IsPaused && !player.IsDead &&
             (cardUsage.InFlightCard == null || CanCancelPlayerRecovery) && (!HasPlayerAction || CanCancelPlayerRecovery) &&
             !playerMovement.IsNormalMoving && !player.IsActionPrevented;
@@ -484,11 +504,8 @@ namespace Olca.Core.Logic.Battle
         private bool TryPlayerBasicAttackForwardWithPercent(long powerPercent)
         {
             if (HasPlayerAction || !CanPlayerBasicAttack) return false;
-            foreach (var enemy in enemies)
-                if (!enemy.IsDead && enemy.GridPosition.X == player.GridPosition.X + 1 && enemy.GridPosition.Y == player.GridPosition.Y) {
-                    ApplyPlayerBasicAttack(enemy, powerPercent); return true;
-                }
-            return false;
+            var target=FindBasicAttackTarget();if(target==null)return false;
+            ApplyPlayerBasicAttack(target,powerPercent);return true;
         }
 
         private sealed class ActionWait
