@@ -31,6 +31,8 @@ namespace Olca.Presentation.Dungeon
         public void Setup(Card card)
         {
             this.card = card;
+            UiLook.Face(GetComponent<Image>()); UiLook.Button(selectButton);
+            UiLook.Label(cardNameText);UiLook.Label(cardCostText);UiLook.Label(cardDescText);UiLook.Label(cardRarityText);
             if (cardNameText != null) cardNameText.text = card.Name;
             if (cardCostText != null) cardCostText.text = $"コスト: {card.Cost}";
             if (cardDescText != null) cardDescText.text = card.Description;

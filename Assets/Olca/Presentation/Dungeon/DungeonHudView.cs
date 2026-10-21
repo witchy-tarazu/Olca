@@ -33,6 +33,7 @@ namespace Olca.Presentation.Dungeon
         /// </summary>
         public void Refresh(DungeonHudData data)
         {
+            foreach(var label in new[]{hpText,progressText,dashStateText,deckCountText})if(label!=null&&UiLook.Typeface!=null)label.font=UiLook.Typeface;
             // 既存シーンで進行度欄が未割当でも、明示した階層列の現在階層を表示する。
             if (data.FloorNumber > 0 && progressText == null)
             {

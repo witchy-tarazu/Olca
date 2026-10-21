@@ -27,7 +27,7 @@ namespace Olca.Presentation.CustomScreen
         public Sprite GetCardIcon(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.CustomIcon;
-            if(assigned!=null||(id!="sword"&&id!="heal"&&id!="shield"))return assigned;
+            if(assigned!=null||(id!="sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"))return assigned;
             if(!generatedMiniIcons.TryGetValue(id,out var icon)||icon==null){
                 icon=id=="sword"?SwordMiniIcon.Create():SupportMiniIcon.Create(id);
                 generatedMiniIcons[id]=icon;
@@ -168,6 +168,17 @@ namespace Olca.Presentation.CustomScreen
 
         public void Initialize(CustomScreenSystem customScreen)
         {
+            Olca.Presentation.Dungeon.UiLook.Button(confirmButton);
+            if(confirmButton!=null){var label=confirmButton.GetComponentInChildren<Text>();if(label!=null)label.text="確定";}
+            if(cursorIndicator!=null){var image=cursorIndicator.GetComponent<Image>();if(image!=null)image.color=new Color(.18f,.62f,.7f,.24f);}
+            Olca.Presentation.Dungeon.UiLook.Label(costDisplay);
+            Olca.Presentation.Dungeon.UiLook.Label(selectedCardDescription);
+            if(costDisplay!=null){costDisplay.fontSize=30;costDisplay.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,56);}
+            if(selectedCardDescription!=null)selectedCardDescription.fontSize=28;
+            foreach(var face in GetComponentsInChildren<Image>(true))if(face.name=="BgCustom"){
+                face.sprite=null;Olca.Presentation.Dungeon.UiLook.Face(face);
+            }
+
             // 再初期化時は既存の購読を解除
             if (this.customScreen != null)
             {
@@ -262,7 +273,7 @@ namespace Olca.Presentation.CustomScreen
             if (label != null)
             {
                 label.text = "加工を戻す";
-                label.fontSize = 36;
+                label.fontSize = 28;
                 label.resizeTextForBestFit = false;
                 var textRect = label.rectTransform;
                 textRect.anchorMin = Vector2.zero;
@@ -273,6 +284,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void UpdateUndoButton()
         {
+            Olca.Presentation.Dungeon.UiLook.Button(undoCustomizationButton);
             if (undoCustomizationButton == null) return;
             // 閉鎖位置ではボタン右端がHUD側へ残るため、操作画面の表示中だけ描画する。
             bool visible = customScreen != null && customScreen.IsOpen && !customScreen.IsConfirming;
@@ -1131,7 +1143,7 @@ namespace Olca.Presentation.CustomScreen
                 }
                 else
                 {
-                    costDisplay.color = Color.white;
+                    costDisplay.color = Olca.Presentation.Dungeon.UiLook.Ink;
                 }
             }
         }
@@ -1174,7 +1186,7 @@ namespace Olca.Presentation.CustomScreen
                 {
                     // コスト、威力、説明を表示
                     selectedCardDescription.text =
-                        $"コスト: {cursorCard.GetFinalCost()}\n" +
+                        $"{cursorCard.Name}\nコスト: {cursorCard.GetFinalCost()}\n" +
                         $"威力: {cursorCard.GetFinalPower()}\n\n" +
                         $"{cursorCard.Description}";
                 }
@@ -1184,6 +1196,7 @@ namespace Olca.Presentation.CustomScreen
                 {
                     selectedCardImage.color = Color.white;
                     selectedCardImage.sprite=GetCardIllustration(cursorCard.Id);
+                    selectedCardImage.color=selectedCardImage.sprite!=null?Color.white:new Color(.35f,.7f,.77f,.16f);
                     selectedCardImage.preserveAspect=true;
                 }
             }
@@ -1204,7 +1217,7 @@ namespace Olca.Presentation.CustomScreen
 
                 if (selectedCardImage != null)
                 {
-                    selectedCardImage.color = Color.white;
+                    selectedCardImage.color = new Color(.35f,.7f,.77f,.16f);
                     selectedCardImage.sprite=null;
                 }
             }
@@ -1218,7 +1231,7 @@ namespace Olca.Presentation.CustomScreen
 
                 if (selectedCardImage != null)
                 {
-                    selectedCardImage.color = Color.white;
+                    selectedCardImage.color = new Color(.35f,.7f,.77f,.16f);
                     selectedCardImage.sprite=null;
                 }
             }

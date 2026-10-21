@@ -44,6 +44,9 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         /// </summary>
         public void Enter()
         {
+            Olca.Presentation.Dungeon.UiLook.Button(executeButton);
+            Olca.Presentation.Dungeon.UiLook.Button(cancelButton);
+            Olca.Presentation.Dungeon.UiLook.Label(guideText);
             IsActive = true;
             gameObject.SetActive(true);
             SetGuideText("カスタマイズ: カードを選んでください（ESC でキャンセル）");
