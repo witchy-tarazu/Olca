@@ -2890,6 +2890,14 @@ namespace Olca.Tests.Integration
                 Assert.IsTrue(c.TryApplyGameplayKeyboardProfile(edit.Apply(),out error),error);c.SetUserPaused(false);
                 Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
                 hp=target.CurrentHp;Tap(UnityEngine.InputSystem.Key.Z);Assert.AreEqual(hp,target.CurrentHp);Tap(UnityEngine.InputSystem.Key.J);Assert.AreEqual(hp-11,target.CurrentHp);
+                for(int f=0;f<40;f++)Tick(c);
+                var heldQueue=new LogicalInputQueue();provider.CaptureTimestamped();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.J));UnityEngine.InputSystem.InputSystem.Update();
+                foreach(var e in provider.CaptureTimestamped())heldQueue.Enqueue(1,e.Input);
+                hp=target.CurrentHp;for(int f=1;f<=60;f++)Tick(c,heldQueue.Take(f));
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();
+                foreach(var e in provider.CaptureTimestamped())heldQueue.Enqueue(61,e.Input);
+                Tick(c,heldQueue.Take(61));Assert.AreEqual(hp-22,target.CurrentHp,"保存済みJの保持/解放を通常Controllerでタメ分岐する");
                 Call(c,"RefreshBasicAttackHud");var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
                 Assert.IsTrue(hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Any(t=>t.text.Contains("[J]")));
                 c=StartCombatDefaults(18,180);Assert.AreEqual("J",c.GameplayKeyboardProfile.Bindings[("keyboard","battle","AttackPrimary")]);
@@ -3654,7 +3662,7 @@ namespace Olca.Tests.Integration
             battle=new Olca.Core.Logic.Battle.BattleSystem(p,new List<Enemy>{target,new Enemy("keeper","keeper",200,ElementType.None,new Vector2Int(5,0))},new Deck());
             state=new Olca.Application.Battle.BasicAttackInputState();
         }
-        private void Step(LogicalInput input=null)=>state.Tick(battle,input??new LogicalInput(),30,12);
+        private void Step(LogicalInput input=null)=>state.Tick(battle,input??new LogicalInput(),60,12);
         private static LogicalInput Tap(bool card=false)=>new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true,CardUseButtonDown=card};
         [TestCase(2,0,189)][TestCase(3,0,200)][TestCase(0,0,200)][TestCase(2,1,200)]
         public void 前方一マス同じ列の敵だけに成長後の無属性攻撃を適用する(int x,int y,int hp)
@@ -3665,14 +3673,83 @@ namespace Olca.Tests.Integration
             SetupBattle();var second=new Enemy("second","second",200,ElementType.None,target.GridPosition,isSummoned:true);battle.AddSummon(second,new List<Olca.Core.Logic.Battle.IEnemyAIAction>{new Olca.Core.Logic.Battle.BasicAttackAction()});
             target.SetInvincible(1000);Step(Tap());Assert.AreEqual(200,target.CurrentHp);Assert.AreEqual(200,second.CurrentHp);
         }
-        [TestCase(1,true)][TestCase(29,true)][TestCase(30,false)]
-        public void 短押しは解放で一度だけ発動し長押しはタメ代替の通常攻撃を出さない(int held,bool accepted)
+        [TestCase(1,1)][TestCase(59,1)][TestCase(60,2)][TestCase(120,2)]
+        public void 解放時の論理タメ量で通常と二倍を一度だけ分岐する(int held,int multiplier)
         {
             SetupBattle();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
             for(int i=1;i<held;i++)Step(new LogicalInput{BasicAttackButton=true});Assert.AreEqual(200,target.CurrentHp);
-            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(accepted?189:200,target.CurrentHp);
-            for(int i=0;i<40;i++)Step();Assert.AreEqual(accepted?189:200,target.CurrentHp);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200-11*multiplier,target.CurrentHp);
+            for(int i=0;i<40;i++)Step();Assert.AreEqual(200-11*multiplier,target.CurrentHp);
         }
+        [TestCase(false)] [TestCase(true)]
+        public void ポーズとカスタムはタメを保持し復帰解放で暴発せず再押下で再開する(bool custom)
+        {
+            SetupBattle(); Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            for(int f=1;f<30;f++)Step(new LogicalInput{BasicAttackButton=true});
+            if(custom){battle.CustomGauge.SetGaugeMs(Olca.Core.Logic.Battle.CustomGaugeSystem.MAX_GAUGE_MS);battle.OpenCustomScreen(new MockRandomProvider());}
+            else battle.Pause(BattlePauseReason.User);
+            for(int f=0;f<100;f++)Step(new LogicalInput{BasicAttackButton=true});
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(30,state.ChargeFrames);
+            if(custom)battle.CustomScreen.Close();else battle.Resume(BattlePauseReason.User);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Step();Assert.AreEqual(200,target.CurrentHp);
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            for(int f=1;f<30;f++)Step(new LogicalInput{BasicAttackButton=true});
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(178,target.CurrentHp);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(178,target.CurrentHp);
+        }
+        [Test]
+        public void タメ中も通常移動しカード入力と明示取消で蓄積を破棄する()
+        {
+            SetupBattle();Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            battle.TickFrame(17,new LogicalInput{Horizontal=-1});Assert.IsTrue(battle.PlayerMovement.IsNormalMoving);
+            for(int f=0;f<20;f++){Step(new LogicalInput{BasicAttackButton=true});battle.TickFrame(17);}
+            Assert.AreEqual(21,state.ChargeFrames);Assert.AreEqual(0,battle.Player.GridPosition.X);
+            Step(new LogicalInput{BasicAttackButton=true,CardUseButtonDown=true});Assert.AreEqual(0,state.ChargeFrames);
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200,target.CurrentHp);
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});state.CancelCharge();
+            Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(200,target.CurrentHp);
+        }
+        [Test]
+        public void ポインター保持は同じタメ状態へ入り取消と別指を攻撃へ転用しない()
+        {
+            SetupBattle();var o=new UnityEngine.GameObject("hold-input");
+            try {
+                var pointer=o.AddComponent<Olca.Presentation.Dungeon.BasicAttackTapButton>();
+                bool down=false,up=false,held=false;int submits=0;
+                pointer.InitializeHold(value=>{if(value)down=true;else up=true;held=value;},()=>{held=down=up=false;state.CancelCharge();},()=>submits++);
+                var data=new UnityEngine.EventSystems.PointerEventData(null){pointerId=1,eligibleForClick=true};
+                pointer.OnPointerDown(data);
+                for(int f=0;f<60;f++){Step(new LogicalInput{BasicAttackButtonDown=down,BasicAttackButton=held});down=false;}
+                var other=new UnityEngine.EventSystems.PointerEventData(null){pointerId=2,eligibleForClick=true};
+                pointer.OnPointerUp(other);pointer.OnPointerClick(other);Assert.IsTrue(held);
+                pointer.OnPointerUp(data);pointer.OnPointerClick(data);Step(new LogicalInput{BasicAttackButtonUp=up});
+                Assert.AreEqual(178,target.CurrentHp);up=false;
+                for(int f=0;f<12;f++)Step();
+                pointer.OnPointerDown(data);Step(new LogicalInput{BasicAttackButtonDown=down,BasicAttackButton=held});
+                data.eligibleForClick=false;pointer.OnPointerUp(data);pointer.OnPointerClick(data);Step();
+                Assert.AreEqual(178,target.CurrentHp);Assert.AreEqual(0,state.ChargeFrames);
+                pointer.OnSubmit(null);Assert.AreEqual(1,submits);
+            }finally{UnityEngine.Object.DestroyImmediate(o);}
+        }
+
+        [Test]
+        public void タメの論理トレースは描画三十六十百二十と追いつき処理で一致する()
+        {
+            List<string> Trace(int fps) {
+                SetupBattle();var clock=new LogicalFrameClock();var trace=new List<string>();long wall=0;
+                void Tick(long frame,int ms) {
+                    if(frame==20)battle.Pause(BattlePauseReason.CustomScreen);
+                    if(frame==30)battle.Resume(BattlePauseReason.CustomScreen);
+                    Step(new LogicalInput{BasicAttackButtonDown=frame==1||frame==30,BasicAttackButton=frame<=70,BasicAttackButtonUp=frame==71});
+                    trace.Add(frame+":"+state.ChargeFrames+":"+target.CurrentHp+":"+state.CooldownFrames);
+                }
+                if(fps==0){clock.Accumulate(1500000000);clock.Drain(Tick);}
+                else for(int sample=1;clock.Frame<90;sample++){long next=(long)sample*1000000000/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Tick);}
+                Assert.AreEqual(178,target.CurrentHp);return trace.Take(90).ToList();
+            }
+            var expected=Trace(60);CollectionAssert.AreEqual(expected,Trace(30));CollectionAssert.AreEqual(expected,Trace(120));CollectionAssert.AreEqual(expected,Trace(0));
+        }
+
         [Test]
         public void 同一フレームの押下解放を保持し連打は十二フレーム未満を予約しない()
         {

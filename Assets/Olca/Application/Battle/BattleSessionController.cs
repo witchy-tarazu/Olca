@@ -198,24 +198,43 @@ namespace Olca.Application.Battle
     public sealed class BasicAttackInputState
     {
         private Olca.Core.Logic.Battle.BattleSystem current;
-        private bool armed;
-        private int heldFrames;
+        private bool armed, resumePending;
+        private string form;
+        public int ChargeFrames { get; private set; }
+        public bool IsCharging => armed;
+        public bool IsResumePending => resumePending;
         public int CooldownFrames { get; private set; }
-        public void Reset() { current = null; armed = false; heldFrames = 0; CooldownFrames = 0; }
-        public void Tick(Olca.Core.Logic.Battle.BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input, int shortPressFrames, int intervalFrames)
+        public void CancelCharge() { armed = resumePending = false; ChargeFrames = 0; }
+        public void Suspend() { if (armed) { armed = false; resumePending = true; } }
+        public void Reset() { current = null; form = null; CancelCharge(); CooldownFrames = 0; }
+        public void Tick(Olca.Core.Logic.Battle.BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input,
+            int chargeFrames, int intervalFrames, int chargeMultiplier = 2)
         {
-            if (shortPressFrames < 1 || intervalFrames < 1) throw new System.ArgumentOutOfRangeException();
-            if (!ReferenceEquals(current, battle)) { Reset(); current = battle; }
+            if (chargeFrames < 1 || intervalFrames < 1 || chargeMultiplier < 1) throw new System.ArgumentOutOfRangeException();
+            if (!ReferenceEquals(current, battle)) { Reset(); current = battle; form = battle?.Transformations.ActiveId; }
             if (battle == null) return;
+            if (form != battle.Transformations.ActiveId) { CancelCharge(); form = battle.Transformations.ActiveId; }
             if (!battle.IsPaused && CooldownFrames > 0) CooldownFrames--;
-            if (!battle.CanPlayerBasicAttack || input.CardUseButtonDown || input.CustomScreenButtonDown) { armed = false; heldFrames = 0; return; }
-            if (input.BasicAttackButtonDown) { armed = CooldownFrames == 0; heldFrames = 0; }
-            if (armed && (input.BasicAttackButton || input.BasicAttackButtonUp)) heldFrames = System.Math.Min(shortPressFrames + 1, heldFrames + 1);
-            if (input.BasicAttackButtonUp && !input.BasicAttackButton) {
-                bool fire = armed && heldFrames <= shortPressFrames && CooldownFrames == 0;
-                armed = false; heldFrames = 0;
-                if (fire) { CooldownFrames = intervalFrames; battle.TryPlayerBasicAttackForward(); }
-            } else if (!input.BasicAttackButton) { armed = false; heldFrames = 0; }
+            if (input.CardUseButtonDown) { CancelCharge(); return; }
+            if (battle.IsGameOver || battle.Player.IsDead || battle.Player.IsActionPrevented || battle.CardUsage.InFlightCard != null)
+            { CancelCharge(); return; }
+            // カスタム/ポーズは量だけ保持。復帰時の自動解放で発射せず、新しい押下で再開する。
+            if (battle.IsPaused || input.CustomScreenButtonDown) { Suspend(); return; }
+            if (resumePending && !input.BasicAttackButtonDown) return;
+            if (input.BasicAttackButtonDown && !armed)
+            {
+                if (CooldownFrames > 0) { CancelCharge(); return; }
+                armed = true; resumePending = false;
+            }
+            if (armed && input.BasicAttackButton) ChargeFrames = System.Math.Min(chargeFrames, ChargeFrames + 1);
+            if (input.BasicAttackButtonUp && !input.BasicAttackButton)
+            {
+                bool fire = armed && CooldownFrames == 0 && battle.CanPlayerBasicAttack;
+                int multiplier = ChargeFrames >= chargeFrames ? chargeMultiplier : 1;
+                CancelCharge();
+                if (fire) { CooldownFrames = intervalFrames; battle.TryPlayerBasicAttackForward(multiplier); }
+            }
+            else if (!input.BasicAttackButton) CancelCharge();
         }
     }
 }

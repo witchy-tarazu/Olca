@@ -363,7 +363,8 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// プレイヤーの基本攻撃
         /// </summary>
-        public void PlayerBasicAttack(Enemy target)
+        public void PlayerBasicAttack(Enemy target) => ApplyPlayerBasicAttack(target, 1);
+        private void ApplyPlayerBasicAttack(Enemy target, int multiplier)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (target.IsDead) return;
@@ -372,7 +373,7 @@ namespace Olca.Core.Logic.Battle
             BeginResolution();
             try
             {
-                int damage = player.AttackPower;
+                int damage = (int)Math.Min(int.MaxValue, (long)player.AttackPower * multiplier);
                 target.TakeDamage(damage, ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
@@ -384,12 +385,13 @@ namespace Olca.Core.Logic.Battle
         // 暫定通常攻撃: 既存の右向きグリッドで前方1マスの先配置の生存敵1体。
         public bool CanPlayerBasicAttack => !IsGameOver && !IsPaused && !player.IsDead && cardUsage.InFlightCard == null &&
             !playerMovement.IsNormalMoving && !player.IsActionPrevented;
-        public bool TryPlayerBasicAttackForward()
+        public bool TryPlayerBasicAttackForward(int multiplier = 1)
         {
+            if (multiplier < 1) throw new ArgumentOutOfRangeException(nameof(multiplier));
             if (!CanPlayerBasicAttack) return false;
             foreach (var enemy in enemies)
                 if (!enemy.IsDead && enemy.GridPosition.X == player.GridPosition.X + 1 && enemy.GridPosition.Y == player.GridPosition.Y) {
-                    PlayerBasicAttack(enemy); return true;
+                    ApplyPlayerBasicAttack(enemy, multiplier); return true;
                 }
             return false;
         }

@@ -355,7 +355,8 @@ namespace Olca.Presentation.Dungeon
         private UnityEngine.UI.Text title, state;
         private UnityEngine.UI.Button button, jumpButton, dashButton, cardButton;
         private UnityEngine.GameObject exploration;
-        public void Initialize(UnityEngine.Font font, System.Action tap, System.Func<int> shortPressFrames)
+        private BasicAttackTapButton attackPointer;
+        public void Initialize(UnityEngine.Font font, System.Action tap, System.Action<bool> hold, System.Action cancel)
         {
             var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = new UnityEngine.Vector2(1,0);
             rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,115);
@@ -375,9 +376,10 @@ namespace Olca.Presentation.Dungeon
             var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,25); r.sizeDelta = new UnityEngine.Vector2(155,74);
             o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>();
             button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
-            var pointer = o.AddComponent<BasicAttackTapButton>(); pointer.Initialize(tap, System.Diagnostics.Stopwatch.GetTimestamp, shortPressFrames, System.Diagnostics.Stopwatch.Frequency); button.onClick.AddListener(pointer.Click);
+            attackPointer = o.AddComponent<BasicAttackTapButton>(); attackPointer.InitializeHold(hold, cancel, tap);
             var label = Label("BasicAttackLabel",0,0,155,74,26); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
         }
+        public void CancelAttackPointer() => attackPointer?.ClearPointer();
         public void InitializeExploration(UnityEngine.Font font, System.Action jump, System.Action dash, System.Action card)
         {
             exploration=new UnityEngine.GameObject("ExplorationTouchControls",typeof(UnityEngine.RectTransform));
@@ -417,14 +419,49 @@ namespace Olca.Presentation.Dungeon
 
 namespace Olca.Presentation.Dungeon
 {
-    public sealed class BasicAttackTapButton : UnityEngine.MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler
+    public sealed class BasicAttackTapButton : UnityEngine.MonoBehaviour,
+        UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler,
+        UnityEngine.EventSystems.IPointerClickHandler, UnityEngine.EventSystems.ISubmitHandler, UnityEngine.EventSystems.ICancelHandler
     {
-        private System.Action fire; private System.Func<long> timestamp; private System.Func<int> limit; private long frequency;
-        private bool pointer, accepted; private long start;
-        public void Initialize(System.Action fire, System.Func<long> timestamp, System.Func<int> limit, long frequency = 60) { this.fire=fire;this.timestamp=timestamp;this.limit=limit;this.frequency=frequency; }
-        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data) { pointer=true;accepted=false;start=timestamp(); }
-        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data) { accepted=(timestamp()-start)/(double)frequency < limit()/60.0; }
-        public void Click() { bool use=!pointer||accepted;pointer=false;accepted=false;if(use)fire(); }
-        private void OnDisable() { pointer=false;accepted=false; }
+        private System.Action fire, cancel;
+        private System.Action<bool> hold;
+        private System.Func<long> timestamp; private System.Func<int> limit; private long frequency;
+        private bool pointer, accepted, released;
+        private int pointerId; private long start;
+        // 旧タップ専用呼出しとの互換。通常HUDはInitializeHoldを使う。
+        public void Initialize(System.Action fire, System.Func<long> timestamp, System.Func<int> limit, long frequency = 60)
+        { this.fire=fire;this.timestamp=timestamp;this.limit=limit;this.frequency=frequency; }
+        public void InitializeHold(System.Action<bool> hold, System.Action cancel, System.Action submit)
+        { this.hold=hold;this.cancel=cancel;fire=submit; }
+        public void ClearPointer() { pointer = accepted = released = false; }
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if (pointer) return;
+            if (hold != null) {
+                var button = GetComponent<UnityEngine.UI.Button>();
+                if ((button != null && !button.IsInteractable()) || (data != null && !data.eligibleForClick)) return;
+                pointer = true; released = false; pointerId = data?.pointerId ?? -1; hold(true);
+            } else { pointer=true;accepted=false;start=timestamp(); }
+        }
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if (hold == null) { accepted=(timestamp()-start)/(double)frequency < limit()/60.0; return; }
+            if (!pointer || (data != null && data.pointerId != pointerId)) return;
+            if (data != null && !data.eligibleForClick) { CancelPointer(); return; }
+            // クリック成立まで解放を確定しない。領域外解放/OS取消は攻撃にしない。
+            released = true;
+        }
+        public void OnPointerClick(UnityEngine.EventSystems.PointerEventData data)
+        {
+            if (hold == null) return;
+            if (!pointer || !released || (data != null && (data.pointerId != pointerId || !data.eligibleForClick))) return;
+            ClearPointer(); hold(false);
+        }
+        public void Click() { if (hold != null) return; bool use=!pointer||accepted;ClearPointer();if(use)fire(); }
+        public void OnSubmit(UnityEngine.EventSystems.BaseEventData data) { if (!pointer) fire?.Invoke(); }
+        public void OnCancel(UnityEngine.EventSystems.BaseEventData data) => CancelPointer();
+        private void CancelPointer() { bool active=pointer;ClearPointer();if(active)cancel?.Invoke(); }
+        private void LateUpdate() { if (hold != null && released) CancelPointer(); }
+        private void OnDisable() => CancelPointer();
     }
 }

@@ -98,7 +98,8 @@ namespace Olca.Application.Dungeon
         private int dashCooldownRemaining; // クールタイム残り論理フレーム
 
         [Header("基本攻撃の暫定調整（Planning/暫定実装一覧）")]
-        [SerializeField, Min(1)] private int basicAttackShortPressFrames = 30;
+        [SerializeField, Min(1)] private int basicAttackChargeFrames = 60;
+        [SerializeField, Min(1)] private int basicAttackChargeMultiplier = 2;
         [SerializeField, Min(1)] private int basicAttackIntervalFrames = 12;
         private readonly BasicAttackInputState basicAttackInput = new BasicAttackInputState();
         private BasicAttackHud basicAttackHud;
@@ -127,9 +128,12 @@ namespace Olca.Application.Dungeon
                 !IsUserPaused && !GameplayPause.InputBlocked && !clearReturnVisible && !collectionOpen && !awaitingCheckpointChoice;
             if(inputProvider!=null&&inputProvider.SetTouchMovementEnabled(enabled)) { logicalLoop.ReleaseInput();inputProvider.QueueSnapshot(); }
         }
-        private void ResetTouchInput()
+        private bool uiAttackHeld, uiAttackDown, uiAttackUp;
+        private void ResetTouchInput(bool preserveCharge = false)
         {
             queuedTouchJump=queuedTouchDash=queuedTouchCard=false;
+            if (preserveCharge) basicAttackInput.Suspend(); else basicAttackInput.CancelCharge();
+            uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackHud?.CancelAttackPointer();
             queuedBasicAttackTap=false;TouchUiCancelGuard.CancelAll();logicalLoop.ReleaseInput();inputProvider?.QueueSnapshot();
         }
         private void OnApplicationFocus(bool focused) { if(!focused)ResetTouchInput(); }
@@ -139,8 +143,22 @@ namespace Olca.Application.Dungeon
             !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && basicAttackInput.CooldownFrames == 0;
         private void QueueBasicAttackFromUi()
         {
-            if (!BasicAttackUiAvailable) return;
+            if (!BasicAttackUiAvailable || basicAttackInput.IsCharging || uiAttackHeld) return;
             logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => queuedBasicAttackTap = true);
+        }
+        private void QueueBasicAttackHoldFromUi(bool held)
+        {
+            if (held && !BasicAttackUiAvailable) return;
+            logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => {
+                if (held) { uiAttackDown |= !uiAttackHeld; uiAttackHeld = true; }
+                else { uiAttackUp |= uiAttackHeld; uiAttackHeld = false; }
+            });
+        }
+        private void CancelBasicAttackFromUi()
+        {
+            logicalLoop.QueueTimestampedCommand(inputProvider.PointerClickTimestamp, () => {
+                uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackInput.CancelCharge();
+            });
         }
         private void RefreshBasicAttackHud()
         {
@@ -153,7 +171,7 @@ namespace Olca.Application.Dungeon
             string state = IsUserPaused ? "ポーズ中" : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中" :
                 battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中" :
                 battle.CardUsage.InFlightCard != null ? "カード使用中" : basicAttackInput.CooldownFrames > 0 ? "再使用待ち" :
-                GameplayPause.InputBlocked ? "キーを離してください" : "使用できます";
+                GameplayPause.InputBlocked ? "キーを離してください" : basicAttackInput.IsResumePending ? "再押下でタメ再開" : basicAttackInput.IsCharging ? $"タメ {basicAttackInput.ChargeFrames}/{basicAttackChargeFrames}" : "短押し / 長押しでタメ";
             basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable);
         }
         private bool battleFieldReady;
@@ -252,8 +270,7 @@ namespace Olca.Application.Dungeon
             GameplayKeyboardSettingsError = null;
             gameFieldView?.RefreshGameplayInstructions(inputProvider.KeyboardProfile, manager.CurrentPhase);
             // 論理時計は継続し、旧割当の入力だけを捨てる。再開時は既存の全キー解放待ちを通る。
-            logicalLoop.ReleaseInput();
-            inputProvider.QueueSnapshot();
+            ResetTouchInput();
             return true;
         }
 
@@ -261,7 +278,7 @@ namespace Olca.Application.Dungeon
         {
             if (manager == null || manager.IsUserPaused == paused) return;
             logicalLoop.Observe(!manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
-            ResetTouchInput();
+            ResetTouchInput(preserveCharge: true);
             manager.SetUserPaused(paused);
             GameplayPause.SetPaused(paused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
@@ -356,7 +373,7 @@ namespace Olca.Application.Dungeon
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
             clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture, OpenSavedDeckMenu);
             var attackPanel = new GameObject("BasicAttackHud", typeof(RectTransform)); attackPanel.transform.SetParent(pauseCanvas.transform, false);
-            basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, () => basicAttackShortPressFrames);
+            basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, QueueBasicAttackHoldFromUi, CancelBasicAttackFromUi);
             basicAttackHud.InitializeExploration(font,()=>QueueExplorationFromUi(true),()=>QueueExplorationFromUi(false),QueueTouchCard);
             basicAttackHud.gameObject.SetActive(false);
         }
@@ -830,12 +847,19 @@ namespace Olca.Application.Dungeon
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
         {
-            if (GameplayPause.InputBlocked) { input = new LogicalInput(); queuedBasicAttackTap = false;queuedTouchJump=queuedTouchDash=queuedTouchCard=false; }
+            if (GameplayPause.InputBlocked) { basicAttackInput.Suspend(); uiAttackHeld = uiAttackDown = uiAttackUp = false; input = new LogicalInput(); queuedBasicAttackTap = false;queuedTouchJump=queuedTouchDash=queuedTouchCard=false; }
             if(queuedTouchJump||queuedTouchDash||queuedTouchCard) {
                 input=input.Copy();
                 if(manager.CurrentPhase==GamePhase.Dungeon) {input.JumpButtonDown|=queuedTouchJump;input.DashButtonDown|=queuedTouchDash;}
                 if(manager.CurrentPhase==GamePhase.Battle)input.CardUseButtonDown|=queuedTouchCard;
                 queuedTouchJump=queuedTouchDash=queuedTouchCard=false;
+            }
+            if (uiAttackHeld || uiAttackDown || uiAttackUp) {
+                input = input.Copy();
+                input.BasicAttackButtonDown |= uiAttackDown;
+                input.BasicAttackButton |= uiAttackHeld;
+                input.BasicAttackButtonUp = !input.BasicAttackButton && (input.BasicAttackButtonUp || uiAttackUp);
+                uiAttackDown = uiAttackUp = false;
             }
             if (queuedBasicAttackTap) { input = input.Copy(); input.BasicAttackButtonDown = input.BasicAttackButtonUp = true; input.BasicAttackButton = false; queuedBasicAttackTap = false; }
             void Process()
@@ -884,7 +908,7 @@ namespace Olca.Application.Dungeon
                     if (input.CustomScreenButtonDown)
                         battleSession?.TryOpenCustomScreen();
 
-                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackShortPressFrames, basicAttackIntervalFrames);
+                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackChargeFrames, basicAttackIntervalFrames, basicAttackChargeMultiplier);
                     // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
                     if (input.CardUseButtonDown)
                         battleSession?.UseCardFromInput();
