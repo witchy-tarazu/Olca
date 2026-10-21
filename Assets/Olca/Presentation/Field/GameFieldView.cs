@@ -164,6 +164,64 @@ namespace Olca.Presentation.Field
             return null;
         }
 
+        private sealed class VisitVisual
+        {
+            public GameObject Root,Near,Check;
+            public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts=new List<(SpriteRenderer,float)>();
+        }
+        private readonly Dictionary<int,VisitVisual> visitVisuals=new Dictionary<int,VisitVisual>();
+        private void RemoveVisitVisual(int cell)
+        {
+            if(!visitVisuals.TryGetValue(cell,out var visual))return;visitVisuals.Remove(cell);
+            if(visual.Root==null)return;visual.Root.SetActive(false);
+            if(UnityEngine.Application.isPlaying)Destroy(visual.Root);else DestroyImmediate(visual.Root);
+        }
+        private void ClearVisitVisuals(){foreach(var cell in new List<int>(visitVisuals.Keys))RemoveVisitVisual(cell);}
+        private VisitVisual CreateVisitVisual(DungeonVisitDefinition definition)
+        {
+            if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
+            var visual=new VisitVisual{Root=new GameObject("VisitCell_"+definition.Cell)};visual.Root.transform.SetParent(transform,false);
+            visual.Root.transform.position=new Vector3(LogicalToWorld(definition.Cell+.5f),CharacterDisplayOffsetY+LogicalToWorld(1.65f),0);
+            void Part(string name,float x,float y,float width,float height,float alpha,Transform parent=null,float angle=0){
+                var go=new GameObject(name);go.transform.SetParent(parent??visual.Root.transform,false);go.transform.localPosition=new Vector3(LogicalToWorld(x),LogicalToWorld(y),0);
+                go.transform.localScale=new Vector3(LogicalToWorld(width),LogicalToWorld(height),1);go.transform.localRotation=Quaternion.Euler(0,0,angle);
+                var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;
+                renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;visual.Parts.Add((renderer,alpha));
+            }
+            Part("Face",0,0,.46f,.4f,.08f);Part("Top",0,.2f,.46f,.014f,.9f);Part("Bottom",0,-.2f,.46f,.014f,.9f);
+            Part("Left",-.23f,0,.014f,.4f,.9f);Part("Right",.23f,0,.014f,.4f,.9f);
+            if(definition.IsShop){
+                Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
+                Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+            }else{Part("RecoveryHorizontal",0,0,.25f,.055f,1);Part("RecoveryVertical",0,0,.055f,.25f,1);}
+            visual.Near=new GameObject("Near");visual.Near.transform.SetParent(visual.Root.transform,false);
+            Part("ArrowLeft",-.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,-35);Part("ArrowRight",.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,35);
+            visual.Check=new GameObject("Check");visual.Check.transform.SetParent(visual.Root.transform,false);
+            Part("CheckShort",-.05f,-.29f,.1f,.025f,1,visual.Check.transform,-45);Part("CheckLong",.04f,-.27f,.19f,.025f,1,visual.Check.transform,45);
+            return visual;
+        }
+        /// <summary>画面内の既存停止地点だけを表示。時間・ゲーム状態・保存を変更しない。</summary>
+        public void RefreshVisitVisuals()
+        {
+            if(!isActiveAndEnabled||dungeonSystem==null||fieldCamera==null||dungeonSystem.IsInBattle||dungeonSystem.IsDungeonCleared||dungeonSystem.IsFloorCompleted||dungeonSystem.Player.IsDead){ClearVisitVisuals();return;}
+            float distance=Mathf.Abs(fieldCamera.transform.position.z);
+            float a=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x,b=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;
+            float left=Mathf.Min(a,b),right=Mathf.Max(a,b);var retained=new HashSet<int>();
+            foreach(var definition in dungeonSystem.Map.Visits){
+                float center=LogicalToWorld(definition.Cell+.5f),half=LogicalToWorld(.24f);if(center-half<left||center+half>right)continue;
+                var state=dungeonSystem.GetVisitDisplayState(definition.Cell);if(!state.HasValue)continue;
+                if(!visitVisuals.TryGetValue(definition.Cell,out var visual)){visual=CreateVisitVisual(definition);visitVisuals.Add(definition.Cell,visual);}retained.Add(definition.Cell);
+                bool done=state==DungeonVisitDisplayState.Closed||state==DungeonVisitDisplayState.Used;
+                bool near=!done&&definition.Cell-dungeonSystem.PlayerPosition>=0&&definition.Cell-dungeonSystem.PlayerPosition<=2;
+                visual.Near.SetActive(near&&state==DungeonVisitDisplayState.Ready);visual.Check.SetActive(done);
+                var tint=done?new Color(.48f,.61f,.65f):definition.IsShop?new Color(.25f,.85f,.95f):new Color(.35f,1f,.7f);
+                if(state==DungeonVisitDisplayState.Active)tint=Color.Lerp(tint,Color.white,.55f);
+                float opacity=done?.45f:near||state==DungeonVisitDisplayState.Active?1:.62f;
+                foreach(var part in visual.Parts){var color=tint;color.a=part.Alpha*opacity;part.Renderer.color=color;}
+            }
+            foreach(var cell in new List<int>(visitVisuals.Keys))if(!retained.Contains(cell))RemoveVisitVisual(cell);
+        }
+
         private sealed class ObstacleVisual
         {
             public GameObject Root; public Obstacle Definition;
@@ -212,7 +270,7 @@ namespace Olca.Presentation.Field
         /// <summary>読み取り専用モデルから描画を同期。表示完了を判定/消費の条件にしない。</summary>
         public void RefreshObstacleVisuals()
         {
-            if (dungeonSystem==null || fieldCamera==null || dungeonSystem.IsInBattle || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.Player.IsDead) { ClearObstacleVisuals();return; }
+            if (dungeonSystem==null || fieldCamera==null || dungeonSystem.IsInBattle || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.Player.IsDead) { ClearObstacleVisuals(); ClearVisitVisuals();return; }
             float distance=Mathf.Abs(fieldCamera.transform.position.z);
             float left=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x;
             float right=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;
@@ -337,13 +395,13 @@ namespace Olca.Presentation.Field
         private void OnEnable()
         {
             if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
-            RefreshObstacleVisuals();
+            RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { RestoreEnemyPerception(); ClearObstacleVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
-            ClearObstacleVisuals();
+            ClearObstacleVisuals(); ClearVisitVisuals();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
             if (currentBattle != null)
@@ -359,7 +417,7 @@ namespace Olca.Presentation.Field
         public void Initialize(DungeonSystem dungeon)
         {
             RestoreEnemyPerception();
-            ClearObstacleVisuals();
+            ClearObstacleVisuals(); ClearVisitVisuals();
             ApplyCharacterDisplayOffset();
             dungeonSystem = dungeon;
             BindPlayerDamage(dungeon?.Player);
@@ -387,7 +445,7 @@ namespace Olca.Presentation.Field
 
             // マップ上の全敵スプライトを生成
             PlaceAllEnemySprites();
-            RefreshObstacleVisuals();
+            RefreshObstacleVisuals(); RefreshVisitVisuals();
             UpdatePlayerSprite();
         }
 
@@ -407,7 +465,7 @@ namespace Olca.Presentation.Field
         private void LateUpdate()
         {
             UpdateCameraFraming();
-            RefreshObstacleVisuals();
+            RefreshObstacleVisuals(); RefreshVisitVisuals();
             RefreshEnemyPerception();
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
@@ -567,6 +625,7 @@ namespace Olca.Presentation.Field
             UpdatePlayerSprite();
             if (cameraFollowEnabled) UpdateCamera();
             UpdateEnemyViews();
+            RefreshVisitVisuals();
         }
 
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>

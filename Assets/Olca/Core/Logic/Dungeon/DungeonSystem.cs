@@ -213,6 +213,14 @@ namespace Olca.Core.Logic.Dungeon
         private DungeonVisitDto activeVisit;
         public DungeonVisitDefinition ActiveVisit => activeVisit==null?null:visitDefinitions.Single(v=>v.Cell==activeVisit.Cell);
         public DungeonVisitDto ActiveVisitState => activeVisit?.Copy();
+        public DungeonVisitDisplayState? GetVisitDisplayState(int cell)
+        {
+            var state=visits?.SingleOrDefault(v=>v.Cell==cell);if(state==null)return null;
+            if(state.Closed)return DungeonVisitDisplayState.Closed;
+            var definition=visitDefinitions.Single(d=>d.Cell==cell);
+            if((definition.IsShop&&state.Purchased.All(x=>x))||(!definition.IsShop&&state.Purchased.Any(x=>x)))return DungeonVisitDisplayState.Used;
+            return activeVisit==state?DungeonVisitDisplayState.Active:DungeonVisitDisplayState.Ready;
+        }
         internal DungeonVisitDto[] CaptureVisits()=>visits?.Select(v=>v.Copy()).ToArray();
         internal static DungeonVisitDto[] PlanVisits(IReadOnlyList<DungeonVisitDefinition> definitions,string runId) => definitions.Count==0?null:definitions.Select(d=>new DungeonVisitDto{
             Cell=d.Cell,Options=Enumerable.Range(0,d.Options.Count).OrderBy(i=>CheckpointValues.Hash(w=>{w.Write(runId);w.Write(d.Hash);w.Write(d.Options[i].Id);} ),StringComparer.Ordinal).Take(d.Slots).ToArray(),Purchased=new bool[d.Slots]}).ToArray();

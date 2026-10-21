@@ -228,6 +228,7 @@ namespace Olca.Core.Domain
         }
         internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));}});
     }
+    public enum DungeonVisitDisplayState { Ready, Active, Used, Closed }
     public sealed class DungeonVisitDto
     {
         public int Cell;

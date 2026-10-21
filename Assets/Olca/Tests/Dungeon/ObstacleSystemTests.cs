@@ -262,3 +262,58 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class VisitMarkerLifecycleTests
+    {
+        private UnityEngine.GameObject root,cameraObject;
+        private UnityEngine.Camera camera;
+        private Olca.Presentation.Field.GameFieldView view;
+        private Olca.Core.Logic.Integration.DungeonBattleManager game;
+        private DungeonCheckpointSession session;
+        private void Setup()
+        {
+            var cells=Enumerable.Range(0,12).Select(i=>new MapCell(i)).ToList();var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            var map=new DungeonConfig("marker","表示",12,cells,visits:new[]{new DungeonVisitDefinition(2,true,new[]{new DungeonVisitOption("sword",10,card)},1),new DungeonVisitDefinition(8,false,new[]{new DungeonVisitOption("heal",0,heal:20)},1)});
+            var initial=DungeonCheckpointSession.CreateDefault(map,new Deck());new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:initial);
+            var data=initial.Store.Read();data.Currency=20;data.Player.Hp=60;Assert.IsTrue(CheckpointCodec.TryRestore(data,initial.Definitions,out var state,out var error),error);
+            var store=new MemoryCheckpointStore(initial.Definitions);Assert.IsTrue(store.TryWrite(data,out error),error);session=new DungeonCheckpointSession(initial.Definitions,store);
+            game=new Olca.Core.Logic.Integration.DungeonBattleManager(state.Map,state.Player,state.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:state);
+            cameraObject=new UnityEngine.GameObject("VisitCamera");camera=cameraObject.AddComponent<UnityEngine.Camera>();camera.orthographic=true;camera.aspect=16f/9;camera.transform.position=new UnityEngine.Vector3(0,0,-10);
+            root=new UnityEngine.GameObject("VisitView");view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();typeof(Olca.Presentation.Field.GameFieldView).GetField("fieldCamera",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(view,camera);view.Initialize(game.Dungeon);
+        }
+        private UnityEngine.Transform Cell(int cell)=>root.transform.Find("VisitCell_"+cell);
+        [TearDown]public void Cleanup(){if(root!=null)UnityEngine.Object.DestroyImmediate(root);if(cameraObject!=null)UnityEngine.Object.DestroyImmediate(cameraObject);}
+        [Test]
+        public void 停止地点マーカーは画面内だけ生成し形状を分け再入場でも二重表示しない()
+        {
+            Setup();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));Assert.IsNotNull(Cell(2).Find("BagHandle"));
+            var face=Cell(2).Find("Face").GetComponent<UnityEngine.SpriteRenderer>();Assert.That(face.bounds.size.x,Is.EqualTo(.46f).Within(.001));Assert.Less(face.color.a,.1f);
+            for(int i=0;i<10;i++)view.RefreshVisitVisuals();Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(r=>r.name=="BagHandle"));
+            camera.transform.position=new UnityEngine.Vector3(9,0,-10);view.RefreshVisitVisuals();Assert.IsNull(Cell(2));Assert.IsNotNull(Cell(8).Find("RecoveryHorizontal"));Assert.IsFalse(Cell(8).Find("Near").gameObject.activeSelf);
+            camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);view.RefreshVisitVisuals();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));Assert.IsTrue(Cell(2).Find("Near").gameObject.activeSelf);
+        }
+        [Test]
+        public void 接近入場使用退出と保存復帰の表示はゲーム状態を進めず停止中も変化しない()
+        {
+            Setup();var d=game.Dungeon;long seq=session.Store.Read().Sequence;var color=Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color;
+            for(int i=0;i<100;i++)view.RefreshVisitVisuals();Assert.AreEqual(0,d.PlayerPosition);Assert.AreEqual(20,d.Currency);Assert.AreEqual(60,d.Player.CurrentHp);Assert.AreEqual(seq,session.Store.Read().Sequence);
+            while(d.ActiveVisit==null)game.TickFrame(17);view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Active,d.GetVisitDisplayState(2));Assert.IsFalse(Cell(2).Find("Near").gameObject.activeSelf);
+            game.SetUserPaused(true);var pos=d.PlayerPosition;color=Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color;
+            for(int i=0;i<30;i++){game.TickFrame(17);view.RefreshVisitVisuals();}Assert.AreEqual(pos,d.PlayerPosition);Assert.AreEqual(color,Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color);game.SetUserPaused(false);
+            Assert.IsTrue(d.ChooseVisit(0));view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Used,d.GetVisitDisplayState(2));Assert.IsTrue(Cell(2).Find("Check").gameObject.activeSelf);
+            Assert.IsTrue(d.ExitVisit());view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Closed,d.GetVisitDisplayState(2));Assert.Less(Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color.a,.5f);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,session.Store),new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
+            view.Initialize(restored.Dungeon);Assert.IsTrue(Cell(2).Find("Check").gameObject.activeSelf);Assert.IsFalse(Cell(2).Find("Near").gameObject.activeSelf);Assert.AreEqual(10,restored.Dungeon.Currency);Assert.AreEqual(1,restored.Dungeon.GetObtainedCards().Count);
+        }
+        [Test]
+        public void 無効化とモデル交換で古いマーカーを破棄し再有効化で一度だけ戻す()
+        {
+            Setup();var old=Cell(2).gameObject;var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;view.enabled=false;view.GetType().GetMethod("OnDisable",flags).Invoke(view,null);view.RefreshVisitVisuals();Assert.IsNull(Cell(2));Assert.IsTrue(old==null);view.enabled=true;view.GetType().GetMethod("OnEnable",flags).Invoke(view,null);Assert.IsNotNull(Cell(2));
+            var cells=Enumerable.Range(0,12).Select(i=>new MapCell(i)).ToList();var replacement=new DungeonSystem(new DungeonConfig("empty","空",12,cells),new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger());
+            view.Initialize(replacement);Assert.IsNull(Cell(2));Assert.IsNull(Cell(8));Assert.AreEqual(0,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Length);
+        }
+    }
+}
