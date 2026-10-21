@@ -147,6 +147,40 @@ namespace Olca.Core.Domain
             paralysisTimer.SetFrames(0); pendingParalysisFrames = null;
             paralysisFrameOpen = frameParalyzed = clearParalysisPending = paralysisInterruptPending = false;
         }
+        private FrameCountdown confusionTimer;
+        private int? pendingConfusionFrames;
+        private bool confusionFrameOpen, frameConfused, clearConfusionPending;
+        public int ConfusionRemainingFrames => confusionTimer.Frames;
+        public bool IsConfused => !IsDead && (confusionFrameOpen ? frameConfused : confusionTimer.IsActive);
+        internal bool HasConfusionState => confusionTimer.IsActive || pendingConfusionFrames.HasValue || clearConfusionPending || frameConfused;
+        /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
+        public void ApplyConfusion(int durationFrames, int durationResistancePercent = 0)
+        {
+            if (durationFrames <= 0 || durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
+            int frames=(int)((long)durationFrames*(100-Math.Min(100,durationResistancePercent))/100);
+            if(IsDead || frames==0)return;
+            pendingConfusionFrames=frames;
+            if(!confusionFrameOpen)clearConfusionPending=false;
+        }
+        public void ClearConfusion(){pendingConfusionFrames=null;clearConfusionPending=true;}
+        private void CommitConfusionChanges()
+        {
+            if(clearConfusionPending)confusionTimer.SetFrames(0);
+            else if(pendingConfusionFrames.HasValue)confusionTimer.SetFrames(pendingConfusionFrames.Value);
+            pendingConfusionFrames=null;clearConfusionPending=false;
+        }
+        internal void BeginConfusionFrame(bool advance)
+        {if(advance)CommitConfusionChanges();confusionFrameOpen=true;frameConfused=confusionTimer.IsActive;}
+        internal void TickConfusion(int ms,bool logical)
+        {if(logical)confusionTimer.TickFrame();else confusionTimer.Tick(ms);}
+        internal void EndConfusionFrame(bool advance)
+        {
+            if(IsDead){ResetConfusion();return;}
+            if(advance)CommitConfusionChanges();confusionFrameOpen=frameConfused=false;
+        }
+        internal void ResetConfusion()
+        {confusionTimer.SetFrames(0);pendingConfusionFrames=null;confusionFrameOpen=frameConfused=clearConfusionPending=false;}
+
         private int pendingInvincibilityMs;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
         /// <summary>保存・戦闘をまたいで保持する外部定義。残り待ち時間は含めない。</summary>
@@ -173,7 +207,7 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             foreach(var state in poisons.Values) { state.EndFrame(); if (IsDead) state.Reset(); }
-            if (IsDead) ResetParalysis();
+            if (IsDead) { ResetParalysis(); ResetConfusion(); }
             // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
             if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;
             else if (pendingConcentrateMultiplier.HasValue) nextCardMultiplier = pendingConcentrateMultiplier.Value;
@@ -202,7 +236,7 @@ namespace Olca.Core.Domain
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) { ResetParalysis(); OnDeath?.Invoke(); }
+            if (died) { ResetParalysis(); ResetConfusion(); OnDeath?.Invoke(); }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -361,7 +395,7 @@ namespace Olca.Core.Domain
                 else
                 {
                     currentHp = Math.Max(0, currentHp - damage);
-                    if (IsDead) ResetParalysis();
+                    if (IsDead) { ResetParalysis(); ResetConfusion(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
@@ -394,7 +428,7 @@ namespace Olca.Core.Domain
 
                 if (!frameHp.Active && IsDead)
                 {
-                    ResetParalysis(); OnDeath?.Invoke();
+                    ResetParalysis(); ResetConfusion(); OnDeath?.Invoke();
                 }
                 return true;
             }
@@ -413,7 +447,7 @@ namespace Olca.Core.Domain
             if (frameHp.Active) { frameHp.Damage(damage); return; }
             currentHp = Math.Max(0, currentHp - damage);
             OnHpChanged?.Invoke(currentHp, maxHp);
-            if (IsDead) { ResetParalysis(); OnDeath?.Invoke(); }
+            if (IsDead) { ResetParalysis(); ResetConfusion(); OnDeath?.Invoke(); }
         }
 
         /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>

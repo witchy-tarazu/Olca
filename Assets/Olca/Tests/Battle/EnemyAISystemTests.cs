@@ -377,3 +377,75 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class PlayerConfusionTests
+    {
+        private BattleSystem battle;private PlayerCharacter player;private Enemy keeper;
+        private void Setup(int x=2){player=new PlayerCharacter(100,new Vector2Int(x,0));keeper=new Enemy("keeper","検証",500,ElementType.None,new Vector2Int(5,0));battle=new BattleSystem(player,new List<Enemy>{keeper},new Deck());}
+        private static Olca.Core.Logic.Integration.LogicalInput Input(float held=0,float tap=0)=>new Olca.Core.Logic.Integration.LogicalInput{Horizontal=held,TouchHorizontalDown=tap};
+        private void Frames(int n){for(int i=0;i<n;i++)battle.TickFrame(17);}
+        [Test]
+        public void 既存敵攻撃のonHitから次フレームに有効化し進行中の移動を反転し直さない()
+        {
+            Setup();var source=new Enemy("source","検証",500,ElementType.None,new Vector2Int(3,0),isSummoned:true);battle.AddSummon(source,new List<IEnemyAIAction>{new BasicAttackAction(1,100000,poiseDamage:0,onHit:p=>p.ApplyConfusion(60))});
+            battle.TickFrame(17,Input(-1));Assert.AreEqual(99,player.CurrentHp);Assert.IsTrue(player.IsConfused);Assert.AreEqual(60,player.ConfusionRemainingFrames);Assert.AreEqual(new Vector2Int(1,0),battle.PlayerMovement.NormalMoveTo);
+            Frames(8);Assert.AreEqual(new Vector2Int(1,0),player.GridPosition);battle.TickFrame(17,Input(1));Assert.AreEqual(new Vector2Int(0,0),battle.PlayerMovement.NormalMoveTo);Frames(8);Assert.AreEqual(new Vector2Int(0,0),player.GridPosition);
+        }
+        [TestCase(1,0,-1)] [TestCase(-1,0,1)] [TestCase(-1,1,-1)] [TestCase(1,-1,1)]
+        public void 解決済み保持とタッチ優先入力を一度だけ反転する(float held,float tap,int expected)
+        {
+            Setup();player.ApplyConfusion(60);battle.TickFrame(17,Input(held,tap));Assert.AreEqual(new Vector2Int(2+expected,0),battle.PlayerMovement.NormalMoveTo);Assert.IsFalse(player.IsActionPrevented);
+        }
+        [Test]
+        public void 付与解除のフレーム境界と同フレーム取消は通常入力にも同じ順序で効く()
+        {
+            Setup();battle.RunLogicalFrame(()=>{player.ApplyConfusion(60);battle.TickFrame(17,Input(1));});Assert.AreEqual(new Vector2Int(3,0),battle.PlayerMovement.NormalMoveTo);Assert.AreEqual(60,player.ConfusionRemainingFrames);
+            Setup();player.ApplyConfusion(60);battle.TickFrame(17);battle.RunLogicalFrame(()=>{player.ClearConfusion();battle.TickFrame(17,Input(1));});Assert.AreEqual(new Vector2Int(1,0),battle.PlayerMovement.NormalMoveTo);Assert.IsFalse(player.IsConfused);
+            Setup();battle.RunLogicalFrame(()=>{player.ApplyConfusion(60);player.ClearConfusion();battle.TickFrame(17);});battle.TickFrame(17,Input(1));Assert.AreEqual(new Vector2Int(3,0),battle.PlayerMovement.NormalMoveTo);Assert.IsFalse(player.IsConfused);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ポーズとカスタムは混乱時間と移動を停止し復帰は残りから進む(bool custom)
+        {
+            Setup();player.ApplyConfusion(60);battle.TickFrame(17,Input(1));float progress=battle.PlayerMovement.NormalMoveProgress;
+            if(custom){battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());}else battle.Pause(BattlePauseReason.User);
+            Frames(120);Assert.AreEqual(59,player.ConfusionRemainingFrames);Assert.AreEqual(progress,battle.PlayerMovement.NormalMoveProgress);
+            if(custom)battle.CustomScreen.Close();else battle.Resume(BattlePauseReason.User);Frames(8);Assert.AreEqual(new Vector2Int(1,0),player.GridPosition);Assert.AreEqual(51,player.ConfusionRemainingFrames);
+        }
+        [Test]
+        public void 個別解除は麻痺毒に漏れず座標指定や滑りへ入力反転を漏らさない()
+        {
+            Setup();player.ApplyConfusion(60);player.ApplyParalysis(10);player.ApplyPoison("external",new StatusEffect(StatusEffectType.Poison,1000,1),60);battle.TickFrame(17,Input(1));Assert.IsTrue(player.IsParalyzed);Assert.IsTrue(player.IsConfused);Assert.IsFalse(battle.PlayerMovement.IsNormalMoving);
+            player.ClearParalysis();battle.TickFrame(17,Input(1));Assert.AreEqual(new Vector2Int(1,0),battle.PlayerMovement.NormalMoveTo);player.ClearConfusion();battle.TickFrame(17);Assert.AreEqual(1,player.CapturePoisons().Length);Assert.IsFalse(player.IsConfused);
+            Setup();player.ApplyConfusion(60);battle.TickFrame(17);Assert.IsTrue(battle.PlayerMovement.TryMove(new Vector2Int(1,0),new List<Enemy>{keeper}));Assert.AreEqual(new Vector2Int(3,0),player.GridPosition,"座標方向を渡す直接移動APIは入力ではない");
+        }
+        [Test]
+        public void 期間更新と耐性は既存状態を不正付与で消さず期限最終フレームまで反転する()
+        {
+            Setup();player.ApplyConfusion(60,50);battle.TickFrame(17);Assert.AreEqual(29,player.ConfusionRemainingFrames);player.ApplyConfusion(60,100);battle.TickFrame(17);Assert.AreEqual(28,player.ConfusionRemainingFrames);
+            battle.RunLogicalFrame(()=>player.ApplyConfusion(1));Assert.AreEqual(1,player.ConfusionRemainingFrames);battle.TickFrame(17,Input(1));Assert.AreEqual(new Vector2Int(1,0),battle.PlayerMovement.NormalMoveTo);Assert.IsFalse(player.IsConfused);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ApplyConfusion(0));Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ApplyConfusion(1,-1));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 勝敗で予約と有効状態を破棄し同じプレイヤーの次戦へ残さない(bool defeat)
+        {
+            Setup();player.ApplyConfusion(60);battle.TickFrame(17);battle.RunLogicalFrame(()=>{player.ApplyConfusion(120);if(defeat)player.TakeDamage(1000);else keeper.TakeDamage(1000,ElementType.None);});Assert.IsTrue(battle.IsGameOver);Assert.IsFalse(player.IsConfused);Assert.AreEqual(0,player.ConfusionRemainingFrames);
+        }
+        [Test]
+        public void チェックポイント再開は保存済み開始状態で混乱と移動予約を再生しない()
+        {
+            var map=Olca.Core.Domain.DungeonConfig.CreateTestDungeon(8,30,7);var defaults=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,new Deck());var store=new Olca.Core.Logic.Dungeon.MemoryCheckpointStore(defaults.Definitions);var session=new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions,store);var g=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+            for(int i=0;i<100&&g.CurrentBattle==null;i++)g.TickFrame(17);var b=g.CurrentBattle;Assert.IsNotNull(b);b.CustomScreen.Close();var sequence=store.Read().Sequence;b.Player.ApplyConfusion(60);b.TickFrame(17,Input(1));Assert.IsTrue(b.Player.IsConfused);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);Assert.IsTrue(g.SuspendForCheckpoint());Assert.IsFalse(b.Player.IsConfused);restored.ActivateCheckpoint();Assert.IsFalse(restored.CurrentBattle.Player.IsConfused);Assert.AreEqual(0,restored.CurrentBattle.Player.ConfusionRemainingFrames);Assert.IsFalse(restored.CurrentBattle.PlayerMovement.IsNormalMoving);Assert.AreEqual(sequence,store.Read().Sequence);
+        }
+        [Test]
+        public void 混乱の入力と時間トレースは描画fpsと追いつきで変わらない()
+        {
+            List<string> Trace(int fps){Setup();player.ApplyConfusion(30);var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();var result=new List<string>();long wall=0;void Tick(long f,int ms){if(f==10)battle.Pause(BattlePauseReason.User);if(f==15)battle.Resume(BattlePauseReason.User);battle.TickFrame(ms,Input(f<25?1:-1));result.Add(player.GridPosition+":"+player.ConfusionRemainingFrames+":"+player.IsConfused+":"+battle.PlayerMovement.NormalMoveTo);}if(fps==0){clock.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond);clock.Drain(Tick);}else for(int i=1;clock.Frame<60;i++){long t=(long)i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(t-wall);wall=t;clock.Drain(Tick);}return result;}
+            CollectionAssert.AreEqual(Trace(60),Trace(30));CollectionAssert.AreEqual(Trace(60),Trace(120));CollectionAssert.AreEqual(Trace(60),Trace(0));
+        }
+    }
+}
