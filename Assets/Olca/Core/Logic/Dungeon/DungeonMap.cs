@@ -15,10 +15,13 @@ namespace Olca.Core.Logic.Dungeon
         public IReadOnlyList<int> StrongEnemyCells { get; }
         public IReadOnlyList<ItemRewardEntry> ItemRewards { get; }
         public int ItemRewardChance { get; }
+        public IReadOnlyList<ExplorationTerrainCell> ExplorationTerrain { get; }
+        public ExplorationTerrainCell GetTerrain(int cell) => ExplorationTerrain.FirstOrDefault(t=>t.Cell==cell);
         private readonly int totalCellCount;
 
         public DungeonMap(DungeonConfig config)
         {
+            ExplorationTerrain=config.ExplorationTerrain;
             Visits=config.Visits;StrongEnemyCells=config.StrongEnemyCells;ItemRewards=config.ItemRewards;ItemRewardChance=config.ItemRewardChance;
             cells = new List<MapCell>(config.MapCells);
             totalCellCount = config.TotalCellCount;

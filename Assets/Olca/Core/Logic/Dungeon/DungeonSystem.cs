@@ -135,6 +135,38 @@ namespace Olca.Core.Logic.Dungeon
         public PlayerCharacter Player => playerCharacter;
         /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
         public DungeonMap Map => map;
+        private int? terrainContactCell;
+        internal int? CheckpointTerrainContact => map.ExplorationTerrain.Count>0?terrainContactCell:null;
+        private void ApplyTerrainSweep(PlayerMovement.MovementStep step,long from,long to,ref bool airReset)
+        {
+            if(map.ExplorationTerrain.Count==0)return;
+            if(!playerCharacter.TerrainState.ReceivesPanelEffects){terrainContactCell=null;return;}
+            if(step.WasJumping&&step.JumpTimeFrames<30){
+                if(!airReset){terrainContactCell=null;airReset=true;}
+                if(step.DurationFrames<=0)return;
+                double landing=(30-step.JumpTimeFrames)/step.DurationFrames;
+                if(landing>1)return;
+                long position=step.PositionAt(landing);if(to<position)return;from=Math.Max(from,position);
+            }
+            for(int cell=(int)Math.Max(0,from/1000);cell<=Math.Min(map.TotalCellCount-1,to/1000);cell++){
+                ApplyTerrainContact(cell);
+            }
+        }
+        private void ApplyTerrainContact(int cell)
+        {
+            if(map.ExplorationTerrain.Count==0||!playerCharacter.TerrainState.ReceivesPanelEffects||terrainContactCell==cell)return;
+            terrainContactCell=cell;var terrain=map.GetTerrain(cell);if(terrain==null)return;
+            var element=playerCharacter.ActiveElement;
+            if((terrain.Type==PanelType.Magma&&element==ElementType.Fire)||(terrain.Type==PanelType.Grass&&element==ElementType.Earth))playerCharacter.Heal(terrain.Heal);
+            else if(terrain.Type==PanelType.Magma)playerCharacter.TakeDamage(terrain.Damage,affectsPoise:false);
+        }
+        private void InitializeBattleTerrain(BattleSystem battle,int origin)
+        {
+            for(int x=0;x<BattleField.GRID_WIDTH;x++){
+                var terrain=map.GetTerrain(origin+x);
+                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),terrain.Type);
+            }
+        }
         private readonly bool hasFieldItems;
         private readonly HashSet<int> collectedItemCells = new HashSet<int>();
         public bool IsItemCollected(int cell) => collectedItemCells.Contains(cell);
@@ -216,6 +248,7 @@ namespace Olca.Core.Logic.Dungeon
                 if (restoration != null)
                 {
                     checkpoints.Adopt(restoration); restoredBoundary = restoration.Snapshot;
+                    terrainContactCell=restoredBoundary.TerrainContactCell;
                     Currency = restoredBoundary.Currency;
                     playerMovement.SetPositionMilli(restoredBoundary.PositionMilli);
                     processedObstacleCells.UnionWith(restoredBoundary.ProcessedObstacleCells ?? new int[0]);
@@ -302,12 +335,13 @@ namespace Olca.Core.Logic.Dungeon
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
             processingTick = true; explorationHpUpdated=false;
             obstacleVisualUnits += logicalFrame ? 50 : Math.Max(0,deltaTimeMs) * 3L;
-            if (playerCharacter.HasPoisonState || IsObstacleStopped || hasFieldItems) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
+            if (playerCharacter.HasPoisonState || IsObstacleStopped || hasFieldItems || map.ExplorationTerrain.Count>0) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
             try
             {
                 playerCharacter.TickPoisons(deltaTimeMs, logicalFrame);
                 if (IsObstacleStopped) { TickObstacleControl(logicalFrame ? 50 : Math.Max(0, deltaTimeMs) * 3L); return; }
                 var step = logicalFrame ? playerMovement.PreviewFrame() : playerMovement.PreviewStep(deltaTimeMs);
+                long terrainFrom=step.Start;bool terrainAirReset=false;
                 int control = playerMovement.ControlRevision, encounter = encounterRevision;
                 var contacts = new List<ContactSystem.SweptContact>();
                 for (int i = 0; i < map.TotalCellCount; i++)
@@ -331,10 +365,12 @@ namespace Olca.Core.Logic.Dungeon
                 });
                 foreach (var contact in contacts)
                 {
+                    ApplyTerrainSweep(step,terrainFrom,contact.Position,ref terrainAirReset);terrainFrom=contact.Position;
                     playerMovement.ApplyStep(step, contact.Position);
                     if (contact.Cell.Obstacle != null) CheckObstacles(contact.Cell);
                     else if(contact.Cell.Item!=null){if(collectedItemCells.Add(contact.Cell.Index))playerCharacter.Heal(contact.Cell.Item.Heal);}
                     else if(visits!=null&&visits.Any(v=>v.Cell==contact.Cell.Index&&!v.Closed)) {
+                        if(map.ExplorationTerrain.Count>0){playerMovement.ResetAirborneMovement();ApplyTerrainContact(contact.Cell.Index);}
                         CommitExplorationHp();if(playerCharacter.IsDead)return;
                         playerMovement.ResetAirborneMovement();playerMovement.Pause();activeVisit=visits.Single(v=>v.Cell==contact.Cell.Index);return;
                     }
@@ -344,6 +380,7 @@ namespace Olca.Core.Logic.Dungeon
                         checkpointSuspended || playerMovement.IsPaused || IsObstacleStopped || control != playerMovement.ControlRevision ||
                         encounter != encounterRevision) return;
                 }
+                ApplyTerrainSweep(step,terrainFrom,step.End,ref terrainAirReset);
                 if (hasNextFloor && finalBoss == null && step.End >= (long)map.TotalCellCount * 1000)
                 {
                     // 旧保存形式の位置範囲を維持し、終端の直前を完了境界として保存する。
@@ -470,6 +507,7 @@ namespace Olca.Core.Logic.Dungeon
                 fusionSystem: fusionSystem, cardDatabase: cardDatabase
             );
 
+            InitializeBattleTerrain(currentBattle,(int)contactInfo.ContactPositionX);
             // バトル終了イベントを購読
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
 
@@ -934,6 +972,7 @@ namespace Olca.Core.Logic.Dungeon
             { BlockCheckpoint(error); return; }
             var plan = snapshot.Battle;
             if(plan.ItemRewardHasNextFloor.HasValue&&plan.ItemRewardHasNextFloor.Value!=hasNextFloor){BlockCheckpoint("アイテム報酬計画の階層条件が不一致です");return;}
+            terrainContactCell=snapshot.TerrainContactCell;
             checkpointSession.Adopt(restored);
             cardRewardSystem.GetCurrentDeck().RestoreCheckpointOrder(restored.Deck.GetAllCards(), restored.FirstHand);
             cardRewardSystem.RestoreObtained(restored.Obtained);
@@ -952,6 +991,7 @@ namespace Olca.Core.Logic.Dungeon
             plannedItemReward=plan.ItemRewardIndex.HasValue?map.ItemRewards[plan.ItemRewardIndex.Value].Item:null;
             currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
                 randomProvider, logger, exceedSystem, tuningSystem, fusionSystem, cardDatabase: cardDatabase);
+            InitializeBattleTerrain(currentBattle,(int)plan.GridOriginX);
             currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
             var started = currentBattle;
@@ -1046,6 +1086,8 @@ namespace Olca.Core.Logic.Dungeon
         private readonly Dictionary<int, Obstacle> obstacles = new Dictionary<int, Obstacle>();
         private readonly Dictionary<int,FieldItem> items = new Dictionary<int,FieldItem>();
         internal bool HasFieldItems => items.Count>0;
+        internal IReadOnlyList<ExplorationTerrainCell> ExplorationTerrain { get; private set; }
+        private static string TerrainHash(IEnumerable<ExplorationTerrainCell> terrain)=>CheckpointValues.Hash(w=>{foreach(var t in terrain){w.Write(t.Cell);w.Write((int)t.Type);w.Write(t.Heal);w.Write(t.Damage);}});
         // 既存の障害物なし/即時ダメージ保存は版1/2を維持。破棄型を含む定義だけ版3。
         internal IReadOnlyList<DungeonVisitDefinition> Visits { get; private set; }
         internal IReadOnlyList<int> StrongEnemyCells { get; private set; }
@@ -1059,7 +1101,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         private static string ItemSettingsHash(IEnumerable<int> strong,IReadOnlyList<ItemRewardEntry> rewards,int chance)=>CheckpointValues.Hash(w=>{foreach(int i in strong.OrderBy(i=>i))w.Write(i);w.Write("pool");w.Write(chance);foreach(var entry in rewards){w.Write(entry.Item.Id);w.Write(entry.Item.Name);w.Write(entry.Item.Heal);w.Write(entry.Weight);}});
 
-        public int SchemaVersion => HasFieldItems ? 4 : obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
+        public int SchemaVersion => ExplorationTerrain.Count>0 ? 5 : HasFieldItems ? 4 : obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
         internal void ValidateProcessedObstacles(CheckpointDto dto)
         {
             if (SchemaVersion == 1)
@@ -1103,6 +1145,7 @@ namespace Olca.Core.Logic.Dungeon
             if (string.IsNullOrWhiteSpace(revision) || map == null || string.IsNullOrWhiteSpace(map.DungeonId) ||
                 map.TotalCellCount <= 0 || map.MapCells.Count != map.TotalCellCount)
                 throw new ArgumentException("固定マップ定義が不完全です");
+            ExplorationTerrain=map.ExplorationTerrain;
             Visits=map.Visits;StrongEnemyCells=map.StrongEnemyCells;ItemRewards=map.ItemRewards;ItemRewardChance=map.ItemRewardChance;
             Revision = revision; DungeonId = map.DungeonId; CellCount = map.TotalCellCount;
             dungeonName = map.DungeonName; initialDeckSize = map.InitialDeckSize;
@@ -1149,6 +1192,7 @@ namespace Olca.Core.Logic.Dungeon
                         if (e.PoiseDefinition.RecoveryDelayFrames.HasValue) { w.Write("poise-recovery"); w.Write(e.PoiseDefinition.RecoveryDelayFrames.Value); } }
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
                 }
+                if(ExplorationTerrain.Count>0){w.Write("exploration-ground-v1");w.Write(TerrainHash(ExplorationTerrain));}
                 if(Visits.Count>0){w.Write("dungeon-visits-v1");foreach(var v in Visits)w.Write(v.Hash);}
                 if(StrongEnemyCells.Any(i=>!enemies.ContainsKey(i)||enemies[i].IsSummoned||enemies[i].EnemyId=="boss"))throw new ArgumentException("強敵セルには固定した通常敵が必要です");
                 if(StrongEnemyCells.Count>0||ItemRewards.Count>0){w.Write("item-rewards-v1");w.Write(ItemSettingsHash(StrongEnemyCells,ItemRewards,ItemRewardChance));}
@@ -1157,6 +1201,7 @@ namespace Olca.Core.Logic.Dungeon
 
         internal void ValidateCurrentMap(DungeonMap map)
         {
+            if(TerrainHash(ExplorationTerrain)!=TerrainHash(map.ExplorationTerrain))throw new ArgumentException("探索地形が定義と一致しません");
             if(ItemSettingsHash(StrongEnemyCells,ItemRewards,ItemRewardChance)!=ItemSettingsHash(map.StrongEnemyCells,map.ItemRewards,map.ItemRewardChance))throw new ArgumentException("アイテム報酬設定が不一致です");
             if(!Visits.Select(v=>v.Hash).SequenceEqual(map.Visits.Select(v=>v.Hash)))throw new ArgumentException("停止地点の定義が不一致です");
             if (map.TotalCellCount != CellCount) throw new ArgumentException("マップサイズが定義と一致しません");
@@ -1197,7 +1242,7 @@ namespace Olca.Core.Logic.Dungeon
                 cells.Add(items.TryGetValue(i,out var item) ? new MapCell(i,item) : obstacles.TryGetValue(i, out var obstacle) ? new MapCell(i, CopyObstacle(obstacle)) :
                     restoredEnemies.TryGetValue(i, out var enemy) && !enemy.IsDead
                     ? new MapCell(i, enemy, heights[i]) : new MapCell(i));
-            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits,StrongEnemyCells,ItemRewards,ItemRewardChance);
+            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits,StrongEnemyCells,ItemRewards,ItemRewardChance,ExplorationTerrain);
         }
 
         public void RegisterCard(string key, Card definition)
@@ -1415,6 +1460,7 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
                 definitions.ValidateProcessedObstacles(d);
                 definitions.ValidateCollectedItems(d);
+                CheckpointValues.Require(!d.TerrainContactCell.HasValue || (definitions.ExplorationTerrain.Count>0&&d.TerrainContactCell.Value==d.PositionMilli/1000&&d.Boundary!=CheckpointBoundary.Departure),"接地済みセルが不整合です");
                 CheckpointValues.Require(d.Currency >= 0, "通貨が負値です");
                 if(definitions.Visits.Count==0)CheckpointValues.Require(d.Visits==null,"未定義の停止地点です");
                 else {
@@ -1663,6 +1709,7 @@ namespace Olca.Core.Logic.Dungeon
             return new CheckpointDto {
                 SchemaVersion = Definitions.SchemaVersion,
                 ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
+                TerrainContactCell=dungeon.CheckpointTerrainContact,
                 CollectedItemCells = Definitions.HasFieldItems ? dungeon.CheckpointCollectedItems : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
@@ -1752,6 +1799,7 @@ namespace Olca.Core.Logic.Dungeon
             next.PositionMilli = 0; next.Player.GridX = next.Player.GridY = 0; next.Battle = null;
             next.Visits=DungeonSystem.PlanVisits(floor.Visits,next.RunId);
             next.ProcessedObstacleCells = floor.SchemaVersion >= 2 ? new int[0] : null;
+            next.TerrainContactCell=null;
             next.CollectedItemCells = floor.HasFieldItems ? new int[0] : null;
             next.Enemies = floor.Enemies.Select(pair => new CheckpointEnemyDto {
                 CellIndex = pair.Key, EnemyId = pair.Value.EnemyId, Hp = pair.Value.MaxHp,

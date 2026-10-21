@@ -15,6 +15,7 @@ namespace Olca.Core.Domain
         public IReadOnlyList<int> StrongEnemyCells { get; }
         public IReadOnlyList<ItemRewardEntry> ItemRewards { get; }
         public int ItemRewardChance { get; }
+        public IReadOnlyList<ExplorationTerrainCell> ExplorationTerrain { get; }
         public List<MapCell> MapCells { get; }     // マス配置データ
 
         public DungeonConfig(
@@ -22,7 +23,7 @@ namespace Olca.Core.Domain
             string dungeonName,
             int totalCellCount,
             List<MapCell> mapCells,
-            int initialDeckSize = 20, IReadOnlyList<DungeonVisitDefinition> visits = null, IReadOnlyList<int> strongEnemyCells=null, IReadOnlyList<ItemRewardEntry> itemRewards=null, int itemRewardChance=100)
+            int initialDeckSize = 20, IReadOnlyList<DungeonVisitDefinition> visits = null, IReadOnlyList<int> strongEnemyCells=null, IReadOnlyList<ItemRewardEntry> itemRewards=null, int itemRewardChance=100, IReadOnlyList<ExplorationTerrainCell> explorationTerrain=null)
         {
             DungeonId = dungeonId;
             DungeonName = dungeonName;
@@ -33,6 +34,9 @@ namespace Olca.Core.Domain
             ItemRewards=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(itemRewards??System.Array.Empty<ItemRewardEntry>()));ItemRewardChance=itemRewardChance;
             if(itemRewardChance<0||itemRewardChance>100||System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(StrongEnemyCells))!=StrongEnemyCells.Count||System.Linq.Enumerable.Any(StrongEnemyCells,i=>i<0||i>=totalCellCount||i>=MapCells.Count||(MapCells[i]?.Type!=CellType.Enemy&&MapCells[i]?.Type!=CellType.Empty)||(MapCells[i].Enemy?.IsSummoned??false)))throw new System.ArgumentException("強敵/報酬率の設定が不正です");
             ItemRewardEntry.Validate(ItemRewards);
+            ExplorationTerrain=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(System.Linq.Enumerable.OrderBy(explorationTerrain??System.Array.Empty<ExplorationTerrainCell>(),t=>t?.Cell??-1)));
+            if(System.Linq.Enumerable.Any(ExplorationTerrain,t=>t==null||t.Cell>=totalCellCount)||System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(ExplorationTerrain,t=>t.Cell)))!=ExplorationTerrain.Count)
+                throw new System.ArgumentException("探索地形セルが不正/重複です");
             Visits=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(visits??System.Array.Empty<DungeonVisitDefinition>()));
             if(System.Linq.Enumerable.Any(Visits,v=>v==null||v.Cell>=totalCellCount-1||MapCells[v.Cell].Type!=CellType.Empty)||System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(Visits,v=>v.Cell)))!=Visits.Count)throw new System.ArgumentException("停止地点は重複しない空セルへ配置してください");
         }
@@ -185,8 +189,10 @@ namespace Olca.Core.Domain
         public int[] ProcessedObstacleCells;
         public int[] CollectedItemCells; // アイテムを含む版4のみ。旧省略/nullはアイテムなし。
         public DungeonVisitDto[] Visits; // 旧省略/nullは停止地点なし
+        public int? TerrainContactCell; // 探索地形のある版5だけ。直前の接地済みセル。
         public CheckpointBattleDto Battle;
         public CheckpointDto Copy() => new CheckpointDto {
+            TerrainContactCell = TerrainContactCell,
             Visits = Visits==null?null:System.Array.ConvertAll(Visits,v=>v?.Copy()),
             CollectedItemCells = CollectedItemCells==null?null:(int[])CollectedItemCells.Clone(),
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,

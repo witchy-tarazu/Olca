@@ -96,3 +96,21 @@ namespace Olca.Core.Domain
         }
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>探索の固定接地効果。周期/消費/新しい地形種類は持たない。</summary>
+    public sealed class ExplorationTerrainCell
+    {
+        public int Cell { get; }
+        public PanelType Type { get; }
+        public int Heal { get; }
+        public int Damage { get; }
+        public ExplorationTerrainCell(int cell, PanelType type, int heal = 5, int magmaDamage = 5)
+        {
+            if (cell < 0 || (type != PanelType.Grass && type != PanelType.Magma) || heal < 0 || magmaDamage < 0)
+                throw new System.ArgumentException("草むら/マグマの固定量は0以上です");
+            Cell=cell;Type=type;Heal=heal;Damage=type==PanelType.Magma?magmaDamage:0;
+        }
+    }
+}

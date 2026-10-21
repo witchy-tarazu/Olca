@@ -342,6 +342,29 @@ namespace Olca.Presentation.Field
         private Color playerNormalColor;
         private float playerHitElapsed = -1f;
 
+        private readonly Dictionary<int,GameObject> terrainVisuals=new Dictionary<int,GameObject>();
+        private void ClearTerrainVisuals()
+        {
+            foreach(var go in terrainVisuals.Values){if(go==null)continue;go.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(go);else DestroyImmediate(go);}terrainVisuals.Clear();
+        }
+        private void RefreshTerrainVisuals()
+        {
+            if(!isActiveAndEnabled||dungeonSystem==null){ClearTerrainVisuals();return;}
+            foreach(var terrain in dungeonSystem.Map.ExplorationTerrain){
+                bool visible=currentBattle==null&&Mathf.Abs(terrain.Cell-dungeonSystem.PlayerPosition)<6;
+                if(!terrainVisuals.TryGetValue(terrain.Cell,out var root)){
+                    if(!visible)continue;
+                    if(obstacleWhiteSprite==null)obstacleWhiteSprite=CreateWhiteSprite();
+                    root=new GameObject("ExplorationTerrain_"+terrain.Cell);root.transform.SetParent(transform,false);
+                    root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f,0);
+                    root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(.06f),1);
+                    var sr=root.AddComponent<SpriteRenderer>();sr.sprite=obstacleWhiteSprite;sr.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;sr.sortingOrder=1;
+                    sr.color=terrain.Type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):new Color(.2f,1f,.5f,.5f);terrainVisuals.Add(terrain.Cell,root);
+                }
+                root.SetActive(visible);
+            }
+        }
+
         private readonly Dictionary<DelayedEffect, GameObject> bombVisuals = new Dictionary<DelayedEffect, GameObject>();
         private void ClearBombVisuals()
         {
@@ -476,10 +499,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
-            ClearBombVisuals();
+            ClearTerrainVisuals(); ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
@@ -496,7 +519,7 @@ namespace Olca.Presentation.Field
         public void Initialize(DungeonSystem dungeon)
         {
             RestoreEnemyPerception();
-            ClearObstacleVisuals(); ClearVisitVisuals();
+            ClearTerrainVisuals(); ClearObstacleVisuals(); ClearVisitVisuals();
             ApplyCharacterDisplayOffset();
             dungeonSystem = dungeon;
             BindPlayerDamage(dungeon?.Player);
@@ -545,7 +568,7 @@ namespace Olca.Presentation.Field
         {
             UpdateCameraFraming();
             RefreshObstacleVisuals(); RefreshVisitVisuals();
-            RefreshEnemyPerception(); RefreshBombVisuals();
+            RefreshEnemyPerception(); RefreshBombVisuals(); RefreshTerrainVisuals();
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();

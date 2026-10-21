@@ -1891,3 +1891,106 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+namespace Olca.Tests.Dungeon
+{
+    public class ExplorationGroundTests
+    {
+        private sealed class FaultStore:ICheckpointStore {
+            public readonly MemoryCheckpointStore Inner;public bool Fail;
+            public FaultStore(CheckpointDefinitions d){Inner=new MemoryCheckpointStore(d);}
+            public CheckpointDto Read()=>Inner.Read();
+            public bool TryWrite(CheckpointDto d,out string error){if(Fail){error="ground-save-fixture";return false;}return Inner.TryWrite(d,out error);}
+        }
+        private static DungeonBattleManager Start(ElementType element,ExplorationTerrainCell[] terrain,out DungeonCheckpointSession session,out FaultStore store,int hp=60,bool spike=false)
+        {
+            var m=DungeonConfig.CreateTestDungeon(30,100,29);if(spike)m.MapCells[0]=new MapCell(0,new Obstacle("spike","既存トゲ",10));
+            var map=new DungeonConfig(m.DungeonId,m.DungeonName,30,m.MapCells,visits:new[]{new DungeonVisitDefinition(10,false,new[]{new DungeonVisitOption("existing-heal",0,heal:1)},1)},explorationTerrain:terrain);
+            var defs=DungeonCheckpointSession.CreateDefault(map,new Deck()).Definitions;store=new FaultStore(defs);session=new DungeonCheckpointSession(defs,store);
+            var p=new PlayerCharacter(100);p.TakeDamage(100-hp);
+            if(element!=ElementType.None)p.SetDepartureStyle(new DepartureStyleDefinition("fixture-"+element,"属性検証fixture",null,new TransformationAttackDefinition(element)));
+            return new DungeonBattleManager(map,p,new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+        }
+        private static PlayerMovement Movement(DungeonSystem d)=>(PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+        [TestCase(ElementType.Fire,PanelType.Magma,65)][TestCase(ElementType.Earth,PanelType.Grass,65)]
+        [TestCase(ElementType.None,PanelType.Grass,60)][TestCase(ElementType.None,PanelType.Magma,55)][TestCase(ElementType.Earth,PanelType.Magma,55)]
+        public void 属性に応じた接地効果は同じセルで繰り返さず踏み直し時だけ再適用する(ElementType element,PanelType type,int hp)
+        {
+            var g=Start(element,new[]{new ExplorationTerrainCell(0,type)},out _,out _);var d=g.Dungeon;
+            d.TickFrame();Assert.AreEqual(hp,d.Player.CurrentHp);for(int i=0;i<4;i++)d.TickFrame();Assert.AreEqual(hp,d.Player.CurrentHp);
+            d.TickFrame();Movement(d).SetPosition(0);d.TickFrame();Assert.AreEqual(hp+(hp-60),d.Player.CurrentHp);
+        }
+        [Test]
+        public void 満タンとフロートとポーズは継続回復や二重処理を作らない()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(0,PanelType.Magma)},out _,out _,100);var d=g.Dungeon;
+            d.TickFrame();d.Player.TakeDamage(10);d.TickFrame();Assert.AreEqual(90,d.Player.CurrentHp);
+            g.SetUserPaused(true);for(int i=0;i<60;i++)g.TickFrame(17);Assert.AreEqual(90,d.Player.CurrentHp);g.SetUserPaused(false);g.TickFrame(17);Assert.AreEqual(90,d.Player.CurrentHp);
+            var other=Start(ElementType.None,new[]{new ExplorationTerrainCell(0,PanelType.Magma)},out _,out _).Dungeon;
+            other.Player.TerrainState.IsFloating=true;other.TickFrame();Assert.AreEqual(60,other.Player.CurrentHp);
+            other.Player.TerrainState.IsFloating=false;other.TickFrame();Assert.AreEqual(55,other.Player.CurrentHp);
+        }
+        [TestCase(false,5)][TestCase(true,10)]
+        public void ジャンプ中は通過セルを避け着地セルだけ一回回復する(bool dash,int landing)
+        {
+            var terrain=Enumerable.Range(0,landing+1).Select(i=>new ExplorationTerrainCell(i,PanelType.Grass)).ToArray();
+            var d=Start(ElementType.Earth,terrain,out _,out _).Dungeon;if(dash)d.StartDash();d.Jump();
+            for(int i=0;i<29;i++)d.TickFrame();Assert.AreEqual(60,d.Player.CurrentHp);
+            d.TickFrame();Assert.AreEqual(65,d.Player.CurrentHp);Assert.AreEqual(landing,(int)d.PlayerPosition);
+        }
+        [Test]
+        public void ダッシュで異なる草むらマグマへ進んでも各セルは一回で地形を消費しない()
+        {
+            var d=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(0,PanelType.Magma),new ExplorationTerrainCell(1,PanelType.Grass),new ExplorationTerrainCell(2,PanelType.Magma)},out _,out _).Dungeon;
+            d.StartDash();for(int i=0;i<8;i++)d.TickFrame();Assert.AreEqual(70,d.Player.CurrentHp);
+            Assert.AreEqual(PanelType.Magma,d.Map.GetTerrain(0).Type);Assert.AreEqual(PanelType.Grass,d.Map.GetTerrain(1).Type);
+        }
+        [Test]
+        public void 毒と地形回復とトゲは同フレームに合算し満タンで先に切り詰めない()
+        {
+            var d=Start(ElementType.Earth,new[]{new ExplorationTerrainCell(0,PanelType.Grass)},out _,out _,100,true).Dungeon;
+            d.Player.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,10000,10),1);d.TickFrame();Assert.AreEqual(85,d.Player.CurrentHp);
+            var dead=Start(ElementType.Earth,new[]{new ExplorationTerrainCell(0,PanelType.Grass)},out _,out _,5,true).Dungeon;int notices=0;dead.OnDungeonFailed+=()=>notices++;
+            dead.TickFrame();Assert.AreEqual(0,dead.Player.CurrentHp);Assert.IsTrue(dead.Player.IsDead);dead.TickFrame();Assert.AreEqual(1,notices);
+        }
+        [Test]
+        public void 接地済みセルの保存復帰と保存失敗再試行は同じ回復を受け直さない()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(10,PanelType.Magma)},out var session,out var store);var d=g.Dungeon;
+            d.Tick(1000);Assert.IsNotNull(d.ActiveVisit);Assert.AreEqual(65,d.Player.CurrentHp);store.Fail=true;Assert.IsFalse(d.ExitVisit());
+            d.TickFrame();Assert.AreEqual(65,d.Player.CurrentHp);store.Fail=false;Assert.IsTrue(g.RetryCheckpoint());
+            Assert.AreEqual(5,store.Read().SchemaVersion);Assert.AreEqual(10,store.Read().TerrainContactCell);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var resumed,out var error),error);
+            resumed.ActivateCheckpoint();resumed.TickFrame(17);Assert.AreEqual(65,resumed.Dungeon.Player.CurrentHp);
+            var bad=store.Read();bad.TerrainContactCell=9;Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void 新しい階層では接地記録を空にし新規セルの回復を一回だけ受ける()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(0,PanelType.Magma)},out var session,out _);g.Dungeon.TickFrame();
+            var captured=(CheckpointDto)typeof(DungeonCheckpointSession).GetMethod("Capture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(session,new object[]{g.Dungeon,CheckpointBoundary.RewardCompleted,null});
+            var map=session.Definitions.CreateInitialMap();var floors=new FloorSequenceDefinitions("fixture-ground","v1",new[]{map,map},new Deck());
+            var next=(CheckpointDto)typeof(FloorSequenceDefinitions).GetMethod("NextStart",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(floors,new object[]{1,captured});
+            Assert.IsNull(next.TerrainContactCell);Assert.AreEqual(CheckpointBoundary.Departure,next.Boundary);
+        }
+        [Test]
+        public void 接敵時に地形種類を引き継ぎ戦闘中の変更を探索や再開へ持ち越さない()
+        {
+            var m=DungeonConfig.CreateTestDungeon(20,100,5);var map=new DungeonConfig(m.DungeonId,m.DungeonName,20,m.MapCells,explorationTerrain:new[]{new ExplorationTerrainCell(3,PanelType.Grass)});
+            var session=DungeonCheckpointSession.CreateDefault(map,new Deck());var g=new DungeonBattleManager(map,new PlayerCharacter(100),new Deck(),new MockRandomProvider(),new MockLogger(),checkpoints:session);
+            g.Dungeon.Tick(1000);Assert.IsNotNull(g.CurrentBattle);Assert.AreEqual(PanelType.Grass,g.CurrentBattle.Field.GetPanelType(new Vector2Int(2,0)));
+            g.CurrentBattle.Field.ChangePanelType(new Vector2Int(2,0),PanelType.Normal);Assert.AreEqual(PanelType.Grass,g.Dungeon.Map.GetTerrain(3).Type);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
+            restored.ActivateCheckpoint();restored.TickFrame(17);Assert.AreEqual(PanelType.Grass,restored.CurrentBattle.Field.GetPanelType(new Vector2Int(2,0)));
+        }
+        [Test]
+        public void 地形ありのファイル保存と読込は定義と接地記録を保持し旧地形なし版を変えない()
+        {
+            var g=Start(ElementType.Fire,new[]{new ExplorationTerrainCell(10,PanelType.Magma)},out var session,out _);g.Dungeon.Tick(1000);Assert.IsTrue(g.Dungeon.ExitVisit());
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-ground-"+System.Guid.NewGuid().ToString("N"));
+            try{var file=new Olca.Unity.FileCheckpointStore(session.Definitions,dir);Assert.IsTrue(file.TryWrite(session.Store.Read(),out var error),error);var saved=file.Read();Assert.AreEqual(10,saved.TerrainContactCell);Assert.IsTrue(CheckpointCodec.TryRestore(saved,session.Definitions,out var restored,out error),error);Assert.AreEqual(1,restored.Map.ExplorationTerrain.Count);Assert.AreEqual(65,restored.Player.CurrentHp);}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+            var old=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(),new Deck());Assert.AreEqual(1,old.Definitions.SchemaVersion);
+            Assert.Throws<System.ArgumentException>(()=>new DungeonConfig("invalid","重複",2,new System.Collections.Generic.List<MapCell>{new MapCell(0),new MapCell(1)},explorationTerrain:new[]{new ExplorationTerrainCell(0,PanelType.Grass),new ExplorationTerrainCell(0,PanelType.Magma)}));
+        }
+    }
+}
