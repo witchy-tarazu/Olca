@@ -42,7 +42,8 @@ namespace Olca.Application.Battle
 
         /// <summary>固定スターターの仮構成。通常5種を各4枚、予備なし。</summary>
         public IReadOnlyList<Card> CollectionCards => catalog.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone())
-            .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone())).ToArray();
+            .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
+            .Concat(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
 
         public Deck CreateStarterDeck()
         {

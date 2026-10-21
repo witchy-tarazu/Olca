@@ -367,14 +367,14 @@ namespace Olca.Core.Domain
         {
             if (card == null) throw new ArgumentNullException(nameof(card));
             data = new ExchangeOfferData { Id=id, CardId=card.Id, Name=card.Name, Rarity=card.Rarity, Level=card.ExceedLevel,
-                Price=price, OverflowTokens=overflowTokens, Limit=limit, Maximum=maximum };
+                Price=price, OverflowTokens=overflowTokens, Limit=limit, Maximum=maximum, CardDefinitionHash=CollectionDisplay.DefinitionHash(card) };
             ExchangeOfferData.Validate(data);
         }
         public ExchangeOfferData Capture() => data.Copy();
     }
     public sealed class ExchangeOfferData
     {
-        public string Id, CardId, Name;
+        public string Id, CardId, Name, CardDefinitionHash;
         public CardRarity Rarity;
         public ExceedLevel Level;
         public long Price, OverflowTokens;
@@ -440,8 +440,9 @@ namespace Olca.Core.Domain
                 throw new ArgumentException("進行データの版・基本値が不正です");
             var discovered=p.DiscoveredCards??Array.Empty<DiscoveredCard>();
             if(discovered.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||string.IsNullOrWhiteSpace(c.Name)||c.Level==ExceedLevel.Lv3||
-                !Enum.IsDefined(typeof(ExceedLevel),c.Level)||!Enum.IsDefined(typeof(CardRarity),c.Rarity))||
-                discovered.GroupBy(c=>(c.Id,c.Level)).Any(g=>g.Count()>1)||
+                !Enum.IsDefined(typeof(ExceedLevel),c.Level)||!Enum.IsDefined(typeof(CardRarity),c.Rarity)||
+                (c.DefinitionHash!=null&&(c.DefinitionHash.Length!=64||!c.DefinitionHash.All(Uri.IsHexDigit))))||
+                discovered.GroupBy(c=>(c.Id,c.Level,c.Rarity,c.Name,c.DefinitionHash)).Any(g=>g.Count()>1)||
                 (p.RevealedRecipes!=null&&(p.RevealedRecipes.Any(string.IsNullOrWhiteSpace)||p.RevealedRecipes.Distinct().Count()!=p.RevealedRecipes.Length)))
                 throw new ArgumentException("図鑑履歴が不正です");
             if (p.SelectedStyleId != null && string.IsNullOrWhiteSpace(p.SelectedStyleId)) throw new ArgumentException("選択スタイルIDが不正です");
@@ -505,7 +506,7 @@ namespace Olca.Core.Domain
     /// <summary>所持数とは独立した永続入手登録。未登録カードの詳細は保持/公開しない。</summary>
     public sealed class DiscoveredCard
     {
-        public string Id, Name;
+        public string Id, Name, DefinitionHash;
         public ExceedLevel Level;
         public CardRarity Rarity;
         public DiscoveredCard Copy() => (DiscoveredCard)MemberwiseClone();
@@ -516,30 +517,59 @@ namespace Olca.Core.Domain
         public string ResultId { get; }
         public ExceedLevel ResultLevel { get; }
         private readonly string[] materials;
+        private readonly Card[] materialCards;
+        private readonly Card resultCard;
         public IReadOnlyList<string> Materials => Array.AsReadOnly(materials);
-        public CollectionRecipe(string id, IEnumerable<string> materials, string resultId, ExceedLevel resultLevel=ExceedLevel.Normal)
+        public CollectionRecipe(string id, IEnumerable<string> materials, string resultId, ExceedLevel resultLevel=ExceedLevel.Normal, IEnumerable<Card> materialCards=null, Card resultCard=null)
         {
+            this.materialCards=materialCards?.Select(c=>c.Clone()).ToArray();this.resultCard=resultCard?.Clone();
             Id=id;ResultId=resultId;ResultLevel=resultLevel;this.materials=materials?.ToArray();
             if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(resultId)||this.materials==null||this.materials.Length!=2||this.materials.Any(string.IsNullOrWhiteSpace)||
                 resultLevel==ExceedLevel.Lv3||!Enum.IsDefined(typeof(ExceedLevel),resultLevel))throw new ArgumentException("図鑑レシピ定義が不正です");
         }
+        public bool IsResultKnown(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) => resultCard==null?
+            (profile.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>c.Id==ResultId&&c.Level==ResultLevel):CollectionDisplay.IsKnown(profile,resultCard,catalog);
+        public string MaterialName(ClearReturnProfile profile,int index) => materialCards==null?CollectionDisplay.Name(profile,materials[index]):
+            CollectionDisplay.MetadataKnown(profile,materialCards[index])?materialCards[index].Name:"？？？";
+        public string ResultName(ClearReturnProfile profile) => resultCard==null?CollectionDisplay.Name(profile,ResultId,ResultLevel):
+            CollectionDisplay.MetadataKnown(profile,resultCard)?resultCard.Name:"？？？";
         public bool Matches(IReadOnlyList<Card> input,Card output) => input!=null&&output!=null&&output.Id==ResultId&&output.ExceedLevel==ResultLevel&&
             input.All(c=>c!=null)&&input.Select(c=>c.Id).OrderBy(x=>x).SequenceEqual(materials.OrderBy(x=>x));
     }
     public static class CollectionDisplay
     {
+        public static string DefinitionHash(Card card) => Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(card);
+        public static bool MetadataMatches(DiscoveredCard known,Card card) => known.Id==card.Id&&known.Level==card.ExceedLevel&&known.Rarity==card.Rarity&&known.Name==card.Name;
+        public static bool MetadataKnown(ClearReturnProfile profile,Card card) => (profile?.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>MetadataMatches(c,card));
         public static string Name(ClearReturnProfile profile,string id,ExceedLevel level=ExceedLevel.Normal)
-            => profile?.DiscoveredCards?.FirstOrDefault(c=>c.Id==id&&c.Level==level)?.Name??"？？？";
-        public static string CardText(ClearReturnProfile profile,Card card)
         {
-            var known=profile?.DiscoveredCards?.FirstOrDefault(c=>c.Id==card.Id&&c.Level==card.ExceedLevel);
-            if(known==null)return "？？？　未入手";
-            if(known.Name!=card.Name||known.Rarity!=card.Rarity)return known.Name+"　登録済み（詳細定義未登録）";
-            return known.Name+"　"+known.Level+"　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n"+card.Description;
+            var names=(profile?.DiscoveredCards??Array.Empty<DiscoveredCard>()).Where(c=>c.Id==id&&c.Level==level).Select(c=>c.Name).Distinct().ToArray();
+            return names.Length==1?names[0]:"？？？";
+        }
+        private static bool EntryKnown(DiscoveredCard entry,Card card,IReadOnlyList<Card> catalog)
+        {
+            if(!MetadataMatches(entry,card))return false;
+            if(entry.DefinitionHash!=null)return entry.DefinitionHash==DefinitionHash(card);
+            return (catalog??new[]{card}).Where(c=>c.Id==card.Id&&c.ExceedLevel==card.ExceedLevel&&c.Rarity==card.Rarity&&c.Name==card.Name)
+                .Select(DefinitionHash).Distinct().Count()==1;
+        }
+        public static bool IsKnown(ClearReturnProfile profile,Card card,IReadOnlyList<Card> catalog=null)
+            => (profile?.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(entry=>EntryKnown(entry,card,catalog));
+        public static string CardText(ClearReturnProfile profile,Card card,IReadOnlyList<Card> catalog=null)
+        {
+            if(!IsKnown(profile,card,catalog))return "？？？　未入手";
+            return card.Name+"　"+card.ExceedLevel+"　"+card.Rarity+"　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n"+card.Description;
+        }
+        public static string[] CardRows(ClearReturnProfile profile,IReadOnlyList<Card> definitions)
+        {
+            var catalog=definitions.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).GroupBy(DefinitionHash).Select(g=>g.First()).ToArray();
+            return catalog.Select(c=>CardText(profile,c,catalog)).Concat((profile.DiscoveredCards??Array.Empty<DiscoveredCard>())
+                .Where(known=>!catalog.Any(c=>EntryKnown(known,c,catalog))).GroupBy(c=>(c.Id,c.Level,c.Rarity,c.Name))
+                .Select(g=>g.Key.Name+"　登録済み（詳細定義未特定）")).ToArray();
         }
         public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe)
             => !(profile?.RevealedRecipes??Array.Empty<string>()).Contains(recipe.Id)?"？？？　未公開レシピ":
-                "公開済み："+string.Join(" ＋ ",recipe.Materials.Select(id=>Name(profile,id)))+" → "+Name(profile,recipe.ResultId,recipe.ResultLevel);
+                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i)))+" → "+recipe.ResultName(profile);
     }
     public interface IClearReturnStore
     {
@@ -554,6 +584,7 @@ namespace Olca.Core.Domain
         private readonly IClearReturnStore store;
         private ClearReturnProfile current, pending;
         private readonly CollectionRecipe[] collectionRecipes;
+        private Card[] collectionDefinitions;
         private bool writing;
         public bool Ready { get; private set; }
         public string Error { get; private set; }
@@ -561,8 +592,9 @@ namespace Olca.Core.Domain
         public ClearReturnProfile Snapshot => current?.Copy();
         public ClearReturnData DisplayFlow => (pending?.Flow != null && pending.Flow.RunId != current?.Flow?.RunId
             ? pending.Flow : current?.Flow ?? pending?.Flow)?.Copy();
-        public ClearReturnSession(IClearReturnStore store, IReadOnlyList<CollectionRecipe> recipes=null)
+        public ClearReturnSession(IClearReturnStore store, IReadOnlyList<CollectionRecipe> recipes=null, IReadOnlyList<Card> definitions=null)
         {
+            ConfigureCollectionDefinitions(definitions);
             collectionRecipes=recipes?.ToArray()??Array.Empty<CollectionRecipe>();
             if(collectionRecipes.Any(r=>r==null)||collectionRecipes.Select(r=>r.Id).Distinct().Count()!=collectionRecipes.Length)throw new ArgumentException("重複しない図鑑レシピが必要です");
             this.store = store ?? throw new ArgumentNullException(nameof(store)); Reload();
@@ -592,21 +624,44 @@ namespace Olca.Core.Domain
             string id=Guid.NewGuid().ToString("N");
             next.SavedDecks=new[]{new SavedDepartureDeck {Id=id,Name="スターター",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel}).ToArray()}};
             next.EquippedDeckId=id;
+            foreach(var card in cards)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,CollectionDisplay.DefinitionHash(card));
             return Stage(next);
+        }
+        public void ConfigureCollectionDefinitions(IReadOnlyList<Card> definitions)
+        {
+            collectionDefinitions=definitions?.Where(c=>c!=null&&c.ExceedLevel!=ExceedLevel.Lv3).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First().Clone()).ToArray();
+        }
+        private static bool SameDiscovery(ClearReturnProfile a,ClearReturnProfile b) =>
+            (a.DiscoveredCards??Array.Empty<DiscoveredCard>()).Select(c=>(c.Id,c.Level,c.Rarity,c.Name,c.DefinitionHash)).SequenceEqual(
+                (b.DiscoveredCards??Array.Empty<DiscoveredCard>()).Select(c=>(c.Id,c.Level,c.Rarity,c.Name,c.DefinitionHash)));
+        private static void Discover(ClearReturnProfile profile,string id,string name,CardRarity rarity,ExceedLevel level,string hash=null)
+        {
+            if(level==ExceedLevel.Lv3)return;
+            var known=(profile.DiscoveredCards??Array.Empty<DiscoveredCard>()).Select(c=>c.Copy()).ToList();
+            bool Same(DiscoveredCard c)=>c.Id==id&&c.Name==name&&c.Rarity==rarity&&c.Level==level;
+            if(hash==null&&known.Any(Same))return;
+            if(known.Any(c=>Same(c)&&c.DefinitionHash==hash))return;
+            if(hash!=null)known.RemoveAll(c=>Same(c)&&c.DefinitionHash==null);
+            known.Add(new DiscoveredCard{Id=id,Name=name,Rarity=rarity,Level=level,DefinitionHash=hash});profile.DiscoveredCards=known.ToArray();
         }
         private void UpdateCollection(ClearReturnProfile profile)
         {
-            var known=(profile.DiscoveredCards??Array.Empty<DiscoveredCard>()).Select(c=>c.Copy()).ToList();
-            foreach(var card in (current?.Owned??Array.Empty<OwnedCardCount>()).Concat(profile.Owned).Where(c=>c.Level!=ExceedLevel.Lv3))
-                if(!known.Any(c=>c.Id==card.Id&&c.Level==card.Level))known.Add(new DiscoveredCard{Id=card.Id,Name=card.Name,Level=card.Level,Rarity=card.Rarity});
-            profile.DiscoveredCards=known.ToArray();
-            profile.RevealedRecipes=(profile.RevealedRecipes??Array.Empty<string>()).Concat(collectionRecipes.Where(r=>known.Any(c=>c.Id==r.ResultId&&c.Level==r.ResultLevel)).Select(r=>r.Id)).Distinct().ToArray();
+            foreach(var card in (current?.Owned??Array.Empty<OwnedCardCount>()).Concat(profile.Owned))
+                Discover(profile,card.Id,card.Name,card.Rarity,card.Level);
+            profile.DiscoveredCards=profile.DiscoveredCards??Array.Empty<DiscoveredCard>();
+            // 旧履歴の4項目から候補が一意な場合だけ、既存定義へ結び付ける。
+            if(collectionDefinitions!=null)foreach(var known in profile.DiscoveredCards.Where(c=>c.DefinitionHash==null)) {
+                var matches=collectionDefinitions.Where(c=>CollectionDisplay.MetadataMatches(known,c)).Select(CollectionDisplay.DefinitionHash).Distinct().ToArray();
+                if(matches.Length==1)known.DefinitionHash=matches[0];
+            }
+            profile.RevealedRecipes=(profile.RevealedRecipes??Array.Empty<string>()).Concat(collectionRecipes.Where(r=>r.IsResultKnown(profile,collectionDefinitions)).Select(r=>r.Id)).Distinct().ToArray();
         }
+
         public bool EnsureCollection()
         {
             if(!Available())return Fail("図鑑の未保存処理を先に再試行してください");
             var next=current.Copy();UpdateCollection(next);
-            if((current.DiscoveredCards?.Length??0)==next.DiscoveredCards.Length &&
+            if(SameDiscovery(current,next) &&
                 (current.RevealedRecipes??Array.Empty<string>()).SequenceEqual(next.RevealedRecipes)){Error=null;return true;}
             return Stage(next);
         }
@@ -617,7 +672,7 @@ namespace Olca.Core.Domain
             var next=current.Copy();UpdateCollection(next);
             next.RevealedRecipes=next.RevealedRecipes.Concat(new[]{recipeId}).Distinct().ToArray();
             if(next.RevealedRecipes.SequenceEqual(current.RevealedRecipes??Array.Empty<string>())&&
-                next.DiscoveredCards.Length==(current.DiscoveredCards?.Length??0)){Error=null;return true;}
+                SameDiscovery(current,next)){Error=null;return true;}
             return Stage(next);
         }
         private bool Fail(string error) { Error = error; return false; }
@@ -698,6 +753,7 @@ namespace Olca.Core.Domain
                 var owned = next.Owned.ToList(); long tokens = 0;
                 foreach (int index in f.Selected) {
                     var card = f.Candidates[index]; var entry = owned.SingleOrDefault(c => c.Id == card.Id && c.Level == card.Level);
+                    if(entry==null||entry.Count<4)Discover(next,card.Id,card.Name,card.Rarity,card.Level,card.ValueHash);
                     if (entry == null) owned.Add(new OwnedCardCount { Id = card.Id, Name = card.Name, Rarity = card.Rarity, Level = card.Level, Count = 1 });
                     else if (entry.Count < 4) entry.Count++;
                     else tokens = checked(tokens + card.OverflowTokens);
@@ -765,6 +821,7 @@ namespace Olca.Core.Domain
                 var next=current.Copy();var item=next.ExchangeStock.Offers.Single(o=>o.Id==productId);
                 var owned=next.Owned.ToList();var card=owned.SingleOrDefault(c=>c.Id==item.CardId&&c.Level==item.Level);
                 long overflow=0;
+                if(card==null||card.Count<4)Discover(next,item.CardId,item.Name,item.Rarity,item.Level,item.CardDefinitionHash);
                 if(card==null)owned.Add(new OwnedCardCount{Id=item.CardId,Name=item.Name,Rarity=item.Rarity,Level=item.Level,Count=1});
                 else if(card.Name!=item.Name||card.Rarity!=item.Rarity) return Fail("既存所持と商品定義が一致しません");
                 else if(card.Count<4)card.Count++;else overflow=item.OverflowTokens;

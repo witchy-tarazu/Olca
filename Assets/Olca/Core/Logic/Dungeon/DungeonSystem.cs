@@ -1299,6 +1299,9 @@ namespace Olca.Core.Logic.Dungeon
             return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits,StrongEnemyCells,ItemRewards,ItemRewardChance,ExplorationTerrain);
         }
 
+        public IReadOnlyList<Card> CollectionDefinitions => cards.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3)
+            .GroupBy(c=>CheckpointValues.CardHash(c)).Select(g=>g.First().Clone()).ToArray();
+
         public void RegisterCard(string key, Card definition)
         {
             if (string.IsNullOrWhiteSpace(key) || definition == null || definition.TuningCount != 0 || definition.IsEffectCopy)

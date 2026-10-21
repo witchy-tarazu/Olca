@@ -514,14 +514,17 @@ namespace Olca.Application.Dungeon
         {
             if(cardCollectionOpen||manager==null||!clearReturnSession.Ready)return;
             cardCollectionOpen=true;collectionWasPaused=IsUserPaused;SetUserPaused(true);pauseOverlay.SetActive(false);
+            clearReturnSession.ConfigureCollectionDefinitions(CurrentCollectionDefinitions());
             clearReturnSession.EnsureCollection();ShowCardCollection();
         }
+        private IReadOnlyList<Card> CurrentCollectionDefinitions() => CreateCardFactory().CollectionCards
+            .Concat(memoryCheckpoints?.Definitions.CollectionDefinitions??System.Array.Empty<Card>())
+            .Concat(configuredDepartureDeck?.GetAllCards()??System.Array.Empty<Card>()).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
         private void ShowCardCollection()
         {
-            var p=clearReturnSession.Snapshot;var factory=CreateCardFactory();var cards=factory.CollectionCards;
-            var rows=cards.Select(c=>CollectionDisplay.CardText(p,c)).Concat((p.DiscoveredCards??System.Array.Empty<DiscoveredCard>())
-                .Where(c=>!cards.Any(d=>d.Id==c.Id&&d.ExceedLevel==c.Level)).Select(c=>c.Name+"　登録済み（詳細定義未登録）")).ToArray();
-            cardCollectionView.RenderCollection(rows,new SimpleFusionRecipeProvider().CollectionRecipes.Select(r=>CollectionDisplay.RecipeText(p,r)).ToArray(),
+            var p=clearReturnSession.Snapshot;var cards=CurrentCollectionDefinitions();
+            var rows=CollectionDisplay.CardRows(p,cards);
+            cardCollectionView.RenderCollection(rows,new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes.Select(r=>CollectionDisplay.RecipeText(p,r)).ToArray(),
                 clearReturnSession.HasPendingSave,clearReturnSession.Error,CloseCardCollection,()=>{clearReturnSession.Retry();ShowCardCollection();});
             cardCollectionView.transform.SetAsLastSibling();
         }
@@ -533,7 +536,8 @@ namespace Olca.Application.Dungeon
         }
         private void RecordFusionDiscovery(IReadOnlyList<Card> materials,Card output)
         {
-            var recipe=new SimpleFusionRecipeProvider().CollectionRecipes.FirstOrDefault(r=>r.Matches(materials,output));
+            var recipe=new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes.FirstOrDefault(r=>r.Matches(materials,output));
+            clearReturnSession.ConfigureCollectionDefinitions(CurrentCollectionDefinitions());
             if(recipe!=null&&!clearReturnSession.RecordFusion(recipe.Id))OpenCardCollection();
         }
         private ClearReturnFileStore clearReturnStore;
@@ -874,7 +878,7 @@ namespace Olca.Application.Dungeon
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store); var f = CreateCardFactory();
                 if (!DungeonBattleManager.TryRestoreCheckpoint(session, randomProvider, logger, out next, out error,
-                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(), f), f)) return false;
+                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), f), f)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
@@ -968,7 +972,7 @@ namespace Olca.Application.Dungeon
                 throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
             ReturnSettings().Validate();
             clearReturnStore = clearReturnStore ?? new ClearReturnFileStore(ProgressDirectory);
-            clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider().CollectionRecipes);
+            clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards);
             progressStartupBlocked = !clearReturnSession.Ready;
             int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
@@ -997,7 +1001,7 @@ namespace Olca.Application.Dungeon
 
             playerCharacter.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(persistentLevel));
             var cardFactory = CreateCardFactory();
-            var recipeProvider = new SimpleFusionRecipeProvider();
+            var recipeProvider = new SimpleFusionRecipeProvider(CreateCardFactory());
             var exceedSystem = new ExceedSystem(cardFactory);
             var tuningSystem = new TuningSystem(cardFactory.GetTuningDefinition);
             var fusionSystem = new FusionSystem(recipeProvider, cardFactory);
@@ -1599,7 +1603,7 @@ namespace Olca.Application.Dungeon
             session = definitions.CreateCheckpointSession(route.Current.FloorIndex, route);
             var factory = CreateCardFactory();
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
-                new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
+                new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
                 hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount);
         }
@@ -1639,7 +1643,7 @@ namespace Olca.Application.Dungeon
                     : memoryCheckpoints;
                 if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
                     out restored, out error, new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition),
-                    new FusionSystem(new SimpleFusionRecipeProvider(), factory), cardDatabase: factory)) return false;
+                    new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory), cardDatabase: factory)) return false;
             }
             if (clearReturnSession?.Snapshot?.Receipts.Any(r => r.RunId == candidate.RunId && r.Outcome != RunReturnOutcome.Cleared) == true)
             { restored.SuspendForCheckpoint(); error = "敗北・撤退が確定した攻略は再開できません"; return false; }

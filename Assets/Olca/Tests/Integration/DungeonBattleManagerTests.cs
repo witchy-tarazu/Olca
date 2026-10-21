@@ -4083,6 +4083,68 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(7,session.Snapshot.Tokens);Assert.AreEqual(1,session.Snapshot.DiscoveredCards.Length);Assert.AreEqual(2,session.Snapshot.RevealedRecipes.Length);
             Assert.IsTrue(session.PurchaseExchange(request,round,"fire"));Assert.AreEqual(7,session.Snapshot.Tokens);Assert.AreEqual(1,session.Snapshot.Owned.Single().Count);
         }
+        [Test]
+        public void 図鑑統合は既存18定義を列挙し個体複製やショップ同一定義で枠を増やさない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var defs=f.CollectionCards;
+            Assert.AreEqual(18,defs.Count);Assert.AreEqual(10,CardRewardSystem.FallbackDefinitions.Count);
+            Assert.AreEqual(18,defs.Select(CollectionDisplay.DefinitionHash).Distinct().Count());
+            var session=new ClearReturnSession(Store(),new Olca.Application.Battle.SimpleFusionRecipeProvider(f).CollectionRecipes,defs);
+            Assert.IsTrue(session.InitializeStarter(f.CreateStarterDeck().GetAllCards()));
+            Assert.AreEqual(18,CollectionDisplay.CardRows(session.Snapshot,defs.Concat(defs.Select(c=>c.Clone())).ToArray()).Length);
+            var normal=CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal);var limited=CardRewardSystem.CreateFallbackCard("sword",CardRarity.Limited);
+            Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(session.Snapshot,normal,defs));
+            Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(session.Snapshot,limited,defs));
+            Assert.IsFalse(CollectionDisplay.MetadataKnown(new ClearReturnProfile {DiscoveredCards=new[]{new DiscoveredCard{Id="sword",Name=normal.Name,Rarity=normal.Rarity,Level=normal.ExceedLevel}}},f.CreateById("sword")));
+        }
+        [TestCase(CardRarity.Normal)][TestCase(CardRarity.Limited)]
+        public void 図鑑統合は実際に持帰った報酬定義だけを公開し同ID別レギュレーションを隠す(CardRarity rarity)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var card=CardRewardSystem.CreateFallbackCard("heal",rarity);
+            var session=new ClearReturnSession(Store(),new Olca.Application.Battle.SimpleFusionRecipeProvider(f).CollectionRecipes,f.CollectionCards);
+            Assert.IsTrue(session.Begin(Terminal(card),"catalog",new ClearReturnSettings()));Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());
+            Assert.IsTrue(CollectionDisplay.IsKnown(session.Snapshot,card,f.CollectionCards));
+            Assert.IsFalse(CollectionDisplay.IsKnown(session.Snapshot,f.CreateById("heal"),f.CollectionCards));
+            var other=CardRewardSystem.CreateFallbackCard("heal",rarity==CardRarity.Normal?CardRarity.Limited:CardRarity.Normal);
+            Assert.IsFalse(CollectionDisplay.IsKnown(session.Snapshot,other,f.CollectionCards));
+            Assert.AreEqual(CollectionDisplay.DefinitionHash(card),session.Snapshot.DiscoveredCards.Single().DefinitionHash);
+            session=new ClearReturnSession(Store(),new Olca.Application.Battle.SimpleFusionRecipeProvider(f).CollectionRecipes,f.CollectionCards);
+            Assert.IsTrue(session.EnsureCollection());Assert.IsTrue(CollectionDisplay.IsKnown(session.Snapshot,card,f.CollectionCards));
+        }
+        [Test]
+        public void 図鑑統合は同名異性能の旧履歴を推測公開せず実入手した定義だけを識別する()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var a=f.CreateById("sword");var b=new Card(a.Id,a.Name,a.Cost,a.Rarity,a.Category,a.Element,a.Series,99,a.Description);
+            var defs=new[]{a,b};var p=new ClearReturnProfile{DiscoveredCards=new[]{new DiscoveredCard{Id=a.Id,Name=a.Name,Level=a.ExceedLevel,Rarity=a.Rarity}}};
+            Assert.IsFalse(CollectionDisplay.IsKnown(p,a,defs));Assert.IsFalse(CollectionDisplay.IsKnown(p,b,defs));
+            Assert.AreEqual(3,CollectionDisplay.CardRows(p,defs).Length);
+            p.DiscoveredCards[0].DefinitionHash=CollectionDisplay.DefinitionHash(a);Assert.IsTrue(CollectionDisplay.IsKnown(p,a,defs));Assert.IsFalse(CollectionDisplay.IsKnown(p,b,defs));
+            p.DiscoveredCards=p.DiscoveredCards.Concat(new[]{new DiscoveredCard{Id=b.Id,Name=b.Name,Level=b.ExceedLevel,Rarity=b.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(b)}}).ToArray();
+            Assert.DoesNotThrow(()=>ClearReturnProfile.Validate(p));Assert.AreEqual(2,CollectionDisplay.CardRows(p,defs.Concat(defs).ToArray()).Length);
+        }
+        [Test]
+        public void 図鑑統合は旧履歴の一意な定義だけを補完し繰返しや超過変換で別定義を公開しない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var store=Store();var old=new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),
+                Owned=new[]{new OwnedCardCount{Id="heal",Name="ヒール",Rarity=CardRarity.Normal,Level=ExceedLevel.Normal,Count=4}},
+                DiscoveredCards=new[]{new DiscoveredCard{Id="heal",Name="ヒール",Rarity=CardRarity.Normal,Level=ExceedLevel.Normal}}};
+            Assert.IsTrue(store.TryWrite(0,old,out var error),error);var session=new ClearReturnSession(store,new Olca.Application.Battle.SimpleFusionRecipeProvider(f).CollectionRecipes,f.CollectionCards);
+            Assert.IsTrue(session.EnsureCollection());Assert.IsNotNull(session.Snapshot.DiscoveredCards.Single().DefinitionHash);var revision=session.Snapshot.Revision;
+            Assert.IsTrue(session.EnsureCollection());Assert.AreEqual(revision,session.Snapshot.Revision);
+            var fallback=CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);Assert.IsTrue(session.Begin(Terminal(fallback),"overflow",new ClearReturnSettings()));
+            Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());Assert.AreEqual(4,session.Snapshot.Owned.Single().Count);Assert.AreEqual(1,session.Snapshot.Tokens);
+            Assert.IsFalse(CollectionDisplay.IsKnown(session.Snapshot,fallback,f.CollectionCards));
+        }
+        [Test]
+        public void 図鑑統合は現カタログから外れた同名旧定義の履歴を別定義の既知判定で消さない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var a=f.CreateById("sword");var old=new Card(a.Id,a.Name,a.Cost,a.Rarity,a.Category,a.Element,a.Series,99,a.Description);
+            var p=new ClearReturnProfile{DiscoveredCards=new[]{
+                new DiscoveredCard{Id=a.Id,Name=a.Name,Level=a.ExceedLevel,Rarity=a.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(a)},
+                new DiscoveredCard{Id=old.Id,Name=old.Name,Level=old.ExceedLevel,Rarity=old.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(old)}}};
+            var rows=CollectionDisplay.CardRows(p,new[]{a,a.Clone()});Assert.AreEqual(2,rows.Length);StringAssert.Contains("詳細定義未特定",rows[1]);
+            Assert.IsTrue(CollectionDisplay.IsKnown(p,a,new[]{a}));
+        }
         private Olca.Unity.ClearReturnFileStore Store(FaultIo io = null) => new Olca.Unity.ClearReturnFileStore(directory, io);
         [Test]
         public void 複数レベルで節目を越える経験値は保存再試行と再開で二重成長せず帰還後だけ反映する()

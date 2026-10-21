@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Olca.Core.Domain;
@@ -128,6 +129,10 @@ namespace Olca.Core.Logic.Dungeon
             }
             return true;
         }
+
+        /// <summary>実抽選と同じ既存フォールバック定義。図鑑用の別カードを作らない。</summary>
+        public static IReadOnlyList<Card> FallbackDefinitions => new[]{CardRarity.Normal,CardRarity.Limited}
+            .SelectMany(r=>FallbackCardIds.Select(id=>CreateFallbackCard(id,r))).ToArray();
 
         public static Card CreateFallbackCard(string cardId, CardRarity targetRarity)
         {
