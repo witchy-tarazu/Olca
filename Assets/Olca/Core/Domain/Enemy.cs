@@ -180,13 +180,43 @@ namespace Olca.Core.Domain
         private FrameCountdown stunTimer;
         private readonly Dictionary<StatusEffectType, StatusEffect> statuses = new Dictionary<StatusEffectType, StatusEffect>();
         private StatusEffectType lastStatusType;
-        private bool statusFrameOpen, frameParalyzed, pendingPoisonRefresh;
+        private bool statusFrameOpen, frameParalyzed;
+        private sealed class PoisonSlot
+        {
+            internal StatusEffect Status;
+            internal long RateRemainder, NextDamageUnits;
+            internal bool WasActive;
+            internal PoisonSlot(StatusEffect status) { Status = status; NextDamageUnits = (status.PoisonIntervalFrames ?? 60) * 50L; }
+            internal int Advance(int milliseconds, bool logical)
+            {
+                long elapsed = logical ? 50 : Math.Min(milliseconds, Math.Max(0, Status.RemainingMs)) * 3L;
+                long interval = (Status.PoisonIntervalFrames ?? 60) * 50L, pulses = 0;
+                if (elapsed >= NextDamageUnits) {
+                    pulses = 1 + (elapsed - NextDamageUnits) / interval;
+                    NextDamageUnits = interval - (elapsed - NextDamageUnits) % interval;
+                } else NextDamageUnits -= elapsed;
+                long damage;
+                if (Status.PoisonIntervalFrames.HasValue) damage = pulses * Status.DamagePerTick;
+                else {
+                    // 旧ms入口の最大期間×最大量も、単位変換の中間乗算でlongを超えない。
+                    long fractional = RateRemainder + (elapsed % 3000) * Status.DamagePerTick;
+                    damage = (elapsed / 3000) * Status.DamagePerTick + fractional / 3000;
+                    RateRemainder = fractional % 3000;
+                }
+                if (logical) Status.TickFrame(); else Status.Tick((int)(elapsed / 3));
+                return (int)Math.Min(int.MaxValue, damage);
+            }
+        }
+        private readonly SortedDictionary<string, PoisonSlot> poisons = new SortedDictionary<string, PoisonSlot>(StringComparer.Ordinal);
+        private readonly Dictionary<string, StatusEffect> pendingPoisons = new Dictionary<string, StatusEffect>();
+        private string lastPoisonKind = "poison";
         private readonly Dictionary<StatusEffectType, StatusEffect> pendingStatuses = new Dictionary<StatusEffectType, StatusEffect>();
         private readonly System.Collections.Generic.HashSet<StatusEffectType> pendingStatusClears = new System.Collections.Generic.HashSet<StatusEffectType>();
         internal void BeginStatusFrame()
         {
             if (statusFrameOpen) return;
             frameParalyzed = IsParalyzed;
+            foreach (var slot in poisons.Values) slot.WasActive = slot.Status.RemainingFrames > 0;
             statusFrameOpen = true;
         }
         internal void EndStatusFrame()
@@ -195,13 +225,20 @@ namespace Olca.Core.Domain
             statusFrameOpen = false;
             if (!IsDead)
                 foreach (var status in pendingStatuses.Values)
-                    if (!pendingStatusClears.Contains(status.Type)) ApplyStatusImmediately(status, pendingPoisonRefresh);
+                    if (!pendingStatusClears.Contains(status.Type)) ApplyStatusImmediately(status);
+            if (!IsDead && !pendingStatusClears.Contains(StatusEffectType.Poison))
+                foreach (var poison in pendingPoisons.Values) ApplyStatusImmediately(poison);
             foreach (var type in pendingStatusClears) RemoveStatus(type);
+            foreach (var kind in new List<string>(poisons.Keys)) {
+                if (poisons[kind].Status.RemainingFrames <= 0) poisons.Remove(kind);
+                else poisons[kind].WasActive = false;
+            }
             CancelStatusFrame();
         }
         internal void CancelStatusFrame()
         {
-            statusFrameOpen = false; pendingStatuses.Clear(); pendingPoisonRefresh = false;
+            statusFrameOpen = false; pendingStatuses.Clear(); pendingPoisons.Clear();
+            foreach (var slot in poisons.Values) slot.WasActive = false;
             pendingStatusClears.Clear();
         }
         /// <summary>論理フレーム中の解除は後段で確定し、同種の未有効付与も取り消す。</summary>
@@ -210,7 +247,6 @@ namespace Olca.Core.Domain
             if (statusFrameOpen) { pendingStatusClears.Add(type); return; }
             RemoveStatus(type);
         }
-        private long poisonDamageRemainder; // ダメージ×ミリ秒の1000未満の端数
 
         // BattleSystemだけが使う、反撃を含む同期ダメージ処理の境界。
         internal event Action OnDamageProcessingStarted;
@@ -256,7 +292,15 @@ namespace Olca.Core.Domain
                 return null;
             }
         }
-        public StatusEffect GetStatus(StatusEffectType type) => statuses.TryGetValue(type, out var status) ? status : null;
+        public StatusEffect GetStatus(StatusEffectType type)
+        {
+            if (type != StatusEffectType.Poison) return statuses.TryGetValue(type, out var status) ? status : null;
+            var last = GetPoison(lastPoisonKind); if (last != null) return last;
+            foreach (var slot in poisons.Values) if (slot.Status.RemainingFrames > 0) return slot.Status;
+            return null;
+        }
+        public StatusEffect GetPoison(string kind) => kind != null && poisons.TryGetValue(kind, out var slot) && slot.Status.RemainingFrames > 0 ? slot.Status : null;
+        public int FramesUntilPoisonDamage(string kind) => GetPoison(kind) == null ? 0 : (int)((poisons[kind].NextDamageUnits + 49) / 50);
 
         /// <summary>麻痺中か。フレーム途中の付与・解除では序盤の判定を変えない。</summary>
         public bool IsParalyzed => statusFrameOpen ? frameParalyzed : GetStatus(StatusEffectType.Paralyze)?.RemainingMs > 0;
@@ -417,32 +461,35 @@ namespace Olca.Core.Domain
         {
             if (status == null) throw new ArgumentNullException(nameof(status));
             status = status.WithTargetResistance(StatusResistances.Get(status.Type));
+            if (status.Type == StatusEffectType.Poison && status.PoisonIntervalFrames.HasValue) status = status.Copy();
             // 時間耐性で無効化・0フレームになった付与は、既存状態と毒積算に触れない。
             if (IsDead || status.Type == StatusEffectType.None || status.RemainingFrames <= 0) return;
             if (statusFrameOpen)
             {
-                pendingStatuses[status.Type] = status;
-                if (status.Type == StatusEffectType.Poison && GetStatus(status.Type)?.RemainingFrames > 0)
-                    pendingPoisonRefresh = true;
+                if (status.Type == StatusEffectType.Poison) pendingPoisons[status.PoisonKind] = status;
+                else pendingStatuses[status.Type] = status;
                 return;
             }
             ApplyStatusImmediately(status);
         }
-        private void ApplyStatusImmediately(StatusEffect status, bool preservePoison = false)
+        private void ApplyStatusImmediately(StatusEffect status)
         {
             if (status.Type == StatusEffectType.Poison) {
-                bool refreshPoison = preservePoison || GetStatus(status.Type)?.RemainingFrames > 0;
-                // 麻痺など別種の付与・解除では毒の積算に触れない。
-                if (!refreshPoison) { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
-            }
-            statuses[status.Type] = status;
+                if (!poisons.TryGetValue(status.PoisonKind, out var slot) || (slot.Status.RemainingFrames <= 0 && !slot.WasActive))
+                    poisons[status.PoisonKind] = new PoisonSlot(status);
+                else {
+                    // 同じ毒の次回発生時計は保持する。旧毎秒量との表現切替では未計上端数だけ破棄する。
+                    if (slot.Status.PoisonIntervalFrames.HasValue != status.PoisonIntervalFrames.HasValue) slot.RateRemainder = 0;
+                    slot.Status = status;
+                }
+                lastPoisonKind = status.PoisonKind;
+            } else statuses[status.Type] = status;
             lastStatusType = status.Type;
         }
-        private void RemoveStatus(StatusEffectType type, bool preservePoison = false)
+        private void RemoveStatus(StatusEffectType type)
         {
-            statuses.Remove(type);
-            if (type == StatusEffectType.Poison && !preservePoison)
-            { poisonDamageRemainder = 0; poisonFrameRemainder = 0; }
+            if (type == StatusEffectType.Poison) { poisons.Clear(); pendingPoisons.Clear(); }
+            else statuses.Remove(type);
         }
 
         /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。</summary>
@@ -452,33 +499,32 @@ namespace Olca.Core.Domain
             RemoveStatus(StatusEffectType.Paralyze);
         }
 
-        private long poisonFrameRemainder;
-        /// <summary>既存の毎秒毒量を維持し、各状態の時間を独立して進める。</summary>
-        public int TickStatusFrame()
+        /// <summary>旧戻り値APIは合計。通常戦闘は種別ごとにHP集計へ渡し、intの合計上限で失わない。</summary>
+        public int TickStatusFrame() => SumPoisonDamage(AdvanceStatuses(0, true));
+        public int TickStatus(int elapsedMs) => SumPoisonDamage(AdvanceStatuses(elapsedMs, false));
+        internal void TickStatusesAndApply(int elapsedMs, bool logical)
         {
-            int damage = 0;
-            foreach (var status in new List<StatusEffect>(statuses.Values)) {
-                if (status.RemainingFrames > 0 && status.Type == StatusEffectType.Poison) {
-                    poisonFrameRemainder += status.DamagePerTick;
-                    damage = (int)(poisonFrameRemainder / 60); poisonFrameRemainder %= 60;
-                }
-                // 終了フレームのダメージを計上してから解除。同フレーム再付与は積算を継承。
-                if (status.TickFrame()) RemoveStatus(status.Type, pendingPoisonRefresh);
-            }
-            return damage;
+            foreach (int damage in AdvanceStatuses(elapsedMs, logical))
+                if (damage > 0) TakePoisonDamage(damage);
         }
-
-        public int TickStatus(int elapsedMs)
+        private static int SumPoisonDamage(List<int> values)
         {
-            if (elapsedMs <= 0) return 0;
-            int damage = 0;
+            long total = 0; foreach (int value in values) total += value;
+            return (int)Math.Min(int.MaxValue, total);
+        }
+        private List<int> AdvanceStatuses(int elapsedMs, bool logical)
+        {
+            var damage = new List<int>();
+            if (!logical && elapsedMs <= 0) return damage;
+            foreach (var pair in new List<KeyValuePair<string, PoisonSlot>>(poisons)) {
+                var slot = pair.Value;
+                if (slot.Status.RemainingFrames <= 0) continue;
+                damage.Add(slot.Advance(elapsedMs, logical));
+                // 同じフレーム後段の再付与も時計を引き継げるよう、期限切れスロットは終端まで保持する。
+                if (slot.Status.RemainingFrames <= 0 && !statusFrameOpen) poisons.Remove(pair.Key);
+            }
             foreach (var status in new List<StatusEffect>(statuses.Values)) {
-                int activeMs = Math.Min(elapsedMs, Math.Max(0, status.RemainingMs));
-                if (status.Type == StatusEffectType.Poison) {
-                    long accumulated = poisonDamageRemainder + (long)status.DamagePerTick * activeMs;
-                    damage = (int)(accumulated / 1000); poisonDamageRemainder = accumulated % 1000;
-                }
-                if (status.Tick(activeMs)) RemoveStatus(status.Type, pendingPoisonRefresh);
+                if (logical ? status.TickFrame() : status.Tick(Math.Min(elapsedMs, Math.Max(0, status.RemainingMs)))) RemoveStatus(status.Type);
             }
             return damage;
         }

@@ -607,8 +607,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         if (!t.IsDead)
                         {
                             int durationMs = effect.Duration > 0 ? (int)(effect.Duration * 1000) : 5000;
-                            int damagePerTick = effect.Power > 0 ? effect.Power : 5;
-                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Poison, durationMs, damagePerTick));
+                            int damagePerTick = effect.PoisonIntervalFrames.HasValue ? effect.Power : effect.Power > 0 ? effect.Power : 5;
+                            t.ApplyStatus(new Domain.StatusEffect(Domain.StatusEffectType.Poison, durationMs, damagePerTick,
+                                poisonKind: effect.PoisonKind, poisonIntervalFrames: effect.PoisonIntervalFrames));
                         }
                     }
                     break;

@@ -1126,6 +1126,10 @@ namespace Olca.Core.Logic.Dungeon
                 Text(w, e.ChainCardId); w.Write((int)e.EffectOrigin); w.Write(e.DelayTime);
                 w.Write(e.TargetOffset.X); w.Write(e.TargetOffset.Y); w.Write(e.CancelOnHole);
                 e.ValidateHitInvincibilityStages();
+                if (e.EffectType == AdditionalEffectType.Poison && (e.PoisonKind != "poison" || e.PoisonIntervalFrames.HasValue)) {
+                    w.Write("poison-definition-v1"); Text(w, e.PoisonKind); w.Write(e.PoisonIntervalFrames.HasValue);
+                    if (e.PoisonIntervalFrames.HasValue) w.Write(e.PoisonIntervalFrames.Value);
+                }
                 var stages = e.HitInvincibilityStages;
                 if (stages != null) { w.Write("hit-invincibility-stages"); w.Write(stages.Length); foreach (bool enabled in stages) w.Write(enabled); }
             }

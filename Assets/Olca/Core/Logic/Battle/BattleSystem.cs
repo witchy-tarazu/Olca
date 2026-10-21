@@ -392,8 +392,7 @@ namespace Olca.Core.Logic.Battle
                     enemy.TickProtection(deltaTimeMs, logicalFrameTick);
                     enemy.TickInvincible(deltaTimeMs, logicalFrameTick);
                     enemy.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
-                    int poisonDamage = logicalFrameTick ? enemy.TickStatusFrame() : enemy.TickStatus(deltaTimeMs);
-                    if (poisonDamage > 0) enemy.TakePoisonDamage(poisonDamage);
+                    enemy.TickStatusesAndApply(deltaTimeMs, logicalFrameTick);
                 }
 
                 // 敵のAI更新

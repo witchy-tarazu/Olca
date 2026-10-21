@@ -796,3 +796,160 @@ namespace Olca.Tests.CardEffects
         }
     }
 }
+
+
+namespace Olca.Tests.CardEffects
+{
+    [TestFixture]
+    public class NamedEnemyPoisonTests
+    {
+        private Enemy enemy;
+        private BattleSystem battle;
+        private void Setup(int resistance=0,int hp=500)
+        {
+            enemy=new Enemy("target","検証",hp,ElementType.None,new Vector2Int(2,0),statusResistances:new TimedStatusResistances(poison:resistance),poiseDefinition:new EnemyPoiseDefinition(100,3));
+            battle=new BattleSystem(new PlayerCharacter(500,new Vector2Int(1,0)),new List<Enemy>{enemy},new Deck());enemy.ApplyStun(60000);
+        }
+        private static StatusEffect Poison(string kind,int damage=7,int interval=3,int duration=1000,int resistance=0)
+            =>new StatusEffect(StatusEffectType.Poison,duration,damage,resistance,kind,interval);
+        private void Frames(int count){for(int i=0;i<count;i++)battle.TickFrame(17);}
+        [Test]
+        public void 毒と上位毒は独立間隔で終端にも発生し同種だけ更新する()
+        {
+            Setup();enemy.ApplyStatus(Poison("poison",7,3,100));enemy.ApplyStatus(Poison("venom",11,4,200));
+            Frames(2);Assert.AreEqual(500,enemy.CurrentHp);Assert.AreEqual(1,enemy.FramesUntilPoisonDamage("poison"));Assert.AreEqual(2,enemy.FramesUntilPoisonDamage("venom"));
+            Frames(1);Assert.AreEqual(493,enemy.CurrentHp);Frames(1);Assert.AreEqual(482,enemy.CurrentHp);Frames(2);
+            Assert.AreEqual(475,enemy.CurrentHp);Assert.IsNull(enemy.GetPoison("poison"));Assert.AreEqual(6,enemy.GetPoison("venom").RemainingFrames);
+            Frames(6);Assert.AreEqual(453,enemy.CurrentHp);Assert.IsFalse(enemy.IsPoisoned);Assert.IsNull(enemy.GetStatus(StatusEffectType.Poison));
+        }
+        [Test]
+        public void 再付与は残時間だけを新期間へ更新し別毒と次回発生までの時計を保持する()
+        {
+            Setup();enemy.ApplyStatus(Poison("poison",7,6));enemy.ApplyStatus(Poison("venom",11,9));Frames(2);
+            battle.RunLogicalFrame(()=>{enemy.ApplyStatus(Poison("poison",7,6,200));battle.TickFrame(17);});
+            Assert.AreEqual(12,enemy.GetPoison("poison").RemainingFrames);Assert.AreEqual(3,enemy.FramesUntilPoisonDamage("poison"));Assert.AreEqual(6,enemy.FramesUntilPoisonDamage("venom"));
+            Frames(3);Assert.AreEqual(493,enemy.CurrentHp);Frames(3);Assert.AreEqual(482,enemy.CurrentHp);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 期限成立フレームの前後どちらで再付与しても時計を戻さず最終発生は一回(bool afterTick)
+        {
+            Setup();enemy.ApplyStatus(Poison("poison",7,3,100));Frames(5);
+            battle.RunLogicalFrame(()=>{if(!afterTick)enemy.ApplyStatus(Poison("poison",7,3,100));battle.TickFrame(17);if(afterTick)enemy.ApplyStatus(Poison("poison",7,3,100));});
+            Assert.AreEqual(486,enemy.CurrentHp);Assert.AreEqual(6,enemy.GetPoison("poison").RemainingFrames);Assert.AreEqual(3,enemy.FramesUntilPoisonDamage("poison"));Frames(3);Assert.AreEqual(479,enemy.CurrentHp);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 共通解除は発生フレームの既存毒量を反映してから全毒と新規予約を取り除く(bool clearAfter)
+        {
+            Setup();enemy.ApplyStatus(Poison("poison",7,3));enemy.ApplyStatus(Poison("venom",11,3));enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));enemy.ApplyStatus(new StatusEffect(StatusEffectType.Blind,1000));Frames(2);
+            battle.RunLogicalFrame(()=>{enemy.ApplyStatus(Poison("third",13,2));if(!clearAfter)enemy.ClearStatus(StatusEffectType.Poison);battle.TickFrame(17);if(clearAfter)enemy.ClearStatus(StatusEffectType.Poison);});
+            Assert.AreEqual(482,enemy.CurrentHp);Assert.IsFalse(enemy.IsPoisoned);Assert.IsNull(enemy.GetPoison("third"));Assert.IsTrue(enemy.IsParalyzed);Assert.IsNotNull(enemy.GetStatus(StatusEffectType.Blind));Frames(12);Assert.AreEqual(482,enemy.CurrentHp);
+        }
+        [Test]
+        public void 全毒の付与は次フレームから有効で同フレーム解除なら発生しない()
+        {
+            Setup();battle.RunLogicalFrame(()=>{enemy.ApplyStatus(Poison("poison",7,1));enemy.ApplyStatus(Poison("venom",11,1));battle.TickFrame(17);});
+            Assert.AreEqual(500,enemy.CurrentHp);Assert.AreEqual(60,enemy.GetPoison("poison").RemainingFrames);Frames(1);Assert.AreEqual(482,enemy.CurrentHp);
+            enemy.ClearStatus(StatusEffectType.Poison);battle.RunLogicalFrame(()=>{enemy.ApplyStatus(Poison("poison",7,1));battle.TickFrame(17);enemy.ClearStatus(StatusEffectType.Poison);});Frames(3);Assert.AreEqual(482,enemy.CurrentHp);
+        }
+        [Test]
+        public void 共通時間耐性は各毒の期間だけを加算軽減し短い毒と完全無効で既存時計を変えない()
+        {
+            Setup(25);var a=Poison("poison",2,3,resistance:25);var b=Poison("venom",3,4,resistance:25);enemy.ApplyStatus(a);enemy.ApplyStatus(b);
+            Assert.AreEqual(30,enemy.GetPoison("poison").RemainingFrames);Frames(30);Assert.AreEqual(459,enemy.CurrentHp);Assert.IsFalse(enemy.IsPoisoned);Assert.AreEqual(45,a.RemainingFrames);Assert.AreEqual(45,b.RemainingFrames);
+            enemy.ApplyStatus(Poison("poison",7,6));Frames(2);var current=enemy.GetPoison("poison");enemy.ApplyStatus(Poison("poison",99,1,resistance:100));Assert.AreSame(current,enemy.GetPoison("poison"));Assert.AreEqual(4,enemy.FramesUntilPoisonDamage("poison"));
+            enemy.ApplyStatus(Poison("short",99,6,1));Frames(1);Assert.IsNull(enemy.GetPoison("short"));Assert.AreEqual(459,enemy.CurrentHp);
+        }
+        [Test]
+        public void 同じ定義を複数敵と複数毒へ渡しても残時間と間隔を共有しない()
+        {
+            Setup();var definition=Poison("poison",7,3);var other=new Enemy("other","検証",500,ElementType.None,new Vector2Int(4,0));enemy.ApplyStatus(definition);other.ApplyStatus(definition);
+            Frames(2);Assert.AreEqual(60,definition.RemainingFrames);Assert.AreEqual(60,other.GetPoison("poison").RemainingFrames);Assert.AreEqual(1,enemy.FramesUntilPoisonDamage("poison"));Assert.AreEqual(3,other.FramesUntilPoisonDamage("poison"));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ポーズとカスタム中は全毒の時計が止まり麻痺と盲目を失わず復帰する(bool custom)
+        {
+            Setup();enemy.ApplyStatus(Poison("poison",7,3));enemy.ApplyStatus(Poison("venom",11,4));enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));Frames(2);
+            if(custom){battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());}else battle.Pause(BattlePauseReason.User);
+            Frames(30);Assert.AreEqual(500,enemy.CurrentHp);Assert.AreEqual(58,enemy.GetPoison("venom").RemainingFrames);Assert.AreEqual(1,enemy.FramesUntilPoisonDamage("poison"));
+            if(custom)battle.CustomScreen.Close();else battle.Resume(BattlePauseReason.User);Frames(1);Assert.AreEqual(493,enemy.CurrentHp);Frames(1);Assert.AreEqual(482,enemy.CurrentHp);Assert.IsTrue(enemy.IsParalyzed);
+        }
+        [Test]
+        public void 同時毒を回復と通常被弾へ合算し毒だけでは倒さず強靭度や無敵を発生させない()
+        {
+            foreach(bool attackFirst in new[]{false,true}){
+                Setup(hp:5);enemy.ApplyStatus(Poison("poison",7,1));enemy.ApplyStatus(Poison("venom",11,1));
+                battle.RunLogicalFrame(()=>{enemy.Heal(20);if(attackFirst)enemy.TakeDamage(4,ElementType.None,poiseDamage:0);battle.TickFrame(17);if(!attackFirst)enemy.TakeDamage(4,ElementType.None,poiseDamage:0);});
+                Assert.AreEqual(3,enemy.CurrentHp);Assert.AreEqual(0,enemy.AccumulatedPoiseDamage);Assert.IsFalse(enemy.IsInvincible);
+            }
+            Setup(hp:5);enemy.ApplyStatus(Poison("poison",int.MaxValue,1));enemy.ApplyStatus(Poison("venom",int.MaxValue,1));
+            battle.RunLogicalFrame(()=>{enemy.Heal(int.MaxValue);battle.TickFrame(17);});Assert.AreEqual(1,enemy.CurrentHp,"合計をintへ切り詰めてHP5を残さない");
+            enemy.TakeDamage(1,ElementType.None);Assert.IsTrue(enemy.IsDead);Assert.IsTrue(battle.IsGameOver);
+        }
+        [Test]
+        public void 旧毎秒毒と明示間隔の同種は二重スロットにせず切替と別状態解除でも時計を保つ()
+        {
+            Setup();enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison,2000,60));Frames(10);Assert.AreEqual(490,enemy.CurrentHp);
+            enemy.ApplyStatus(Poison("poison",7,3,2000));Assert.AreEqual(50,enemy.FramesUntilPoisonDamage("poison"));Frames(49);Assert.AreEqual(490,enemy.CurrentHp);Frames(1);Assert.AreEqual(483,enemy.CurrentHp);Frames(3);Assert.AreEqual(476,enemy.CurrentHp);
+            enemy.ApplyStatus(new StatusEffect(StatusEffectType.Blind,1000));enemy.ClearStatus(StatusEffectType.Blind);Assert.AreEqual(3,enemy.FramesUntilPoisonDamage("poison"));
+        }
+        [Test]
+        public void 同種の新しい外部量間隔は次回までの残カウントを保ち以後に採用する()
+        {
+            Setup();enemy.ApplyStatus(Poison("poison",7,6));Frames(2);enemy.ApplyStatus(Poison("poison",11,3));Assert.AreEqual(4,enemy.FramesUntilPoisonDamage("poison"));Frames(3);Assert.AreEqual(500,enemy.CurrentHp);Frames(1);Assert.AreEqual(489,enemy.CurrentHp);Frames(3);Assert.AreEqual(478,enemy.CurrentHp);
+        }
+        private static Card MasterCard(string kind="venom",int? interval=3)
+        {
+            return Card.FromMaster(new Olca.Core.Domain.Master.CardMaster{Id="master-poison",Name="検証",Category=CardCategory.Attack,Power=1,AdditionalEffectTypes="Poison",DerivativeTrigger="OnDamage",AdditionalEffectPower=7,AdditionalEffectDuration=1,PoisonKind=kind,PoisonIntervalFrames=interval});
+        }
+        [Test]
+        public void マスター種別間隔は通常カード使用へ届き加工複製で保持される()
+        {
+            Setup();var card=MasterCard();battle.RunLogicalFrame(()=>{battle.CardUsage.EnqueueCards(new List<Card>{card});Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());battle.TickFrame(17);});
+            Assert.AreEqual(499,enemy.CurrentHp);Assert.IsNotNull(enemy.GetPoison("venom"));Frames(3);Assert.AreEqual(492,enemy.CurrentHp);
+            foreach(var copy in new[]{card.Clone(),card.ApplyTuning(new Card("tune","調律",1,CardRarity.Normal,CardCategory.Tuning,ElementType.None,CardSeries.None,0,"検証")),card.WithPowerMultiplier(2)}){Assert.AreEqual("venom",copy.Modifier.AdditionalEffects[0].PoisonKind);Assert.AreEqual(3,copy.Modifier.AdditionalEffects[0].PoisonIntervalFrames);}
+            Assert.Throws<System.ArgumentException>(()=>MasterCard("venom",null));Assert.Throws<System.ArgumentException>(()=>MasterCard("",3));Assert.Throws<System.ArgumentException>(()=>MasterCard("poison",0));
+            Assert.Throws<System.ArgumentException>(()=>Poison("venom",-1,3));
+        }
+        [Test]
+        public void 未指定の旧毒カードのhashを維持し新しい種別や間隔だけを定義照合へ加える()
+        {
+            string Hash(Card card)=>(string)typeof(Card).Assembly.GetType("Olca.Core.Logic.Dungeon.CheckpointValues").GetMethod("CardHash",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic).Invoke(null,new object[]{card});
+            var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.Poison,Trigger=DerivativeTrigger.OnDamage,Power=3,Duration=2});var legacy=new Card("legacy-poison","旧毒",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,10,"旧互換",modifier:m);
+            Assert.AreEqual("A7A58D016E0B1011DA40CD733E0C703791D78D9EB42E1D683B435EF3D12F4A65",Hash(legacy));Assert.AreNotEqual(Hash(MasterCard()),Hash(MasterCard("poison")));Assert.AreNotEqual(Hash(MasterCard()),Hash(MasterCard("venom",4)));
+        }
+        [Test]
+        public void 新しい毒定義のファイル再開は開始境界で敵状態を復元せず定義変更なら元保存を保持する()
+        {
+            var root=MasterCard();var config=DungeonConfig.CreateTestDungeon(10);config.MapCells[3]=new MapCell(3,new Enemy("target","検証",500,ElementType.None,new Vector2Int(3,0)));
+            var deck=new Deck(new List<Card>{root,root.Clone(),root.Clone(),root.Clone(),root.Clone()});
+            var defaults=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(config,deck);
+            string directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-enemy-poison-"+System.Guid.NewGuid().ToString("N"));
+            try {
+                var file=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory);var session=new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions,file);
+                var game=new Olca.Core.Logic.Integration.DungeonBattleManager(config,new PlayerCharacter(500),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
+                for(int i=0;game.CurrentBattle==null&&i<100;i++)game.TickFrame(17);Assert.IsNotNull(game.CurrentBattle);var old=game.CurrentBattle;old.Enemies[0].ApplyStun(60000);old.CustomScreen.Close();
+                old.CardUsage.EnqueueCards(new List<Card>{root});Assert.IsTrue(old.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());old.TickFrame(17);Assert.IsNotNull(old.Enemies[0].GetPoison("venom"));
+                var saved=System.IO.File.ReadAllBytes(file.ActivePath);Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
+                Assert.IsTrue(game.SuspendForCheckpoint());restored.ActivateCheckpoint();int remaining=old.Enemies[0].GetPoison("venom").RemainingFrames;game.TickFrame(17);Assert.AreEqual(remaining,old.Enemies[0].GetPoison("venom").RemainingFrames);
+                Assert.IsFalse(restored.CurrentBattle.Enemies[0].IsPoisoned);Assert.AreEqual(500,restored.CurrentBattle.Enemies[0].CurrentHp);CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(file.ActivePath));
+                var changed=MasterCard("venom",4);var definitions=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(defaults.Definitions.CreateInitialMap(),new Deck(new List<Card>{changed})).Definitions;
+                Assert.IsNull(new Olca.Unity.FileCheckpointStore(definitions,directory).Read());CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(file.ActivePath));
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+        [Test]
+        public void 旧毎秒入口の最大期間と量でも中間乗算を桁溢れさせない()
+        {
+            Setup();enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison,int.MaxValue,int.MaxValue));
+            Assert.AreEqual(int.MaxValue,enemy.TickStatus(int.MaxValue));Assert.IsFalse(enemy.IsPoisoned);
+            Assert.Throws<System.ArgumentException>(()=>new StatusEffect(StatusEffectType.Poison,1000,-1));
+        }
+        [Test]
+        public void 複数毒の論理トレースは描画頻度と追いつきで一致する()
+        {
+            List<string> Trace(int fps){Setup();enemy.ApplyStatus(Poison("poison",2,3));enemy.ApplyStatus(Poison("venom",3,4));var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();var result=new List<string>();long wall=0;
+                void Tick(long frame,int ms){if(frame==8)battle.Pause(BattlePauseReason.User);if(frame==14)battle.Resume(BattlePauseReason.User);battle.RunLogicalFrame(()=>{if(frame==20)enemy.ApplyStatus(Poison("poison",2,3));battle.TickFrame(ms);if(frame==30)enemy.ClearStatus(StatusEffectType.Poison);});result.Add(enemy.CurrentHp+":"+enemy.FramesUntilPoisonDamage("poison")+":"+enemy.FramesUntilPoisonDamage("venom"));}
+                if(fps==0){clock.Accumulate(Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond);clock.Drain(Tick);}else for(int i=1;clock.Frame<60;i++){long next=(long)i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Tick);}return result;}
+            CollectionAssert.AreEqual(Trace(60),Trace(30));CollectionAssert.AreEqual(Trace(60),Trace(120));CollectionAssert.AreEqual(Trace(60),Trace(0));
+        }
+    }
+}

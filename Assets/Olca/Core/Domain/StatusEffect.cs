@@ -172,9 +172,14 @@ namespace Olca.Core.Domain
 
         /// <summary>毒の場合の1ティックあたりのダメージ</summary>
         public int DamagePerTick { get; }
+        /// <summary>毒系共通耐性の下で独立更新する外部種別。未指定は旧毒。</summary>
+        public string PoisonKind { get; }
+        /// <summary>nullだけは旧毎秒量の互換入口。明示時は固定量の発生間隔。</summary>
+        public int? PoisonIntervalFrames { get; }
         private int originalFrames, initialReducedFrames, appliedResistance;
 
         // 生成側の既存軽減率とも加算する。共有された付与元を変更せず、対象ごとに独立させる。
+        internal StatusEffect Copy() => (StatusEffect)MemberwiseClone();
         internal StatusEffect WithTargetResistance(int resistance)
         {
             if (resistance == 0) return this;
@@ -193,10 +198,14 @@ namespace Olca.Core.Domain
         /// <param name="type">状態異常の種類</param>
         /// <param name="durationMs">持続時間（ミリ秒）</param>
         /// <param name="damagePerTick">毒ダメージ（ミリ秒ごと）。毒以外は0</param>
-        public StatusEffect(StatusEffectType type, int durationMs, int damagePerTick = 0, int durationResistancePercent = 0)
+        public StatusEffect(StatusEffectType type, int durationMs, int damagePerTick = 0, int durationResistancePercent = 0, string poisonKind = "poison", int? poisonIntervalFrames = null)
         {
             if (durationMs <= 0) throw new ArgumentException("持続時間は1以上である必要があります", nameof(durationMs));
             if (durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationResistancePercent));
+            if (type == StatusEffectType.Poison && (string.IsNullOrWhiteSpace(poisonKind) || poisonIntervalFrames <= 0 ||
+                (poisonKind != "poison" && !poisonIntervalFrames.HasValue) || damagePerTick < 0))
+                throw new ArgumentException("毒種と正の間隔・非負の固定量が必要です");
+            PoisonKind = poisonKind; PoisonIntervalFrames = poisonIntervalFrames;
             Type = type;
             long frames = ((long)durationMs * 60 + 999) / 1000;
             originalFrames = (int)frames;

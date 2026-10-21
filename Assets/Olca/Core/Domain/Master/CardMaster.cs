@@ -138,6 +138,8 @@ namespace Olca.Core.Domain.Master
         /// 状態異常の持続時間など
         /// </summary>
         public float AdditionalEffectDuration { get; set; }
+        public string PoisonKind { get; set; } = "poison";
+        public int? PoisonIntervalFrames { get; set; }
 
         /// <summary>
         /// ヒット回数（多段ヒット、チェイン回数など）

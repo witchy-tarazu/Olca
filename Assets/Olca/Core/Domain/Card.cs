@@ -358,6 +358,7 @@ namespace Olca.Core.Domain
                         EffectType = effectType,
                         Power = master.AdditionalEffectPower,
                         Duration = master.AdditionalEffectDuration,
+                        PoisonKind = master.PoisonKind, PoisonIntervalFrames = master.PoisonIntervalFrames,
                         HitCount = master.AdditionalEffectHitCount,
                         HitInvincibilityStages = effectType == AdditionalEffectType.MultiHit ? master.AdditionalEffectHitInvincibilityStages : null,
                         ChainCardId = master.ChainCardId,
