@@ -168,26 +168,47 @@ namespace Olca.Core.Domain
             return result <= 0 ? 0 : (int)System.Math.Max(1m, System.Math.Min(int.MaxValue, result));
         }
     }
-    /// <summary>外部定義から受け取るIDと被弾特性。製品ID・解放条件・カード変換は定義しない。</summary>
+    /// <summary>外部定義から受け取るIDと被弾特性。製品ID・解放条件は定義しない。</summary>
     public sealed class TransformationDefenseDefinition
     {
         public string Id { get; }
         public int HandSizeBonus { get; }
+        private readonly System.Collections.Generic.Dictionary<string, TransformationCardConversion> cardConversions
+            = new System.Collections.Generic.Dictionary<string, TransformationCardConversion>(System.StringComparer.Ordinal);
+        internal Card ConvertHandCard(Card card) => cardConversions.TryGetValue(card.Id, out var rule) ? rule.CreateCard() : null;
         public ElementResistances Resistances { get; }
         public TransformationWeakness Weakness { get; }
         public ElementType BreakElement => Weakness.Element;
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement, int handSizeBonus = 0)
-            : this(id, resistances, new TransformationWeakness(breakElement), handSizeBonus) { }
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty, int handSizeBonus = 0)
-            : this(id, resistances, new TransformationWeakness(breakProperty), handSizeBonus) { }
-        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness, int handSizeBonus = 0)
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, ElementType breakElement, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null)
+            : this(id, resistances, new TransformationWeakness(breakElement), handSizeBonus, cardConversions) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, AttackProperty breakProperty, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null)
+            : this(id, resistances, new TransformationWeakness(breakProperty), handSizeBonus, cardConversions) { }
+        public TransformationDefenseDefinition(string id, ElementResistances resistances, TransformationWeakness weakness, int handSizeBonus = 0, System.Collections.Generic.IEnumerable<TransformationCardConversion> cardConversions = null)
         {
             if (handSizeBonus < 0) throw new System.ArgumentOutOfRangeException(nameof(handSizeBonus));
             HandSizeBonus = handSizeBonus;
+            foreach (var rule in cardConversions ?? System.Array.Empty<TransformationCardConversion>()) {
+                if (rule == null) throw new System.ArgumentException("変換定義がnullです", nameof(cardConversions));
+                this.cardConversions.Add(rule.SourceCardId, rule);
+            }
             if (string.IsNullOrWhiteSpace(id)) throw new System.ArgumentException("変身IDが必要です", nameof(id));
             Id = id;
             Resistances = resistances ?? throw new System.ArgumentNullException(nameof(resistances));
             Weakness = weakness ?? throw new System.ArgumentNullException(nameof(weakness));
         }
     }
+    /// <summary>外部指定の一段置換。テンプレートを深く保持し、手札個体ごとに複製する。</summary>
+    public sealed class TransformationCardConversion
+    {
+        public string SourceCardId { get; }
+        private readonly Card template;
+        public TransformationCardConversion(string sourceCardId, Card targetTemplate)
+        {
+            if (string.IsNullOrWhiteSpace(sourceCardId)) throw new System.ArgumentException("変換元IDが必要です", nameof(sourceCardId));
+            SourceCardId = sourceCardId;
+            template = (targetTemplate ?? throw new System.ArgumentNullException(nameof(targetTemplate))).Clone();
+        }
+        internal Card CreateCard() => template.Clone();
+    }
+
 }

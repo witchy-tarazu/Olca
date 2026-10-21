@@ -42,28 +42,43 @@ namespace Olca.Core.Logic.Battle
         private IRandomProvider openingRandom;
         private readonly List<Card> previewDraws = new List<Card>();
         private readonly List<Card> previewCopies = new List<Card>();
+        private sealed class HandConversion { public Card Original, Current; }
+        private readonly List<HandConversion> previewConversions = new List<HandConversion>();
+        private TransformationDefenseDefinition activeCardConversion;
         public event Action OnHandChanged;
         internal event Action OnOpening;
 
-        internal void PreviewHandLimit(int limit)
+        internal void PreviewHandLimit(int limit, TransformationDefenseDefinition definition)
         {
             RollbackPreviewDraws();
             SetMaxHandSize(limit);
             int count = Math.Max(0, limit - currentHand.Count - selectedCards.Count);
             var drawn = deck.DrawCards(count, openingRandom);
             previewDraws.AddRange(drawn); previewCopies.AddRange(drawn); currentHand.AddRange(drawn);
+            // 一段だけ置換し、変換先が別ルールに一致しても同じ選択内で再変換しない。
+            for (int i = 0; i < currentHand.Count; i++) {
+                var converted = definition.ConvertHandCard(currentHand[i]);
+                if (converted == null) continue;
+                previewConversions.Add(new HandConversion { Original = currentHand[i], Current = converted });
+                currentHand[i] = converted;
+            }
             OnHandChanged?.Invoke();
         }
-        internal void CommitPreviewDraws() { previewDraws.Clear(); previewCopies.Clear(); }
+        internal void CommitPreviewDraws(TransformationDefenseDefinition definition = null)
+        {
+            previewDraws.Clear(); previewCopies.Clear(); previewConversions.Clear();
+            if (definition != null) activeCardConversion = definition;
+        }
+        internal void ClearActiveCardConversion() => activeCardConversion = null;
         internal void CancelPreviewHandLimit(int limit)
         {
             RollbackPreviewDraws(); SetMaxHandSize(limit); OnHandChanged?.Invoke();
         }
         private void RollbackPreviewDraws()
         {
-            if (previewDraws.Count == 0) return;
+            if (previewDraws.Count == 0 && previewConversions.Count == 0) return;
             // 追加分を素材とする加工だけを依存順に遡る。無関係な加工は残す。
-            var dependent = new HashSet<Card>(previewCopies);
+            var dependent = new HashSet<Card>(previewCopies.Concat(previewConversions.Select(c => c.Current)));
             var undo = new HashSet<CustomizationHistory>();
             foreach (var history in customizationHistory)
                 if (history.HandBefore.Any(slot => slot.MaterialSnapshot != null && dependent.Contains(slot.Original))) {
@@ -71,6 +86,15 @@ namespace Olca.Core.Logic.Battle
                 }
             for (int i = customizationHistory.Count - 1; i >= 0; i--)
                 if (undo.Contains(customizationHistory[i])) UndoCustomizationAt(i);
+            foreach (var conversion in previewConversions) {
+                int index = currentHand.IndexOf(conversion.Current);
+                if (index >= 0) currentHand[index] = conversion.Original;
+                index = selectedCards.IndexOf(conversion.Current);
+                if (index >= 0) selectedCards[index] = conversion.Original;
+                foreach (var history in customizationHistory)
+                    foreach (var slot in history.HandBefore)
+                        if (ReferenceEquals(slot.Original, conversion.Current)) slot.Original = conversion.Original;
+            }
             foreach (var card in previewCopies) { currentHand.Remove(card); selectedCards.Remove(card); }
             deck.ReturnPreviewDraws(previewDraws);
             CommitPreviewDraws();
@@ -165,7 +189,7 @@ namespace Olca.Core.Logic.Battle
             if (drawCount > 0 && !checkpointFirstOpen)
             {
                 var drawnCards = deck.DrawCards(drawCount, random);
-                currentHand.AddRange(drawnCards);
+                foreach (var card in drawnCards) currentHand.Add(activeCardConversion?.ConvertHandCard(card) ?? card);
             }
 
             checkpointFirstOpen = false;
@@ -552,6 +576,8 @@ namespace Olca.Core.Logic.Battle
                 {
                     var restored = slot.MaterialSnapshot.Clone();
                     restoredHand.Add(restored);
+                    foreach (var conversion in previewConversions)
+                        if (ReferenceEquals(conversion.Current, slot.Original)) conversion.Current = restored;
                     for (int i = 0; i < previewCopies.Count; i++)
                         if (ReferenceEquals(previewCopies[i], slot.Original)) previewCopies[i] = restored;
                     // 再加工前の生成物を復元した場合、さらに前のUndo対象も差し替える。
@@ -804,7 +830,7 @@ namespace Olca.Core.Logic.Battle
             int limit = checked(baseHandSize + definition.HandSizeBonus);
             while (screen.SelectedCards.Count > 0)
                 screen.TryDeselectCard(screen.SelectedCards[screen.SelectedCards.Count - 1]);
-            screen.PreviewHandLimit(limit);
+            screen.PreviewHandLimit(limit, definition);
             pending = definition;
             // 確定済みの変身・残回数には触れず、仮反映だけを置き換える。
             player.SetTransformationPreview(definition.Resistances);
@@ -838,7 +864,7 @@ namespace Olca.Core.Logic.Battle
             if (disposed || confirmedThisOpening) return;
             confirmedThisOpening = true;
             var definition = pending;
-            screen.CommitPreviewDraws();
+            screen.CommitPreviewDraws(definition);
             if (definition != null) activeHandBonus = definition.HandSizeBonus;
             DiscardPending();
             if (definition == null) return;
@@ -856,6 +882,7 @@ namespace Olca.Core.Logic.Battle
         {
             ActiveId = null;
             activeHandBonus = 0;
+            screen.ClearActiveCardConversion();
             DiscardPending();
             screen.SetMaxHandSize(baseHandSize);
             // 強制解除・期間切れで使用済みIDを取り消さない。
@@ -870,6 +897,7 @@ namespace Olca.Core.Logic.Battle
             player.OnTransformationDefenseEnded -= OnDefenseEnded;
             DiscardPending();
             ActiveId = null;
+            screen.ClearActiveCardConversion();
         }
     }
 }

@@ -123,6 +123,75 @@ namespace Olca.Tests.Battle
             }
         }
 
+        private static Card ConversionCard(string id) => new Card(id,id,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,10,"検証");
+        [Test]
+        public void 変換は一段だけで元個体と共有テンプレートを変えず取消再選択で二重適用しない()
+        {
+            var originals=Enumerable.Range(0,12).Select(i=>ConversionCard("c"+i)).ToList();var deck=new Deck(originals);var screen=new CustomScreenSystem(deck);
+            var template=ConversionCard("c1");template.Modifier.BonusDamage=5;
+            var rules=new[]{new TransformationCardConversion("c0",template),new TransformationCardConversion("c1",ConversionCard("c2"))};
+            var definition=new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,cardConversions:rules);
+            template.Modifier.BonusDamage=999;
+            using(var state=new TransformationSelectionState(player,screen)) {
+                state.Configure(new[]{definition});screen.Open(new Card[0],new MockRandomProvider());screen.TrySelectCard(originals[0]);
+                state.TryPreview("fixture");Assert.IsEmpty(screen.SelectedCards);var converted=screen.CurrentHand.Single(c=>c.Id=="c1");
+                Assert.AreEqual(15,converted.GetFinalPower());Assert.AreNotSame(template,converted);Assert.AreNotSame(originals[1],converted);
+                Assert.AreEqual(2,screen.CurrentHand.Count(c=>c.Id=="c2"),"c0→c1を同選択内でc2へ進めない");
+                state.TryPreview("fixture");Assert.AreSame(converted,screen.CurrentHand.Single(c=>c.Id=="c1"));
+                state.TryCancelPending();CollectionAssert.AreEquivalent(originals.Take(10),screen.CurrentHand);Assert.AreEqual(10,originals[0].GetFinalPower());
+                state.TryPreview("fixture");Assert.AreEqual(15,screen.CurrentHand.Single(c=>c.Id=="c1").GetFinalPower());state.TryCancelPending();
+                CollectionAssert.AreEqual(originals,deck.GetAllCards());
+            }
+        }
+        [Test]
+        public void 変換と追加ドローの依存加工だけ連鎖取消し無関係な加工を保持する()
+        {
+            var cards=new[]{"a","b","c","d","u","v","g","h"}.Select(ConversionCard).ToList();var deck=new Deck(cards);
+            var factory=new MockCardFactory();foreach(var id in new[]{"x","y","z"})factory.Register(id,ConversionCard(id));
+            var recipes=new MockFusionRecipeProvider();recipes.Register("x","q","b");recipes.Register("y","x","c");recipes.Register("z","d","u");
+            var screen=new CustomScreenSystem(deck,maxHandSize:6,fusionSystem:new FusionSystem(recipes,factory));
+            var template=ConversionCard("q");
+            using(var state=new TransformationSelectionState(player,screen)) {
+                state.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,2,new[]{new TransformationCardConversion("a",template),new TransformationCardConversion("g",template)})});
+                screen.Open(new Card[0],new MockRandomProvider());state.TryPreview("fixture");Assert.AreEqual(2,screen.CurrentHand.Count(c=>c.Id=="q"));
+                var x=screen.ExecuteFusion(new[]{screen.CurrentHand[0],cards[1]});Assert.IsTrue(x.IsSuccess);
+                var y=screen.ExecuteFusion(new[]{x.ResultCard,cards[2]});Assert.IsTrue(y.IsSuccess);
+                var z=screen.ExecuteFusion(new[]{cards[3],cards[4]});Assert.IsTrue(z.IsSuccess);
+                screen.TrySelectCard(y.ResultCard);state.TryCancelPending();Assert.IsNotNull(state.PendingId,"末尾選択解除が先");state.TryCancelPending();
+                CollectionAssert.AreEquivalent(new[]{"a","b","c","z","v"},screen.CurrentHand.Select(c=>c.Id));
+                Assert.AreSame(cards[0],screen.CurrentHand.Single(c=>c.Id=="a"));Assert.AreSame(z.ResultCard,screen.CurrentHand.Single(c=>c.Id=="z"));
+                Assert.AreEqual(2,deck.RemainingCount);Assert.AreEqual(1,screen.CustomizationUndoCount);Assert.AreEqual(10,template.GetFinalPower());
+                state.TryPreview("fixture");Assert.AreEqual(2,screen.CurrentHand.Count(c=>c.Id=="q"));state.TryCancelPending();
+                CollectionAssert.AreEqual(new[]{cards[6],cards[7]},deck.GetRemainingCards());
+            }
+        }
+        [Test]
+        public void 確定変換は終了後も保持し継続中の新規ドローだけ変換する()
+        {
+            var cards=Enumerable.Range(0,20).Select(i=>ConversionCard("c"+i)).ToList();var deck=new Deck(cards);
+            var b=new BattleSystem(player,new List<Enemy>{new Enemy("e","検証",9999,ElementType.None,new Vector2Int(5,0))},deck);
+            var rules=cards.Select(c=>new TransformationCardConversion(c.Id,ConversionCard("converted"))).Concat(new[]{new TransformationCardConversion("converted",ConversionCard("twice"))}).ToArray();
+            b.Transformations.Configure(new[]{new TransformationDefenseDefinition("one",ElementResistances.Neutral,ElementType.Fire,2,rules),new TransformationDefenseDefinition("two",ElementResistances.Neutral,ElementType.Water,1,new[]{new TransformationCardConversion("converted",ConversionCard("second"))})});
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());var s=b.CustomScreen;var t=b.Transformations;
+            t.TryPreview("one");Assert.AreEqual(12,s.CurrentHand.Count(c=>c.Id=="converted"));var first=s.CurrentHand[0];s.TrySelectCard(first);s.Confirm();Assert.AreSame(first,s.AvailableCards[0]);s.Close();
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.AreEqual(12,s.CurrentHand.Count(c=>c.Id=="converted"),"既存手札をtwiceへ再変換しない");Assert.AreEqual(7,deck.RemainingCount);
+            var baseline=s.CurrentHand.ToArray();t.TryPreview("two");Assert.IsTrue(s.CurrentHand.All(c=>c.Id=="second"));t.TryCancelPending();CollectionAssert.AreEqual(baseline,s.CurrentHand);
+            t.TryPreview("two");s.Confirm();Assert.AreEqual(2,t.UsedIds.Count);player.EndTransformationDefense();Assert.IsTrue(s.CurrentHand.All(c=>c.Id=="second"));Assert.AreEqual(12,s.CurrentHand.Count);Assert.AreEqual(10,s.MaxHandSize);
+            s.Close();b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.IsTrue(s.CurrentHand.All(c=>c.Id=="second"));CollectionAssert.AreEqual(cards,deck.GetAllCards());
+        }
+        [Test]
+        public void 同IDの変換でも未確定閉鎖で元の加工済み個体へ戻り定義の重複を拒否する()
+        {
+            var original=ConversionCard("a");original.Modifier.BonusDamage=7;var screen=new CustomScreenSystem(new Deck(new List<Card>{original}));
+            var target=ConversionCard("a");target.Modifier.BonusDamage=2;var rule=new TransformationCardConversion("a",target);
+            Assert.Throws<System.ArgumentException>(()=>new TransformationDefenseDefinition("bad",ElementResistances.Neutral,ElementType.Fire,cardConversions:new[]{rule,rule}));
+            using(var state=new TransformationSelectionState(player,screen)) {
+                state.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,cardConversions:new[]{rule})});screen.Open(new Card[0],new MockRandomProvider());state.TryPreview("fixture");
+                Assert.AreEqual(12,screen.CurrentHand[0].GetFinalPower());screen.TrySelectCard(screen.CurrentHand[0]);screen.Close();
+                Assert.AreSame(original,screen.CurrentHand[0]);Assert.AreEqual(17,original.GetFinalPower());Assert.IsEmpty(state.UsedIds);Assert.AreEqual(2,target.Modifier.BonusDamage);
+            }
+        }
+
         private BattleSystem CreateTransformationBattle(int secondFireResistance = 100)
         {
             var cards = new List<Card> {
