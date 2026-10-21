@@ -2458,6 +2458,10 @@ namespace Olca.Tests.Integration
                 definitions = new FloorSequenceDefinitions("controller-fixture", "v1", maps, deck);
             }
             if (definitions != null) controller.ConfigureFloorSequence(definitions);
+            // 既存の単マップ試験は明示設定で従来の直接起動契約を検証する。選択画面は別の通常UI試験へ分離。
+            if (definitions == null && Get(controller,"configuredDungeon") == null && Get(controller,"dungeonChoices") == null &&
+                (!System.IO.Directory.Exists(directory) || !System.IO.Directory.EnumerateFiles(directory,"*.json").Any()))
+                controller.ConfigureDungeon((DungeonConfig)controller.GetType().GetMethod("CreateDefaultDungeon",Hidden).Invoke(controller,new object[]{false}));
             var view = host.AddComponent<Olca.Presentation.Field.GameFieldView>(); Set(controller, "gameFieldView", view);
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
@@ -2469,6 +2473,91 @@ namespace Olca.Tests.Integration
             for (int i = 0; i < 120 && Model(controller).CurrentBattle == null; i++) Tick(controller);
             Assert.IsNotNull(Model(controller).CurrentBattle);
         }
+        private Olca.Application.Dungeon.DungeonBattleController StartSelection(bool debug = false)
+        {
+            definitions = null;
+            return Start(configure: c => {
+                var deck = (Deck)c.GetType().GetMethod("CreateInitialDeck",Hidden).Invoke(c,null);
+                var maps = new[] { DungeonConfig.CreateTestDungeon(5,30,4) };
+                c.ConfigureDungeonSelection(new[] {
+                    new FloorSequenceDefinitions("selection-a","v1",maps,deck),
+                    new FloorSequenceDefinitions("selection-b","v1",maps,deck),
+                    new FloorSequenceDefinitions("selection-c","v1",maps,deck) }, debug);
+            });
+        }
+        private static UnityEngine.UI.Button SelectionButton(Olca.Application.Dungeon.DungeonBattleController c,string name)
+            => ((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(false).Single(b=>b.name==name);
+        [Test]
+        public void ダンジョンの初回選択取消と未解放拒否は保存せず同じ選択先で出撃再開する()
+        {
+            var c=StartSelection();Assert.IsTrue((bool)Get(c,"initialHub"));Assert.IsTrue(SelectionButton(c,"DungeonChoice_0").interactable);
+            Assert.IsFalse(SelectionButton(c,"DungeonChoice_1").interactable);Assert.IsFalse(SelectionButton(c,"DungeonChoice_2").interactable);
+            Assert.IsNull(c.PersistentProgress.NextDeparture);Assert.IsEmpty(c.PersistentProgress.Receipts);Assert.IsFalse(Store(c).HasExistingData);
+            KeyboardButton(c,"DungeonChoice_1");Assert.AreEqual(0,Get(c,"selectedDungeon"));
+            KeyboardButton(c,"CancelDungeonSelection");Assert.IsNull(c.PersistentProgress.NextDeparture);
+            KeyboardButton(c,"ConfirmDungeonSelection");var start=c.PersistentProgress.NextDeparture.Start.Copy();Assert.IsFalse((bool)Get(c,"initialHub"));Assert.AreEqual("selection-a",Store(c).Read().RouteId);
+            Assert.AreEqual(NextDepartureData.InitialParent,c.PersistentProgress.NextDeparture.ParentRunId);Assert.IsEmpty(c.PersistentProgress.Receipts);
+            c=StartSelection();Assert.AreEqual(start.RunId,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual("selection-a",Store(c).Read().RouteId);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(start.RunId,Store(c).Read().State.RunId);
+        }
+        [Test]
+        public void 保存済みクリアだけで次を解放し取消と再選択と再読込で既存成長を保つ()
+        {
+            var c=StartSelection();KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);Model(c).SelectCardReward(Win(c)[0]);
+            KeyboardButton(c,"ConfirmCarryHome");KeyboardButton(c,"ConfirmReturn");
+            CollectionAssert.AreEqual(new[]{"selection-a"},c.PersistentProgress.ClearedDungeons);var experience=c.PersistentProgress.Experience;
+            KeyboardButton(c,"SelectDungeon");Assert.IsTrue(SelectionButton(c,"DungeonChoice_1").interactable);Assert.IsFalse(SelectionButton(c,"DungeonChoice_2").interactable);
+            KeyboardButton(c,"DungeonChoice_1");KeyboardButton(c,"CancelDungeonSelection");Assert.AreEqual(0,Get(c,"selectedDungeon"));
+            KeyboardButton(c,"SelectDungeon");KeyboardButton(c,"DungeonChoice_1");KeyboardButton(c,"ConfirmDungeonSelection");Assert.AreEqual(1,Get(c,"selectedDungeon"));
+            KeyboardButton(c,"NextDeparture");var run=c.PersistentProgress.NextDeparture.Start.RunId;Assert.AreEqual("selection-b",Store(c).Read().RouteId);
+            Assert.AreEqual(experience,c.PersistentProgress.Experience);Assert.AreEqual(1,c.PersistentProgress.Receipts.Length);
+            c=StartSelection();Assert.AreEqual(1,Get(c,"selectedDungeon"));Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
+            Assert.AreEqual("selection-b",Store(c).Read().RouteId);Assert.AreEqual(run,Store(c).Read().State.RunId);
+        }
+        [Test]
+        public void デバッグ全解放はクリア履歴を捏造せず選択を保存して通常設定で再開する()
+        {
+            var c=StartSelection(true);Assert.IsTrue(SelectionButton(c,"DungeonChoice_2").interactable);KeyboardButton(c,"DungeonChoice_2");
+            KeyboardButton(c,"ConfirmDungeonSelection");Assert.IsEmpty(c.PersistentProgress.ClearedDungeons);Assert.AreEqual("selection-c",Store(c).Read().RouteId);
+            var run=c.PersistentProgress.NextDeparture.Start.RunId;c=StartSelection();Assert.AreEqual(2,Get(c,"selectedDungeon"));
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(run,Store(c).Read().State.RunId);Assert.IsEmpty(c.PersistentProgress.ClearedDungeons);
+        }
+        [TestCase("progress")] [TestCase("checkpoint")]
+        public void 初回出撃の保存失敗は同じ計画を保持し再試行でも二重出撃しない(string fault)
+        {
+            var c=StartSelection(true);KeyboardButton(c,"DungeonChoice_1");
+            var io=new KeyboardFaultIo{Fault="before"};
+            if(fault=="progress")Set(Get(c,"clearReturnStore"),"io",io);else Set(c,"nextDepartureIo",io);
+            KeyboardButton(c,"ConfirmDungeonSelection");Assert.IsTrue((bool)Get(c,"initialHub"));Assert.IsFalse(Store(c).HasExistingData);
+            Assert.AreEqual(fault=="progress",((ClearReturnSession)Get(c,"clearReturnSession")).HasPendingSave);
+            var planned=c.PersistentProgress.NextDeparture?.Start.RunId;io.Fault=null;KeyboardButton(c,"RetryDungeonDeparture");
+            Assert.IsFalse((bool)Get(c,"initialHub"));Assert.AreEqual("selection-b",Store(c).Read().RouteId);
+            var run=c.PersistentProgress.NextDeparture.Start.RunId;if(planned!=null)Assert.AreEqual(planned,run);
+            Call(c,"StartNextDeparture");Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);Assert.IsEmpty(c.PersistentProgress.Receipts);
+        }
+
+        [Test]
+        public void 初回の進行保存完了後エラーも同じ計画を使い受領履歴を増やさない()
+        {
+            var c=StartSelection(true);KeyboardButton(c,"DungeonChoice_1");Set(Get(c,"clearReturnStore"),"io",new KeyboardFaultIo{Fault="after"});
+            KeyboardButton(c,"ConfirmDungeonSelection");Assert.IsFalse((bool)Get(c,"initialHub"));var run=c.PersistentProgress.NextDeparture.Start.RunId;
+            Assert.AreEqual("selection-b",Store(c).Read().RouteId);Assert.IsEmpty(c.PersistentProgress.Receipts);
+            c=StartSelection();Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);
+        }
+        [Test]
+        public void 保存した選択先の定義変更は別ダンジョンへ振替えず既存ファイルを保持する()
+        {
+            var c=StartSelection(true);KeyboardButton(c,"DungeonChoice_1");KeyboardButton(c,"ConfirmDungeonSelection");var run=c.PersistentProgress.NextDeparture.Start.RunId;
+            var before=System.IO.Directory.GetFiles(directory,"*.json",System.IO.SearchOption.AllDirectories).ToDictionary(p=>p,System.IO.File.ReadAllBytes);
+            definitions=null;c=Start(configure: next=>{
+                var deck=(Deck)next.GetType().GetMethod("CreateInitialDeck",Hidden).Invoke(next,null);
+                next.ConfigureDungeonSelection(new[]{new FloorSequenceDefinitions("selection-a","v1",new[]{DungeonConfig.CreateTestDungeon(5,30,4)},deck),
+                    new FloorSequenceDefinitions("selection-b","changed",new[]{DungeonConfig.CreateTestDungeon(5,30,4)},deck)});
+            });
+            Assert.IsFalse(c.TryRestoreMemoryCheckpoint(out _));Assert.AreEqual(run,c.PersistentProgress.NextDeparture.Start.RunId);
+            foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));
+        }
+
         [Test]
         public void 通貨画面中のポーズは前面に表示し停止中の受取を拒否する()
         {

@@ -190,6 +190,51 @@ namespace Olca.Application.Dungeon
         public int CurrentFloorIndex { get; private set; }
         public int FloorCount => floorDefinitions?.FloorCount ?? 1;
 
+        private sealed class DungeonChoice
+        {
+            public FloorSequenceDefinitions Floors;
+            public CheckpointDefinitions Single;
+            public string Id => Floors?.RouteId ?? Single.DungeonId;
+            public string Key => Floors?.RouteHash ?? Single.MapHash;
+            public string Label => Map().DungeonName + (Floors == null ? "" : " / " + Id);
+            public DungeonConfig Map() => Floors?.CreateInitialMap(0) ?? Single.CreateInitialMap();
+        }
+        private List<DungeonChoice> dungeonChoices;
+        private bool dungeonSelectionEnabled, initialHub, dungeonSelectionOpen, debugUnlockDungeons;
+        private int selectedDungeon, selectionBeforeOpen;
+        /// <summary>登録順に解放する既存定義。デバッグ全開放は保存したクリア履歴を書き換えない。</summary>
+        public void ConfigureDungeonSelection(IReadOnlyList<FloorSequenceDefinitions> choices, bool debugUnlockAll = false)
+        {
+            if (manager != null) throw new System.InvalidOperationException("起動後はダンジョン一覧を変更できません");
+            if (choices == null || choices.Count == 0 || choices.Any(c => c == null) || choices.Select(c => c.RouteId).Distinct().Count() != choices.Count)
+                throw new System.ArgumentException("重複しない既存ダンジョン定義が必要です");
+            dungeonChoices = choices.Select(c => new DungeonChoice { Floors = c }).ToList();
+            dungeonSelectionEnabled = true; debugUnlockDungeons = debugUnlockAll; floorDefinitions = choices[0];
+        }
+        private bool DungeonUnlocked(int index) => index >= 0 && index < dungeonChoices.Count &&
+            (debugUnlockDungeons || index == 0 || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index].Id) || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index - 1].Id));
+        private bool CanSelectDungeon => clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+            !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
+            (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
+            clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
+        private void OpenDungeonSelection()
+        {
+            if (!CanSelectDungeon || !dungeonSelectionEnabled) return;
+            selectionBeforeOpen = selectedDungeon; dungeonSelectionOpen = true; ShowDungeonSelection();
+        }
+        private void ShowDungeonSelection()
+        {
+            clearReturnVisible = true; dungeonSelectionOpen = true;
+            clearReturnView.RenderDungeonSelection(dungeonChoices.Select(c => c.Label).ToArray(),
+                Enumerable.Range(0, dungeonChoices.Count).Select(DungeonUnlocked).ToArray(), selectedDungeon,
+                i => { if (dungeonSelectionOpen && CanSelectDungeon && DungeonUnlocked(i)) { selectedDungeon = i; ShowDungeonSelection(); } },
+                () => { if (!dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; dungeonSelectionOpen = false;
+                    if (initialHub) StartNextDeparture(); else ShowClearReturn(); },
+                () => { if (!dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
+                    if (initialHub) { dungeonSelectionOpen = true; ShowDungeonSelection(); } else ShowClearReturn(); },
+                !CanSelectDungeon, clearReturnError ?? clearReturnSession.Error, RetryClearReturn);
+        }
+
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
         public void ConfigureFloorSequence(FloorSequenceDefinitions definitions)
         {
@@ -371,7 +416,7 @@ namespace Olca.Application.Dungeon
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
-            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture, OpenSavedDeckMenu);
+            clearReturnView.Initialize(font, ToggleCarryCard, ConfirmCarryCards, ConfirmClearReturn, RetryClearReturn, StartNextDeparture, CloseOwnedCards, OpenOwnedDeparture, OpenSavedDeckMenu, dungeonSelectionEnabled ? (System.Action)OpenDungeonSelection : null);
             var attackPanel = new GameObject("BasicAttackHud", typeof(RectTransform)); attackPanel.transform.SetParent(pauseCanvas.transform, false);
             basicAttackHud = attackPanel.AddComponent<BasicAttackHud>(); basicAttackHud.Initialize(font, QueueBasicAttackFromUi, QueueBasicAttackHoldFromUi, CancelBasicAttackFromUi);
             basicAttackHud.InitializeExploration(font,()=>QueueExplorationFromUi(true),()=>QueueExplorationFromUi(false),QueueTouchCard);
@@ -583,15 +628,17 @@ namespace Olca.Application.Dungeon
         }
         private void ShowClearReturn()
         {
+            if (initialHub) { ShowDungeonSelection(); return; }
             clearReturnVisible = true; transitionCts?.Cancel(); retreatConfirmation?.SetActive(false);
             checkpointOverlay?.SetActive(false); pauseOverlay?.SetActive(false); keyboardSettingsView?.DiscardAndClose();
             clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.DisplayFlow,
                 !clearReturnSession.Ready || clearReturnSession.HasPendingSave || progressStartupBlocked || clearReturnError != null,
-                clearReturnError ?? clearReturnSession.Error);
+                clearReturnError ?? clearReturnSession.Error, dungeonName: dungeonSelectionEnabled ? dungeonChoices[selectedDungeon].Label : null);
         }
         private void ResumeClearReturnIfNeeded()
         {
             if (!clearReturnSession.Ready) { ShowClearReturn(); return; }
+            if (initialHub) { clearReturnVisible = true; OpenDungeonSelection(); return; }
             if (clearReturnSession.Snapshot.NextDeparture != null && !awaitingCheckpointChoice && !HasIncompleteReturn) {
                 if (!ActivateNextDeparture(out var startError)) { clearReturnError = startError; ShowClearReturn(); }
                 return;
@@ -626,7 +673,8 @@ namespace Olca.Application.Dungeon
         private void RetryClearReturn()
         {
             if(savedDeckMenuOpen){clearReturnSession.Retry();if(!clearReturnSession.HasPendingSave){savedDeckDirty=false;editingSavedDeckId=null;ownedDepartureError=null;}ShowSavedDeckMenu();return;}
-            if (!clearReturnSession.Retry()) { ShowClearReturn(); return; }
+            if (!clearReturnSession.Retry()) { if (initialHub) ShowDungeonSelection(); else ShowClearReturn(); return; }
+            if (initialHub && clearReturnSession.Snapshot.NextDeparture != null) { if (!ActivateNextDeparture(out clearReturnError)) ShowDungeonSelection(); return; }
             if (!progressStartupBlocked && clearReturnSession.Snapshot.NextDeparture?.ParentRunId == clearReturnSession.Snapshot.Flow?.RunId &&
                 clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) {
                 if (!ActivateNextDeparture(out clearReturnError)) ShowClearReturn();
@@ -641,29 +689,30 @@ namespace Olca.Application.Dungeon
             ShowClearReturn();
         }
 
-        private string DepartureDefinitionKey(CheckpointDto start) => floorDefinitions?.RouteHash ?? nextDepartureDefinitions.MapHash;
         private void StartNextDeparture() => StartNextDepartureWithDeck(null);
         private void StartNextDepartureWithDeck(Deck ownedDeck)
         {
-            if (departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
-                clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned) return;
+            if (dungeonSelectionOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
+                (!initialHub && clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned)) return;
             departureWriting = true;
             try {
                 if (clearReturnSession.HasPendingSave) { ShowClearReturn(); return; }
-                if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId) {
-                    var map = floorDefinitions?.CreateInitialMap(0) ?? nextDepartureDefinitions.CreateInitialMap();
-                    if (floorDefinitions == null) map.ValidateFinalFloorForDeparture();
+                if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent)) {
+                    var choice = dungeonChoices[selectedDungeon];
+                    if (dungeonSelectionEnabled && !DungeonUnlocked(selectedDungeon)) { clearReturnError = "未解放のダンジョンです"; ShowClearReturn(); return; }
+                    var map = choice.Map();
+                    if (choice.Floors == null) map.ValidateFinalFloorForDeparture();
                     Deck deck=ownedDeck;
                     if(deck==null&&clearReturnSession.Snapshot.EquippedDeckId!=null&&!TryResolveSavedDeck(SavedDecks.SingleOrDefault(d=>d.Id==clearReturnSession.Snapshot.EquippedDeckId),out deck,out clearReturnError)){ShowClearReturn();return;}
                     deck=deck??CreateInitialDeck();
                     // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
-                    var frozen = floorDefinitions?.CreateDepartureSession() ?? new DungeonCheckpointSession(nextDepartureDefinitions, new MemoryCheckpointStore(nextDepartureDefinitions));
+                    var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     var level = clearReturnSession.Snapshot.Level; var settings = ReturnSettings();
                     var player = new PlayerCharacter(settings.MaxHp(level), attackPower: settings.Attack(level),
                         staggerDurationFrames: battleStaggerFrames, poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
                     new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen);
                     var start = frozen.Store.Read();
-                    if (!ValidateDeparture(start, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, DepartureDefinitionKey(start))) {
+                    if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key)) {
                         ShowClearReturn(); return;
                     }
                 }
@@ -672,31 +721,32 @@ namespace Olca.Application.Dungeon
               catch (System.OverflowException e) { clearReturnError = e.Message; ShowClearReturn(); }
             finally { departureWriting = false; }
         }
-        private bool ValidateDeparture(CheckpointDto start, out string error)
+        private bool ValidateDeparture(CheckpointDto start, DungeonChoice choice, out string error)
         {
-            if (floorDefinitions != null) return floorDefinitions.TryRestore(new FloorSequenceCheckpointDto {
-                RouteId = floorDefinitions.RouteId, Revision = floorDefinitions.Revision, RouteHash = floorDefinitions.RouteHash,
+            if (choice.Floors != null) return choice.Floors.TryRestore(new FloorSequenceCheckpointDto {
+                RouteId = choice.Floors.RouteId, Revision = choice.Floors.Revision, RouteHash = choice.Floors.RouteHash,
                 FloorIndex = 0, State = start }, out _, out error);
-            return CheckpointCodec.TryRestore(start, nextDepartureDefinitions, out _, out error);
+            return CheckpointCodec.TryRestore(start, choice.Single, out _, out error);
         }
         private bool ActivateNextDeparture(out string error)
         {
             error = null; var plan = clearReturnSession.Snapshot.NextDeparture;
-            if (plan == null || plan.DefinitionKey != DepartureDefinitionKey(plan.Start) || !ValidateDeparture(plan.Start, out error)) {
+            var choice = plan == null ? null : dungeonChoices.SingleOrDefault(c => c.Key == plan.DefinitionKey);
+            if (choice == null || !ValidateDeparture(plan.Start, choice, out error)) {
                 error = error ?? "次回出撃の定義が一致しません。既存保存は変更していません。"; return false;
             }
             DungeonBattleManager next; DungeonCheckpointSession session; FloorSequenceSession route = null; FloorSequenceFileStore routeStore = null;
-            if (floorDefinitions != null) {
-                routeStore = new FloorSequenceFileStore(floorDefinitions, ActiveCheckpointDirectory, nextDepartureIo);
+            if (choice.Floors != null) {
+                routeStore = new FloorSequenceFileStore(choice.Floors, ActiveCheckpointDirectory, nextDepartureIo);
                 if (!routeStore.HasExistingData && !routeStore.TryWrite(new FloorSequenceCheckpointDto {
-                    RouteId = floorDefinitions.RouteId, Revision = floorDefinitions.Revision, RouteHash = floorDefinitions.RouteHash,
+                    RouteId = choice.Floors.RouteId, Revision = choice.Floors.Revision, RouteHash = choice.Floors.RouteHash,
                     FloorIndex = 0, State = plan.Start }, out error)) return false;
-                route = new FloorSequenceSession(floorDefinitions, routeStore);
+                route = new FloorSequenceSession(choice.Floors, routeStore);
                 if (!route.TryLoad(out error) || route.Current.State.Snapshot.RunId != plan.Start.RunId) { error = error ?? "攻略IDが一致しません"; return false; }
                 if (route.Current.State.Snapshot.Boundary == CheckpointBoundary.Terminal) { error = "終了済み攻略を上書きしません"; return false; }
-                next = CreateFloorManager(route, out session);
+                next = CreateFloorManager(route, out session, choice.Floors);
             } else {
-                var defs = nextDepartureDefinitions;
+                var defs = choice.Single;
                 var store = new FileCheckpointStore(defs, ActiveCheckpointDirectory, nextDepartureIo);
                 if (!store.HasExistingData && !store.TryWrite(plan.Start, out error)) return false;
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
@@ -706,7 +756,8 @@ namespace Olca.Application.Dungeon
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
-            floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
+            floorDefinitions = choice.Floors; nextDepartureDefinitions = choice.Single; selectedDungeon = dungeonChoices.IndexOf(choice);
+            initialHub = false; dungeonSelectionOpen = false; floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
             clearReturnVisible = false; clearReturnError = null; nonClearReturnRequest = null; clearReturnView.gameObject.SetActive(false); checkpointOverlay.SetActive(false);
             ReplaceManager(next, session); return true;
         }
@@ -744,6 +795,12 @@ namespace Olca.Application.Dungeon
             inputProvider.StartEventCapture();
             customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
+            dungeonSelectionEnabled |= configuredDungeon == null && floorDefinitions == null;
+            var savedPlan = clearReturnSession.Snapshot?.NextDeparture;
+            if (dungeonChoices != null && savedPlan != null) {
+                int found = dungeonChoices.FindIndex(c => c.Key == savedPlan.DefinitionKey);
+                if (found >= 0) { selectedDungeon = found; floorDefinitions = dungeonChoices[found].Floors; }
+            }
             var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
             var playerCharacter = new PlayerCharacter(
                 maxHp: ReturnSettings().MaxHp(persistentLevel),
@@ -796,11 +853,14 @@ namespace Olca.Application.Dungeon
                 // 旧保存には新規出撃条件を遡及適用しない。
                 if (!awaitingCheckpointChoice) dungeonConfig.ValidateFinalFloorForDeparture();
             }
+            if (dungeonChoices == null) dungeonChoices = new List<DungeonChoice> { new DungeonChoice { Floors = floorDefinitions, Single = nextDepartureDefinitions } };
+            initialHub = dungeonSelectionEnabled && clearReturnSession.Ready && clearReturnSession.Snapshot.Flow == null &&
+                savedPlan == null && !awaitingCheckpointChoice;
             manager = new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null ? null : memoryCheckpoints, cardDatabase: cardFactory,
+                fusionSystem: fusionSystem, checkpoints: initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null ? null : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
@@ -1277,15 +1337,16 @@ namespace Olca.Application.Dungeon
         }
         private void OnFloorCompleted() { floorSwapPending = true; }
 
-        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session)
+        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session, FloorSequenceDefinitions definitions = null)
         {
+            definitions = definitions ?? floorDefinitions;
             var state = route.Current.State;
-            session = floorDefinitions.CreateCheckpointSession(route.Current.FloorIndex, route);
+            session = definitions.CreateCheckpointSession(route.Current.FloorIndex, route);
             var factory = CreateCardFactory();
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
                 new ExceedSystem(factory), new TuningSystem(), new FusionSystem(new SimpleFusionRecipeProvider(), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
-                hasNextFloor: route.Current.FloorIndex + 1 < floorDefinitions.FloorCount);
+                hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount);
         }
 
         private void ApplyPendingFloor()

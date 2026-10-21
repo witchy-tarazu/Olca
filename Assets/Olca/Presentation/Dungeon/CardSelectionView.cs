@@ -192,7 +192,7 @@ namespace Olca.Presentation.Dungeon
     {
         private Font font;
         private Action<int> toggle;
-        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture, savedDeckMenu;
+        private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture, savedDeckMenu, selectDungeon;
         private int savedDeckPage;
         private int departurePage;
         private GameObject content;
@@ -200,14 +200,14 @@ namespace Olca.Presentation.Dungeon
         private string lastRun;
         private ClearReturnStage? lastStage;
         private const int PageSize = 8;
-        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null, Action savedDeckMenu = null)
+        public void Initialize(Font font, Action<int> toggle, Action confirm, Action finish, Action retry, Action depart = null, Action closeCollection = null, Action editOwnedDeparture = null, Action savedDeckMenu = null, Action selectDungeon = null)
         {
-            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;this.savedDeckMenu=savedDeckMenu;
+            this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;this.savedDeckMenu=savedDeckMenu;this.selectDungeon=selectDungeon;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
         }
-        public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false)
+        public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;
             lastRun = flow?.RunId; lastStage = flow?.Stage;
@@ -254,12 +254,38 @@ namespace Olca.Presentation.Dungeon
                 if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, -420, 900, 75, closeCollection);
                 else {
                     if (editOwnedDeparture != null) Button("EditOwnedDeparture", "所持カードで出撃デッキを編成", -440, -420, 820, 75, editOwnedDeparture).interactable = !blocked;
-                    if (depart != null) Button("NextDeparture", profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃", 440, -420, 820, 75, depart).interactable = !blocked;
+                    if (depart != null) Button("NextDeparture", (dungeonName==null?"":dungeonName+"へ\n")+(profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃"), 440, -420, 820, 75, depart).interactable = !blocked;
                 }
             }
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",0,-510,800,58,savedDeckMenu);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",selectDungeon==null?0:-440,-510,800,58,savedDeckMenu);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectDungeon!=null&&!blocked&&error==null)Button("SelectDungeon","ダンジョンを選択",440,-510,800,58,selectDungeon);
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -510, 800, 58, retry);
         }
+        private int dungeonPage;
+        public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
+            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave)
+        {
+            if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
+            content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
+            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            gameObject.SetActive(true);
+            Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
+            Text("DungeonSelectionHelp", error ?? "クリアに応じて次のダンジョンが解放されます。", 0, 350, 1700, 80, 25);
+            const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
+            for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
+                int index = dungeonPage * rows + row;
+                var button = Button("DungeonChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
+                button.interactable = !blocked && unlocked[index];
+                if (selected == index) button.GetComponent<Image>().color = new Color(.12f, .42f, .47f, .82f);
+            }
+            Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, -285, 250, 60, 24);
+            Button("ConfirmDungeonSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
+            Button("CancelDungeonSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
+            if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
+        }
+
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
             string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null)
         {

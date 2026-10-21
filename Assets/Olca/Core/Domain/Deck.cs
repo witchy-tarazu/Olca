@@ -315,6 +315,7 @@ namespace Olca.Core.Domain
     // 進行文書を先に確定し、別攻略ディレクトリへ同じ出撃スナップショットを再試行する。
     public sealed class NextDepartureData
     {
+        public const string InitialParent = "initial-departure-v1";
         public string ParentRunId, DefinitionKey;
         public CheckpointDto Start;
         public NextDepartureData Copy() => new NextDepartureData { ParentRunId = ParentRunId, DefinitionKey = DefinitionKey, Start = Start?.Copy() };
@@ -385,7 +386,7 @@ namespace Olca.Core.Domain
                 n.Start == null || !Guid.TryParseExact(n.Start.RunId, "N", out _) || n.Start.RunId == n.ParentRunId ||
                 n.Start.Boundary != CheckpointBoundary.Departure || n.Start.Sequence != 1 || n.Start.PositionMilli != 0 ||
                 n.Start.Player == null || n.Start.Player.Hp != n.Start.Player.MaxHp || n.Start.ObtainedOrder == null || n.Start.ObtainedOrder.Length != 0 ||
-                !p.Receipts.Any(r => r.RunId == n.ParentRunId))) throw new ArgumentException("次回出撃計画が不正です");
+                !(p.Receipts.Any(r => r.RunId == n.ParentRunId) || (n.ParentRunId == NextDepartureData.InitialParent && (p.Flow == null || p.Flow?.RunId == n.Start.RunId))))) throw new ArgumentException("次回出撃計画が不正です");
             var f = p.Flow; if (f == null) return;
             if (string.IsNullOrWhiteSpace(f.RunId) || string.IsNullOrWhiteSpace(f.DungeonKey) || string.IsNullOrWhiteSpace(f.Fingerprint) ||
                 !Enum.IsDefined(typeof(ClearReturnStage), f.Stage) || !Enum.IsDefined(typeof(RunReturnOutcome), f.Outcome) || f.Candidates == null || f.Selected == null || f.Settings == null || f.ExperienceAward < 0 || f.TokenAward < 0)
@@ -540,11 +541,12 @@ namespace Olca.Core.Domain
         }
         public bool PrepareNextDeparture(CheckpointDto start, string definitionKey)
         {
-            if (!Available() || current.Flow?.Stage != ClearReturnStage.Returned) return Fail("帰還確定後に出撃してください");
+            if (!Available() || (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned)) return Fail("拠点で出撃してください");
+            string parent = current.Flow?.RunId ?? NextDepartureData.InitialParent;
             // 同じ帰還画面の再操作は、既に確定した攻略ID/能力/デッキを使う。
-            if (current.NextDeparture?.ParentRunId == current.Flow.RunId) { Error = null; return true; }
+            if (current.NextDeparture?.ParentRunId == parent) { Error = null; return true; }
             var next = current.Copy();
-            next.NextDeparture = new NextDepartureData { ParentRunId = current.Flow.RunId, DefinitionKey = definitionKey, Start = start?.Copy() };
+            next.NextDeparture = new NextDepartureData { ParentRunId = parent, DefinitionKey = definitionKey, Start = start?.Copy() };
             return Stage(next);
         }
         private bool DeckEditingAvailable() => Available() && current.Flow?.Stage==ClearReturnStage.Returned && current.NextDeparture?.ParentRunId!=current.Flow.RunId;
