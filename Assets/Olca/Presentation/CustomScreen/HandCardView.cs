@@ -76,6 +76,8 @@ namespace Olca.Presentation.CustomScreen
 
             // カード情報表示（コストのみ）
             costText.text = $"{card.GetFinalCost()}";
+            Olca.Presentation.Dungeon.UiLook.Label(costText);
+            if(cardButton!=null)Olca.Presentation.Dungeon.UiLook.Button(cardButton);
 
             // クリックイベント
             cardButton.onClick.AddListener(() => parentView.OnCardClicked(card));
@@ -252,9 +254,9 @@ namespace Olca.Presentation.CustomScreen
             for(int y=0;y<size;y++)for(int x=0;x<size;x++){
                 float t=(x-85)*.7f+(y-112)*.714f,n=(x-85)*.714f-(y-112)*.7f;
                 Color color=Color.clear;
-                if(t>=0&&t<155&&Mathf.Abs(n)<11*(1-t/165))color=new Color(.7f,.98f,1f,1);
+                if(t>=0&&t<155&&Mathf.Abs(n)<11*(1-t/165))color=new Color(.08f,.42f,.52f,1);
                 if(t>=0&&t<140&&Mathf.Abs(n)<3)color=new Color(1,1,1,1);
-                if(Mathf.Abs(t)<5&&Mathf.Abs(n)<34)color=new Color(.2f,.82f,.9f,1);
+                if(Mathf.Abs(t)<5&&Mathf.Abs(n)<34)color=new Color(.13f,.62f,.72f,1);
                 if(t< -5&&t> -34&&Mathf.Abs(n)<6)color=new Color(.15f,.55f,.65f,1);
                 if((t+38)*(t+38)+n*n<35)color=new Color(.65f,.97f,1,1);
                 pixels[y*size+x]=color;
@@ -269,27 +271,35 @@ namespace Olca.Presentation.CustomScreen
     {
         public static Sprite Create(string cardId)
         {
-            if(cardId!="heal"&&cardId!="shield")throw new System.ArgumentException("専用miniの対象外です",nameof(cardId));
+            if(cardId!="heal"&&cardId!="shield"&&cardId!="bomb"&&cardId!="tuning")throw new System.ArgumentException("専用miniの対象外です",nameof(cardId));
             const int size=256;var pixels=new Color32[size*size];
             for(int y=0;y<size;y++)for(int x=0;x<size;x++){
                 float dx=Mathf.Abs(x-128),dy=Mathf.Abs(y-164);
                 Color color=Color.clear;
-                if(cardId=="heal"){
+                if(cardId=="bomb"){
+                    float radius=Mathf.Sqrt((x-128)*(x-128)+(y-149)*(y-149));
+                    if(radius<59)color=radius>49?new Color(.12f,.55f,.64f,1):new Color(.4f,.8f,.85f,.5f);
+                    if(Mathf.Abs(x-135)<7&&y>202&&y<230)color=new Color(.12f,.55f,.64f,1);
+                    if(Mathf.Abs(x-158)+Mathf.Abs(y-226)<15)color=new Color(.9f,.65f,.2f,1);
+                }else if(cardId=="tuning"){
+                    // 二本の音叉と中央の軸。カード本絵には転用しない。
+                    if((dx<43&&dx>30&&y>144&&y<228)||(y>140&&y<153&&dx<43)||(dx<7&&y>85&&y<150))color=new Color(.12f,.55f,.64f,1);
+                }else if(cardId=="heal"){
                     // 太い十字で100px表示でも回復を識別できる。
-                    if((dx<=20&&dy<=67)||(dx<=67&&dy<=20))color=new Color(.2f,.82f,.9f,1);
-                    if((dx<=13&&dy<=60)||(dx<=60&&dy<=13))color=new Color(.7f,.98f,1,1);
+                    if((dx<=20&&dy<=67)||(dx<=67&&dy<=20))color=new Color(.13f,.62f,.72f,1);
+                    if((dx<=13&&dy<=60)||(dx<=60&&dy<=13))color=new Color(.08f,.42f,.52f,1);
                 }else{
                     // 上辺と肩を持ち、下端へ細くなる盾。内側は透ける面にする。
                     float halfWidth=y>=184?66:Mathf.Lerp(0,66,Mathf.Clamp01((y-88)/96f));
                     if(y>=88&&y<=226&&dx<=halfWidth){
                         bool edge=dx>=halfWidth-9||y>=217;
-                        color=edge?new Color(.7f,.98f,1,1):new Color(.2f,.82f,.9f,.25f);
-                        if(dx<=4&&y>=113&&y<=207)color=new Color(.2f,.82f,.9f,1);
+                        color=edge?new Color(.08f,.42f,.52f,1):new Color(.2f,.82f,.9f,.25f);
+                        if(dx<=4&&y>=113&&y<=207)color=new Color(.13f,.62f,.72f,1);
                     }
                 }
                 pixels[y*size+x]=color;
             }
-            var name=cardId=="heal"?"HealCustomIcon":"ShieldCustomIcon";
+            var name=cardId+"CustomIcon";
             var texture=new Texture2D(size,size,TextureFormat.RGBA32,false){name=name,filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp,hideFlags=HideFlags.HideAndDontSave};
             texture.SetPixels32(pixels);texture.Apply(false,true);
             var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;

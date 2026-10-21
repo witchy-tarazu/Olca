@@ -47,6 +47,8 @@ namespace Olca.Presentation.Battle
         public void Initialize(BattleSystem battleSystem)
         {
             DetachBattleEvents();
+            Olca.Presentation.Dungeon.UiLook.Label(playerHpText);
+            if(customGaugeLabel!=null){var label=customGaugeLabel.GetComponent<Text>();if(label!=null){Olca.Presentation.Dungeon.UiLook.Label(label);label.fontSize=26;label.text="CUSTOM";}}
             ResetGaugeVisual();
             gaugeResetting = false;
             isCustomScreenOpen = false;
@@ -87,7 +89,7 @@ namespace Olca.Presentation.Battle
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             customScreenBackdrop = backdrop.GetComponent<Image>();
-            customScreenBackdrop.color = new Color(0f, 0f, 0f, 0.7f);
+            customScreenBackdrop.color = new Color(.02f,.08f,.12f,.38f);
             customScreenBackdrop.raycastTarget = false;
         }
 

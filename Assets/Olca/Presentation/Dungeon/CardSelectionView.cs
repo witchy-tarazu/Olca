@@ -38,6 +38,8 @@ namespace Olca.Presentation.Dungeon
             CancellationToken ct = default)
         {
             selectionTcs = new UniTaskCompletionSource<Card>();
+            if(containerRoot!=null)UiLook.Face(containerRoot.GetComponent<Image>());
+            UiLook.Label(deckCountText);
             EnsureSkipButton();
 
             // デッキ枚数表示
@@ -158,7 +160,7 @@ namespace Olca.Presentation.Dungeon
             label.font = deckCountText != null ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.fontSize = 28; label.alignment = TextAnchor.MiddleCenter;
             label.color = new Color(.9f, .97f, 1f); label.raycastTarget = false;
-            label.text = "受け取らずに進む";
+            label.text = "受け取らずに進む"; UiLook.Button(skipButton);
         }
 
         private async UniTask FadeAsync(
@@ -204,7 +206,7 @@ namespace Olca.Presentation.Dungeon
         {
             this.font = font; this.toggle = toggle; this.confirm = confirm; this.finish = finish; this.retry = retry; this.depart = depart; this.closeCollection = closeCollection; this.editOwnedDeparture = editOwnedDeparture;this.savedDeckMenu=savedDeckMenu;this.selectDungeon=selectDungeon;this.selectStyle=selectStyle;this.openExchange=openExchange;
             var rect = (RectTransform)transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
-            gameObject.AddComponent<Image>().color = new Color(0.035f, 0.085f, 0.12f, .88f);
+            gameObject.AddComponent<Image>().color = UiLook.Surface;
             var frame = gameObject.AddComponent<Outline>(); frame.effectColor = new Color(.48f,.9f,.94f,.45f); frame.effectDistance = new Vector2(1,-1); gameObject.SetActive(false);
         }
         private int collectionPage;
@@ -276,11 +278,11 @@ namespace Olca.Presentation.Dungeon
                     if (depart != null) Button("NextDeparture", (dungeonName==null?"":dungeonName+"へ\n")+(profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃"), 440, -420, 820, 75, depart).interactable = !blocked;
                 }
             }
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",-645,-510,410,58,savedDeckMenu);
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectDungeon!=null&&!blocked&&error==null)Button("SelectDungeon","ダンジョンを選択",645,-510,410,58,selectDungeon);
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,-510,410,58,selectStyle);
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,-510,410,58,openExchange);
-            if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -510, 800, 58, retry);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",-645,-493,410,58,savedDeckMenu);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectDungeon!=null&&!blocked&&error==null)Button("SelectDungeon","ダンジョンを選択",645,-493,410,58,selectDungeon);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,-493,410,58,selectStyle);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,-493,410,58,openExchange);
+            if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -493, 800, 58, retry);
         }
         private int dungeonPage;
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
@@ -297,16 +299,16 @@ namespace Olca.Presentation.Dungeon
                 int index = dungeonPage * rows + row;
                 var button = Button("DungeonChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
                 button.interactable = !blocked && unlocked[index];
-                if (selected == index) button.GetComponent<Image>().color = new Color(.12f, .42f, .47f, .82f);
+                if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
             Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange); }).interactable = !blocked && dungeonPage > 0;
             Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange); }).interactable = !blocked && dungeonPage + 1 < pages;
             Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, -285, 250, 60, 24);
             Button("ConfirmDungeonSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
             Button("CancelDungeonSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
-            if (chooseStyle != null && !blocked && error == null) Button("SelectDepartureStyle", "出撃スタイル", -430, -510, 800, 58, chooseStyle);
-            if (openTokenExchange != null && !blocked && error == null) Button("OpenTokenExchange", "トークン交換所", 430, -510, 800, 58, openTokenExchange);
-            if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
+            if (chooseStyle != null && !blocked && error == null) Button("SelectDepartureStyle", "出撃スタイル", -430, -493, 800, 58, chooseStyle);
+            if (openTokenExchange != null && !blocked && error == null) Button("OpenTokenExchange", "トークン交換所", 430, -493, 800, 58, openTokenExchange);
+            if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);
         }
                         public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
             Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true)
@@ -360,7 +362,7 @@ namespace Olca.Presentation.Dungeon
                 bool sold=item.Limit!=ExchangeLimit.Unlimited&&(item.Limit==ExchangeLimit.PerRefresh?item.Purchased:total)>=item.Maximum;
                 string limit=item.Limit==ExchangeLimit.Unlimited?"無制限":item.Limit==ExchangeLimit.PerRefresh?$"更新まで {item.Purchased}/{item.Maximum}":$"通算 {total}/{item.Maximum}";
                 var b=Button("ExchangeOffer_"+item.Id,(selected==item.Id?"［選択中］ ":sold?"［売切れ］ ":"［選択］ ")+(item.Random?"ランダム ":"固定 ")+item.Name+new string('★',(int)item.Level)+$" / {item.Price} トークン / 所持{owned}/4 / "+limit,0,205-row*90,1730,76,()=>choose(item.Id));
-                b.interactable=!blocked&&!sold;if(selected==item.Id)b.GetComponent<Image>().color=new Color(.12f,.42f,.47f,.82f);
+                b.interactable=!blocked&&!sold;if(selected==item.Id)b.GetComponent<Image>().color=UiLook.Chosen;
             }
             Button("PreviousExchangePage","前へ",-380,-270,260,60,()=>{exchangePage--;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage>0;
             Button("NextExchangePage","次へ",380,-270,260,60,()=>{exchangePage++;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage+1<pages;
@@ -388,14 +390,14 @@ namespace Olca.Presentation.Dungeon
                 int index = stylePage * rows + row;
                 var button = Button("StyleChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
                 button.interactable = !blocked && unlocked[index];
-                if (selected == index) button.GetComponent<Image>().color = new Color(.12f, .42f, .47f, .82f);
+                if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
             Button("PreviousStylePage", "前へ", -380, -285, 260, 60, () => { stylePage--; RenderStyleSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && stylePage > 0;
             Button("NextStylePage", "次へ", 380, -285, 260, 60, () => { stylePage++; RenderStyleSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && stylePage + 1 < pages;
             Text("StylePage", $"{stylePage+1}/{pages}", 0, -285, 250, 60, 24);
             Button("ConfirmStyleSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
             Button("CancelStyleSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
-            if (error != null || blocked) Button("RetryStyleDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
+            if (error != null || blocked) Button("RetryStyleDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);
         }
 
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
@@ -412,7 +414,7 @@ namespace Olca.Presentation.Dungeon
                 Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, () => close(true)); return;
             }
             if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(InputField));inputObj.transform.SetParent(content.transform,false);
-                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(0,405);ir.sizeDelta=new Vector2(1100,48);inputObj.GetComponent<Image>().color=new Color(.05f,.12f,.16f,.8f);
+                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(0,405);ir.sizeDelta=new Vector2(1100,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
                 var label=Text("SavedDeckNameText",deckName??"",0,0,1080,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;
                 var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;input.onValueChanged.AddListener(value=>rename(value));}
             Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 350, 1750, 120, 26);
@@ -431,8 +433,8 @@ namespace Olca.Presentation.Dungeon
             Button("NextDeparturePage", "次へ", 380, -340, 240, 55, () => { departurePage++; resume(); }).interactable = departurePage+1 < pages;
             if(save==null)Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, confirm).interactable = valid;
             else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,save).interactable=!pending;
-            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-510,800,58,retrySave);
-            else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -510, 800, 58, () => close(false));
+            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retrySave);
+            else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -493, 800, 58, () => close(false));
         }
 
         public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
@@ -458,8 +460,8 @@ namespace Olca.Presentation.Dungeon
             Button("NextSavedDeckPage","次へ",380,-300,240,55,()=>{savedDeckPage++;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);}).interactable=!pending&&savedDeckPage+1<pages;
             Button("NewSavedDeck","新しいデッキ",-450,-420,750,75,create).interactable=!pending;
             Button("CloseSavedDeckMenu","帰還画面へ戻る",450,-420,750,75,close).interactable=!pending;
-            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-510,800,58,retry);
-            else if(reload!=null)Button("ReloadSavedDecks","保存から再読込",0,-510,800,58,reload);
+            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retry);
+            else if(reload!=null)Button("ReloadSavedDecks","保存から再読込",0,-493,800,58,reload);
         }
 
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)
@@ -472,15 +474,16 @@ namespace Olca.Presentation.Dungeon
         {
             var o = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Text)); o.transform.SetParent(content.transform, false);
             var t = o.GetComponent<UnityEngine.UI.Text>(); t.text = value; t.font = font; t.fontSize = size; t.alignment = TextAnchor.MiddleCenter; t.raycastTarget = false;
+            UiLook.Label(t);
             t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(.5f, .5f); t.rectTransform.anchoredPosition = new Vector2(x, y); t.rectTransform.sizeDelta = new Vector2(width, height); return t;
         }
         private Button Button(string name, string label, float x, float y, float width, float height, Action action)
         {
             var o = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); o.transform.SetParent(content.transform, false);
             var r = (RectTransform)o.transform; r.anchorMin = r.anchorMax = new Vector2(.5f, .5f); r.anchoredPosition = new Vector2(x, y); r.sizeDelta = new Vector2(width, height);
-            o.GetComponent<Image>().color = new Color(.14f, .29f, .36f, .78f);
+            o.GetComponent<Image>().color = UiLook.ButtonFace;
             var edge = o.AddComponent<Outline>(); edge.effectColor = new Color(.5f,.9f,.93f,.6f); edge.effectDistance = new Vector2(1,-1); var b = o.GetComponent<Button>(); b.navigation = new Navigation { mode = Navigation.Mode.None }; b.onClick.AddListener(() => action());
-            var text = Text(name + "Label", label, x, y, width, height, 25); text.transform.SetParent(o.transform, false); text.rectTransform.anchoredPosition = Vector2.zero; return b;
+            var text = Text(name + "Label", label, x, y, width, height, 25); text.transform.SetParent(o.transform, false); text.rectTransform.anchoredPosition = Vector2.zero; UiLook.Button(b); return b;
         }
     }
 }
@@ -498,21 +501,21 @@ namespace Olca.Presentation.Dungeon
         {
             var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = new UnityEngine.Vector2(1,0);
             rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,170); rect.anchoredPosition = new UnityEngine.Vector2(-280,115);
-            var face = gameObject.AddComponent<UnityEngine.UI.Image>(); face.color = new UnityEngine.Color(.04f,.11f,.16f,.87f); face.raycastTarget = false;
+            var face = gameObject.AddComponent<UnityEngine.UI.Image>(); face.color = UiLook.Surface; face.raycastTarget = false;
             var edge = gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
             UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
             {
                 var o = new UnityEngine.GameObject(name, typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text)); o.transform.SetParent(transform,false);
-                var text = o.GetComponent<UnityEngine.UI.Text>(); text.font = font; text.fontSize = size; text.color = new UnityEngine.Color(.94f,.99f,1f);
+                var text = o.GetComponent<UnityEngine.UI.Text>(); text.font = font; text.fontSize = size; text.color = UiLook.Ink;
                 text.alignment = UnityEngine.TextAnchor.MiddleCenter; text.raycastTarget = false;
-                var r = text.rectTransform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(x,y); r.sizeDelta = new UnityEngine.Vector2(w,h); return text;
+                var r = text.rectTransform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(x,y); r.sizeDelta = new UnityEngine.Vector2(w,h); UiLook.Label(text); return text;
             }
             title = Label("BasicAttackKey",-80,50,300,44,26);
             Label("BasicAttackHelp",-80,0,310,60,22).text = "前方一マス・敵一体\n短く押して離す";
             state = Label("BasicAttackState",0,-55,470,36,22);
             var o = new UnityEngine.GameObject("BasicAttackButton",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button)); o.transform.SetParent(transform,false);
-            var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,25); r.sizeDelta = new UnityEngine.Vector2(155,74);
-            o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>();
+            var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,0); r.sizeDelta = new UnityEngine.Vector2(155,74);
+            o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>(); UiLook.Button(button);
             button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
             attackPointer = o.AddComponent<BasicAttackTapButton>(); attackPointer.InitializeHold(hold, cancel, tap);
             var label = Label("BasicAttackLabel",0,0,155,74,26); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
@@ -526,9 +529,9 @@ namespace Olca.Presentation.Dungeon
                 var o=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));o.transform.SetParent(exploration.transform,false);
                 var r=(UnityEngine.RectTransform)o.transform;r.sizeDelta=new UnityEngine.Vector2(190,80);r.anchoredPosition=new UnityEngine.Vector2(x,0);
                 o.GetComponent<UnityEngine.UI.Image>().color=new UnityEngine.Color(.2f,.46f,.53f,.86f);
-                var b=o.GetComponent<UnityEngine.UI.Button>();b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};b.onClick.AddListener(()=>action());
+                var b=o.GetComponent<UnityEngine.UI.Button>();UiLook.Button(b);b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};b.onClick.AddListener(()=>action());
                 var t=new UnityEngine.GameObject(name+"Label",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));t.transform.SetParent(o.transform,false);
-                var text=t.GetComponent<UnityEngine.UI.Text>();text.font=font;text.fontSize=26;text.text=label;text.color=UnityEngine.Color.white;text.alignment=UnityEngine.TextAnchor.MiddleCenter;text.raycastTarget=false;
+                var text=t.GetComponent<UnityEngine.UI.Text>();text.font=font;text.fontSize=26;text.text=label;UiLook.Label(text);text.color=UiLook.Ink;text.alignment=UnityEngine.TextAnchor.MiddleCenter;text.raycastTarget=false;
                 var tr=text.rectTransform;tr.anchorMin=UnityEngine.Vector2.zero;tr.anchorMax=UnityEngine.Vector2.one;tr.offsetMin=tr.offsetMax=UnityEngine.Vector2.zero;return b;
             }
             jumpButton=Make("ExplorationJumpButton","ジャンプ",-110,jump);dashButton=Make("ExplorationDashButton","ダッシュ",110,dash);
@@ -550,7 +553,7 @@ namespace Olca.Presentation.Dungeon
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
             title.text = "攻撃 [" + (key ?? "未割当") + "] / カード"; state.text = value; button.interactable = available;
-            state.color = available ? new UnityEngine.Color(.65f,1f,.95f) : new UnityEngine.Color(.92f,.94f,.98f);
+            state.color = UiLook.Ink;
         }
     }
 }
@@ -601,5 +604,60 @@ namespace Olca.Presentation.Dungeon
         private void CancelPointer() { bool active=pointer;ClearPointer();if(active)cancel?.Invoke(); }
         private void LateUpdate() { if (hold != null && released) CancelPointer(); }
         private void OnDisable() => CancelPointer();
+    }
+}
+
+namespace Olca.Presentation.Dungeon
+{
+    /// <summary>仮UIの共通色。入力/寸法/ゲームの値には触れず、既存のGraphicだけを整える。</summary>
+    public static class UiLook
+    {
+        public static readonly Color Surface = new Color(.84f,.94f,.97f,.94f);
+        public static readonly Color ButtonFace = new Color(.69f,.87f,.92f,.96f);
+        public static readonly Color Chosen = new Color(.34f,.75f,.81f,1f);
+        public static readonly Color Ink = new Color(.055f,.17f,.22f,1f);
+        public static readonly Color Edge = new Color(.17f,.63f,.71f,.75f);
+        private static Font typeface;
+        private static bool fontChecked;
+        public static Font Typeface {
+            get {
+                if(!fontChecked){
+                    fontChecked=true;
+                    var installed=Font.GetOSInstalledFontNames();
+                    foreach(var name in new[]{"Noto Sans CJK JP","Noto Sans JP","Yu Gothic","Meiryo"})
+                        if(System.Array.IndexOf(installed,name)>=0){typeface=Font.CreateDynamicFontFromOSFont(name,28);break;}
+                }
+                return typeface;
+            }
+        }
+        public static void Label(UnityEngine.UI.Text label)
+        {
+            if(label==null)return;
+            if(Typeface!=null)label.font=Typeface;
+            label.color=Ink; label.raycastTarget=false;
+            label.horizontalOverflow=HorizontalWrapMode.Wrap;
+        }
+        public static void Face(Image image)
+        {
+            if(image==null)return;
+            image.color=Surface;
+            var edge=image.GetComponent<Outline>()??image.gameObject.AddComponent<Outline>();
+            edge.effectColor=Edge;edge.effectDistance=new Vector2(1,-1);edge.useGraphicAlpha=true;
+        }
+        public static void Button(Button button)
+        {
+            if(button==null)return;
+            var image=button.targetGraphic as Image;
+            if(image!=null){Face(image);image.color=Color.white;}
+            var colors=button.colors;colors.normalColor=ButtonFace;
+            colors.highlightedColor=new Color(.83f,.98f,1f,1f);
+            colors.selectedColor=Chosen;colors.pressedColor=new Color(.46f,.72f,.79f,1f);
+            colors.disabledColor=new Color(.68f,.75f,.78f,.65f);colors.colorMultiplier=1f;colors.fadeDuration=.1f;
+            button.colors=colors;
+            foreach(var label in button.GetComponentsInChildren<UnityEngine.UI.Text>(true)){
+                Label(label);label.fontSize=Mathf.Min(label.fontSize,30);
+                label.resizeTextForBestFit=true;label.resizeTextMinSize=20;label.resizeTextMaxSize=label.fontSize;
+            }
+        }
     }
 }

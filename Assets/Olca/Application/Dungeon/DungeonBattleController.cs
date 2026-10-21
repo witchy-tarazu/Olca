@@ -424,15 +424,15 @@ namespace Olca.Application.Dungeon
                 var textObj = new GameObject("Label", typeof(RectTransform), typeof(Text)); textObj.transform.SetParent(obj.transform, false);
                 var text = textObj.GetComponent<Text>(); text.font = font; text.text = label; text.fontSize = 30; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
-                return button;
+                UiLook.Button(button); return button;
             }
             currencyOverlay = new GameObject("CurrencyRewardPanel", typeof(RectTransform), typeof(Image));
             currencyOverlay.transform.SetParent(pauseCanvas.transform, false);
             var currencyRect = (RectTransform)currencyOverlay.transform; currencyRect.anchorMin = Vector2.zero; currencyRect.anchorMax = Vector2.one; currencyRect.offsetMin = currencyRect.offsetMax = Vector2.zero;
-            currencyOverlay.GetComponent<Image>().color = new Color(.02f, .08f, .12f, .97f);
+            currencyOverlay.GetComponent<Image>().color = UiLook.Surface;
             Text CurrencyText(string name, Transform parent, Vector2 anchor, Vector2 position, Vector2 size) {
                 var obj = new GameObject(name, typeof(RectTransform), typeof(Text)); obj.transform.SetParent(parent, false);
-                var text = obj.GetComponent<Text>(); text.font = font; text.fontSize = 30; text.color = Color.white; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
+                var text = obj.GetComponent<Text>(); text.font = font; text.fontSize = 30; UiLook.Label(text); text.color = UiLook.Ink; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
                 var r = text.rectTransform; r.anchorMin = r.anchorMax = anchor; r.anchoredPosition = position; r.sizeDelta = size; return text;
             }
             currencyRewardText = CurrencyText("CurrencyRewardText", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(0,100), new Vector2(1000,180));
@@ -440,10 +440,11 @@ namespace Olca.Application.Dungeon
             receiveCurrencyButton.onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(true); });
             MakeButton("SkipCurrencyButton", "スキップ", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(240,-80)).onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(false); });
             currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-160,-125), new Vector2(300,45));
+            currencyBalanceText.color=Color.white; // 背景上のHUDだけは明るい文字で可読性を保つ。
             MakeButton("PauseCurrencyReward","ポーズ",currencyOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
             currencyOverlay.SetActive(false);
             itemRewardOverlay=new GameObject("ItemRewardPanel",typeof(RectTransform),typeof(Image));itemRewardOverlay.transform.SetParent(pauseCanvas.transform,false);
-            var itemRect=(RectTransform)itemRewardOverlay.transform;itemRect.anchorMin=Vector2.zero;itemRect.anchorMax=Vector2.one;itemRect.offsetMin=itemRect.offsetMax=Vector2.zero;itemRewardOverlay.GetComponent<Image>().color=new Color(.02f,.08f,.12f,.97f);
+            var itemRect=(RectTransform)itemRewardOverlay.transform;itemRect.anchorMin=Vector2.zero;itemRect.anchorMax=Vector2.one;itemRect.offsetMin=itemRect.offsetMax=Vector2.zero;itemRewardOverlay.GetComponent<Image>().color=UiLook.Surface;
             itemRewardText=CurrencyText("ItemRewardText",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(0,100),new Vector2(1200,220));
             MakeButton("ReceiveItemReward","受け取る",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(-240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(true);});
             MakeButton("SkipItemReward","スキップ",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});
@@ -462,9 +463,9 @@ namespace Olca.Application.Dungeon
             MakeButton("RetreatButton", "撤退して帰還", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -400)).onClick.AddListener(RequestRetreat);
             retreatConfirmation = new GameObject("RetreatConfirmation", typeof(RectTransform), typeof(Image)); retreatConfirmation.transform.SetParent(pauseCanvas.transform, false);
             var rr = (RectTransform)retreatConfirmation.transform; rr.anchorMin = Vector2.zero; rr.anchorMax = Vector2.one; rr.offsetMin = rr.offsetMax = Vector2.zero;
-            retreatConfirmation.GetComponent<Image>().color = new Color(.02f,.05f,.08f,.96f);
+            retreatConfirmation.GetComponent<Image>().color = UiLook.Surface;
             var warning = new GameObject("RetreatWarning", typeof(RectTransform), typeof(Text)); warning.transform.SetParent(retreatConfirmation.transform, false);
-            var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
+            var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; UiLook.Label(wt); wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
             wt.text = "撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
             wt.rectTransform.sizeDelta = new Vector2(1600,200); wt.rectTransform.anchoredPosition = new Vector2(0,150);
             MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100)).onClick.AddListener(ConfirmRetreat);
@@ -479,10 +480,10 @@ namespace Olca.Application.Dungeon
             checkpointOverlay.transform.SetParent(pauseCanvas.transform, false);
             var cr = (RectTransform)checkpointOverlay.transform;
             cr.anchorMin = Vector2.zero; cr.anchorMax = Vector2.one; cr.offsetMin = cr.offsetMax = Vector2.zero;
-            checkpointOverlay.GetComponent<Image>().color = new Color(0.02f, 0.04f, 0.08f, 0.94f);
+            checkpointOverlay.GetComponent<Image>().color = UiLook.Surface;
             var message = new GameObject("CheckpointMessage", typeof(RectTransform), typeof(Text));
             message.transform.SetParent(checkpointOverlay.transform, false);
-            checkpointMessage = message.GetComponent<Text>(); checkpointMessage.font = font;
+            checkpointMessage = message.GetComponent<Text>(); checkpointMessage.font = font; UiLook.Label(checkpointMessage);
             checkpointMessage.fontSize = 30; checkpointMessage.alignment = TextAnchor.MiddleCenter;
             checkpointMessage.horizontalOverflow = HorizontalWrapMode.Wrap;
             checkpointMessage.rectTransform.sizeDelta = new Vector2(1360, 560);

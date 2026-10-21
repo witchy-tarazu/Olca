@@ -114,7 +114,7 @@ namespace Olca.Tests
                 Assert.AreEqual(total, model.GetTotalUsedCost());
                 Assert.AreEqual(limit - total, model.RemainingCost);
                 Assert.AreEqual($"コスト: {total} / {limit}", text.text);
-                Assert.AreEqual(Color.white, text.color);
+                Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink, text.color);
                 Assert.AreEqual(count, model.SelectedCards.Count);
                 var expected = new List<Card>(model.SelectedCards);
                 model.Confirm();
@@ -174,7 +174,7 @@ namespace Olca.Tests
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(b);
                 Assert.AreEqual("コスト: 5 / 5", text.text);
-                Assert.AreEqual(Color.white, text.color);
+                Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink, text.color);
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(c);
                 Assert.AreEqual("コスト: 3 / 5", text.text);
