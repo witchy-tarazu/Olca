@@ -173,10 +173,12 @@ namespace Olca.Core.Domain
         public CheckpointEnemyDto[] Enemies = new CheckpointEnemyDto[0];
         // 版2のみ。版1の既存保存では欠落/nullを維持する。
         public int[] ProcessedObstacleCells;
+        public int[] CollectedItemCells; // アイテムを含む版4のみ。旧省略/nullはアイテムなし。
         public DungeonVisitDto[] Visits; // 旧省略/nullは停止地点なし
         public CheckpointBattleDto Battle;
         public CheckpointDto Copy() => new CheckpointDto {
             Visits = Visits==null?null:System.Array.ConvertAll(Visits,v=>v?.Copy()),
+            CollectedItemCells = CollectedItemCells==null?null:(int[])CollectedItemCells.Clone(),
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
             MapHash = MapHash, RunId = RunId, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
             Player = Player?.Copy(), Cards = Cards == null ? null : System.Array.ConvertAll(Cards, c => c?.Copy()),

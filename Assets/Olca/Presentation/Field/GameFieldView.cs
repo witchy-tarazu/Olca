@@ -164,6 +164,31 @@ namespace Olca.Presentation.Field
             return null;
         }
 
+        private readonly Dictionary<int,GameObject> fieldItemVisuals=new Dictionary<int,GameObject>();
+        private void RemoveFieldItemVisual(int cell)
+        {
+            if(!fieldItemVisuals.TryGetValue(cell,out var root))return;fieldItemVisuals.Remove(cell);
+            if(root==null)return;root.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);
+        }
+        private void ClearFieldItemVisuals(){foreach(var cell in new List<int>(fieldItemVisuals.Keys))RemoveFieldItemVisual(cell);}
+        /// <summary>未取得の画面内アイテムだけを表示する。取得後は即時に消し、描画で効果を適用しない。</summary>
+        public void RefreshFieldItemVisuals()
+        {
+            if(!isActiveAndEnabled||dungeonSystem==null||fieldCamera==null||dungeonSystem.IsInBattle||dungeonSystem.IsDungeonCleared||dungeonSystem.IsFloorCompleted||dungeonSystem.Player.IsDead){ClearFieldItemVisuals();return;}
+            float distance=Mathf.Abs(fieldCamera.transform.position.z),a=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x,b=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;
+            var retained=new HashSet<int>();
+            for(int i=0;i<dungeonSystem.Map.TotalCellCount;i++){
+                var cell=dungeonSystem.Map.GetCell(i);if(cell?.Item==null||dungeonSystem.IsItemCollected(i))continue;
+                float x=LogicalToWorld(i+.5f),half=LogicalToWorld(.2f);if(x-half<Mathf.Min(a,b)||x+half>Mathf.Max(a,b))continue;
+                retained.Add(i);if(fieldItemVisuals.ContainsKey(i))continue;
+                if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
+                var root=new GameObject("FieldHealCell_"+i);root.transform.SetParent(transform,false);root.transform.position=new Vector3(x,CharacterDisplayOffsetY+LogicalToWorld(.45f),0);fieldItemVisuals.Add(i,root);
+                void Part(string name,float px,float py,float w,float h,float alpha){var go=new GameObject(name);go.transform.SetParent(root.transform,false);go.transform.localPosition=new Vector3(LogicalToWorld(px),LogicalToWorld(py),0);go.transform.localScale=new Vector3(LogicalToWorld(w),LogicalToWorld(h),1);var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.35f,1f,.7f,alpha);renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;}
+                Part("Face",0,0,.34f,.34f,.08f);Part("Top",0,.17f,.34f,.014f,.6f);Part("Bottom",0,-.17f,.34f,.014f,.6f);Part("Left",-.17f,0,.014f,.34f,.6f);Part("Right",.17f,0,.014f,.34f,.6f);Part("HealHorizontal",0,0,.24f,.055f,1);Part("HealVertical",0,0,.055f,.24f,1);
+            }
+            foreach(var cell in new List<int>(fieldItemVisuals.Keys))if(!retained.Contains(cell))RemoveFieldItemVisual(cell);
+        }
+
         private sealed class VisitVisual
         {
             public GameObject Root,Near,Check;
@@ -176,7 +201,7 @@ namespace Olca.Presentation.Field
             if(visual.Root==null)return;visual.Root.SetActive(false);
             if(UnityEngine.Application.isPlaying)Destroy(visual.Root);else DestroyImmediate(visual.Root);
         }
-        private void ClearVisitVisuals(){foreach(var cell in new List<int>(visitVisuals.Keys))RemoveVisitVisual(cell);}
+        private void ClearVisitVisuals(){ClearFieldItemVisuals();foreach(var cell in new List<int>(visitVisuals.Keys))RemoveVisitVisual(cell);}
         private VisitVisual CreateVisitVisual(DungeonVisitDefinition definition)
         {
             if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
@@ -203,6 +228,7 @@ namespace Olca.Presentation.Field
         /// <summary>画面内の既存停止地点だけを表示。時間・ゲーム状態・保存を変更しない。</summary>
         public void RefreshVisitVisuals()
         {
+            RefreshFieldItemVisuals();
             if(!isActiveAndEnabled||dungeonSystem==null||fieldCamera==null||dungeonSystem.IsInBattle||dungeonSystem.IsDungeonCleared||dungeonSystem.IsFloorCompleted||dungeonSystem.Player.IsDead){ClearVisitVisuals();return;}
             float distance=Mathf.Abs(fieldCamera.transform.position.z);
             float a=fieldCamera.ViewportToWorldPoint(new Vector3(0,0,distance)).x,b=fieldCamera.ViewportToWorldPoint(new Vector3(1,0,distance)).x;

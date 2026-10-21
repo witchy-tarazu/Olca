@@ -846,7 +846,15 @@ namespace Olca.Application.Dungeon
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
-        private DungeonConfig CreateDefaultDungeon(bool legacy = false) => CreateDefaultDungeonVisits(legacy, false);
+        private DungeonConfig CreateDefaultDungeon(bool legacy = false)
+        {
+            var map=CreateDefaultDungeonVisits(legacy,false);if(legacy||map.Visits.Count==0)return map;
+            var first=map.MapCells.FirstOrDefault(c=>c.Type==CellType.Enemy);if(first==null)return map;
+            int cell=first.Index+1;if(cell>=map.TotalCellCount-1||map.MapCells[cell].Type!=CellType.Empty)return map;
+            var heal=CreateCardFactory().CreateById(SimpleCardFactory.Heal);var cells=new List<MapCell>(map.MapCells);
+            cells[cell]=new MapCell(cell,new FieldItem(heal.Id,heal.Name,heal.Power));
+            return new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,cells,map.InitialDeckSize,map.Visits);
+        }
         private DungeonConfig CreateDefaultDungeonVisits(bool legacy, bool withoutRemoval)
         {
             var map=CreateDefaultDungeonWithoutVisits(legacy);if(legacy)return map;
@@ -871,7 +879,7 @@ namespace Olca.Application.Dungeon
         private void RegisterLegacyDeparture(Deck initialDeck)
         {
             var plan=clearReturnSession.Snapshot.NextDeparture;if(plan==null||configuredDungeon!=null||floorDefinitions!=null)return;
-            foreach(var map in new[]{CreateDefaultDungeonVisits(false,true),CreateDefaultDungeonWithoutVisits(),CreateDefaultDungeonWithoutVisits(true)})
+            foreach(var map in new[]{CreateDefaultDungeonVisits(false,false),CreateDefaultDungeonVisits(false,true),CreateDefaultDungeonWithoutVisits(),CreateDefaultDungeonWithoutVisits(true)})
                 foreach(var deck in new[]{initialDeck,CreateDepartureDeck(true)}) {
                     var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
                     if(plan.DefinitionKey==defs.MapHash&&!knownLegacyDungeons.Any(c=>c.Key==defs.MapHash)&&CheckpointCodec.TryRestore(plan.Start,defs,out _,out _))
@@ -936,7 +944,7 @@ namespace Olca.Application.Dungeon
                 {
                     // マップ/カードそれぞれの既知の旧定義だけを完全検証する。保存は書き換えない。
                     var maps = configuredDungeon == null
-                        ? new[] { dungeonConfig, CreateDefaultDungeonVisits(false,true), CreateDefaultDungeonWithoutVisits(), CreateDefaultDungeonWithoutVisits(true) } : new[] { dungeonConfig };
+                        ? new[] { dungeonConfig, CreateDefaultDungeonVisits(false,false), CreateDefaultDungeonVisits(false,true), CreateDefaultDungeonWithoutVisits(), CreateDefaultDungeonWithoutVisits(true) } : new[] { dungeonConfig };
                     var decks = new[] { initialDeck, CreateDepartureDeck(legacyPoise: true) };
                     bool matched = false;
                     foreach (var map in maps)

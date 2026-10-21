@@ -21,6 +21,7 @@ namespace Olca.Core.Domain
         public CellType Type { get; private set; }   // マス種類（変更可能）
         public float Height { get; }           // 高さ（0.0=地上、1.0以上=空中）
         public Enemy Enemy { get; private set; }          // 敵データ（nullの場合あり)
+        public FieldItem Item { get; }
         public Obstacle Obstacle { get; private set; }    // 障害物データ（nullの場合あり）
 
         /// <summary>
@@ -59,6 +60,13 @@ namespace Olca.Core.Domain
             Obstacle = obstacle;
         }
 
+        /// <summary>既存の回復効果を持つ地上フィールドアイテム。</summary>
+        public MapCell(int index, FieldItem item)
+        {
+            if (item == null) throw new System.ArgumentNullException(nameof(item));
+            Index=index;Type=CellType.Item;Height=0;Item=item;
+        }
+
         /// <summary>
         /// 敵を削除（倒した後に呼ばれる）
         /// </summary>
@@ -69,6 +77,22 @@ namespace Olca.Core.Domain
             {
                 Type = CellType.Empty;
             }
+        }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>取得時に既存Healへ渡す固定回復定義。在庫・任意使用・新しい効果種類を持たない。</summary>
+    public sealed class FieldItem
+    {
+        public string Id { get; }
+        public string Name { get; }
+        public int Heal { get; }
+        public FieldItem(string id,string name,int heal)
+        {
+            if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(name)||heal<=0)throw new System.ArgumentException("回復アイテムの定義が不正です");
+            Id=id;Name=name;Heal=heal;
         }
     }
 }

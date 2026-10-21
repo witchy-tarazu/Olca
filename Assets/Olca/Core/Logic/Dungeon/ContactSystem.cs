@@ -81,6 +81,21 @@ namespace Olca.Core.Logic.Dungeon
             }
             return null;
         }
+        internal SweptContact? FindItemContact(PlayerMovement.MovementStep step, MapCell cell)
+        {
+            if(cell?.Item==null||!step.TryCellRange(cell.Index,0,out var first,out var last))return null;
+            var points=new List<long>{first,last};step.AddHeightTurningPoints(points,first,last);
+            int direction=step.End>=step.Start?1:-1;points.Sort((a,b)=>direction*a.CompareTo(b));
+            // 地上の接触許容高さは既存接敵と同じ0.2。ジャンプで通り過ぎた物を遠隔取得しない。
+            for(int i=0;i<points.Count;i++){
+                long a=points[i];if(step.HeightAt(a)<=.2f)return new SweptContact(cell,a,step);
+                if(i+1==points.Count||step.HeightAt(points[i+1])>.2f)continue;
+                long low=0,high=Math.Abs(points[i+1]-a);while(low+1<high){long mid=low+(high-low)/2;if(step.HeightAt(a+direction*mid)<=.2f)high=mid;else low=mid;}
+                return new SweptContact(cell,a+direction*high,step);
+            }
+            return null;
+        }
+
         internal bool NotifyContact(MapCell cell, PlayerMovement player)
         {
             if (notifying || !CanContact(cell, player.Height)) return false;
