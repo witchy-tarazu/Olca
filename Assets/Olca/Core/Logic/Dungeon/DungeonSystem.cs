@@ -224,6 +224,8 @@ namespace Olca.Core.Logic.Dungeon
             cardRewardSystem = new CardRewardSystem(initialDeck, random, rewardPool);
             obstacleSystem = new ObstacleSystem(logger);
             playerCharacter = player;
+            if(config.ExplorationTerrain.Any(t=>t.Type==PanelType.Ice))
+                playerMovement.ConfigureIce(map.TotalCellCount,cell=>map.GetTerrain(cell)?.Type==PanelType.Ice,()=>player.TerrainState.ReceivesPanelEffects);
             player.FreezeDepartureStyle();
             randomProvider = random;
             this.logger = logger;

@@ -359,7 +359,7 @@ namespace Olca.Presentation.Field
                     root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f,0);
                     root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(.06f),1);
                     var sr=root.AddComponent<SpriteRenderer>();sr.sprite=obstacleWhiteSprite;sr.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;sr.sortingOrder=1;
-                    sr.color=terrain.Type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):new Color(.2f,1f,.5f,.5f);terrainVisuals.Add(terrain.Cell,root);
+                    sr.color=terrain.Type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):terrain.Type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);terrainVisuals.Add(terrain.Cell,root);
                 }
                 root.SetActive(visible);
             }
