@@ -13,6 +13,48 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class CardRewardSystemTests
     {
+        [TestCase(0, "sword")]
+        [TestCase(1, "heal")]
+        [TestCase(4, "heal")]
+        [TestCase(5, "shield")]
+        public void 重みの区間境界で抽選し選択済みとゼロ重みと重複を除外する(int roll, string first)
+        {
+            var cards = new[] { "sword", "heal", "shield", "fire" }
+                .Select(id => CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal)).ToList();
+            cards.Add(cards[1].Clone());
+            var random = new FallbackCountingRandom { Index = roll };
+            var pool = new SimpleCardPool(cards, c => c.Id == "heal" ? 4 : c.Id == "fire" ? 0 : 1);
+            var rewards = new CardRewardSystem(CreateTestDeck(), random, pool);
+            var choices = rewards.GenerateCardChoices(new Enemy("slime", "敵", 10, ElementType.None, new Vector2Int(3, 0)));
+            Assert.AreEqual(first, choices[0].Id);
+            CollectionAssert.AreEquivalent(new[] { "sword", "heal", "shield" }, choices.Select(c => c.Id));
+            Assert.AreEqual(3, random.Calls);
+        }
+
+        [TestCase(-1)] [TestCase(0)] [TestCase(int.MaxValue)]
+        public void 不正重みと有効候補不足と合計上限超過は抽選前に失敗する(int weight)
+        {
+            var cards = new[] { "sword", "heal", "shield" }
+                .Select(id => CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal)).ToList();
+            var random = new FallbackCountingRandom();
+            var rewards = new CardRewardSystem(CreateTestDeck(), random, new SimpleCardPool(cards, c => weight));
+            Assert.IsFalse(rewards.TryGenerateConfiguredChoices(new Enemy("slime", "敵", 10, ElementType.None, new Vector2Int(3, 0)), out var choices));
+            Assert.IsEmpty(choices); Assert.AreEqual(0, random.Calls);
+        }
+
+        [Test]
+        public void 同じカードの重み競合は抽選前に失敗する()
+        {
+            var cards = new[] { "sword", "heal", "shield" }
+                .Select(id => CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal)).ToList();
+            var duplicate = cards[0].Clone(); cards.Add(duplicate);
+            var random = new FallbackCountingRandom();
+            var rewards = new CardRewardSystem(CreateTestDeck(), random,
+                new SimpleCardPool(cards, c => ReferenceEquals(c, duplicate) ? 2 : 1));
+            Assert.IsFalse(rewards.TryGenerateConfiguredChoices(new Enemy("slime", "敵", 10, ElementType.None, new Vector2Int(3, 0)), out var choices));
+            Assert.IsEmpty(choices); Assert.AreEqual(0, random.Calls);
+        }
+
         [TestCase("boss", true, 1)]
         [TestCase("miniboss", false, 3)]
         [TestCase("boss_guard", false, 3)]

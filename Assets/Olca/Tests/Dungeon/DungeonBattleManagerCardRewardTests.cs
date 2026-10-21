@@ -421,9 +421,10 @@ namespace Olca.Tests.Dungeon
             for (int i = 0; i < 30; i++) cells.Add(new MapCell(i));
             cells[3] = new MapCell(3, new Enemy(boss ? "boss" : "slime", "敵", 50, ElementType.None, new Vector2Int(3, 0)));
             if (!boss) cells[29] = new MapCell(29, new Enemy("boss", "ボス", 100, ElementType.None, new Vector2Int(29, 0)));
+            int weightCalls = 0;
             var manager = new DungeonBattleManager(new DungeonConfig("pool", "注入検証", 30, cells),
                 new PlayerCharacter(100), CreateTestDeck(), mockRandom, mockLogger,
-                rewardPool: new SimpleCardPool(definitions));
+                rewardPool: new SimpleCardPool(definitions, c => { weightCalls++; return c.Id == "heal" ? 9 : 1; }));
             IReadOnlyList<Card> offered = null;
             manager.OnCardRewardPresented += cards => offered = cards;
             var battle = AdvanceToBattle(manager);
@@ -431,6 +432,7 @@ namespace Olca.Tests.Dungeon
             manager.Tick(0);
             Assert.AreEqual(GamePhase.CardReward, manager.CurrentPhase);
             CollectionAssert.AreEqual(definitions.Select(c => c.Id), offered.Select(c => c.Id));
+            Assert.AreEqual(definitions.Count, weightCalls, "通常Manager経路で重みを読み取る");
             int before = manager.Dungeon.GetCurrentDeck().TotalCount;
             var chosen = offered[0];
             manager.SelectCardReward(skip ? null : chosen);

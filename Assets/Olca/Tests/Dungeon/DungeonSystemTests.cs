@@ -1249,6 +1249,41 @@ namespace Olca.Tests.Dungeon
             Assert.IsFalse(CheckpointCodec.TryRestore(departure,definitions,out _,out _));
         }
 
+        [Test]
+        public void 重み付き戦闘開始計画は保存後の重み変更でも候補を再抽選しない()
+        {
+            bool saved = false;
+            var cards = new[] { "sword", "heal", "shield", "fire", "ice" }
+                .Select(id => CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal)).ToList();
+            var pool = new Olca.Tests.Mocks.SimpleCardPool(cards, c => {
+                Assert.IsFalse(saved, "保存復帰では重みを参照しない");
+                return c.Id == "heal" ? 10 : c.Id == "fire" ? 0 : 1;
+            });
+            CheckpointBattlePlan plan = null;
+            for (int seed = 0; seed < 100; seed++)
+            {
+                Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure, Encounter(), definitions, seed, pool,
+                    c => "reward/v1/" + c.Id, out plan, out var error), error);
+                if (plan.Snapshot.Battle.RewardOffered) break;
+            }
+            Assert.IsTrue(plan.Snapshot.Battle.RewardOffered);
+            var snapshot = plan.Snapshot;
+            var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-weighted-" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var store = new Olca.Unity.FileCheckpointStore(definitions, directory);
+                Assert.IsTrue(store.TryWrite(snapshot, out var error), error); saved = true;
+                var bytes = System.IO.File.ReadAllBytes(store.ActivePath);
+                var reopened = new Olca.Unity.FileCheckpointStore(definitions, directory);
+                Assert.IsTrue(CheckpointCodec.TryRestore(reopened.Read(), definitions, out var restored, out error), error);
+                Assert.AreEqual(3, restored.RewardCandidates.Count);
+                Assert.IsFalse(restored.RewardCandidates.Any(c => c.Id == "fire"));
+                CollectionAssert.AreEqual(snapshot.Battle.RewardCandidates, restored.Snapshot.Battle.RewardCandidates);
+                CollectionAssert.AreEqual(bytes, System.IO.File.ReadAllBytes(store.ActivePath));
+            }
+            finally { if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true); }
+        }
+
         [TestCase(false)]
         [TestCase(true)]
         public void 部分一致IDの新規通常報酬と旧保存一候補を再抽選せず復帰する(bool legacy)
