@@ -333,7 +333,7 @@ namespace Olca.Unity
 namespace Olca.Unity
 {
     // 進行・帰還段階・受領台帳を一つの原子的文書へ保存し、二つのファイル間の部分確定を避ける。
-    public sealed class ClearReturnFileStore : Olca.Core.Domain.IClearReturnStore
+    public sealed class ClearReturnFileStore : Olca.Core.Domain.IClearReturnStore, Olca.Core.Domain.INewClearReturnStore
     {
         [System.Runtime.Serialization.DataContract]
         private sealed class Envelope
@@ -347,6 +347,8 @@ namespace Olca.Unity
         public string DirectoryPath { get; }
         public string ActivePath => System.IO.Path.Combine(DirectoryPath, "progress.json");
         public string BackupPath => System.IO.Path.Combine(DirectoryPath, "progress.backup.json");
+        public bool IsNewProfile => !System.IO.File.Exists(ActivePath) && !System.IO.Directory.Exists(ActivePath) &&
+            !System.IO.File.Exists(BackupPath) && !System.IO.Directory.Exists(BackupPath);
         public ClearReturnFileStore(string directory, CheckpointFileIo io = null)
         {
             DirectoryPath = System.IO.Path.GetFullPath(directory ?? throw new System.ArgumentNullException(nameof(directory)));

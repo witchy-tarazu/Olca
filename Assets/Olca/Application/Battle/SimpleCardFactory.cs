@@ -39,6 +39,15 @@ namespace Olca.Application.Battle
             "product/tuning/power-v1", new[] { new TuningEffectDefinition("power", 1,
                 new Dictionary<int, CardModifier> { [1] = new CardModifier { BonusDamage = 10 } }) });
 
+        /// <summary>固定スターターの仮構成。通常5種を各4枚、予備なし。</summary>
+        public Deck CreateStarterDeck()
+        {
+            var cards=new List<Card>();
+            foreach(var id in new[]{Sword,Bomb,Heal,Shield,Tuning})
+                for(int n=0;n<4;n++)cards.Add(CreateById(id));
+            return new Deck(cards);
+        }
+
         public TuningGrantDefinition GetTuningDefinition(Card card)
             => card != null && card.Id == Tuning && card.Category == CardCategory.Tuning &&
                 card.ExceedLevel == ExceedLevel.Normal ? StandardTuning : null;

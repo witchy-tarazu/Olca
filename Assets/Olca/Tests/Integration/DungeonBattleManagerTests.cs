@@ -2519,6 +2519,64 @@ namespace Olca.Tests.Integration
             c=Start(production:true,configure:config);Assert.IsFalse((bool)Get(c,"clearReturnVisible"));Assert.AreEqual(0,Model(c).Dungeon.Map.Visits.Count);
             Assert.AreEqual(old.Store.Read().RunId,((DungeonCheckpointSession)Get(c,"memoryCheckpoints")).Store.Read().RunId);
         }
+        [Test]
+        public void 通常新規開始だけ20枚と同一所持を一度保存し再起動と出撃へ接続する()
+        {
+            var c=StartStandard();var p=c.PersistentProgress;
+            Assert.AreEqual(20,p.Owned.Sum(o=>o.Count));Assert.AreEqual(5,p.Owned.Length);
+            Assert.IsTrue(p.Owned.All(o=>o.Count==4));Assert.AreEqual(1,p.SavedDecks.Length);
+            Assert.AreEqual(20,p.SavedDecks[0].Cards.Length);Assert.AreEqual(p.SavedDecks[0].Id,p.EquippedDeckId);
+            var store=new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+            UnityEngine.Object.DestroyImmediate(c.gameObject);c=StartStandard();
+            CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(20,c.PersistentProgress.Owned.Sum(o=>o.Count));
+            KeyboardButton(c,"ConfirmDungeonSelection");Assert.AreEqual(20,c.PersistentProgress.NextDeparture.Start.DeckOrder.Length);
+            Assert.AreEqual(20,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        [Test]
+        public void 空の旧進行ファイルは新規配布せず従来6枚出撃を維持する()
+        {
+            var store=new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress"));
+            Assert.IsTrue(store.TryWrite(0,new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N")},out var error),error);
+            var bytes=System.IO.File.ReadAllBytes(store.ActivePath);var c=StartStandard();
+            Assert.AreEqual(0,c.PersistentProgress.Owned.Length);Assert.AreEqual(0,c.PersistentProgress.SavedDecks.Length);
+            CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+            KeyboardButton(c,"ConfirmDungeonSelection");Assert.AreEqual(6,c.PersistentProgress.NextDeparture.Start.DeckOrder.Length);
+        }
+
+        [Test]
+        public void 進行なしでも旧チェックポイントがあれば配布せず6枚を再開する()
+        {
+            var c=Start(production:true,configure:host=>{
+                var map=(DungeonConfig)host.GetType().GetMethod("CreateDefaultDungeon",Hidden).Invoke(host,new object[]{false});
+                var deck=(Deck)host.GetType().GetMethod("CreateInitialDeck",Hidden).Invoke(host,null);
+                var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
+                var store=new Olca.Unity.FileCheckpointStore(defs,directory);
+                new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),
+                    checkpoints:new DungeonCheckpointSession(defs,store));
+            });
+            Assert.AreEqual(0,c.PersistentProgress.Owned.Length);Assert.IsTrue((bool)Get(c,"awaitingCheckpointChoice"));
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(6,Model(c).Dungeon.GetCurrentDeck().TotalCount);
+        }
+
+        private sealed class StarterFaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Fail=true;
+            public override void MoveNew(string temporary,string destination){if(Fail)throw new System.IO.IOException("starter fixture");base.MoveNew(temporary,destination);}
+        }
+        [Test]
+        public void 新規配布保存失敗は出撃を止め再試行成功後に20枚だけを装備する()
+        {
+            var io=new StarterFaultIo();var c=Start(production:true,configure:host=>Set(host,"clearReturnStore",
+                new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress"),io)));
+            Assert.AreEqual(0,c.PersistentProgress.Owned.Length);Assert.IsNull(c.PersistentProgress.NextDeparture);
+            Assert.IsTrue(((ClearReturnSession)Get(c,"clearReturnSession")).HasPendingSave);
+            Assert.IsFalse(SelectionButton(c,"ConfirmDungeonSelection").interactable);
+            io.Fail=false;Call(c,"RetryClearReturn");Assert.IsTrue(SelectionButton(c,"ConfirmDungeonSelection").interactable);
+            KeyboardButton(c,"ConfirmDungeonSelection");Assert.AreEqual(20,c.PersistentProgress.NextDeparture.Start.DeckOrder.Length);
+            Assert.AreEqual(20,c.PersistentProgress.Owned.Sum(o=>o.Count));
+        }
+
         private Olca.Application.Dungeon.DungeonBattleController StartStandard() => Start(production:true,configure:c=>{Set(c,"dungeonCellCount",100);Set(c,"firstEnemyCell",50);Set(c,"enemySpacing",30);});
         [Test]
         public void 標準製品マップは初戦後の空セルだけにショップと既存回復を配置し初期資源を増やさない()
@@ -2545,6 +2603,9 @@ namespace Olca.Tests.Integration
         [TestCase(false,false,4)][TestCase(false,true,4)]
         public void 標準旧保存と旧出撃計画は旧マップで再開し帰還後の次回だけ新配置を使う(bool legacy,bool existingFile,int oldVisits)
         {
+            // 旧進行の試験で新規スターター配布を混ぜない。
+            var legacyProgress=new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress"));
+            Assert.IsTrue(legacyProgress.TryWrite(0,new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N")},out var legacyError),legacyError);
             var c=StartStandard();var map=oldVisits==4?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutTerrain",Hidden).Invoke(c,new object[]{false}):oldVisits==3?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutItemRewards",Hidden).Invoke(c,new object[]{false}):oldVisits>0?(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonVisits",Hidden).Invoke(c,new object[]{false,oldVisits==1}):(DungeonConfig)c.GetType().GetMethod("CreateDefaultDungeonWithoutVisits",Hidden).Invoke(c,new object[]{legacy});
             var deck=(Deck)c.GetType().GetMethod("CreateDepartureDeck",Hidden).Invoke(c,new object[]{legacy});var memory=DungeonCheckpointSession.CreateDefault(map,deck);
             new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:memory);var old=memory.Store.Read();
@@ -3917,6 +3978,31 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(GamePhase.DungeonCleared, game.CurrentPhase);
             Assert.IsTrue(CheckpointCodec.TryRestore(session.Store.Read(), session.Definitions, out var result, out var error), error); return result;
         }
+        [TestCase(false)][TestCase(true)]
+        public void スターターは保存失敗と書込後例外でも同じ20枚を一度だけ確定する(bool after)
+        {
+            var io=new FaultIo{Before=!after,After=after};var store=Store(io);var session=new ClearReturnSession(store);
+            var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            bool ok=session.InitializeStarter(cards);Assert.AreEqual(after,ok);
+            if(!after){Assert.AreEqual(0,session.Snapshot.Owned.Length);Assert.IsTrue(session.HasPendingSave);io.Before=false;Assert.IsTrue(session.Retry());}
+            Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));var id=session.Snapshot.EquippedDeckId;
+            session=new ClearReturnSession(Store());Assert.IsFalse(session.InitializeStarter(cards));
+            Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));Assert.AreEqual(id,session.Snapshot.EquippedDeckId);
+            Assert.AreEqual(1,session.Snapshot.SavedDecks.Length);
+        }
+
+        [Test]
+        public void スターター配布後の複数デッキ保存切替と再開は所持を増殖しない()
+        {
+            var session=new ClearReturnSession(Store());var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(session.InitializeStarter(cards));var original=session.Snapshot.SavedDecks.Single();
+            Assert.IsTrue(session.Begin(Terminal(),"fixture",new ClearReturnSettings()));Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            var id=System.Guid.NewGuid().ToString("N");Assert.IsTrue(session.SaveDeck(id,"複製",original.Cards));Assert.IsTrue(session.EquipDeck(id));
+            Assert.AreEqual(2,session.Snapshot.SavedDecks.Length);Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));
+            session=new ClearReturnSession(Store());Assert.AreEqual(id,session.Snapshot.EquippedDeckId);Assert.IsFalse(session.InitializeStarter(cards));
+            Assert.IsTrue(session.DeleteDeck(original.Id));Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));
+        }
+
         private Olca.Unity.ClearReturnFileStore Store(FaultIo io = null) => new Olca.Unity.ClearReturnFileStore(directory, io);
         [Test]
         public void 複数レベルで節目を越える経験値は保存再試行と再開で二重成長せず帰還後だけ反映する()

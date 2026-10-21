@@ -720,7 +720,7 @@ namespace Olca.Application.Dungeon
         private void ResumeClearReturnIfNeeded()
         {
             if (!clearReturnSession.Ready) { ShowClearReturn(); return; }
-            if (initialHub) { clearReturnVisible = true; OpenDungeonSelection(); return; }
+            if (initialHub) { clearReturnVisible = true; ShowDungeonSelection(); return; }
             if (clearReturnSession.Snapshot.NextDeparture != null && !awaitingCheckpointChoice && !HasIncompleteReturn) {
                 if (!ActivateNextDeparture(out var startError)) { clearReturnError = startError; ShowClearReturn(); }
                 return;
@@ -757,6 +757,7 @@ namespace Olca.Application.Dungeon
             if(savedDeckMenuOpen){clearReturnSession.Retry();if(!clearReturnSession.HasPendingSave){savedDeckDirty=false;editingSavedDeckId=null;ownedDepartureError=null;}ShowSavedDeckMenu();return;}
             if (!clearReturnSession.Retry()) { if (initialHub) ShowDungeonSelection(); else ShowClearReturn(); return; }
             if (initialHub && clearReturnSession.Snapshot.NextDeparture != null) { if (!ActivateNextDeparture(out clearReturnError)) ShowDungeonSelection(); return; }
+            if (initialHub) { ShowDungeonSelection(); return; }
             if (!progressStartupBlocked && clearReturnSession.Snapshot.NextDeparture?.ParentRunId == clearReturnSession.Snapshot.Flow?.RunId &&
                 clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) {
                 if (!ActivateNextDeparture(out clearReturnError)) ShowClearReturn();
@@ -1004,6 +1005,13 @@ namespace Olca.Application.Dungeon
                 awaitingCheckpointChoice = store.HasExistingData;
                 // 旧保存には新規出撃条件を遡及適用しない。
                 if (!awaitingCheckpointChoice) dungeonConfig.ValidateFinalFloorForDeparture();
+            }
+            // 通常の新規開始だけに配布。空の旧進行/既存攻略/外部fixtureへ遡及しない。
+            if (configuredDungeon == null && floorDefinitions == null && configuredDepartureDeck == null &&
+                !awaitingCheckpointChoice && clearReturnSession.Ready && clearReturnStore is INewClearReturnStore fresh && fresh.IsNewProfile)
+            {
+                initialDeck = cardFactory.CreateStarterDeck();
+                clearReturnSession.InitializeStarter(initialDeck.GetAllCards());
             }
             if (dungeonChoices == null) dungeonChoices = new List<DungeonChoice> { new DungeonChoice { Floors = floorDefinitions, Single = nextDepartureDefinitions } };
             initialHub = dungeonSelectionEnabled && clearReturnSession.Ready && clearReturnSession.Snapshot.Flow == null &&

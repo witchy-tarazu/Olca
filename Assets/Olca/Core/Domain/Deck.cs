@@ -499,6 +499,8 @@ namespace Olca.Core.Domain
         ClearReturnProfile Read(out string error);
         bool TryWrite(long expectedRevision, ClearReturnProfile next, out string error);
     }
+    /// <summary>未作成の進行保存だけを明示する。空の旧保存とは区別する。</summary>
+    public interface INewClearReturnStore { bool IsNewProfile { get; } }
     // 保存成功までは現状態を変更しない。失敗後も同じ計画を再試行し、受領済みRunIdを再計上しない。
     public sealed class ClearReturnSession
     {
@@ -522,6 +524,25 @@ namespace Olca.Core.Domain
             if (read == null) { Ready = false; return Fail(error ?? "進行データを読み込めません"); }
             try { ClearReturnProfile.Validate(read); current = read.Copy(); Ready = true; Error = null; return true; }
             catch (ArgumentException e) { Ready = false; return Fail(e.Message); }
+        }
+        public bool InitializeStarter(IReadOnlyList<Card> cards)
+        {
+            if (!Available() || !(store is INewClearReturnStore fresh) || !fresh.IsNewProfile ||
+                current.Revision != 0 || current.Level != 1 || current.Experience != 0 || current.Tokens != 0 ||
+                current.Owned.Length != 0 || current.Receipts.Length != 0 || current.ClearedDungeons.Length != 0 ||
+                current.Flow != null || current.NextDeparture != null || current.SavedDecks.Length != 0 ||
+                current.EquippedDeckId != null || current.ExchangeStock != null || current.SelectedStyleId != null)
+                return Fail("既存の進行データにはスターターを配布しません");
+            if(cards==null)return Fail("スターター定義が必要です");
+            var counts=cards.Where(c=>c!=null).GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            if(!DepartureDeckRules.TryCreate(cards,counts,out _,out var error))return Fail(error);
+            var next=current.Copy();
+            next.Owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).Select(g=>new OwnedCardCount {
+                Id=g.Key.Id,Level=g.Key.ExceedLevel,Name=g.First().Name,Rarity=g.First().Rarity,Count=g.Count() }).ToArray();
+            string id=Guid.NewGuid().ToString("N");
+            next.SavedDecks=new[]{new SavedDepartureDeck {Id=id,Name="スターター",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel}).ToArray()}};
+            next.EquippedDeckId=id;
+            return Stage(next);
         }
         private bool Fail(string error) { Error = error; return false; }
         private bool Available() => Ready && !writing && pending == null;
