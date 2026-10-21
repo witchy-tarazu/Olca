@@ -183,6 +183,9 @@ namespace Olca.Core.Logic.Dungeon
 
             logger.LogInfo($"[DungeonSystem] ダンジョン初期化: {config.DungeonName}");
             checkpointSession = checkpoints;
+            visitDefinitions=config.Visits;
+            if(visitDefinitions.Count>0&&checkpoints==null)throw new ArgumentException("停止地点には保存セッションが必要です");
+            visits=restoration?.Snapshot.Visits??PlanVisits(visitDefinitions,checkpoints?.RunId??"");
             if (checkpoints != null)
             {
                 if (restoration != null)
@@ -205,6 +208,30 @@ namespace Olca.Core.Logic.Dungeon
         /// 毎フレーム更新 - 整数ベース版
         /// </summary>
         /// <param name="deltaTimeMs">経過時間（ミリ秒）</param>
+                private readonly IReadOnlyList<DungeonVisitDefinition> visitDefinitions;
+        private DungeonVisitDto[] visits;
+        private DungeonVisitDto activeVisit;
+        public DungeonVisitDefinition ActiveVisit => activeVisit==null?null:visitDefinitions.Single(v=>v.Cell==activeVisit.Cell);
+        public DungeonVisitDto ActiveVisitState => activeVisit?.Copy();
+        internal DungeonVisitDto[] CaptureVisits()=>visits?.Select(v=>v.Copy()).ToArray();
+        internal static DungeonVisitDto[] PlanVisits(IReadOnlyList<DungeonVisitDefinition> definitions,string runId) => definitions.Count==0?null:definitions.Select(d=>new DungeonVisitDto{
+            Cell=d.Cell,Options=Enumerable.Range(0,d.Options.Count).OrderBy(i=>CheckpointValues.Hash(w=>{w.Write(runId);w.Write(d.Hash);w.Write(d.Options[i].Id);} ),StringComparer.Ordinal).Take(d.Slots).ToArray(),Purchased=new bool[d.Slots]}).ToArray();
+        public bool ChooseVisit(int slot)
+        {
+            if(activeVisit==null||IsCheckpointBlocked||checkpointSuspended||activeVisit.Closed||slot<0||slot>=activeVisit.Options.Length||activeVisit.Purchased[slot]||(!ActiveVisit.IsShop&&activeVisit.Purchased.Any(x=>x)))return false;
+            var option=ActiveVisit.Options[activeVisit.Options[slot]];if(Currency<option.Price)return false;
+            Currency-=option.Price;activeVisit.Purchased[slot]=true;
+            if(option.Card!=null)cardRewardSystem.SelectCard(option.Card);else playerCharacter.Heal(option.Heal);
+            return true;
+        }
+        public bool ExitVisit()
+        {
+            if(activeVisit==null||IsCheckpointBlocked||checkpointSuspended)return false;
+            activeVisit.Closed=true;
+            try{StageCheckpoint(checkpointSession.Capture(this,CheckpointBoundary.RewardCompleted),()=>{activeVisit=null;playerMovement.Resume();});return !IsCheckpointBlocked;}
+            catch(ArgumentException e){BlockCheckpoint(e.Message);return false;}
+        }
+
         private bool explorationHpFrame, explorationHpUpdated;
         private readonly List<PenaltyInfo> pendingObstaclePenalties = new List<PenaltyInfo>();
         private ContactInfo pendingPoisonFrameContact;
@@ -223,7 +250,7 @@ namespace Olca.Core.Logic.Dungeon
         public void TickFrame() => TickStep(0, true);
         private void TickStep(int deltaTimeMs, bool logicalFrame)
         {
-            if (processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
+            if (activeVisit!=null || processingTick || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked || checkpointSuspended ||
                 playerCharacter.CurrentHp <= 0 || playerMovement.IsPaused) return;
             processingTick = true; explorationHpUpdated=false;
             obstacleVisualUnits += logicalFrame ? 50 : Math.Max(0,deltaTimeMs) * 3L;
@@ -239,6 +266,7 @@ namespace Olca.Core.Logic.Dungeon
                 {
                     var cell = map.GetCell(i);
                     if (cell == null) continue;
+                    if(visits!=null&&visits.Any(v=>v.Cell==i&&!v.Closed)&&step.TryCellRange(i,0,out var vf,out var vl))contacts.Add(new ContactSystem.SweptContact(cell,vf,step));
                     if (cell.Obstacle != null && !processedObstacleCells.Contains(i) &&
                         step.TryCellRange(i, 0, out var first, out var last))
                         contacts.Add(new ContactSystem.SweptContact(cell, first, step));
@@ -254,6 +282,10 @@ namespace Olca.Core.Logic.Dungeon
                 {
                     playerMovement.ApplyStep(step, contact.Position);
                     if (contact.Cell.Obstacle != null) CheckObstacles(contact.Cell);
+                    else if(visits!=null&&visits.Any(v=>v.Cell==contact.Cell.Index&&!v.Closed)) {
+                        CommitExplorationHp();if(playerCharacter.IsDead)return;
+                        playerMovement.ResetAirborneMovement();playerMovement.Pause();activeVisit=visits.Single(v=>v.Cell==contact.Cell.Index);return;
+                    }
                     else if (contactSystem.NotifyContact(contact.Cell, playerMovement)) return;
                     // 通知先で開始・終了・再開が同期実行されても、残りの移動を持ち越さない。
                     if (playerCharacter.CurrentHp <= 0 || IsInBattle || IsFloorCompleted || IsDungeonCleared || IsCheckpointBlocked ||
@@ -956,6 +988,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly Dictionary<int, float> heights = new Dictionary<int, float>();
         private readonly Dictionary<int, Obstacle> obstacles = new Dictionary<int, Obstacle>();
         // 既存の障害物なし/即時ダメージ保存は版1/2を維持。破棄型を含む定義だけ版3。
+        internal IReadOnlyList<DungeonVisitDefinition> Visits { get; private set; }
         public int SchemaVersion => obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
         internal void ValidateProcessedObstacles(CheckpointDto dto)
         {
@@ -991,6 +1024,7 @@ namespace Olca.Core.Logic.Dungeon
             if (string.IsNullOrWhiteSpace(revision) || map == null || string.IsNullOrWhiteSpace(map.DungeonId) ||
                 map.TotalCellCount <= 0 || map.MapCells.Count != map.TotalCellCount)
                 throw new ArgumentException("固定マップ定義が不完全です");
+            Visits=map.Visits;
             Revision = revision; DungeonId = map.DungeonId; CellCount = map.TotalCellCount;
             dungeonName = map.DungeonName; initialDeckSize = map.InitialDeckSize;
             MapHash = CheckpointValues.Hash(w => {
@@ -1031,11 +1065,13 @@ namespace Olca.Core.Logic.Dungeon
                         if (e.PoiseDefinition.RecoveryDelayFrames.HasValue) { w.Write("poise-recovery"); w.Write(e.PoiseDefinition.RecoveryDelayFrames.Value); } }
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
                 }
+                if(Visits.Count>0){w.Write("dungeon-visits-v1");foreach(var v in Visits)w.Write(v.Hash);}
             });
         }
 
         internal void ValidateCurrentMap(DungeonMap map)
         {
+            if(!Visits.Select(v=>v.Hash).SequenceEqual(map.Visits.Select(v=>v.Hash)))throw new ArgumentException("停止地点の定義が不一致です");
             if (map.TotalCellCount != CellCount) throw new ArgumentException("マップサイズが定義と一致しません");
             for (int i = 0; i < CellCount; i++)
             {
@@ -1070,7 +1106,7 @@ namespace Olca.Core.Logic.Dungeon
                 cells.Add(obstacles.TryGetValue(i, out var obstacle) ? new MapCell(i, CopyObstacle(obstacle)) :
                     restoredEnemies.TryGetValue(i, out var enemy) && !enemy.IsDead
                     ? new MapCell(i, enemy, heights[i]) : new MapCell(i));
-            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize);
+            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits);
         }
 
         public void RegisterCard(string key, Card definition)
@@ -1288,6 +1324,12 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointValues.Require(d.PositionMilli >= 0 && d.PositionMilli < (long)definitions.CellCount * 1000, "探索位置が範囲外です");
                 definitions.ValidateProcessedObstacles(d);
                 CheckpointValues.Require(d.Currency >= 0, "通貨が負値です");
+                if(definitions.Visits.Count==0)CheckpointValues.Require(d.Visits==null,"未定義の停止地点です");
+                else {
+                    CheckpointValues.Require(d.Visits!=null&&d.Visits.Length==definitions.Visits.Count,"停止地点が欠落しています");
+                    for(int i=0;i<definitions.Visits.Count;i++){var v=d.Visits[i];var def=definitions.Visits[i];
+                        CheckpointValues.Require(v!=null&&v.Cell==def.Cell&&v.Options!=null&&v.Purchased!=null&&v.Options.Length==def.Slots&&v.Purchased.Length==def.Slots&&v.Options.Distinct().Count()==def.Slots&&v.Options.All(n=>n>=0&&n<def.Options.Count)&& (def.IsShop||v.Purchased.Count(x=>x)<=1),"停止地点の候補/購入履歴が不正です");}
+                }
                 var p = d.Player;
                 CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 && p.StaggerFrames >= 0 && (!p.PoiseRecoveryFrames.HasValue || p.PoiseRecoveryFrames > 0) &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
@@ -1468,6 +1510,7 @@ namespace Olca.Core.Logic.Dungeon
         public static DungeonCheckpointSession CreateDefault(DungeonConfig map, Deck deck)
         {
             var definitions = new CheckpointDefinitions("fixed-runtime-v1", map);
+            foreach(var card in map.Visits.SelectMany(v=>v.Options).Where(o=>o.Card!=null).Select(o=>o.Card).GroupBy(c=>CheckpointValues.CardHash(c)).Select(g=>g.First()))definitions.RegisterCard("visit/v1/"+CheckpointValues.CardHash(card),card);
             foreach (var group in deck.GetAllCards().GroupBy(c => CheckpointValues.CardHash(c)))
                 definitions.RegisterCard("initial/v1/" + group.Key, group.First());
             foreach (var rarity in new[] { CardRarity.Normal, CardRarity.Limited })
@@ -1526,6 +1569,7 @@ namespace Olca.Core.Logic.Dungeon
                 ProcessedObstacleCells = Definitions.SchemaVersion >= 2 ? dungeon.CheckpointProcessedObstacles : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
+                Visits=dungeon.CaptureVisits(),
                 Player = new CheckpointPlayerDto { Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
                     Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
                     WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
@@ -1609,6 +1653,7 @@ namespace Olca.Core.Logic.Dungeon
             next.DungeonId = floor.DungeonId; next.MapHash = floor.MapHash;
             next.Sequence = checked(next.Sequence + 1); next.Boundary = CheckpointBoundary.Departure;
             next.PositionMilli = 0; next.Player.GridX = next.Player.GridY = 0; next.Battle = null;
+            next.Visits=DungeonSystem.PlanVisits(floor.Visits,next.RunId);
             next.ProcessedObstacleCells = floor.SchemaVersion >= 2 ? new int[0] : null;
             next.Enemies = floor.Enemies.Select(pair => new CheckpointEnemyDto {
                 CellIndex = pair.Key, EnemyId = pair.Value.EnemyId, Hp = pair.Value.MaxHp,

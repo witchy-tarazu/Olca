@@ -11,6 +11,7 @@ namespace Olca.Core.Domain
         public string DungeonName { get; }
         public int TotalCellCount { get; }         // 総マス数
         public int InitialDeckSize { get; }        // 初期デッキ枚数（デフォルト20枚）
+        public IReadOnlyList<DungeonVisitDefinition> Visits { get; }
         public List<MapCell> MapCells { get; }     // マス配置データ
 
         public DungeonConfig(
@@ -18,13 +19,15 @@ namespace Olca.Core.Domain
             string dungeonName,
             int totalCellCount,
             List<MapCell> mapCells,
-            int initialDeckSize = 20)
+            int initialDeckSize = 20, IReadOnlyList<DungeonVisitDefinition> visits = null)
         {
             DungeonId = dungeonId;
             DungeonName = dungeonName;
             TotalCellCount = totalCellCount;
             MapCells = mapCells ?? new List<MapCell>();
             InitialDeckSize = initialDeckSize;
+            Visits=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(visits??System.Array.Empty<DungeonVisitDefinition>()));
+            if(System.Linq.Enumerable.Any(Visits,v=>v==null||v.Cell>=totalCellCount-1||MapCells[v.Cell].Type!=CellType.Empty)||System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(Visits,v=>v.Cell)))!=Visits.Count)throw new System.ArgumentException("停止地点は重複しない空セルへ配置してください");
         }
 
         /// <summary>
@@ -170,8 +173,10 @@ namespace Olca.Core.Domain
         public CheckpointEnemyDto[] Enemies = new CheckpointEnemyDto[0];
         // 版2のみ。版1の既存保存では欠落/nullを維持する。
         public int[] ProcessedObstacleCells;
+        public DungeonVisitDto[] Visits; // 旧省略/nullは停止地点なし
         public CheckpointBattleDto Battle;
         public CheckpointDto Copy() => new CheckpointDto {
+            Visits = Visits==null?null:System.Array.ConvertAll(Visits,v=>v?.Copy()),
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
             MapHash = MapHash, RunId = RunId, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
             Player = Player?.Copy(), Cards = Cards == null ? null : System.Array.ConvertAll(Cards, c => c?.Copy()),
@@ -195,4 +200,41 @@ namespace Olca.Core.Domain
             FormatVersion = FormatVersion, RouteId = RouteId, Revision = Revision, RouteHash = RouteHash,
             FloorIndex = FloorIndex, State = State?.Copy() };
     }
+    /// <summary>既存カード/回復処理だけを登録する探索停止地点。イベント内容は製品データで指定する。</summary>
+    public sealed class DungeonVisitOption
+    {
+        public string Id { get; }
+        public long Price { get; }
+        public int Heal { get; }
+        private readonly Card card;
+        public Card Card => card?.Clone();
+        public string Label => card?.Name ?? "HP回復 " + Heal;
+        public DungeonVisitOption(string id,long price,Card card=null,int heal=0) {
+            if(string.IsNullOrWhiteSpace(id)||price<0||heal<0||(card==null)==(heal==0))throw new System.ArgumentException("既存カードまたは正の回復量が必要です");
+            Id=id;Price=price;this.card=card?.Clone();Heal=heal;
+        }
+    }
+    public sealed class DungeonVisitDefinition
+    {
+        public int Cell { get; }
+        public bool IsShop { get; }
+        public int Slots { get; }
+        public IReadOnlyList<DungeonVisitOption> Options { get; }
+        public DungeonVisitDefinition(int cell,bool shop,IReadOnlyList<DungeonVisitOption> options,int slots) {
+            if(cell<1||options==null||slots<1||slots>options.Count||System.Linq.Enumerable.Any(options,o=>o==null)||
+                System.Linq.Enumerable.Count(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(options,o=>o.Id)))!=options.Count ||
+                (shop&&System.Linq.Enumerable.Any(options,o=>o.Price<=0))||(!shop&&slots!=options.Count))throw new System.ArgumentException("停止地点の候補/枠が不正です");
+            Cell=cell;IsShop=shop;Slots=slots;Options=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(options));
+        }
+        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));}});
+    }
+    public sealed class DungeonVisitDto
+    {
+        public int Cell;
+        public int[] Options;
+        public bool[] Purchased;
+        public bool Closed;
+        public DungeonVisitDto Copy()=>new DungeonVisitDto{Cell=Cell,Options=Options==null?null:(int[])Options.Clone(),Purchased=Purchased==null?null:(bool[])Purchased.Clone(),Closed=Closed};
+    }
+
 }

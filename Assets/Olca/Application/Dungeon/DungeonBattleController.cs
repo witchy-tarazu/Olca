@@ -104,7 +104,7 @@ namespace Olca.Application.Dungeon
         private readonly BasicAttackInputState basicAttackInput = new BasicAttackInputState();
         private BasicAttackHud basicAttackHud;
         private bool queuedTouchJump, queuedTouchDash, queuedTouchCard;
-        private bool ExplorationUiAvailable => manager?.CurrentPhase==GamePhase.Dungeon && !IsUserPaused && !GameplayPause.InputBlocked &&
+        private bool ExplorationUiAvailable => manager?.Dungeon.ActiveVisit==null && manager?.CurrentPhase==GamePhase.Dungeon && !IsUserPaused && !GameplayPause.InputBlocked &&
             !clearReturnVisible && !collectionOpen && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && manager.Dungeon.IsExplorationMoving;
         private void QueueExplorationFromUi(bool jump)
         {
@@ -163,7 +163,7 @@ namespace Olca.Application.Dungeon
         private void RefreshBasicAttackHud()
         {
             if (basicAttackHud == null) return;
-            bool visible = (manager?.CurrentPhase == GamePhase.Battle || manager?.CurrentPhase == GamePhase.Dungeon) && !clearReturnVisible && !collectionOpen &&
+            bool visible = manager?.Dungeon.ActiveVisit==null && (manager?.CurrentPhase == GamePhase.Battle || manager?.CurrentPhase == GamePhase.Dungeon) && !clearReturnVisible && !collectionOpen &&
                 (keyboardSettingsView == null || !keyboardSettingsView.gameObject.activeSelf);
             basicAttackHud.gameObject.SetActive(visible); if (!visible) return;
             if(manager.CurrentPhase==GamePhase.Dungeon) { basicAttackHud.RenderExploration(ExplorationUiAvailable); return; }
@@ -935,7 +935,8 @@ namespace Olca.Application.Dungeon
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, checkpoints: initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null ? null : memoryCheckpoints, cardDatabase: cardFactory,
+                fusionSystem: fusionSystem, checkpoints: initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
+                    ? (dungeonConfig.Visits.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
@@ -967,14 +968,37 @@ namespace Olca.Application.Dungeon
         }
 
         // EventSystemとViewのUpdateで受けたクリックを、同じ描画フレームの論理処理へ渡す。
+                private int? renderedVisitCell;
+        private int selectedVisit = -1;
+        private void RefreshDungeonVisit()
+        {
+            if(manager.Dungeon.ActiveVisit==null){if(renderedVisitCell.HasValue&&!clearReturnVisible)clearReturnView.gameObject.SetActive(false);renderedVisitCell=null;selectedVisit=-1;return;}
+            if(IsUserPaused){clearReturnView.gameObject.SetActive(false);return;}
+            if(renderedVisitCell!=manager.Dungeon.ActiveVisit.Cell||!clearReturnView.gameObject.activeSelf){selectedVisit=-1;logicalLoop.ReleaseInput();ShowDungeonVisit();}
+        }
+        private void ShowDungeonVisit()
+        {
+            var d=manager.Dungeon;var definition=d.ActiveVisit;var state=d.ActiveVisitState;if(definition==null)return;
+            renderedVisitCell=definition.Cell;
+            var enabled=state.Purchased.Select(p=>!p&&(definition.IsShop||!state.Purchased.Any(x=>x))).ToArray();
+            var names=state.Options.Select((n,i)=>(state.Purchased[i]?"［済］ ":"")+definition.Options[n].Label+" / "+definition.Options[n].Price+" 通貨").ToArray();
+            bool can=selectedVisit>=0&&enabled[selectedVisit]&&d.Currency>=definition.Options[state.Options[selectedVisit]].Price;
+            clearReturnView.RenderDungeonVisit((definition.IsShop?"ダンジョンショップ":"イベント")+" / 所持 "+d.Currency+" 通貨",names,enabled,selectedVisit,d.IsCheckpointBlocked,can,
+                i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon))return;selectedVisit=i;ShowDungeonVisit();},
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ChooseVisit(selectedVisit);selectedVisit=-1;ShowDungeonVisit();},
+                ()=>{selectedVisit=-1;ShowDungeonVisit();},
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true));
+        }
+
         private void LateUpdate()
         {
             if (manager == null) return;
             RefreshTouchContext();
-            bool active = !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
+            bool active = manager.Dungeon.ActiveVisit==null && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
             logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
-                () => manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused));
+                () => manager.Dungeon.ActiveVisit==null && (manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused)));
             ApplyPendingFloor();
+            RefreshDungeonVisit();
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
             RefreshBasicAttackHud();
@@ -1009,6 +1033,7 @@ namespace Olca.Application.Dungeon
 
         private void HandleInput(LogicalInput input, int deltaTimeMs)
         {
+            if(manager.Dungeon.ActiveVisit!=null)return;
             switch (manager.CurrentPhase)
             {
                 case GamePhase.Dungeon:

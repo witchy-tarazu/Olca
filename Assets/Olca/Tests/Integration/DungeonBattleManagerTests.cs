@@ -4239,3 +4239,85 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class DungeonVisitFlowTests
+    {
+        private sealed class FaultStore : ICheckpointStore {
+            public readonly MemoryCheckpointStore Inner;public bool Fail;public System.Action During;
+            public FaultStore(CheckpointDefinitions definitions){Inner=new MemoryCheckpointStore(definitions);}
+            public bool TryWrite(CheckpointDto d,out string error){During?.Invoke();if(Fail){error="fixture exit save failure";return false;}return Inner.TryWrite(d,out error);}
+            public CheckpointDto Read()=>Inner.Read();
+        }
+        private sealed class ExitIo : Olca.Unity.CheckpointFileIo {
+            public string Fault;public override void Replace(string temporary,string destination,string backup){if(Fault=="before")throw new System.IO.IOException("visit fixture before");base.Replace(temporary,destination,backup);if(Fault=="after")throw new System.IO.IOException("visit fixture after");}
+        }
+        [TestCase("before")][TestCase("after")]
+        public void 停止地点の実ファイル退出保存は保存前後エラーと再開でも一回だけ取引する(string fault) {
+            Start(true,out var original,out var memory);var directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-visit-"+System.Guid.NewGuid().ToString("N"));
+            try{var io=new ExitIo();var file=new Olca.Unity.FileCheckpointStore(original.Definitions,directory,io);Assert.IsTrue(file.TryWrite(memory.Read(),out var error),error);
+                var session=new DungeonCheckpointSession(original.Definitions,file);Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var game,out error),error);game.Dungeon.ActivateCheckpoint();Enter(game);
+                Assert.IsTrue(game.Dungeon.ChooseVisit(0));io.Fault=fault;bool saved=game.Dungeon.ExitVisit();
+                if(fault=="before"){Assert.IsFalse(saved);Assert.AreEqual(20,file.Read().Currency);io.Fault=null;Assert.IsTrue(game.RetryCheckpoint());}else Assert.IsTrue(saved);
+                var data=file.Read();Assert.AreEqual(10,data.Currency);Assert.AreEqual(1,data.ObtainedOrder.Length);Assert.AreEqual(2,data.DeckOrder.Length);Assert.IsTrue(data.Visits[0].Closed);
+                Assert.IsTrue(CheckpointCodec.TryRestore(data,original.Definitions,out var restored,out error),error);Assert.AreEqual(10,restored.Snapshot.Currency);Assert.AreEqual(1,restored.Obtained.Count);
+                Assert.IsFalse(game.Dungeon.ChooseVisit(0));Assert.IsFalse(game.Dungeon.ExitVisit());
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+        [Test]
+        public void 停止地点なしの旧マップhashは維持し候補定義の変更と欠落だけを拒否する() {
+            var legacy=DungeonConfig.CreateTestDungeon(5,30,4);legacy.MapCells[4]=new MapCell(4,new Enemy("boss","旧dash",200,ElementType.None,new Vector2Int(4,0)));var old=new CheckpointDefinitions("v1",legacy);Assert.AreEqual("FD6B09962EE734F318E3FC8905339460CBB37E720D5FAFD732E88CDE71665090",old.MapHash);
+            var game=Start(true,out var session,out var store);var copy=store.Read();copy.Visits=null;Assert.IsFalse(CheckpointCodec.TryRestore(copy,session.Definitions,out _,out _));
+            var same=session.Definitions.CreateInitialMap();Assert.AreEqual(1,same.Visits.Count);Assert.AreEqual(session.Definitions.MapHash,new CheckpointDefinitions("fixed-runtime-v1",same).MapHash);
+        }
+        private static DungeonConfig Map(bool shop) {
+            var m=DungeonConfig.CreateTestDungeon(8,100,7);var factory=new Olca.Application.Battle.SimpleCardFactory();
+            var options=shop?new[]{new DungeonVisitOption("sword",10,factory.CreateById("sword")),new DungeonVisitOption("bomb",10,factory.CreateById("bomb"))}:
+                new[]{new DungeonVisitOption("existing-heal",0,heal:20)};
+            return new DungeonConfig(m.DungeonId,m.DungeonName,m.TotalCellCount,m.MapCells,visits:new[]{new DungeonVisitDefinition(2,shop,options,options.Length)});
+        }
+        private static DungeonBattleManager Start(bool shop,out DungeonCheckpointSession session,out FaultStore store,bool funded=true) {
+            var map=Map(shop);var deck=new Deck(new List<Card>{new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")});
+            var seed=DungeonCheckpointSession.CreateDefault(map,deck);new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:seed);
+            var dto=seed.Store.Read();dto.Currency=funded?20:0;dto.Player.Hp=60;
+            Assert.IsTrue(CheckpointCodec.TryRestore(dto,seed.Definitions,out var state,out var error),error);
+            store=new FaultStore(seed.Definitions);Assert.IsTrue(store.TryWrite(dto,out error),error);session=new DungeonCheckpointSession(seed.Definitions,store);
+            return new DungeonBattleManager(state.Map,state.Player,state.Deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,restoration:state);
+        }
+        private static void Enter(DungeonBattleManager game){for(int i=0;i<100&&game.Dungeon.ActiveVisit==null;i++)game.TickFrame(17);Assert.IsNotNull(game.Dungeon.ActiveVisit);}
+        [TestCase(true)][TestCase(false)]
+        public void 停止地点は通常探索で入り選択中の移動毒タイマーとダッシュを停止し退出保存する(bool shop) {
+            var game=Start(shop,out var session,out var store);game.Dungeon.Player.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,10000,1),30);Enter(game);
+            var d=game.Dungeon;float position=d.PlayerPosition;var poison=d.Player.CapturePoisons()[0];int hp=d.Player.CurrentHp;long seq=store.Read().Sequence;
+            game.SetUserPaused(true);for(int i=0;i<100;i++)game.TickFrame(17);game.SetUserPaused(false);for(int i=0;i<100;i++)game.TickFrame(17);
+            Assert.AreEqual(position,d.PlayerPosition);Assert.AreEqual(hp,d.Player.CurrentHp);Assert.AreEqual(poison.RemainingUnits,d.Player.CapturePoisons()[0].RemainingUnits);
+            Assert.IsTrue(d.ChooseVisit(0));Assert.IsFalse(d.ChooseVisit(0));Assert.AreEqual(shop?10:20,d.Currency);Assert.AreEqual(shop?hp:System.Math.Min(100,hp+20),d.Player.CurrentHp);
+            Assert.AreEqual(seq,store.Read().Sequence,"取引は退出まで未確定");Assert.IsTrue(d.ExitVisit());Assert.IsNull(d.ActiveVisit);Assert.AreEqual(seq+1,store.Read().Sequence);
+            Assert.IsTrue(store.Read().Visits[0].Closed);Assert.IsFalse(d.ChooseVisit(0));
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,store),new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
+            restored.Dungeon.ActivateCheckpoint();for(int i=0;i<5;i++)restored.TickFrame(17);Assert.IsNull(restored.Dungeon.ActiveVisit);Assert.AreEqual(d.Currency,restored.Dungeon.Currency);
+            Assert.AreEqual(d.GetCurrentDeck().TotalCount,restored.Dungeon.GetCurrentDeck().TotalCount);Assert.AreEqual(d.GetObtainedCards().Count,restored.Dungeon.GetObtainedCards().Count);
+        }
+        [TestCase(true)][TestCase(false)]
+        public void 退出保存失敗は同じ候補と取引を再試行し再入を拒否し保存前再開はまとめて戻す(bool shop) {
+            var game=Start(shop,out var session,out var store);Enter(game);var d=game.Dungeon;var before=store.Read();Assert.IsTrue(d.ChooseVisit(0));store.Fail=true;
+            Assert.IsFalse(d.ExitVisit());Assert.IsTrue(d.IsCheckpointBlocked);Assert.IsFalse(d.ChooseVisit(0));Assert.AreEqual(before.Sequence,store.Read().Sequence);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var rolledBack,out var error),error);Assert.AreEqual(20,rolledBack.Snapshot.Currency);Assert.AreEqual(60,rolledBack.Player.CurrentHp);Assert.IsFalse(rolledBack.Snapshot.Visits[0].Purchased[0]);
+            store.Fail=false;store.During=()=>Assert.IsFalse(d.ChooseVisit(0));Assert.IsTrue(game.RetryCheckpoint());store.During=null;
+            Assert.IsFalse(game.RetryCheckpoint());Assert.IsNull(d.ActiveVisit);Assert.AreEqual(shop?10:20,store.Read().Currency);Assert.AreEqual(shop?1:0,store.Read().ObtainedOrder.Length);
+        }
+        [Test]
+        public void ショップの不足選択取消相当退出と候補保存は所持を増やさず再抽選もしない() {
+            var game=Start(true,out var session,out var store,false);Enter(game);var d=game.Dungeon;Assert.IsFalse(d.ChooseVisit(0));Assert.AreEqual(0,d.Currency);Assert.AreEqual(0,d.GetObtainedCards().Count);
+            var options=store.Read().Visits[0].Options;Assert.IsTrue(d.ExitVisit());CollectionAssert.AreEqual(options,store.Read().Visits[0].Options);Assert.AreEqual(0,store.Read().ObtainedOrder.Length);
+            var invalid=store.Read();invalid.Visits[0].Options[0]=99;Assert.IsFalse(CheckpointCodec.TryRestore(invalid,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void イベントは一回の確定のみで既存回復を適用し退出再進入で繰り返さない() {
+            var game=Start(false,out var session,out var store);Enter(game);Assert.IsTrue(game.Dungeon.ChooseVisit(0));Assert.IsFalse(game.Dungeon.ChooseVisit(0));Assert.AreEqual(80,game.Dungeon.Player.CurrentHp);Assert.IsTrue(game.Dungeon.ExitVisit());
+            Assert.AreEqual(80,store.Read().Player.Hp);Assert.AreEqual(20,store.Read().Currency);Assert.IsEmpty(store.Read().ObtainedOrder);
+        }
+    }
+}

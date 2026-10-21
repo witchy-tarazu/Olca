@@ -289,7 +289,22 @@ namespace Olca.Presentation.Dungeon
             if (openTokenExchange != null && !blocked && error == null) Button("OpenTokenExchange", "トークン交換所", 430, -510, 800, 58, openTokenExchange);
             if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -510, 850, 58, retrySave);
         }
-                private int exchangePage;
+                        public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
+            Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit)
+        {
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("DungeonVisitContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            Text("VisitTitle",title,0,435,1450,90,32);
+            Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit);
+            for(int i=0;i<names.Length;i++){int slot=i;var button=Button("VisitOption_"+i,(selected==i?"［選択中］ ":"")+names[i],0,260-i*90,1700,76,()=>choose(slot));button.interactable=!blocked&&enabled[i];}
+            Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,-280,1750,100,24);
+            Button("ConfirmVisit","選択を確定",-560,-440,520,72,confirmVisit).interactable=!blocked&&canConfirm;
+            Button("CancelVisit","選択取消",0,-440,520,72,cancelVisit).interactable=!blocked&&selected>=0;
+            Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit).interactable=!blocked;
+        }
+
+        private int exchangePage;
         public void RenderTokenExchange(ClearReturnProfile profile, string selected, bool blocked, string error,
             Action<string> choose, Action buy, Action cancel, Action close, Action retrySave)
         {
