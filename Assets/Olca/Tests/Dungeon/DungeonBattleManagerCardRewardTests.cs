@@ -366,14 +366,14 @@ namespace Olca.Tests.Dungeon
             Assert.AreEqual(1, random.FloatCalls);
         }
 
-        [TestCase("boss")]
-        [TestCase("final_boss")]
-        public void ボス保証は高い乱数でも抽選を消費せず報酬を出す(string id)
+        [TestCase("boss", true, 0)]
+        [TestCase("final_boss", false, 1)]
+        public void ボス保証は完全一致だけで通常敵は抽選する(string id, bool expected, int calls)
         {
             var random = new CountingRewardRandom { Roll = 1f };
             var rewards = new CardRewardSystem(CreateTestDeck(), random);
-            Assert.IsTrue(rewards.ShouldDropCard(new Enemy(id, "ボス", 100, ElementType.None, new Vector2Int(9, 0))));
-            Assert.AreEqual(0, random.FloatCalls);
+            Assert.AreEqual(expected, rewards.ShouldDropCard(new Enemy(id, "ボス", 100, ElementType.None, new Vector2Int(9, 0))));
+            Assert.AreEqual(calls, random.FloatCalls);
         }
 
         [TestCase(0.4999f, true)]

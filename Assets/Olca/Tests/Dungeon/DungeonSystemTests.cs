@@ -1249,6 +1249,37 @@ namespace Olca.Tests.Dungeon
             Assert.IsFalse(CheckpointCodec.TryRestore(departure,definitions,out _,out _));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 部分一致IDの新規通常報酬と旧保存一候補を再抽選せず復帰する(bool legacy)
+        {
+            map.MapCells[3] = new MapCell(3, new Enemy("miniboss", "通常敵", 50, ElementType.None, new Vector2Int(3, 0)));
+            var updated = new CheckpointDefinitions("fixture-v1", map);
+            updated.RegisterCard("standard/v1/sword", standard);
+            updated.RegisterCard("fallback/v1/sword", fallback);
+            foreach (string id in new[] { "sword", "heal", "shield", "fire", "ice" })
+                updated.RegisterCard("reward/v1/" + id, CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal));
+            var oldReward = CardRewardSystem.CreateFallbackCard("sword", CardRarity.Limited);
+            updated.RegisterCard("legacy/boss/sword", oldReward);
+            departure.MapHash = updated.MapHash; departure.Enemies[0].EnemyId = "miniboss";
+            definitions = updated;
+            var snapshot = FindPlan(legacy).Snapshot;
+            if (legacy)
+            {
+                var keep = snapshot.Battle.RewardCandidates[0];
+                var remove = snapshot.Battle.RewardCandidates.Skip(1).ToArray();
+                snapshot.Battle.RewardCandidates = new[] { keep };
+                snapshot.Cards = snapshot.Cards.Where(c => !remove.Contains(c.InstanceId))
+                    .Select(c => c.InstanceId == keep ? definitions.CaptureCard(keep, "legacy/boss/sword", oldReward) : c).ToArray();
+            }
+            var store = new MemoryCheckpointStore(definitions);
+            Assert.IsTrue(store.TryWrite(snapshot, out var error), error);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(), definitions, out var restored, out error), error);
+            CollectionAssert.AreEqual(snapshot.Battle.RewardCandidates, restored.Snapshot.Battle.RewardCandidates);
+            Assert.AreEqual(legacy ? 1 : 0, restored.RewardCandidates.Count);
+            if (legacy) Assert.AreEqual(CardRarity.Limited, restored.RewardCandidates[0].Rarity);
+        }
+
         private CheckpointBattleDto Encounter() => new CheckpointBattleDto {
             ContactCell = 3, ParticipantCells = new[] { 3 }, HandLimit = 2, GridOriginX = -1,
             DashContact = true, DashEffect = (int)ActionSystem.DashContactEffect.InitialDamage };

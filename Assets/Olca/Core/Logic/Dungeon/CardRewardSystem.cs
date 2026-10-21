@@ -43,7 +43,7 @@ namespace Olca.Core.Logic.Dungeon
             if (defeatedEnemy == null) return false;
 
             // ボスは100%ドロップ
-            if (defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss"))
+            if (defeatedEnemy.EnemyId == "boss")
             {
                 return true;
             }
@@ -66,7 +66,7 @@ namespace Olca.Core.Logic.Dungeon
             var choices = new List<Card>();
 
             // ボスの場合は1枚のみ（高レアリティ）
-            if (defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss"))
+            if (defeatedEnemy.EnemyId == "boss")
             {
                 Card bossCard = GenerateCard(CardRarity.Limited);  // ボスからはリミテッド
                 choices.Add(bossCard);
@@ -96,7 +96,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             choices = new List<Card>();
             if (cardPool == null || defeatedEnemy == null) return false;
-            bool boss = defeatedEnemy.EnemyId == "boss" || defeatedEnemy.EnemyId.Contains("boss");
+            bool boss = defeatedEnemy.EnemyId == "boss";
             var definitions = cardPool.GetCandidates(boss ? CardRarity.Limited : CardRarity.Normal);
             var candidates = new List<Card>();
             var seen = new HashSet<(string, ExceedLevel)>();

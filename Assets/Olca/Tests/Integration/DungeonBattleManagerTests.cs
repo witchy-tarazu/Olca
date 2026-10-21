@@ -1941,7 +1941,7 @@ namespace Olca.Tests.Integration
         private DungeonConfig Map(int discard)
         {
             var map = DungeonConfig.CreateTestDungeon(20, 30, 3);
-            // 報酬を必ず得る検証用敵。最終ボスのセル種別・製品値は変更しない。
+            // 通常敵の報酬は下記の固定計画seedで得る。部分一致IDをボス扱いしない。
             map.MapCells[3] = new MapCell(3, new Enemy("boss_fixture", "fixture", 50, ElementType.None, new Vector2Int(3,0)));
             map.MapCells[10] = new MapCell(10, Obstacle.CreateCardDiscardObstacle("discard-fixture", "fixture", discard));
             return map;
@@ -1962,7 +1962,7 @@ namespace Olca.Tests.Integration
         {
             var defaults=DungeonCheckpointSession.CreateDefault(Map(discard),Deck());var io=new FailIo();
             var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory,io);
-            var session=new DungeonCheckpointSession(defaults.Definitions,store);var random=new MockRandomProvider();
+            var session=new DungeonCheckpointSession(defaults.Definitions,store);var random=new MockRandomProvider(fixedIntValue:1);
             var manager=new DungeonBattleManager(Map(discard),new PlayerCharacter(100),Deck(),random,new MockLogger(),checkpoints:session);
             IReadOnlyList<Card> choices=null;manager.OnCardRewardPresented+=value=>choices=value;
             ReachBattle(manager);Assert.IsNotNull(manager.CurrentBattle);

@@ -1198,8 +1198,12 @@ namespace Olca.Core.Logic.Dungeon
                     var b = d.Battle;
                     ValidateEncounter(b, p, enemies);
                     ValidateReferences(b.FirstHand, cards); ValidateReferences(b.RewardCandidates, cards);
-                    bool boss = enemies[b.ContactCell].EnemyId.Contains("boss");
-                    CheckpointValues.Require(boss ? b.RewardOffered : (!b.RewardOffered || b.RewardCandidates.Length == 3), "報酬件数と接敵種別が一致しません");
+                    string contactId = enemies[b.ContactCell].EnemyId;
+                    bool boss = contactId == "boss";
+                    // 旧版は部分一致IDにもボス候補を保存した。保存済みの1〜3候補を再抽選せず受理する。
+                    // 新版の同じ通常敵では報酬なしも合法。新規抽選にはこの互換条件を使わない。
+                    bool legacyBossCandidates = contactId.Contains("boss") && b.RewardOffered;
+                    CheckpointValues.Require(boss ? b.RewardOffered : (!b.RewardOffered || b.RewardCandidates.Length == 3 || legacyBossCandidates), "報酬件数と接敵種別が一致しません");
                     CheckpointValues.Require(b.FirstHand.Length == Math.Min(b.HandLimit, d.DeckOrder.Length) && b.FirstHand.All(id => d.DeckOrder.Contains(id)), "初回手札が不整合です");
                     CheckpointValues.Require(b.RewardOffered == (b.RewardCandidates.Length > 0) && b.RewardCandidates.Length <= 3 &&
                         b.RewardCandidates.All(id => !d.DeckOrder.Contains(id) && !d.ObtainedOrder.Contains(id)), "報酬候補が不整合です");

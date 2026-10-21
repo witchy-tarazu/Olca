@@ -13,6 +13,21 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class CardRewardSystemTests
     {
+        [TestCase("boss", true, 1)]
+        [TestCase("miniboss", false, 3)]
+        [TestCase("boss_guard", false, 3)]
+        [TestCase("Boss", false, 3)]
+        public void 新規報酬のボス識別はマップと同じ完全一致(string id, bool boss, int count)
+        {
+            var enemy = new Enemy(id, "敵", 100, ElementType.None, new Vector2Int(3, 0));
+            var rewards = new CardRewardSystem(new Deck(new List<Card>()), new MockRandomProvider(fixedFloatValue: 1f));
+            Assert.AreEqual(boss ? CellType.Boss : CellType.Enemy, new MapCell(3, enemy).Type);
+            Assert.AreEqual(boss, rewards.ShouldDropCard(enemy));
+            var choices = rewards.GenerateCardChoices(enemy);
+            Assert.AreEqual(count, choices.Count);
+            Assert.IsTrue(choices.All(c => c.Rarity == (boss ? CardRarity.Limited : CardRarity.Normal)));
+        }
+
         [Test]
         public void 通貨は初期参加した撃破敵だけを集計し召喚物と後発参加を除外する()
         {
