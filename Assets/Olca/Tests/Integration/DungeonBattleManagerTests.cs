@@ -4433,3 +4433,123 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    public class ItemBattleRewardTests
+    {
+        private sealed class FaultStore:ICheckpointStore{
+            public readonly MemoryCheckpointStore Inner;public bool Fail;public System.Action During;
+            public FaultStore(CheckpointDefinitions defs){Inner=new MemoryCheckpointStore(defs);}
+            public bool TryWrite(CheckpointDto dto,out string error){During?.Invoke();if(Fail){error="item reward save failure";return false;}return Inner.TryWrite(dto,out error);}
+            public CheckpointDto Read()=>Inner.Read();
+        }
+        private sealed class FaultIo:Olca.Unity.CheckpointFileIo{
+            public string Fault;public override void Replace(string temporary,string destination,string backup){if(Fault=="before")throw new System.IO.IOException("item before");base.Replace(temporary,destination,backup);if(Fault=="after")throw new System.IO.IOException("item after");}
+        }
+        private static DungeonBattleManager Start(string kind,out DungeonCheckpointSession session,out FaultStore store,int hp=60,int chance=100,int seed=0)
+        {
+            bool boss=kind.Contains("boss");var m=DungeonConfig.CreateTestDungeon(20,100,boss?100:2);if(kind=="late")m.MapCells[12]=new MapCell(12,new Enemy("late","既存強敵",50,ElementType.None,new Vector2Int(4,0)));
+            var strong=kind=="strong"?new[]{2}:kind=="late"?new[]{12}:new int[0];
+            var map=new DungeonConfig(m.DungeonId,m.DungeonName,20,m.MapCells,strongEnemyCells:strong,itemRewards:new[]{new ItemRewardEntry(new FieldItem("heal","ヒール",20))},itemRewardChance:chance);
+            var deck=new Deck(new List<Card>{new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")});var defaults=DungeonCheckpointSession.CreateDefault(map,deck);store=new FaultStore(defaults.Definitions);session=new DungeonCheckpointSession(defaults.Definitions,store);
+            var player=new PlayerCharacter(100);if(hp<100)player.TakeDamage(100-hp);
+            var game=new DungeonBattleManager(map,player,deck,new MockRandomProvider(seed),new MockLogger(),checkpoints:session,hasNextFloor:kind=="midboss");game.Dungeon.ConfigureCurrencyReward(10);
+            for(int i=0;i<200&&game.CurrentBattle==null&&!game.Dungeon.IsCheckpointBlocked;i++)game.TickFrame(17);
+            Assert.IsFalse(game.Dungeon.IsCheckpointBlocked,game.Dungeon.CheckpointError);Assert.IsNotNull(game.CurrentBattle);return game;
+        }
+        private static void Kill(DungeonBattleManager game){foreach(var enemy in game.CurrentBattle.Enemies.ToArray())if(!enemy.IsSummoned&&!enemy.IsDead)enemy.TakeDamage(enemy.MaxHp,ElementType.None);}
+        private static Card CardChoice(DungeonBattleManager game,DungeonCheckpointSession session,FaultStore store,bool receive)
+        {
+            if(!store.Read().Battle.RewardOffered)return null;Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var state,out var error),error);
+            // 通常ランタイムの同一候補を選ぶ。復元した別参照は使わない。
+            var choices=(List<Card>)typeof(DungeonSystem).GetField("pendingRewardChoices",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(game.Dungeon);var card=receive?choices[0]:null;game.SelectCardReward(card);return card;
+        }
+        [TestCase("normal",false)][TestCase("strong",true)][TestCase("midboss",true)][TestCase("finalboss",false)][TestCase("late",false)]
+        public void 強敵と中間ボスだけで初期参加条件を満たす一枠を固定する(string kind,bool expected)
+        {
+            var game=Start(kind,out var session,out var store);var plan=store.Read();Assert.AreEqual(expected,plan.Battle.ItemRewardIndex.HasValue);
+            if(kind=="late")game.Dungeon.Map.GetCell(12).Enemy.TakeDamage(50,ElementType.None);Kill(game);CardChoice(game,session,store,false);
+            Assert.AreEqual(expected,game.Dungeon.PendingItemReward!=null);if(expected)game.SelectItemReward(false);if(game.Dungeon.PendingCurrencyReward>0)game.SelectCurrencyReward(false);
+            Assert.IsNull(store.Read().Battle);Assert.AreEqual(60,store.Read().Player.Hp);
+        }
+        [TestCase(false,false,false)][TestCase(false,false,true)][TestCase(false,true,false)][TestCase(false,true,true)]
+        [TestCase(true,false,false)][TestCase(true,false,true)][TestCase(true,true,false)][TestCase(true,true,true)]
+        public void カードアイテム通貨の別枠は独立選択し全終了後に一回だけ保存する(bool card,bool item,bool currency)
+        {
+            var game=Start("midboss",out var session,out var store);var d=game.Dungeon;long seq=store.Read().Sequence;Kill(game);var selected=CardChoice(game,session,store,card);Assert.IsNotNull(d.PendingItemReward);
+            game.SelectItemReward(item);Assert.AreEqual(item?80:60,d.Player.CurrentHp);game.SelectItemReward(!item);Assert.AreEqual(item?80:60,d.Player.CurrentHp);Assert.AreEqual(seq,store.Read().Sequence);
+            Assert.AreEqual(10,d.PendingCurrencyReward);game.SelectCurrencyReward(currency);game.SelectCurrencyReward(!currency);
+            Assert.AreEqual(seq+1,store.Read().Sequence);Assert.AreEqual(item?80:60,store.Read().Player.Hp);Assert.AreEqual(currency?10:0,store.Read().Currency);Assert.AreEqual(card?1:0,store.Read().ObtainedOrder.Length);
+            if(card)Assert.AreSame(selected,d.GetObtainedCards().Single());
+        }
+        [Test]
+        public void 満タン受取も一度で消費しポーズ中の受取と重複を拒否する()
+        {
+            var game=Start("strong",out var session,out var store,hp:100);Kill(game);CardChoice(game,session,store,false);game.SetUserPaused(true);game.SelectItemReward(true);Assert.IsNotNull(game.Dungeon.PendingItemReward);game.SetUserPaused(false);
+            game.SelectItemReward(true);Assert.IsNull(game.Dungeon.PendingItemReward);Assert.AreEqual(100,game.Dungeon.Player.CurrentHp);game.SelectItemReward(true);game.SelectCurrencyReward(false);Assert.AreEqual(100,store.Read().Player.Hp);
+        }
+        [Test]
+        public void 召喚撃破は報酬を提示せず初期強敵撃破後だけ一回提示する()
+        {
+            var game=Start("strong",out var session,out var store);int count=0;game.Dungeon.OnItemRewardOffered+=_=>count++;
+            var summon=new Enemy("summon","既存召喚fixture",5,ElementType.None,new Vector2Int(5,0),isSummoned:true);game.CurrentBattle.AddSummon(summon,new List<Olca.Core.Logic.Battle.IEnemyAIAction>{new Olca.Core.Logic.Battle.BasicAttackAction(attackDamage:1,cooldown:10)});
+            summon.TakeDamage(5,ElementType.None);Assert.AreEqual(0,count);Kill(game);CardChoice(game,session,store,false);Assert.AreEqual(1,count);game.SelectItemReward(false);game.SelectItemReward(true);Assert.AreEqual(1,count);game.SelectCurrencyReward(false);
+        }
+        [Test]
+        public void 保存失敗再試行と戦闘開始からの再開で候補と回復を二重適用しない()
+        {
+            var game=Start("strong",out var session,out var store);var before=store.Read();Kill(game);CardChoice(game,session,store,false);game.SelectItemReward(true);Assert.AreEqual(80,game.Dungeon.Player.CurrentHp);store.Fail=true;game.SelectCurrencyReward(true);
+            Assert.IsTrue(game.Dungeon.IsCheckpointBlocked);game.SelectItemReward(true);Assert.AreEqual(80,game.Dungeon.Player.CurrentHp);Assert.AreEqual(before.Sequence,store.Read().Sequence);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),session.Definitions,out var rollback,out var error),error);Assert.AreEqual(60,rollback.Player.CurrentHp);Assert.AreEqual(before.Battle.ItemRewardIndex,rollback.Snapshot.Battle.ItemRewardIndex);
+            store.Fail=false;store.During=()=>game.SelectItemReward(true);Assert.IsTrue(game.RetryCheckpoint());store.During=null;Assert.IsFalse(game.RetryCheckpoint());Assert.AreEqual(80,store.Read().Player.Hp);Assert.AreEqual(10,store.Read().Currency);
+        }
+        [TestCase("before")][TestCase("after")]
+        public void 実ファイル保存前後エラーでも同じ結果を再試行し再起動で回復を増やさない(string fault)
+        {
+            Start("strong",out var original,out var memory);var path=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-item-reward-"+System.Guid.NewGuid().ToString("N"));
+            try{var io=new FaultIo();var disk=new Olca.Unity.FileCheckpointStore(original.Definitions,path,io);Assert.IsTrue(disk.TryWrite(memory.Read(),out var error),error);
+                Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(original.Definitions,disk),new MockRandomProvider(999),new MockLogger(),out var game,out error),error);game.ActivateCheckpoint();Kill(game);
+                var choices=(List<Card>)typeof(DungeonSystem).GetField("pendingRewardChoices",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(game.Dungeon);if(choices!=null)game.SelectCardReward(null);
+                game.SelectItemReward(true);io.Fault=fault;game.SelectCurrencyReward(true);if(game.Dungeon.IsCheckpointBlocked){io.Fault=null;Assert.IsTrue(game.RetryCheckpoint());}
+                var reopened=new Olca.Unity.FileCheckpointStore(original.Definitions,path);Assert.IsTrue(CheckpointCodec.TryRestore(reopened.Read(),original.Definitions,out var result,out error),error);Assert.AreEqual(80,result.Player.CurrentHp);Assert.AreEqual(10,result.Snapshot.Currency);Assert.IsNull(result.Snapshot.Battle);
+            }finally{if(System.IO.Directory.Exists(path))System.IO.Directory.Delete(path,true);}
+        }
+        [Test]
+        public void 保存済み候補は異なる乱数で再抽選せず旧省略も報酬なしを保つ()
+        {
+            Start("strong",out var session,out var store);var saved=store.Read();Assert.IsTrue(saved.Battle.ItemRewardIndex.HasValue);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,store),new MockRandomProvider(999),new MockLogger(),out var restored,out var error),error);restored.ActivateCheckpoint();CollectionAssert.AreEqual(saved.Battle.FirstHand,store.Read().Battle.FirstHand);Assert.AreEqual(saved.Battle.ItemRewardIndex,store.Read().Battle.ItemRewardIndex);
+            var old=saved.Copy();old.Sequence++;old.Battle.ItemRewardIndex=null;old.Battle.ItemRewardHasNextFloor=null;var oldStore=new MemoryCheckpointStore(session.Definitions);Assert.IsTrue(oldStore.TryWrite(old,out error),error);
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,oldStore),new MockRandomProvider(999),new MockLogger(),out var legacy,out error),error);legacy.ActivateCheckpoint();Kill(legacy);if(old.Battle.RewardOffered)legacy.SelectCardReward(null);Assert.IsNull(legacy.Dungeon.PendingItemReward);Assert.AreEqual(60,legacy.Dungeon.Player.CurrentHp);
+        }
+        [TestCase(true)][TestCase(false)]
+        public void 中間ボスの保存復帰は同じ階層条件だけを受け入れる(bool next)
+        {
+            Start("midboss",out var session,out var store);var before=store.Read();
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,store),new MockRandomProvider(999),new MockLogger(),out var game,out var error,hasNextFloor:next),error);game.ActivateCheckpoint();
+            Assert.AreEqual(!next,game.Dungeon.IsCheckpointBlocked);Assert.AreEqual(before.Sequence,store.Read().Sequence);Assert.AreEqual(before.Battle.ItemRewardIndex,store.Read().Battle.ItemRewardIndex);
+        }
+        [Test]
+        public void 空セルを強敵として新規定義に固定せず回復候補率も検証する()
+        {
+            var m=DungeonConfig.CreateTestDungeon(8,100,7);var invalid=new DungeonConfig(m.DungeonId,m.DungeonName,8,m.MapCells,strongEnemyCells:new[]{2});
+            Assert.Throws<System.ArgumentException>(()=>DungeonCheckpointSession.CreateDefault(invalid,new Deck()));
+            Assert.Throws<System.ArgumentException>(()=>new DungeonConfig(m.DungeonId,m.DungeonName,8,m.MapCells,itemRewardChance:101));
+        }
+        [TestCase(-1)][TestCase(99)]
+        public void 不正候補添字と資格外候補を拒否する(int index)
+        {
+            Start("strong",out var session,out var store);var bad=store.Read();bad.Battle.ItemRewardIndex=index;Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+            Start("finalboss",out session,out store);bad=store.Read();bad.Battle.ItemRewardIndex=0;Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
+        }
+        [Test]
+        public void 重みゼロ空プール率ゼロと不正値を区別する()
+        {
+            var item=new FieldItem("heal","ヒール",20);Assert.Throws<System.ArgumentException>(()=>new ItemRewardEntry(item,-1));Assert.Throws<System.ArgumentException>(()=>ItemRewardEntry.Validate(new[]{new ItemRewardEntry(item),new ItemRewardEntry(item)}));
+            var other=new FieldItem("fixture-heal","回復fixture",10);Assert.Throws<System.ArgumentException>(()=>ItemRewardEntry.Validate(new[]{new ItemRewardEntry(item,int.MaxValue),new ItemRewardEntry(other,1)}));
+            Assert.IsNull(ItemRewardEntry.Pick(new ItemRewardEntry[0],100,new MockRandomProvider()));Assert.IsNull(ItemRewardEntry.Pick(new[]{new ItemRewardEntry(item,0)},100,new MockRandomProvider()));Assert.IsNull(ItemRewardEntry.Pick(new[]{new ItemRewardEntry(item)},0,new MockRandomProvider()));
+            var pool=new[]{new ItemRewardEntry(item,1),new ItemRewardEntry(other,3)};Assert.AreEqual(0,ItemRewardEntry.Pick(pool,100,new MockRandomProvider(0)));Assert.AreEqual(1,ItemRewardEntry.Pick(pool,100,new MockRandomProvider(1)));Assert.AreEqual(1,ItemRewardEntry.Pick(pool,100,new MockRandomProvider(3)));
+        }
+    }
+}

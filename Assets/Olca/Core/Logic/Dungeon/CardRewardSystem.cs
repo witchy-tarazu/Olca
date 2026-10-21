@@ -214,3 +214,28 @@ namespace Olca.Core.Logic.Dungeon
     }
 
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>既存アイテム効果の抽選重み。製品の新しい種類は作らない。</summary>
+    public sealed class ItemRewardEntry
+    {
+        public FieldItem Item { get; }
+        public int Weight { get; }
+        public ItemRewardEntry(FieldItem item,int weight=1){if(item==null||weight<0)throw new System.ArgumentException("アイテム/重みが不正です");Item=item;Weight=weight;}
+        public static void Validate(System.Collections.Generic.IReadOnlyList<ItemRewardEntry> pool)
+        {
+            if(pool==null)throw new System.ArgumentNullException(nameof(pool));
+            var seen=new System.Collections.Generic.HashSet<string>();long total=0;
+            foreach(var entry in pool){if(entry==null||!seen.Add(entry.Item.Id))throw new System.ArgumentException("アイテム候補の欠落/重複です");total+=entry.Weight;if(total>int.MaxValue)throw new System.ArgumentException("重み合計が上限を超えています");}
+        }
+        public static int? Pick(System.Collections.Generic.IReadOnlyList<ItemRewardEntry> pool,int chance,Olca.Core.Interfaces.IRandomProvider random)
+        {
+            if(random==null)throw new System.ArgumentNullException(nameof(random));
+            Validate(pool);if(chance<0||chance>100)throw new System.ArgumentOutOfRangeException(nameof(chance));
+            int total=0;foreach(var entry in pool)total+=entry.Weight;if(total==0||chance==0)return null;
+            if(chance<100&&random.Range(0,100)>=chance)return null;
+            int roll=random.Range(0,total);for(int i=0;i<pool.Count;i++){if(roll<pool[i].Weight)return i;roll-=pool[i].Weight;}return null;
+        }
+    }
+}

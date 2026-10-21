@@ -12,11 +12,14 @@ namespace Olca.Core.Logic.Dungeon
     {
         private readonly List<MapCell> cells;
         public IReadOnlyList<DungeonVisitDefinition> Visits { get; }
+        public IReadOnlyList<int> StrongEnemyCells { get; }
+        public IReadOnlyList<ItemRewardEntry> ItemRewards { get; }
+        public int ItemRewardChance { get; }
         private readonly int totalCellCount;
 
         public DungeonMap(DungeonConfig config)
         {
-            Visits=config.Visits;
+            Visits=config.Visits;StrongEnemyCells=config.StrongEnemyCells;ItemRewards=config.ItemRewards;ItemRewardChance=config.ItemRewardChance;
             cells = new List<MapCell>(config.MapCells);
             totalCellCount = config.TotalCellCount;
         }

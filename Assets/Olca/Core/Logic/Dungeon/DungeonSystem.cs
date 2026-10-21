@@ -43,13 +43,33 @@ namespace Olca.Core.Logic.Dungeon
         private int currencyPerEnemy;
         private long earnedCurrency;
         private Card currencyCardSelection;
+        private FieldItem plannedItemReward;
+        private Card itemCardSelection;
+        private List<Enemy> initialItemTargets=new List<Enemy>();
+        public FieldItem PendingItemReward { get; private set; }
+        private bool OfferAfterCard(Card selected)
+        {
+            var item=plannedItemReward;plannedItemReward=null;
+            if(item!=null&&initialItemTargets.Any(e=>e.IsDead)){
+                itemCardSelection=selected;PendingItemReward=item;OnItemRewardOffered?.Invoke(item);return true;
+            }
+            return OfferCurrency(selected);
+        }
+        public void SelectItemReward(bool receive)
+        {
+            if(checkpointSuspended||IsCheckpointBlocked||PendingItemReward==null)return;
+            var item=PendingItemReward;var card=itemCardSelection;PendingItemReward=null;itemCardSelection=null;
+            // 選択を先に消費してから既存回復通知へ進む。重複/再入では二回使えない。
+            if(receive)playerCharacter.Heal(item.Heal);
+            if(!OfferCurrency(card))SaveCheckpointReward(card);
+        }
         public long Currency { get; private set; }
         public long PendingCurrencyReward { get; private set; }
         public void ConfigureCurrencyReward(int amount) {
             if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             currencyPerEnemy = amount;
         }
-        public void DiscardRunCurrency() { Currency = 0; PendingCurrencyReward = 0; earnedCurrency = 0; }
+        public void DiscardRunCurrency() { Currency = 0; PendingCurrencyReward = 0; earnedCurrency = 0; PendingItemReward=null;plannedItemReward=null;itemCardSelection=null; }
         private bool OfferCurrency(Card selected) {
             if (earnedCurrency <= 0) return false;
             currencyCardSelection = selected; PendingCurrencyReward = earnedCurrency; earnedCurrency = 0;
@@ -189,7 +209,7 @@ namespace Olca.Core.Logic.Dungeon
             logger.LogInfo($"[DungeonSystem] ダンジョン初期化: {config.DungeonName}");
             checkpointSession = checkpoints;
             visitDefinitions=config.Visits;
-            if(visitDefinitions.Count>0&&checkpoints==null)throw new ArgumentException("停止地点には保存セッションが必要です");
+            if((visitDefinitions.Count>0||config.ItemRewards.Count>0)&&checkpoints==null)throw new ArgumentException("停止地点/アイテム報酬には保存セッションが必要です");
             visits=restoration?.Snapshot.Visits??PlanVisits(visitDefinitions,checkpoints?.RunId??"");
             if (checkpoints != null)
             {
@@ -663,7 +683,7 @@ namespace Olca.Core.Logic.Dungeon
                 return;
             }
 
-            if (!OfferCurrency(null)) ReturnToDungeon();
+            if (!OfferAfterCard(null)) ReturnToDungeon();
         }
 
         /// <summary>
@@ -676,13 +696,13 @@ namespace Olca.Core.Logic.Dungeon
             {
                 if (pendingRewardChoices == null || (selectedCard != null && !pendingRewardChoices.Contains(selectedCard))) return;
                 pendingRewardChoices = null;
-                if (!OfferCurrency(selectedCard)) SaveCheckpointReward(selectedCard); return;
+                if (!OfferAfterCard(selectedCard)) SaveCheckpointReward(selectedCard); return;
             }
             if (IsFloorCompleted || IsDungeonCleared || pendingRewardChoices == null) return;
             if (selectedCard != null && !pendingRewardChoices.Contains(selectedCard)) return;
 
             pendingRewardChoices = null;
-            if (!OfferCurrency(selectedCard)) FinalizeLegacyCardReward(selectedCard);
+            if (!OfferAfterCard(selectedCard)) FinalizeLegacyCardReward(selectedCard);
         }
         private void FinalizeLegacyCardReward(Card selectedCard)
         {
@@ -898,7 +918,7 @@ namespace Olca.Core.Logic.Dungeon
                     GridOriginX = contact.EnemyCellIndex - 4, HandLimit = new CustomScreenSystem(new Deck()).MaxHandSize };
                 int seed = randomProvider.Range(0, int.MaxValue);
                 if (!CheckpointBattlePlan.TryCreate(dto, encounter, checkpointSession.Definitions, seed, rewardPoolForCheckpoint,
-                    card => checkpointSession.Definitions.CaptureKnownCard("candidate", card).DefinitionKey, out var plan, out var error))
+                    card => checkpointSession.Definitions.CaptureKnownCard("candidate", card).DefinitionKey, out var plan, out var error, hasNextFloor))
                     throw new ArgumentException(error);
                 var snapshot = plan.Snapshot;
                 playerMovement.Pause();
@@ -913,6 +933,7 @@ namespace Olca.Core.Logic.Dungeon
             if (!CheckpointCodec.TryRestore(snapshot, checkpointSession.Definitions, out var restored, out var error))
             { BlockCheckpoint(error); return; }
             var plan = snapshot.Battle;
+            if(plan.ItemRewardHasNextFloor.HasValue&&plan.ItemRewardHasNextFloor.Value!=hasNextFloor){BlockCheckpoint("アイテム報酬計画の階層条件が不一致です");return;}
             checkpointSession.Adopt(restored);
             cardRewardSystem.GetCurrentDeck().RestoreCheckpointOrder(restored.Deck.GetAllCards(), restored.FirstHand);
             cardRewardSystem.RestoreObtained(restored.Obtained);
@@ -926,6 +947,9 @@ namespace Olca.Core.Logic.Dungeon
             plannedRewards = restored.RewardCandidates.ToList(); activeCheckpoint = snapshot.Copy(); pendingRewardChoices = null;
             IsInBattle = true; playerMovement.Pause();
             battleCurrency = new BattleCurrencyRewardSnapshot(participants, e => plan.CurrencyAmounts == null ? 0 : plan.CurrencyAmounts[participants.IndexOf(e)]);
+            PendingItemReward=null;itemCardSelection=null;
+            initialItemTargets=participants.Where(e=>!e.IsSummoned&&checkpointSession.Definitions.ItemQualifyingCells(plan.ParticipantCells,hasNextFloor).Any(i=>ReferenceEquals(map.GetCell(i).Enemy,e))).ToList();
+            plannedItemReward=plan.ItemRewardIndex.HasValue?map.ItemRewards[plan.ItemRewardIndex.Value].Item:null;
             currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
                 randomProvider, logger, exceedSystem, tuningSystem, fusionSystem, cardDatabase: cardDatabase);
             currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
@@ -970,7 +994,7 @@ namespace Olca.Core.Logic.Dungeon
                 pendingRewardChoices = new List<Card>(plannedRewards);
                 OnCardRewardOffered?.Invoke(new List<Card>(pendingRewardChoices));
             }
-            else if (!OfferCurrency(null)) SaveCheckpointReward(null);
+            else if (!OfferAfterCard(null)) SaveCheckpointReward(null);
         }
         private void SaveCheckpointReward(Card selected, long currency = 0)
         {
@@ -996,6 +1020,7 @@ namespace Olca.Core.Logic.Dungeon
         public event Action<ContactInfo> OnBattleStart;
         public event Action<BattleResult> OnBattleEnd;        // バトル終了（勝敗通知）
         public event Action<long> OnCurrencyRewardOffered;
+        public event Action<FieldItem> OnItemRewardOffered;
         public event Action<List<Card>> OnCardRewardOffered;  // カード選択画面表示
         public event Action OnReturnToDungeon;                // ダンジョン復帰
         public event Action<PenaltyInfo> OnObstaclePenalty;   // 障害物ペナルティ
@@ -1023,6 +1048,17 @@ namespace Olca.Core.Logic.Dungeon
         internal bool HasFieldItems => items.Count>0;
         // 既存の障害物なし/即時ダメージ保存は版1/2を維持。破棄型を含む定義だけ版3。
         internal IReadOnlyList<DungeonVisitDefinition> Visits { get; private set; }
+        internal IReadOnlyList<int> StrongEnemyCells { get; private set; }
+        internal IReadOnlyList<ItemRewardEntry> ItemRewards { get; private set; }
+        internal int ItemRewardChance { get; private set; }
+        internal int[] ItemQualifyingCells(IEnumerable<int> initial,bool nextFloor)
+        {
+            var cells=initial.Where(i=>enemies.ContainsKey(i)&&!enemies[i].IsSummoned).Distinct().ToArray();
+            var bosses=cells.Where(i=>enemies[i].EnemyId=="boss").ToArray();
+            return bosses.Length>0?(nextFloor?bosses:new int[0]):cells.Where(i=>StrongEnemyCells.Contains(i)).ToArray();
+        }
+        private static string ItemSettingsHash(IEnumerable<int> strong,IReadOnlyList<ItemRewardEntry> rewards,int chance)=>CheckpointValues.Hash(w=>{foreach(int i in strong.OrderBy(i=>i))w.Write(i);w.Write("pool");w.Write(chance);foreach(var entry in rewards){w.Write(entry.Item.Id);w.Write(entry.Item.Name);w.Write(entry.Item.Heal);w.Write(entry.Weight);}});
+
         public int SchemaVersion => HasFieldItems ? 4 : obstacles.Values.Any(o => o.PenaltyType == ObstaclePenaltyType.CardDiscard) ? 3 : obstacles.Count == 0 ? 1 : 2;
         internal void ValidateProcessedObstacles(CheckpointDto dto)
         {
@@ -1067,7 +1103,7 @@ namespace Olca.Core.Logic.Dungeon
             if (string.IsNullOrWhiteSpace(revision) || map == null || string.IsNullOrWhiteSpace(map.DungeonId) ||
                 map.TotalCellCount <= 0 || map.MapCells.Count != map.TotalCellCount)
                 throw new ArgumentException("固定マップ定義が不完全です");
-            Visits=map.Visits;
+            Visits=map.Visits;StrongEnemyCells=map.StrongEnemyCells;ItemRewards=map.ItemRewards;ItemRewardChance=map.ItemRewardChance;
             Revision = revision; DungeonId = map.DungeonId; CellCount = map.TotalCellCount;
             dungeonName = map.DungeonName; initialDeckSize = map.InitialDeckSize;
             MapHash = CheckpointValues.Hash(w => {
@@ -1114,11 +1150,14 @@ namespace Olca.Core.Logic.Dungeon
                     w.Write(e.GridPosition.X); w.Write(e.GridPosition.Y);
                 }
                 if(Visits.Count>0){w.Write("dungeon-visits-v1");foreach(var v in Visits)w.Write(v.Hash);}
+                if(StrongEnemyCells.Any(i=>!enemies.ContainsKey(i)||enemies[i].IsSummoned||enemies[i].EnemyId=="boss"))throw new ArgumentException("強敵セルには固定した通常敵が必要です");
+                if(StrongEnemyCells.Count>0||ItemRewards.Count>0){w.Write("item-rewards-v1");w.Write(ItemSettingsHash(StrongEnemyCells,ItemRewards,ItemRewardChance));}
             });
         }
 
         internal void ValidateCurrentMap(DungeonMap map)
         {
+            if(ItemSettingsHash(StrongEnemyCells,ItemRewards,ItemRewardChance)!=ItemSettingsHash(map.StrongEnemyCells,map.ItemRewards,map.ItemRewardChance))throw new ArgumentException("アイテム報酬設定が不一致です");
             if(!Visits.Select(v=>v.Hash).SequenceEqual(map.Visits.Select(v=>v.Hash)))throw new ArgumentException("停止地点の定義が不一致です");
             if (map.TotalCellCount != CellCount) throw new ArgumentException("マップサイズが定義と一致しません");
             for (int i = 0; i < CellCount; i++)
@@ -1158,7 +1197,7 @@ namespace Olca.Core.Logic.Dungeon
                 cells.Add(items.TryGetValue(i,out var item) ? new MapCell(i,item) : obstacles.TryGetValue(i, out var obstacle) ? new MapCell(i, CopyObstacle(obstacle)) :
                     restoredEnemies.TryGetValue(i, out var enemy) && !enemy.IsDead
                     ? new MapCell(i, enemy, heights[i]) : new MapCell(i));
-            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits);
+            return new DungeonConfig(DungeonId, dungeonName, CellCount, cells, initialDeckSize,Visits,StrongEnemyCells,ItemRewards,ItemRewardChance);
         }
 
         public void RegisterCard(string key, Card definition)
@@ -1411,6 +1450,7 @@ namespace Olca.Core.Logic.Dungeon
                     var b = d.Battle;
                     ValidateEncounter(b, p, enemies);
                     ValidateReferences(b.FirstHand, cards); ValidateReferences(b.RewardCandidates, cards);
+                    CheckpointValues.Require(!b.ItemRewardIndex.HasValue||(b.ItemRewardHasNextFloor.HasValue&&b.ItemRewardIndex.Value>=0&&b.ItemRewardIndex.Value<definitions.ItemRewards.Count&&definitions.ItemRewards[b.ItemRewardIndex.Value].Weight>0&&definitions.ItemQualifyingCells(b.ParticipantCells,b.ItemRewardHasNextFloor.Value).Length>0),"アイテム報酬候補/戦闘条件が不正です");
                     string contactId = enemies[b.ContactCell].EnemyId;
                     bool boss = contactId == "boss";
                     // 旧版は部分一致IDにもボス候補を保存した。保存済みの1〜3候補を再抽選せず受理する。
@@ -1502,7 +1542,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         public static bool TryCreate(CheckpointDto state, CheckpointBattleDto encounter, CheckpointDefinitions definitions,
             int planningSeed, ICardPool rewardPool, Func<Card, string> rewardDefinitionKey,
-            out CheckpointBattlePlan plan, out string error)
+            out CheckpointBattlePlan plan, out string error, bool hasNextFloor=false)
         {
             plan = null;
             if (!CheckpointCodec.TryRestore(state, definitions, out var restored, out error)) return false;
@@ -1537,6 +1577,9 @@ namespace Olca.Core.Logic.Dungeon
                     }
                     d.Cards = records.ToArray();
                 }
+                d.Battle.ItemRewardIndex=null;d.Battle.ItemRewardHasNextFloor=definitions.ItemRewards.Count>0?(bool?)hasNextFloor:null;
+                if(definitions.ItemQualifyingCells(encounter.ParticipantCells,hasNextFloor).Length>0)
+                    d.Battle.ItemRewardIndex=ItemRewardEntry.Pick(definitions.ItemRewards,definitions.ItemRewardChance,random);
                 if (!CheckpointCodec.TryRestore(d, definitions, out _, out error)) return false;
                 plan = new CheckpointBattlePlan(d, random.Calls); return true;
             }

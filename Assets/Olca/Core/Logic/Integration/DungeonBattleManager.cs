@@ -82,6 +82,7 @@ namespace Olca.Core.Logic.Integration
             };
             dungeonSystem.OnCardRewardOffered += OnCardRewardOfferedHandler;
             dungeonSystem.OnCurrencyRewardOffered += _ => currentPhase = GamePhase.CardReward;
+            dungeonSystem.OnItemRewardOffered += _ => currentPhase = GamePhase.CardReward;
             dungeonSystem.OnReturnToDungeon += OnReturnedToDungeon;
 
             currentPhase = GamePhase.Dungeon;
@@ -202,6 +203,10 @@ namespace Olca.Core.Logic.Integration
         /// カード報酬を選択してダンジョンに戻る
         /// </summary>
         /// <param name="selectedCard">選択したカード（null でスキップ）</param>
+        public void SelectItemReward(bool receive) {
+            if(IsUserPaused||IsSuspended||dungeonSystem.IsCheckpointBlocked||currentPhase!=GamePhase.CardReward)return;
+            dungeonSystem.SelectItemReward(receive);
+        }
         public void SelectCurrencyReward(bool receive) {
             if (IsUserPaused || IsSuspended || dungeonSystem.IsCheckpointBlocked || currentPhase != GamePhase.CardReward) return;
             dungeonSystem.SelectCurrencyReward(receive);
@@ -304,12 +309,12 @@ namespace Olca.Core.Logic.Integration
         public void ActivateCheckpoint() { if (!IsSuspended) dungeonSystem.ActivateCheckpoint(); }
         public bool RetryCheckpoint() => !IsSuspended && dungeonSystem.RetryCheckpoint();
         public static bool TryRestoreCheckpoint(DungeonCheckpointSession session, IRandomProvider random, IGameLogger logger,
-            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null, ICardDatabase cardDatabase = null)
+            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null, ICardDatabase cardDatabase = null, bool hasNextFloor=false)
         {
             manager = null;
             if (!session.TryRead(out var restored, out error)) return false;
             manager = new DungeonBattleManager(restored.Map, restored.Player, restored.Deck, random, logger,
-                exceed, tuning, fusion, checkpoints: session, restoration: restored, cardDatabase: cardDatabase);
+                exceed, tuning, fusion, checkpoints: session, restoration: restored, cardDatabase: cardDatabase,hasNextFloor:hasNextFloor);
             return true;
         }
 
