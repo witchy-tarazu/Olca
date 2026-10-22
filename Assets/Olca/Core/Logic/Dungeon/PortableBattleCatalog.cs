@@ -14,6 +14,7 @@ namespace Olca.Core.Logic.Dungeon
     public sealed class PortableCardDefinition
     {
         public string Key, Hash;
+        public PortableTuningGrant TuningDefinition;
         public string Id;
         public string Name;
         public int Cost;
@@ -45,8 +46,8 @@ namespace Olca.Core.Logic.Dungeon
         public int? RecoveryCancelAfterFrames;
         public static PortableCardDefinition Capture(string key, Card card)
         {
-            if(card==null||card.TuningCount!=0||card.TuningDefinition!=null||card.IsEffectCopy)throw new NotSupportedException("加工/付与定義付きカードの輸送は未対応です");
-            return new PortableCardDefinition { Key=key,Hash=CollectionDisplay.DefinitionHash(card),
+            if(card==null||card.TuningCount!=0||card.IsEffectCopy)throw new NotSupportedException("加工/付与定義付きカードの輸送は未対応です");
+            return new PortableCardDefinition { Key=key,Hash=CollectionDisplay.DefinitionHash(card),TuningDefinition=card.TuningDefinition==null?null:PortableTuningGrant.Capture(card.TuningDefinition.Id,card.TuningDefinition),
                 Id=card.Id,
                 Name=card.Name,
                 Cost=card.Cost,
@@ -81,6 +82,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             if(string.IsNullOrWhiteSpace(Key)||Hash==null||Modifier==null||Modifier.AdditionalEffects==null)throw new ArgumentException("カード定義が欠損しています");
             var card=new Card(Id, Name, Cost, Rarity, Category, Element, Series == null ? null : new CardSeries(Series), Power, Description, TargetType, PanelChangeType, MoveDirection, MoveDistance, Modifier.Clone(), MoveMotionTime, AttackMotionTime, PenetrationMode, StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect, ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames);
+            if(TuningDefinition!=null)card=card.WithTuningDefinition(TuningDefinition.Restore());
             if(CollectionDisplay.DefinitionHash(card)!=Hash)throw new ArgumentException("カード定義のhashが一致しません");return card;
         }
     }
@@ -142,13 +144,13 @@ namespace Olca.Core.Logic.Dungeon
     public sealed class PortableBattlePackage
     {
         public int Version=1;public string Revision,MapHash,CatalogHash;public PortableMapDefinition Map;public PortableCardDefinition[] Cards;
-        public PortableFloorRoute FloorRoute;
+        public PortableFloorRoute FloorRoute;public PortableProcessingCatalog Processing;public PortableTuningGrant[] Grants;
         public byte[] CheckpointEnvelope;public uint ReplaySeed;public uint? RandomState;public long RandomDraws;public PortableBattleRules Rules;
         public static PortableBattlePackage Capture(CheckpointDefinitions definitions,byte[] checkpoint,PortableBattleRules rules,uint replaySeed)
         {
-            if(definitions==null||definitions.PortableGrantCount!=0)throw new NotSupportedException("調律履歴定義の輸送は未対応です");
+            if(definitions==null)throw new ArgumentNullException(nameof(definitions));
             var result=new PortableBattlePackage{Revision=definitions.Revision,MapHash=definitions.MapHash,CatalogHash=definitions.CardCatalogHash,Map=PortableMapDefinition.Capture(definitions.CreateInitialMap()),
-                Cards=definitions.PortableCards.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableCardDefinition.Capture(p.Key,p.Value)).ToArray(),CheckpointEnvelope=(byte[])checkpoint.Clone(),Rules=rules,ReplaySeed=replaySeed};
+                Grants=definitions.PortableGrants.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableTuningGrant.Capture(p.Key,p.Value)).ToArray(),Cards=definitions.PortableCards.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableCardDefinition.Capture(p.Key,p.Value)).ToArray(),CheckpointEnvelope=(byte[])checkpoint.Clone(),Rules=rules,ReplaySeed=replaySeed};
             var saved=PortableCheckpointJson.Decode(checkpoint).Battle?.Random;
             if(saved!=null){saved.Validate();result.ReplaySeed=saved.Seed;result.RandomState=saved.State;result.RandomDraws=saved.Draws;}
             result.Restore(out _);return result;
@@ -166,6 +168,8 @@ namespace Olca.Core.Logic.Dungeon
             if(Version!=1||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");Rules.Validate();
             if(RandomState==0||RandomDraws<0||(!RandomState.HasValue&&RandomDraws!=0))throw new ArgumentException("乱数状態が不正です");
             var defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());
+            if(Grants!=null)foreach(var grant in Grants)defs.RegisterGrant(grant.Key,grant.Restore());
+            if(Processing!=null)Processing.Restore();
             if(defs.MapHash!=MapHash||defs.CardCatalogHash!=CatalogHash)throw new ArgumentException("輸送された製品定義のhashが一致しません");
             if(FloorRoute!=null) {
                 var selected=FloorRoute.Restore(out var state);
@@ -181,9 +185,9 @@ namespace Olca.Core.Logic.Dungeon
         }
         public BattleSimulation CreateSimulation()
         {
-            var restored=Restore(out var catalog);var r=Rules;var settings=new BattleSimulationSettings(restored.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames);
+            var restored=Restore(out var catalog);var processing=Processing?.Restore();var r=Rules;var settings=new BattleSimulationSettings(restored.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames);
             return new BattleSimulation(settings,ReplaySeed,random=>{
-                var battle=CheckpointBattleFactory.Create(restored.Player,new DungeonMap(restored.Map),restored.Deck,restored.Snapshot,restored.FirstHand,random,r.GaugeSpeed,cardDatabase:catalog,checkpointRandomRestored:restored.Snapshot.Battle.Random!=null);
+                var battle=CheckpointBattleFactory.Create(restored.Player,new DungeonMap(restored.Map),restored.Deck,restored.Snapshot,restored.FirstHand,random,r.GaugeSpeed,exceed:processing?.Exceed,tuning:processing?.Tuning,fusion:processing?.Fusion,cardDatabase:catalog,checkpointRandomRestored:restored.Snapshot.Battle.Random!=null);
                 battle.ConfigureDefaultHitInvincibility(r.HitInvincibilityMs);battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(r.StartupFrames,r.RecoveryFrames,r.CancelAfterFrames));return battle;
             },true,randomState:RandomState,randomDraws:RandomDraws);
         }

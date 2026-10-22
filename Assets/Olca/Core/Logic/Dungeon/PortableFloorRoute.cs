@@ -32,18 +32,18 @@ namespace Olca.Core.Logic.Dungeon
     {
         public string Revision,MapHash,CatalogHash;
         public PortableMapDefinition Map;
-        public PortableCardDefinition[] Cards;
+        public PortableCardDefinition[] Cards;public PortableTuningGrant[] Grants;
         internal static PortableFloorDefinition Capture(CheckpointDefinitions definitions)
         {
-            if(definitions.PortableGrantCount!=0)throw new NotSupportedException("調律履歴定義の輸送は未対応です");
             return new PortableFloorDefinition{Revision=definitions.Revision,MapHash=definitions.MapHash,CatalogHash=definitions.CardCatalogHash,
-                Map=PortableMapDefinition.Capture(definitions.CreateInitialMap()),Cards=definitions.PortableCards.OrderBy(c=>c.Key,StringComparer.Ordinal).Select(c=>PortableCardDefinition.Capture(c.Key,c.Value)).ToArray()};
+                Map=PortableMapDefinition.Capture(definitions.CreateInitialMap()),Grants=definitions.PortableGrants.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableTuningGrant.Capture(p.Key,p.Value)).ToArray(),Cards=definitions.PortableCards.OrderBy(c=>c.Key,StringComparer.Ordinal).Select(c=>PortableCardDefinition.Capture(c.Key,c.Value)).ToArray()};
         }
         internal CheckpointDefinitions Restore()
         {
             if(Map==null||Cards==null||Cards.Any(c=>c==null))throw new ArgumentException("階層定義が欠損しています");
             var definitions=new CheckpointDefinitions(Revision,Map.Restore());
             foreach(var card in Cards)definitions.RegisterCard(card.Key,card.Restore());
+            if(Grants!=null)foreach(var grant in Grants)definitions.RegisterGrant(grant.Key,grant.Restore());
             if(definitions.MapHash!=MapHash||definitions.CardCatalogHash!=CatalogHash)throw new ArgumentException("階層定義hashが一致しません");
             return definitions;
         }

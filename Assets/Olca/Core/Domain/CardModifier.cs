@@ -37,6 +37,7 @@ namespace Olca.Core.Domain
             this.stages = new Dictionary<int, CardModifier>();
             if (stages != null) foreach (var pair in stages) this.stages[pair.Key] = pair.Value?.Clone();
         }
+        internal IEnumerable<KeyValuePair<int,CardModifier>> PortableStages => System.Linq.Enumerable.Select(stages,p=>new KeyValuePair<int,CardModifier>(p.Key,p.Value?.Clone()));
         public bool TryGetStage(int stage, out CardModifier value)
         {
             bool found = stages.TryGetValue(stage, out var stored);

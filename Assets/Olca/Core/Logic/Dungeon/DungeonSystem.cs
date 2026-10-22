@@ -1079,6 +1079,7 @@ namespace Olca.Core.Logic.Dungeon
     {
         internal IReadOnlyDictionary<string, Card> PortableCards => cards;
         internal int PortableGrantCount => grants.Count;
+        internal IEnumerable<KeyValuePair<string,TuningGrantDefinition>> PortableGrants => grants;
         public string Revision { get; }
         public string DungeonId { get; }
         public string MapHash { get; }
