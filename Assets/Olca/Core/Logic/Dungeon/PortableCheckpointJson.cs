@@ -33,6 +33,10 @@ namespace Olca.Core.Logic.Dungeon
             if(e==null||e.Version!=1||e.Payload==null||Hash(Encoding.UTF8.GetBytes(e.Payload))!=e.Sha256)throw new InvalidDataException("保存形式が未対応、または整合性検証に失敗しました");
             return Deserialize<FloorSequenceCheckpointDto>(Encoding.UTF8.GetBytes(e.Payload));
         }
+        public static byte[] Encode(ClearReturnProfile value)
+        {ClearReturnProfile.Validate(value);var payload=Serialize(value);return Serialize(new Envelope{Version=1,Payload=Encoding.UTF8.GetString(payload),Sha256=Hash(payload)});}
+        public static ClearReturnProfile DecodeProgress(byte[] bytes)
+        {var e=Deserialize<Envelope>(bytes);if(e==null||e.Version!=1||e.Payload==null||Hash(Encoding.UTF8.GetBytes(e.Payload))!=e.Sha256)throw new InvalidDataException("進行保存の形式またはhashが不正です");var profile=Deserialize<ClearReturnProfile>(Encoding.UTF8.GetBytes(e.Payload));ClearReturnProfile.Validate(profile);return profile;}
         public static CheckpointDto Decode(byte[] bytes)
         {
             var e=Deserialize<Envelope>(bytes);

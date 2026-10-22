@@ -8,7 +8,7 @@ internal static class Program
     private static int Main(string[] args)
     {
         try {
-            PortableBattlePackage package = null;string outputRoot=null,forbiddenRoot=null,inspectResult=null;bool postBattle=false,receive=false,finishFloor=false;
+            PortableBattlePackage package = null;string returnPackage=null,inspectReturn=null;string outputRoot=null,forbiddenRoot=null,inspectResult=null;bool postBattle=false,receive=false,finishFloor=false;
             uint seed = 123; int frames = 240, batch = 1, work = 0; bool verify = false, custom = false, transformation = false, processing = false;
             for (int i = 0; i < args.Length; i++) {
                 if (args[i] == "--finish-floor") { finishFloor=true; continue; }
@@ -20,8 +20,21 @@ internal static class Program
                 if (args[i] == "--verify") { verify = true; continue; }
                 if (i + 1 >= args.Length) throw new ArgumentException("値が必要です: " + args[i]);
                 string key = args[i], value = args[++i];
-                switch (key) { case "--output-root":outputRoot=value;break;case "--forbidden-root":forbiddenRoot=value;break;case "--inspect-result":inspectResult=value;break;case "--package": package = PortableCheckpointJson.Deserialize<PortableBattlePackage>(System.IO.File.ReadAllBytes(value)); break; case "--seed": seed = uint.Parse(value); break; case "--frames": frames = int.Parse(value); break;
+                switch (key) { case "--return-package":returnPackage=value;break;case "--inspect-return":inspectReturn=value;break;case "--output-root":outputRoot=value;break;case "--forbidden-root":forbiddenRoot=value;break;case "--inspect-result":inspectResult=value;break;case "--package": package = PortableCheckpointJson.Deserialize<PortableBattlePackage>(System.IO.File.ReadAllBytes(value)); break; case "--seed": seed = uint.Parse(value); break; case "--frames": frames = int.Parse(value); break;
                     case "--batch": batch = int.Parse(value); break; case "--work": work = int.Parse(value); break; default: throw new ArgumentException("不明な引数: " + key); }
+            }
+            if(inspectReturn!=null){var result=PortableCheckpointJson.Deserialize<PortableReturnResult>(System.IO.File.ReadAllBytes(inspectReturn));Console.WriteLine(result.Canonical());return 0;}
+            if(returnPackage!=null){
+                var input=PortableCheckpointJson.Deserialize<PortableReturnPackage>(System.IO.File.ReadAllBytes(returnPackage));
+                void Load(){long n=0;for(int k=0;k<2000;k++)n=unchecked(n*33+k);GC.KeepAlive(n);}
+                string traceReturn=PortableReturnReplay.Trace(input,batch);
+                if(verify)foreach(int size in new[]{1,7,31,240})if(traceReturn!=PortableReturnReplay.Trace(input,size,Load))throw new InvalidOperationException("帰還コマンドの分割／負荷で結果が変化しました");
+                if(outputRoot!=null){
+                    if(forbiddenRoot==null)throw new ArgumentException("帰還保存には明示した禁止ルートが必要です");var io=new Olca.Unity.CheckpointFileIo(new Olca.Unity.ValidationStorageGuard(outputRoot,forbiddenRoot));var directory=System.IO.Path.Combine(outputRoot,"progress");var resultPath=System.IO.Path.Combine(outputRoot,"return-result.json");io.RequireWritable(directory,resultPath);
+                    if(System.IO.Directory.Exists(directory)||System.IO.File.Exists(resultPath))throw new System.IO.IOException("既存の帰還検証出力を上書きしません");io.CreateDirectory(directory);io.WriteAndFlush(System.IO.Path.Combine(directory,"progress.json"),input.InitialProgressEnvelope);
+                    PortableReturnResult saved=null;var actual=PortableReturnReplay.Trace(input,batch,Load,()=>new Olca.Unity.ClearReturnFileStore(directory,io),r=>saved=r);if(actual!=traceReturn)throw new InvalidOperationException("メモリと実進行保存で帰還結果が異なります");io.WriteAndFlush(resultPath,PortableCheckpointJson.Serialize(saved));
+                }
+                Console.Write(traceReturn);return 0;
             }
             if(inspectResult!=null){var result=PortableCheckpointJson.Deserialize<PortableRunCheckpoint>(System.IO.File.ReadAllBytes(inspectResult));Console.WriteLine(result.Canonical());return 0;}
             if(postBattle&&package==null)throw new ArgumentException("結果保存にはpackageが必要です");

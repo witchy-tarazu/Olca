@@ -367,13 +367,6 @@ namespace Olca.Unity
     // 進行・帰還段階・受領台帳を一つの原子的文書へ保存し、二つのファイル間の部分確定を避ける。
     public sealed class ClearReturnFileStore : Olca.Core.Domain.IClearReturnStore, Olca.Core.Domain.INewClearReturnStore
     {
-        [System.Runtime.Serialization.DataContract]
-        private sealed class Envelope
-        {
-            [System.Runtime.Serialization.DataMember(IsRequired = true)] public int Version;
-            [System.Runtime.Serialization.DataMember(IsRequired = true)] public string Payload;
-            [System.Runtime.Serialization.DataMember(IsRequired = true)] public string Sha256;
-        }
         private readonly CheckpointFileIo io;
         private bool writing;
         public string DirectoryPath { get; }
@@ -386,35 +379,9 @@ namespace Olca.Unity
             DirectoryPath = System.IO.Path.GetFullPath(directory ?? throw new System.ArgumentNullException(nameof(directory)));
             this.io = io ?? new CheckpointFileIo();
         }
-        private static byte[] Serialize<T>(T value)
-        {
-            using (var stream = new System.IO.MemoryStream()) {
-                new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T)).WriteObject(stream, value); return stream.ToArray();
-            }
-        }
-        private static T Deserialize<T>(byte[] bytes)
-        {
-            using (var stream = new System.IO.MemoryStream(bytes))
-                return (T)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T)).ReadObject(stream);
-        }
-        private static string Hash(byte[] bytes)
-        {
-            using (var sha = System.Security.Cryptography.SHA256.Create()) return System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
-        }
-        private static byte[] Encode(Olca.Core.Domain.ClearReturnProfile profile)
-        {
-            var payload = Serialize(profile);
-            return Serialize(new Envelope { Version = 1, Payload = System.Text.Encoding.UTF8.GetString(payload), Sha256 = Hash(payload) });
-        }
-        private static Olca.Core.Domain.ClearReturnProfile Decode(byte[] bytes)
-        {
-            if (bytes.Length == 0 || bytes.Length > 16 * 1024 * 1024) throw new System.IO.InvalidDataException();
-            var envelope = Deserialize<Envelope>(bytes);
-            if (envelope == null || envelope.Version != 1 || envelope.Payload == null || Hash(System.Text.Encoding.UTF8.GetBytes(envelope.Payload)) != envelope.Sha256)
-                throw new System.IO.InvalidDataException();
-            var profile = Deserialize<Olca.Core.Domain.ClearReturnProfile>(System.Text.Encoding.UTF8.GetBytes(envelope.Payload));
-            Olca.Core.Domain.ClearReturnProfile.Validate(profile); return profile;
-        }
+        private static string Hash(byte[] bytes)=>Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(bytes);
+        private static byte[] Encode(Olca.Core.Domain.ClearReturnProfile profile)=>Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile);
+        private static Olca.Core.Domain.ClearReturnProfile Decode(byte[] bytes)=>Olca.Core.Logic.Dungeon.PortableCheckpointJson.DecodeProgress(bytes);
         private static bool Failure(System.Exception e) => e is System.IO.IOException || e is System.UnauthorizedAccessException ||
             e is System.Runtime.Serialization.SerializationException || e is System.Xml.XmlException || e is System.ArgumentException || e is System.Security.SecurityException || e is System.OverflowException;
         public Olca.Core.Domain.ClearReturnProfile Read(out string error)

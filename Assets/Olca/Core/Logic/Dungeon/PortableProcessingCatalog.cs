@@ -66,8 +66,8 @@ namespace Olca.Core.Logic.Dungeon
         public bool HasExceededDefinition(Card c,ExceedLevel level)=>c!=null&&level==(ExceedLevel)((int)c.ExceedLevel+1)&&exceed.ContainsKey(Key(c));
         public Card CreateExceeded(Card c,ExceedLevel level)=>HasExceededDefinition(c,level)?cards[exceed[Key(c)]].Clone():null;
         public string FindResultCardId(IReadOnlyList<string> ids)=>null;
-        public bool HasRecipeContaining(IReadOnlyList<string> ids)=>FusionRecipes.Any(r=>Contains(r.Materials,ids));
-        private IReadOnlyList<CollectionRecipe> FusionRecipes=>recipes;
+        public bool HasRecipeContaining(IReadOnlyList<string> ids)=>CollectionRecipes.Any(r=>Contains(r.Materials,ids));
+        public IReadOnlyList<CollectionRecipe> CollectionRecipes=>recipes;
         private IReadOnlyList<CollectionRecipe> recipes;
         private static bool Contains(IReadOnlyList<string> all,IReadOnlyList<string> requested){if(requested==null||requested.Count==0)return false;var left=all.ToList();return requested.All(id=>left.Remove(id));}
     }
