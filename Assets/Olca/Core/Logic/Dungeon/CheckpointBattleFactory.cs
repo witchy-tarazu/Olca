@@ -8,7 +8,7 @@ using Olca.Core.Logic.CardEffects;
 
 namespace Olca.Core.Logic.Dungeon
 {
-    /// <summary>既存DungeonSystemの戦闘開始復帰を共用。報酬再抽選・途中保存・ダッシュ初撃は行わない。</summary>
+    /// <summary>既存DungeonSystemの戦闘開始復帰を共用。報酬再抽選・途中保存は行わない。初撃は開始準備完了後に呼出元が適用する。</summary>
     public static class CheckpointBattleFactory
     {
         public const float DefaultGaugeSpeed=2f;
@@ -31,6 +31,7 @@ namespace Olca.Core.Logic.Dungeon
             }else logger?.LogWarning("[Checkpoint] 旧保存に乱数状態がないため従来の外部乱数を使用します。旧ライブ列の再現は保証しません");
             var battle=new BattleSystem(player,plan.ParticipantCells.Select(i=>map.GetCell(i).Enemy).ToList(),deck,gaugeSpeed,random,logger,exceed,tuning,fusion,cardDatabase:cardDatabase);
             if(savedRandom!=null)battle.UseCheckpointRandom();
+            battle.StartEffects.Configure(plan.DashContact,plan.DashEffect,plan.DashValue);
             ApplyTerrain(battle,map,(int)plan.GridOriginX);battle.CustomScreen.RestoreCheckpointHand(firstHand);return battle;
         }
     }

@@ -70,7 +70,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void 既存保存封筒のhash不一致と未対応境界は修復や上書きなしで拒否する()
         {
-            var p=Package();var dto=PortableCheckpointJson.Decode(p.CheckpointEnvelope);dto.Battle.DashContact=true;p.CheckpointEnvelope=PortableCheckpointJson.Encode(dto);
+            var p=Package();var dto=PortableCheckpointJson.Decode(p.CheckpointEnvelope);dto.Battle.DashContact=true;dto.Battle.DashEffect=(int)ActionSystem.DashContactEffect.PlayerDamage;dto.Battle.DashValue=null;p.CheckpointEnvelope=PortableCheckpointJson.Encode(dto);
             Assert.Catch(()=>p.CreateSimulation());p=Package();dto=PortableCheckpointJson.Decode(p.CheckpointEnvelope);dto.Boundary=CheckpointBoundary.RewardCompleted;dto.Battle=null;p.CheckpointEnvelope=PortableCheckpointJson.Encode(dto);Assert.Catch(()=>p.CreateSimulation());
         }
     }

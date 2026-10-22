@@ -79,6 +79,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>カスタム画面システム</summary>
         public CustomScreenSystem CustomScreen => customScreen;
+        public BattleStartEffects StartEffects { get; }
         public TransformationSelectionState Transformations { get; }
 
         /// <summary>カード使用システム</summary>
@@ -198,6 +199,7 @@ namespace Olca.Core.Logic.Battle
             FusionSystem fusionSystem = null,
             IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null)
         {
+            StartEffects = new BattleStartEffects(this,logger);
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
             this.battleField = new BattleField(initialPermanentHoles);

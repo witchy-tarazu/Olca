@@ -159,7 +159,7 @@ namespace Olca.Core.Logic.Dungeon
             var defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());
             if(defs.MapHash!=MapHash||defs.CardCatalogHash!=CatalogHash)throw new ArgumentException("輸送された製品定義のhashが一致しません");
             if(!CheckpointCodec.TryRestore(PortableCheckpointJson.Decode(CheckpointEnvelope),defs,out var restored,out var error))throw new InvalidDataException(error);
-            if(restored.Snapshot.Boundary!=CheckpointBoundary.BattleStart||restored.Snapshot.Battle.DashContact)throw new NotSupportedException("この入口は通常接触の戦闘開始チェックポイントのみ対応します");
+            if(restored.Snapshot.Boundary!=CheckpointBoundary.BattleStart)throw new NotSupportedException("この入口は戦闘開始チェックポイントのみ対応します");
             var saved=restored.Snapshot.Battle.Random;
             if(saved!=null&&(ReplaySeed!=saved.Seed||RandomState!=saved.State||RandomDraws!=saved.Draws))throw new ArgumentException("輸送側の乱数指定が保存状態と一致しません");
             catalog=new PortableCardCatalog(Cards.Select(c=>c.Restore()));return restored;

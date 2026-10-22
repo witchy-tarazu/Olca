@@ -25,7 +25,7 @@ namespace Olca.Core.Logic.Battle
         }
         public static string Trace(PortableBattlePackage package,int batch=1,Action renderWork=null)
         {
-            if(batch<1)throw new ArgumentOutOfRangeException(nameof(batch));var simulation=package.CreateSimulation();var commands=Commands(package);var trace=new StringBuilder();
+            if(batch<1)throw new ArgumentOutOfRangeException(nameof(batch));var simulation=package.CreateSimulation();var commands=Commands(package);var trace=new StringBuilder();trace.Append(simulation.InitialObservation.Canonical).Append('\n');
             for(int start=0;start<commands.Count;start+=batch){renderWork?.Invoke();for(int i=start;i<Math.Min(commands.Count,start+batch);i++)trace.Append(simulation.Step(commands[i]).Canonical).Append('\n');}return trace.ToString();
         }
     }

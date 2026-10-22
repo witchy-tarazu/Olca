@@ -68,11 +68,11 @@ namespace Olca.Core.Logic.Battle
         {
             Step = step; LogicalFrame = battle.LogicalFrame; PlayerHp = battle.Player.CurrentHp; State = battle.State; Events = Array.AsReadOnly(events);
             var p = battle.Player.GridPosition;
-            string enemies = string.Join(";", battle.Enemies.Select(e => e.EnemyId + ":" + e.CurrentHp + ":" + e.GridPosition.X + ":" + e.GridPosition.Y + ":" + e.GetStatus(StatusEffectType.Poison)?.RemainingFrames));
+            string enemies = string.Join(";", battle.Enemies.Select(e => e.EnemyId + ":" + e.CurrentHp + ":" + e.GridPosition.X + ":" + e.GridPosition.Y + ":" + e.GetStatus(StatusEffectType.Poison)?.RemainingFrames + ":" + e.IsStunned));
             string panels = string.Join("", Enumerable.Range(0, BattleField.GRID_HEIGHT).SelectMany(y => Enumerable.Range(0, BattleField.GRID_WIDTH).Select(x => ((int)battle.Field.GetPanelType(new Vector2Int(x, y))).ToString(CultureInfo.InvariantCulture))));
             Canonical = string.Join("|", step, LogicalFrame, battle.State, battle.IsPaused, PlayerHp, p.X, p.Y, enemies,
                 battle.CardUsage.RemainingCount, battle.CardUsage.InFlightCard?.Id ?? "-", battle.PlayerActionPhase,
-                attack.ChargeFrames, attack.CooldownFrames, battle.DelayedEffects.ActiveEffectCount, panels, random.State, random.Draws, string.Join(";", events), battle.CustomScreen.Commands.Observe().Canonical);
+                attack.ChargeFrames, attack.CooldownFrames, battle.DelayedEffects.ActiveEffectCount, panels, random.State, random.Draws, string.Join(";", events), battle.CustomScreen.Commands.Observe().Canonical, battle.StartEffects.Applied, battle.StartEffects.DashContact, battle.StartEffects.Effect, battle.StartEffects.Value);
         }
     }
     /// <summary>実ゲームと同じBattleSystemへの整数フレーム入口。製品データ/保存/UIを持たない。</summary>
@@ -81,6 +81,7 @@ namespace Olca.Core.Logic.Battle
         public BattleSystem Battle { get; }
         public SeededBattleRandom Random { get; }
         public BattleSimulationSettings Settings { get; }
+        public BattleFrameObservation InitialObservation { get; }
         private readonly BasicAttackInputState attack;
         private readonly List<string> events = new List<string>();
         public long StepIndex { get; private set; }
@@ -105,12 +106,15 @@ namespace Olca.Core.Logic.Battle
             Battle.OnPlayerAttack += (target, damage) => events.Add("basic:" + target.EnemyId + ":" + damage);
             Battle.CardUsage.OnCardUsed += card => events.Add("card:" + card.Id);
             Battle.OnBattleEnd += result => events.Add("end:" + result);
+            Battle.StartEffects.OnApplied += value => events.Add(value);
             if (openInitialCustom) {
                 // 製品の初戦カスタム開始と同じ既存手順。通常の再開コマンドにはゲージ条件を適用する。
                 Battle.CustomGauge.SetGaugeMs(CustomGaugeSystem.MAX_GAUGE_MS);
                 var opened = Battle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open));
                 if (!opened.Accepted) throw new ArgumentException(opened.Reason);
             }
+            Battle.StartEffects.Complete();
+            InitialObservation = new BattleFrameObservation(0,Battle,Random,this.attack,events.ToArray());
         }
         private static BattleSystem CreateSampleBattle(BattleSimulationSettings settings, IRandomProvider random)
         {

@@ -554,6 +554,7 @@ namespace Olca.Core.Logic.Dungeon
                 fusionSystem: fusionSystem, cardDatabase: cardDatabase
             );
 
+            currentBattle.StartEffects.Configure(contactInfo.IsDashContact,(int?)contactInfo.DashEffect,contactInfo.DashValue);
             InitializeBattleTerrain(currentBattle,(int)contactInfo.ContactPositionX);
             // バトル終了イベントを購読
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
@@ -567,10 +568,9 @@ namespace Olca.Core.Logic.Dungeon
             OnBattleStart?.Invoke(contactInfo);
 
             // 開始通知中に敗北・終了した場合は初撃で結果を上書きしない。
-            if (IsInBattle && ReferenceEquals(currentBattle, startedBattle) && !startedBattle.IsGameOver
-                && contactInfo.IsDashContact && contactInfo.DashEffect.HasValue)
+            if (IsInBattle && ReferenceEquals(currentBattle, startedBattle) && !startedBattle.IsGameOver)
             {
-                ApplyDashEffect(contactInfo.DashEffect.Value, enemies, contactInfo.DashValue);
+                startedBattle.StartEffects.Complete();
             }
         }
 
@@ -638,46 +638,6 @@ namespace Olca.Core.Logic.Dungeon
                     logger.LogInfo($"  - {enemies[i].Name}位置: ({nextEnemyX}, 0)");
                     nextEnemyX--;
                 }
-            }
-        }
-
-        /// <summary>
-        /// ダッシュ接敵の効果をバトルに適用
-        /// </summary>
-        private void ApplyDashEffect(ActionSystem.DashContactEffect effect, List<Enemy> enemies, int? value)
-        {
-            int amount=ActionSystem.ResolveDashDefinition(effect,value).Value;
-            switch (effect)
-            {
-                case ActionSystem.DashContactEffect.InitialDamage:
-                    // 全敵に初期ダメージ
-                    int DASH_DAMAGE = amount; // 未指定の旧定義は15を維持
-                    foreach (var enemy in enemies)
-                    {
-                        enemy.TakeDamage(DASH_DAMAGE, ElementType.None);
-                        logger.LogInfo($"  - {enemy.Name}に{DASH_DAMAGE}ダメージ！（ダッシュ接敵）");
-                    }
-                    break;
-
-                case ActionSystem.DashContactEffect.Stun:
-                    // 全敵に3秒スタンを付与
-                    int STUN_FRAMES = amount;
-                    foreach (var enemy in enemies)
-                    {
-                        enemy.ApplyStunFrames(STUN_FRAMES);
-                    }
-                    logger.LogInfo($"  - 敵をスタン（{STUN_FRAMES}フレーム）！（ダッシュ接敵）");
-                    break;
-
-                case ActionSystem.DashContactEffect.PlayerDamage:
-                    // 既存防御/無敵を経由。未指定の強靭度削りは0として新しいのけぞりを足さない。
-                    playerCharacter.TakeDamage(amount,poiseDamage:0);
-                    break;
-                case ActionSystem.DashContactEffect.FirstStrike:
-                    // カスタムゲージを満タンにして先制攻撃権を付与
-                    currentBattle.SetFirstStrike();
-                    logger.LogInfo("  - 先制攻撃！カスタムゲージ満タン（ダッシュ接敵）");
-                    break;
             }
         }
 
@@ -1038,8 +998,8 @@ namespace Olca.Core.Logic.Dungeon
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
             var started = currentBattle;
             OnBattleStart?.Invoke(currentContactInfo);
-            if (IsInBattle && ReferenceEquals(currentBattle, started) && !started.IsGameOver && plan.DashContact && currentContactInfo.DashEffect.HasValue)
-                ApplyDashEffect(currentContactInfo.DashEffect.Value, participants, currentContactInfo.DashValue);
+            if (IsInBattle && ReferenceEquals(currentBattle, started) && !started.IsGameOver)
+                started.StartEffects.Complete();
         }
         public void ActivateCheckpoint()
         {
