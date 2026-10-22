@@ -28,6 +28,93 @@ namespace Olca.Tests.CardTests
             exceedSystem = new ExceedSystem(cardFactory);
         }
 
+        [TestCase("name")]
+        [TestCase("power")]
+        [TestCase("rarity")]
+        [TestCase("cost")]
+        [TestCase("series")]
+        [TestCase("timing")]
+        [TestCase("modifier")]
+        public void 同ID同段階でも元定義が異なる二枚は両順序で拒否する(string difference)
+        {
+            var a = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+            var b = new Card(a.Id, difference == "name" ? "sword_card" : a.Name,
+                a.Cost + (difference == "cost" ? 1 : 0), difference == "rarity" ? CardRarity.Limited : a.Rarity,
+                a.Category, a.Element, difference == "series" ? CardSeries.None : a.Series,
+                a.Power + (difference == "power" ? 1 : 0), a.Description,
+                targetType: a.TargetType, modifier: difference == "modifier" ? new CardModifier { BonusDamage = 1 } : a.Modifier.Clone(),
+                subCategory: a.SubCategory, properties: a.Properties, poiseDamage: a.PoiseDamage,
+                hitInvincibilityMs: a.HitInvincibilityMs, startupFrames: difference == "timing" ? 9 : a.StartupFrames,
+                recoveryFrames: a.RecoveryFrames, recoveryCancelAfterFrames: a.RecoveryCancelAfterFrames);
+            foreach (var pair in new[] { new[] { a, b }, new[] { b, a } })
+            {
+                Assert.IsFalse(exceedSystem.Validate(pair[0], pair[1]).IsValid, difference);
+                Assert.IsFalse(exceedSystem.Execute(pair[0], pair[1]).IsSuccess, difference);
+            }
+        }
+
+        [Test]
+        public void 調律履歴が違っても同じ元定義なら超越でき生成先は標準状態になる()
+        {
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var a = factory.CreateById("sword");
+            var tuning = new TuningSystem(factory.GetTuningDefinition);
+            var b = tuning.Execute(a.Clone(), factory.CreateById("tuning")).ResultCard;
+            var before = CollectionDisplay.DefinitionHash(b);
+            var system = new ExceedSystem(factory);
+            Assert.AreNotEqual(CollectionDisplay.DefinitionHash(a), before);
+            foreach (var pair in new[] { new[] { a, b }, new[] { b, a } })
+            {
+                var result = system.Execute(pair[0], pair[1]);
+                Assert.IsTrue(result.IsSuccess, result.ErrorMessage);
+                Assert.AreEqual(45, result.ResultCard.GetFinalPower());
+                Assert.AreEqual(0, result.ResultCard.TuningCount);
+            }
+            Assert.AreEqual(before, CollectionDisplay.DefinitionHash(b), "素材は変更しない");
+        }
+
+        [Test]
+        public void 旧調律APIも元定義の固有効果を保持して同じカードを誤拒否しない()
+        {
+            var a = new Card("same", "同じカード", 1, CardRarity.Normal, CardCategory.Attack,
+                ElementType.None, CardSeries.Sword, 20, "", modifier:new CardModifier { BonusDamage = 2 });
+            var source = new Card("t", "調律", 1, CardRarity.Normal, CardCategory.Tuning,
+                ElementType.None, CardSeries.None, 0, "", modifier:new CardModifier { BonusDamage = 10 });
+            var tuned = a.ApplyTuning(source).ApplyTuning(source);
+            Assert.AreEqual(42, tuned.GetFinalPower());
+            Assert.IsTrue(exceedSystem.Validate(a, tuned).IsValid);
+            Assert.AreEqual(22, a.GetFinalPower());
+        }
+
+        [Test]
+        public void 同ID別定義の保存復帰後も判定が変わらず旧定義のハッシュも維持する()
+        {
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var a = factory.CreateById("sword");
+            var b = new Card(a.Id, "sword_card", a.Cost, a.Rarity, a.Category, a.Element, a.Series, a.Power, "Fallback");
+            var definitions = new Olca.Core.Logic.Dungeon.CheckpointDefinitions("exceed-test", DungeonConfig.CreateTestDungeon());
+            definitions.RegisterCard("product", a); definitions.RegisterCard("fallback", b);
+            var grant = factory.GetTuningDefinition(factory.CreateById("tuning"));
+            definitions.RegisterGrant("tuning", grant);
+            var tuned = TuningEvaluator.Evaluate(a, grant).ResultCard;
+            var data = new[] { definitions.CaptureKnownCard("one", a), definitions.CaptureKnownCard("two", a.Clone()), definitions.CaptureKnownCard("three", b), definitions.CaptureCard("four", "product", tuned, "tuning") };
+            var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(CheckpointCardDto[]));
+            using (var stream = new System.IO.MemoryStream())
+            {
+                serializer.WriteObject(stream, data); stream.Position = 0;
+                data = (CheckpointCardDto[])serializer.ReadObject(stream);
+            }
+            var restore = typeof(Olca.Core.Logic.Dungeon.CheckpointDefinitions).GetMethod("RestoreCard", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var restored = System.Array.ConvertAll(data, dto => (Card)restore.Invoke(definitions, new object[] { dto }));
+            Assert.AreEqual(CollectionDisplay.DefinitionHash(a), data[0].ValueHash);
+            Assert.AreEqual(CollectionDisplay.DefinitionHash(b), data[2].ValueHash);
+            Assert.IsTrue(exceedSystem.Validate(restored[0], restored[1]).IsValid);
+            Assert.IsFalse(exceedSystem.Validate(restored[0], restored[2]).IsValid);
+            Assert.AreEqual(CollectionDisplay.DefinitionHash(tuned), data[3].ValueHash);
+            Assert.IsTrue(exceedSystem.Validate(restored[0], restored[3]).IsValid);
+            Assert.AreEqual(1, restored[3].TuningCount);
+        }
+
         // ===== Validate =====
 
         [Test]

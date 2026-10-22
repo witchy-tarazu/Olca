@@ -927,6 +927,30 @@ namespace Olca.Tests.CardTests
             Assert.AreEqual(handBefore - 1, cs.CurrentHand.Count);
             Assert.IsTrue(cs.CurrentHand.Contains(result.ResultCard));
         }
+        [Test]
+        public void 同ID別定義の超越拒否は無消費で同定義の加工取消後も再判定できる()
+        {
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var a = factory.CreateById("sword"); var b = a.Clone();
+            var different = new Card(a.Id, "sword_card", a.Cost, a.Rarity, a.Category, a.Element, a.Series, a.Power, "Fallback");
+            var screen = new CustomScreenSystem(new Deck(new List<Card> { a, different, b }), maxHandSize:20, maxCost:100,
+                exceedSystem:new ExceedSystem(factory), fusionSystem:new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(), factory));
+            screen.Open(new Card[0], new MockRandomProvider(0));
+            var original = screen.CurrentHand.ToArray();
+            var preview = screen.PreviewCustomization(new[] { a, different });
+            Assert.IsFalse(preview.CanExecute); StringAssert.Contains("同じ定義", preview.Reason);
+            Assert.IsFalse(screen.ExecuteCustomization(new[] { a, different }).CanExecute);
+            Assert.IsFalse(screen.ExecuteExceed(a, different).IsSuccess);
+            CollectionAssert.AreEqual(original, screen.CurrentHand); Assert.AreEqual(0, screen.CustomizationUndoCount);
+            Assert.IsTrue(screen.ExecuteCustomization(new[] { a, b }).CanExecute);
+            Assert.IsTrue(screen.TryUndoCustomization());
+            Assert.AreEqual(3, screen.CurrentHand.Count);
+            var same = screen.CurrentHand.Where(c => c.Name == a.Name).ToArray();
+            var other = screen.CurrentHand.Single(c => c.Name == different.Name);
+            Assert.IsFalse(screen.PreviewCustomization(new[] { same[0], other }).CanExecute);
+            Assert.IsTrue(screen.PreviewCustomization(same).CanExecute);
+        }
+
         private Card UndoCard(string id, bool tuning = false, ExceedLevel level = ExceedLevel.Normal) =>
             new Card(id, id, 2, CardRarity.Normal, tuning ? CardCategory.Tuning : CardCategory.Attack,
                 ElementType.Fire, CardSeries.Sword, 10, "Undo素材", modifier: new CardModifier { BonusDamage = tuning ? 5 : 2 }, exceedLevel: level);

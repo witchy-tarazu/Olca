@@ -117,6 +117,18 @@ namespace Olca.Core.Domain
         internal bool IsEffectCopy { get; private set; }
         internal CardModifier GetTuningBaseModifier() => (tuningBaseModifier ?? Modifier).Clone();
 
+        /// <summary>加工素材の同一性用。定義固有の効果は残し、付与された調律履歴だけを除く。</summary>
+        internal Card CreateUntunedDefinitionCopy()
+        {
+            var copy = Clone();
+            copy.Modifier = GetTuningBaseModifier();
+            copy.tuningBaseModifier = null;
+            copy.tuningHistory.Clear();
+            copy.TuningCount = 0;
+            copy.HasStageDependentTuning = false;
+            return copy;
+        }
+
         public Card WithTuningDefinition(TuningGrantDefinition definition)
         {
             var copy = Clone(); copy.TuningDefinition = definition; return copy;
@@ -222,6 +234,7 @@ namespace Olca.Core.Domain
             )
             {
                 TuningCount = TuningCount + 1,
+                tuningBaseModifier = GetTuningBaseModifier(),
                 HasStageDependentTuning = HasStageDependentTuning || tuningCard.Modifier.HasStageDependentValues
             };
         }
