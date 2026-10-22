@@ -424,26 +424,13 @@ namespace Olca.Core.Logic.Battle
 
             var first = currentSelection[0];
 
-            // 超越・調律は二枚操作。三枚目以降は融合レシピだけで判定する。
-            if (currentSelection.Count == 1 && CanExceed(first, candidate))
-                return true;
+            if(currentSelection.Count!=1)return false;
+            if(CanExceed(first,candidate))return true;
+            if(ReferenceEquals(first,candidate))return false;
+            if(tuningSystem!=null&&IsTuningMaterial(first)!=IsTuningMaterial(candidate))
+                return PreviewCustomization(new[]{first,candidate}).CanExecute;
+            return fusionSystem!=null&&fusionSystem.Validate(new[]{first,candidate}).IsValid;
 
-            // 調律: TuningカードとTuning以外のカードの組み合わせ
-            if (currentSelection.Count == 1 && tuningSystem != null)
-            {
-                bool firstIsTuning = first.Category == CardCategory.Tuning;
-                bool candidateIsTuning = candidate.Category == CardCategory.Tuning;
-                if (firstIsTuning != candidateIsTuning) return true;
-            }
-
-            // 融合: 現在の選択＋候補がいずれかのレシピに含まれる（部分一致）
-            if (fusionSystem != null)
-            {
-                var ids = currentSelection.Select(c => c.Id).Append(candidate.Id).ToList();
-                if (fusionSystem.HasCompatibleRecipe(ids)) return true;
-            }
-
-            return false;
         }
 
         /// <summary>確定と共通の判定。素材・デッキ・履歴には触れず、独立した結果を返す。</summary>
@@ -451,7 +438,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (!IsOpen || IsConfirming)
                 return CustomizationPreview.Invalid("加工できる画面状態ではありません");
-            if (materials == null || materials.Count < 2)
+            if (materials == null || materials.Count != 2)
                 return CustomizationPreview.Invalid("素材を2枚選んでください");
             if (!HasMaterialCopies(materials))
                 return CustomizationPreview.Invalid("使用予定の選択を解除し、手札の別々の素材を選んでください");
@@ -467,11 +454,11 @@ namespace Olca.Core.Logic.Battle
                 return result.IsSuccess ? CustomizationPreview.Ready(CustomizationOperation.Exceed, result.ResultCard) :
                     CustomizationPreview.Undefined(CustomizationOperation.Exceed, result.ErrorMessage);
             }
-            if (copies.Length == 2 && (a.Category == CardCategory.Tuning) != (b.Category == CardCategory.Tuning))
+            if (copies.Length == 2 && IsTuningMaterial(a) != IsTuningMaterial(b))
             {
                 if (tuningSystem == null) return CustomizationPreview.Invalid("調律システムが設定されていません");
-                var target = a.Category == CardCategory.Tuning ? b : a;
-                var source = a.Category == CardCategory.Tuning ? a : b;
+                var target = IsTuningMaterial(a) ? b : a;
+                var source = IsTuningMaterial(a) ? a : b;
                 var validation = tuningSystem.Validate(target, source);
                 if (!validation.IsValid) return CustomizationPreview.Invalid(validation.ErrorMessage, CustomizationOperation.Tuning);
                 var result = tuningSystem.Execute(target, source);
@@ -479,6 +466,8 @@ namespace Olca.Core.Logic.Battle
                     result.IsUndefined ? CustomizationPreview.Undefined(CustomizationOperation.Tuning, result.ErrorMessage) :
                     CustomizationPreview.Invalid(result.ErrorMessage, CustomizationOperation.Tuning);
             }
+            var materialError=FusionMaterialError(copies);
+            if(materialError!=null)return CustomizationPreview.Invalid(materialError,CustomizationOperation.Fusion);
             if (fusionSystem == null) return CustomizationPreview.Invalid("融合システムが設定されていません");
             var fusionValidation = fusionSystem.Validate(copies);
             if (!fusionValidation.IsValid)
@@ -506,8 +495,8 @@ namespace Olca.Core.Logic.Battle
                     return exceeded.IsSuccess ? CustomizationPreview.Ready(preview.Operation, exceeded.ResultCard) :
                         CustomizationPreview.Invalid(exceeded.ErrorMessage, preview.Operation);
                 case CustomizationOperation.Tuning:
-                    var tuned = ExecuteTuning(selected.First(c => c.Category != CardCategory.Tuning),
-                        selected.First(c => c.Category == CardCategory.Tuning));
+                    var tuned = ExecuteTuning(selected.First(c => !IsTuningMaterial(c)),
+                        selected.First(IsTuningMaterial));
                     return tuned.IsSuccess ? CustomizationPreview.Ready(preview.Operation, tuned.ResultCard) :
                         tuned.IsUndefined ? CustomizationPreview.Undefined(preview.Operation, tuned.ErrorMessage) :
                         CustomizationPreview.Invalid(tuned.ErrorMessage, preview.Operation);
@@ -601,13 +590,16 @@ namespace Olca.Core.Logic.Battle
             return true;
         }
 
+        public bool IsTuningMaterial(Card card) => TuningSystem.IsMaterial(card);
+        private string FusionMaterialError(IReadOnlyList<Card> cards) => FusionSystem.MaterialRoleError(cards);
+
         /// <summary>加工の取り消し後、手札と選択表示を再同期するための通知</summary>
         public event Action OnCustomizationUndone;
 
         /// <summary>融合レシピの完全一致を確認し、部分選択中の実行を防ぐ</summary>
         public bool CanFuse(IReadOnlyList<Card> materials)
         {
-            return fusionSystem != null && fusionSystem.Validate(materials).IsValid;
+            return FusionMaterialError(materials)==null&&fusionSystem != null && fusionSystem.Validate(materials).IsValid;
         }
 
         /// <summary>同名・同段階の素材で超越できるかを検証する</summary>
@@ -651,7 +643,7 @@ namespace Olca.Core.Logic.Battle
         /// 調律を実行する（調律カードを対象カードに適用して追加効果を付与）
         /// </summary>
         /// <param name="targetCard">調律対象カード（手札にあること）</param>
-        /// <param name="tuningCard">調律素材カード（手札にあること・CategoryがTuning）</param>
+        /// <param name="tuningCard">調律素材カード（手札にあり素材適性を持つこと）</param>
         public TuningResult ExecuteTuning(Card targetCard, Card tuningCard)
         {
             if (!IsOpen || IsConfirming) return TuningResult.Fail("加工できる画面状態ではありません");
@@ -683,11 +675,13 @@ namespace Olca.Core.Logic.Battle
             if (!IsOpen || IsConfirming) return FusionResult.Fail("加工できる画面状態ではありません");
             if (fusionSystem == null)
                 return FusionResult.Fail("融合システムが設定されていません");
-            if (materials == null || materials.Count < 2)
-                return FusionResult.Fail("2枚以上の素材が必要です");
+            if (materials == null || materials.Count != 2)
+                return FusionResult.Fail("素材は2枚固定です");
             if (!HasMaterialCopies(materials))
                 return FusionResult.Fail("指定カードが手札にありません");
 
+            var materialError=FusionMaterialError(materials);
+            if(materialError!=null)return FusionResult.Fail(materialError);
             var history = CaptureCustomization(materials);
             var result = fusionSystem.Execute(materials);
             if (result.IsSuccess)
@@ -793,6 +787,24 @@ namespace Olca.Core.Logic.Battle
             = Array.AsReadOnly(new TransformationDefenseDefinition[0]);
         /// <summary>仮選択の変更が完了し、カード選択とプレビュー能力を表示へ同期できる通知。</summary>
         public event Action OnPreviewChanged;
+        public bool PresentationEnabled { get; private set; }
+        public bool ShortPresentation { get; set; }
+        public int ActivationFramesRemaining { get; private set; }
+        public int ActivationDurationFrames { get; private set; }
+        public int ReleaseFramesRemaining { get; private set; }
+        public bool IsActivating => ActivationFramesRemaining>0;
+        public int RemainingPhases => player.RemainingTransformationPhases;
+        public bool HasActive => player.HasTransformationDefense;
+        public string ActiveStatusText => HasActive?(ActiveId??"変身")+" 残り "+RemainingPhases+" 回":"変身なし（残り0回）";
+        public string CustomStatusText => pending==null?ActiveStatusText:ActiveStatusText+"\n仮選択 "+pending.Id+"（確定後3回）";
+        internal event Action OnActivationPresentation;
+        public void EnablePresentation() { if(!disposed)PresentationEnabled=true; }
+        internal void AdvancePresentationFrame()
+        {
+            if(disposed)return;
+            if(ReleaseFramesRemaining>0)ReleaseFramesRemaining--;
+            if(!screen.IsOpen&&ActivationFramesRemaining>0)ActivationFramesRemaining--;
+        }
         public string PendingId => pending?.Id;
         public string ActiveId { get; private set; }
         public TransformationAttackDefinition ActiveAttack => ActiveId != null && available.TryGetValue(ActiveId, out var definition) ? definition.Attack : null;
@@ -875,6 +887,10 @@ namespace Olca.Core.Logic.Battle
             player.BeginTransformationDefense(definition.Resistances, definition.Weakness);
             ActiveId = definition.Id;
             used.Add(definition.Id);
+            if(PresentationEnabled){
+                ReleaseFramesRemaining=0;ActivationDurationFrames=ShortPresentation?12:60;
+                ActivationFramesRemaining=ActivationDurationFrames;OnActivationPresentation?.Invoke();
+            }
         }
         private void OnClosed(List<Card> cards)
         {
@@ -884,6 +900,8 @@ namespace Olca.Core.Logic.Battle
         }
         private void OnDefenseEnded()
         {
+            if(PresentationEnabled&&ActiveId!=null)ReleaseFramesRemaining=12;
+            ActivationFramesRemaining=0;
             ActiveId = null;
             activeHandBonus = 0;
             screen.ClearActiveCardConversion();
@@ -895,6 +913,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (disposed) return;
             disposed = true;
+            ActivationFramesRemaining=ReleaseFramesRemaining=0;OnActivationPresentation=null;
             screen.OnScreenOpened -= OnOpened;
             screen.OnConfirmed -= OnConfirmed;
             screen.OnScreenClosed -= OnClosed;

@@ -204,6 +204,7 @@ namespace Olca.Core.Logic.Battle
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
             Transformations = new TransformationSelectionState(player, customScreen);
+            Transformations.OnActivationPresentation += PauseForTransformation;
             customScreen.OnOpening += OnTransformationPhaseOpening;
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => !IsPaused && !IsGameOver && !HasPlayerAction && cardUsage.InFlightCard == null && !player.IsActionPrevented);
@@ -334,8 +335,12 @@ namespace Olca.Core.Logic.Battle
         private bool logicalFrameTick;
         private List<Enemy> statusFrameParticipants;
         /// <summary>入力による付与も含め、状態異常の有効化・解除境界を一論理フレームにまとめる。</summary>
+        private void PauseForTransformation() => Pause(BattlePauseReason.Transformation);
         public void RunLogicalFrame(Action action)
         {
+            // 演出最終フレームまではHP/状態更新も停止。次フレームの集計開始前に再開する。
+            if(statusFrameParticipants==null&&!Transformations.IsActivating&&(pauseReasons&BattlePauseReason.Transformation)!=0)
+                Resume(BattlePauseReason.Transformation);
             if (statusFrameParticipants != null || IsGameOver) { action(); return; }
             var participants = new List<Enemy>(enemies);
             statusFrameParticipants = participants;
@@ -376,7 +381,10 @@ namespace Olca.Core.Logic.Battle
         {
             RunLogicalFrame(() => {
                 logicalFrameTick = true;
-                try { Tick(compatibleMilliseconds, input); }
+                try {
+                    if(!IsGameOver&&(pauseReasons&BattlePauseReason.User)==0)Transformations.AdvancePresentationFrame();
+                    Tick(compatibleMilliseconds, input);
+                }
                 finally { logicalFrameTick = false; }
             });
         }
@@ -565,7 +573,7 @@ namespace Olca.Core.Logic.Battle
                 return;
             }
 
-            if (customScreen.IsOpen) return;
+            if (customScreen.IsOpen || Transformations.IsActivating) return;
             // 未使用カードを取得してカスタム画面に渡す
             var remainingCards = cardUsage.GetRemainingCards();
             customScreen.Open(remainingCards, random);
@@ -732,6 +740,7 @@ namespace Olca.Core.Logic.Battle
             player.SetAura(0);
             player.EndTransformationDefense();
             customScreen.OnOpening -= OnTransformationPhaseOpening;
+            Transformations.OnActivationPresentation-=PauseForTransformation;
             Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
@@ -800,5 +809,5 @@ namespace Olca.Core.Logic.Battle
         Defeat
     }
     [System.Flags]
-    public enum BattlePauseReason { None = 0, CustomScreen = 1, User = 2 }
+    public enum BattlePauseReason { None = 0, CustomScreen = 1, User = 2, Transformation = 4 }
 }

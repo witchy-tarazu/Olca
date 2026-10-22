@@ -444,6 +444,7 @@ namespace Olca.Core.Domain
         public long Revision, Experience, Tokens;
         public int Level = 1, ReturnedHp;
         public string CommitId;
+        public string CheckpointGeneration; // nullは旧保存の領域。新規開始だけで切替。
         public OwnedCardCount[] Owned = new OwnedCardCount[0];
         public string[] ClearedDungeons = new string[0];
         public ClearReceipt[] Receipts = new ClearReceipt[0];
@@ -458,7 +459,7 @@ namespace Olca.Core.Domain
         public string[] RevealedRecipes;
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public ClearReturnProfile Copy() => new ClearReturnProfile {
-            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId,
+            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
             Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
@@ -468,6 +469,7 @@ namespace Olca.Core.Domain
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
+            if(p.CheckpointGeneration!=null&&!Guid.TryParseExact(p.CheckpointGeneration,"N",out _))throw new ArgumentException("攻略保存の世代が不正です");
             var discovered=p.DiscoveredCards??Array.Empty<DiscoveredCard>();
             if(discovered.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||string.IsNullOrWhiteSpace(c.Name)||c.Level==ExceedLevel.Lv3||
                 !Enum.IsDefined(typeof(ExceedLevel),c.Level)||!Enum.IsDefined(typeof(CardRarity),c.Rarity)||
@@ -556,16 +558,35 @@ namespace Olca.Core.Domain
             this.materialCards=materialCards?.Select(c=>c.Clone()).ToArray();this.resultCard=resultCard?.Clone();
             Id=id;ResultId=resultId;ResultLevel=resultLevel;this.materials=materials?.ToArray();
             if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(resultId)||this.materials==null||this.materials.Length!=2||this.materials.Any(string.IsNullOrWhiteSpace)||
-                resultLevel==ExceedLevel.Lv3||!Enum.IsDefined(typeof(ExceedLevel),resultLevel))throw new ArgumentException("図鑑レシピ定義が不正です");
+                !Enum.IsDefined(typeof(ExceedLevel),resultLevel)||
+                (resultCard!=null&&(resultCard.Id!=resultId||resultCard.ExceedLevel!=resultLevel)))throw new ArgumentException("図鑑レシピ定義が不正です");
         }
         public bool IsResultKnown(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) => resultCard==null?
-            (profile.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>c.Id==ResultId&&c.Level==ResultLevel):CollectionDisplay.IsKnown(profile,resultCard,catalog);
-        public string MaterialName(ClearReturnProfile profile,int index) => materialCards==null?CollectionDisplay.Name(profile,materials[index]):
-            CollectionDisplay.MetadataKnown(profile,materialCards[index])?materialCards[index].Name:"？？？";
-        public string ResultName(ClearReturnProfile profile) => resultCard==null?CollectionDisplay.Name(profile,ResultId,ResultLevel):
-            CollectionDisplay.MetadataKnown(profile,resultCard)?resultCard.Name:"？？？";
+            (profile?.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>c.Id==ResultId&&c.Level==ResultLevel):CollectionDisplay.IsKnown(profile,resultCard,catalog);
+        public bool IsRevealed(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) =>
+            (profile?.RevealedRecipes??Array.Empty<string>()).Contains(Id)||IsResultKnown(profile,catalog);
+        public string MaterialName(ClearReturnProfile profile,int index,IReadOnlyList<Card> catalog=null) => materialCards==null?CollectionDisplay.Name(profile,materials[index]):
+            CollectionDisplay.IsKnown(profile,materialCards[index],catalog)?materialCards[index].Name:"？？？";
+        public string ResultName(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) => !IsRevealed(profile,catalog)?"？？？":
+            resultCard==null?CollectionDisplay.Name(profile,ResultId,ResultLevel):resultCard.Name;
+        // 公開履歴はレシピIDに対する知識。結果定義を特定できない旧定義から性能を推測しない。
+        public bool TryGetResult(ClearReturnProfile profile,out Card result,IReadOnlyList<Card> catalog=null)
+        {
+            result=IsRevealed(profile,catalog)?resultCard?.Clone():null;return result!=null;
+        }
+        public string ResultPerformance(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null)
+        {
+            if(!TryGetResult(profile,out var card,catalog))return null;
+            var description=card.Description??"";
+            if(materialCards==null)description="素材定義未特定のため説明は非表示";
+            else foreach(var material in materialCards.Where(c=>!CollectionDisplay.IsKnown(profile,c,catalog)))
+                if(!string.IsNullOrEmpty(material.Name))description=description.Replace(material.Name,"？？？");
+            return CollectionDisplay.PerformanceText(card,description);
+        }
         public bool Matches(IReadOnlyList<Card> input,Card output) => input!=null&&output!=null&&output.Id==ResultId&&output.ExceedLevel==ResultLevel&&
-            input.All(c=>c!=null)&&input.Select(c=>c.Id).OrderBy(x=>x).SequenceEqual(materials.OrderBy(x=>x));
+            (resultCard==null||CollectionDisplay.DefinitionHash(output)==CollectionDisplay.DefinitionHash(resultCard))&&
+            input.All(c=>c!=null)&&input.Select(c=>c.Id).OrderBy(x=>x).SequenceEqual(materials.OrderBy(x=>x))&&
+            (materialCards==null||input.Select(c=>CollectionDisplay.DefinitionHash(c.CreateUntunedDefinitionCopy())).OrderBy(x=>x).SequenceEqual(materialCards.Select(c=>CollectionDisplay.DefinitionHash(c.CreateUntunedDefinitionCopy())).OrderBy(x=>x)));
     }
     public static class CollectionDisplay
     {
@@ -598,9 +619,23 @@ namespace Olca.Core.Domain
                 .Where(known=>!catalog.Any(c=>EntryKnown(known,c,catalog))).GroupBy(c=>(c.Id,c.Level,c.Rarity,c.Name))
                 .Select(g=>g.Key.Name+"　登録済み（詳細定義未特定）")).ToArray();
         }
-        public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe)
-            => !(profile?.RevealedRecipes??Array.Empty<string>()).Contains(recipe.Id)?"？？？　未公開レシピ":
-                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i)))+" → "+recipe.ResultName(profile);
+        public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe,IReadOnlyList<Card> catalog=null)
+            => !recipe.IsRevealed(profile,catalog)?"？？？　未公開レシピ":
+                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i,catalog)))+" → "+recipe.ResultName(profile,catalog);
+        public static CollectionRecipeRow[] RecipeRows(ClearReturnProfile profile,IEnumerable<CollectionRecipe> recipes,IReadOnlyList<Card> catalog=null)
+            => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
+        public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+
+            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+card.Element+"　シリーズ "+card.Series?.Name+
+            "\n"+(description??card.Description);
+    }
+    /// <summary>公開判定後の表示専用値。未公開行には結果定義自体を渡さない。</summary>
+    public sealed class CollectionRecipeRow
+    {
+        public string Text { get; }
+        private readonly Card result;
+        public Card Result => result?.Clone();
+        public string Performance { get; }
+        internal CollectionRecipeRow(string text,Card result,string performance){Text=text;this.result=result?.Clone();Performance=performance;}
     }
     public interface IClearReturnStore
     {
@@ -646,16 +681,33 @@ namespace Olca.Core.Domain
                 current.Flow != null || current.NextDeparture != null || current.SavedDecks.Length != 0 ||
                 current.EquippedDeckId != null || current.ExchangeStock != null || current.SelectedStyleId != null)
                 return Fail("既存の進行データにはスターターを配布しません");
-            if(cards==null)return Fail("スターター定義が必要です");
-            var counts=cards.Where(c=>c!=null).GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
-            if(!DepartureDeckRules.TryCreate(cards,counts,out _,out var error))return Fail(error);
             var next=current.Copy();
+            if(!PopulateStarter(next,cards,out var error))return Fail(error);
+            return Stage(next);
+        }
+        private static bool PopulateStarter(ClearReturnProfile next,IReadOnlyList<Card> cards,out string error)
+        {
+            error=null;
+            if(cards==null){error="スターター定義が必要です";return false;}
+            var counts=cards.Where(c=>c!=null).GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            if(!DepartureDeckRules.TryCreate(cards,counts,out _,out error))return false;
+
             next.Owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).Select(g=>new OwnedCardCount {
                 Id=g.Key.Id,Level=g.Key.ExceedLevel,Name=g.First().Name,Rarity=g.First().Rarity,Count=g.Count(),DefinitionHash=CollectionDisplay.DefinitionHash(g.First()) }).ToArray();
             string id=Guid.NewGuid().ToString("N");
             next.SavedDecks=new[]{new SavedDepartureDeck {Id=id,Name="スターター",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(c)}).ToArray()}};
             next.EquippedDeckId=id;
             foreach(var card in cards)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,CollectionDisplay.DefinitionHash(card));
+
+            return true;
+        }
+        /// <summary>許可地点は呼出側で判定し、進行1枠の確定済み内容だけを再保存する。</summary>
+        public bool ManualSave() => Available() && Stage(current.Copy());
+        public bool StartNewGame(long confirmedRevision,IReadOnlyList<Card> starter)
+        {
+            if(!Available()||current.Revision!=confirmedRevision)return Fail("確認後に進行が変わりました。確認し直してください");
+            var next=new ClearReturnProfile { CheckpointGeneration=Guid.NewGuid().ToString("N") };
+            if(!PopulateStarter(next,starter,out var error))return Fail(error);
             return Stage(next);
         }
         public void ConfigureCollectionDefinitions(IReadOnlyList<Card> definitions)
@@ -959,6 +1011,65 @@ namespace Olca.Core.Domain
                 if (!store.TryWrite(current.Revision, pending.Copy(), out var error)) return Fail(error);
                 current = pending; pending = null; Error = null; return true;
             } finally { writing = false; }
+        }
+    }
+
+    public enum DialogueTextSpeed { Slow,Normal,Fast,Instant }
+    public enum DialogueEndReason { Completed,Skipped,Interrupted }
+    public sealed class DialogueChoice
+    {
+        public string Label { get; } public int NextIndex { get; }
+        public DialogueChoice(string label,int nextIndex){if(string.IsNullOrWhiteSpace(label))throw new ArgumentException();Label=label;NextIndex=nextIndex;}
+    }
+    public sealed class DialogueLine
+    {
+        public string Speaker { get; } public string Text { get; } public IReadOnlyList<DialogueChoice> Choices { get; }
+        public DialogueLine(string text,string speaker="",IEnumerable<DialogueChoice> choices=null){if(string.IsNullOrWhiteSpace(text))throw new ArgumentException();Text=text;Speaker=speaker??"";Choices=Array.AsReadOnly((choices??Array.Empty<DialogueChoice>()).ToArray());if(Choices.Any(c=>c==null)||Choices.Count>4)throw new ArgumentException("選択肢は4件以内です");}
+    }
+    public sealed class DialogueScript
+    {
+        public string Id { get; } public IReadOnlyList<DialogueLine> Lines { get; }
+        public bool CanSkip=>!Lines.Any(l=>l.Choices.Select(c=>c.NextIndex).Distinct().Count()>1);
+        public DialogueScript(string id,IEnumerable<DialogueLine> lines){if(string.IsNullOrWhiteSpace(id)||lines==null)throw new ArgumentException();Id=id;var list=lines.ToArray();if(list.Length==0||list.Any(l=>l==null))throw new ArgumentException();
+            for(int n=0;n<list.Length;n++)if(list[n].Choices.Any(c=>c.NextIndex<=n||c.NextIndex>list.Length))throw new ArgumentException("会話の選択先は後続または終了に限ります");Lines=Array.AsReadOnly(list);}
+    }
+    /// <summary>会話の表示時計と操作。ゲーム進行・報酬・永続保存は所有しない。</summary>
+    public sealed class DialogueSession
+    {
+        public DialogueScript Script { get; } public DialogueTextSpeed Speed { get; private set; }
+        public bool IsOpen { get; private set; }=true; public bool IsPaused { get; set; }
+        public bool BacklogOpen { get; private set; } public bool SkipConfirmationOpen { get; private set; }
+        public bool FastForward { get; private set; } public long Version { get; private set; }
+        public int Index { get; private set; } public int VisibleElements { get; private set; }
+        public DialogueEndReason EndReason { get; private set; }
+        private int[] elements;private int frames;private bool recorded;
+        private readonly List<string> backlog=new List<string>();private readonly List<int> choices=new List<int>();
+        public IReadOnlyList<int> SelectedChoices=>choices.ToArray();
+        public DialogueLine Current=>IsOpen?Script.Lines[Index]:null;
+        public bool TextComplete=>IsOpen&&VisibleElements==elements.Length;
+        public bool WaitingForChoice=>TextComplete&&Current.Choices.Count>0;
+        public string VisibleText=>!IsOpen?"":VisibleElements>=elements.Length?Current.Text:Current.Text.Substring(0,elements[VisibleElements]);
+        public IReadOnlyList<string> Backlog=>!IsOpen?Array.Empty<string>():backlog.Concat(!recorded&&VisibleElements>0?new[]{Entry(VisibleText)}:Array.Empty<string>()).ToArray();
+        private string Entry(string text)=>string.IsNullOrEmpty(Current.Speaker)?text:Current.Speaker+"\n"+text;
+        private bool CanAct=>IsOpen&&!IsPaused&&!BacklogOpen&&!SkipConfirmationOpen;
+        public DialogueSession(DialogueScript script,DialogueTextSpeed speed=DialogueTextSpeed.Normal){Script=script??throw new ArgumentNullException(nameof(script));SetSpeed(speed);Enter(0);}
+        public void SetSpeed(DialogueTextSpeed speed){if(!Enum.IsDefined(typeof(DialogueTextSpeed),speed))throw new ArgumentOutOfRangeException();Speed=speed;frames=0;Version++;}
+        private void Enter(int index){Index=index;frames=0;recorded=false;VisibleElements=0;elements=System.Globalization.StringInfo.ParseCombiningCharacters(Current.Text);Version++;if(Speed==DialogueTextSpeed.Instant)Reveal();}
+        private void Record(){if(recorded)return;backlog.Add(Entry(Current.Text));recorded=true;}
+        private void Reveal(){VisibleElements=elements.Length;Record();frames=0;Version++;}
+        private void Move(int index){if(index>=Script.Lines.Count){End(DialogueEndReason.Completed);return;}Enter(index);}
+        public bool Decide(){if(!CanAct)return false;if(!TextComplete){Reveal();return true;}if(WaitingForChoice)return false;Move(Index+1);return true;}
+        public bool Choose(int index){if(!CanAct||!WaitingForChoice||index<0||index>=Current.Choices.Count)return false;var next=Current.Choices[index].NextIndex;choices.Add(index);Move(next);return true;}
+        public bool ToggleFastForward(){if(!CanAct)return false;FastForward=!FastForward;frames=0;Version++;return true;}
+        public bool ToggleBacklog(){if(!IsOpen||IsPaused||SkipConfirmationOpen)return false;BacklogOpen=!BacklogOpen;Version++;return true;}
+        public bool RequestSkip(){if(!CanAct||!Script.CanSkip)return false;SkipConfirmationOpen=true;Version++;return true;}
+        public bool CancelSkip(){if(!IsOpen||IsPaused||!SkipConfirmationOpen)return false;SkipConfirmationOpen=false;Version++;return true;}
+        public bool ConfirmSkip(){if(!IsOpen||IsPaused||!SkipConfirmationOpen||!Script.CanSkip)return false;End(DialogueEndReason.Skipped);return true;}
+        public void Interrupt(){if(IsOpen)End(DialogueEndReason.Interrupted);}
+        private void End(DialogueEndReason reason){EndReason=reason;IsOpen=false;FastForward=BacklogOpen=SkipConfirmationOpen=false;backlog.Clear();VisibleElements=0;Version++;}
+        public void AdvanceFrame(){if(!CanAct)return;if(!TextComplete){frames++;int interval=Speed==DialogueTextSpeed.Slow?4:Speed==DialogueTextSpeed.Normal?2:1;
+                if(Speed==DialogueTextSpeed.Instant){Reveal();return;}if(FastForward||frames>=interval){VisibleElements=Math.Min(elements.Length,VisibleElements+(FastForward?4:1));frames=0;Version++;if(TextComplete)Record();}return;}
+            if(FastForward&&!WaitingForChoice&&++frames>=12)Move(Index+1);
         }
     }
 }

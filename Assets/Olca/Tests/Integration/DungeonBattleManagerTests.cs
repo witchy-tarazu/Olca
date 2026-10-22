@@ -13,6 +13,43 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class DungeonBattleManagerTests
     {
+        [Test]
+        public void 検証保存ガードは専用領域だけ許可し模擬既定と領域外と未指定を無書込で拒否する()
+        {
+            string container = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-storage-guard-" + System.Guid.NewGuid().ToString("N"));
+            string own = System.IO.Path.Combine(container, "own"), mockDefault = System.IO.Path.Combine(container, "mock-default");
+            var guard = new Olca.Unity.ValidationStorageGuard(own, mockDefault);
+            var io = new Olca.Unity.CheckpointFileIo(guard);
+            try {
+                foreach (string target in new[] { mockDefault, System.IO.Path.Combine(container,"own-other"), System.IO.Path.Combine(own,"..","outside") }) {
+                    Assert.That(new Olca.Unity.AudioVolumeFileStore(target, io).TrySave(new Olca.Unity.AudioVolumeSettings(99),out _), Is.False);
+                    Assert.That(new Olca.Unity.TransformationPresentationFileStore(target, io).TrySave(true,out _), Is.False);
+                    Assert.That(new Olca.Unity.DialogueTextSettingsStore(target, io).TrySave(DialogueTextSpeed.Fast,out _), Is.False);
+                    Assert.That(new Olca.Unity.KeyboardBindingFileStore(target, io).TrySave(Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile(),out _), Is.False);
+                }
+                Assert.That(System.IO.Directory.Exists(container), Is.False, "拒否先にはディレクトリさえ生成しない");
+                Assert.Throws<System.IO.IOException>(() => guard.Require((string)null));
+                if(System.IO.Path.DirectorySeparatorChar == '/')
+                    Assert.Throws<System.IO.IOException>(() => guard.Require(System.IO.Path.Combine(container,"OWN","settings")));
+                Assert.Throws<System.IO.IOException>(() => Olca.Unity.ValidationStorageGuard.RequireEditorStartup(own,own,own,true));
+                Assert.Throws<System.IO.IOException>(() => new Olca.Unity.ValidationStorageGuard("",mockDefault));
+                Assert.Throws<System.IO.IOException>(() => new Olca.Unity.ValidationStorageGuard(container,mockDefault));
+                string settings = System.IO.Path.Combine(own,"settings");
+                Assert.That(new Olca.Unity.AudioVolumeFileStore(settings,io).TrySave(new Olca.Unity.AudioVolumeSettings(99),out _), Is.True);
+                // 再構築は静的な許可キャッシュを引き継がず、同じ規則で再検査する。
+                var restartedIo = new Olca.Unity.CheckpointFileIo(new Olca.Unity.ValidationStorageGuard(own,mockDefault));
+                var audio = new Olca.Unity.AudioVolumeFileStore(settings,restartedIo);
+                Assert.That(audio.TryRead(out var value,out _), Is.True); Assert.That(value.Master, Is.EqualTo(99));
+                Assert.That(audio.TrySave(new Olca.Unity.AudioVolumeSettings(98),out _), Is.True);
+                byte[] temporary = { 1,2,3 }; string temp = System.IO.Path.Combine(own,"temp"); restartedIo.WriteAndFlush(temp,temporary);
+                Assert.Throws<System.IO.IOException>(()=>restartedIo.MoveNew(temp,System.IO.Path.Combine(mockDefault,"moved")));
+                Assert.Throws<System.IO.IOException>(()=>restartedIo.Replace(temp,audio.ActivePath,System.IO.Path.Combine(mockDefault,"backup")));
+                Assert.That(System.IO.File.ReadAllBytes(temp), Is.EqualTo(temporary));
+                Assert.That(System.IO.Directory.Exists(mockDefault), Is.False);
+                Assert.That(audio.TryRead(out value,out _), Is.True); Assert.That(value.Master, Is.EqualTo(98));
+            } finally { if(System.IO.Directory.Exists(container)) System.IO.Directory.Delete(container,true); }
+        }
+
         [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
         [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
         public void 空中ダッシュ入力と空中接敵を通常探索と保存復帰で区別する(int fps, bool stall)
@@ -2433,7 +2470,7 @@ namespace Olca.Tests.Integration
             }
         }
         private static object Get(object target, string name) => target.GetType().GetField(name, Hidden).GetValue(target);
-        private static void Set(object target, string name, object value) => target.GetType().GetField(name, Hidden).SetValue(target, value);
+        private static void Set(object target, string name, object value) {var type=target.GetType();System.Reflection.FieldInfo field=null;while(type!=null&&field==null){field=type.GetField(name,Hidden);type=type.BaseType;}if(field==null)throw new System.MissingFieldException(name);field.SetValue(target,value);}
         private static void Call(object target, string name, params object[] args) => target.GetType().GetMethod(name, Hidden).Invoke(target, args);
         private static DungeonBattleManager Model(Olca.Application.Dungeon.DungeonBattleController controller) => (DungeonBattleManager)Get(controller, "manager");
         private static Olca.Unity.FloorSequenceFileStore Store(Olca.Application.Dungeon.DungeonBattleController controller) => (Olca.Unity.FloorSequenceFileStore)Get(controller, "floorStore");
@@ -2468,6 +2505,8 @@ namespace Olca.Tests.Integration
         }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
+        [Test] public void 会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない(){var c=Start();var m=Model(c);var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));int ended=0;var script=new DialogueScript("external",new[]{new DialogueLine("検証")});Assert.IsTrue(c.TryStartDialogue(script,r=>ended++));Assert.IsFalse(c.TryStartDialogue(script));float x=m.Dungeon.PlayerPosition;for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,DashButtonDown=true});Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.SetUserPaused(true);c.CurrentDialogue.AdvanceFrame();Assert.AreEqual(0,c.CurrentDialogue.VisibleElements);c.SetUserPaused(false);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));}
+        [Test] public void 会話中のチェックポイント再開は会話とバックログを復元せず既存保存を保持する(){var c=Start();int ended=0;DialogueEndReason reason=DialogueEndReason.Completed;Assert.IsTrue(c.TryStartDialogue(new DialogueScript("external",new[]{new DialogueLine("復元しない文章")}),r=>{ended++;reason=r;}));var old=c.CurrentDialogue;old.Decide();c.SetUserPaused(true);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);Assert.AreEqual(DialogueEndReason.Interrupted,reason);Assert.IsEmpty(old.Backlog);}
         private static void ToBattle(Olca.Application.Dungeon.DungeonBattleController controller)
         {
             for (int i = 0; i < 120 && Model(controller).CurrentBattle == null; i++) Tick(controller);
@@ -3185,7 +3224,7 @@ namespace Olca.Tests.Integration
         private static void KeyboardButton(Olca.Application.Dungeon.DungeonBattleController controller, string name)
         {
             var canvas = (UnityEngine.GameObject)Get(controller, "pauseCanvas");
-            canvas.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b => b.name == name).onClick.Invoke();
+            canvas.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b => b.name == name && !b.GetComponentsInParent<UnityEngine.Transform>(true).Any(t=>t.name=="GamepadSettingsPanel")).onClick.Invoke();
         }
         [TestCase(false)] [TestCase(true)]
         public void ポーズのキー設定画面で実キーを交換し保存失敗は未適用のまま再試行と破棄と確認付き初期化ができる(bool failFirst)
@@ -3958,6 +3997,57 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        private sealed class ProgressActionFaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Before,After;
+            public override void Replace(string temporary,string destination,string backup){if(Before)throw new System.IO.IOException("before");base.Replace(temporary,destination,backup);if(After)throw new System.IO.IOException("after");}
+        }
+        [Test]
+        public void 手動保存は同じ進行だけを再保存し旧形式と設定と攻略ファイルを変更しない()
+        {
+            var session=new ClearReturnSession(Store());var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(session.InitializeStarter(starter));var id=session.Snapshot.EquippedDeckId;
+            var checkpoint=System.IO.Path.Combine(directory,"active.json");var settings=System.IO.Path.Combine(directory,"keyboard.json");
+            System.IO.File.WriteAllText(checkpoint,"checkpoint-bytes");System.IO.File.WriteAllText(settings,"settings-bytes");
+            long revision=session.Snapshot.Revision;Assert.IsTrue(session.ManualSave(),session.Error);
+            var restored=new ClearReturnSession(Store());Assert.AreEqual(revision+1,restored.Snapshot.Revision);Assert.AreEqual(id,restored.Snapshot.EquippedDeckId);
+            Assert.AreEqual(20,restored.Snapshot.Owned.Sum(o=>o.Count));Assert.IsNull(restored.Snapshot.CheckpointGeneration);
+            Assert.AreEqual("checkpoint-bytes",System.IO.File.ReadAllText(checkpoint));Assert.AreEqual("settings-bytes",System.IO.File.ReadAllText(settings));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 新規開始は確定した同じ計画を原子的に保存し旧進行を保全して二重配布しない(bool after)
+        {
+            var io=new ProgressActionFaultIo();var session=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(directory,io));var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(session.InitializeStarter(starter));Assert.IsTrue(session.Begin(Terminal(Card("old")),"old-dungeon",new ClearReturnSettings()));
+            Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            var before=System.IO.File.ReadAllBytes(Store().ActivePath);var revision=session.Snapshot.Revision;
+            var settings=System.IO.Path.Combine(directory,"settings.json");var checkpoint=System.IO.Path.Combine(directory,"active.json");
+            System.IO.File.WriteAllText(settings,"keep settings");System.IO.File.WriteAllText(checkpoint,"keep old checkpoint");
+            io.Before=!after;io.After=after;bool ok=session.StartNewGame(revision,starter);Assert.AreEqual(after,ok);
+            if(!after){CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(Store().ActivePath));Assert.IsTrue(session.HasPendingSave);Assert.IsFalse(session.StartNewGame(revision,starter));io.Before=false;Assert.IsTrue(session.Retry(),session.Error);}
+            Assert.IsFalse(session.StartNewGame(revision,starter),"古い確認の二重決定を拒否");
+            var current=new ClearReturnSession(Store()).Snapshot;Assert.AreEqual(1,current.Level);Assert.AreEqual(0,current.Experience);Assert.AreEqual(0,current.Tokens);Assert.IsNull(current.Flow);Assert.IsNull(current.NextDeparture);
+            Assert.IsEmpty(current.Receipts);Assert.IsEmpty(current.ClearedDungeons);Assert.AreEqual(20,current.Owned.Sum(o=>o.Count));Assert.AreEqual(1,current.SavedDecks.Length);
+            Assert.IsTrue(System.Guid.TryParseExact(current.CheckpointGeneration,"N",out _));
+            Assert.AreEqual("keep settings",System.IO.File.ReadAllText(settings));Assert.AreEqual("keep old checkpoint",System.IO.File.ReadAllText(checkpoint));
+            var archives=System.IO.Directory.GetFiles(System.IO.Path.Combine(directory,"new-game-backups"),"*.json");Assert.AreEqual(1,archives.Length);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(archives[0]));
+            Assert.IsTrue(session.ManualSave());CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(archives[0]));
+        }
+        [Test]
+        public void 確認後の更新と不正スターターと不正保存世代は新規開始で上書きしない()
+        {
+            var session=new ClearReturnSession(Store());var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();Assert.IsTrue(session.InitializeStarter(starter));
+            long old=session.Snapshot.Revision;Assert.IsTrue(session.ManualSave());var bytes=System.IO.File.ReadAllBytes(Store().ActivePath);
+            Assert.IsFalse(session.StartNewGame(old,starter));Assert.IsFalse(session.StartNewGame(session.Snapshot.Revision,starter.Take(6).ToArray()));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));
+            var bad=session.Snapshot;bad.CheckpointGeneration="../old";Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(bad));
+        }
+        [Test]
+        public void 手動保存の障害は旧進行を維持して同じ内容を再試行できる()
+        {
+            var io=new FaultIo();var session=new ClearReturnSession(Store(io));Assert.IsTrue(session.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+            var before=System.IO.File.ReadAllBytes(Store().ActivePath);io.Before=true;Assert.IsFalse(session.ManualSave());CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(Store().ActivePath));
+            Assert.IsFalse(session.ManualSave());io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual(20,new ClearReturnSession(Store()).Snapshot.Owned.Sum(o=>o.Count));
+        }
         [System.Runtime.Serialization.DataContract]
         private sealed class LegacyEnvelope
         {
@@ -4035,9 +4125,50 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(session.DeleteDeck(original.Id));Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));
         }
 
-        private static CollectionRecipe[] CollectionRecipes() => new[]{
-            new CollectionRecipe("one",new[]{"sword","bomb"},"fire_sword"),
-            new CollectionRecipe("special",new[]{"shield","heal"},"fire_sword")};
+        private static CollectionRecipe[] CollectionRecipes()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();
+            CollectionRecipe Recipe(string id,string a,string b)=>new CollectionRecipe(id,new[]{a,b},"fire_sword",
+                materialCards:new[]{f.CreateById(a),f.CreateById(b)},resultCard:f.CreateById("fire_sword"));
+            return new[]{Recipe("one","sword","bomb"),Recipe("special","shield","heal")};
+        }
+        [Test]
+        public void 融合公開は結果詳細だけを許可し未知素材と未入手カード本体は隠す()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var recipes=CollectionRecipes();var session=new ClearReturnSession(Store(),recipes);
+            Assert.IsTrue(CollectionDisplay.RecipeRows(session.Snapshot,recipes).All(r=>r.Result==null));
+            Assert.IsTrue(session.RecordFusion("one"));var p=session.Snapshot;var rows=CollectionDisplay.RecipeRows(p,recipes);
+            StringAssert.Contains("？？？ ＋ ？？？ → ファイアソード",rows[0].Text);
+            Assert.AreEqual(60,rows[0].Result.Power);StringAssert.Contains("威力 60",rows[0].Performance);
+            StringAssert.Contains("（？？？＋？？？の融合）",rows[0].Performance);
+            Assert.IsNull(rows[1].Result);Assert.AreEqual("？？？　未公開レシピ",rows[1].Text);
+            Assert.IsEmpty(p.Owned);Assert.IsEmpty(p.DiscoveredCards);Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(p,f.CreateById("fire_sword")));
+            rows[0].Result.Modifier.BonusDamage=999;Assert.AreEqual(60,rows[0].Result.GetFinalPower());
+            var resumed=new ClearReturnSession(Store(),recipes);Assert.IsTrue(resumed.EnsureCollection());
+            Assert.AreEqual(60,CollectionDisplay.RecipeRows(resumed.Snapshot,recipes)[0].Result.Power);Assert.IsEmpty(resumed.Snapshot.DiscoveredCards);
+        }
+        [Test]
+        public void 同ID同名別性能の入手履歴や融合結果では別定義レシピを公開しない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var actual=f.CreateById("fire_sword");
+            var other=new Card(actual.Id,actual.Name,actual.Cost,actual.Rarity,actual.Category,actual.Element,actual.Series,999,actual.Description);
+            var recipe=new CollectionRecipe("other",new[]{"sword","bomb"},other.Id,resultCard:other);
+            var catalog=f.CollectionCards.Concat(new[]{other}).ToArray();
+            var known=new DiscoveredCard{Id=actual.Id,Name=actual.Name,Level=actual.ExceedLevel,Rarity=actual.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(actual)};
+            var p=new ClearReturnProfile{DiscoveredCards=new[]{known}};
+            Assert.IsFalse(recipe.IsResultKnown(p,catalog));Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{recipe},catalog)[0].Result);
+            Assert.IsFalse(CollectionRecipes()[0].Matches(new[]{f.CreateById("sword"),f.CreateById("bomb")},other));
+            known.DefinitionHash=null;Assert.IsFalse(recipe.IsResultKnown(p,catalog));
+            var materialRecipe=new CollectionRecipe("material",new[]{actual.Id,"bomb"},"sword",materialCards:new[]{other,f.CreateById("bomb")},resultCard:f.CreateById("sword"));
+            p.RevealedRecipes=new[]{"material"};Assert.AreEqual("？？？",materialRecipe.MaterialName(p,0,catalog));
+        }
+        [Test]
+        public void 結果定義のない旧レシピは公開履歴だけから性能を推測しない()
+        {
+            var old=new CollectionRecipe("legacy",new[]{"a","b"},"fire_sword");var p=new ClearReturnProfile{RevealedRecipes=new[]{"legacy"}};
+            Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{old})[0].Result);
+            Assert.AreEqual("公開済み：？？？ ＋ ？？？ → ？？？",CollectionDisplay.RecipeText(p,old));
+        }
         [Test]
         public void 図鑑はスターターを登録し未入手のカード性能とレシピ素材を公開しない()
         {
@@ -4069,7 +4200,8 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(cs.ExecuteFusion(new[]{sword,bomb}).IsSuccess);Assert.AreEqual(1,events);Assert.IsTrue(session.HasPendingSave);
             Assert.IsEmpty(session.Snapshot.RevealedRecipes??new string[0]);Assert.IsTrue(cs.TryUndoCustomization());Assert.AreEqual(2,cs.CurrentHand.Count);
             io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual("one",session.Snapshot.RevealedRecipes.Single());Assert.IsEmpty(session.Snapshot.Owned);
-            Assert.IsEmpty(session.Snapshot.DiscoveredCards);StringAssert.DoesNotContain("ソード",CollectionDisplay.RecipeText(session.Snapshot,CollectionRecipes()[0]));
+            Assert.IsEmpty(session.Snapshot.DiscoveredCards);StringAssert.Contains("？？？ ＋ ？？？ → ファイアソード",CollectionDisplay.RecipeText(session.Snapshot,CollectionRecipes()[0]));
+            Assert.AreEqual(60,CollectionDisplay.RecipeRows(session.Snapshot,CollectionRecipes())[0].Result.Power);
             session=new ClearReturnSession(Store(),CollectionRecipes());Assert.IsTrue(session.EnsureCollection());Assert.AreEqual("one",session.Snapshot.RevealedRecipes.Single());
         }
         [TestCase(false)][TestCase(true)]
@@ -4928,4 +5060,120 @@ namespace Olca.Tests.Integration
             dto.Player.AttackGrowth=null;Assert.IsTrue(CheckpointCodec.TryRestore(dto,session.Definitions,out restored,out error),error);Assert.IsNull(restored.Player.AttackGrowth);var b=new Olca.Core.Logic.Battle.BattleSystem(restored.Player,new List<Enemy>{new Enemy("e","敵",100,ElementType.None,new Vector2Int(5,0))},new Deck());Assert.AreEqual(60,b.ResolveBasicChargeFrames(60));dto.Player.AttackGrowth=new AttackMilestoneDto{Level=10,ChargePercent=0,IntervalReduction=2};Assert.IsFalse(CheckpointCodec.TryRestore(dto,session.Definitions,out _,out _));
         }
     }
+}
+
+namespace Olca.Tests.Integration
+{
+    public class GamepadGameplayInputTests
+    {
+        private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] held)
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in held)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [Test]
+        public void 仮想パッドのゲームボタンは既存の論理入力へ一度だけ立上り保持解放を送る()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();
+            try{provider.StartEventCapture();provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.RightShoulder,UnityEngine.InputSystem.LowLevel.GamepadButton.North,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftStick);
+                var pressed=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(pressed.BasicAttackButtonDown&&pressed.BasicAttackButton&&pressed.JumpButtonDown&&pressed.CardUseButtonDown&&pressed.CustomScreenButtonDown&&pressed.DashButtonDown&&pressed.DashButton);
+                State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);var hold=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(hold.BasicAttackButton);Assert.IsFalse(hold.BasicAttackButtonDown);State(pad);var release=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(release.BasicAttackButtonUp);Assert.IsFalse(release.BasicAttackButton);Assert.IsEmpty(provider.CaptureTimestamped());
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void キーとパッドの同じ攻撃は合成して片側解放で発射せず最後の解放だけ送る()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=new Olca.Unity.UnityInputProvider();
+            try{provider.StartEventCapture();provider.CaptureTimestamped();UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Z));UnityEngine.InputSystem.InputSystem.Update();Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);
+                State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);var joined=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(joined.BasicAttackButton);Assert.IsFalse(joined.BasicAttackButtonDown);UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();var switched=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(switched.BasicAttackButton);Assert.IsFalse(switched.BasicAttackButtonUp);State(pad);Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonUp);
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
+        [Test]
+        public void スナップショットと切断は押下を発生させず保持中の復帰を中立まで遮断する()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();
+            try{provider.StartEventCapture();provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);provider.CaptureTimestamped();provider.QueueSnapshot();var snapshot=provider.CaptureTimestamped().Last().Input;Assert.IsFalse(snapshot.BasicAttackButton||snapshot.BasicAttackButtonDown||snapshot.BasicAttackButtonUp);
+                State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);Assert.IsFalse(provider.CaptureTimestamped().Last().Input.BasicAttackButton);State(pad);provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);
+                UnityEngine.InputSystem.InputSystem.DisableDevice(pad);var removed=provider.CaptureTimestamped().Last().Input;Assert.IsFalse(removed.BasicAttackButton||removed.BasicAttackButtonUp);UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad);provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 十字キーは移動軸へ入り中心復帰で残留せずキーボード再割当を変えない()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();
+            try{var profile=provider.KeyboardProfile;provider.StartEventCapture();provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp);var moved=provider.CaptureTimestamped().Last().Input;Assert.AreEqual(1,moved.Horizontal);Assert.AreEqual(1,moved.Vertical);Assert.AreEqual(1,moved.HorizontalDown);State(pad);var neutral=provider.CaptureTimestamped().Last().Input;Assert.AreEqual(0,neutral.Horizontal);Assert.AreEqual(0,neutral.Vertical);Assert.AreSame(profile,provider.KeyboardProfile);
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    public class CustomGamepadInputTests
+    {
+        private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] buttons)
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in buttons)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [Test]
+        public void 無効場面と保持復帰を遮断し新しい押下だけを一回採取する()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();bool active=false;var input=new Olca.Unity.CustomGamepadInput(()=>active);
+            try{State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);active=true;Assert.IsEmpty(input.Read());State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.IsEmpty(input.Read());State(pad);Assert.IsEmpty(input.Read());State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(Olca.Unity.CustomPadCommand.Decide,input.Read().Single().Command);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.IsEmpty(input.Read());active=false;input.Read();active=true;input.Read();State(pad);Assert.IsEmpty(input.Read());}
+            finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 同時ボタンは確定を優先し方向の保持と同じ状態の再送で決定を重複しない()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var input=new Olca.Unity.CustomGamepadInput(()=>true);
+            try{input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.Start,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);CollectionAssert.AreEqual(new[]{Olca.Unity.CustomPadCommand.Right,Olca.Unity.CustomPadCommand.Confirm},input.Read().Select(e=>e.Command));State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.Start,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);Assert.IsEmpty(input.Read());State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(Olca.Unity.CustomPadCommand.Cancel,input.Read().Single().Command);}
+            finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 切断やリセットは未処理入力と世代を破棄し別デバイスへ移動を残留させない()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var input=new Olca.Unity.CustomGamepadInput(()=>true);
+            try{input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.North);var old=input.Read().Single();input.Reset();Assert.AreNotEqual(old.Epoch,input.Epoch);State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);UnityEngine.InputSystem.InputSystem.DisableDevice(pad);Assert.IsEmpty(input.Read());UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.RightStick);Assert.IsEmpty(input.Read(),"再接続直後の保持は中立まで無視");State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.RightStick);Assert.AreEqual(Olca.Unity.CustomPadCommand.Details,input.Read().Single().Command);State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.Select);Assert.AreEqual(Olca.Unity.CustomPadCommand.Transform,input.Read().Single().Command);}
+            finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+    }
+    public class MenuPadScopeTests
+    {
+        private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] keys)
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in keys)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [Test]
+        public void スライダーは左右で調整し上下で移動して切替は一押し一回だけ行う()
+        {
+            var root=new UnityEngine.GameObject("Settings",typeof(UnityEngine.RectTransform));var sliderObject=new UnityEngine.GameObject("Volume",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Slider));sliderObject.transform.SetParent(root.transform);((UnityEngine.RectTransform)sliderObject.transform).anchoredPosition=new UnityEngine.Vector2(0,100);var slider=sliderObject.GetComponent<UnityEngine.UI.Slider>();slider.minValue=0;slider.maxValue=2;slider.wholeNumbers=true;slider.value=1;var toggleObject=new UnityEngine.GameObject("Switch",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Toggle));toggleObject.transform.SetParent(root.transform);var toggle=toggleObject.GetComponent<UnityEngine.UI.Toggle>();toggle.isOn=false;var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var menu=new Olca.Unity.MenuPadScope(()=>true);
+            try{menu.Bind(root.transform,"Volume",()=>{});State(pad);menu.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft);menu.Tick();Assert.AreEqual(0,slider.value);State(pad);menu.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft);menu.Tick();Assert.AreEqual(0,slider.value);State(pad);menu.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);menu.Tick();Assert.AreEqual(1,slider.value);State(pad);menu.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown);menu.Tick();Assert.AreEqual("Switch",menu.FocusName);State(pad);menu.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);menu.Tick();Assert.IsTrue(toggle.isOn);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);menu.Tick();Assert.IsTrue(toggle.isOn);}
+            finally{menu.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 同じボタンを再表示しても前回焦点より指定した安全な初期焦点を優先する()
+        {
+            var existing=UnityEngine.EventSystems.EventSystem.current;var previous=existing?.currentSelectedGameObject;var es=existing!=null?existing:new UnityEngine.GameObject("MenuEventSystem",typeof(UnityEngine.EventSystems.EventSystem)).GetComponent<UnityEngine.EventSystems.EventSystem>();var root=new UnityEngine.GameObject("Reward",typeof(UnityEngine.RectTransform));var receive=new UnityEngine.GameObject("Receive",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));receive.transform.SetParent(root.transform);var skip=new UnityEngine.GameObject("Skip",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));skip.transform.SetParent(root.transform);var menu=new Olca.Unity.MenuPadScope(()=>true);
+            try{if(existing==null)typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnEnable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(es,null);UnityEngine.EventSystems.EventSystem.current=es;es.SetSelectedGameObject(receive);menu.Bind(root.transform,"Skip",()=>{});Assert.AreEqual(skip,es.currentSelectedGameObject);es.SetSelectedGameObject(receive);root.SetActive(false);root.SetActive(true);menu.Bind(root.transform,"Skip",()=>{});Assert.AreEqual("Skip",menu.FocusName);Assert.AreEqual(skip,es.currentSelectedGameObject);}
+            finally{menu.Dispose();es.SetSelectedGameObject(previous);UnityEngine.Object.DestroyImmediate(root);if(existing==null){typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnDisable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(es,null);UnityEngine.Object.DestroyImmediate(es.gameObject);}}
+        }
+        [Test]
+        public void 受領後の次報酬へ保持中の決定取消を持ち越さない()
+        {
+            var first=new UnityEngine.GameObject("CardReward",typeof(UnityEngine.RectTransform));var second=new UnityEngine.GameObject("CurrencyReward",typeof(UnityEngine.RectTransform));var a=new UnityEngine.GameObject("Receive",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));a.transform.SetParent(first.transform);var b=new UnityEngine.GameObject("Skip",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));b.transform.SetParent(second.transform);second.SetActive(false);var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var scope=new Olca.Unity.MenuPadScope(()=>true);int received=0,skipped=0;
+            try{a.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(()=>{received++;first.SetActive(false);second.SetActive(true);scope.Bind(second.transform,"Skip",()=>skipped++);});b.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(()=>skipped++);scope.Bind(first.transform,"Receive",()=>{});State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,received);Assert.AreEqual(0,skipped);State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,skipped,"同時入力は取消だけ");}
+            finally{scope.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.Object.DestroyImmediate(first);UnityEngine.Object.DestroyImmediate(second);}
+        }
+        [Test]
+        public void 再描画を伴う決定は保持で重複せず背面と切断復帰を遮断する()
+        {
+            var root=new UnityEngine.GameObject("Menu",typeof(UnityEngine.RectTransform));var obj=new UnityEngine.GameObject("Decide",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));obj.transform.SetParent(root.transform);var button=obj.GetComponent<UnityEngine.UI.Button>();var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();bool top=true;int count=0,cancel=0;var scope=new Olca.Unity.MenuPadScope(()=>top);
+            try{button.onClick.AddListener(()=>{count++;scope.Bind(root.transform,"Decide",()=>cancel++);});scope.Bind(root.transform,"Decide",()=>cancel++);State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,count);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,count);State(pad);scope.Tick();top=false;State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East);scope.Tick();Assert.AreEqual(0,cancel);top=true;scope.Tick();State(pad);scope.Tick();UnityEngine.InputSystem.InputSystem.DisableDevice(pad);scope.Tick();UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,count);State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East);scope.Tick();Assert.AreEqual(1,cancel);}
+            finally{scope.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.Object.DestroyImmediate(root);}
+        }
+    }
+
+}
+
+namespace Olca.Tests.Integration {
+ [NUnit.Framework.TestFixture] public class IndependentGamepadBindingTests {
+  static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] keys){var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in keys){if(key==UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger)state.leftTrigger=1;else if(key==UnityEngine.InputSystem.LowLevel.GamepadButton.RightTrigger)state.rightTrigger=1;else state=state.WithButton(key);}UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+  sealed class FaultIo:Olca.Unity.CheckpointFileIo {public override void MoveNew(string a,string b){throw new System.IO.IOException("own fixture write failure");}public override void Replace(string a,string b,string c){throw new System.IO.IOException("own fixture replace failure");}}
+  [NUnit.Framework.Test] public void パッドの交換と必須条件はキーボードを変更せず独立保存再開できる(){string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-pad-"+System.Guid.NewGuid().ToString("N"));try{var kb=new Olca.Unity.KeyboardBindingFileStore(dir);NUnit.Framework.Assert.IsTrue(kb.TrySave(Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile(),out _));var original=System.IO.File.ReadAllBytes(kb.ActivePath);var defaults=Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile();NUnit.Framework.Assert.AreEqual("South",defaults.Bindings[("gamepad","exploration","JumpPrimary")]);NUnit.Framework.Assert.AreEqual("West",defaults.Bindings[("gamepad","battle","AttackPrimary")]);var edit=defaults.BeginEdit();var attack=("gamepad","battle","AttackPrimary");var card=("gamepad","battle","CardPrimary");NUnit.Framework.Assert.IsTrue(edit.TryAssign(attack,defaults.Bindings[card],out _));NUnit.Framework.Assert.AreEqual(defaults.Bindings[attack],edit.Preview().Bindings[card]);NUnit.Framework.Assert.IsFalse(edit.TryAssign(("gamepad","menu","Decide"),null,out _));NUnit.Framework.Assert.IsFalse(edit.TryAssign(("gamepad","battle","Pause"),null,out _));var store=new Olca.Unity.GamepadBindingFileStore(dir);NUnit.Framework.Assert.IsTrue(store.TrySave(edit.Preview(),out _));NUnit.Framework.Assert.IsTrue(new Olca.Unity.GamepadBindingFileStore(dir).TryRead(out var restored,out _));NUnit.Framework.Assert.AreEqual(defaults.Bindings[card],restored.Bindings[attack]);NUnit.Framework.CollectionAssert.AreEqual(original,System.IO.File.ReadAllBytes(kb.ActivePath));NUnit.Framework.Assert.IsFalse(new Olca.Unity.GamepadBindingFileStore(dir,new FaultIo()).TrySave(defaults,out _));NUnit.Framework.Assert.IsTrue(store.TryRead(out restored,out _));NUnit.Framework.Assert.AreEqual(defaults.Bindings[card],restored.Bindings[attack]);edit.Discard();NUnit.Framework.Assert.AreEqual(defaults.Bindings[attack],edit.Preview().Bindings[attack]);}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}}
+  [NUnit.Framework.Test] public void 必須操作なしや不正ボタンを保存前に拒否する(){var defaults=Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile();var slots=defaults.Bindings.ToDictionary(p=>p.Key,p=>p.Value);slots[("gamepad","menu","Cancel")]=null;var missing=new Olca.Core.Domain.InputBindingProfile(slots,new (string,string,string)[0]);NUnit.Framework.Assert.IsFalse(Olca.Unity.UnityInputProvider.ValidateGamepadProfile(missing,out _));slots[("gamepad","menu","Cancel")]=defaults.Bindings[("gamepad","menu","Cancel")];slots[("gamepad","battle","AttackPrimary")]="999";NUnit.Framework.Assert.IsFalse(Olca.Unity.UnityInputProvider.ValidateGamepadProfile(new Olca.Core.Domain.InputBindingProfile(slots,new (string,string,string)[0]),out _));}
+  [NUnit.Framework.Test] public void 再割当を通常イベントとメニューへ反映し保持と切断復帰で誤発動しない(){var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();var input=new Olca.Unity.CustomGamepadInput(()=>true,context:"menu");try{var edit=Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();NUnit.Framework.Assert.IsTrue(edit.TryAssign(("gamepad","battle","AttackPrimary"),"RightTrigger",out _));NUnit.Framework.Assert.IsTrue(edit.TryAssign(("gamepad","menu","Decide"),"LeftTrigger",out _));NUnit.Framework.Assert.IsTrue(provider.TryRestoreGamepadProfile(edit.Preview(),out _));provider.GamepadContext=()=>"battle";provider.GamepadPauseAvailable=()=>true;provider.StartEventCapture();provider.CaptureTimestamped();input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.RightTrigger);NUnit.Framework.Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);State(pad);provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.Start);NUnit.Framework.Assert.IsTrue(provider.ConsumeGamepadPause());NUnit.Framework.Assert.IsFalse(provider.ConsumeGamepadPause());State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.Start);NUnit.Framework.Assert.IsFalse(provider.ConsumeGamepadPause());State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger);NUnit.Framework.Assert.AreEqual(Olca.Unity.CustomPadCommand.Decide,input.Read().Single().Command);UnityEngine.InputSystem.InputSystem.DisableDevice(pad);input.Read();UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger);NUnit.Framework.Assert.IsEmpty(input.Read());State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger);NUnit.Framework.Assert.AreEqual(Olca.Unity.CustomPadCommand.Decide,input.Read().Single().Command);}finally{input.Dispose();provider.Dispose();var reset=new Olca.Unity.UnityInputProvider();reset.TryRestoreGamepadProfile(Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile(),out _);reset.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}}
+ }
 }

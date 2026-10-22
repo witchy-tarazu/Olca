@@ -77,10 +77,10 @@ namespace Olca.Core.Logic.Battle
     /// </summary>
     public class TuningSelectionState
     {
-        /// <summary>調律対象カード（CardCategory.Tuning 以外）</summary>
+        /// <summary>調律対象カード（素材適性を持たないカード）</summary>
         public Card TargetCard { get; private set; }
 
-        /// <summary>調律素材カード（CardCategory.Tuning）</summary>
+        /// <summary>調律素材カード（明示定義、または旧区分の互換カード）</summary>
         public Card TuningCard { get; private set; }
 
         /// <summary>対象と調律カードが両方揃っているか</summary>
@@ -88,7 +88,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>
         /// カードをトグル選択する。
-        /// CardCategory.Tuning のカードは調律素材スロットへ、それ以外は対象スロットへ自動振り分け。
+        /// 素材適性を持つカードは素材スロットへ、それ以外は対象スロットへ自動振り分け。
         /// 選択済みなら解除。
         /// </summary>
         public bool TryToggle(Card card)
@@ -106,7 +106,7 @@ namespace Olca.Core.Logic.Battle
                 return true;
             }
 
-            if (card.Category == CardCategory.Tuning)
+            if (TuningSystem.IsMaterial(card))
             {
                 TuningCard = card;
                 return true;
@@ -144,7 +144,7 @@ namespace Olca.Core.Logic.Battle
         public IReadOnlyList<Card> Materials => materials.AsReadOnly();
 
         /// <summary>2枚以上選択されているか</summary>
-        public bool IsReady => materials.Count >= 2;
+        public bool IsReady => materials.Count == 2;
 
         /// <summary>
         /// カードをトグル選択する。
@@ -160,6 +160,7 @@ namespace Olca.Core.Logic.Battle
                 return true;
             }
 
+            if(materials.Count==2)return false;
             materials.Add(card);
             return true;
         }

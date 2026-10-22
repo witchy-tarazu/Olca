@@ -2,15 +2,38 @@ using System.Collections.Generic;
 
 namespace Olca.Core.Domain
 {
+    /// <summary>調律付与先の不変条件。未指定の項目は制限しない。</summary>
+    public sealed class TuningTargetCondition
+    {
+        public CardCategory? Category { get; }
+        public string SeriesName { get; }
+        public ElementType? Element { get; }
+        public string DefinitionHash { get; }
+        public bool HasRestrictions => Category.HasValue||SeriesName!=null||Element.HasValue||DefinitionHash!=null;
+        public TuningTargetCondition(CardCategory? category=null,CardSeries series=null,ElementType? element=null,string definitionHash=null)
+        {
+            if((category.HasValue&&!System.Enum.IsDefined(typeof(CardCategory),category.Value))||
+                (element.HasValue&&!System.Enum.IsDefined(typeof(ElementType),element.Value))||
+                (series!=null&&string.IsNullOrWhiteSpace(series.Name))||
+                (definitionHash!=null&&(definitionHash.Length!=64||!System.Linq.Enumerable.All(definitionHash,System.Uri.IsHexDigit))))
+                throw new System.ArgumentException("調律の対象条件が不正です");
+            Category=category;SeriesName=series?.Name;Element=element;DefinitionHash=definitionHash?.ToUpperInvariant();
+        }
+        public bool Allows(Card card) => card!=null&&(!Category.HasValue||card.Category==Category.Value)&&
+            (SeriesName==null||card.Series?.Name==SeriesName)&&(!Element.HasValue||card.Element==Element.Value)&&
+            (DefinitionHash==null||CollectionDisplay.DefinitionHash(card.CreateUntunedDefinitionCopy())==DefinitionHash);
+    }
+
     /// <summary>効果ごとの不変な段階定義。欠落段階を上限と推測しない。</summary>
     public sealed class TuningEffectDefinition
     {
         public string Id { get; }
         public int MaxStage { get; }
+        public TuningTargetCondition TargetCondition { get; }
         private readonly Dictionary<int, CardModifier> stages;
-        public TuningEffectDefinition(string id, int maxStage, IDictionary<int, CardModifier> stages)
+        public TuningEffectDefinition(string id, int maxStage, IDictionary<int, CardModifier> stages, TuningTargetCondition targetCondition=null)
         {
-            Id = id; MaxStage = maxStage;
+            Id = id; MaxStage = maxStage; TargetCondition=targetCondition;
             this.stages = new Dictionary<int, CardModifier>();
             if (stages != null) foreach (var pair in stages) this.stages[pair.Key] = pair.Value?.Clone();
         }
@@ -28,14 +51,17 @@ namespace Olca.Core.Domain
         public string Id { get; }
         public int FixedCostAdjustment { get; }
         public bool ZeroCost { get; }
+        public TuningTargetCondition TargetCondition { get; }
         private readonly List<TuningEffectDefinition> effects;
         public IReadOnlyList<TuningEffectDefinition> Effects => effects.AsReadOnly();
         public TuningGrantDefinition(string id, IEnumerable<TuningEffectDefinition> effects = null,
-            int fixedCostAdjustment = 0, bool zeroCost = false)
+            int fixedCostAdjustment = 0, bool zeroCost = false, TuningTargetCondition targetCondition=null)
         {
-            Id = id; FixedCostAdjustment = fixedCostAdjustment; ZeroCost = zeroCost;
+            Id = id; FixedCostAdjustment = fixedCostAdjustment; ZeroCost = zeroCost; TargetCondition=targetCondition;
             this.effects = effects == null ? new List<TuningEffectDefinition>() : new List<TuningEffectDefinition>(effects);
         }
+        public bool Allows(Card card) => (TargetCondition==null||TargetCondition.Allows(card))&&
+            System.Linq.Enumerable.All(effects,e=>e==null||e.TargetCondition==null||e.TargetCondition.Allows(card));
     }
 
     /// <summary>

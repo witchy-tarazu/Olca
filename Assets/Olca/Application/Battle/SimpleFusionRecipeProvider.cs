@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Olca.Core.Domain;
+using Olca.Core.Logic.Battle;
 using Olca.Core.Interfaces;
 
 namespace Olca.Application.Battle
@@ -9,14 +10,14 @@ namespace Olca.Application.Battle
     /// シンプルな融合レシピ提供者。
     /// コードベースでレシピを定義する（CSVマスターデータ未整備の間の仮実装）。
     /// </summary>
-    public class SimpleFusionRecipeProvider : IFusionRecipeProvider
+    public class SimpleFusionRecipeProvider : IFusionRecipeProvider, IFusionDefinitionCatalogProvider
     {
         // レシピ: 素材ID一覧（順序不問） → 結果カードID
         private readonly List<(List<string> materials, string resultId)> recipes;
         private readonly SimpleCardFactory cardFactory;
 
-        public IReadOnlyList<CollectionRecipe> CollectionRecipes => recipes.Select(r=>new CollectionRecipe(
-            "special/v1/"+string.Join("+",r.materials.OrderBy(x=>x))+"/"+r.resultId,r.materials,r.resultId, materialCards:r.materials.Select(id=>cardFactory.CreateById(id)), resultCard:cardFactory.CreateById(r.resultId))).ToArray();
+        public FusionDefinitionCatalog FusionDefinitions { get; }
+        public IReadOnlyList<CollectionRecipe> CollectionRecipes => FusionDefinitions.CollectionRecipes;
 
         public SimpleFusionRecipeProvider(SimpleCardFactory cardFactory=null)
         {
@@ -27,6 +28,13 @@ namespace Olca.Application.Battle
                 (new List<string> { SimpleCardFactory.Sword, SimpleCardFactory.Bomb },
                  SimpleCardFactory.FireSword),
             };
+            FusionDefinitions=new FusionDefinitionCatalog();
+            foreach(var card in this.cardFactory.FusionCards)
+                FusionDefinitions.RegisterCard(card,card.Series.Name,card.Id,(int)card.ExceedLevel);
+            foreach(var recipe in recipes)
+                FusionDefinitions.RegisterSpecial("special/v1/"+string.Join("+",recipe.materials.OrderBy(x=>x))+"/"+recipe.resultId,
+                    this.cardFactory.CreateById(recipe.materials[0]),this.cardFactory.CreateById(recipe.materials[1]),this.cardFactory.CreateById(recipe.resultId));
+            // 通常の系統組合せ表は製品仕様待ち。未登録を別カードへ推測しない。
         }
 
         /// <summary>

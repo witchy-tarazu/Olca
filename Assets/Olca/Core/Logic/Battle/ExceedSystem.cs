@@ -29,6 +29,10 @@ namespace Olca.Core.Logic.Battle
                 return ExceedValidationResult.Fail("同名カード2枚が必要です");
             if (cardA.ExceedLevel != cardB.ExceedLevel)
                 return ExceedValidationResult.Fail("同じ超越段階のカード2枚が必要です");
+            // 個体・付与履歴ではなく現在の元定義を照合。保存用ハッシュの形式は変えない。
+            if (CollectionDisplay.DefinitionHash(cardA.CreateUntunedDefinitionCopy()) !=
+                CollectionDisplay.DefinitionHash(cardB.CreateUntunedDefinitionCopy()))
+                return ExceedValidationResult.Fail("同じ定義のカード2枚が必要です");
             if (cardA.ExceedLevel >= ExceedLevel.Lv3)
                 return ExceedValidationResult.Fail("最上位カードはこれ以上超越できません");
 

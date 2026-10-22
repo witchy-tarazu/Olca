@@ -248,7 +248,8 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>カスタム画面専用の剣記号。本絵の縮小・切抜きではなくUI図形として独立制作する。</summary>
     public static class SwordMiniIcon
     {
-        public static Sprite Create()
+        public static Sprite Create() => Create(false);
+        public static Sprite Create(bool fire)
         {
             const int size=256;var pixels=new Color32[size*size];
             for(int y=0;y<size;y++)for(int x=0;x<size;x++){
@@ -259,11 +260,13 @@ namespace Olca.Presentation.CustomScreen
                 if(Mathf.Abs(t)<5&&Mathf.Abs(n)<34)color=new Color(.13f,.62f,.72f,1);
                 if(t< -5&&t> -34&&Mathf.Abs(n)<6)color=new Color(.15f,.55f,.65f,1);
                 if((t+38)*(t+38)+n*n<35)color=new Color(.65f,.97f,1,1);
+                // 既存融合の炎属性を短い炎の線で示す専用mini。本絵を加工しない。
+                if(fire&&t>35&&t<145&&Mathf.Abs(n-(18+6*Mathf.Sin(t*.08f)))<5)color=new Color(.95f,.46f,.17f,1);
                 pixels[y*size+x]=color;
             }
-            var texture=new Texture2D(size,size,TextureFormat.RGBA32,false){name="SwordCustomIcon",filterMode=FilterMode.Bilinear,hideFlags=HideFlags.HideAndDontSave};
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,false){name=fire?"FireSwordCustomIcon":"SwordCustomIcon",filterMode=FilterMode.Bilinear,hideFlags=HideFlags.HideAndDontSave};
             texture.SetPixels32(pixels);texture.Apply(false,true);
-            var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name="SwordCustomIcon";sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
+            var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=fire?"FireSwordCustomIcon":"SwordCustomIcon";sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
         }
     }
     /// <summary>本絵とは独立した回復・防御のUI記号。下部はコスト文字用に空ける。</summary>

@@ -927,6 +927,98 @@ namespace Olca.Tests.CardTests
             Assert.AreEqual(handBefore - 1, cs.CurrentHand.Count);
             Assert.IsTrue(cs.CurrentHand.Contains(result.ResultCard));
         }
+        [Test]
+        public void 同ID別定義の超越拒否は無消費で同定義の加工取消後も再判定できる()
+        {
+            var factory = new Olca.Application.Battle.SimpleCardFactory();
+            var a = factory.CreateById("sword"); var b = a.Clone();
+            var different = new Card(a.Id, "sword_card", a.Cost, a.Rarity, a.Category, a.Element, a.Series, a.Power, "Fallback");
+            var screen = new CustomScreenSystem(new Deck(new List<Card> { a, different, b }), maxHandSize:20, maxCost:100,
+                exceedSystem:new ExceedSystem(factory), fusionSystem:new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(), factory));
+            screen.Open(new Card[0], new MockRandomProvider(0));
+            var original = screen.CurrentHand.ToArray();
+            var preview = screen.PreviewCustomization(new[] { a, different });
+            Assert.IsFalse(preview.CanExecute); StringAssert.Contains("同じ定義", preview.Reason);
+            Assert.IsFalse(screen.ExecuteCustomization(new[] { a, different }).CanExecute);
+            Assert.IsFalse(screen.ExecuteExceed(a, different).IsSuccess);
+            CollectionAssert.AreEqual(original, screen.CurrentHand); Assert.AreEqual(0, screen.CustomizationUndoCount);
+            Assert.IsTrue(screen.ExecuteCustomization(new[] { a, b }).CanExecute);
+            Assert.IsTrue(screen.TryUndoCustomization());
+            Assert.AreEqual(3, screen.CurrentHand.Count);
+            var same = screen.CurrentHand.Where(c => c.Name == a.Name).ToArray();
+            var other = screen.CurrentHand.Single(c => c.Name == different.Name);
+            Assert.IsFalse(screen.PreviewCustomization(new[] { same[0], other }).CanExecute);
+            Assert.IsTrue(screen.PreviewCustomization(same).CanExecute);
+        }
+
+        private static Card OrdinaryTuningSource(Card target=null)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();
+            return f.CreateById("bomb").WithTuningDefinition(new TuningGrantDefinition("ordinary-source",new[]{new TuningEffectDefinition("bonus",1,
+                new Dictionary<int,CardModifier>{{1,new CardModifier{BonusDamage=3}}},new TuningTargetCondition(category:CardCategory.Attack,series:CardSeries.Sword))},
+                targetCondition:target==null?null:new TuningTargetCondition(definitionHash:CollectionDisplay.DefinitionHash(target))));
+        }
+        private static CustomScreenSystem EligibilityScreen(params Card[] cards)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var screen=new CustomScreenSystem(new Deck(cards.ToList()),maxHandSize:20,maxCost:100,
+                tuningSystem:new TuningSystem(f.GetTuningDefinition),exceedSystem:new ExceedSystem(f),fusionSystem:new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(f),f));
+            screen.Open(new Card[0],new MockRandomProvider(0));return screen;
+        }
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 通常カードの適性と対象条件を候補プレビュー確定とUndoで共通に扱う(bool reverse)
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var target=f.CreateById("sword");var source=OrdinaryTuningSource(target);
+            var other=new Card(target.Id,target.Name,target.Cost,target.Rarity,target.Category,target.Element,target.Series,99,target.Description);
+            var screen=EligibilityScreen(target,source,other);var pair=reverse?new[]{source,target}:new[]{target,source};
+            Assert.IsTrue(screen.IsCompatibleWithCurrentSelection(new[]{pair[0]},pair[1]));
+            Assert.IsFalse(screen.IsCompatibleWithCurrentSelection(new[]{source},other));
+            var before=screen.CurrentHand.ToArray();Assert.IsFalse(screen.PreviewCustomization(new[]{source,other}).CanExecute);
+            Assert.IsFalse(screen.ExecuteCustomization(new[]{source,other}).CanExecute);CollectionAssert.AreEqual(before,screen.CurrentHand);Assert.AreEqual(0,screen.CustomizationUndoCount);
+            var preview=screen.PreviewCustomization(pair);Assert.AreEqual(CustomizationOperation.Tuning,preview.Operation);Assert.IsTrue(preview.CanExecute,preview.Reason);
+            CollectionAssert.AreEqual(before,screen.CurrentHand,"プレビュー取消は無消費");
+            Assert.IsFalse(screen.ExecuteFusion(pair).IsSuccess,"既存のソード＋ボムレシピへ迂回しない");
+            var result=screen.ExecuteCustomization(pair);Assert.IsTrue(result.CanExecute,result.Reason);Assert.AreEqual(33,result.ResultCard.GetFinalPower());
+            Assert.IsTrue(screen.TryUndoCustomization());var restored=screen.CurrentHand.Single(c=>c.Id==target.Id&&c.Power==30);
+            var restoredSource=screen.CurrentHand.Single(c=>c.TuningDefinition!=null);
+            Assert.IsTrue(screen.IsTuningMaterial(restoredSource));Assert.IsTrue(screen.PreviewCustomization(new[]{restored,restoredSource}).CanExecute);
+            Assert.IsFalse(screen.PreviewCustomization(new[]{other,restoredSource}).CanExecute);Assert.AreEqual(3,screen.CurrentHand.Count);
+        }
+        [Test]
+        public void 適性カードも通常選択と単独使用ができ付与効果を自身の性能に混ぜない()
+        {
+            var source=OrdinaryTuningSource();var screen=EligibilityScreen(source);var state=new TuningSelectionState();
+            Assert.IsTrue(state.TryToggle(source));Assert.AreSame(source,state.TuningCard);Assert.IsNull(state.TargetCard);
+            Assert.IsTrue(screen.TrySelectCard(source));screen.Confirm();Assert.AreEqual(40,screen.AvailableCards.Single().GetFinalPower());
+            Assert.AreEqual(CardCategory.Attack,source.Category);Assert.AreEqual(0,source.TuningCount);
+        }
+        [Test]
+        public void 適性同士は調律せず異シリーズだけ融合でき同定義ペアは超越を優先する()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var source=OrdinaryTuningSource();
+            var sword=f.CreateById("sword").WithTuningDefinition(source.TuningDefinition);var same=sword.Clone();
+            var definitions=new FusionDefinitionCatalog();var output=f.CreateById("fire_sword");definitions.RegisterCard(source,"補助A","source",0);definitions.RegisterCard(sword,"補助B","sword",0);definitions.RegisterCard(output,"結果","output",0);definitions.RegisterSpecial("fixture/eligible",source,sword,output);
+            var screen=new CustomScreenSystem(new Deck(new List<Card>{source,sword,same}),exceedSystem:new ExceedSystem(f),tuningSystem:new TuningSystem(f.GetTuningDefinition),fusionSystem:new FusionSystem(new MockFusionRecipeProvider(),f,definitions));screen.Open(new Card[0],new MockRandomProvider(0));Assert.IsFalse(screen.ExecuteTuning(sword,source).IsSuccess);
+            var fusion=screen.PreviewCustomization(new[]{source,sword});Assert.AreEqual(CustomizationOperation.Fusion,fusion.Operation);Assert.IsTrue(fusion.CanExecute,fusion.Reason);
+            Assert.AreEqual(CustomizationOperation.Exceed,screen.PreviewCustomization(new[]{sword,same}).Operation);
+            var mixed=new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(f),f);
+            Assert.IsFalse(mixed.Validate(new[]{source,f.CreateById("sword")}).IsValid);
+        }
+        [Test]
+        public void 調律超越再調律と逆順Undoで適性と付与回数を復元し即時ドローしない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var a=f.CreateById("sword");var b=a.Clone();var t=OrdinaryTuningSource();var t2=t.Clone();
+            var screen=EligibilityScreen(a,b,t,t2);var first=screen.ExecuteCustomization(new[]{a,t});Assert.IsTrue(first.CanExecute,first.Reason);
+            var tuned=screen.CurrentHand.Single(c=>c.TuningCount==1);Assert.AreEqual(33,tuned.GetFinalPower());
+            var second=screen.ExecuteCustomization(new[]{tuned,b});Assert.IsTrue(second.CanExecute,second.Reason);
+            var upper=screen.CurrentHand.Single(c=>c.ExceedLevel==ExceedLevel.Lv1);Assert.AreEqual(45,upper.GetFinalPower());Assert.AreEqual(0,upper.TuningCount);
+            var next=screen.ExecuteCustomization(new[]{upper,t2});Assert.IsTrue(next.CanExecute,next.Reason);Assert.AreEqual(48,next.ResultCard.GetFinalPower());Assert.AreEqual(1,screen.CurrentHand.Count);
+            Assert.IsTrue(screen.TryUndoCustomization());Assert.AreEqual(45,screen.CurrentHand.Single(c=>c.ExceedLevel==ExceedLevel.Lv1).GetFinalPower());
+            Assert.IsTrue(screen.TryUndoCustomization());Assert.AreEqual(33,screen.CurrentHand.Single(c=>c.TuningCount==1).GetFinalPower());
+            Assert.IsTrue(screen.TryUndoCustomization());Assert.AreEqual(4,screen.CurrentHand.Count);Assert.AreEqual(2,screen.CurrentHand.Count(screen.IsTuningMaterial));
+            Assert.IsTrue(screen.CurrentHand.Where(c=>c.Id=="sword").All(c=>c.Power==30&&c.TuningCount==0));
+        }
+
         private Card UndoCard(string id, bool tuning = false, ExceedLevel level = ExceedLevel.Normal) =>
             new Card(id, id, 2, CardRarity.Normal, tuning ? CardCategory.Tuning : CardCategory.Attack,
                 ElementType.Fire, CardSeries.Sword, 10, "Undo素材", modifier: new CardModifier { BonusDamage = tuning ? 5 : 2 }, exceedLevel: level);

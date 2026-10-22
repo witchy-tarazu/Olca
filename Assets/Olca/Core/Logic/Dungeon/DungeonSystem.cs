@@ -1437,6 +1437,17 @@ namespace Olca.Core.Logic.Dungeon
                     bool found = effect.TryGetStage(stage, out var value); w.Write(found); if (found) Modifier(w, value);
                 }
             }
+            if(grant.TargetCondition?.HasRestrictions==true||grant.Effects.Any(e=>e.TargetCondition?.HasRestrictions==true)){
+                w.Write("tuning-target-conditions-v1");TuningCondition(w,grant.TargetCondition);
+                foreach(var effect in grant.Effects)TuningCondition(w,effect.TargetCondition);
+            }
+        }
+        private static void TuningCondition(System.IO.BinaryWriter w,TuningTargetCondition condition)
+        {
+            bool restricted=condition?.HasRestrictions==true;w.Write(restricted);if(!restricted)return;
+            w.Write(condition.Category.HasValue);if(condition.Category.HasValue)w.Write((int)condition.Category.Value);
+            Text(w,condition.SeriesName);w.Write(condition.Element.HasValue);if(condition.Element.HasValue)w.Write((int)condition.Element.Value);
+            Text(w,condition.DefinitionHash);
         }
         internal static void WriteObstacle(System.IO.BinaryWriter writer, Obstacle obstacle)
         {

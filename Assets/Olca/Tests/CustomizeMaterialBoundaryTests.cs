@@ -64,31 +64,11 @@ namespace Olca.Tests
         }
 
         [Test]
-        public void 三枚融合レシピ_部分一致の候補を維持し完全一致でのみ実行できる()
+        public void 三枚融合は候補でも直接実行でも拒否して手札を維持する()
         {
-            // 実レシピ提供者の三枚レシピ対応を検証するためのテスト用データ。
-            var data = (List<(List<string> materials, string resultId)>)typeof(SimpleFusionRecipeProvider)
-                .GetField("recipes", Flags).GetValue(recipes);
-            data.Clear();
-            data.Add((new List<string> { SimpleCardFactory.Sword, SimpleCardFactory.Bomb, SimpleCardFactory.Heal }, SimpleCardFactory.FireSword));
-            var a = factory.CreateById(SimpleCardFactory.Sword);
-            var bomb = factory.CreateById(SimpleCardFactory.Bomb);
-            var heal = factory.CreateById(SimpleCardFactory.Heal);
-            var model = Open(a, bomb, heal);
-            Assert.IsTrue(model.IsCompatibleWithCurrentSelection(new[] { a, bomb }, heal));
-            WithView(model, (view, mode, button, selected) =>
-            {
-                view.OnCardClicked(a);
-                view.OnCardClicked(bomb);
-                Assert.AreEqual(2, selected.Count);
-                Assert.IsFalse(button.interactable, "部分一致の二枚では未完成");
-                view.OnCardClicked(heal);
-                Assert.AreEqual(3, selected.Count);
-                Assert.IsTrue(button.interactable);
-                typeof(CustomScreenView).GetMethod("OnCustomizeExecuteRequested", Flags).Invoke(view, null);
-                Assert.AreEqual(1, model.CurrentHand.Count);
-                Assert.AreEqual(SimpleCardFactory.FireSword, model.CurrentHand[0].Id);
-            });
+            var a=factory.CreateById(SimpleCardFactory.Sword);var b=factory.CreateById(SimpleCardFactory.Bomb);var c=factory.CreateById(SimpleCardFactory.Heal);var model=Open(a,b,c);
+            Assert.IsFalse(model.IsCompatibleWithCurrentSelection(new[]{a,b},c));Assert.IsFalse(model.ExecuteFusion(new[]{a,b,c}).IsSuccess);
+            CollectionAssert.AreEquivalent(new[]{a,b,c},model.CurrentHand);
         }
 
         [Test]
@@ -137,6 +117,20 @@ namespace Olca.Tests
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        [TestCase(true)] [TestCase(false)]
+        public void 加工終了を同じフレームの論理確定取消へ重ねず使用予定を維持する(bool cancel)
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            var a=factory.CreateById("sword");var b=factory.CreateById("bomb");var heal=factory.CreateById("heal");var model=Open(a,b,heal);Assert.IsTrue(model.TrySelectCard(heal));
+            WithView(model,(view,mode,button,selected)=>{
+                view.ConfigureLogicalConfirmation((stamp,action)=>action(),()=>System.Diagnostics.Stopwatch.GetTimestamp());
+                if(cancel)typeof(CustomScreenView).GetMethod("OnCustomizeModeCancelled",Flags).Invoke(view,null);
+                else {view.OnCardClicked(a);view.OnCardClicked(b);model.OnFused+=card=>mode.Exit();typeof(CustomScreenView).GetMethod("OnCustomizeExecuteRequested",Flags).Invoke(view,null);Assert.AreEqual(1,model.CustomizationUndoCount);}
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput{MenuCancelButtonDown=cancel,MenuConfirmButtonDown=!cancel});
+                Assert.IsFalse(mode.IsActive);Assert.IsFalse(model.IsConfirming);CollectionAssert.AreEqual(new[]{heal},model.SelectedCards);
+            });
+        }
+
         [TestCase(1, false)]
         [TestCase(2, true)]
         public void 超越_同参照素材の実在枚数を確認する(int copies, bool allowed)
@@ -178,7 +172,7 @@ namespace Olca.Tests
             var second = reverse ? a : b;
             Assert.IsFalse(model.CanExceed(first, second));
             Assert.IsFalse(model.IsCompatibleWithCurrentSelection(new[] { first }, second));
-            Assert.IsTrue(model.IsCompatibleWithCurrentSelection(new[] { first }, bomb));
+            Assert.AreEqual(!reverse,model.IsCompatibleWithCurrentSelection(new[] { first }, bomb),"特殊レシピは元定義のソードだけを登録");
             Assert.IsFalse(model.ExecuteExceed(first, second).IsSuccess);
             Assert.IsFalse(model.ExecuteFusion(new[] { first, second }).IsSuccess);
             CollectionAssert.AreEqual(new[] { a, b, bomb }, model.CurrentHand);

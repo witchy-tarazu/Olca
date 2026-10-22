@@ -14,6 +14,11 @@ namespace Olca.Core.Logic.Battle
         public TuningSystem(Func<Card, TuningGrantDefinition> definitionProvider = null)
         { this.definitionProvider = definitionProvider; }
 
+        // 明示的な付与定義が新しい適性。旧Tuning区分は既存カード・保存の互換入口だけに残す。
+        public static bool IsMaterial(Card card) => card!=null&&(card.TuningDefinition!=null||card.Category==CardCategory.Tuning);
+        private TuningGrantDefinition Definition(Card card) => card?.TuningDefinition??
+            (card?.Category==CardCategory.Tuning?definitionProvider?.Invoke(card):null);
+
         /// <summary>
         /// 調律可能かどうかを検証する
         /// </summary>
@@ -21,11 +26,13 @@ namespace Olca.Core.Logic.Battle
         {
             if (targetCard == null || tuningCard == null)
                 return TuningValidationResult.Fail("カードがnullです");
-            if (tuningCard.Category != CardCategory.Tuning)
-                return TuningValidationResult.Fail("調律カードではありません（CardCategory.Tuningが必要）");
-            if (targetCard.Category == CardCategory.Tuning)
+            if (!IsMaterial(tuningCard))
+                return TuningValidationResult.Fail("調律カードとしての適性がありません");
+            if (IsMaterial(targetCard))
                 return TuningValidationResult.Fail("調律カードへの調律はできません");
 
+            var definition=Definition(tuningCard);
+            if(definition!=null&&!definition.Allows(targetCard))return TuningValidationResult.Fail("調律の対象条件を満たしていません");
             return TuningValidationResult.Success();
         }
 
@@ -42,7 +49,7 @@ namespace Olca.Core.Logic.Battle
             if (!validation.IsValid)
                 return TuningResult.Fail(validation.ErrorMessage);
 
-            var definition = tuningCard.TuningDefinition ?? definitionProvider?.Invoke(tuningCard);
+            var definition = Definition(tuningCard);
             if (definition == null)
             {
                 var modifier = tuningCard.Modifier;
@@ -61,6 +68,8 @@ namespace Olca.Core.Logic.Battle
         public static TuningResult Evaluate(Card target, TuningGrantDefinition additional)
         {
             if (target == null || additional == null) return TuningResult.Undefined("付与定義が未定義です");
+            if(TuningSystem.IsMaterial(target))return TuningResult.Fail("調律カードへの調律はできません");
+            if(!additional.Allows(target))return TuningResult.Fail("調律の対象条件を満たしていません");
             if (target.IsEffectCopy || target.TuningCount != target.TuningHistory.Count)
                 return TuningResult.Undefined("調律付与履歴が不足しているか使用時コピーです");
             var history = new List<TuningGrantDefinition>(target.TuningHistory) { additional };
@@ -71,6 +80,7 @@ namespace Olca.Core.Logic.Battle
             {
                 foreach (var grant in history)
                 {
+                    if(grant!=null&&!grant.Allows(target))return TuningResult.Fail("保存された調律の対象条件を満たしていません");
                     if (grant == null || string.IsNullOrEmpty(grant.Id) ||
                         (grant.Effects.Count == 0 && grant.FixedCostAdjustment == 0 && !grant.ZeroCost))
                         return TuningResult.Undefined("調律の付与定義が未定義です");

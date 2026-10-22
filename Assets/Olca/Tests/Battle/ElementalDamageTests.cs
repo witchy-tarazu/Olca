@@ -43,6 +43,92 @@ namespace Olca.Tests.Battle
             battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("large",ElementResistances.Neutral,ElementType.Fire,bonus),new TransformationDefenseDefinition("small",ElementResistances.Neutral,ElementType.Water,1)});
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());return battle;
         }
+        [TestCase(false,60)]
+        [TestCase(true,12)]
+        public void 変身演出は画面閉鎖後の論理フレームだけ進み戦闘と使用回数を二重更新しない(bool shortened,int frames)
+        {
+            var b=HandBonusBattle(out _);var t=b.Transformations;var cs=b.CustomScreen;t.EnablePresentation();t.ShortPresentation=shortened;
+            Assert.IsTrue(t.TryPreview("large"));Assert.AreEqual(0,t.RemainingPhases);StringAssert.Contains("仮選択",t.CustomStatusText);
+            cs.Confirm();Assert.AreEqual(3,t.RemainingPhases);Assert.AreEqual(1,t.UsedIds.Count);Assert.AreEqual(frames,t.ActivationFramesRemaining);
+            for(int n=0;n<8;n++)b.TickFrame(16);Assert.AreEqual(frames,t.ActivationFramesRemaining,"カスタム閉鎖までは演出を進めない");
+            cs.Close();t.ShortPresentation=!shortened;
+            for(int n=0;n<frames;n++){b.TickFrame(16);Assert.IsTrue(b.IsPaused);Assert.AreEqual(0,b.CustomGauge.CurrentGaugeMs);}
+            Assert.AreEqual(0,t.ActivationFramesRemaining);Assert.AreEqual(3,t.RemainingPhases);b.TickFrame(16);Assert.IsFalse(b.IsPaused);Assert.Greater(b.CustomGauge.CurrentGaugeMs,0);
+            Assert.AreEqual(1,t.UsedIds.Count);Assert.AreEqual(3,t.RemainingPhases);
+        }
+        [Test]
+        public void 変身演出はユーザーポーズで止まり入力によるカスタム再開で持続回数を消費しない()
+        {
+            var b=HandBonusBattle(out _);var t=b.Transformations;t.EnablePresentation();t.TryPreview("large");b.CustomScreen.Confirm();b.CustomScreen.Close();
+            for(int n=0;n<10;n++)b.TickFrame(16);Assert.AreEqual(50,t.ActivationFramesRemaining);
+            b.Pause(BattlePauseReason.User);for(int n=0;n<100;n++)b.TickFrame(16);Assert.AreEqual(50,t.ActivationFramesRemaining);
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.IsFalse(b.CustomScreen.IsOpen);Assert.AreEqual(3,t.RemainingPhases);
+            b.Resume(BattlePauseReason.User);b.TickFrame(16);Assert.AreEqual(49,t.ActivationFramesRemaining);
+        }
+        private BattleSystem PresentedForm()
+        {
+            var b=HandBonusBattle(out _);b.Transformations.EnablePresentation();b.Transformations.TryPreview("large");b.CustomScreen.Confirm();b.CustomScreen.Close();
+            for(int n=0;n<61;n++)b.TickFrame(16);return b;
+        }
+        [Test]
+        public void 未確定取消は演出も回数も消費せず別変身の取消で継続表示へ戻る()
+        {
+            var b=HandBonusBattle(out _);var t=b.Transformations;t.EnablePresentation();t.TryPreview("large");t.TryCancelPending();
+            b.CustomScreen.Confirm();b.CustomScreen.Close();Assert.IsFalse(t.HasActive);Assert.IsFalse(t.IsActivating);Assert.IsEmpty(t.UsedIds);
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());t.TryPreview("large");b.CustomScreen.Confirm();b.CustomScreen.Close();
+            for(int n=0;n<61;n++)b.TickFrame(16);b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());
+            Assert.AreEqual(2,t.RemainingPhases);t.TryPreview("small");StringAssert.Contains("small",t.CustomStatusText);t.TryCancelPending();
+            Assert.AreEqual("large",t.ActiveId);Assert.AreEqual(2,t.RemainingPhases);Assert.IsFalse(t.IsActivating);Assert.IsFalse(t.IsUsed("small"));
+        }
+        [Test]
+        public void 三回目のカスタムで残りゼロとなり解除演出は追加停止せず期限で消える()
+        {
+            var b=PresentedForm();var t=b.Transformations;
+            for(int expected=2;expected>=0;expected--){b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.AreEqual(expected,t.RemainingPhases);b.CustomScreen.Confirm();b.CustomScreen.Close();}
+            Assert.IsFalse(t.HasActive);Assert.IsTrue(t.IsUsed("large"));Assert.AreEqual(12,t.ReleaseFramesRemaining);Assert.IsFalse(b.IsPaused);
+            StringAssert.Contains("0回",t.ActiveStatusText);for(int n=0;n<12;n++)b.TickFrame(16);Assert.AreEqual(0,t.ReleaseFramesRemaining);
+        }
+        [Test]
+        public void 弱点解除と戦闘終了は実状態を優先し変身演出を残さない()
+        {
+            var b=PresentedForm();var t=b.Transformations;player.TakeDamage(1,attackElement:ElementType.Fire);
+            Assert.IsFalse(t.HasActive);Assert.AreEqual(0,t.RemainingPhases);Assert.AreEqual(12,t.ReleaseFramesRemaining);Assert.IsFalse(b.IsPaused);
+            foreach(var enemy in b.Enemies.ToArray())enemy.TakeDamage(enemy.MaxHp,ElementType.None);
+            Assert.IsTrue(b.IsGameOver);Assert.AreEqual(0,t.ReleaseFramesRemaining);Assert.AreEqual(0,t.ActivationFramesRemaining);
+        }
+        [Test]
+        public void 演出中のチェックポイント再開は途中演出も変身使用状態も引き継がない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var map=DungeonConfig.CreateTestDungeon(20,30,3);var deck=f.CreateStarterDeck();
+            var cp=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);var random=new MockRandomProvider(0);
+            var game=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,random,logger,checkpoints:cp,cardDatabase:f);
+            for(int n=0;n<20&&game.CurrentBattle==null;n++)game.Tick(50);var b=game.CurrentBattle;Assert.IsNotNull(b);
+            b.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire)});b.Transformations.EnablePresentation();
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(random);b.Transformations.TryPreview("fixture");b.CustomScreen.Confirm();b.CustomScreen.Close();b.TickFrame(16);
+            Assert.AreEqual(59,b.Transformations.ActivationFramesRemaining);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(cp.Definitions,cp.Store),random,logger,out var restored,out var error,cardDatabase:f),error);
+            Assert.IsTrue(game.SuspendForCheckpoint());Assert.AreEqual(0,b.Transformations.ActivationFramesRemaining);
+            restored.ActivateCheckpoint();Assert.IsNotNull(restored.CurrentBattle);
+            Assert.IsFalse(restored.CurrentBattle.Player.HasTransformationDefense);Assert.AreEqual(0,restored.CurrentBattle.Transformations.ActivationFramesRemaining);Assert.IsEmpty(restored.CurrentBattle.Transformations.UsedIds);
+        }
+        private sealed class AnimationSettingFaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Fail;
+            public override void MoveNew(string a,string b){if(Fail)throw new System.IO.IOException();base.MoveNew(a,b);}
+            public override void Replace(string a,string b,string backup){if(Fail)throw new System.IO.IOException();base.Replace(a,b,backup);}
+        }
+        [Test]
+        public void 変身演出設定は独立保存し再読込と失敗時の旧内容保持を行う()
+        {
+            var path=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-animation-"+System.Guid.NewGuid().ToString("N"));
+            try{var io=new AnimationSettingFaultIo();var store=new Olca.Unity.TransformationPresentationFileStore(path,io);
+                Assert.IsTrue(store.TryRead(out var shortened,out _));Assert.IsFalse(shortened);Assert.IsFalse(System.IO.Directory.Exists(path));
+                Assert.IsTrue(store.TrySave(true,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);io.Fail=true;
+                Assert.IsFalse(store.TrySave(false,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+                Assert.IsTrue(new Olca.Unity.TransformationPresentationFileStore(path).TryRead(out shortened,out error),error);Assert.IsTrue(shortened);
+                io.Fail=false;Assert.IsTrue(store.TrySave(false,out error),error);Assert.IsTrue(store.TryRead(out shortened,out error));Assert.IsFalse(shortened);
+            }finally{if(System.IO.Directory.Exists(path))System.IO.Directory.Delete(path,true);}
+        }
         [Test]
         public void 変身追加ドローは選択分を二重計上せず取消再選択でも同じ個体を同順に引く()
         {
@@ -773,5 +859,87 @@ namespace Olca.Tests.Battle
             // GetFinalElement()でElementOverride(Water)が使われ、火属性の敵に2倍ダメージ
             Assert.AreEqual(60, enemy.CurrentHp, "DamageEffectでも20×2=40ダメージになるはず");
         }
+    }
+
+    [TestFixture]
+    public class AudioVolumeSettingsTests
+    {
+        private string directory;
+        private sealed class FaultIo:Olca.Unity.CheckpointFileIo {
+            public bool Before,After;
+            public override void MoveNew(string t,string d){if(Before)throw new System.IO.IOException();base.MoveNew(t,d);if(After)throw new System.IO.IOException();}
+            public override void Replace(string t,string d,string b){if(Before)throw new System.IO.IOException();base.Replace(t,d,b);if(After)throw new System.IO.IOException();}
+        }
+        [SetUp] public void Setup()=>directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-audio-"+System.Guid.NewGuid().ToString("N"));
+        [TearDown] public void Cleanup(){if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        [Test] public void 音量設定のない旧設定は元音量を維持し他設定を書き換えない(){
+            System.IO.Directory.CreateDirectory(directory);var keyboard=System.IO.Path.Combine(directory,"keyboard-gameplay.json");System.IO.File.WriteAllText(keyboard,"existing-keyboard");
+            var store=new Olca.Unity.AudioVolumeFileStore(directory);Assert.IsTrue(store.TryRead(out var value,out var error),error);
+            Assert.AreEqual(100,value.Master);Assert.AreEqual(100,value.Bgm);Assert.AreEqual(100,value.Effects);Assert.AreEqual(100,value.Voice);
+            Assert.IsFalse(System.IO.File.Exists(store.ActivePath));Assert.AreEqual("existing-keyboard",System.IO.File.ReadAllText(keyboard));
+        }
+        [TestCase(0,100,100,100)] [TestCase(100,100,100,100)] [TestCase(37,81,52,0)]
+        public void 四系統のゼロと上限と個別値を独立保存し再読込できる(int master,int bgm,int effects,int voice){
+            var store=new Olca.Unity.AudioVolumeFileStore(directory);Assert.IsTrue(store.TrySave(new Olca.Unity.AudioVolumeSettings(master,bgm,effects,voice),out var error),error);
+            Assert.IsTrue(new Olca.Unity.AudioVolumeFileStore(directory).TryRead(out var value,out error),error);
+            Assert.AreEqual(master,value.Master);Assert.AreEqual(bgm,value.Bgm);Assert.AreEqual(effects,value.Effects);Assert.AreEqual(voice,value.Voice);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new Olca.Unity.AudioVolumeSettings(-1));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new Olca.Unity.AudioVolumeSettings(voice:101));
+        }
+        [TestCase(false)] [TestCase(true)] public void 保存前失敗は旧音量を保ち保存直後の例外は内容照合で確定する(bool after){
+            var io=new FaultIo();var store=new Olca.Unity.AudioVolumeFileStore(directory,io);Assert.IsTrue(store.TrySave(new Olca.Unity.AudioVolumeSettings(20,30,40,50),out _));
+            var bytes=System.IO.File.ReadAllBytes(store.ActivePath);io.Before=!after;io.After=after;
+            Assert.AreEqual(after,store.TrySave(new Olca.Unity.AudioVolumeSettings(0,100,0,99),out _));
+            if(!after){CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));io.Before=false;Assert.IsTrue(store.TrySave(new Olca.Unity.AudioVolumeSettings(0,100,0,99),out _));}
+            Assert.IsTrue(store.TryRead(out var value,out _));Assert.AreEqual(0,value.Master);Assert.AreEqual(99,value.Voice);
+        }
+        [TestCase("broken")]
+        [TestCase("{\"Version\":1,\"Master\":20,\"Bgm\":30,\"Effects\":40}")]
+        [TestCase("{\"Version\":1,\"Master\":101,\"Bgm\":30,\"Effects\":40,\"Voice\":50}")]
+        [TestCase("{\"Version\":2,\"Master\":20,\"Bgm\":30,\"Effects\":40,\"Voice\":50}")]
+        public void 壊れた設定や未対応形式は上書きしない(string content){
+            System.IO.Directory.CreateDirectory(directory);var store=new Olca.Unity.AudioVolumeFileStore(directory);System.IO.File.WriteAllText(store.ActivePath,content);
+            Assert.IsFalse(store.TryRead(out var muted,out _));Assert.AreEqual(0,muted.Master,"未知の音量を最大音量で再生しない");Assert.IsFalse(store.TrySave(new Olca.Unity.AudioVolumeSettings(),out _));Assert.AreEqual(content,System.IO.File.ReadAllText(store.ActivePath));
+        }
+        [Test] public void 実ソースは全体と区分と元音量を掛け二重適用せずListenerと未登録ソースを変えない(){
+            var parent=new UnityEngine.GameObject("audio-test");var existing=parent.AddComponent<UnityEngine.AudioSource>();existing.volume=.4f;float listener=UnityEngine.AudioListener.volume;
+            var other=new UnityEngine.GameObject("unregistered").AddComponent<UnityEngine.AudioSource>();other.volume=.3f;
+            try{using(var router=new Olca.Unity.GameplayAudioRouter(parent.transform)){
+                router.Register(existing,Olca.Unity.GameplayAudioChannel.Effects);router.Apply(new Olca.Unity.AudioVolumeSettings(20,25,50,100));
+                Assert.AreEqual(.05f,router.Bgm.volume,.00001f);Assert.AreEqual(.1f,router.Effects.volume,.00001f);Assert.AreEqual(.2f,router.Voice.volume,.00001f);Assert.AreEqual(.04f,existing.volume,.00001f);
+                router.Register(existing,Olca.Unity.GameplayAudioChannel.Effects);router.Apply(new Olca.Unity.AudioVolumeSettings(20,25,50,100));Assert.AreEqual(.04f,existing.volume,.00001f);
+                router.SetPaused(true);router.Apply(new Olca.Unity.AudioVolumeSettings(0));Assert.IsTrue(router.IsPaused);Assert.AreEqual(0,router.Bgm.volume);Assert.AreEqual(0,router.Effects.volume);Assert.AreEqual(0,router.Voice.volume);
+                router.Apply(new Olca.Unity.AudioVolumeSettings());Assert.AreEqual(.4f,existing.volume,.00001f);router.SetPaused(false);Assert.IsFalse(router.IsPaused);
+                Assert.AreEqual(listener,UnityEngine.AudioListener.volume);Assert.AreEqual(.3f,other.volume,.00001f);
+            }Assert.AreEqual(.4f,existing.volume,.00001f);}finally{UnityEngine.Object.DestroyImmediate(parent);UnityEngine.Object.DestroyImmediate(other.gameObject);}
+        }
+        [Test] public void 音量スライダーの左右入力は一パーセント変更し上下は画面内の項目へ移動する(){
+            var eventRoot=new UnityEngine.GameObject("audio-input-events");var events=eventRoot.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            var root=new UnityEngine.GameObject("audio-input-view",typeof(UnityEngine.RectTransform));
+            try{int saved=0;var view=root.AddComponent<Olca.Presentation.Field.GameplayAudioSettingsView>();view.Initialize(UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf"),value=>{saved++;return null;},()=>{});
+                view.Open(new Olca.Unity.AudioVolumeSettings(20,50,25,10),null);var slider=root.GetComponentsInChildren<UnityEngine.UI.Slider>().Single(s=>s.name=="AudioSliderMaster");events.SetSelectedGameObject(slider.gameObject);Assert.LessOrEqual(slider.handleRect.rect.height,((UnityEngine.RectTransform)slider.transform).rect.height,"ハンドルが隣の行へはみ出さない");
+                var move=new UnityEngine.EventSystems.AxisEventData(events){moveDir=UnityEngine.EventSystems.MoveDirection.Right,moveVector=UnityEngine.Vector2.right};
+                UnityEngine.EventSystems.ExecuteEvents.Execute(slider.gameObject,move,UnityEngine.EventSystems.ExecuteEvents.moveHandler);Assert.AreEqual(21,slider.value);Assert.AreEqual(0,saved,"候補変更で保存しない");
+                slider.value=100;UnityEngine.EventSystems.ExecuteEvents.Execute(slider.gameObject,move,UnityEngine.EventSystems.ExecuteEvents.moveHandler);Assert.AreEqual(100,slider.value);
+                move.moveDir=UnityEngine.EventSystems.MoveDirection.Down;move.moveVector=UnityEngine.Vector2.down;UnityEngine.EventSystems.ExecuteEvents.Execute(slider.gameObject,move,UnityEngine.EventSystems.ExecuteEvents.moveHandler);
+                Assert.AreEqual("AudioSliderBgm",events.currentSelectedGameObject.name);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(eventRoot);}
+        }
+        [Test] public void 新規開始も独立音量ファイルを保持する(){
+            var audio=new Olca.Unity.AudioVolumeFileStore(System.IO.Path.Combine(directory,"settings"));Assert.IsTrue(audio.TrySave(new Olca.Unity.AudioVolumeSettings(10,20,0,40),out _));var bytes=System.IO.File.ReadAllBytes(audio.ActivePath);
+            var progress=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress")));var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(progress.InitializeStarter(starter));Assert.IsTrue(progress.StartNewGame(progress.Snapshot.Revision,starter));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(audio.ActivePath));
+        }
+    }
+
+    [TestFixture] public class DialogueSessionTests
+    {
+        private static DialogueScript Plain()=>new DialogueScript("fixture",new[]{new DialogueLine("あいうえお","検証"),new DialogueLine("次の文章")});
+        [Test] public void 段階表示と全文表示と次送りは独立し終了時に履歴を消す(){var s=new DialogueSession(Plain());Assert.AreEqual("",s.VisibleText);s.AdvanceFrame();Assert.AreEqual("",s.VisibleText);s.AdvanceFrame();Assert.AreEqual("あ",s.VisibleText);Assert.IsFalse(s.Backlog.Single().Contains("い"));Assert.IsTrue(s.Decide());Assert.AreEqual("あいうえお",s.VisibleText);Assert.AreEqual(0,s.Index);s.Decide();Assert.AreEqual(1,s.Index);s.Decide();s.Decide();Assert.IsFalse(s.IsOpen);Assert.IsEmpty(s.Backlog);Assert.AreEqual("",s.VisibleText);Assert.IsFalse(s.Decide());}
+        [Test] public void 日本語結合文字とサロゲートを途中分断せず長文と即時表示に対応する(){var text="あ\u3099漢😀終";var s=new DialogueSession(new DialogueScript("unicode",new[]{new DialogueLine(text)}));s.AdvanceFrame();s.AdvanceFrame();Assert.AreEqual("あ\u3099",s.VisibleText);for(int n=0;n<4;n++)s.AdvanceFrame();Assert.AreEqual("あ\u3099漢😀",s.VisibleText);var longText=new string('漢',4000);s=new DialogueSession(new DialogueScript("long",new[]{new DialogueLine(longText)}),DialogueTextSpeed.Instant);Assert.AreEqual(longText,s.VisibleText);}
+        [Test] public void ポーズとバックログとスキップ確認中は時計も送りも止まる(){var s=new DialogueSession(Plain());s.IsPaused=true;for(int n=0;n<100;n++)s.AdvanceFrame();Assert.AreEqual(0,s.VisibleElements);Assert.IsFalse(s.Decide());s.SetSpeed(DialogueTextSpeed.Instant);Assert.AreEqual(0,s.VisibleElements);s.IsPaused=false;s.AdvanceFrame();Assert.IsTrue(s.TextComplete);s.ToggleBacklog();s.AdvanceFrame();Assert.IsFalse(s.Decide());Assert.AreEqual(0,s.Index);s.ToggleBacklog();s.RequestSkip();Assert.IsFalse(s.Decide());s.AdvanceFrame();Assert.AreEqual(0,s.Index);s.CancelSkip();Assert.AreEqual(0,s.Index);Assert.IsFalse(s.ConfirmSkip());s.RequestSkip();Assert.IsTrue(s.ConfirmSkip());Assert.AreEqual(DialogueEndReason.Skipped,s.EndReason);Assert.IsEmpty(s.Backlog);Assert.IsFalse(s.ConfirmSkip());}
+        [Test] public void 早送りは分岐で停止し選択後に再開し未選択文章を履歴へ漏らさない(){var script=new DialogueScript("branch",new[]{new DialogueLine("前"),new DialogueLine("選択",choices:new[]{new DialogueChoice("A",2),new DialogueChoice("B",3)}),new DialogueLine("未選択"),new DialogueLine("選択後")});var s=new DialogueSession(script);Assert.IsFalse(s.RequestSkip());s.ToggleFastForward();for(int n=0;n<100;n++)s.AdvanceFrame();Assert.AreEqual(1,s.Index);Assert.IsTrue(s.WaitingForChoice);Assert.IsTrue(s.FastForward);Assert.IsFalse(s.Decide());Assert.IsFalse(s.Choose(-1));Assert.IsTrue(s.Choose(1));Assert.AreEqual(3,s.Index);Assert.IsTrue(s.FastForward);Assert.IsFalse(s.Backlog.Any(x=>x.Contains("未選択")));for(int n=0;n<100;n++)s.AdvanceFrame();Assert.IsFalse(s.IsOpen);Assert.AreEqual(DialogueEndReason.Completed,s.EndReason);Assert.IsEmpty(s.Backlog);}
+        [Test] public void 早送り解除と中断は新しい会話へ状態を持ち越さない(){var s=new DialogueSession(Plain());s.ToggleFastForward();s.ToggleFastForward();for(int n=0;n<1000;n++)s.AdvanceFrame();Assert.AreEqual(0,s.Index);s.Interrupt();s.Interrupt();Assert.AreEqual(DialogueEndReason.Interrupted,s.EndReason);Assert.IsEmpty(s.Backlog);var next=new DialogueSession(Plain());Assert.IsFalse(next.FastForward);Assert.IsEmpty(next.Backlog);Assert.Throws<System.ArgumentException>(()=>new DialogueScript("loop",new[]{new DialogueLine("x",choices:new[]{new DialogueChoice("loop",0)})}));}
+        [Test] public void 表示速度の旧省略と保存障害と再読込を独立設定で扱う(){var dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-dialogue-"+System.Guid.NewGuid().ToString("N"));try{var io=new SpeedFaultIo();var store=new Olca.Unity.DialogueTextSettingsStore(dir,io);Assert.IsTrue(store.TryRead(out var speed,out _));Assert.AreEqual(DialogueTextSpeed.Normal,speed);Assert.IsTrue(store.TrySave(DialogueTextSpeed.Fast,out _));var old=System.IO.File.ReadAllBytes(store.ActivePath);io.Fail=true;Assert.IsFalse(store.TrySave(DialogueTextSpeed.Instant,out _));CollectionAssert.AreEqual(old,System.IO.File.ReadAllBytes(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TrySave(DialogueTextSpeed.Instant,out _));Assert.IsTrue(new Olca.Unity.DialogueTextSettingsStore(dir).TryRead(out speed,out _));Assert.AreEqual(DialogueTextSpeed.Instant,speed);System.IO.File.WriteAllText(store.ActivePath,"broken");Assert.IsFalse(store.TrySave(DialogueTextSpeed.Slow,out _));Assert.AreEqual("broken",System.IO.File.ReadAllText(store.ActivePath));}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}}
+        private sealed class SpeedFaultIo:Olca.Unity.CheckpointFileIo{public bool Fail;public override void Replace(string t,string d,string b){if(Fail)throw new System.IO.IOException();base.Replace(t,d,b);}}
     }
 }

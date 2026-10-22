@@ -45,6 +45,8 @@ namespace Olca.Application.Battle
             .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
             .Concat(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
 
+        public IReadOnlyList<Card> FusionCards => catalog.Values.Concat(swordUpgrades.Values).Select(c=>c.Clone()).ToArray();
+
         public Deck CreateStarterDeck()
         {
             var cards=new List<Card>();
@@ -54,8 +56,8 @@ namespace Olca.Application.Battle
         }
 
         public TuningGrantDefinition GetTuningDefinition(Card card)
-            => card != null && card.Id == Tuning && card.Category == CardCategory.Tuning &&
-                card.ExceedLevel == ExceedLevel.Normal ? StandardTuning : null;
+            => card != null && card.Id == Tuning && catalog.TryGetValue(Tuning,out var definition) &&
+                CollectionDisplay.DefinitionHash(card)==CollectionDisplay.DefinitionHash(definition) ? StandardTuning : null;
 
         public bool HasExceededDefinition(Card card, ExceedLevel nextLevel)
             => card != null && card.Id == Sword && card.Series == CardSeries.Sword &&

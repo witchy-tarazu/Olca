@@ -60,7 +60,7 @@ namespace Olca.Application.Battle
 
             // バトルセッション共通操作をBattleSessionControllerに委譲
             battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger,
-                    (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames);
+                    (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames, transformationPresentation:true);
             battleSession.Attach(battleSystem);
 
             // バトル開始時: ゲージを満タンにしてカスタム画面を即時オープン
