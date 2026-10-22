@@ -573,6 +573,7 @@ namespace Olca.Application.Dungeon
             ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
             cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
             cardCollectionButton.gameObject.SetActive(false);
+            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
         }
         private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
         private GameObject progressActionOverlay;
@@ -607,9 +608,10 @@ namespace Olca.Application.Dungeon
         private void RefreshProgressActions()
         {
             if(manualSaveButton==null)return;
-            manualSaveButton.gameObject.SetActive(!progressDialogOpen&&IsProgressHub);
+            bool allowProgressActions=!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
+            manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&!clearReturnSession.HasPendingSave;
-            newGameButton.gameObject.SetActive(!progressDialogOpen&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame;
+            newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame;
             manualSaveButton.transform.SetAsLastSibling();newGameButton.transform.SetAsLastSibling();
             if(progressDialogOpen)progressActionOverlay.transform.SetAsLastSibling();
         }
@@ -668,9 +670,11 @@ namespace Olca.Application.Dungeon
         {
             var p=clearReturnSession.Snapshot;var cards=CurrentCollectionDefinitions();
             var rows=CollectionDisplay.CardRows(p,cards);
+            var catalog=cards.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
+            var details=catalog.Select(c=>CollectionDisplay.IsKnown(p,c,catalog)?c:null).Concat(Enumerable.Repeat<Card>(null,rows.Length-catalog.Length)).ToArray();
             cardCollectionView.RenderCollection(rows,CollectionDisplay.RecipeRows(p,new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes,cards),
                 clearReturnSession.HasPendingSave,clearReturnSession.Error,CloseCardCollection,()=>{clearReturnSession.Retry();ShowCardCollection();},
-                card=>customScreenView!=null?customScreenView.GetCardIcon(card.Id):null);
+                card=>customScreenView!=null?customScreenView.GetCardIcon(card.Id):null,cardDetails:details);
             cardCollectionView.transform.SetAsLastSibling();
         }
         private void CloseCardCollection()
@@ -1408,7 +1412,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!DialogueOpen && !AudioSettingsOpen && !progressDialogOpen && !cardCollectionOpen && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!DialogueOpen && !AudioSettingsOpen && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);

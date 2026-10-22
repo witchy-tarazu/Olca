@@ -5095,4 +5095,17 @@ namespace Olca.Tests.Integration
             finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
     }
+    public class MenuPadScopeTests
+    {
+        private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] keys)
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in keys)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [Test]
+        public void 再描画を伴う決定は保持で重複せず背面と切断復帰を遮断する()
+        {
+            var root=new UnityEngine.GameObject("Menu",typeof(UnityEngine.RectTransform));var obj=new UnityEngine.GameObject("Decide",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));obj.transform.SetParent(root.transform);var button=obj.GetComponent<UnityEngine.UI.Button>();var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();bool top=true;int count=0,cancel=0;var scope=new Olca.Unity.MenuPadScope(()=>top);
+            try{button.onClick.AddListener(()=>{count++;scope.Bind(root.transform,"Decide",()=>cancel++);});scope.Bind(root.transform,"Decide",()=>cancel++);State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,count);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,count);State(pad);scope.Tick();top=false;State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East);scope.Tick();Assert.AreEqual(0,cancel);top=true;scope.Tick();State(pad);scope.Tick();UnityEngine.InputSystem.InputSystem.DisableDevice(pad);scope.Tick();UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,count);State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East);scope.Tick();Assert.AreEqual(1,cancel);}
+            finally{scope.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.Object.DestroyImmediate(root);}
+        }
+    }
+
 }
