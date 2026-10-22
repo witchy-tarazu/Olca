@@ -2,6 +2,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Dungeon;
@@ -1185,5 +1186,53 @@ namespace Olca.Presentation.Field
             var button = obj.GetComponent<UnityEngine.UI.Button>(); button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
             MakeText("Label", text, obj.transform, Vector2.zero, size, 24); Olca.Presentation.Dungeon.UiLook.Button(button); return button;
         }
+    }
+
+    /// <summary>音量候補は保存成功まで適用しない。無音のままでも設定操作できる。</summary>
+    public sealed class GameplayAudioSettingsView : MonoBehaviour
+    {
+        private readonly Slider[] sliders=new Slider[4];private readonly Text[] values=new Text[4];
+        private System.Func<Olca.Unity.AudioVolumeSettings,string> save;private System.Action close;private Text status;
+        private Font font;private Button saveButton,cancelButton;
+        private Text Label(string name,string value,Vector2 position,Vector2 size,int fontSize){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);
+            var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.alignment=TextAnchor.MiddleCenter;text.text=value;Olca.Presentation.Dungeon.UiLook.Label(text);
+            text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;}
+        private Button Button(string name,string value,Vector2 position){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);
+            var rect=(RectTransform)obj.transform;rect.anchoredPosition=position;rect.sizeDelta=new Vector2(460,80);var button=obj.GetComponent<Button>();
+            var text=Label(name+"Label",value,Vector2.zero,new Vector2(440,70),30);text.transform.SetParent(obj.transform,false);Olca.Presentation.Dungeon.UiLook.Button(button);return button;}
+        private Image SliderImage(string name,Transform parent,Color color,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();image.color=color;image.rectTransform.sizeDelta=size;return image;}
+        public void Initialize(Font font,System.Func<Olca.Unity.AudioVolumeSettings,string> save,System.Action close)
+        {
+            this.font=font;this.save=save;this.close=close;var rect=(RectTransform)transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            gameObject.AddComponent<Image>().color=Olca.Presentation.Dungeon.UiLook.Surface;
+            Label("AudioTitle","音量設定",new Vector2(0,420),new Vector2(1600,80),38);
+            status=Label("AudioStatus","",new Vector2(0,310),new Vector2(1600,110),26);
+            string[] ids={"Master","Bgm","Effects","Voice"},names={"全体","BGM","効果音","ボイス"};
+            for(int n=0;n<4;n++){
+                int index=n;float y=170-n*105;Label("AudioLabel"+ids[n],names[n],new Vector2(-600,y),new Vector2(300,60),30);
+                var obj=new GameObject("AudioSlider"+ids[n],typeof(RectTransform),typeof(Image),typeof(Slider));obj.transform.SetParent(transform,false);
+                var sr=(RectTransform)obj.transform;sr.anchoredPosition=new Vector2(0,y);sr.sizeDelta=new Vector2(760,60);obj.GetComponent<Image>().color=new Color(.1f,.3f,.4f,.03f);
+                SliderImage("Track",obj.transform,new Color(.2f,.35f,.42f,.7f),new Vector2(760,16));
+                var area=new GameObject("FillArea",typeof(RectTransform));area.transform.SetParent(obj.transform,false);((RectTransform)area.transform).sizeDelta=new Vector2(730,16);
+                var fill=SliderImage("Fill",area.transform,new Color(.25f,.72f,.83f,.9f),Vector2.zero);fill.raycastTarget=false;
+                fill.rectTransform.anchorMin=Vector2.zero;fill.rectTransform.anchorMax=Vector2.one;fill.rectTransform.offsetMin=fill.rectTransform.offsetMax=Vector2.zero;
+                var handles=new GameObject("HandleArea",typeof(RectTransform));handles.transform.SetParent(obj.transform,false);((RectTransform)handles.transform).sizeDelta=new Vector2(730,60);
+                var handle=SliderImage("Handle",handles.transform,new Color(.7f,.94f,1f),new Vector2(28,48));
+                var slider=obj.GetComponent<Slider>();slider.minValue=0;slider.maxValue=100;slider.wholeNumbers=true;slider.fillRect=fill.rectTransform;slider.handleRect=handle.rectTransform;handle.rectTransform.sizeDelta=new Vector2(28,-12);slider.targetGraphic=handle;
+                var colors=slider.colors;colors.selectedColor=new Color(.2f,.7f,.85f);colors.highlightedColor=new Color(.4f,.9f,1f);slider.colors=colors;
+                sliders[n]=slider;values[n]=Label("AudioValue"+ids[n],"",new Vector2(550,y),new Vector2(180,60),30);
+                slider.onValueChanged.AddListener(v=>values[index].text=((int)v)+" %");
+            }
+            saveButton=Button("SaveAudioSettings","保存・適用",new Vector2(-300,-350));cancelButton=Button("CancelAudioSettings","破棄して戻る",new Vector2(300,-350));
+            saveButton.onClick.AddListener(()=>{var error=this.save(new Olca.Unity.AudioVolumeSettings((int)sliders[0].value,(int)sliders[1].value,(int)sliders[2].value,(int)sliders[3].value));status.text=error??"音量設定を保存し、再生経路へ適用しました。";});
+            cancelButton.onClick.AddListener(()=>this.close());
+            for(int n=0;n<4;n++)sliders[n].navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=n==0?(Selectable)cancelButton:sliders[n-1],selectOnDown=n==3?(Selectable)saveButton:sliders[n+1],selectOnLeft=null,selectOnRight=null};
+            saveButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=sliders[3],selectOnLeft=cancelButton,selectOnRight=cancelButton};
+            cancelButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=sliders[3],selectOnLeft=saveButton,selectOnRight=saveButton};gameObject.SetActive(false);
+        }
+        public void Open(Olca.Unity.AudioVolumeSettings value,string error){int[] current={value.Master,value.Bgm,value.Effects,value.Voice};for(int n=0;n<4;n++){sliders[n].SetValueWithoutNotify(current[n]);values[n].text=current[n]+" %";}
+            status.text=error??"0 %は消音、100 %は元の音量です。左右キーでも調整できます。\n保存・適用するまで音量は変わりません。試聴音は鳴らしません。";
+            gameObject.SetActive(true);transform.SetAsLastSibling();UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(sliders[0].gameObject);}
+        public void DiscardAndClose(){if(this!=null)gameObject.SetActive(false);}
     }
 }

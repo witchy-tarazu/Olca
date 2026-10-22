@@ -527,4 +527,74 @@ namespace Olca.Unity
             }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
         }
     }
+
+    /// <summary>百分率。既定100は既存のソース音量を増幅せず維持する。</summary>
+    public sealed class AudioVolumeSettings
+    {
+        public int Master { get; } public int Bgm { get; } public int Effects { get; } public int Voice { get; }
+        public AudioVolumeSettings(int master=100,int bgm=100,int effects=100,int voice=100)
+        {if(new[]{master,bgm,effects,voice}.Any(v=>v<0||v>100))throw new System.ArgumentOutOfRangeException();Master=master;Bgm=bgm;Effects=effects;Voice=voice;}
+        public float Gain(GameplayAudioChannel channel)=>Master*.01f*(channel==GameplayAudioChannel.Bgm?Bgm:channel==GameplayAudioChannel.Effects?Effects:Voice)*.01f;
+    }
+    public enum GameplayAudioChannel { Bgm,Effects,Voice }
+    /// <summary>既存の全体Listenerには触れず、登録した実ソースへ全体×系統×元音量を反映する。</summary>
+    public sealed class GameplayAudioRouter : System.IDisposable
+    {
+        private sealed class Route { public AudioSource Source;public GameplayAudioChannel Channel;public float BaseVolume; }
+        private readonly List<Route> routes=new List<Route>();
+        private readonly List<GameObject> owned=new List<GameObject>();
+        private AudioVolumeSettings settings=new AudioVolumeSettings();private bool disposed;
+        public bool IsPaused { get; private set; }
+        public AudioSource Bgm { get; } public AudioSource Effects { get; } public AudioSource Voice { get; }
+        public GameplayAudioRouter(Transform parent)
+        {
+            AudioSource Create(string name,GameplayAudioChannel channel){var obj=new GameObject(name);obj.transform.SetParent(parent,false);owned.Add(obj);
+                var source=obj.AddComponent<AudioSource>();source.playOnAwake=false;source.spatialBlend=0;source.loop=channel==GameplayAudioChannel.Bgm;Register(source,channel);return source;}
+            Bgm=Create("GameplayBgmAudio",GameplayAudioChannel.Bgm);Effects=Create("GameplayEffectsAudio",GameplayAudioChannel.Effects);Voice=Create("GameplayVoiceAudio",GameplayAudioChannel.Voice);
+        }
+        public void Register(AudioSource source,GameplayAudioChannel channel)
+        {
+            if(disposed||source==null||!System.Enum.IsDefined(typeof(GameplayAudioChannel),channel))throw new System.ArgumentException();
+            var prior=routes.FirstOrDefault(r=>r.Source==source);if(prior!=null){if(prior.Channel!=channel)throw new System.ArgumentException("音声系統は重複登録できません");return;}
+            var route=new Route{Source=source,Channel=channel,BaseVolume=source.volume};routes.Add(route);source.volume=route.BaseVolume*settings.Gain(channel);if(IsPaused)source.Pause();
+        }
+        public void Apply(AudioVolumeSettings value){if(disposed)throw new System.ObjectDisposedException(nameof(GameplayAudioRouter));settings=value??throw new System.ArgumentNullException(nameof(value));
+            foreach(var route in routes)if(route.Source!=null)route.Source.volume=route.BaseVolume*settings.Gain(route.Channel);}
+        public void SetPaused(bool paused){if(disposed||IsPaused==paused)return;IsPaused=paused;foreach(var route in routes)if(route.Source!=null){if(paused)route.Source.Pause();else route.Source.UnPause();}}
+        public void PlayBgm(AudioClip clip){if(disposed)return;if(Bgm.clip==clip)return;Bgm.Stop();Bgm.clip=clip;if(clip!=null){Bgm.Play();if(IsPaused)Bgm.Pause();}}
+        public void PlayEffect(AudioClip clip){if(!disposed&&!IsPaused&&clip!=null)Effects.PlayOneShot(clip);}
+        public void PlayVoice(AudioClip clip){if(disposed||clip==null||IsPaused)return;Voice.Stop();Voice.clip=clip;Voice.Play();}
+        public void Dispose(){if(disposed)return;disposed=true;foreach(var route in routes)if(route.Source!=null){if(owned.Contains(route.Source.gameObject))route.Source.Stop();route.Source.volume=route.BaseVolume;}
+            foreach(var obj in owned)if(obj!=null){if(UnityEngine.Application.isPlaying)Object.Destroy(obj);else Object.DestroyImmediate(obj);}routes.Clear();owned.Clear();}
+    }
+    public sealed class AudioVolumeFileStore
+    {
+        [System.Runtime.Serialization.DataContract] private sealed class Document {
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Version;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Master;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Bgm;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Effects;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Voice;
+        }
+        private readonly string directory;private readonly CheckpointFileIo io;private bool writing;
+        public string ActivePath=>System.IO.Path.Combine(directory,"audio-volumes.json");private string BackupPath=>ActivePath+".backup";
+        public AudioVolumeFileStore(string directory,CheckpointFileIo io=null){this.directory=System.IO.Path.GetFullPath(directory);this.io=io??new CheckpointFileIo();}
+        private static byte[] Encode(AudioVolumeSettings value){using(var stream=new System.IO.MemoryStream()){
+            new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).WriteObject(stream,new Document{Version=1,Master=value.Master,Bgm=value.Bgm,Effects=value.Effects,Voice=value.Voice});return stream.ToArray();}}
+        private static AudioVolumeSettings Decode(byte[] bytes){if(bytes.Length==0||bytes.Length>4096)throw new System.IO.InvalidDataException();using(var stream=new System.IO.MemoryStream(bytes)){
+            var doc=(Document)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).ReadObject(stream);if(doc==null||doc.Version!=1)throw new System.IO.InvalidDataException();return new AudioVolumeSettings(doc.Master,doc.Bgm,doc.Effects,doc.Voice);}}
+        private static bool Failure(System.Exception e)=>e is System.IO.IOException||e is System.IO.InvalidDataException||e is System.UnauthorizedAccessException||e is System.Runtime.Serialization.SerializationException||e is System.Xml.XmlException||e is System.ArgumentException||e is System.Security.SecurityException;
+        public bool TryRead(out AudioVolumeSettings value,out string error){value=new AudioVolumeSettings();error=null;try{
+            if(!System.IO.File.Exists(ActivePath)){if(System.IO.Directory.Exists(ActivePath)||System.IO.File.Exists(BackupPath)||System.IO.Directory.Exists(BackupPath))throw new System.IO.IOException();return true;}
+            value=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
+        }catch(System.Exception e)when(Failure(e)){value=new AudioVolumeSettings(0);error="音量設定を読み込めません。安全のため消音し、既存ファイルは変更していません。";return false;}}
+        public bool TrySave(AudioVolumeSettings value,out string error){error=null;if(value==null){error="音量設定が必要です";return false;}if(writing){error="音量設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
+            var bytes=Encode(value);string temporary=null;writing=true;try{System.IO.Directory.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".audio-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
+                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
+            }catch(System.Exception e)when(Failure(e)){try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                error="音量設定を保存できません。適用済みの音量を維持します。";return false;
+            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+        }
+    }
 }

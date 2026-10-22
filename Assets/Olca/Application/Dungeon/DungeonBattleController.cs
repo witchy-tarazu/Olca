@@ -371,6 +371,24 @@ namespace Olca.Application.Dungeon
         private TransformationPresentationFileStore transformationSettings;
         private bool shortTransformationPresentation;
         private string transformationSettingsError;
+        private AudioVolumeFileStore audioSettingsStore;
+        private AudioVolumeSettings audioVolumes=new AudioVolumeSettings();
+        private GameplayAudioRouter gameplayAudio;
+        private GameplayAudioSettingsView audioSettingsView;
+        public AudioVolumeSettings GameplayAudioVolumes=>audioVolumes;
+        public GameplayAudioRouter GameplayAudio=>gameplayAudio;
+        public string GameplayAudioSettingsError { get; private set; }
+        [SerializeField] private AudioClip dungeonBgm,battleBgm,uiEffect;
+        private bool AudioSettingsOpen=>audioSettingsView!=null&&audioSettingsView.gameObject.activeSelf;
+        public bool TryApplyGameplayAudioVolumes(AudioVolumeSettings value,out string error)
+        {
+            error=null;if(!IsUserPaused){error="ポーズ中のみ音量設定を適用できます";return false;}
+            if(audioSettingsStore==null||!audioSettingsStore.TrySave(value,out error)){GameplayAudioSettingsError=error;return false;}
+            audioVolumes=value;gameplayAudio.Apply(value);GameplayAudioSettingsError=null;return true;
+        }
+        private void OpenAudioSettings(){if(!IsUserPaused||progressDialogOpen||audioSettingsView==null)return;keyboardSettingsView?.DiscardAndClose();pauseOverlay.SetActive(false);audioSettingsView.Open(audioVolumes,GameplayAudioSettingsError);}
+        private void CloseAudioSettings(){audioSettingsView.DiscardAndClose();pauseOverlay.SetActive(IsUserPaused);if(IsUserPaused)pauseOverlay.transform.SetAsLastSibling();}
+
         public string GameplayKeyboardSettingsError { get; private set; }
         public void ConfigureGameplaySettingsDirectory(string directory)
         {
@@ -398,9 +416,10 @@ namespace Olca.Application.Dungeon
             logicalLoop.Observe(!manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
             ResetTouchInput(preserveCharge: true);
             manager.SetUserPaused(paused);
+            gameplayAudio?.SetPaused(paused);
             GameplayPause.SetPaused(paused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
-            else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose(); }
+            else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();if(audioSettingsView!=null)audioSettingsView.DiscardAndClose(); }
             // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
             if (pauseOverlay != null) { pauseOverlay.SetActive(paused); if (paused) pauseOverlay.transform.SetAsLastSibling(); }
             inputProvider?.QueueSnapshot();
@@ -427,7 +446,7 @@ namespace Olca.Application.Dungeon
                 var textObj = new GameObject("Label", typeof(RectTransform), typeof(Text)); textObj.transform.SetParent(obj.transform, false);
                 var text = textObj.GetComponent<Text>(); text.font = font; text.text = label; text.fontSize = 30; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
-                UiLook.Button(button); return button;
+                UiLook.Button(button);button.onClick.AddListener(()=>gameplayAudio?.PlayEffect(uiEffect)); return button;
             }
             currencyOverlay = new GameObject("CurrencyRewardPanel", typeof(RectTransform), typeof(Image));
             currencyOverlay.transform.SetParent(pauseCanvas.transform, false);
@@ -488,6 +507,10 @@ namespace Olca.Application.Dungeon
             settingsPanel.transform.SetParent(pauseCanvas.transform, false);
             keyboardSettingsView = settingsPanel.AddComponent<GameplayKeyboardSettingsView>();
             keyboardSettingsView.Initialize(font, candidate => TryApplyGameplayKeyboardProfile(candidate, out var error) ? null : error);
+            var audioPanel=new GameObject("AudioSettingsPanel",typeof(RectTransform));audioPanel.transform.SetParent(pauseCanvas.transform,false);
+            audioSettingsView=audioPanel.AddComponent<GameplayAudioSettingsView>();audioSettingsView.Initialize(font,candidate=>TryApplyGameplayAudioVolumes(candidate,out var error)?null:error,CloseAudioSettings);
+            var audioButton=MakeButton("AudioSettingsButton","音量設定",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-300));
+            ((RectTransform)audioButton.transform).sizeDelta=new Vector2(420,70);audioButton.onClick.AddListener(OpenAudioSettings);
             pauseOverlay.SetActive(false);
             checkpointOverlay = new GameObject("CheckpointOverlay", typeof(RectTransform), typeof(Image));
             checkpointOverlay.transform.SetParent(pauseCanvas.transform, false);
@@ -527,7 +550,7 @@ namespace Olca.Application.Dungeon
         private Text progressActionMessage;
         private bool progressDialogOpen,newGameConfirmation,newGameSavePending,manualSavePending;
         private long confirmedProgressRevision;
-        private bool IsProgressHub => clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool IsProgressHub => !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
@@ -1098,6 +1121,9 @@ namespace Olca.Application.Dungeon
             keyboardSettings = new KeyboardBindingFileStore(gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             transformationSettings=new TransformationPresentationFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             transformationSettings.TryRead(out shortTransformationPresentation,out transformationSettingsError);
+            audioSettingsStore=new AudioVolumeFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            audioSettingsStore.TryRead(out audioVolumes,out var audioError);GameplayAudioSettingsError=audioError;
+            gameplayAudio=new GameplayAudioRouter(transform);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(dungeonBgm);
             if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
             GameplayKeyboardSettingsError = settingsError;
             if (settingsError != null) logger.LogWarning(settingsError);
@@ -1262,6 +1288,7 @@ namespace Olca.Application.Dungeon
             UpdateViews();
             RefreshBasicAttackHud();
             RefreshProgressActions();
+            if(AudioSettingsOpen)audioSettingsView.transform.SetAsLastSibling();
         }
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
@@ -1346,7 +1373,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!progressDialogOpen && !cardCollectionOpen && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!AudioSettingsOpen && !progressDialogOpen && !cardCollectionOpen && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
@@ -1391,6 +1418,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleStarted(BattleSystem battle, ContactInfo contactInfo)
         {
+            gameplayAudio?.PlayBgm(battleBgm!=null?battleBgm:dungeonBgm);
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
             battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(0, 12, 6));
@@ -1483,6 +1511,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
+            gameplayAudio?.PlayBgm(dungeonBgm);
             ResetTouchInput();
             if (manager.CurrentPhase == GamePhase.Dungeon) ScheduleExplorationResume();
             HandleBattleEndAsync().Forget();
@@ -1809,6 +1838,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            gameplayAudio?.Dispose();
             inputProvider?.Dispose();
             logicalLoop.Dispose();
             if (IsUserPaused) SetUserPaused(false);

@@ -860,4 +860,74 @@ namespace Olca.Tests.Battle
             Assert.AreEqual(60, enemy.CurrentHp, "DamageEffectでも20×2=40ダメージになるはず");
         }
     }
+
+    [TestFixture]
+    public class AudioVolumeSettingsTests
+    {
+        private string directory;
+        private sealed class FaultIo:Olca.Unity.CheckpointFileIo {
+            public bool Before,After;
+            public override void MoveNew(string t,string d){if(Before)throw new System.IO.IOException();base.MoveNew(t,d);if(After)throw new System.IO.IOException();}
+            public override void Replace(string t,string d,string b){if(Before)throw new System.IO.IOException();base.Replace(t,d,b);if(After)throw new System.IO.IOException();}
+        }
+        [SetUp] public void Setup()=>directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-audio-"+System.Guid.NewGuid().ToString("N"));
+        [TearDown] public void Cleanup(){if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        [Test] public void 音量設定のない旧設定は元音量を維持し他設定を書き換えない(){
+            System.IO.Directory.CreateDirectory(directory);var keyboard=System.IO.Path.Combine(directory,"keyboard-gameplay.json");System.IO.File.WriteAllText(keyboard,"existing-keyboard");
+            var store=new Olca.Unity.AudioVolumeFileStore(directory);Assert.IsTrue(store.TryRead(out var value,out var error),error);
+            Assert.AreEqual(100,value.Master);Assert.AreEqual(100,value.Bgm);Assert.AreEqual(100,value.Effects);Assert.AreEqual(100,value.Voice);
+            Assert.IsFalse(System.IO.File.Exists(store.ActivePath));Assert.AreEqual("existing-keyboard",System.IO.File.ReadAllText(keyboard));
+        }
+        [TestCase(0,100,100,100)] [TestCase(100,100,100,100)] [TestCase(37,81,52,0)]
+        public void 四系統のゼロと上限と個別値を独立保存し再読込できる(int master,int bgm,int effects,int voice){
+            var store=new Olca.Unity.AudioVolumeFileStore(directory);Assert.IsTrue(store.TrySave(new Olca.Unity.AudioVolumeSettings(master,bgm,effects,voice),out var error),error);
+            Assert.IsTrue(new Olca.Unity.AudioVolumeFileStore(directory).TryRead(out var value,out error),error);
+            Assert.AreEqual(master,value.Master);Assert.AreEqual(bgm,value.Bgm);Assert.AreEqual(effects,value.Effects);Assert.AreEqual(voice,value.Voice);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new Olca.Unity.AudioVolumeSettings(-1));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new Olca.Unity.AudioVolumeSettings(voice:101));
+        }
+        [TestCase(false)] [TestCase(true)] public void 保存前失敗は旧音量を保ち保存直後の例外は内容照合で確定する(bool after){
+            var io=new FaultIo();var store=new Olca.Unity.AudioVolumeFileStore(directory,io);Assert.IsTrue(store.TrySave(new Olca.Unity.AudioVolumeSettings(20,30,40,50),out _));
+            var bytes=System.IO.File.ReadAllBytes(store.ActivePath);io.Before=!after;io.After=after;
+            Assert.AreEqual(after,store.TrySave(new Olca.Unity.AudioVolumeSettings(0,100,0,99),out _));
+            if(!after){CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));io.Before=false;Assert.IsTrue(store.TrySave(new Olca.Unity.AudioVolumeSettings(0,100,0,99),out _));}
+            Assert.IsTrue(store.TryRead(out var value,out _));Assert.AreEqual(0,value.Master);Assert.AreEqual(99,value.Voice);
+        }
+        [TestCase("broken")]
+        [TestCase("{\"Version\":1,\"Master\":20,\"Bgm\":30,\"Effects\":40}")]
+        [TestCase("{\"Version\":1,\"Master\":101,\"Bgm\":30,\"Effects\":40,\"Voice\":50}")]
+        [TestCase("{\"Version\":2,\"Master\":20,\"Bgm\":30,\"Effects\":40,\"Voice\":50}")]
+        public void 壊れた設定や未対応形式は上書きしない(string content){
+            System.IO.Directory.CreateDirectory(directory);var store=new Olca.Unity.AudioVolumeFileStore(directory);System.IO.File.WriteAllText(store.ActivePath,content);
+            Assert.IsFalse(store.TryRead(out var muted,out _));Assert.AreEqual(0,muted.Master,"未知の音量を最大音量で再生しない");Assert.IsFalse(store.TrySave(new Olca.Unity.AudioVolumeSettings(),out _));Assert.AreEqual(content,System.IO.File.ReadAllText(store.ActivePath));
+        }
+        [Test] public void 実ソースは全体と区分と元音量を掛け二重適用せずListenerと未登録ソースを変えない(){
+            var parent=new UnityEngine.GameObject("audio-test");var existing=parent.AddComponent<UnityEngine.AudioSource>();existing.volume=.4f;float listener=UnityEngine.AudioListener.volume;
+            var other=new UnityEngine.GameObject("unregistered").AddComponent<UnityEngine.AudioSource>();other.volume=.3f;
+            try{using(var router=new Olca.Unity.GameplayAudioRouter(parent.transform)){
+                router.Register(existing,Olca.Unity.GameplayAudioChannel.Effects);router.Apply(new Olca.Unity.AudioVolumeSettings(20,25,50,100));
+                Assert.AreEqual(.05f,router.Bgm.volume,.00001f);Assert.AreEqual(.1f,router.Effects.volume,.00001f);Assert.AreEqual(.2f,router.Voice.volume,.00001f);Assert.AreEqual(.04f,existing.volume,.00001f);
+                router.Register(existing,Olca.Unity.GameplayAudioChannel.Effects);router.Apply(new Olca.Unity.AudioVolumeSettings(20,25,50,100));Assert.AreEqual(.04f,existing.volume,.00001f);
+                router.SetPaused(true);router.Apply(new Olca.Unity.AudioVolumeSettings(0));Assert.IsTrue(router.IsPaused);Assert.AreEqual(0,router.Bgm.volume);Assert.AreEqual(0,router.Effects.volume);Assert.AreEqual(0,router.Voice.volume);
+                router.Apply(new Olca.Unity.AudioVolumeSettings());Assert.AreEqual(.4f,existing.volume,.00001f);router.SetPaused(false);Assert.IsFalse(router.IsPaused);
+                Assert.AreEqual(listener,UnityEngine.AudioListener.volume);Assert.AreEqual(.3f,other.volume,.00001f);
+            }Assert.AreEqual(.4f,existing.volume,.00001f);}finally{UnityEngine.Object.DestroyImmediate(parent);UnityEngine.Object.DestroyImmediate(other.gameObject);}
+        }
+        [Test] public void 音量スライダーの左右入力は一パーセント変更し上下は画面内の項目へ移動する(){
+            var eventRoot=new UnityEngine.GameObject("audio-input-events");var events=eventRoot.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            var root=new UnityEngine.GameObject("audio-input-view",typeof(UnityEngine.RectTransform));
+            try{int saved=0;var view=root.AddComponent<Olca.Presentation.Field.GameplayAudioSettingsView>();view.Initialize(UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf"),value=>{saved++;return null;},()=>{});
+                view.Open(new Olca.Unity.AudioVolumeSettings(20,50,25,10),null);var slider=root.GetComponentsInChildren<UnityEngine.UI.Slider>().Single(s=>s.name=="AudioSliderMaster");events.SetSelectedGameObject(slider.gameObject);Assert.LessOrEqual(slider.handleRect.rect.height,((UnityEngine.RectTransform)slider.transform).rect.height,"ハンドルが隣の行へはみ出さない");
+                var move=new UnityEngine.EventSystems.AxisEventData(events){moveDir=UnityEngine.EventSystems.MoveDirection.Right,moveVector=UnityEngine.Vector2.right};
+                UnityEngine.EventSystems.ExecuteEvents.Execute(slider.gameObject,move,UnityEngine.EventSystems.ExecuteEvents.moveHandler);Assert.AreEqual(21,slider.value);Assert.AreEqual(0,saved,"候補変更で保存しない");
+                slider.value=100;UnityEngine.EventSystems.ExecuteEvents.Execute(slider.gameObject,move,UnityEngine.EventSystems.ExecuteEvents.moveHandler);Assert.AreEqual(100,slider.value);
+                move.moveDir=UnityEngine.EventSystems.MoveDirection.Down;move.moveVector=UnityEngine.Vector2.down;UnityEngine.EventSystems.ExecuteEvents.Execute(slider.gameObject,move,UnityEngine.EventSystems.ExecuteEvents.moveHandler);
+                Assert.AreEqual("AudioSliderBgm",events.currentSelectedGameObject.name);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(eventRoot);}
+        }
+        [Test] public void 新規開始も独立音量ファイルを保持する(){
+            var audio=new Olca.Unity.AudioVolumeFileStore(System.IO.Path.Combine(directory,"settings"));Assert.IsTrue(audio.TrySave(new Olca.Unity.AudioVolumeSettings(10,20,0,40),out _));var bytes=System.IO.File.ReadAllBytes(audio.ActivePath);
+            var progress=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress")));var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(progress.InitializeStarter(starter));Assert.IsTrue(progress.StartNewGame(progress.Snapshot.Revision,starter));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(audio.ActivePath));
+        }
+    }
 }
