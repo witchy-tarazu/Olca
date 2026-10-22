@@ -654,3 +654,59 @@ namespace Olca.Unity
     }
 
 }
+
+namespace Olca.Unity
+{
+    public enum CustomPadCommand { Left,Right,Up,Down,Decide,Cancel,Confirm,Customize,Undo,Details,Transform }
+    public readonly struct CustomPadEvent
+    {
+        public readonly CustomPadCommand Command;public readonly long Timestamp;public readonly int Epoch;
+        public CustomPadEvent(CustomPadCommand command,long timestamp,int epoch){Command=command;Timestamp=timestamp;Epoch=epoch;}
+    }
+    /// <summary>カスタム画面専用。押下だけを採取し、標準UIの同じSubmitとの二重送信を防ぐ。</summary>
+    public sealed class CustomGamepadInput:System.IDisposable
+    {
+        private sealed class State {public readonly Dictionary<GamepadButton,bool> Buttons=new Dictionary<GamepadButton,bool>();public Vector2 Stick;public bool Armed;public int X,Y;}
+        private static readonly GamepadButton[] Keys={GamepadButton.South,GamepadButton.East,GamepadButton.West,GamepadButton.North,GamepadButton.Start,GamepadButton.Select,GamepadButton.RightStick,GamepadButton.DpadLeft,GamepadButton.DpadRight,GamepadButton.DpadUp,GamepadButton.DpadDown};
+        private readonly HashSet<Gamepad> neutralRequired=new HashSet<Gamepad>();
+        private readonly System.Func<bool> usable,ownsUi;private readonly Dictionary<Gamepad,State> states=new Dictionary<Gamepad,State>();private readonly List<CustomPadEvent> pending=new List<CustomPadEvent>();private bool active,disposed;private readonly double offset;
+        public int Epoch{get;private set;}
+        public bool HasGamepad=>InputSystem.devices.OfType<Gamepad>().Any(p=>p.enabled);
+        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null){this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
+        private static bool Neutral(State state)=>!state.Buttons.Values.Any(v=>v)&&state.Stick.sqrMagnitude<.25f;
+        public void Reset(){Epoch++;pending.Clear();states.Clear();active=false;}
+        private bool CheckActive()
+        {
+            bool now=!disposed&&usable();if(!now){if(active)Reset();return false;}if(active)return true;active=true;Epoch++;
+            foreach(var pad in InputSystem.devices.OfType<Gamepad>().Where(p=>p.enabled)){var state=new State{Stick=pad.leftStick.ReadValue()};foreach(var key in Keys)state.Buttons[key]=pad[key].isPressed;state.Armed=Neutral(state)&&!neutralRequired.Contains(pad);states[pad]=state;}return true;
+        }
+        private void Changed(InputDevice device,InputDeviceChange change)
+        {
+            if(!(device is Gamepad pad))return;
+            if(change==InputDeviceChange.Removed){Reset();neutralRequired.Remove(pad);}
+            else if(change==InputDeviceChange.Disconnected||change==InputDeviceChange.Disabled||change==InputDeviceChange.Reconnected||change==InputDeviceChange.Enabled||change==InputDeviceChange.Added){Reset();neutralRequired.Add(pad);}
+        }
+        private void OnEvent(InputEventPtr evt,InputDevice device)
+        {
+            // キー側も既存カーソル／論理決定が所有する。マウスが残したButtonへのSubmitを重ねない。
+            if(!disposed&&device is Keyboard&&ownsUi()){UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);return;}
+            if(!(device is Gamepad pad)||!pad.enabled||(!evt.IsA<StateEvent>()&&!evt.IsA<DeltaStateEvent>())||disposed)return;
+            if(ownsUi())UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            if(!CheckActive())return;
+            if(!states.TryGetValue(pad,out var state))return;
+            var before=new Dictionary<GamepadButton,bool>(state.Buttons);
+            foreach(var key in Keys)if(pad[key].ReadValueFromEvent(evt,out float value))state.Buttons[key]=value>=pad[key].pressPointOrDefault;
+            if(pad.leftStick.x.ReadUnprocessedValueFromEvent(evt,out float x))state.Stick.x=x;if(pad.leftStick.y.ReadUnprocessedValueFromEvent(evt,out float y))state.Stick.y=y;
+            if(!state.Armed){if(Neutral(state)){state.Armed=true;neutralRequired.Remove(pad);}return;}
+            long stamp=(long)System.Math.Round((evt.time+offset)*System.Diagnostics.Stopwatch.Frequency);
+            void Add(CustomPadCommand command)=>pending.Add(new CustomPadEvent(command,stamp,Epoch));
+            bool Held(GamepadButton key)=>state.Buttons[key];bool Down(GamepadButton key)=>Held(key)&&!before[key];
+            int nextX=Held(GamepadButton.DpadRight)?1:Held(GamepadButton.DpadLeft)?-1:state.Stick.x>.5f?1:state.Stick.x<-.5f?-1:0;
+            int nextY=Held(GamepadButton.DpadUp)?1:Held(GamepadButton.DpadDown)?-1:state.Stick.y>.5f?1:state.Stick.y<-.5f?-1:0;
+            if(nextX!=0&&nextX!=state.X)Add(nextX>0?CustomPadCommand.Right:CustomPadCommand.Left);else if(nextY!=0&&nextY!=state.Y)Add(nextY>0?CustomPadCommand.Up:CustomPadCommand.Down);state.X=nextX;state.Y=nextY;
+            if(Down(GamepadButton.East))Add(CustomPadCommand.Cancel);else if(Down(GamepadButton.RightStick))Add(CustomPadCommand.Details);else if(Down(GamepadButton.Select))Add(CustomPadCommand.Transform);else if(Down(GamepadButton.North))Add(CustomPadCommand.Customize);else if(Down(GamepadButton.West))Add(CustomPadCommand.Undo);else if(Down(GamepadButton.Start))Add(CustomPadCommand.Confirm);else if(Down(GamepadButton.South))Add(CustomPadCommand.Decide);
+        }
+        public CustomPadEvent[] Read(){CheckActive();var result=pending.ToArray();pending.Clear();return result;}
+        public void Dispose(){if(disposed)return;disposed=true;InputSystem.onEvent-=OnEvent;InputSystem.onDeviceChange-=Changed;Reset();neutralRequired.Clear();}
+    }
+}

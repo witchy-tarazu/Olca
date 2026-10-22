@@ -117,6 +117,20 @@ namespace Olca.Tests
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        [TestCase(true)] [TestCase(false)]
+        public void 加工終了を同じフレームの論理確定取消へ重ねず使用予定を維持する(bool cancel)
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            var a=factory.CreateById("sword");var b=factory.CreateById("bomb");var heal=factory.CreateById("heal");var model=Open(a,b,heal);Assert.IsTrue(model.TrySelectCard(heal));
+            WithView(model,(view,mode,button,selected)=>{
+                view.ConfigureLogicalConfirmation((stamp,action)=>action(),()=>System.Diagnostics.Stopwatch.GetTimestamp());
+                if(cancel)typeof(CustomScreenView).GetMethod("OnCustomizeModeCancelled",Flags).Invoke(view,null);
+                else {view.OnCardClicked(a);view.OnCardClicked(b);model.OnFused+=card=>mode.Exit();typeof(CustomScreenView).GetMethod("OnCustomizeExecuteRequested",Flags).Invoke(view,null);Assert.AreEqual(1,model.CustomizationUndoCount);}
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput{MenuCancelButtonDown=cancel,MenuConfirmButtonDown=!cancel});
+                Assert.IsFalse(mode.IsActive);Assert.IsFalse(model.IsConfirming);CollectionAssert.AreEqual(new[]{heal},model.SelectedCards);
+            });
+        }
+
         [TestCase(1, false)]
         [TestCase(2, true)]
         public void 超越_同参照素材の実在枚数を確認する(int copies, bool allowed)

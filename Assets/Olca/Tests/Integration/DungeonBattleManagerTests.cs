@@ -5066,3 +5066,33 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    public class CustomGamepadInputTests
+    {
+        private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] buttons)
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in buttons)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [Test]
+        public void 無効場面と保持復帰を遮断し新しい押下だけを一回採取する()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();bool active=false;var input=new Olca.Unity.CustomGamepadInput(()=>active);
+            try{State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);active=true;Assert.IsEmpty(input.Read());State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.IsEmpty(input.Read());State(pad);Assert.IsEmpty(input.Read());State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(Olca.Unity.CustomPadCommand.Decide,input.Read().Single().Command);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.IsEmpty(input.Read());active=false;input.Read();active=true;input.Read();State(pad);Assert.IsEmpty(input.Read());}
+            finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 同時ボタンは確定を優先し方向の保持と同じ状態の再送で決定を重複しない()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var input=new Olca.Unity.CustomGamepadInput(()=>true);
+            try{input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.Start,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);CollectionAssert.AreEqual(new[]{Olca.Unity.CustomPadCommand.Right,Olca.Unity.CustomPadCommand.Confirm},input.Read().Select(e=>e.Command));State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.Start,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);Assert.IsEmpty(input.Read());State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East,UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(Olca.Unity.CustomPadCommand.Cancel,input.Read().Single().Command);}
+            finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 切断やリセットは未処理入力と世代を破棄し別デバイスへ移動を残留させない()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var input=new Olca.Unity.CustomGamepadInput(()=>true);
+            try{input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.North);var old=input.Read().Single();input.Reset();Assert.AreNotEqual(old.Epoch,input.Epoch);State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);UnityEngine.InputSystem.InputSystem.DisableDevice(pad);Assert.IsEmpty(input.Read());UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.RightStick);Assert.IsEmpty(input.Read(),"再接続直後の保持は中立まで無視");State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.RightStick);Assert.AreEqual(Olca.Unity.CustomPadCommand.Details,input.Read().Single().Command);State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.Select);Assert.AreEqual(Olca.Unity.CustomPadCommand.Transform,input.Read().Single().Command);}
+            finally{input.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+    }
+}
