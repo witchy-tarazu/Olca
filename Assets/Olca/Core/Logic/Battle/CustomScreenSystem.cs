@@ -818,6 +818,7 @@ namespace Olca.Core.Logic.Battle
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.screen = screen ?? throw new ArgumentNullException(nameof(screen));
             baseHandSize = screen.MaxHandSize;
+            screen.Commands.AttachTransformations(this);
             screen.OnScreenOpened += OnOpened;
             screen.OnConfirmed += OnConfirmed;
             screen.OnScreenClosed += OnClosed;

@@ -67,3 +67,11 @@ SHA256: `4597d866f2c40ce9f2624e4e61942ee73efd10ecd9872c9585457f4ef48d8edc`
 個体ハンドルは `Battle.CustomScreen.Commands.Observe()` の手札/選択観測から取得します。消費・Undoで別参照になった個体には新番号が付きます。ID・同名・定義違いの推測選択はしません。プレビューと加工取消は無消費、加工実行後は逆順Undo、確定後は `ReturnToBattle` で復帰します。生成カードの再加工も既存Coreが扱います。拒否時にもコードと理由が観測できます。
 
 `CustomBattleReplay.Commands(seed)`は独立した同一Coreの計画用インスタンスで、復元コピーを含む対象ハンドルを確定した不変コマンド列を作ります。実再生側ではその列を変えず適用します。トレースには対象番号・受付結果・手札等の定義hashを含めます。fixtureは製品カード登録/ゲーム保存を変更しません。これはカスタム操作の第2区切りで、変身、製品DB投入、保存復帰コマンドは未移行です。
+
+### 変身操作と自然解除のリプレイ
+
+`--transformation --verify`で、変身の選択・加工連鎖取消・発動・演出停止・バリア/弱点解除と、通常のゲージ充填を使う3フェーズの自然終了を比較します。`--seed`、`--batch`、`--work`が使え、固定シナリオのため`--frames`は使用しません。製品データを追加せず、`TransformationBattleReplay`の明示fixtureだけを使います。
+
+入力例は `new CustomScreenCommand(CustomCommandKind.PreviewTransformation, "fixture-a")`、取消は `CancelTransformation`。選択カードがあれば1枚解除し、次の取消でその画面の仮変身を戻す既存規則です。発動は`Confirm`、画面終了は`ReturnToBattle`です。確定済み変身の任意解除コマンドはありません。弱点命中・持続回数切れ・戦闘終了の解除は同じ戦闘Coreが行い、観測とイベントに出ます。
+
+変身の残回数/使用済みID/演出残時間/耐性/攻撃性能は各受付・フレームの状態に含まれます。定義は作成時に`battle.Transformations.Configure(...)`で明示注入し、製品DB/保存復帰の投入経路はまだ別残件です。Unity側の通常Viewも同じ選択/取消コマンドを利用しますが、この検証でGUIコピーや物理実機を同期・操作したことにはなりません。

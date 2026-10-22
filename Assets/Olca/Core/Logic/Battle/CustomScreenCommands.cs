@@ -6,7 +6,7 @@ using Olca.Core.Interfaces;
 
 namespace Olca.Core.Logic.Battle
 {
-    public enum CustomCommandKind { Open, Select, Deselect, PreviewCustomization, ExecuteCustomization, CancelCustomization, Undo, Confirm, ReturnToBattle }
+    public enum CustomCommandKind { Open, Select, Deselect, PreviewCustomization, ExecuteCustomization, CancelCustomization, Undo, Confirm, ReturnToBattle, PreviewTransformation, CancelTransformation }
     public enum CustomCommandRejection { None, InvalidCommand, Busy, BattleUnavailable, UserPaused, GaugeNotFull, ScreenClosed, Confirming, NotConfirming, CardUnavailable, RuleRejected }
 
     /// <summary>カードIDではなく、この戦闘内の個体ハンドルで対象を指定する不変入力。</summary>
@@ -14,8 +14,31 @@ namespace Olca.Core.Logic.Battle
     {
         public CustomCommandKind Kind { get; }
         public IReadOnlyList<long> Cards { get; }
+        public string TransformationId { get; }
         public CustomScreenCommand(CustomCommandKind kind, params long[] cards)
         { Kind = kind; Cards = Array.AsReadOnly((cards ?? Array.Empty<long>()).ToArray()); }
+        public CustomScreenCommand(CustomCommandKind kind, string transformationId) : this(kind) { TransformationId = transformationId; }
+    }
+    public sealed class TransformationObservation
+    {
+        public string PendingId { get; }
+        public string ActiveId { get; }
+        public int RemainingPhases { get; }
+        public int ActivationFrames { get; }
+        public int ReleaseFrames { get; }
+        public IReadOnlyList<string> UsedIds { get; }
+        public string Canonical { get; }
+        internal TransformationObservation(BattleSystem battle, TransformationSelectionState transformation)
+        {
+            var state = transformation ?? battle?.Transformations; PendingId = state?.PendingId; ActiveId = state?.ActiveId;
+            RemainingPhases = state?.RemainingPhases ?? 0; ActivationFrames = state?.ActivationFramesRemaining ?? 0; ReleaseFrames = state?.ReleaseFramesRemaining ?? 0;
+            UsedIds = Array.AsReadOnly(state?.UsedIds.ToArray() ?? Array.Empty<string>());
+            var attack = battle?.ActivePlayerAttack; var defense = battle?.Player.ActiveResistances;
+            Canonical = string.Join(":", Uri.EscapeDataString(PendingId ?? ""), Uri.EscapeDataString(ActiveId ?? ""), RemainingPhases, ActivationFrames, ReleaseFrames,
+                string.Join(",", UsedIds.Select(Uri.EscapeDataString)), state?.PresentationEnabled ?? false, state?.ShortPresentation ?? false,
+                attack?.Element ?? ElementType.None, attack?.NormalPowerPercent ?? 100, attack?.ChargedPowerPercent ?? 200, attack?.ChargeFrames ?? 0, attack?.IntervalFrames ?? 0,
+                defense?.Fire ?? 0, defense?.Water ?? 0, defense?.Wind ?? 0, defense?.Earth ?? 0, battle?.Player.BarrierHp ?? 0);
+        }
     }
     public sealed class CustomCardObservation
     {
@@ -36,17 +59,19 @@ namespace Olca.Core.Logic.Battle
         public bool IsConfirming { get; }
         public int UndoCount { get; }
         public int UsedCost { get; }
+        public TransformationObservation Transformation { get; }
         public IReadOnlyList<CustomCardObservation> Hand { get; }
         public IReadOnlyList<CustomCardObservation> Selected { get; }
         public IReadOnlyList<CustomCardObservation> Available { get; }
         public string Canonical { get; }
-        internal CustomScreenObservation(CustomScreenSystem screen, Func<Card, long> handle)
+        internal CustomScreenObservation(CustomScreenSystem screen, Func<Card, long> handle, BattleSystem battle, TransformationSelectionState transformation)
         {
+            Transformation = new TransformationObservation(battle, transformation);
             IsOpen = screen.IsOpen; IsConfirming = screen.IsConfirming; UndoCount = screen.CustomizationUndoCount; UsedCost = screen.GetTotalUsedCost();
             CustomCardObservation[] Capture(IEnumerable<Card> cards) => cards.Select(c => new CustomCardObservation(handle(c), c)).ToArray();
             Hand = Array.AsReadOnly(Capture(screen.CurrentHand)); Selected = Array.AsReadOnly(Capture(screen.SelectedCards)); Available = Array.AsReadOnly(Capture(screen.AvailableCards));
             string List(IReadOnlyList<CustomCardObservation> values) => string.Join(",", values.Select(c => c.Canonical));
-            Canonical = string.Join("/", IsOpen, IsConfirming, UndoCount, UsedCost, List(Hand), List(Selected), List(Available));
+            Canonical = string.Join("/", IsOpen, IsConfirming, UndoCount, UsedCost, List(Hand), List(Selected), List(Available), Transformation.Canonical);
         }
     }
     public sealed class CustomCommandResult
@@ -62,7 +87,7 @@ namespace Olca.Core.Logic.Battle
         internal CustomCommandResult(long sequence, CustomScreenCommand command, CustomCommandRejection rejection, string reason, CustomizationPreview preview, CustomScreenObservation state)
         {
             Sequence = sequence; Rejection = rejection; Reason = reason; Preview = preview; State = state;
-            string output = command.Kind + ":" + string.Join(",", command.Cards) + ":" + rejection + ":" + Uri.EscapeDataString(reason ?? "");
+            string output = command.Kind + ":" + Uri.EscapeDataString(command.TransformationId ?? "") + ":" + string.Join(",", command.Cards) + ":" + rejection + ":" + Uri.EscapeDataString(reason ?? "");
             if (preview != null) output += ":" + preview.Operation + ":" + preview.Status + ":" + (preview.ResultCard == null ? "-" : CollectionDisplay.DefinitionHash(preview.ResultCard));
             Events = Array.AsReadOnly(new[] { (Accepted ? "custom-accepted:" : "custom-rejected:") + output });
             Canonical = sequence + "|" + output + "|" + state.Canonical;
@@ -79,6 +104,7 @@ namespace Olca.Core.Logic.Battle
         private bool executing;
         private readonly Queue<Action> afterCommand = new Queue<Action>();
         private BattleSystem battle;
+        private TransformationSelectionState transformations;
         private IRandomProvider random;
         public long Sequence => sequence;
         // 同期View互換で、確定イベント内に完了した表示を受付処理の後へ送る。時計/スレッドへは送らない。
@@ -91,6 +117,7 @@ namespace Olca.Core.Logic.Battle
             screen.OnExceeded += _ => Refresh(); screen.OnTuned += _ => Refresh(); screen.OnFused += _ => Refresh();
             screen.OnCustomizationUndone += Refresh;
         }
+        internal void AttachTransformations(TransformationSelectionState state) { transformations = state; }
         internal void AttachBattle(BattleSystem battle, IRandomProvider random) { this.battle = battle; this.random = random; }
         private void Refresh()
         {
@@ -98,7 +125,7 @@ namespace Olca.Core.Logic.Battle
                 if (!handles.ContainsKey(card)) { long id = checked(++nextHandle); handles.Add(card, id); cards.Add(id, card); }
         }
         public long HandleOf(Card card) => card != null && handles.TryGetValue(card, out long id) ? id : 0;
-        public CustomScreenObservation Observe() { Refresh(); return new CustomScreenObservation(screen, HandleOf); }
+        public CustomScreenObservation Observe() { Refresh(); return new CustomScreenObservation(screen, HandleOf, battle, transformations); }
 
         public CustomCommandResult Execute(CustomScreenCommand command, IRandomProvider openingRandom = null)
         {
@@ -111,7 +138,7 @@ namespace Olca.Core.Logic.Battle
                     => new CustomCommandResult(sequence, command, code, reason, preview, Observe());
                 int expected = command.Kind == CustomCommandKind.Select || command.Kind == CustomCommandKind.Deselect ? 1 :
                     command.Kind == CustomCommandKind.PreviewCustomization || command.Kind == CustomCommandKind.ExecuteCustomization ? 2 : 0;
-                if (!Enum.IsDefined(typeof(CustomCommandKind), command.Kind) || command.Cards.Count != expected || command.Cards.Distinct().Count() != command.Cards.Count)
+                if ((command.Kind == CustomCommandKind.PreviewTransformation ? string.IsNullOrWhiteSpace(command.TransformationId) : command.TransformationId != null) || !Enum.IsDefined(typeof(CustomCommandKind), command.Kind) || command.Cards.Count != expected || command.Cards.Distinct().Count() != command.Cards.Count)
                     return Result(CustomCommandRejection.InvalidCommand, "操作または対象数が不正です");
                 if (battle != null && battle.IsGameOver) return Result(CustomCommandRejection.BattleUnavailable, "戦闘が終了しています");
                 if (battle != null && battle.IsUserPaused && command.Kind != CustomCommandKind.ReturnToBattle) return Result(CustomCommandRejection.UserPaused, "ポーズ中は操作できません");
@@ -134,6 +161,12 @@ namespace Olca.Core.Logic.Battle
                     targets.Add(card);
                 }
                 switch (command.Kind) {
+                    case CustomCommandKind.PreviewTransformation:
+                        if (transformations == null) return Result(CustomCommandRejection.BattleUnavailable, "変身状態を接続してください");
+                        return transformations.TryPreview(command.TransformationId) ? Result() : Result(CustomCommandRejection.RuleRejected, "未解放・使用済み・オーラ中など、変身を選べない状態です");
+                    case CustomCommandKind.CancelTransformation:
+                        if (transformations == null) return Result(CustomCommandRejection.BattleUnavailable, "変身状態を接続してください");
+                        return transformations.TryCancelPending() ? Result() : Result(CustomCommandRejection.RuleRejected, "この画面で新しく選んだ変身だけ取り消せます");
                     case CustomCommandKind.Select:
                         return screen.TrySelectCard(targets[0]) ? Result() : Result(CustomCommandRejection.RuleRejected, "手札・選択枚数・コスト条件を満たしません");
                     case CustomCommandKind.Deselect:

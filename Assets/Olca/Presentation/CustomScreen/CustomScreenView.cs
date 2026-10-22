@@ -105,7 +105,7 @@ namespace Olca.Presentation.CustomScreen
                     if (Olca.Unity.GameplayPause.InputBlocked || handAnimating || customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
                     var state = transformations; var id = state.AvailableDefinitions[index].Id;
                     System.Action select = () => {
-                        if (this != null && ReferenceEquals(state, transformations) && !Olca.Unity.GameplayPause.InputBlocked) state.TryPreview(id);
+                        if (this != null && ReferenceEquals(state, transformations) && !Olca.Unity.GameplayPause.InputBlocked) customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.PreviewTransformation, id));
                     };
                     if (queueConfirmation == null) select(); else queueConfirmation(pointerClickTimestamp(), select);
                 });
@@ -365,7 +365,7 @@ namespace Olca.Presentation.CustomScreen
             }
             if(command==Olca.Unity.CustomPadCommand.Details){ShowPadDetails();return;}
             if(command==Olca.Unity.CustomPadCommand.Transform){if(!mode&&transformations?.AvailableDefinitions.Count>0){padTransformationIndex=padTransformationIndex<0?0:-1;RefreshTransformationButtons();}return;}
-            if(command==Olca.Unity.CustomPadCommand.Cancel){if(mode)OnCustomizeModeCancelled();else if(padTransformationIndex>=0){transformations?.TryCancelPending();RefreshTransformationButtons();}else CancelSelection();return;}
+            if(command==Olca.Unity.CustomPadCommand.Cancel){if(mode)OnCustomizeModeCancelled();else if(padTransformationIndex>=0){customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelTransformation));RefreshTransformationButtons();}else CancelSelection();return;}
             if(command==Olca.Unity.CustomPadCommand.Customize){if(mode)OnCustomizeModeCancelled();else{padTransformationIndex=-1;EnterCustomizeMode();}return;}
             if(command==Olca.Unity.CustomPadCommand.Undo){if(mode)OnCustomizeModeCancelled();OnUndoClicked();return;}
             if(command==Olca.Unity.CustomPadCommand.Confirm){if(mode){if(PreviewFromCommand(customizeSelectedCards).CanExecute)OnCustomizeExecuteRequested();}else if(customScreen.CanConfirm())customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));return;}
@@ -373,7 +373,7 @@ namespace Olca.Presentation.CustomScreen
                 int count=transformations.AvailableDefinitions.Count;
                 if(command==Olca.Unity.CustomPadCommand.Left||command==Olca.Unity.CustomPadCommand.Up)padTransformationIndex=(padTransformationIndex+count-1)%count;
                 else if(command==Olca.Unity.CustomPadCommand.Right||command==Olca.Unity.CustomPadCommand.Down)padTransformationIndex=(padTransformationIndex+1)%count;
-                else if(command==Olca.Unity.CustomPadCommand.Decide){var id=transformations.AvailableDefinitions[padTransformationIndex].Id;if(!transformations.IsUsed(id))transformations.TryPreview(id);}
+                else if(command==Olca.Unity.CustomPadCommand.Decide){var id=transformations.AvailableDefinitions[padTransformationIndex].Id;if(!transformations.IsUsed(id))customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.PreviewTransformation, id));}
                 RefreshTransformationButtons();return;
             }
             if(command==Olca.Unity.CustomPadCommand.Left)cursor.MoveLeft();else if(command==Olca.Unity.CustomPadCommand.Right)cursor.MoveRight();else if(command==Olca.Unity.CustomPadCommand.Up)cursor.MoveUp();else if(command==Olca.Unity.CustomPadCommand.Down)cursor.MoveDown();
@@ -548,7 +548,7 @@ namespace Olca.Presentation.CustomScreen
             var selected = customScreen.SelectedCards;
             if (selected.Count == 0)
             {
-                transformations?.TryCancelPending();
+                customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelTransformation));
                 return;
             }
             if (!customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Deselect, customScreen.Commands.HandleOf(selected[selected.Count - 1]))).Accepted) return;
