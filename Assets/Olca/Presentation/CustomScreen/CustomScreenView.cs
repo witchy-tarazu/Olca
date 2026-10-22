@@ -76,10 +76,21 @@ namespace Olca.Presentation.CustomScreen
 
         private CustomScreenSystem customScreen;
         private TransformationSelectionState transformations;
+        private Text transformationStatus;
         private readonly List<Button> transformationButtons = new List<Button>();
         private void RefreshTransformationButtons()
         {
             int count = transformations?.AvailableDefinitions.Count ?? 0;
+            if(transformationStatus==null&&confirmButton!=null){
+                var obj=new GameObject("CustomTransformationStatus",typeof(RectTransform),typeof(Text));obj.transform.SetParent(confirmButton.transform.parent,false);
+                transformationStatus=obj.GetComponent<Text>();transformationStatus.font=confirmButton.GetComponentInChildren<Text>()?.font;
+                transformationStatus.fontSize=24;transformationStatus.alignment=TextAnchor.MiddleLeft;Olca.Presentation.Dungeon.UiLook.Label(transformationStatus);
+                var rect=transformationStatus.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,1);rect.anchoredPosition=new Vector2(350,-80);rect.sizeDelta=new Vector2(650,80);
+            }
+            if(transformationStatus!=null){
+                transformationStatus.gameObject.SetActive(transformations!=null&&customScreen!=null&&customScreen.IsOpen&&(count>0||transformations.HasActive));
+                transformationStatus.text=transformations?.CustomStatusText??"";
+            }
             while (transformationButtons.Count > count) {
                 var last = transformationButtons[transformationButtons.Count - 1];
                 transformationButtons.RemoveAt(transformationButtons.Count - 1); Destroy(last.gameObject);
@@ -102,7 +113,12 @@ namespace Olca.Presentation.CustomScreen
                 rect.sizeDelta = new Vector2(230f, 64f);
                 rect.anchoredPosition = ((RectTransform)confirmButton.transform).anchoredPosition + new Vector2(110f + (index % 2) * 250f, 550f + (index / 2) * 76f);
                 var label = obj.GetComponentInChildren<Text>();
-                if (label != null) { label.fontSize=28;label.resizeTextForBestFit=true;label.resizeTextMinSize=16;label.resizeTextMaxSize=28; }
+                if (label != null) {
+                    label.fontSize=24;label.resizeTextForBestFit=true;label.resizeTextMinSize=16;label.resizeTextMaxSize=24;
+                    label.rectTransform.anchorMin=Vector2.zero;label.rectTransform.anchorMax=Vector2.one;
+                    label.rectTransform.offsetMin=new Vector2(8,4);label.rectTransform.offsetMax=new Vector2(-8,-4);
+                    label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;
+                }
                 transformationButtons.Add(button);
             }
             for (int i=0;i<transformationButtons.Count;i++) {
@@ -111,7 +127,7 @@ namespace Olca.Presentation.CustomScreen
                 button.gameObject.SetActive(visible);
                 button.interactable=visible && !handAnimating && !transformations.IsUsed(definition.Id) && !Olca.Unity.GameplayPause.InputBlocked;
                 var label=button.GetComponentInChildren<Text>();
-                if(label!=null)label.text=$"変身 {i+1}  手札+{definition.HandSizeBonus}" + (transformations.IsUsed(definition.Id)?" 使用済み":transformations.PendingId==definition.Id?" 選択中":"");
+                if(label!=null)label.text=definition.Id+"\n"+(transformations.IsUsed(definition.Id)?"使用済み":transformations.PendingId==definition.Id?"選択中":$"手札+{definition.HandSizeBonus}");
             }
         }
         private void OnHandChanged()

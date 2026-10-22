@@ -28,12 +28,13 @@ namespace Olca.Application.Battle
         private bool isClosing;
         private readonly Action<int, Action> scheduleLogical;
         private readonly int closeDurationFrames;
+        private readonly bool transformationPresentation;
 
         public BattleSessionController(
             IBattleView battleView,
             ICustomScreenView customScreenView,
             IRandomProvider randomProvider,
-            IGameLogger logger, Action<int, Action> scheduleLogical = null, int closeDurationFrames = 0)
+            IGameLogger logger, Action<int, Action> scheduleLogical = null, int closeDurationFrames = 0, bool transformationPresentation = false)
         {
             this.battleView = battleView;
             this.customScreenView = customScreenView;
@@ -41,6 +42,7 @@ namespace Olca.Application.Battle
             this.logger = logger;
             this.scheduleLogical = scheduleLogical;
             this.closeDurationFrames = closeDurationFrames;
+            this.transformationPresentation=transformationPresentation;
         }
 
         /// <summary>
@@ -52,6 +54,7 @@ namespace Olca.Application.Battle
         {
             Detach();
             currentBattle = battle;
+            if(transformationPresentation)battle.Transformations.EnablePresentation();
             customScreenView.BindTransformations(battle.Transformations);
             currentBattle.CustomGauge.OnGaugeFull += OnGaugeFull;
             if (scheduleLogical != null) currentBattle.CustomScreen.OnConfirmed += OnLogicalConfirmed;

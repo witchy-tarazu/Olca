@@ -368,6 +368,9 @@ namespace Olca.Application.Dungeon
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
         private string gameplaySettingsDirectoryOverride;
         private KeyboardBindingFileStore keyboardSettings;
+        private TransformationPresentationFileStore transformationSettings;
+        private bool shortTransformationPresentation;
+        private string transformationSettingsError;
         public string GameplayKeyboardSettingsError { get; private set; }
         public void ConfigureGameplaySettingsDirectory(string directory)
         {
@@ -459,6 +462,16 @@ namespace Olca.Application.Dungeon
             MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
             MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
                 .onClick.AddListener(() => keyboardSettingsView.Open(GameplayKeyboardProfile));
+            var animationSetting=MakeButton("TransformationAnimationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-200));
+            ((RectTransform)animationSetting.transform).sizeDelta=new Vector2(420,70);
+            void RefreshAnimationSetting(){animationSetting.GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出："+(shortTransformationPresentation?"短縮":"通常");}
+            animationSetting.onClick.AddListener(()=>{
+                if(transformationSettings.TrySave(!shortTransformationPresentation,out transformationSettingsError)){
+                    shortTransformationPresentation=!shortTransformationPresentation;
+                    if(manager?.CurrentBattle!=null)manager.CurrentBattle.Transformations.ShortPresentation=shortTransformationPresentation;
+                }
+                RefreshAnimationSetting();
+            });RefreshAnimationSetting();
             MakeButton("OwnedCardsButton", "所持カード", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -300)).onClick.AddListener(OpenOwnedCards);
             MakeButton("RetreatButton", "撤退して帰還", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -400)).onClick.AddListener(RequestRetreat);
             retreatConfirmation = new GameObject("RetreatConfirmation", typeof(RectTransform), typeof(Image)); retreatConfirmation.transform.SetParent(pauseCanvas.transform, false);
@@ -1003,6 +1016,8 @@ namespace Olca.Application.Dungeon
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
             keyboardSettings = new KeyboardBindingFileStore(gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            transformationSettings=new TransformationPresentationFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            transformationSettings.TryRead(out shortTransformationPresentation,out transformationSettingsError);
             if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
             GameplayKeyboardSettingsError = settingsError;
             if (settingsError != null) logger.LogWarning(settingsError);
@@ -1108,7 +1123,7 @@ namespace Olca.Application.Dungeon
             // バトルセッション共通操作をBattleSessionControllerに委譲
             if (battleView != null && customScreenView != null)
                 battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger,
-                    (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames);
+                    (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames, transformationPresentation:true);
 
             CreatePauseControls();
             ResumeClearReturnIfNeeded();
@@ -1303,6 +1318,7 @@ namespace Olca.Application.Dungeon
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
             if (!battle.CustomScreen.IsOpen) battle.OpenCustomScreen(randomProvider);
             battle.CustomScreen.OnFusionExecuted += (materials,output)=>{if(ReferenceEquals(manager?.CurrentBattle,battle)&&!manager.IsSuspended)RecordFusionDiscovery(materials,output);};
+            battle.Transformations.ShortPresentation=shortTransformationPresentation;
             battleSession?.Attach(battle);
             TransitionToBattleAsync(battle, contactInfo).Forget();
         }

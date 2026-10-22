@@ -795,6 +795,24 @@ namespace Olca.Core.Logic.Battle
             = Array.AsReadOnly(new TransformationDefenseDefinition[0]);
         /// <summary>仮選択の変更が完了し、カード選択とプレビュー能力を表示へ同期できる通知。</summary>
         public event Action OnPreviewChanged;
+        public bool PresentationEnabled { get; private set; }
+        public bool ShortPresentation { get; set; }
+        public int ActivationFramesRemaining { get; private set; }
+        public int ActivationDurationFrames { get; private set; }
+        public int ReleaseFramesRemaining { get; private set; }
+        public bool IsActivating => ActivationFramesRemaining>0;
+        public int RemainingPhases => player.RemainingTransformationPhases;
+        public bool HasActive => player.HasTransformationDefense;
+        public string ActiveStatusText => HasActive?(ActiveId??"変身")+" 残り "+RemainingPhases+" 回":"変身なし（残り0回）";
+        public string CustomStatusText => pending==null?ActiveStatusText:ActiveStatusText+"\n仮選択 "+pending.Id+"（確定後3回）";
+        internal event Action OnActivationPresentation;
+        public void EnablePresentation() { if(!disposed)PresentationEnabled=true; }
+        internal void AdvancePresentationFrame()
+        {
+            if(disposed)return;
+            if(ReleaseFramesRemaining>0)ReleaseFramesRemaining--;
+            if(!screen.IsOpen&&ActivationFramesRemaining>0)ActivationFramesRemaining--;
+        }
         public string PendingId => pending?.Id;
         public string ActiveId { get; private set; }
         public TransformationAttackDefinition ActiveAttack => ActiveId != null && available.TryGetValue(ActiveId, out var definition) ? definition.Attack : null;
@@ -877,6 +895,10 @@ namespace Olca.Core.Logic.Battle
             player.BeginTransformationDefense(definition.Resistances, definition.Weakness);
             ActiveId = definition.Id;
             used.Add(definition.Id);
+            if(PresentationEnabled){
+                ReleaseFramesRemaining=0;ActivationDurationFrames=ShortPresentation?12:60;
+                ActivationFramesRemaining=ActivationDurationFrames;OnActivationPresentation?.Invoke();
+            }
         }
         private void OnClosed(List<Card> cards)
         {
@@ -886,6 +908,8 @@ namespace Olca.Core.Logic.Battle
         }
         private void OnDefenseEnded()
         {
+            if(PresentationEnabled&&ActiveId!=null)ReleaseFramesRemaining=12;
+            ActivationFramesRemaining=0;
             ActiveId = null;
             activeHandBonus = 0;
             screen.ClearActiveCardConversion();
@@ -897,6 +921,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (disposed) return;
             disposed = true;
+            ActivationFramesRemaining=ReleaseFramesRemaining=0;OnActivationPresentation=null;
             screen.OnScreenOpened -= OnOpened;
             screen.OnConfirmed -= OnConfirmed;
             screen.OnScreenClosed -= OnClosed;

@@ -39,6 +39,54 @@ namespace Olca.Presentation.Battle
         private readonly GaugeSpritePlayback gaugePlayback = new GaugeSpritePlayback();
         private bool gaugeResetting;
 
+        private Text transformationStatus, transformationCaption;
+        private Image transformationFrame, transformationSweep;
+        private Text PresentationText(string name,Transform parent,Vector2 position,Vector2 size,int fontSize)
+        {
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(parent,false);
+            var text=obj.GetComponent<Text>();text.font=playerHpText!=null?playerHpText.font:Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize=fontSize;text.alignment=TextAnchor.MiddleCenter;Olca.Presentation.Dungeon.UiLook.Label(text);
+            var rect=text.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=position;rect.sizeDelta=size;return text;
+        }
+        private void EnsureTransformationVisual()
+        {
+            if(transformationStatus!=null)return;
+            var hud=new GameObject("TransformationHudPanel",typeof(RectTransform),typeof(Image));hud.transform.SetParent(transform,false);
+            var hr=(RectTransform)hud.transform;hr.anchorMin=hr.anchorMax=Vector2.one;hr.anchoredPosition=new Vector2(-550,-185);hr.sizeDelta=new Vector2(500,65);
+            hud.GetComponent<Image>().color=Olca.Presentation.Dungeon.UiLook.Surface;hud.GetComponent<Image>().raycastTarget=false;
+            transformationStatus=PresentationText("TransformationHud",hud.transform,Vector2.zero,new Vector2(480,60),26);
+            var obj=new GameObject("TransformationPresentation",typeof(RectTransform),typeof(Image));obj.transform.SetParent(transform,false);
+            var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(250,60);rect.sizeDelta=new Vector2(600,180);
+            transformationFrame=obj.GetComponent<Image>();transformationFrame.raycastTarget=false;
+            var edge=obj.AddComponent<Outline>();edge.effectColor=new Color(.4f,.9f,1f,.5f);edge.effectDistance=new Vector2(1,1);
+            transformationCaption=PresentationText("TransformationCaption",obj.transform,Vector2.zero,new Vector2(550,100),30);
+            transformationCaption.color=new Color(.75f,.97f,1f,1f);
+            var captionEdge=transformationCaption.gameObject.AddComponent<Outline>();captionEdge.effectColor=new Color(.02f,.07f,.12f,.9f);captionEdge.effectDistance=new Vector2(1,-1);
+            var line=new GameObject("TransformationSweep",typeof(RectTransform),typeof(Image));line.transform.SetParent(obj.transform,false);
+            transformationSweep=line.GetComponent<Image>();transformationSweep.color=new Color(.25f,.85f,1f,.55f);transformationSweep.raycastTarget=false;
+            var lr=(RectTransform)line.transform;lr.anchorMin=lr.anchorMax=new Vector2(.5f,.5f);lr.sizeDelta=new Vector2(3,140);
+        }
+        private void ResetTransformationVisual()
+        {
+            if(transformationFrame!=null)transformationFrame.gameObject.SetActive(false);
+            if(transformationStatus!=null)transformationStatus.transform.parent.gameObject.SetActive(false);
+        }
+        private void UpdateTransformationVisual()
+        {
+            if(battleSystem==null||battleSystem.IsGameOver){ResetTransformationVisual();return;}
+            EnsureTransformationVisual();var state=battleSystem.Transformations;
+            transformationStatus.transform.parent.gameObject.SetActive(state.HasActive||state.ReleaseFramesRemaining>0);
+            transformationStatus.text=state.ActiveStatusText;
+            bool activation=state.IsActivating&&!battleSystem.CustomScreen.IsOpen;
+            bool release=state.ReleaseFramesRemaining>0;
+            transformationFrame.gameObject.SetActive(activation||release);if(!activation&&!release)return;
+            float progress=activation?1f-state.ActivationFramesRemaining/(float)state.ActivationDurationFrames:1f-state.ReleaseFramesRemaining/12f;
+            transformationFrame.color=new Color(.6f,.92f,1f,activation ? .08f+.12f*Mathf.Sin(Mathf.PI*progress):.16f*(1f-progress));
+            transformationCaption.text=activation?"変身  "+state.ActiveId:"変身解除";
+            transformationSweep.rectTransform.anchoredPosition=new Vector2(-270f+540f*progress,0);
+            transformationSweep.color=new Color(.25f,.85f,1f,.5f*(1f-progress));
+        }
+
         // ========== 定数 ==========
         private const float CUSTOM_SCREEN_HIDDEN_X = -900f;  // 左端接続を保ち、縦ゲージ枠を画面内に残す閉じ位置
         private const float CUSTOM_SCREEN_VISIBLE_X = 0f;    // カスタム画面表示時のX座標（画面内）
@@ -112,7 +160,7 @@ namespace Olca.Presentation.Battle
             var background=gaugeSlider.transform.Find("Background")?.GetComponent<Image>();
             if(background!=null){background.sprite=gaugeSprites.Track;background.color=Color.white;background.type=Image.Type.Simple;background.raycastTarget=false;}
         }
-        private void Update() => UpdateGaugeVisual();
+        private void Update() {UpdateGaugeVisual();UpdateTransformationVisual();}
         private void UpdateGaugeVisual()
         {
             if(gaugeFill==null)return;
@@ -126,9 +174,9 @@ namespace Olca.Presentation.Battle
             if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
-        private void OnBattleEnded(BattleResult result) => ResetGaugeVisual();
+        private void OnBattleEnded(BattleResult result) {ResetGaugeVisual();ResetTransformationVisual();}
 
-        private void OnDisable() => ResetGaugeVisual();
+        private void OnDisable() {ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()
         {
@@ -143,6 +191,7 @@ namespace Olca.Presentation.Battle
         {
             if (battleSystem == null) return;
 
+            UpdateTransformationVisual();
             // プレイヤーHP表示（数値のみ）
             var player = battleSystem.Player;
             if (playerHpText != null)

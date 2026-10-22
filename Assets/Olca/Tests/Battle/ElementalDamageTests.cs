@@ -43,6 +43,92 @@ namespace Olca.Tests.Battle
             battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("large",ElementResistances.Neutral,ElementType.Fire,bonus),new TransformationDefenseDefinition("small",ElementResistances.Neutral,ElementType.Water,1)});
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());return battle;
         }
+        [TestCase(false,60)]
+        [TestCase(true,12)]
+        public void 変身演出は画面閉鎖後の論理フレームだけ進み戦闘と使用回数を二重更新しない(bool shortened,int frames)
+        {
+            var b=HandBonusBattle(out _);var t=b.Transformations;var cs=b.CustomScreen;t.EnablePresentation();t.ShortPresentation=shortened;
+            Assert.IsTrue(t.TryPreview("large"));Assert.AreEqual(0,t.RemainingPhases);StringAssert.Contains("仮選択",t.CustomStatusText);
+            cs.Confirm();Assert.AreEqual(3,t.RemainingPhases);Assert.AreEqual(1,t.UsedIds.Count);Assert.AreEqual(frames,t.ActivationFramesRemaining);
+            for(int n=0;n<8;n++)b.TickFrame(16);Assert.AreEqual(frames,t.ActivationFramesRemaining,"カスタム閉鎖までは演出を進めない");
+            cs.Close();t.ShortPresentation=!shortened;
+            for(int n=0;n<frames;n++){b.TickFrame(16);Assert.IsTrue(b.IsPaused);Assert.AreEqual(0,b.CustomGauge.CurrentGaugeMs);}
+            Assert.AreEqual(0,t.ActivationFramesRemaining);Assert.AreEqual(3,t.RemainingPhases);b.TickFrame(16);Assert.IsFalse(b.IsPaused);Assert.Greater(b.CustomGauge.CurrentGaugeMs,0);
+            Assert.AreEqual(1,t.UsedIds.Count);Assert.AreEqual(3,t.RemainingPhases);
+        }
+        [Test]
+        public void 変身演出はユーザーポーズで止まり入力によるカスタム再開で持続回数を消費しない()
+        {
+            var b=HandBonusBattle(out _);var t=b.Transformations;t.EnablePresentation();t.TryPreview("large");b.CustomScreen.Confirm();b.CustomScreen.Close();
+            for(int n=0;n<10;n++)b.TickFrame(16);Assert.AreEqual(50,t.ActivationFramesRemaining);
+            b.Pause(BattlePauseReason.User);for(int n=0;n<100;n++)b.TickFrame(16);Assert.AreEqual(50,t.ActivationFramesRemaining);
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.IsFalse(b.CustomScreen.IsOpen);Assert.AreEqual(3,t.RemainingPhases);
+            b.Resume(BattlePauseReason.User);b.TickFrame(16);Assert.AreEqual(49,t.ActivationFramesRemaining);
+        }
+        private BattleSystem PresentedForm()
+        {
+            var b=HandBonusBattle(out _);b.Transformations.EnablePresentation();b.Transformations.TryPreview("large");b.CustomScreen.Confirm();b.CustomScreen.Close();
+            for(int n=0;n<61;n++)b.TickFrame(16);return b;
+        }
+        [Test]
+        public void 未確定取消は演出も回数も消費せず別変身の取消で継続表示へ戻る()
+        {
+            var b=HandBonusBattle(out _);var t=b.Transformations;t.EnablePresentation();t.TryPreview("large");t.TryCancelPending();
+            b.CustomScreen.Confirm();b.CustomScreen.Close();Assert.IsFalse(t.HasActive);Assert.IsFalse(t.IsActivating);Assert.IsEmpty(t.UsedIds);
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());t.TryPreview("large");b.CustomScreen.Confirm();b.CustomScreen.Close();
+            for(int n=0;n<61;n++)b.TickFrame(16);b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());
+            Assert.AreEqual(2,t.RemainingPhases);t.TryPreview("small");StringAssert.Contains("small",t.CustomStatusText);t.TryCancelPending();
+            Assert.AreEqual("large",t.ActiveId);Assert.AreEqual(2,t.RemainingPhases);Assert.IsFalse(t.IsActivating);Assert.IsFalse(t.IsUsed("small"));
+        }
+        [Test]
+        public void 三回目のカスタムで残りゼロとなり解除演出は追加停止せず期限で消える()
+        {
+            var b=PresentedForm();var t=b.Transformations;
+            for(int expected=2;expected>=0;expected--){b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());Assert.AreEqual(expected,t.RemainingPhases);b.CustomScreen.Confirm();b.CustomScreen.Close();}
+            Assert.IsFalse(t.HasActive);Assert.IsTrue(t.IsUsed("large"));Assert.AreEqual(12,t.ReleaseFramesRemaining);Assert.IsFalse(b.IsPaused);
+            StringAssert.Contains("0回",t.ActiveStatusText);for(int n=0;n<12;n++)b.TickFrame(16);Assert.AreEqual(0,t.ReleaseFramesRemaining);
+        }
+        [Test]
+        public void 弱点解除と戦闘終了は実状態を優先し変身演出を残さない()
+        {
+            var b=PresentedForm();var t=b.Transformations;player.TakeDamage(1,attackElement:ElementType.Fire);
+            Assert.IsFalse(t.HasActive);Assert.AreEqual(0,t.RemainingPhases);Assert.AreEqual(12,t.ReleaseFramesRemaining);Assert.IsFalse(b.IsPaused);
+            foreach(var enemy in b.Enemies.ToArray())enemy.TakeDamage(enemy.MaxHp,ElementType.None);
+            Assert.IsTrue(b.IsGameOver);Assert.AreEqual(0,t.ReleaseFramesRemaining);Assert.AreEqual(0,t.ActivationFramesRemaining);
+        }
+        [Test]
+        public void 演出中のチェックポイント再開は途中演出も変身使用状態も引き継がない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var map=DungeonConfig.CreateTestDungeon(20,30,3);var deck=f.CreateStarterDeck();
+            var cp=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);var random=new MockRandomProvider(0);
+            var game=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,random,logger,checkpoints:cp,cardDatabase:f);
+            for(int n=0;n<20&&game.CurrentBattle==null;n++)game.Tick(50);var b=game.CurrentBattle;Assert.IsNotNull(b);
+            b.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire)});b.Transformations.EnablePresentation();
+            b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(random);b.Transformations.TryPreview("fixture");b.CustomScreen.Confirm();b.CustomScreen.Close();b.TickFrame(16);
+            Assert.AreEqual(59,b.Transformations.ActivationFramesRemaining);
+            Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(cp.Definitions,cp.Store),random,logger,out var restored,out var error,cardDatabase:f),error);
+            Assert.IsTrue(game.SuspendForCheckpoint());Assert.AreEqual(0,b.Transformations.ActivationFramesRemaining);
+            restored.ActivateCheckpoint();Assert.IsNotNull(restored.CurrentBattle);
+            Assert.IsFalse(restored.CurrentBattle.Player.HasTransformationDefense);Assert.AreEqual(0,restored.CurrentBattle.Transformations.ActivationFramesRemaining);Assert.IsEmpty(restored.CurrentBattle.Transformations.UsedIds);
+        }
+        private sealed class AnimationSettingFaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Fail;
+            public override void MoveNew(string a,string b){if(Fail)throw new System.IO.IOException();base.MoveNew(a,b);}
+            public override void Replace(string a,string b,string backup){if(Fail)throw new System.IO.IOException();base.Replace(a,b,backup);}
+        }
+        [Test]
+        public void 変身演出設定は独立保存し再読込と失敗時の旧内容保持を行う()
+        {
+            var path=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-animation-"+System.Guid.NewGuid().ToString("N"));
+            try{var io=new AnimationSettingFaultIo();var store=new Olca.Unity.TransformationPresentationFileStore(path,io);
+                Assert.IsTrue(store.TryRead(out var shortened,out _));Assert.IsFalse(shortened);Assert.IsFalse(System.IO.Directory.Exists(path));
+                Assert.IsTrue(store.TrySave(true,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);io.Fail=true;
+                Assert.IsFalse(store.TrySave(false,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+                Assert.IsTrue(new Olca.Unity.TransformationPresentationFileStore(path).TryRead(out shortened,out error),error);Assert.IsTrue(shortened);
+                io.Fail=false;Assert.IsTrue(store.TrySave(false,out error),error);Assert.IsTrue(store.TryRead(out shortened,out error));Assert.IsFalse(shortened);
+            }finally{if(System.IO.Directory.Exists(path))System.IO.Directory.Delete(path,true);}
+        }
         [Test]
         public void 変身追加ドローは選択分を二重計上せず取消再選択でも同じ個体を同順に引く()
         {

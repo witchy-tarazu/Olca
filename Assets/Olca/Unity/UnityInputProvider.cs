@@ -491,4 +491,40 @@ namespace Olca.Unity
             }
         }
     }
+    /// <summary>変身演出だけの独立設定。攻略の保存・初期化と混ぜない。</summary>
+    public sealed class TransformationPresentationFileStore
+    {
+        [System.Runtime.Serialization.DataContract] private sealed class Document {
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Version;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public bool Short;
+        }
+        private readonly string directory;
+        private readonly CheckpointFileIo io;
+        private bool writing;
+        public string ActivePath => System.IO.Path.Combine(directory,"transformation-presentation.json");
+        private string BackupPath => ActivePath+".backup";
+        public TransformationPresentationFileStore(string directory,CheckpointFileIo io=null)
+        {this.directory=System.IO.Path.GetFullPath(directory);this.io=io??new CheckpointFileIo();}
+        private static byte[] Encode(bool shortened){using(var stream=new System.IO.MemoryStream()){
+            new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).WriteObject(stream,new Document{Version=1,Short=shortened});return stream.ToArray();}}
+        private static bool Decode(byte[] bytes){if(bytes.Length==0||bytes.Length>4096)throw new System.IO.InvalidDataException();
+            using(var stream=new System.IO.MemoryStream(bytes)){var doc=(Document)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).ReadObject(stream);
+                if(doc==null||doc.Version!=1)throw new System.IO.InvalidDataException();return doc.Short;}}
+        private static bool Failure(System.Exception e)=>e is System.IO.IOException||e is System.UnauthorizedAccessException||e is System.Runtime.Serialization.SerializationException||e is System.Xml.XmlException||e is System.ArgumentException||e is System.Security.SecurityException;
+        public bool TryRead(out bool shortened,out string error){shortened=false;error=null;try{
+            if(!System.IO.File.Exists(ActivePath)){if(System.IO.Directory.Exists(ActivePath)||System.IO.File.Exists(BackupPath))throw new System.IO.IOException();return true;}
+            shortened=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
+        }catch(System.Exception e)when(Failure(e)){error="変身演出の設定を読めません。保存内容は変更していません。";return false;}}
+        public bool TrySave(bool shortened,out string error){error=null;if(writing){error="演出設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
+            var bytes=Encode(shortened);string temporary=null;writing=true;try{
+                System.IO.Directory.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".form-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
+                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
+                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
+            }catch(System.Exception e)when(Failure(e)){
+                try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                error="演出設定を保存できません。現在の設定を維持します。";return false;
+            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+        }
+    }
 }
