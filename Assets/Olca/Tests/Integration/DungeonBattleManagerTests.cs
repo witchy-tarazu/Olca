@@ -5024,3 +5024,45 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+    public class GamepadGameplayInputTests
+    {
+        private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] held)
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in held)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [Test]
+        public void 仮想パッドのゲームボタンは既存の論理入力へ一度だけ立上り保持解放を送る()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();
+            try{provider.StartEventCapture();provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.RightShoulder,UnityEngine.InputSystem.LowLevel.GamepadButton.North,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftStick);
+                var pressed=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(pressed.BasicAttackButtonDown&&pressed.BasicAttackButton&&pressed.JumpButtonDown&&pressed.CardUseButtonDown&&pressed.CustomScreenButtonDown&&pressed.DashButtonDown&&pressed.DashButton);
+                State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);var hold=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(hold.BasicAttackButton);Assert.IsFalse(hold.BasicAttackButtonDown);State(pad);var release=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(release.BasicAttackButtonUp);Assert.IsFalse(release.BasicAttackButton);Assert.IsEmpty(provider.CaptureTimestamped());
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void キーとパッドの同じ攻撃は合成して片側解放で発射せず最後の解放だけ送る()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=new Olca.Unity.UnityInputProvider();
+            try{provider.StartEventCapture();provider.CaptureTimestamped();UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Z));UnityEngine.InputSystem.InputSystem.Update();Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);
+                State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);var joined=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(joined.BasicAttackButton);Assert.IsFalse(joined.BasicAttackButtonDown);UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();var switched=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(switched.BasicAttackButton);Assert.IsFalse(switched.BasicAttackButtonUp);State(pad);Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonUp);
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
+        [Test]
+        public void スナップショットと切断は押下を発生させず保持中の復帰を中立まで遮断する()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();
+            try{provider.StartEventCapture();provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);provider.CaptureTimestamped();provider.QueueSnapshot();var snapshot=provider.CaptureTimestamped().Last().Input;Assert.IsFalse(snapshot.BasicAttackButton||snapshot.BasicAttackButtonDown||snapshot.BasicAttackButtonUp);
+                State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);Assert.IsFalse(provider.CaptureTimestamped().Last().Input.BasicAttackButton);State(pad);provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);
+                UnityEngine.InputSystem.InputSystem.DisableDevice(pad);var removed=provider.CaptureTimestamped().Last().Input;Assert.IsFalse(removed.BasicAttackButton||removed.BasicAttackButtonUp);UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad);provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.West);Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test]
+        public void 十字キーは移動軸へ入り中心復帰で残留せずキーボード再割当を変えない()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();
+            try{var profile=provider.KeyboardProfile;provider.StartEventCapture();provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp);var moved=provider.CaptureTimestamped().Last().Input;Assert.AreEqual(1,moved.Horizontal);Assert.AreEqual(1,moved.Vertical);Assert.AreEqual(1,moved.HorizontalDown);State(pad);var neutral=provider.CaptureTimestamped().Last().Input;Assert.AreEqual(0,neutral.Horizontal);Assert.AreEqual(0,neutral.Vertical);Assert.AreSame(profile,provider.KeyboardProfile);
+            }finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+    }
+}

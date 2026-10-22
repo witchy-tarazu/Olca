@@ -55,6 +55,7 @@ namespace Olca.Unity
     {
         private readonly List<TimestampedLogicalInput> events = new List<TimestampedLogicalInput>();
         private readonly Dictionary<ButtonControl, bool> buttons = new Dictionary<ButtonControl, bool>();
+        private readonly HashSet<InputDevice> blockedGamepads=new HashSet<InputDevice>();
         private readonly Dictionary<InputDevice, UnityEngine.Vector2> sticks = new Dictionary<InputDevice, UnityEngine.Vector2>();
         private Olca.Core.Logic.Integration.LogicalInput eventState = new Olca.Core.Logic.Integration.LogicalInput();
         private readonly Olca.Core.Logic.Integration.TouchMovementState touchMovement = new Olca.Core.Logic.Integration.TouchMovementState();
@@ -182,6 +183,16 @@ namespace Olca.Unity
             var value = KeyboardProfile.Bindings[("keyboard", context, action)];
             return value != null && KeyHeld(System.Enum.Parse<Key>(value));
         }
+        // 既存Input ActionsのWest攻撃・Southジャンプ・L押込Sprintを優先した仮割当。
+        public System.Func<bool> GamepadGameplayActive { get; set; }
+        private bool PadHeld(GamepadButton key)=>buttons.Any(pair=>pair.Value&&pair.Key.device is Gamepad pad&&pad.enabled&&!blockedGamepads.Contains(pad)&&ReferenceEquals(pair.Key,pad[key]));
+        private bool ActionHeld(string context,string action)
+        {
+            if(Held(context,action))return true;
+            if(context=="exploration")return action=="JumpPrimary"?PadHeld(GamepadButton.South):action=="DashPrimary"&&PadHeld(GamepadButton.LeftStick);
+            return action=="AttackPrimary"?PadHeld(GamepadButton.West):action=="CardPrimary"?PadHeld(GamepadButton.RightShoulder):action=="CustomPrimary"&&PadHeld(GamepadButton.North);
+        }
+        private bool PadNeutral(InputDevice device)=>!buttons.Any(p=>p.Key.device==device&&p.Value)&&(!sticks.TryGetValue(device,out var stick)||stick.sqrMagnitude<.19f*.19f);
         public void StartEventCapture()
         {
             if (capturing) return;
@@ -199,7 +210,7 @@ namespace Olca.Unity
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseChanged;
 #endif
-            capturing = false; events.Clear(); touchMovement.Clear(); physicalTouches.Clear(); blockedTouches.Clear();
+            capturing = false; blockedGamepads.Clear(); events.Clear(); touchMovement.Clear(); physicalTouches.Clear(); blockedTouches.Clear();
         }
 #if UNITY_EDITOR
         private void EditorPauseChanged(UnityEditor.PauseState state)
@@ -213,12 +224,13 @@ namespace Olca.Unity
         private static StickControl Stick(InputDevice device) => device is Gamepad pad ? pad.leftStick : (device as Joystick)?.stick;
         public void QueueSnapshot()
         {
-            SnapshotTouches(); buttons.Clear(); sticks.Clear();
-            foreach (var device in InputSystem.devices)
+            SnapshotTouches(); blockedGamepads.RemoveWhere(d=>!InputSystem.devices.Contains(d));buttons.Clear(); sticks.Clear();
+            foreach (var device in InputSystem.devices.Where(d=>d.enabled))
             {
                 foreach (var button in Buttons(device)) buttons[button] = button.isPressed;
                 var stick = Stick(device); if (stick != null) sticks[device] = stick.ReadUnprocessedValue();
             }
+            foreach(var pad in InputSystem.devices.OfType<Gamepad>()) {if(!pad.enabled||!PadNeutral(pad))blockedGamepads.Add(pad);else blockedGamepads.Remove(pad);}
             eventState = BuildState();
             events.Add(new TimestampedLogicalInput(System.Diagnostics.Stopwatch.GetTimestamp(), eventState.Copy()));
         }
@@ -233,27 +245,34 @@ namespace Olca.Unity
         {
             float x = (Held("battle", "RightPrimary") || Held("battle", "RightSecondary") ? 1 : 0) - (Held("battle", "LeftPrimary") || Held("battle", "LeftSecondary") ? 1 : 0);
             float y = (Held("battle", "UpPrimary") || Held("battle", "UpSecondary") ? 1 : 0) - (Held("battle", "DownPrimary") || Held("battle", "DownSecondary") ? 1 : 0);
-            foreach (var stick in sticks.Values)
+            x += (PadHeld(GamepadButton.DpadRight)?1:0)-(PadHeld(GamepadButton.DpadLeft)?1:0);
+            y += (PadHeld(GamepadButton.DpadUp)?1:0)-(PadHeld(GamepadButton.DpadDown)?1:0);
+            x=Mathf.Clamp(x,-1,1);y=Mathf.Clamp(y,-1,1);
+            foreach (var sample in sticks.Where(p=>p.Key.enabled&&!blockedGamepads.Contains(p.Key)))
             {
+                var stick=sample.Value;
                 // 既存InputManagerの軸0/1・dead=0.19と同じ範囲。キーは変更しない。
                 if (Mathf.Abs(stick.x) >= .19f && Mathf.Abs(stick.x) > Mathf.Abs(x)) x = stick.x;
                 if (Mathf.Abs(stick.y) >= .19f && Mathf.Abs(stick.y) > Mathf.Abs(y)) y = stick.y;
             }
             return new Olca.Core.Logic.Integration.LogicalInput {
                 HasInputSample = true, AnyKey = physicalTouches.Count>0 || buttons.Values.Any(pressed => pressed),
-                Horizontal = touchMovement.Direction!=0 ? touchMovement.Direction : x, Vertical = y, BasicAttackButton = Held("battle", "AttackPrimary"),
-                DashButton = Held("exploration", "DashPrimary") || Held("exploration", "DashSecondary")
+                Horizontal = touchMovement.Direction!=0 ? touchMovement.Direction : x, Vertical = y, BasicAttackButton = ActionHeld("battle", "AttackPrimary"),
+                DashButton = ActionHeld("exploration", "DashPrimary") || ActionHeld("exploration", "DashSecondary")
             };
         }
         private void CaptureEvent(InputEventPtr evt, InputDevice device)
         {
             if (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>()) return;
+            // 実ゲーム中のSouthを、以前フォーカスしたUIのSubmitへ重ねて送らない。
+            if(device is Gamepad&&GamepadGameplayActive?.Invoke()==true)
+                UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             bool enter = KeyHeld(Key.Enter), numpadEnter = KeyHeld(Key.NumpadEnter), space = KeyHeld(Key.Space), escape = KeyHeld(Key.Escape);
             var pointer = device as Pointer;
             bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
-            bool basic = Held("battle", "AttackPrimary");
-            bool jump = Held("exploration", "JumpPrimary"), card = Held("battle", "CardPrimary"), leftShift = Held("exploration", "DashPrimary"), rightShift = Held("exploration", "DashSecondary");
-            bool leftAlt = Held("battle", "CustomPrimary"), rightAlt = Held("battle", "CustomSecondary");
+            bool basic = ActionHeld("battle", "AttackPrimary");
+            bool jump = ActionHeld("exploration", "JumpPrimary"), card = ActionHeld("battle", "CardPrimary"), leftShift = ActionHeld("exploration", "DashPrimary"), rightShift = ActionHeld("exploration", "DashSecondary");
+            bool leftAlt = ActionHeld("battle", "CustomPrimary"), rightAlt = ActionHeld("battle", "CustomSecondary");
             foreach (var button in Buttons(device))
                 if (button.ReadValueFromEvent(evt, out float value)) buttons[button] = value >= button.pressPointOrDefault;
             var stick = Stick(device);
@@ -264,6 +283,7 @@ namespace Olca.Unity
                 if (stick.y.ReadUnprocessedValueFromEvent(evt, out float y)) position.y = y;
                 sticks[device] = position;
             }
+            if(device is Gamepad&&blockedGamepads.Contains(device)&&PadNeutral(device))blockedGamepads.Remove(device);
             int previousTouchCount=physicalTouches.Count;
             float touchDown=0; bool touchCanceled=false;
             if(device is Touchscreen screen) CaptureTouches(evt,screen,out touchDown,out touchCanceled);
@@ -271,12 +291,12 @@ namespace Olca.Unity
             // タッチの短い押下/取消はキーボードの立ち上がりと独立に併合する。
             next.TouchHorizontalDown=touchDown; next.CancelTouchTap=touchCanceled;
             next.HorizontalDown = device is Touchscreen ? 0 : eventState.Horizontal == 0 ? next.Horizontal : 0;
-            next.JumpButtonDown = !jump && Held("exploration", "JumpPrimary");
-            next.CardUseButtonDown = !card && Held("battle", "CardPrimary");
-            next.BasicAttackButtonDown = !basic && Held("battle", "AttackPrimary");
-            next.BasicAttackButtonUp = basic && !Held("battle", "AttackPrimary");
-            next.DashButtonDown = (!leftShift && Held("exploration", "DashPrimary")) || (!rightShift && Held("exploration", "DashSecondary"));
-            next.CustomScreenButtonDown = (!leftAlt && Held("battle", "CustomPrimary")) || (!rightAlt && Held("battle", "CustomSecondary"));
+            next.JumpButtonDown = !jump && ActionHeld("exploration", "JumpPrimary");
+            next.CardUseButtonDown = !card && ActionHeld("battle", "CardPrimary");
+            next.BasicAttackButtonDown = !basic && ActionHeld("battle", "AttackPrimary");
+            next.BasicAttackButtonUp = basic && !ActionHeld("battle", "AttackPrimary");
+            next.DashButtonDown = (!leftShift && ActionHeld("exploration", "DashPrimary")) || (!rightShift && ActionHeld("exploration", "DashSecondary"));
+            next.CustomScreenButtonDown = (!leftAlt && ActionHeld("battle", "CustomPrimary")) || (!rightAlt && ActionHeld("battle", "CustomSecondary"));
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
             next.MenuConfirmButtonDown = (!enter && KeyHeld(Key.Enter)) || (!numpadEnter && KeyHeld(Key.NumpadEnter));
             next.MenuDecideButtonDown = !space && KeyHeld(Key.Space);

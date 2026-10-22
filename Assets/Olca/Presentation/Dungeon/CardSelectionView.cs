@@ -582,11 +582,11 @@ namespace Olca.Presentation.Dungeon
                 var text=t.GetComponent<UnityEngine.UI.Text>();text.font=font;text.fontSize=26;text.text=label;UiLook.Label(text);text.color=UiLook.Ink;text.alignment=UnityEngine.TextAnchor.MiddleCenter;text.raycastTarget=false;
                 var tr=text.rectTransform;tr.anchorMin=UnityEngine.Vector2.zero;tr.anchorMax=UnityEngine.Vector2.one;tr.offsetMin=tr.offsetMax=UnityEngine.Vector2.zero;return b;
             }
-            jumpButton=Make("ExplorationJumpButton","ジャンプ",-110,jump);dashButton=Make("ExplorationDashButton","ダッシュ",110,dash);
+            jumpButton=Make("ExplorationJumpButton","ジャンプ\nPad South",-110,jump);dashButton=Make("ExplorationDashButton","ダッシュ\nPad L押込",110,dash);
             cardButton=Make("TouchCardUseButton","カード",0,card);
             cardButton.transform.SetParent(transform,false);((UnityEngine.RectTransform)cardButton.transform).anchoredPosition=new UnityEngine.Vector2(-80,5);
             ((UnityEngine.RectTransform)cardButton.transform).sizeDelta=new UnityEngine.Vector2(190,60);
-            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,60);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,30);title.fontSize=22;
+            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,60);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=20;
             exploration.SetActive(false);
         }
         public void RenderExploration(bool available)
@@ -600,7 +600,7 @@ namespace Olca.Presentation.Dungeon
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
-            title.text = "攻撃 [" + (key ?? "未割当") + "] / カード"; state.text = value; button.interactable = available;
+            title.text = "攻撃 [" + (key ?? "未割当") + "] / West  カード [RB]\nNorth: カスタム"; state.text = value; button.interactable = available;
             state.color = UiLook.Ink;
         }
     }

@@ -987,10 +987,10 @@ namespace Olca.Presentation.Field
             }
             if (phase == GamePhase.Battle)
                 return $"{Keys("battle", "LeftPrimary", "LeftSecondary")}: 左  {Keys("battle", "RightPrimary", "RightSecondary")}: 右  " +
-                    $"{Keys("battle", "UpPrimary", "UpSecondary")}: 上  {Keys("battle", "DownPrimary", "DownSecondary")}: 下\n" +
-                    $"{Keys("battle", "AttackPrimary")}: 固有攻撃  {Keys("battle", "CardPrimary")}: カード使用  {Keys("battle", "CustomPrimary", "CustomSecondary")}: カスタム";
+                    $"{Keys("battle", "UpPrimary", "UpSecondary")}: 上  {Keys("battle", "DownPrimary", "DownSecondary")}: 下  パッド: Lスティック / 十字\n" +
+                    $"{Keys("battle", "AttackPrimary")}: 固有攻撃 (West)  {Keys("battle", "CardPrimary")}: カード使用 (RB)  {Keys("battle", "CustomPrimary", "CustomSecondary")}: カスタム (North)";
             if (phase == GamePhase.Dungeon)
-                return $"自動前進  {Keys("exploration", "JumpPrimary")}: ジャンプ  {Keys("exploration", "DashPrimary", "DashSecondary")}: ダッシュ";
+                return $"自動前進  {Keys("exploration", "JumpPrimary")}: ジャンプ  {Keys("exploration", "DashPrimary", "DashSecondary")}: ダッシュ  パッド: South ジャンプ / L押込 ダッシュ";
             return string.Empty;
         }
 
