@@ -282,7 +282,7 @@ namespace Olca.Application.Dungeon
         }
         private bool DungeonUnlocked(int index) => index >= 0 && index < dungeonChoices.Count &&
             (debugUnlockDungeons || index == 0 || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index].Id) || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index - 1].Id));
-        private bool CanSelectDungeon => clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool CanSelectDungeon => !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
             (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
@@ -506,6 +506,7 @@ namespace Olca.Application.Dungeon
             retryCheckpointButton = MakeButton("RetryCheckpointButton", "保存を再試行", checkpointOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -270));
             ((RectTransform)retryCheckpointButton.transform).sizeDelta = new Vector2(320, 70);
             retryCheckpointButton.onClick.AddListener(() => { RetryMemoryCheckpoint(); ShowCheckpointStatus(); });
+            CreateProgressActions(font,MakeButton);
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
@@ -521,12 +522,89 @@ namespace Olca.Application.Dungeon
             cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
             cardCollectionButton.gameObject.SetActive(false);
         }
+        private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
+        private GameObject progressActionOverlay;
+        private Text progressActionMessage;
+        private bool progressDialogOpen,newGameConfirmation,newGameSavePending,manualSavePending;
+        private long confirmedProgressRevision;
+        private bool IsProgressHub => clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+            !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
+            clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
+            clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
+        private bool CanStartNewGame => !progressStartupBlocked&&clearReturnSession!=null&&clearReturnSession.Ready&&
+            (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
+        private void CreateProgressActions(Font font,System.Func<string,string,Transform,Vector2,Vector2,Button> MakeButton)
+        {
+            manualSaveButton=MakeButton("ManualSaveButton","保存（スロット1）",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(-700,455));
+            newGameButton=MakeButton("NewGameButton","はじめから",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(-380,455));
+            foreach(var button in new[]{manualSaveButton,newGameButton})((RectTransform)button.transform).sizeDelta=new Vector2(280,60);
+            manualSaveButton.onClick.AddListener(SaveProgressFromUi);newGameButton.onClick.AddListener(RequestNewGame);
+            progressActionOverlay=new GameObject("ProgressActionOverlay",typeof(RectTransform),typeof(Image));progressActionOverlay.transform.SetParent(pauseCanvas.transform,false);
+            var rect=(RectTransform)progressActionOverlay.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            progressActionOverlay.GetComponent<Image>().color=UiLook.Surface;
+            var obj=new GameObject("ProgressActionMessage",typeof(RectTransform),typeof(Text));obj.transform.SetParent(progressActionOverlay.transform,false);
+            progressActionMessage=obj.GetComponent<Text>();progressActionMessage.font=font;progressActionMessage.fontSize=30;UiLook.Label(progressActionMessage);progressActionMessage.alignment=TextAnchor.MiddleCenter;
+            progressActionMessage.rectTransform.sizeDelta=new Vector2(1500,430);progressActionMessage.rectTransform.anchoredPosition=new Vector2(0,120);
+            progressConfirmButton=MakeButton("ConfirmNewGame","進行を初期化して開始",progressActionOverlay.transform,new Vector2(.5f,.5f),new Vector2(-300,-180));
+            ((RectTransform)progressConfirmButton.transform).sizeDelta=new Vector2(500,80);progressConfirmButton.onClick.AddListener(ConfirmNewGame);
+            progressCancelButton=MakeButton("CancelProgressAction","取消して戻る",progressActionOverlay.transform,new Vector2(.5f,.5f),new Vector2(300,-180));
+            ((RectTransform)progressCancelButton.transform).sizeDelta=new Vector2(500,80);progressCancelButton.onClick.AddListener(()=>{
+                if(newGameSavePending||manualSavePending)return;progressDialogOpen=false;progressActionOverlay.SetActive(false);
+            });progressActionOverlay.SetActive(false);
+        }
+        private void RefreshProgressActions()
+        {
+            if(manualSaveButton==null)return;
+            manualSaveButton.gameObject.SetActive(!progressDialogOpen&&IsProgressHub);
+            manualSaveButton.interactable=IsProgressHub&&!clearReturnSession.HasPendingSave;
+            newGameButton.gameObject.SetActive(!progressDialogOpen&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame;
+            manualSaveButton.transform.SetAsLastSibling();newGameButton.transform.SetAsLastSibling();
+            if(progressDialogOpen)progressActionOverlay.transform.SetAsLastSibling();
+        }
+        private void ShowProgressAction(string message,bool confirm,bool canClose=true)
+        {
+            progressDialogOpen=true;progressActionMessage.text=message;progressActionOverlay.SetActive(true);progressActionOverlay.transform.SetAsLastSibling();
+            progressConfirmButton.gameObject.SetActive(confirm);progressCancelButton.interactable=canClose;
+            progressCancelButton.GetComponentInChildren<Text>().text=newGameConfirmation?"取消して戻る":"閉じる";
+            progressCancelButton.navigation=confirm?new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=progressConfirmButton,selectOnRight=progressConfirmButton}:new Navigation{mode=Navigation.Mode.None};
+            progressConfirmButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=progressCancelButton,selectOnRight=progressCancelButton};
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(canClose?progressCancelButton.gameObject:progressConfirmButton.gameObject);RefreshProgressActions();
+        }
+        private void SaveProgressFromUi()
+        {
+            if(progressDialogOpen||!IsProgressHub||clearReturnSession.HasPendingSave)return;
+            newGameConfirmation=false;
+            bool saved=clearReturnSession.ManualSave();
+            manualSavePending=!saved&&clearReturnSession.HasPendingSave;
+            ShowProgressAction(saved?"スロット1に保存しました。\n拠点の所持・成長・編成・図鑑を保存しました。\nダンジョンの途中状態は保存していません。":"保存できませんでした。スロット1の元データを保持しています。\n"+clearReturnSession.Error+"\n同じ内容で再試行してください。",manualSavePending,!manualSavePending);
+            if(!saved)progressConfirmButton.GetComponentInChildren<Text>().text="同じ保存を再試行";
+        }
+        private void RequestNewGame()
+        {
+            if(progressDialogOpen||!CanStartNewGame)return;
+            newGameConfirmation=true;confirmedProgressRevision=clearReturnSession.Snapshot.Revision;
+            progressConfirmButton.GetComponentInChildren<Text>().text="進行を初期化して開始";
+            ShowProgressAction("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で拠点から開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true);
+        }
+        private void ConfirmNewGame()
+        {
+            if(!progressDialogOpen)return;
+            if(manualSavePending){if(clearReturnSession.Retry()){manualSavePending=false;ShowProgressAction("スロット1に保存しました。",false);}else ShowProgressAction("保存を再試行できませんでした。\n"+clearReturnSession.Error,true,false);return;}
+            if(!newGameConfirmation)return;
+            bool saved=newGameSavePending?clearReturnSession.Retry():CanStartNewGame&&clearReturnSession.StartNewGame(confirmedProgressRevision,CreateCardFactory().CreateStarterDeck().GetAllCards());
+            if(!saved){newGameSavePending=clearReturnSession.HasPendingSave;ShowProgressAction("新規開始の保存が完了していません。元の進行と同じ再試行計画を保持しています。\n"+clearReturnSession.Error,true,!newGameSavePending);progressConfirmButton.GetComponentInChildren<Text>().text="同じ新規開始を再試行";return;}
+            newGameSavePending=false;newGameConfirmation=false;progressDialogOpen=false;progressActionOverlay.SetActive(false);
+            manager.SuspendForCheckpoint();battleSession?.Detach();transitionCts?.Cancel();battleView?.gameObject.SetActive(false);gameFieldView?.OnBattleEnded();
+            awaitingCheckpointChoice=false;checkpointOverlay.SetActive(false);pauseOverlay.SetActive(false);initialHub=true;clearReturnVisible=true;
+            dungeonSelectionOpen=false;selectedDungeon=selectionBeforeOpen=0;floorSwapPending=false;clearReturnError=null;nonClearReturnRequest=null;
+            logicalLoop.StartNewTimeline();ResetTouchInput();ShowDungeonSelection();
+        }
         private ClearReturnView cardCollectionView;
         private UnityEngine.UI.Button cardCollectionButton;
         private bool cardCollectionOpen, collectionWasPaused;
         private void OpenCardCollection()
         {
-            if(cardCollectionOpen||manager==null||!clearReturnSession.Ready)return;
+            if(progressDialogOpen||cardCollectionOpen||manager==null||!clearReturnSession.Ready)return;
             cardCollectionOpen=true;collectionWasPaused=IsUserPaused;SetUserPaused(true);pauseOverlay.SetActive(false);
             clearReturnSession.ConfigureCollectionDefinitions(CurrentCollectionDefinitions());
             clearReturnSession.EnsureCollection();ShowCardCollection();
@@ -561,8 +639,10 @@ namespace Olca.Application.Dungeon
         private bool clearReturnVisible, progressStartupBlocked, collectionOpen, departureWriting;
         private CheckpointFileIo nextDepartureIo;
         private CheckpointDefinitions nextDepartureDefinitions;
-        public string ActiveCheckpointDirectory => clearReturnSession?.Snapshot?.NextDeparture == null ? CheckpointDirectory :
-            System.IO.Path.Combine(CheckpointDirectory, "runs", clearReturnSession.Snapshot.NextDeparture.Start.RunId);
+        private string ProgressCheckpointRoot => clearReturnSession?.Snapshot?.CheckpointGeneration==null?CheckpointDirectory:
+            System.IO.Path.Combine(CheckpointDirectory,"profiles",clearReturnSession.Snapshot.CheckpointGeneration);
+        public string ActiveCheckpointDirectory => clearReturnSession?.Snapshot?.NextDeparture == null ? ProgressCheckpointRoot :
+            System.IO.Path.Combine(ProgressCheckpointRoot, "runs", clearReturnSession.Snapshot.NextDeparture.Start.RunId);
         private void OpenOwnedCards()
         {
             if (!IsUserPaused || HasIncompleteReturn) return;
@@ -844,7 +924,7 @@ namespace Olca.Application.Dungeon
         private void StartNextDeparture() => StartNextDepartureWithDeck(null);
         private void StartNextDepartureWithDeck(Deck ownedDeck)
         {
-            if (exchangeOpen || styleSelectionOpen || dungeonSelectionOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
+            if (progressDialogOpen || exchangeOpen || styleSelectionOpen || dungeonSelectionOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
                 (!initialHub && clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned)) return;
             departureWriting = true;
             try {
@@ -1181,6 +1261,7 @@ namespace Olca.Application.Dungeon
             if (manager.Dungeon.IsCheckpointBlocked) ShowCheckpointStatus();
             UpdateViews();
             RefreshBasicAttackHud();
+            RefreshProgressActions();
         }
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
@@ -1265,7 +1346,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!cardCollectionOpen && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!progressDialogOpen && !cardCollectionOpen && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);

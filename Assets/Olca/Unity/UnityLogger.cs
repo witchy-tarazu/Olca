@@ -413,6 +413,19 @@ namespace Olca.Unity
                 if (existing.Revision != expectedRevision || next.Revision != checked(expectedRevision + 1))
                 { error = "進行データが別の処理で更新されています。再読込してください。"; return false; }
                 System.IO.Directory.CreateDirectory(DirectoryPath);
+                // 新規開始の旧進行は通常backupの更新で失われない別名へ保全する。
+                if(next.CheckpointGeneration!=existing.CheckpointGeneration&&System.IO.File.Exists(ActivePath)) {
+                    var oldBytes=System.IO.File.ReadAllBytes(ActivePath);Decode(oldBytes);
+                    var archive=System.IO.Path.Combine(DirectoryPath,"new-game-backups");System.IO.Directory.CreateDirectory(archive);
+                    var path=System.IO.Path.Combine(archive,"progress-"+existing.Revision+"-"+Hash(oldBytes)+".json");
+                    if(!System.IO.File.Exists(path)){
+                        temporary=System.IO.Path.Combine(archive,".preserve-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                        io.WriteAndFlush(temporary,oldBytes);
+                        if(!Equal(System.IO.File.ReadAllBytes(temporary),oldBytes))throw new System.IO.IOException();
+                        io.MoveNew(temporary,path);temporary=null;
+                    }
+                    if(!Equal(System.IO.File.ReadAllBytes(path),oldBytes))throw new System.IO.IOException("旧進行の保全に失敗しました");
+                }
                 temporary = System.IO.Path.Combine(DirectoryPath, ".progress-" + System.Guid.NewGuid().ToString("N") + ".tmp");
                 io.WriteAndFlush(temporary, bytes); Decode(System.IO.File.ReadAllBytes(temporary));
                 if (System.IO.File.Exists(ActivePath)) io.Replace(temporary, ActivePath, BackupPath); else io.MoveNew(temporary, ActivePath);

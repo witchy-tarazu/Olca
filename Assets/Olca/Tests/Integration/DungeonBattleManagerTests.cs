@@ -3958,6 +3958,57 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        private sealed class ProgressActionFaultIo : Olca.Unity.CheckpointFileIo
+        {
+            public bool Before,After;
+            public override void Replace(string temporary,string destination,string backup){if(Before)throw new System.IO.IOException("before");base.Replace(temporary,destination,backup);if(After)throw new System.IO.IOException("after");}
+        }
+        [Test]
+        public void 手動保存は同じ進行だけを再保存し旧形式と設定と攻略ファイルを変更しない()
+        {
+            var session=new ClearReturnSession(Store());var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(session.InitializeStarter(starter));var id=session.Snapshot.EquippedDeckId;
+            var checkpoint=System.IO.Path.Combine(directory,"active.json");var settings=System.IO.Path.Combine(directory,"keyboard.json");
+            System.IO.File.WriteAllText(checkpoint,"checkpoint-bytes");System.IO.File.WriteAllText(settings,"settings-bytes");
+            long revision=session.Snapshot.Revision;Assert.IsTrue(session.ManualSave(),session.Error);
+            var restored=new ClearReturnSession(Store());Assert.AreEqual(revision+1,restored.Snapshot.Revision);Assert.AreEqual(id,restored.Snapshot.EquippedDeckId);
+            Assert.AreEqual(20,restored.Snapshot.Owned.Sum(o=>o.Count));Assert.IsNull(restored.Snapshot.CheckpointGeneration);
+            Assert.AreEqual("checkpoint-bytes",System.IO.File.ReadAllText(checkpoint));Assert.AreEqual("settings-bytes",System.IO.File.ReadAllText(settings));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 新規開始は確定した同じ計画を原子的に保存し旧進行を保全して二重配布しない(bool after)
+        {
+            var io=new ProgressActionFaultIo();var session=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(directory,io));var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            Assert.IsTrue(session.InitializeStarter(starter));Assert.IsTrue(session.Begin(Terminal(Card("old")),"old-dungeon",new ClearReturnSettings()));
+            Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            var before=System.IO.File.ReadAllBytes(Store().ActivePath);var revision=session.Snapshot.Revision;
+            var settings=System.IO.Path.Combine(directory,"settings.json");var checkpoint=System.IO.Path.Combine(directory,"active.json");
+            System.IO.File.WriteAllText(settings,"keep settings");System.IO.File.WriteAllText(checkpoint,"keep old checkpoint");
+            io.Before=!after;io.After=after;bool ok=session.StartNewGame(revision,starter);Assert.AreEqual(after,ok);
+            if(!after){CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(Store().ActivePath));Assert.IsTrue(session.HasPendingSave);Assert.IsFalse(session.StartNewGame(revision,starter));io.Before=false;Assert.IsTrue(session.Retry(),session.Error);}
+            Assert.IsFalse(session.StartNewGame(revision,starter),"古い確認の二重決定を拒否");
+            var current=new ClearReturnSession(Store()).Snapshot;Assert.AreEqual(1,current.Level);Assert.AreEqual(0,current.Experience);Assert.AreEqual(0,current.Tokens);Assert.IsNull(current.Flow);Assert.IsNull(current.NextDeparture);
+            Assert.IsEmpty(current.Receipts);Assert.IsEmpty(current.ClearedDungeons);Assert.AreEqual(20,current.Owned.Sum(o=>o.Count));Assert.AreEqual(1,current.SavedDecks.Length);
+            Assert.IsTrue(System.Guid.TryParseExact(current.CheckpointGeneration,"N",out _));
+            Assert.AreEqual("keep settings",System.IO.File.ReadAllText(settings));Assert.AreEqual("keep old checkpoint",System.IO.File.ReadAllText(checkpoint));
+            var archives=System.IO.Directory.GetFiles(System.IO.Path.Combine(directory,"new-game-backups"),"*.json");Assert.AreEqual(1,archives.Length);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(archives[0]));
+            Assert.IsTrue(session.ManualSave());CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(archives[0]));
+        }
+        [Test]
+        public void 確認後の更新と不正スターターと不正保存世代は新規開始で上書きしない()
+        {
+            var session=new ClearReturnSession(Store());var starter=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();Assert.IsTrue(session.InitializeStarter(starter));
+            long old=session.Snapshot.Revision;Assert.IsTrue(session.ManualSave());var bytes=System.IO.File.ReadAllBytes(Store().ActivePath);
+            Assert.IsFalse(session.StartNewGame(old,starter));Assert.IsFalse(session.StartNewGame(session.Snapshot.Revision,starter.Take(6).ToArray()));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));
+            var bad=session.Snapshot;bad.CheckpointGeneration="../old";Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(bad));
+        }
+        [Test]
+        public void 手動保存の障害は旧進行を維持して同じ内容を再試行できる()
+        {
+            var io=new FaultIo();var session=new ClearReturnSession(Store(io));Assert.IsTrue(session.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+            var before=System.IO.File.ReadAllBytes(Store().ActivePath);io.Before=true;Assert.IsFalse(session.ManualSave());CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(Store().ActivePath));
+            Assert.IsFalse(session.ManualSave());io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual(20,new ClearReturnSession(Store()).Snapshot.Owned.Sum(o=>o.Count));
+        }
         [System.Runtime.Serialization.DataContract]
         private sealed class LegacyEnvelope
         {

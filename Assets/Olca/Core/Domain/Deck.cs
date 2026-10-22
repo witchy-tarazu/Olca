@@ -444,6 +444,7 @@ namespace Olca.Core.Domain
         public long Revision, Experience, Tokens;
         public int Level = 1, ReturnedHp;
         public string CommitId;
+        public string CheckpointGeneration; // nullは旧保存の領域。新規開始だけで切替。
         public OwnedCardCount[] Owned = new OwnedCardCount[0];
         public string[] ClearedDungeons = new string[0];
         public ClearReceipt[] Receipts = new ClearReceipt[0];
@@ -458,7 +459,7 @@ namespace Olca.Core.Domain
         public string[] RevealedRecipes;
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public ClearReturnProfile Copy() => new ClearReturnProfile {
-            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId,
+            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
             Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
@@ -468,6 +469,7 @@ namespace Olca.Core.Domain
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
+            if(p.CheckpointGeneration!=null&&!Guid.TryParseExact(p.CheckpointGeneration,"N",out _))throw new ArgumentException("攻略保存の世代が不正です");
             var discovered=p.DiscoveredCards??Array.Empty<DiscoveredCard>();
             if(discovered.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||string.IsNullOrWhiteSpace(c.Name)||c.Level==ExceedLevel.Lv3||
                 !Enum.IsDefined(typeof(ExceedLevel),c.Level)||!Enum.IsDefined(typeof(CardRarity),c.Rarity)||
@@ -678,16 +680,33 @@ namespace Olca.Core.Domain
                 current.Flow != null || current.NextDeparture != null || current.SavedDecks.Length != 0 ||
                 current.EquippedDeckId != null || current.ExchangeStock != null || current.SelectedStyleId != null)
                 return Fail("既存の進行データにはスターターを配布しません");
-            if(cards==null)return Fail("スターター定義が必要です");
-            var counts=cards.Where(c=>c!=null).GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
-            if(!DepartureDeckRules.TryCreate(cards,counts,out _,out var error))return Fail(error);
             var next=current.Copy();
+            if(!PopulateStarter(next,cards,out var error))return Fail(error);
+            return Stage(next);
+        }
+        private static bool PopulateStarter(ClearReturnProfile next,IReadOnlyList<Card> cards,out string error)
+        {
+            error=null;
+            if(cards==null){error="スターター定義が必要です";return false;}
+            var counts=cards.Where(c=>c!=null).GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            if(!DepartureDeckRules.TryCreate(cards,counts,out _,out error))return false;
+
             next.Owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).Select(g=>new OwnedCardCount {
                 Id=g.Key.Id,Level=g.Key.ExceedLevel,Name=g.First().Name,Rarity=g.First().Rarity,Count=g.Count(),DefinitionHash=CollectionDisplay.DefinitionHash(g.First()) }).ToArray();
             string id=Guid.NewGuid().ToString("N");
             next.SavedDecks=new[]{new SavedDepartureDeck {Id=id,Name="スターター",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(c)}).ToArray()}};
             next.EquippedDeckId=id;
             foreach(var card in cards)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,CollectionDisplay.DefinitionHash(card));
+
+            return true;
+        }
+        /// <summary>許可地点は呼出側で判定し、進行1枠の確定済み内容だけを再保存する。</summary>
+        public bool ManualSave() => Available() && Stage(current.Copy());
+        public bool StartNewGame(long confirmedRevision,IReadOnlyList<Card> starter)
+        {
+            if(!Available()||current.Revision!=confirmedRevision)return Fail("確認後に進行が変わりました。確認し直してください");
+            var next=new ClearReturnProfile { CheckpointGeneration=Guid.NewGuid().ToString("N") };
+            if(!PopulateStarter(next,starter,out var error))return Fail(error);
             return Stage(next);
         }
         public void ConfigureCollectionDefinitions(IReadOnlyList<Card> definitions)
