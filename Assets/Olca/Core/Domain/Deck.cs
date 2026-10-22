@@ -558,7 +558,7 @@ namespace Olca.Core.Domain
             this.materialCards=materialCards?.Select(c=>c.Clone()).ToArray();this.resultCard=resultCard?.Clone();
             Id=id;ResultId=resultId;ResultLevel=resultLevel;this.materials=materials?.ToArray();
             if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(resultId)||this.materials==null||this.materials.Length!=2||this.materials.Any(string.IsNullOrWhiteSpace)||
-                resultLevel==ExceedLevel.Lv3||!Enum.IsDefined(typeof(ExceedLevel),resultLevel)||
+                !Enum.IsDefined(typeof(ExceedLevel),resultLevel)||
                 (resultCard!=null&&(resultCard.Id!=resultId||resultCard.ExceedLevel!=resultLevel)))throw new ArgumentException("図鑑レシピ定義が不正です");
         }
         public bool IsResultKnown(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) => resultCard==null?
@@ -585,7 +585,8 @@ namespace Olca.Core.Domain
         }
         public bool Matches(IReadOnlyList<Card> input,Card output) => input!=null&&output!=null&&output.Id==ResultId&&output.ExceedLevel==ResultLevel&&
             (resultCard==null||CollectionDisplay.DefinitionHash(output)==CollectionDisplay.DefinitionHash(resultCard))&&
-            input.All(c=>c!=null)&&input.Select(c=>c.Id).OrderBy(x=>x).SequenceEqual(materials.OrderBy(x=>x));
+            input.All(c=>c!=null)&&input.Select(c=>c.Id).OrderBy(x=>x).SequenceEqual(materials.OrderBy(x=>x))&&
+            (materialCards==null||input.Select(c=>CollectionDisplay.DefinitionHash(c.CreateUntunedDefinitionCopy())).OrderBy(x=>x).SequenceEqual(materialCards.Select(c=>CollectionDisplay.DefinitionHash(c.CreateUntunedDefinitionCopy())).OrderBy(x=>x)));
     }
     public static class CollectionDisplay
     {

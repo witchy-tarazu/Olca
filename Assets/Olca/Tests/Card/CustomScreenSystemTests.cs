@@ -997,7 +997,8 @@ namespace Olca.Tests.CardTests
         {
             var f=new Olca.Application.Battle.SimpleCardFactory();var source=OrdinaryTuningSource();
             var sword=f.CreateById("sword").WithTuningDefinition(source.TuningDefinition);var same=sword.Clone();
-            var screen=EligibilityScreen(source,sword,same);Assert.IsFalse(screen.ExecuteTuning(sword,source).IsSuccess);
+            var definitions=new FusionDefinitionCatalog();var output=f.CreateById("fire_sword");definitions.RegisterCard(source,"補助A","source",0);definitions.RegisterCard(sword,"補助B","sword",0);definitions.RegisterCard(output,"結果","output",0);definitions.RegisterSpecial("fixture/eligible",source,sword,output);
+            var screen=new CustomScreenSystem(new Deck(new List<Card>{source,sword,same}),exceedSystem:new ExceedSystem(f),tuningSystem:new TuningSystem(f.GetTuningDefinition),fusionSystem:new FusionSystem(new MockFusionRecipeProvider(),f,definitions));screen.Open(new Card[0],new MockRandomProvider(0));Assert.IsFalse(screen.ExecuteTuning(sword,source).IsSuccess);
             var fusion=screen.PreviewCustomization(new[]{source,sword});Assert.AreEqual(CustomizationOperation.Fusion,fusion.Operation);Assert.IsTrue(fusion.CanExecute,fusion.Reason);
             Assert.AreEqual(CustomizationOperation.Exceed,screen.PreviewCustomization(new[]{sword,same}).Operation);
             var mixed=new FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(f),f);

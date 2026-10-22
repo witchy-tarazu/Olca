@@ -50,7 +50,7 @@ namespace Olca.Tests.Domain
         public void 融合は結果製品の時間を使い取消は元素材の時間へ戻す()
         {
             var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(3,12,6)},{"bomb",new PlayerAttackTiming(2,9,3)},{"fire_sword",new PlayerAttackTiming(8,16,5)}});
-            var sword=factory.CreateById("sword");var bomb=factory.CreateById("bomb");var screen=new Olca.Core.Logic.Battle.CustomScreenSystem(new Deck(new System.Collections.Generic.List<Card>{sword,bomb}),fusionSystem:new Olca.Core.Logic.Battle.FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(),factory));screen.Open(new Card[0],new Olca.Tests.Mocks.MockRandomProvider());
+            var sword=factory.CreateById("sword");var bomb=factory.CreateById("bomb");var screen=new Olca.Core.Logic.Battle.CustomScreenSystem(new Deck(new System.Collections.Generic.List<Card>{sword,bomb}),fusionSystem:new Olca.Core.Logic.Battle.FusionSystem(new Olca.Application.Battle.SimpleFusionRecipeProvider(factory),factory));screen.Open(new Card[0],new Olca.Tests.Mocks.MockRandomProvider());
             var fusion=screen.ExecuteFusion(new[]{sword,bomb});Assert.IsTrue(fusion.IsSuccess);Assert.AreEqual(8,fusion.ResultCard.StartupFrames);Assert.AreEqual(16,fusion.ResultCard.RecoveryFrames);Assert.AreEqual(5,fusion.ResultCard.RecoveryCancelAfterFrames);
             Assert.IsTrue(screen.TryUndoCustomization());foreach(var card in screen.CurrentHand){Assert.AreEqual(card.Id=="sword"?3:2,card.StartupFrames);Assert.AreEqual(card.Id=="sword"?6:3,card.RecoveryCancelAfterFrames);}
         }

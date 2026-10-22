@@ -424,21 +424,13 @@ namespace Olca.Core.Logic.Battle
 
             var first = currentSelection[0];
 
-            // 超越・調律は二枚操作。三枚目以降は融合レシピだけで判定する。
-            if (currentSelection.Count == 1 && CanExceed(first, candidate))
-                return true;
-
-            if(currentSelection.Count==1&&tuningSystem!=null&&IsTuningMaterial(first)!=IsTuningMaterial(candidate))
+            if(currentSelection.Count!=1)return false;
+            if(CanExceed(first,candidate))return true;
+            if(ReferenceEquals(first,candidate))return false;
+            if(tuningSystem!=null&&IsTuningMaterial(first)!=IsTuningMaterial(candidate))
                 return PreviewCustomization(new[]{first,candidate}).CanExecute;
+            return fusionSystem!=null&&fusionSystem.Validate(new[]{first,candidate}).IsValid;
 
-            // 融合: 現在の選択＋候補がいずれかのレシピに含まれる（部分一致）
-            if (fusionSystem != null&&FusionMaterialError(currentSelection.Append(candidate).ToArray())==null)
-            {
-                var ids = currentSelection.Select(c => c.Id).Append(candidate.Id).ToList();
-                if (fusionSystem.HasCompatibleRecipe(ids)) return true;
-            }
-
-            return false;
         }
 
         /// <summary>確定と共通の判定。素材・デッキ・履歴には触れず、独立した結果を返す。</summary>
@@ -446,7 +438,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (!IsOpen || IsConfirming)
                 return CustomizationPreview.Invalid("加工できる画面状態ではありません");
-            if (materials == null || materials.Count < 2)
+            if (materials == null || materials.Count != 2)
                 return CustomizationPreview.Invalid("素材を2枚選んでください");
             if (!HasMaterialCopies(materials))
                 return CustomizationPreview.Invalid("使用予定の選択を解除し、手札の別々の素材を選んでください");
@@ -683,8 +675,8 @@ namespace Olca.Core.Logic.Battle
             if (!IsOpen || IsConfirming) return FusionResult.Fail("加工できる画面状態ではありません");
             if (fusionSystem == null)
                 return FusionResult.Fail("融合システムが設定されていません");
-            if (materials == null || materials.Count < 2)
-                return FusionResult.Fail("2枚以上の素材が必要です");
+            if (materials == null || materials.Count != 2)
+                return FusionResult.Fail("素材は2枚固定です");
             if (!HasMaterialCopies(materials))
                 return FusionResult.Fail("指定カードが手札にありません");
 

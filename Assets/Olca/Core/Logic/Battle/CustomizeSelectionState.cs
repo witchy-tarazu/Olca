@@ -144,7 +144,7 @@ namespace Olca.Core.Logic.Battle
         public IReadOnlyList<Card> Materials => materials.AsReadOnly();
 
         /// <summary>2枚以上選択されているか</summary>
-        public bool IsReady => materials.Count >= 2;
+        public bool IsReady => materials.Count == 2;
 
         /// <summary>
         /// カードをトグル選択する。
@@ -160,6 +160,7 @@ namespace Olca.Core.Logic.Battle
                 return true;
             }
 
+            if(materials.Count==2)return false;
             materials.Add(card);
             return true;
         }

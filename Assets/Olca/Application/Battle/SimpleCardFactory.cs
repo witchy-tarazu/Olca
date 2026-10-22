@@ -45,6 +45,8 @@ namespace Olca.Application.Battle
             .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
             .Concat(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
 
+        public IReadOnlyList<Card> FusionCards => catalog.Values.Concat(swordUpgrades.Values).Select(c=>c.Clone()).ToArray();
+
         public Deck CreateStarterDeck()
         {
             var cards=new List<Card>();

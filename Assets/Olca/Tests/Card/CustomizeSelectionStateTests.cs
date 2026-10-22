@@ -291,7 +291,7 @@ namespace Olca.Tests.CardTests
         }
 
         [Test]
-        public void TryToggle_3枚選択が可能()
+        public void TryToggle_3枚目は拒否する()
         {
             // Arrange
             var state = new FusionSelectionState();
@@ -302,7 +302,7 @@ namespace Olca.Tests.CardTests
             state.TryToggle(CreateCard("card_c"));
 
             // Assert
-            Assert.AreEqual(3, state.Materials.Count);
+            Assert.AreEqual(2, state.Materials.Count);
         }
 
         [Test]
