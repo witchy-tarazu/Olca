@@ -86,7 +86,7 @@ DTOは正規カードの全コンストラクター値・Modifier・定義キー
 
 **乱数の限界:** 旧チェックポイントにはゲーム用System.Randomのseed/内部状態がありません。初回手札・報酬候補は保存値を保ち再抽選せず、以後の比較用seedを輸送DTOに明示します。これは旧ライブセッションの全乱数列の復元ではありません。輸送DTOの`RandomState`/`RandomDraws`を明示した場合は、今回の純C#乱数状態から継続できます。元の保存形式にフィールドを追加したり、推測seedで元保存を書き換えたりしません。
 
-**未対応:** BattleStart境界の通常／ダッシュ開始に対応します（下記参照）。製品変身定義、報酬受領後の攻略/永続保存への復帰コマンドは未対応です。欠損や未対応は例外/拒否として扱い、未定義データを作りません。任意の戦闘途中セーブは新設していません。既存保存層・DungeonSystemの開始時配置/地形/初回手札処理を共用し、通常経路の回帰はUnity MCPの全件テストで確認します。GUIコピーと実機は別の未確認です。
+**未対応:** BattleStart境界の通常／ダッシュ開始に対応します（下記参照）。製品変身定義、階層移行と永続帰還保存は未対応です。単階層の戦闘後保存は下記の追加入口に対応しました。欠損や未対応は例外/拒否として扱い、未定義データを作りません。任意の戦闘途中セーブは新設していません。既存保存層・DungeonSystemの開始時配置/地形/初回手札処理を共用し、通常経路の回帰はUnity MCPの全件テストで確認します。GUIコピーと実機は別の未確認です。
 
 ### 新規保存に含まれるRNG状態
 
@@ -106,13 +106,13 @@ DTOは正規カードの全コンストラクター値・Modifier・定義キー
 
 初撃のHP変化や終了イベントも観測できるよう`BattleSimulation.InitialObservation`を追加し、`PortableBattleReplay.Trace`の先頭に受付前のstep0を出します。通常365入力の場合は初期行を含め366行になります。開始条件・適用状態・スタン状態もトレースに含めます。新旧の保存値は変更しませんが、比較トレースの形式はこの追加分だけ拡張されます。
 
-複数階層の封筒輸送は下記の入口で接続しました。階層移動コマンド、戦闘後保存、GUI同期は残件です。加工ルール輸送は下記に対応しました。
+複数階層の封筒輸送は下記の入口で接続しました。階層移動コマンド、永続帰還保存、GUI同期は残件です。単階層の戦闘後保存は下記に対応しました。加工ルール輸送は下記に対応しました。
 
 ### 階層列のBattleStart輸送
 
 `PortableBattlePackage.Capture(FloorSequenceDefinitions, bytes, rules, seed)`は、既存`floors.active.json`と同じチェックサム付き封筒を受け取る。`PortableFloorRoute`に全階層の正規マップ／カード定義と元封筒を保持し、既存`FloorSequenceDefinitions.TryRestore`でRouteId・Revision・RouteHash・FloorIndex・状態を照合する。単階層の旧パッケージも引き続き受け付ける。
 
-Unity側で登録済みの階層列を渡し、各階層の定義を`PortableFloorDefinition.Capture`で変換する。CLI向けにカード表・敵表を別に記述しない。CLIは従来と同じ`--package path --verify`で選択階層の戦闘を再生する。階層移動コマンドや戦闘後保存は追加しない。加工ルールは下記の追加入口を使う。製品に登録されていない階層列を自動生成する機能でもない。
+Unity側で登録済みの階層列を渡し、各階層の定義を`PortableFloorDefinition.Capture`で変換する。CLI向けにカード表・敵表を別に記述しない。CLIは従来と同じ`--package path --verify`で選択階層の戦闘を再生する。階層移動コマンドは追加しない。単階層の戦闘後保存は下記を参照。加工ルールは下記の追加入口を使う。製品に登録されていない階層列を自動生成する機能でもない。
 
 ### 加工ルール輸送
 
@@ -126,3 +126,19 @@ Unity側で登録済みの階層列を渡し、各階層の定義を`PortableFlo
 ```
 
 `--processing`は手札で実行可能な超越・調律・融合についてプレビュー／取消／加工／消費済み再入力／Undoを通常コマンドで再生する。対象がない方式は実行しないため、実行数は手札と製品登録に依存する。任意途中保存・戦闘後保存・GUI同期は追加していない。
+
+### 単階層の勝利後保存
+
+`PortableBattleSession`は既存DungeonBattleManagerの戦闘をコマンドで進め、報酬の受取／スキップ、停止した保存の再試行を同じCoreへ渡す。勝利と報酬保存が完了した場合だけ`CaptureResult()`が`PortableRunCheckpoint`を作る。`Restore()`で既存保存として検証し、`Resume()`は通常再開可能な境界だけをManagerへ渡す。終了済みTerminalの通常再開は拒否する。
+
+```sh
+/path/to/dotnet /dedicated-proof/bin/Olca.BattleSim.dll \
+  --package /dedicated-proof/input.json --post-battle --receive-rewards --verify \
+  --output-root /dedicated-proof/receive --forbidden-root /existing-game-settings-parent
+/path/to/dotnet /dedicated-proof/bin/Olca.BattleSim.dll \
+  --inspect-result /dedicated-proof/receive/result.json
+```
+
+受取なしの確認は`--receive-rewards`を省く。これは固定検証入力であり、製品に自動スキップを追加する設定ではない。出力指定なしではメモリで検証するだけ。出力時は明示のガードを必須にし、既存の出力ディレクトリ／result.jsonを上書きしない。通常ゲームと同じFileCheckpointStore／CheckpointFileIo／ValidationStorageGuardのソースをリンクし、UnityのログとEditor専用処理を除いてコンパイルする。Unity DLLやスタブは使わない。
+
+この接続は単階層の製品既定ゲージ設定に限定し、階層封筒を落とした結果保存は拒否する。敗北は既存HP0 Terminalまで、中断は旧開始保存の保持まで。永続帰還・階層移行・GUI同期は次の区切りで、任意途中保存は増やさない。

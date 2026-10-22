@@ -5,6 +5,7 @@ namespace Olca.Unity
     /// <summary>
     /// UnityEngine.Debugを使用したロガー
     /// </summary>
+    #if !OLCA_PORTABLE
     public class UnityLogger : IGameLogger
     {
         public void LogInfo(string message)
@@ -22,6 +23,7 @@ namespace Olca.Unity
             UnityEngine.Debug.LogError($"[ERROR] {message}");
         }
     }
+    #endif
 }
 
 namespace Olca.Unity

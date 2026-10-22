@@ -163,11 +163,13 @@ namespace Olca.Core.Logic.Dungeon
             result.FloorRoute=PortableFloorRoute.Capture(definitions,checkpoint);
             result.Restore(out _);return result;
         }
-        public RestoredCheckpoint Restore(out PortableCardCatalog catalog)
+        public CheckpointDefinitions CreateCheckpointDefinitions(){Restore(out _,out var definitions);return definitions;}
+        public RestoredCheckpoint Restore(out PortableCardCatalog catalog)=>Restore(out catalog,out _);
+        internal RestoredCheckpoint Restore(out PortableCardCatalog catalog,out CheckpointDefinitions defs)
         {
             if(Version!=1||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");Rules.Validate();
             if(RandomState==0||RandomDraws<0||(!RandomState.HasValue&&RandomDraws!=0))throw new ArgumentException("乱数状態が不正です");
-            var defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());
+            defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());
             if(Grants!=null)foreach(var grant in Grants)defs.RegisterGrant(grant.Key,grant.Restore());
             if(Processing!=null)Processing.Restore();
             if(defs.MapHash!=MapHash||defs.CardCatalogHash!=CatalogHash)throw new ArgumentException("輸送された製品定義のhashが一致しません");

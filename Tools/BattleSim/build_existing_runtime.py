@@ -31,7 +31,7 @@ framework = frameworks[0]
 refs = sorted(framework.glob('*.dll'))
 if not refs or any(x.name.startswith('Unity') for x in refs):
     raise SystemExit('framework contains Unity references or is empty')
-sources = sorted((repo / 'Assets/Olca/Core').rglob('*.cs')) + [Path(__file__).with_name('Program.cs')]
+sources = sorted((repo / 'Assets/Olca/Core').rglob('*.cs')) + [repo / 'Assets/Olca/Unity/UnityLogger.cs', Path(__file__).with_name('Program.cs')]
 output = root / 'bin'
 output.mkdir(parents=True, exist_ok=True)
 assembly = output / 'Olca.BattleSim.dll'

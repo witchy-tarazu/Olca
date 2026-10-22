@@ -51,6 +51,7 @@ namespace Olca.Core.Logic.Battle
         private readonly DelayedEffectSystem delayedEffects;
         private readonly IRandomProvider randomProvider;
         private bool checkpointRandom;
+        internal SeededBattleRandom SimulationRandom => randomProvider as SeededBattleRandom;
         public BattleRandomStateDto CheckpointRandomState => checkpointRandom ? ((SeededBattleRandom)randomProvider).CaptureState() : null;
         internal void UseCheckpointRandom() { if (!(randomProvider is SeededBattleRandom)) throw new InvalidOperationException("復帰済み戦闘乱数が必要です"); checkpointRandom=true; }
         private readonly IGameLogger logger;

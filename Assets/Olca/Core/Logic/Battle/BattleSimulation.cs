@@ -95,6 +95,7 @@ namespace Olca.Core.Logic.Battle
         {
             Settings = settings ?? throw new ArgumentNullException(nameof(settings)); Random = new SeededBattleRandom(seed,randomState,randomDraws); this.attack = attack ?? new BasicAttackInputState();
             Battle = (createBattle ?? throw new ArgumentNullException(nameof(createBattle)))(Random) ?? throw new ArgumentException("初期戦闘が必要です");
+            Random=Battle.SimulationRandom??Random;
             Battle.Player.OnTransformationDefenseEnded += () => events.Add("transformation-ended");
             Battle.Transformations.OnPreviewChanged += () => events.Add("transformation-preview:" + (Battle.Transformations.PendingId ?? "-"));
             Battle.Transformations.OnActivationPresentation += () => events.Add("transformation-activated:" + Battle.Transformations.ActiveId);
