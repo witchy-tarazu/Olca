@@ -13,6 +13,43 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class DungeonBattleManagerTests
     {
+        [Test]
+        public void 検証保存ガードは専用領域だけ許可し模擬既定と領域外と未指定を無書込で拒否する()
+        {
+            string container = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-storage-guard-" + System.Guid.NewGuid().ToString("N"));
+            string own = System.IO.Path.Combine(container, "own"), mockDefault = System.IO.Path.Combine(container, "mock-default");
+            var guard = new Olca.Unity.ValidationStorageGuard(own, mockDefault);
+            var io = new Olca.Unity.CheckpointFileIo(guard);
+            try {
+                foreach (string target in new[] { mockDefault, System.IO.Path.Combine(container,"own-other"), System.IO.Path.Combine(own,"..","outside") }) {
+                    Assert.That(new Olca.Unity.AudioVolumeFileStore(target, io).TrySave(new Olca.Unity.AudioVolumeSettings(99),out _), Is.False);
+                    Assert.That(new Olca.Unity.TransformationPresentationFileStore(target, io).TrySave(true,out _), Is.False);
+                    Assert.That(new Olca.Unity.DialogueTextSettingsStore(target, io).TrySave(DialogueTextSpeed.Fast,out _), Is.False);
+                    Assert.That(new Olca.Unity.KeyboardBindingFileStore(target, io).TrySave(Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile(),out _), Is.False);
+                }
+                Assert.That(System.IO.Directory.Exists(container), Is.False, "拒否先にはディレクトリさえ生成しない");
+                Assert.Throws<System.IO.IOException>(() => guard.Require((string)null));
+                if(System.IO.Path.DirectorySeparatorChar == '/')
+                    Assert.Throws<System.IO.IOException>(() => guard.Require(System.IO.Path.Combine(container,"OWN","settings")));
+                Assert.Throws<System.IO.IOException>(() => Olca.Unity.ValidationStorageGuard.RequireEditorStartup(own,own,own,true));
+                Assert.Throws<System.IO.IOException>(() => new Olca.Unity.ValidationStorageGuard("",mockDefault));
+                Assert.Throws<System.IO.IOException>(() => new Olca.Unity.ValidationStorageGuard(container,mockDefault));
+                string settings = System.IO.Path.Combine(own,"settings");
+                Assert.That(new Olca.Unity.AudioVolumeFileStore(settings,io).TrySave(new Olca.Unity.AudioVolumeSettings(99),out _), Is.True);
+                // 再構築は静的な許可キャッシュを引き継がず、同じ規則で再検査する。
+                var restartedIo = new Olca.Unity.CheckpointFileIo(new Olca.Unity.ValidationStorageGuard(own,mockDefault));
+                var audio = new Olca.Unity.AudioVolumeFileStore(settings,restartedIo);
+                Assert.That(audio.TryRead(out var value,out _), Is.True); Assert.That(value.Master, Is.EqualTo(99));
+                Assert.That(audio.TrySave(new Olca.Unity.AudioVolumeSettings(98),out _), Is.True);
+                byte[] temporary = { 1,2,3 }; string temp = System.IO.Path.Combine(own,"temp"); restartedIo.WriteAndFlush(temp,temporary);
+                Assert.Throws<System.IO.IOException>(()=>restartedIo.MoveNew(temp,System.IO.Path.Combine(mockDefault,"moved")));
+                Assert.Throws<System.IO.IOException>(()=>restartedIo.Replace(temp,audio.ActivePath,System.IO.Path.Combine(mockDefault,"backup")));
+                Assert.That(System.IO.File.ReadAllBytes(temp), Is.EqualTo(temporary));
+                Assert.That(System.IO.Directory.Exists(mockDefault), Is.False);
+                Assert.That(audio.TryRead(out value,out _), Is.True); Assert.That(value.Master, Is.EqualTo(98));
+            } finally { if(System.IO.Directory.Exists(container)) System.IO.Directory.Delete(container,true); }
+        }
+
         [TestCase(30, false)] [TestCase(60, false)] [TestCase(120, false)]
         [TestCase(30, true)] [TestCase(60, true)] [TestCase(120, true)]
         public void 空中ダッシュ入力と空中接敵を通常探索と保存復帰で区別する(int fps, bool stall)

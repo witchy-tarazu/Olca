@@ -26,18 +26,110 @@ namespace Olca.Unity
 
 namespace Olca.Unity
 {
+    /// <summary>検証コピー専用の書込許可範囲。設定は毎回読み直し、再読込後も既定保存先を拒否する。</summary>
+    public sealed class ValidationStorageGuard
+    {
+        public const string ManifestName = ".olca-validation-storage-guard.json";
+        [System.Serializable] public sealed class Configuration { public string Root; public string ForbiddenRoot; }
+        private readonly string root, forbidden;
+        public ValidationStorageGuard(string root, string forbiddenRoot)
+        {
+            this.root = Canonical(root); forbidden = Canonical(forbiddenRoot);
+            if (Within(this.root, forbidden) || Within(forbidden, this.root))
+                throw new System.IO.IOException("検証ルートと既定保存先は分離してください");
+        }
+        // シンボリックリンクは許可せず、既存の各祖先を照合する。未作成の末尾も同じ規則で正規化する。
+        private static string Canonical(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path))
+                throw new System.IO.IOException("検証保存先には絶対パスが必要です");
+            // ../によるリンク祖先の消去も許可しない。保存先は呼出側で正規化した絶対パスを渡す。
+            if (System.Array.IndexOf(path.Split(System.IO.Path.DirectorySeparatorChar), "..") >= 0)
+                throw new System.IO.IOException("親参照を含む検証保存先は拒否します");
+            string full = System.IO.Path.GetFullPath(path).TrimEnd(System.IO.Path.DirectorySeparatorChar);
+            if (string.IsNullOrEmpty(full)) throw new System.IO.IOException("ファイルシステム全体は検証ルートにできません");
+            for (string current = full; !string.IsNullOrEmpty(current); current = System.IO.Path.GetDirectoryName(current)) {
+                try { if ((System.IO.File.GetAttributes(current) & System.IO.FileAttributes.ReparsePoint) != 0)
+                    throw new System.IO.IOException("リンクを経由する検証保存先は拒否します"); }
+                catch (System.IO.FileNotFoundException) { }
+                catch (System.IO.DirectoryNotFoundException) { }
+            }
+            return full;
+        }
+        private static System.StringComparison PathComparison => System.IO.Path.DirectorySeparatorChar == '\\'
+            ? System.StringComparison.OrdinalIgnoreCase : System.StringComparison.Ordinal;
+        private static bool Within(string path, string parent) =>
+            string.Equals(path, parent, PathComparison) ||
+            path.StartsWith(parent + System.IO.Path.DirectorySeparatorChar, PathComparison);
+        public void Require(params string[] paths)
+        {
+            // 祖先の置換も検出するため、構築時だけでなく操作ごとに検査する。
+            Canonical(root); Canonical(forbidden);
+            if (paths == null || paths.Length == 0) throw new System.IO.IOException("検証保存先が未指定です");
+            foreach (string path in paths) {
+                string target = Canonical(path);
+                if (!Within(target, root) || Within(target, forbidden))
+                    throw new System.IO.IOException("検証領域外への書込を開始前に停止しました");
+            }
+        }
+        public static ValidationStorageGuard FromEditorProject()
+        {
+#if UNITY_EDITOR
+            string manifest = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath), ManifestName);
+            if (System.IO.File.Exists(manifest)) {
+                if ((System.IO.File.GetAttributes(manifest) & System.IO.FileAttributes.ReparsePoint) != 0)
+                    throw new System.IO.IOException("検証設定のリンクは拒否します");
+                var config = UnityEngine.JsonUtility.FromJson<Configuration>(System.IO.File.ReadAllText(manifest));
+                if (config == null) throw new System.IO.IOException("検証保存先設定が不正です");
+                return new ValidationStorageGuard(config.Root, config.ForbiddenRoot);
+            }
+#endif
+            return null;
+        }
+        public static void RequireEditorStartup(string settings, string checkpoint, string progress, bool required = false)
+        {
+            // 未注入のsettingsはnullのまま拒否し、persistentDataPathにフォールバックさせない。
+            var guard = FromEditorProject();
+            if (required && guard == null) throw new System.IO.IOException("必須の検証保存先設定がありません");
+            guard?.Require(settings, checkpoint, progress);
+        }
+    }
+
     /// <summary>OS失敗を権限変更なしで検証できるファイル操作境界。</summary>
     public class CheckpointFileIo
     {
+        private readonly ValidationStorageGuard validation;
+        private readonly bool editorGuardRequired;
+        public CheckpointFileIo(ValidationStorageGuard validation = null)
+        {
+            this.validation = validation;
+            editorGuardRequired = validation == null && ValidationStorageGuard.FromEditorProject() != null;
+        }
+        public void RequireWritable(params string[] paths)
+        {
+            var guard = validation ?? ValidationStorageGuard.FromEditorProject();
+            if (editorGuardRequired && guard == null) throw new System.IO.IOException("検証保存先設定が失われたため停止しました");
+            guard?.Require(paths);
+        }
+        public bool TryRequireWritable(string active, string backup, out string error)
+        {
+            try { RequireWritable(active, backup); error = null; return true; }
+            catch (System.Exception e) when (e is System.IO.IOException || e is System.UnauthorizedAccessException || e is System.ArgumentException || e is System.Security.SecurityException) {
+                error = "検証保存先ガードが書込を開始前に停止しました: " + e.Message; return false;
+            }
+        }
+        public void CreateDirectory(string path) { RequireWritable(path); System.IO.Directory.CreateDirectory(path); }
         public virtual void WriteAndFlush(string path, byte[] bytes)
         {
+            RequireWritable(path);
             using (var stream = new System.IO.FileStream(path, System.IO.FileMode.CreateNew,
                 System.IO.FileAccess.Write, System.IO.FileShare.None))
             { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
         }
         public virtual void Replace(string temporary, string destination, string backup)
-            => System.IO.File.Replace(temporary, destination, backup);
-        public virtual void MoveNew(string temporary, string destination) => System.IO.File.Move(temporary, destination);
+        { RequireWritable(temporary, destination, backup); System.IO.File.Replace(temporary, destination, backup); }
+        public virtual void MoveNew(string temporary, string destination)
+        { RequireWritable(temporary, destination); System.IO.File.Move(temporary, destination); }
     }
 
     /// <summary>既存ファイルを検証してから更新する。未知版/破損は自動修復・上書きしない。</summary>
@@ -137,7 +229,8 @@ namespace Olca.Unity
             string temporary = null;
             try
             {
-                System.IO.Directory.CreateDirectory(DirectoryPath);
+                io.CreateDirectory(DirectoryPath);
+                io.RequireWritable(System.IO.Path.Combine(DirectoryPath, "active.lock"));
                 using (var gate = new System.IO.FileStream(System.IO.Path.Combine(DirectoryPath, "active.lock"),
                     System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite, System.IO.FileShare.None))
                 {
@@ -281,7 +374,8 @@ namespace Olca.Unity
             string temporary = null;
             try
             {
-                System.IO.Directory.CreateDirectory(DirectoryPath);
+                io.CreateDirectory(DirectoryPath);
+                io.RequireWritable(System.IO.Path.Combine(DirectoryPath, "floors.lock"));
                 using (var gate = new System.IO.FileStream(System.IO.Path.Combine(DirectoryPath, "floors.lock"),
                     System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite, System.IO.FileShare.None))
                 {
@@ -404,7 +498,8 @@ namespace Olca.Unity
             try {
                 Olca.Core.Domain.ClearReturnProfile.Validate(next);
                 bytes = Encode(next);
-                System.IO.Directory.CreateDirectory(DirectoryPath);
+                io.CreateDirectory(DirectoryPath);
+                io.RequireWritable(System.IO.Path.Combine(DirectoryPath, "progress.lock"));
                 using (var fileLock = new System.IO.FileStream(System.IO.Path.Combine(DirectoryPath, "progress.lock"),
                     System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite, System.IO.FileShare.None)) {
                 var existing = Read(out error); if (existing == null) return false;
@@ -412,11 +507,11 @@ namespace Olca.Unity
                 if (System.IO.File.Exists(ActivePath) && Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) return true;
                 if (existing.Revision != expectedRevision || next.Revision != checked(expectedRevision + 1))
                 { error = "進行データが別の処理で更新されています。再読込してください。"; return false; }
-                System.IO.Directory.CreateDirectory(DirectoryPath);
+                io.CreateDirectory(DirectoryPath);
                 // 新規開始の旧進行は通常backupの更新で失われない別名へ保全する。
                 if(next.CheckpointGeneration!=existing.CheckpointGeneration&&System.IO.File.Exists(ActivePath)) {
                     var oldBytes=System.IO.File.ReadAllBytes(ActivePath);Decode(oldBytes);
-                    var archive=System.IO.Path.Combine(DirectoryPath,"new-game-backups");System.IO.Directory.CreateDirectory(archive);
+                    var archive=System.IO.Path.Combine(DirectoryPath,"new-game-backups");io.CreateDirectory(archive);
                     var path=System.IO.Path.Combine(archive,"progress-"+existing.Revision+"-"+Hash(oldBytes)+".json");
                     if(!System.IO.File.Exists(path)){
                         temporary=System.IO.Path.Combine(archive,".preserve-"+System.Guid.NewGuid().ToString("N")+".tmp");

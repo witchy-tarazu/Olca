@@ -490,12 +490,13 @@ namespace Olca.Unity
         public bool TrySave(Olca.Core.Domain.InputBindingProfile profile,out string error)
         {
             error=null;
+            if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;
             if(writing){error="キー設定を保存中です";return false;}
             if(!UnityInputProvider.ValidateKeyboardProfile(profile,out error))return false;
             if(!TryRead(out _,out error))return false;
             var bytes=Encode(profile);string temporary=null;writing=true;
             try{
-                System.IO.Directory.CreateDirectory(DirectoryPath);
+                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(DirectoryPath);
                 temporary=System.IO.Path.Combine(DirectoryPath,".keyboard-"+System.Guid.NewGuid().ToString("N")+".tmp");
                 io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
                 if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
@@ -535,9 +536,9 @@ namespace Olca.Unity
             if(!System.IO.File.Exists(ActivePath)){if(System.IO.Directory.Exists(ActivePath)||System.IO.File.Exists(BackupPath))throw new System.IO.IOException();return true;}
             shortened=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
         }catch(System.Exception e)when(Failure(e)){error="変身演出の設定を読めません。保存内容は変更していません。";return false;}}
-        public bool TrySave(bool shortened,out string error){error=null;if(writing){error="演出設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
+        public bool TrySave(bool shortened,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(writing){error="演出設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
             var bytes=Encode(shortened);string temporary=null;writing=true;try{
-                System.IO.Directory.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".form-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".form-"+System.Guid.NewGuid().ToString("N")+".tmp");
                 io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
                 if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
                 if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
@@ -608,8 +609,8 @@ namespace Olca.Unity
             if(!System.IO.File.Exists(ActivePath)){if(System.IO.Directory.Exists(ActivePath)||System.IO.File.Exists(BackupPath)||System.IO.Directory.Exists(BackupPath))throw new System.IO.IOException();return true;}
             value=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
         }catch(System.Exception e)when(Failure(e)){value=new AudioVolumeSettings(0);error="音量設定を読み込めません。安全のため消音し、既存ファイルは変更していません。";return false;}}
-        public bool TrySave(AudioVolumeSettings value,out string error){error=null;if(value==null){error="音量設定が必要です";return false;}if(writing){error="音量設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
-            var bytes=Encode(value);string temporary=null;writing=true;try{System.IO.Directory.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".audio-"+System.Guid.NewGuid().ToString("N")+".tmp");
+        public bool TrySave(AudioVolumeSettings value,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(value==null){error="音量設定が必要です";return false;}if(writing){error="音量設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
+            var bytes=Encode(value);string temporary=null;writing=true;try{io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".audio-"+System.Guid.NewGuid().ToString("N")+".tmp");
                 io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
                 if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
             }catch(System.Exception e)when(Failure(e)){try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
@@ -640,9 +641,9 @@ namespace Olca.Unity
             if(!System.IO.File.Exists(ActivePath)){if(System.IO.Directory.Exists(ActivePath)||System.IO.File.Exists(BackupPath)||System.IO.Directory.Exists(BackupPath))throw new System.IO.IOException();return true;}
             speed=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
         }catch(System.Exception e)when(Failure(e)){error="文字表示速度の設定を読めません。保存内容は変更していません。";return false;}}
-        public bool TrySave(Olca.Core.Domain.DialogueTextSpeed speed,out string error){error=null;if(!System.Enum.IsDefined(typeof(Olca.Core.Domain.DialogueTextSpeed),speed)){error="文字表示速度が不正です";return false;}if(writing){error="文字表示速度設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
+        public bool TrySave(Olca.Core.Domain.DialogueTextSpeed speed,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(!System.Enum.IsDefined(typeof(Olca.Core.Domain.DialogueTextSpeed),speed)){error="文字表示速度が不正です";return false;}if(writing){error="文字表示速度設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
             var bytes=Encode(speed);string temporary=null;writing=true;try{
-                System.IO.Directory.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".dialogue-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".dialogue-"+System.Guid.NewGuid().ToString("N")+".tmp");
                 io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
                 if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
                 if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;

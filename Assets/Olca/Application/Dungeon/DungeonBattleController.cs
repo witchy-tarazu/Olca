@@ -389,6 +389,13 @@ namespace Olca.Application.Dungeon
             if(dialogueView!=null){dialogueView.gameObject.SetActive(!IsUserPaused);if(!IsUserPaused){dialogueView.Refresh();dialogueView.transform.SetAsLastSibling();}}
         }
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
+        [SerializeField, HideInInspector] private bool validationStorageRequired;
+        public void RequireValidationStorageGuard()
+        {
+            if (inputProvider != null) throw new System.InvalidOperationException("起動後は検証ガードを変更できません");
+            if (ValidationStorageGuard.FromEditorProject() == null) throw new System.IO.IOException("検証専用の保存先設定が必須です");
+            validationStorageRequired = true;
+        }
         private string gameplaySettingsDirectoryOverride;
         private KeyboardBindingFileStore keyboardSettings;
         private TransformationPresentationFileStore transformationSettings;
@@ -1163,6 +1170,8 @@ namespace Olca.Application.Dungeon
 
         private void Start()
         {
+            // 検証時はPlay再読込で設定先が失われたら、保存処理を生成する前に停止する。
+            ValidationStorageGuard.RequireEditorStartup(gameplaySettingsDirectoryOverride, CheckpointDirectory, ProgressDirectory, validationStorageRequired);
             if (commonHitInvincibilityMs <= 0 || (long)commonHitInvincibilityMs * 60 <= (long)battleStaggerFrames * 1000)
                 throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
             ReturnSettings().Validate();
