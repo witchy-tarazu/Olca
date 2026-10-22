@@ -436,6 +436,7 @@ namespace Olca.Application.Dungeon
         public void SetUserPaused(bool paused)
         {
             if (manager == null || manager.IsUserPaused == paused) return;
+            systemMenu?.Suspend();systemMenuRoot=null;if(paused)pauseFocus="ResumeButton";
             logicalLoop.Observe(!DialogueOpen && !manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
             ResetTouchInput(preserveCharge: true);
             manager.SetUserPaused(paused);
@@ -573,7 +574,7 @@ namespace Olca.Application.Dungeon
             ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
             cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
             cardCollectionButton.gameObject.SetActive(false);
-            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
+            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
         }
         private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
         private GameObject progressActionOverlay;
@@ -1063,6 +1064,19 @@ namespace Olca.Application.Dungeon
         private Text currencyRewardText, currencyBalanceText;
         private Button receiveCurrencyButton;
         private MenuPadScope resourceRewardMenu;
+        private MenuPadScope systemMenu;private Transform systemMenuRoot;private string pauseFocus="ResumeButton";
+        private void RefreshSystemMenu()
+        {
+            GameObject root=null;string preferred=null;System.Action cancel=null;
+            Button Find(GameObject panel,string name)=>panel.transform.Find(name)?.GetComponent<Button>();
+            if(progressDialogOpen&&progressActionOverlay.activeInHierarchy){root=progressActionOverlay;preferred=progressCancelButton.IsInteractable()?"CancelProgressAction":"ConfirmNewGame";cancel=()=>{if(progressCancelButton.IsInteractable())progressCancelButton.onClick.Invoke();};}
+            else if(retreatConfirmation!=null&&retreatConfirmation.activeInHierarchy){root=retreatConfirmation;preferred="CancelRetreat";cancel=()=>Find(root,"CancelRetreat").onClick.Invoke();}
+            else if(checkpointOverlay!=null&&checkpointOverlay.activeInHierarchy){root=checkpointOverlay;preferred=manager.Dungeon.IsCheckpointBlocked?"RetryCheckpointButton":"ContinueCheckpointButton";}
+            else if(pauseOverlay!=null&&pauseOverlay.activeInHierarchy&&IsUserPaused){root=pauseOverlay;preferred=pauseFocus;cancel=()=>SetUserPaused(false);}
+            var next=root!=null?root.transform:null;
+            if(next!=systemMenuRoot){if(pauseOverlay!=null&&systemMenuRoot==pauseOverlay.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=next;if(next!=null){if(systemMenu==null)systemMenu=new MenuPadScope(()=>MenuPadScope.IsTopmost(systemMenuRoot),()=>systemMenuRoot==checkpointOverlay?.transform?new[]{newGameButton}:System.Array.Empty<Button>());systemMenu.Bind(next,preferred,cancel);}}
+            systemMenu?.Tick();
+        }
         private Transform resourceRewardRoot;
         private void BindResourceReward(GameObject root,string preferred,System.Action skip)
         {
@@ -1336,6 +1350,7 @@ namespace Olca.Application.Dungeon
             if(AudioSettingsOpen)audioSettingsView.transform.SetAsLastSibling();
             if(DialogueOpen&&!IsUserPaused)dialogueView.transform.SetAsLastSibling();
             resourceRewardMenu?.Tick();
+            RefreshSystemMenu();
         }
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
@@ -1888,6 +1903,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            systemMenu?.Dispose();
             resourceRewardMenu?.Dispose();
             FinishDialogue(interrupt:true);dialogueLoop.Dispose();
             gameplayAudio?.Dispose();

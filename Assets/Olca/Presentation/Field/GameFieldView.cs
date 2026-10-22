@@ -1063,6 +1063,12 @@ namespace Olca.Presentation.Field
         private UnityEngine.UI.Button saveButton;
         private GameObject resetConfirmation;
         private Font font;
+        private Olca.Unity.MenuPadScope menu;private bool navigationDirty;private int assignedFrame=-1;private string normalFocus="CloseKeyboardSettings";
+        private void InvalidateNavigation(){var name=menu?.FocusName;if(name!=null&&name!="CancelCapture"&&name!="ConfirmKeyboardReset"&&name!="CancelKeyboardReset")normalFocus=name;menu?.Suspend();navigationDirty=true;}
+        private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
+        private void LateUpdate(){if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(assignedFrame!=Time.frameCount)menu.Tick();}
+        private void OnDisable(){menu?.Suspend();}
+        private void OnDestroy(){menu?.Dispose();}
 
         public void Initialize(Font font, System.Func<InputBindingProfile, string> save)
         {
@@ -1116,7 +1122,7 @@ namespace Olca.Presentation.Field
 
         public void Open(InputBindingProfile profile)
         {
-            applied = profile; edit = profile.BeginEdit(); listening = null;
+            applied = profile; edit = profile.BeginEdit(); listening = null;normalFocus="CloseKeyboardSettings";
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             resetConfirmation.SetActive(false); gameObject.SetActive(true);
             transform.SetAsLastSibling(); // ポーズの遮蔽面より前へ出し、設定の操作を受け取る。
@@ -1135,7 +1141,7 @@ namespace Olca.Presentation.Field
             if (awaitRelease) { if (keys.HeldCount == 0) awaitRelease = false; return; }
             if (keys.HeldCount == 0) return;
             if (keys.HeldCount != 1) { awaitRelease = true; Refresh("新しいキーを1つだけ押してください。"); return; }
-            var slot = listening.Value; listening = null; Assign(slot, keys.Key);
+            var slot = listening.Value; listening = null;assignedFrame=Time.frameCount; Assign(slot, keys.Key);
         }
         private void Assign((string Device, string Context, string Action) slot, string key)
         {
@@ -1157,7 +1163,7 @@ namespace Olca.Presentation.Field
         private void Refresh(string message)
         {
             foreach (var pair in labels) pair.Value.text = edit.Draft[pair.Key] ?? "未割当";
-            status.text = message; saveButton.interactable = !listening.HasValue;
+            status.text = message; saveButton.interactable = !listening.HasValue;InvalidateNavigation();
         }
         private static string Label(string action)
         {
@@ -1193,7 +1199,10 @@ namespace Olca.Presentation.Field
     {
         private readonly Slider[] sliders=new Slider[4];private readonly Text[] values=new Text[4];
         private System.Func<Olca.Unity.AudioVolumeSettings,string> save;private System.Action close;private Text status;
-        private Font font;private Button saveButton,cancelButton;
+        private Font font;private Button saveButton,cancelButton;private Olca.Unity.MenuPadScope menu;
+        private void LateUpdate(){menu?.Tick();}
+        private void OnDisable(){menu?.Suspend();}
+        private void OnDestroy(){menu?.Dispose();}
         private Text Label(string name,string value,Vector2 position,Vector2 size,int fontSize){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);
             var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.alignment=TextAnchor.MiddleCenter;text.text=value;Olca.Presentation.Dungeon.UiLook.Label(text);
             text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;}
@@ -1232,7 +1241,7 @@ namespace Olca.Presentation.Field
         }
         public void Open(Olca.Unity.AudioVolumeSettings value,string error){int[] current={value.Master,value.Bgm,value.Effects,value.Voice};for(int n=0;n<4;n++){sliders[n].SetValueWithoutNotify(current[n]);values[n].text=current[n]+" %";}
             status.text=error??"0 %は消音、100 %は元の音量です。左右キーでも調整できます。\n保存・適用するまで音量は変わりません。試聴音は鳴らしません。";
-            gameObject.SetActive(true);transform.SetAsLastSibling();UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(sliders[0].gameObject);}
+            gameObject.SetActive(true);transform.SetAsLastSibling();if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform));menu.Bind(transform,"AudioSliderMaster",()=>close());}
         public void DiscardAndClose(){if(this!=null)gameObject.SetActive(false);}
     }
 
@@ -1240,6 +1249,11 @@ namespace Olca.Presentation.Field
     {
         private DialogueSession owner;private Font font;private Text title,body;private ScrollRect scroll;
         private Button next,fast,history,skip,pause;private readonly List<Button> choices=new List<Button>();
+        private Olca.Unity.MenuPadScope menu;private string navigationKey;private bool wasBacklog;
+        private void LateUpdate(){menu?.Tick();}
+        private void OnDisable(){menu?.Suspend();navigationKey=null;}
+        private void OnDestroy(){menu?.Dispose();}
+        private void CancelMenu(){if(owner==null||!owner.IsOpen||owner.IsPaused)return;if(owner.SkipConfirmationOpen)owner.CancelSkip();else if(owner.BacklogOpen)owner.ToggleBacklog();Refresh();}
         private System.Action pauseAction;private long rendered=-1;private int choiceNode=-1,page;
         private Text Label(string name,Transform parent,Vector2 pos,Vector2 size,int fontSize){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(parent,false);var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.supportRichText=false;text.alignment=TextAnchor.MiddleCenter;Olca.Presentation.Dungeon.UiLook.Label(text);text.rectTransform.anchoredPosition=pos;text.rectTransform.sizeDelta=size;return text;}
         private Button Make(string name,string label,Vector2 pos,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);var rect=(RectTransform)obj.transform;rect.anchoredPosition=pos;rect.sizeDelta=size;var button=obj.GetComponent<Button>();var text=Label(name+"Label",obj.transform,Vector2.zero,size-new Vector2(16,8),26);text.text=label;Olca.Presentation.Dungeon.UiLook.Button(button);return button;}
@@ -1250,8 +1264,8 @@ namespace Olca.Presentation.Field
             scroll=area.GetComponent<ScrollRect>();scroll.viewport=ar;scroll.content=body.rectTransform;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;scroll.scrollSensitivity=35;
             next=Make("DialogueNext","決定",new Vector2(-600,-360),new Vector2(350,75));fast=Make("DialogueFast","早送り",new Vector2(-200,-360),new Vector2(350,75));history=Make("DialogueHistory","バックログ",new Vector2(200,-360),new Vector2(350,75));skip=Make("DialogueSkip","スキップ",new Vector2(600,-360),new Vector2(350,75));pause=Make("DialoguePause","ポーズ",new Vector2(790,455),new Vector2(260,60));pause.onClick.AddListener(()=>this.pauseAction());gameObject.SetActive(false);
         }
-        private void OnEnable(){rendered=-1;}
-        public void Bind(DialogueSession value){owner=value;rendered=-1;choiceNode=-1;page=0;gameObject.SetActive(value!=null);if(value==null){body.text="";title.text="";foreach(var b in choices)b.gameObject.SetActive(false);}Refresh();}
+        private void OnEnable(){rendered=-1;navigationKey=null;}
+        public void Bind(DialogueSession value){menu?.Suspend();navigationKey=null;owner=value;rendered=-1;choiceNode=-1;page=0;gameObject.SetActive(value!=null);if(value==null){body.text="";title.text="";foreach(var b in choices)b.gameObject.SetActive(false);}Refresh();}
         private void Action(Button button,string label,bool enabled,System.Action<DialogueSession> action){button.gameObject.SetActive(true);button.interactable=enabled;button.GetComponentInChildren<Text>().text=label;button.onClick.RemoveAllListeners();var captured=owner;long version=captured.Version;button.onClick.AddListener(()=>{if(ReferenceEquals(owner,captured)&&captured.Version==version&&captured.IsOpen)action(captured);});}
         public void Refresh(){if(this==null||owner==null||!owner.IsOpen)return;if(rendered==owner.Version)return;rendered=owner.Version;
             foreach(var b in choices)b.gameObject.SetActive(false);fast.gameObject.SetActive(true);skip.gameObject.SetActive(true);next.gameObject.SetActive(true);history.gameObject.SetActive(true);
@@ -1264,8 +1278,10 @@ namespace Olca.Presentation.Field
                 }
             }
             if(body.text!=text){body.text=text;body.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,body.preferredHeight+20));if(resetScroll)scroll.verticalNormalizedPosition=1;}
-            var active=choices.Concat(new[]{next,fast,history,skip,pause}).Where(b=>b.gameObject.activeSelf&&b.interactable).ToArray();for(int n=0;n<active.Length;n++)active[n].navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=active[(n+active.Length-1)%active.Length],selectOnUp=active[(n+active.Length-1)%active.Length],selectOnRight=active[(n+1)%active.Length],selectOnDown=active[(n+1)%active.Length]};
-            var events=UnityEngine.EventSystems.EventSystem.current;if(events!=null&&(events.currentSelectedGameObject==null||!events.currentSelectedGameObject.activeInHierarchy||!events.currentSelectedGameObject.transform.IsChildOf(transform)||events.currentSelectedGameObject.GetComponent<Selectable>()?.IsInteractable()==false))events.SetSelectedGameObject(active.FirstOrDefault()?.gameObject);
+            string key=owner.Index+":"+owner.SkipConfirmationOpen+":"+owner.BacklogOpen+":"+owner.WaitingForChoice+":"+page;
+            if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>owner!=null&&owner.IsOpen&&!owner.IsPaused&&Olca.Unity.MenuPadScope.IsTopmost(transform));
+            if(navigationKey!=key){string preferred=owner.SkipConfirmationOpen?"DialogueHistory":owner.BacklogOpen?(wasBacklog?menu.FocusName:"DialogueHistory"):owner.WaitingForChoice?"DialogueChoice0":"DialogueNext";navigationKey=key;wasBacklog=owner.BacklogOpen;menu.Bind(transform,preferred,CancelMenu,scroll,directionScroll:false);}
+
         }
     }
 }

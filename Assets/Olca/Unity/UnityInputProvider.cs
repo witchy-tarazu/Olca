@@ -657,7 +657,7 @@ namespace Olca.Unity
 
 namespace Olca.Unity
 {
-    public enum CustomPadCommand { Left,Right,Up,Down,Decide,Cancel,Confirm,Customize,Undo,Details,Transform }
+    public enum CustomPadCommand { Left,Right,Up,Down,Decide,Cancel,Confirm,Customize,Undo,Details,Transform,PageUp,PageDown }
     public readonly struct CustomPadEvent
     {
         public readonly CustomPadCommand Command;public readonly long Timestamp;public readonly int Epoch;
@@ -667,13 +667,13 @@ namespace Olca.Unity
     public sealed class CustomGamepadInput:System.IDisposable
     {
         private sealed class State {public readonly Dictionary<GamepadButton,bool> Buttons=new Dictionary<GamepadButton,bool>();public Vector2 Stick;public bool Armed;public int X,Y;}
-        private static readonly GamepadButton[] Keys={GamepadButton.South,GamepadButton.East,GamepadButton.West,GamepadButton.North,GamepadButton.Start,GamepadButton.Select,GamepadButton.RightStick,GamepadButton.DpadLeft,GamepadButton.DpadRight,GamepadButton.DpadUp,GamepadButton.DpadDown};
+        private static readonly GamepadButton[] Keys={GamepadButton.South,GamepadButton.East,GamepadButton.West,GamepadButton.North,GamepadButton.Start,GamepadButton.Select,GamepadButton.RightStick,GamepadButton.LeftShoulder,GamepadButton.RightShoulder,GamepadButton.DpadLeft,GamepadButton.DpadRight,GamepadButton.DpadUp,GamepadButton.DpadDown};
         private readonly HashSet<Gamepad> neutralRequired=new HashSet<Gamepad>();
-        private readonly bool ownsKeyboard;
+        private readonly System.Func<bool> ownsKeyboard;
         private readonly System.Func<bool> usable,ownsUi;private readonly Dictionary<Gamepad,State> states=new Dictionary<Gamepad,State>();private readonly List<CustomPadEvent> pending=new List<CustomPadEvent>();private bool active,disposed;private readonly double offset;
         public int Epoch{get;private set;}
         public bool HasGamepad=>InputSystem.devices.OfType<Gamepad>().Any(p=>p.enabled);
-        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true){this.ownsKeyboard=ownsKeyboard;this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
+        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null){this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
         private static bool Neutral(State state)=>!state.Buttons.Values.Any(v=>v)&&state.Stick.sqrMagnitude<.25f;
         public void Reset(){Epoch++;pending.Clear();states.Clear();active=false;}
         private bool CheckActive()
@@ -690,7 +690,7 @@ namespace Olca.Unity
         private void OnEvent(InputEventPtr evt,InputDevice device)
         {
             // キー側も既存カーソル／論理決定が所有する。マウスが残したButtonへのSubmitを重ねない。
-            if(!disposed&&ownsKeyboard&&device is Keyboard&&ownsUi()){UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);return;}
+            if(!disposed&&ownsKeyboard()&&device is Keyboard&&ownsUi()){UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);return;}
             if(!(device is Gamepad pad)||!pad.enabled||(!evt.IsA<StateEvent>()&&!evt.IsA<DeltaStateEvent>())||disposed)return;
             if(ownsUi())UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             if(!CheckActive())return;
@@ -705,7 +705,7 @@ namespace Olca.Unity
             int nextX=Held(GamepadButton.DpadRight)?1:Held(GamepadButton.DpadLeft)?-1:state.Stick.x>.5f?1:state.Stick.x<-.5f?-1:0;
             int nextY=Held(GamepadButton.DpadUp)?1:Held(GamepadButton.DpadDown)?-1:state.Stick.y>.5f?1:state.Stick.y<-.5f?-1:0;
             if(nextX!=0&&nextX!=state.X)Add(nextX>0?CustomPadCommand.Right:CustomPadCommand.Left);else if(nextY!=0&&nextY!=state.Y)Add(nextY>0?CustomPadCommand.Up:CustomPadCommand.Down);state.X=nextX;state.Y=nextY;
-            if(Down(GamepadButton.East))Add(CustomPadCommand.Cancel);else if(Down(GamepadButton.RightStick))Add(CustomPadCommand.Details);else if(Down(GamepadButton.Select))Add(CustomPadCommand.Transform);else if(Down(GamepadButton.North))Add(CustomPadCommand.Customize);else if(Down(GamepadButton.West))Add(CustomPadCommand.Undo);else if(Down(GamepadButton.Start))Add(CustomPadCommand.Confirm);else if(Down(GamepadButton.South))Add(CustomPadCommand.Decide);
+            if(Down(GamepadButton.East))Add(CustomPadCommand.Cancel);else if(Down(GamepadButton.LeftShoulder))Add(CustomPadCommand.PageUp);else if(Down(GamepadButton.RightShoulder))Add(CustomPadCommand.PageDown);else if(Down(GamepadButton.RightStick))Add(CustomPadCommand.Details);else if(Down(GamepadButton.Select))Add(CustomPadCommand.Transform);else if(Down(GamepadButton.North))Add(CustomPadCommand.Customize);else if(Down(GamepadButton.West))Add(CustomPadCommand.Undo);else if(Down(GamepadButton.Start))Add(CustomPadCommand.Confirm);else if(Down(GamepadButton.South))Add(CustomPadCommand.Decide);
         }
         public CustomPadEvent[] Read(){CheckActive();var result=pending.ToArray();pending.Clear();return result;}
         public void Dispose(){if(disposed)return;disposed=true;InputSystem.onEvent-=OnEvent;InputSystem.onDeviceChange-=Changed;Reset();neutralRequired.Clear();}
@@ -718,8 +718,9 @@ namespace Olca.Unity
     public sealed class MenuPadScope:System.IDisposable
     {
         private readonly CustomGamepadInput input;private readonly System.Func<bool> top;private readonly System.Func<IEnumerable<UnityEngine.UI.Button>> external;
-        private UnityEngine.UI.Button[] linked=System.Array.Empty<UnityEngine.UI.Button>();
-        private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Button focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
+        private UnityEngine.UI.Selectable[] linked=System.Array.Empty<UnityEngine.UI.Selectable>();
+        private bool directionScroll=true;
+        private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Selectable focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
         public string FocusName=>focused!=null?focused.name:null;
         public static bool IsTopmost(Transform root)
         {
@@ -727,21 +728,21 @@ namespace Olca.Unity
             var hits=new List<UnityEngine.EventSystems.RaycastResult>();es.RaycastAll(new UnityEngine.EventSystems.PointerEventData(es){position=new Vector2(Screen.width/2f,Screen.height/2f)},hits);
             return hits.Count==0||hits[0].gameObject.transform==root||hits[0].gameObject.transform.IsChildOf(root);
         }
-        public MenuPadScope(System.Func<bool> top,System.Func<IEnumerable<UnityEngine.UI.Button>> external=null)
-        {this.top=top;this.external=external;input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false);}
+        public MenuPadScope(System.Func<bool> top,System.Func<IEnumerable<UnityEngine.UI.Button>> external=null,System.Func<bool> keyboardOwned=null)
+        {this.top=top;this.external=external;input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false,keyboardOwned:keyboardOwned);}
         private bool Typing()=>root!=null&&root.GetComponentsInChildren<UnityEngine.UI.InputField>().Any(f=>f.isFocused);
         private bool Usable()=>root!=null&&root.gameObject.activeInHierarchy&&top()&&!Typing();
-        private UnityEngine.UI.Button[] Buttons()=>root==null?System.Array.Empty<UnityEngine.UI.Button>():root.GetComponentsInChildren<UnityEngine.UI.Button>().Concat(external?.Invoke()??System.Array.Empty<UnityEngine.UI.Button>()).Where(b=>b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable()).Distinct().ToArray();
-        private static Vector2 Point(UnityEngine.UI.Button b)=>RectTransformUtility.WorldToScreenPoint(null,b.transform.TransformPoint(((RectTransform)b.transform).rect.center));
-        private static UnityEngine.UI.Button Near(UnityEngine.UI.Button from,Vector2 direction,UnityEngine.UI.Button[] buttons)
+        private UnityEngine.UI.Selectable[] Buttons()=>root==null?System.Array.Empty<UnityEngine.UI.Selectable>():root.GetComponentsInChildren<UnityEngine.UI.Selectable>().Concat((external?.Invoke()??System.Array.Empty<UnityEngine.UI.Button>()).Cast<UnityEngine.UI.Selectable>()).Where(b=>b!=null&&(b is UnityEngine.UI.Button||b is UnityEngine.UI.Slider||b is UnityEngine.UI.Toggle)&&b.gameObject.activeInHierarchy&&b.IsInteractable()).Distinct().ToArray();
+        private static Vector2 Point(UnityEngine.UI.Selectable b)=>RectTransformUtility.WorldToScreenPoint(null,b.transform.TransformPoint(((RectTransform)b.transform).rect.center));
+        private static UnityEngine.UI.Selectable Near(UnityEngine.UI.Selectable from,Vector2 direction,UnityEngine.UI.Selectable[] buttons)
         {var p=Point(from);return buttons.Where(b=>b!=from&&Vector2.Dot(Point(b)-p,direction)>.01f).OrderByDescending(b=>Vector2.Dot(Point(b)-p,direction)/(Point(b)-p).sqrMagnitude).FirstOrDefault();}
-        public void Bind(Transform root,string preferred,System.Action cancel,UnityEngine.UI.ScrollRect scroll=null,bool restorePosition=false)
-        {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;linked=System.Array.Empty<UnityEngine.UI.Button>();focused=null;if(!restorePosition)havePoint=false;
+        public void Bind(Transform root,string preferred,System.Action cancel,UnityEngine.UI.ScrollRect scroll=null,bool restorePosition=false,bool directionScroll=true)
+        {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;this.directionScroll=directionScroll;linked=System.Array.Empty<UnityEngine.UI.Selectable>();focused=null;if(!restorePosition)havePoint=false;
             if(Usable()){var initial=Buttons().FirstOrDefault(b=>b.name==preferred);if(initial!=null)Focus(initial);}Refresh();}
         public void Suspend(){version++;input.Reset();root=null;focused=null;cancel=null;scroll=null;}
-        private void Focus(UnityEngine.UI.Button button)
+        private void Focus(UnityEngine.UI.Selectable button)
         {focused=button;if(button==null)return;preferred=button.name;lastPoint=Point(button);havePoint=true;button.Select();Follow(button);}
-        private void Follow(UnityEngine.UI.Button button)
+        private void Follow(UnityEngine.UI.Selectable button)
         {
             foreach(var area in root.GetComponentsInChildren<UnityEngine.UI.ScrollRect>()){
                 if(area.content==null||area.viewport==null||!button.transform.IsChildOf(area.content))continue;
@@ -752,7 +753,7 @@ namespace Olca.Unity
         private void Refresh()
         {
             if(!Usable())return;var buttons=Buttons();
-            if(!linked.SequenceEqual(buttons)){linked=buttons;foreach(var b in buttons)b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.Explicit,selectOnLeft=Near(b,Vector2.left,buttons),selectOnRight=Near(b,Vector2.right,buttons),selectOnUp=Near(b,Vector2.up,buttons),selectOnDown=Near(b,Vector2.down,buttons)};}
+            if(!linked.SequenceEqual(buttons)){linked=buttons;foreach(var b in buttons)b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.Explicit,selectOnLeft=b is UnityEngine.UI.Slider?null:Near(b,Vector2.left,buttons),selectOnRight=b is UnityEngine.UI.Slider?null:Near(b,Vector2.right,buttons),selectOnUp=Near(b,Vector2.up,buttons),selectOnDown=Near(b,Vector2.down,buttons)};}
             var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;var actual=buttons.FirstOrDefault(b=>b.gameObject==selected);
             if(actual!=null){focused=actual;preferred=actual.name;lastPoint=Point(actual);havePoint=true;Follow(actual);return;}
             if(focused==null||!buttons.Contains(focused))focused=buttons.FirstOrDefault(b=>b.name==preferred)??(havePoint?buttons.OrderBy(b=>(Point(b)-lastPoint).sqrMagnitude).FirstOrDefault():buttons.FirstOrDefault());
@@ -766,12 +767,13 @@ namespace Olca.Unity
             int current=version;
             foreach(var e in commands){if(current!=version||e.Epoch!=input.Epoch||!Usable())break;
                 if(e.Command==CustomPadCommand.Cancel){cancel?.Invoke();continue;}
-                if(scroll!=null&&(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.Down)){scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+(e.Command==CustomPadCommand.Up?.2f:-.2f));continue;}
-                if(e.Command==CustomPadCommand.Decide){if(focused!=null&&focused.IsInteractable())focused.onClick.Invoke();continue;}
+                if(scroll!=null&&(e.Command==CustomPadCommand.PageUp||e.Command==CustomPadCommand.PageDown||directionScroll&&(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.Down))){scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.PageUp?.2f:-.2f));continue;}
+                if(e.Command==CustomPadCommand.Decide){if(focused!=null&&focused.IsInteractable()){if(focused is UnityEngine.UI.Button button)button.onClick.Invoke();else if(focused is UnityEngine.UI.Toggle toggle)toggle.isOn=!toggle.isOn;}continue;}
+                if(focused is UnityEngine.UI.Slider slider&&(e.Command==CustomPadCommand.Left||e.Command==CustomPadCommand.Right)){float step=slider.wholeNumbers?1:(slider.maxValue-slider.minValue)*.1f;slider.value=Mathf.Clamp(slider.value+(e.Command==CustomPadCommand.Right?step:-step),slider.minValue,slider.maxValue);continue;}
                 Vector2 direction=e.Command==CustomPadCommand.Left?Vector2.left:e.Command==CustomPadCommand.Right?Vector2.right:e.Command==CustomPadCommand.Up?Vector2.up:e.Command==CustomPadCommand.Down?Vector2.down:Vector2.zero;
                 if(direction!=Vector2.zero&&focused!=null)Focus(Near(focused,direction,Buttons())??focused);
             }
-            if(scroll!=null){if(Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
+            if(scroll!=null){if(directionScroll&&Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
         }
         public void Dispose(){input.Dispose();Suspend();}
     }
