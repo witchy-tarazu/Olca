@@ -1,5 +1,3 @@
-using MasterMemory;
-using MessagePack;
 using Olca.Core.Logic.CardEffects.Effects;
 
 namespace Olca.Core.Domain.Master
@@ -8,10 +6,14 @@ namespace Olca.Core.Domain.Master
     /// カードマスターデータ
     /// MasterMemoryで管理されるカード情報
     /// </summary>
-    [MemoryTable("cards"), MessagePackObject(true)]
+#if !OLCA_PORTABLE
+    [MasterMemory.MemoryTable("cards"), MessagePack.MessagePackObject(true)]
+#endif
     public class CardMaster
     {
-        [PrimaryKey]
+#if !OLCA_PORTABLE
+        [MasterMemory.PrimaryKey]
+#endif
         public string Id { get; set; }
 
         public string Name { get; set; }

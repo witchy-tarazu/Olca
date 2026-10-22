@@ -101,7 +101,7 @@ namespace Olca.Application.Dungeon
         [SerializeField, Min(1)] private int basicAttackChargeFrames = 60;
         [SerializeField, Min(1)] private int basicAttackChargeMultiplier = 2;
         [SerializeField, Min(1)] private int basicAttackIntervalFrames = 12;
-        private readonly BasicAttackInputState basicAttackInput = new BasicAttackInputState();
+        private readonly Olca.Core.Logic.Battle.BasicAttackInputState basicAttackInput = new Olca.Core.Logic.Battle.BasicAttackInputState();
         private BasicAttackHud basicAttackHud;
         private bool queuedTouchJump, queuedTouchDash, queuedTouchCard;
         private bool ExplorationUiAvailable => manager?.Dungeon.ActiveVisit==null && manager?.CurrentPhase==GamePhase.Dungeon && !IsUserPaused && !GameplayPause.InputBlocked &&

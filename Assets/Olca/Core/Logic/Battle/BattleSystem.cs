@@ -2,9 +2,8 @@ using Olca.Core.Logic.CardEffects;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Cysharp.Threading.Tasks;
-using Olca.Core.Domain;
 using Olca.Core.Interfaces;
+using Olca.Core.Domain;
 
 namespace Olca.Core.Logic.Battle
 {
@@ -156,7 +155,7 @@ namespace Olca.Core.Logic.Battle
             ResolveBasicActionAsync(percent, timing, Transformations.ActiveId).Forget();
             return true;
         }
-        private async UniTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form)
+        private async FrameTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form)
         {
             var cts = new CancellationTokenSource(); var owner = BeginPlayerAction(true, () => cts.Cancel());
             try {
@@ -519,17 +518,17 @@ namespace Olca.Core.Logic.Battle
         private sealed class ActionWait
         {
             public long Deadline;
-            public readonly UniTaskCompletionSource Completion = new UniTaskCompletionSource();
+            public readonly FrameCompletionSource Completion = new FrameCompletionSource();
             public CancellationTokenRegistration Registration;
         }
         private readonly List<ActionWait> actionWaits = new List<ActionWait>();
 
         // Unity PlayerLoopのWaitUntilを使わず、期限に達した論理更新内で継続する。
-        internal UniTask WaitForActionAsync(float seconds, CancellationToken ct)
+        internal FrameTask WaitForActionAsync(float seconds, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
-            if (seconds <= 0) return UniTask.CompletedTask;
+            if (IsGameOver) return FrameTask.FromCanceled(new CancellationToken(true));
+            if (seconds <= 0) return FrameTask.CompletedTask;
             // 1フレーム=50単位。float秒の表現誤差のみを除き、入力境界で一度だけ変換する。
             // 旧ms APIと交互に呼ばれても同じ時計で期限を判定する。
             var wait = new ActionWait {
@@ -539,11 +538,11 @@ namespace Olca.Core.Logic.Battle
             if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
             return wait.Completion.Task;
         }
-        internal UniTask WaitForActionFramesAsync(int frames, CancellationToken ct)
+        internal FrameTask WaitForActionFramesAsync(int frames, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
-            if (frames <= 0) return UniTask.CompletedTask;
+            if (IsGameOver) return FrameTask.FromCanceled(new CancellationToken(true));
+            if (frames <= 0) return FrameTask.CompletedTask;
             var wait = new ActionWait { Deadline = actionTimeUnits + frames * 50L };
             actionWaits.Add(wait);
             if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
@@ -554,7 +553,7 @@ namespace Olca.Core.Logic.Battle
             // 継続内で追加された次の待機には、このフレームの時間を二重適用しない。
             foreach (var wait in actionWaits.ToArray())
             {
-                if (wait.Completion.Task.Status != UniTaskStatus.Pending || wait.Deadline <= actionTimeUnits || IsGameOver)
+                if (wait.Completion.Task.Status != FrameTaskStatus.Pending || wait.Deadline <= actionTimeUnits || IsGameOver)
                 {
                     actionWaits.Remove(wait); wait.Registration.Dispose();
                     if (IsGameOver) wait.Completion.TrySetCanceled(); else wait.Completion.TrySetResult();

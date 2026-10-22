@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 using Olca.Core.Domain;
 using Olca.Core.Logic.CardEffects;
-using Olca.Core.Interfaces;
 
 namespace Olca.Core.Logic.Battle
 {
@@ -138,7 +137,7 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// カード効果を非同期で実行
         /// </summary>
-        private async UniTask ExecuteCardEffectAsync(Card card, object owner, CancellationToken ct)
+        private async FrameTask ExecuteCardEffectAsync(Card card, object owner, CancellationToken ct)
         {
             card = ApplyConcentrate(card);
             var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase };
@@ -169,7 +168,7 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 現在のカード（先頭のカード）を非同期で使用
         /// </summary>
-        public async UniTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
+        public async FrameTask<bool> TryUseCurrentCardAsync(CancellationToken ct = default)
         {
             if (!CanUseCurrentCard || !battleSystem.TryPreparePlayerAttack() || isUsingCard)
             {

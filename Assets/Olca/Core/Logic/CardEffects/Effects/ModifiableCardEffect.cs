@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 
@@ -31,8 +31,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 使用動作を待機する。指定された派生前後隙は追跡し、発射済み投擲は独立して進行する。
         /// </summary>
-        public UniTask ExecuteAsync(BattleContext context, CancellationToken ct) => ExecuteAsync(context, ct, true);
-        internal async UniTask ExecuteAsync(BattleContext context, CancellationToken ct, bool includeTimings)
+        public FrameTask ExecuteAsync(BattleContext context, CancellationToken ct) => ExecuteAsync(context, ct, true);
+        internal async FrameTask ExecuteAsync(BattleContext context, CancellationToken ct, bool includeTimings)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             ct.ThrowIfCancellationRequested();

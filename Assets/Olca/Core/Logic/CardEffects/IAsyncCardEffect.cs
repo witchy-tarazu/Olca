@@ -1,5 +1,5 @@
 using System.Threading;
-using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 
 namespace Olca.Core.Logic.CardEffects
 {
@@ -13,6 +13,6 @@ namespace Olca.Core.Logic.CardEffects
         /// </summary>
         /// <param name="context">バトルコンテキスト</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
-        UniTask ExecuteAsync(BattleContext context, CancellationToken cancellationToken);
+        FrameTask ExecuteAsync(BattleContext context, CancellationToken cancellationToken);
     }
 }

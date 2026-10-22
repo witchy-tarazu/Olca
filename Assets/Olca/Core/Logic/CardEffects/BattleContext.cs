@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 using System.Threading;
-using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 
 namespace Olca.Core.Logic.CardEffects
 {
@@ -35,7 +35,7 @@ namespace Olca.Core.Logic.CardEffects
 
         // 同じ使用から同期的に派生した前後隙だけを追跡する。飛翔・設置は独立動作。
         private DerivativeLifetime derivativeLifetime = new DerivativeLifetime();
-        internal UniTask WaitForDerivativesAsync(CancellationToken ct) => derivativeLifetime.WaitAsync(ct);
+        internal FrameTask WaitForDerivativesAsync(CancellationToken ct) => derivativeLifetime.WaitAsync(ct);
         internal void InheritDerivatives(BattleContext parent) => derivativeLifetime = parent.derivativeLifetime;
         internal void RegisterActionDelay(DelayedEffect effect)
         {
@@ -46,10 +46,10 @@ namespace Olca.Core.Logic.CardEffects
         private sealed class DerivativeLifetime
         {
             private int pending;
-            private UniTaskCompletionSource completion;
+            private FrameCompletionSource completion;
             public Action Add()
             {
-                if (pending++ == 0) completion = new UniTaskCompletionSource();
+                if (pending++ == 0) completion = new FrameCompletionSource();
                 bool finished = false;
                 return () => {
                     if (finished) return;
@@ -57,8 +57,8 @@ namespace Olca.Core.Logic.CardEffects
                     if (--pending == 0) completion.TrySetResult();
                 };
             }
-            public UniTask WaitAsync(CancellationToken ct)
-                => pending == 0 ? UniTask.CompletedTask : completion.Task.AttachExternalCancellation(ct);
+            public FrameTask WaitAsync(CancellationToken ct)
+                => pending == 0 ? FrameTask.CompletedTask : completion.Task.AttachExternalCancellation(ct);
         }
 
         /// <summary>

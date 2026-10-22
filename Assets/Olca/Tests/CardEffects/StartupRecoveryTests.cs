@@ -377,7 +377,7 @@ namespace Olca.Tests.CardEffects
             enemy.ApplyStun(60000);
         }
         private void Frames(int count) { for (int i = 0; i < count; i++) battle.TickFrame(17); }
-        private Cysharp.Threading.Tasks.UniTask<bool> Use(Card card)
+        private Olca.Core.Interfaces.FrameTask<bool> Use(Card card)
         {
             battle.CardUsage.EnqueueCards(new List<Card> { card, Card("next", 2, 4) });
             return battle.CardUsage.TryUseCurrentCardAsync().Preserve();
@@ -395,7 +395,7 @@ namespace Olca.Tests.CardEffects
             Frames(3);
             if (!extend) { Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction); }
             else {
-                Assert.IsFalse(task.Status.IsCompleted()); Assert.IsFalse(battle.TryStartPlayerBasicAttack(false));
+                Assert.IsFalse(task.GetAwaiter().IsCompleted); Assert.IsFalse(battle.TryStartPlayerBasicAttack(false));
                 Assert.IsFalse(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());
                 Frames(1); Assert.AreEqual(PlayerAttackPhase.Recovery, battle.PlayerActionPhase);
                 Assert.AreEqual(0, battle.RecoveryElapsedFrames); Frames(1); Assert.IsFalse(battle.CanCancelPlayerRecovery);
@@ -480,7 +480,7 @@ namespace Olca.Tests.CardEffects
             Assert.IsTrue(Use(card).GetAwaiter().GetResult()); Assert.IsFalse(battle.HasPlayerAction); Frames(7); Assert.AreEqual(492, enemy.CurrentHp);
             Setup(); card = Card("parent", recovery: 6, extend: true, modifier: Chain("child"));
             var direct = new ModifiableCardEffect().ExecuteAsync(new BattleContext(battle, card) { CardDatabase = database }, default).Preserve();
-            Frames(12); Assert.IsFalse(direct.Status.IsCompleted()); Frames(1); Assert.IsTrue(direct.Status.IsCompleted()); direct.GetAwaiter().GetResult();
+            Frames(12); Assert.IsFalse(direct.GetAwaiter().IsCompleted); Frames(1); Assert.IsTrue(direct.GetAwaiter().IsCompleted); direct.GetAwaiter().GetResult();
         }
         [Test]
         public void 派生途中のファイル保存再開は開始境界へ戻り旧待機と遅延を新戦闘へ持ち込まない()

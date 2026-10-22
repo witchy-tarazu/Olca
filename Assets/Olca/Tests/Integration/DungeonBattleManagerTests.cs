@@ -1530,11 +1530,11 @@ namespace Olca.Tests.Integration
             var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
             if (phase > 0) clock.Drain((f, ms) => battle.TickFrame(ms), phase);
             var method = typeof(BattleSystem).GetMethod("WaitForActionAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var wait = (UniTask)method.Invoke(battle, new object[] { .017f, System.Threading.CancellationToken.None });
+            var wait = (Olca.Core.Interfaces.FrameTask)method.Invoke(battle, new object[] { .017f, System.Threading.CancellationToken.None });
             clock.Drain((f, ms) => battle.TickFrame(ms), 1);
-            Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
+            Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Pending, wait.Status);
             clock.Drain((f, ms) => battle.TickFrame(ms), 1);
-            Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
+            Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Succeeded, wait.Status);
         }
         [Test]
         public void ゲージ速度小数部を毎フレーム切り捨てず一秒分蓄積する()
@@ -1588,10 +1588,10 @@ namespace Olca.Tests.Integration
             var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> {
                 new Enemy("frame", "fixture", 100, ElementType.None, new Vector2Int(5, 2)) }, new Deck());
             var method = typeof(BattleSystem).GetMethod("WaitForActionAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var wait = (UniTask)method.Invoke(battle, new object[] { .1f, System.Threading.CancellationToken.None });
+            var wait = (Olca.Core.Interfaces.FrameTask)method.Invoke(battle, new object[] { .1f, System.Threading.CancellationToken.None });
             battle.Tick(50); battle.TickFrame(16); battle.TickFrame(17);
-            Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
-            battle.TickFrame(17); Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
+            Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Pending, wait.Status);
+            battle.TickFrame(17); Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Succeeded, wait.Status);
         }
         private static List<string> TimestampedTrace(int fps, bool stall)
         {
