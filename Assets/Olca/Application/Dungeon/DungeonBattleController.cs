@@ -1519,7 +1519,7 @@ namespace Olca.Application.Dungeon
             battleFieldReady = false;
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
-            if (!battle.CustomScreen.IsOpen) battle.OpenCustomScreen(randomProvider);
+            if (!battle.CustomScreen.IsOpen) battle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open), randomProvider);
             battle.CustomScreen.OnFusionExecuted += (materials,output)=>{if(ReferenceEquals(manager?.CurrentBattle,battle)&&!manager.IsSuspended)RecordFusionDiscovery(materials,output);};
             battle.Transformations.ShortPresentation=shortTransformationPresentation;
             battleSession?.Attach(battle);

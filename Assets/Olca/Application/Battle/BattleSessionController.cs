@@ -96,8 +96,8 @@ namespace Olca.Application.Battle
             if (!currentBattle.CustomGauge.IsFull) return;
             if (currentBattle.CustomScreen.IsOpen) return;
 
-            currentBattle.OpenCustomScreen(randomProvider);
-            battleView.OpenCustomScreen();
+            var result = currentBattle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open), randomProvider);
+            if (result.Accepted) battleView.OpenCustomScreen();
         }
 
         /// <summary>カード入力を含む通常ゲーム経路の一論理フレーム。</summary>
@@ -148,6 +148,10 @@ namespace Olca.Application.Battle
             // 意図: アニメーションを待ってから CustomScreen.Close() を呼ぶことで
             // バトルの Resume() が正しいタイミングで呼ばれる
             if (currentBattle == null || isClosing) return;
+            if (!currentBattle.CustomScreen.IsConfirming) {
+                var confirmed = currentBattle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));
+                if (!confirmed.Accepted || isClosing) return;
+            }
             isClosing = true;
             if (scheduleLogical == null) CloseCustomScreenAsync().Forget();
             else
@@ -156,7 +160,10 @@ namespace Olca.Application.Battle
                 // 表示の終了通知ではなく既存演出時間を換算した論理フレームで再開する。
                 scheduleLogical(closeDurationFrames, () => {
                     if (version != sessionVersion || !ReferenceEquals(currentBattle, closing)) return;
-                    closing.CustomScreen.Close(); isClosing = false;
+                    closing.CustomScreen.Commands.AfterCurrentCommand(() => {
+                        if (version != sessionVersion || !ReferenceEquals(currentBattle, closing)) return;
+                        closing.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.ReturnToBattle)); isClosing = false;
+                    });
                 });
                 CloseVisualOnlyAsync().Forget();
             }
@@ -177,7 +184,10 @@ namespace Olca.Application.Battle
             {
                 await battleView.CloseCustomScreenAsync();
                 if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
-                    closingBattle?.CustomScreen.Close();
+                    closingBattle?.CustomScreen.Commands.AfterCurrentCommand(() => {
+                        if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
+                            closingBattle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.ReturnToBattle));
+                    });
             }
             catch (OperationCanceledException)
             {

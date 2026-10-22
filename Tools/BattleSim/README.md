@@ -57,3 +57,13 @@ Unity MCPで同じCoreソースとUnity入力互換アダプターを実行し�
 SHA256: `4597d866f2c40ce9f2624e4e61942ee73efd10ecd9872c9585457f4ef48d8edc`
 
 最終行: Step240 / 論理199 / Victory / プレイヤーHP85 / 敵HP0。結果・参照DLL一覧・ソース一覧は `/workspace/.olca-cloud/results/pure-battle-20261022/` および専用出力ルートの `compile-manifest.json` に保存。Unityの既存全件回帰はこれと別に必須で実行する。
+
+### カスタム操作の同一Coreリプレイ
+
+同じビルド手順の出力DLLへ `--custom --verify` を指定すると、カスタムから戦闘復帰・カード使用までの固定fixtureを再生します。`--seed`、`--batch`、`--work`も利用可能です。`--custom`では57受付ステップの固定列を使い、`--frames`は使いません。通常シナリオの`--frames`は従来どおりです。
+
+`BattleSimulation`の追加コンストラクターへ `Func<IRandomProvider, BattleSystem>` と初回カスタム開始の有無を渡すと、初期状態・加工定義を明示注入できます。入力は `BattleFrameCommand(custom: new CustomScreenCommand(kind, handles))`。コマンドStepは戦闘論理フレームを進めず、操作受付番号と結果イベントを出します。通常の時間Stepは `new BattleFrameCommand(input)` を別に渡します。同じStepに両者を混ぜず、カスタム操作と戦闘入力を別々に記録してください。
+
+個体ハンドルは `Battle.CustomScreen.Commands.Observe()` の手札/選択観測から取得します。消費・Undoで別参照になった個体には新番号が付きます。ID・同名・定義違いの推測選択はしません。プレビューと加工取消は無消費、加工実行後は逆順Undo、確定後は `ReturnToBattle` で復帰します。生成カードの再加工も既存Coreが扱います。拒否時にもコードと理由が観測できます。
+
+`CustomBattleReplay.Commands(seed)`は独立した同一Coreの計画用インスタンスで、復元コピーを含む対象ハンドルを確定した不変コマンド列を作ります。実再生側ではその列を変えず適用します。トレースには対象番号・受付結果・手札等の定義hashを含めます。fixtureは製品カード登録/ゲーム保存を変更しません。これはカスタム操作の第2区切りで、変身、製品DB投入、保存復帰コマンドは未移行です。

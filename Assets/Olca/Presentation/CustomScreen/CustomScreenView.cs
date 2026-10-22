@@ -168,7 +168,7 @@ namespace Olca.Presentation.CustomScreen
             if (lastModeInputFrame==Time.frameCount||lastDetailsCloseFrame==Time.frameCount||lastPadFrame==Time.frameCount||(detailsPanel!=null&&detailsPanel.activeSelf)||queueConfirmation == null || customScreen == null || !customScreen.IsOpen ||
                 Olca.Unity.GameplayPause.InputBlocked || (customizeModeView != null && customizeModeView.IsActive)) return;
             if (input.MenuDecideButtonDown) OnDecidePressed(true);
-            if (input.MenuConfirmButtonDown) customScreen.Confirm();
+            if (input.MenuConfirmButtonDown) customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));
             if (input.MenuCancelButtonDown) CancelSelection();
         }
         private List<HandCardView> handCardViews = new List<HandCardView>();
@@ -320,7 +320,7 @@ namespace Olca.Presentation.CustomScreen
             if (customScreen == null || !customScreen.CanUndoCustomization || undoInProgress || lastUndoFrame == Time.frameCount) return;
             undoInProgress = true;
             lastUndoFrame = Time.frameCount;
-            try { customScreen.TryUndoCustomization(); }
+            try { customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Undo)); }
             finally { undoInProgress = false; UpdateUndoButton(); }
         }
 
@@ -368,7 +368,7 @@ namespace Olca.Presentation.CustomScreen
             if(command==Olca.Unity.CustomPadCommand.Cancel){if(mode)OnCustomizeModeCancelled();else if(padTransformationIndex>=0){transformations?.TryCancelPending();RefreshTransformationButtons();}else CancelSelection();return;}
             if(command==Olca.Unity.CustomPadCommand.Customize){if(mode)OnCustomizeModeCancelled();else{padTransformationIndex=-1;EnterCustomizeMode();}return;}
             if(command==Olca.Unity.CustomPadCommand.Undo){if(mode)OnCustomizeModeCancelled();OnUndoClicked();return;}
-            if(command==Olca.Unity.CustomPadCommand.Confirm){if(mode){if(customScreen.PreviewCustomization(customizeSelectedCards).CanExecute)OnCustomizeExecuteRequested();}else if(customScreen.CanConfirm())customScreen.Confirm();return;}
+            if(command==Olca.Unity.CustomPadCommand.Confirm){if(mode){if(PreviewFromCommand(customizeSelectedCards).CanExecute)OnCustomizeExecuteRequested();}else if(customScreen.CanConfirm())customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));return;}
             if(padTransformationIndex>=0&&transformations?.AvailableDefinitions.Count>0){
                 int count=transformations.AvailableDefinitions.Count;
                 if(command==Olca.Unity.CustomPadCommand.Left||command==Olca.Unity.CustomPadCommand.Up)padTransformationIndex=(padTransformationIndex+count-1)%count;
@@ -524,7 +524,7 @@ namespace Olca.Presentation.CustomScreen
                 // 確定ボタンで決定 → 選択確定
                 if (customScreen.CanConfirm())
                 {
-                    if (logical) customScreen.Confirm(); else OnConfirmClicked();
+                    if (logical) customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm)); else OnConfirmClicked();
                 }
             }
             else
@@ -551,7 +551,7 @@ namespace Olca.Presentation.CustomScreen
                 transformations?.TryCancelPending();
                 return;
             }
-            if (!customScreen.TryDeselectCard(selected[selected.Count - 1])) return;
+            if (!customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Deselect, customScreen.Commands.HandleOf(selected[selected.Count - 1]))).Accepted) return;
             RefreshSelection();
         }
 
@@ -969,11 +969,11 @@ namespace Olca.Presentation.CustomScreen
             // 通常モード: カード選択トグル
             if (customScreen.SelectedCards.Any(c => c == card))
             {
-                customScreen.TryDeselectCard(card);
+                customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Deselect, customScreen.Commands.HandleOf(card)));
             }
             else
             {
-                customScreen.TrySelectCard(card);
+                customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Select, customScreen.Commands.HandleOf(card)));
             }
 
             // View更新（選択状態のハイライト）
@@ -1032,7 +1032,7 @@ namespace Olca.Presentation.CustomScreen
                 if (customizeSelectedCards.Count > 0 &&
                     !customScreen.IsCompatibleWithCurrentSelection(customizeSelectedCards, card))
                 {
-                    var invalid = customScreen.PreviewCustomization(customizeSelectedCards.Concat(new[] { card }).ToArray());
+                    var invalid = PreviewFromCommand(customizeSelectedCards.Concat(new[] { card }).ToArray());
                     customizeModeView.ShowError(invalid.Reason ?? "このカードは現在の選択と組み合わせできません");
                     UpdateCursorCardDisplay(handCardViews.FindIndex(v => v.Card == card));
                     return;
@@ -1043,7 +1043,7 @@ namespace Olca.Presentation.CustomScreen
 
             // 操作種別を判定してUIに反映
             var opType = DetectCustomizeOperation();
-            bool canExecute = customScreen.PreviewCustomization(customizeSelectedCards).CanExecute;
+            bool canExecute = PreviewFromCommand(customizeSelectedCards).CanExecute;
             customizeModeView.UpdateExecuteButton(canExecute);
             customizeModeView.UpdateOperationHint(GetOperationHint(opType));
 
@@ -1055,7 +1055,7 @@ namespace Olca.Presentation.CustomScreen
         /// 選択中のカードから操作種別を自動判定する
         /// </summary>
         private CustomizationOperation DetectCustomizeOperation()
-            => customScreen.PreviewCustomization(customizeSelectedCards).Operation;
+            => PreviewFromCommand(customizeSelectedCards).Operation;
 
         /// <summary>操作種別に応じたガイドテキストを返す</summary>
         private string GetOperationHint(CustomizationOperation opType)
@@ -1076,11 +1076,20 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>
         /// 実行ボタン押下: 自動判定した操作種別でカスタマイズを実行する
         /// </summary>
+        private CustomizationPreview PreviewFromCommand(IReadOnlyList<Card> materials)
+        {
+            if (materials == null || materials.Count != 2) return CustomizationPreview.Invalid("素材を2枚選んでください");
+            var response = customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.PreviewCustomization,
+                materials.Select(customScreen.Commands.HandleOf).ToArray()));
+            return response.Preview ?? CustomizationPreview.Invalid(response.Reason);
+        }
+
         private void OnCustomizeExecuteRequested()
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
             lastModeInputFrame=Time.frameCount;
-            var result = customScreen.ExecuteCustomization(customizeSelectedCards);
+            var response = customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.ExecuteCustomization, customizeSelectedCards.Select(customScreen.Commands.HandleOf).ToArray()));
+            var result = response.Preview ?? CustomizationPreview.Invalid(response.Reason);
             if (!result.CanExecute)
             {
                 UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
@@ -1116,6 +1125,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void OnCustomizeModeCancelled()
         {
+            customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelCustomization));
             lastModeInputFrame=Time.frameCount;
             customizeSelectedCards.Clear();
             customizeModeView.Exit();
@@ -1345,7 +1355,7 @@ namespace Olca.Presentation.CustomScreen
                 if (!materials.Contains(candidate)) materials.Add(candidate);
             }
             customizeModeView.ClearError();
-            customizeModeView.UpdateExecuteButton(customScreen.PreviewCustomization(customizeSelectedCards).CanExecute);
+            customizeModeView.UpdateExecuteButton(PreviewFromCommand(customizeSelectedCards).CanExecute);
             if (materials.Count < 2)
             {
                 string guide = materials.Count == 0 ? "最初の素材を選んでください" : "2枚目にカーソルを合わせてください";
@@ -1353,7 +1363,7 @@ namespace Olca.Presentation.CustomScreen
                 if (selectedCardDescription != null) selectedCardDescription.text = guide;
                 return;
             }
-            var preview = customScreen.PreviewCustomization(materials);
+            var preview = PreviewFromCommand(materials);
             string operation = preview.Operation == CustomizationOperation.Exceed ? "超越" :
                 preview.Operation == CustomizationOperation.Tuning ? "調律" : "融合";
             if (!preview.CanExecute)
@@ -1378,11 +1388,11 @@ namespace Olca.Presentation.CustomScreen
         private void OnConfirmClicked()
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
-            if (queueConfirmation == null) { customScreen.Confirm(); return; }
+            if (queueConfirmation == null) { customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm)); return; }
             var requestedScreen = customScreen;
             queueConfirmation(pointerClickTimestamp(), () => {
                 if (this == null || !ReferenceEquals(customScreen, requestedScreen) || Olca.Unity.GameplayPause.InputBlocked) return;
-                requestedScreen.Confirm();
+                requestedScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));
             });
         }
 

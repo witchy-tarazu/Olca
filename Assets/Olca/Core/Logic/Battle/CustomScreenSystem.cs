@@ -12,6 +12,7 @@ namespace Olca.Core.Logic.Battle
     /// </summary>
     public class CustomScreenSystem
     {
+        public CustomScreenCommands Commands { get; }
         private readonly Deck deck;
         private readonly List<Card> currentHand; // 現在表示されているカード
         private readonly List<Card> selectedCards; // カスタム画面で今回選択中のカード（確定前）
@@ -154,6 +155,7 @@ namespace Olca.Core.Logic.Battle
             this.exceedSystem = exceedSystem;
             this.tuningSystem = tuningSystem;
             this.fusionSystem = fusionSystem;
+            Commands = new CustomScreenCommands(this);
         }
 
         /// <summary>

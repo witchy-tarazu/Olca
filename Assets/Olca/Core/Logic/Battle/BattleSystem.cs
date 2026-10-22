@@ -174,6 +174,7 @@ namespace Olca.Core.Logic.Battle
         public BattleState State => state;
 
         /// <summary>一時停止中か</summary>
+        public bool IsUserPaused => (pauseReasons & BattlePauseReason.User) != 0;
         public bool IsPaused => pauseReasons != BattlePauseReason.None;
 
         /// <summary>バトル終了したか</summary>
@@ -202,6 +203,7 @@ namespace Olca.Core.Logic.Battle
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
+            customScreen.Commands.AttachBattle(this, randomProvider);
             Transformations = new TransformationSelectionState(player, customScreen);
             Transformations.OnActivationPresentation += PauseForTransformation;
             customScreen.OnOpening += OnTransformationPhaseOpening;

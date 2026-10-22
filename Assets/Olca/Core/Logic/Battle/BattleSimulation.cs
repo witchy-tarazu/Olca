@@ -49,8 +49,9 @@ namespace Olca.Core.Logic.Battle
     {
         public LogicalInput Input { get; }
         public bool? UserPaused { get; }
-        public BattleFrameCommand(LogicalInput input = null, bool? userPaused = null)
-        { Input = (input ?? new LogicalInput()).Copy(); UserPaused = userPaused; }
+        public CustomScreenCommand Custom { get; }
+        public BattleFrameCommand(LogicalInput input = null, bool? userPaused = null, CustomScreenCommand custom = null)
+        { Input = (input ?? new LogicalInput()).Copy(); UserPaused = userPaused; Custom = custom; }
     }
     public sealed class BattleFrameObservation
     {
@@ -68,7 +69,7 @@ namespace Olca.Core.Logic.Battle
             string panels = string.Join("", Enumerable.Range(0, BattleField.GRID_HEIGHT).SelectMany(y => Enumerable.Range(0, BattleField.GRID_WIDTH).Select(x => ((int)battle.Field.GetPanelType(new Vector2Int(x, y))).ToString(CultureInfo.InvariantCulture))));
             Canonical = string.Join("|", step, LogicalFrame, battle.State, battle.IsPaused, PlayerHp, p.X, p.Y, enemies,
                 battle.CardUsage.RemainingCount, battle.CardUsage.InFlightCard?.Id ?? "-", battle.PlayerActionPhase,
-                attack.ChargeFrames, attack.CooldownFrames, battle.DelayedEffects.ActiveEffectCount, panels, random.State, random.Draws, string.Join(";", events));
+                attack.ChargeFrames, attack.CooldownFrames, battle.DelayedEffects.ActiveEffectCount, panels, random.State, random.Draws, string.Join(";", events), battle.CustomScreen.Commands.Observe().Canonical);
         }
     }
     /// <summary>実ゲームと同じBattleSystemへの整数フレーム入口。製品データ/保存/UIを持たない。</summary>
@@ -82,37 +83,65 @@ namespace Olca.Core.Logic.Battle
         public long StepIndex { get; private set; }
         private bool stepping;
         public BattleSimulation(BattleSimulationSettings settings, uint seed, BasicAttackInputState attack = null)
+            : this(settings, seed, rng => CreateSampleBattle(settings, rng), false, attack) { }
+
+        /// <summary>初期状態と既存の定義を呼出元から注入する。同じコア以外に判定を持たせない。</summary>
+        public BattleSimulation(BattleSimulationSettings settings, uint seed, Func<IRandomProvider, BattleSystem> createBattle,
+            bool openInitialCustom, BasicAttackInputState attack = null)
         {
             Settings = settings ?? throw new ArgumentNullException(nameof(settings)); Random = new SeededBattleRandom(seed); this.attack = attack ?? new BasicAttackInputState();
+            Battle = (createBattle ?? throw new ArgumentNullException(nameof(createBattle)))(Random) ?? throw new ArgumentException("初期戦闘が必要です");
+            Battle.Player.OnHpChanged += (hp, max) => events.Add("player-hp:" + hp);
+            foreach (var enemy in Battle.Enemies) {
+                enemy.OnHpChanged += (hp, max) => events.Add("enemy-hp:" + enemy.EnemyId + ":" + hp);
+                enemy.OnDamaged += (damage, multiplier) => events.Add("enemy-hit:" + damage + ":" + multiplier.ToString("R", CultureInfo.InvariantCulture));
+            }
+            Battle.OnPlayerAttack += (target, damage) => events.Add("basic:" + target.EnemyId + ":" + damage);
+            Battle.CardUsage.OnCardUsed += card => events.Add("card:" + card.Id);
+            Battle.OnBattleEnd += result => events.Add("end:" + result);
+            if (openInitialCustom) {
+                // 製品の初戦カスタム開始と同じ既存手順。通常の再開コマンドにはゲージ条件を適用する。
+                Battle.CustomGauge.SetGaugeMs(CustomGaugeSystem.MAX_GAUGE_MS);
+                var opened = Battle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open));
+                if (!opened.Accepted) throw new ArgumentException(opened.Reason);
+            }
+        }
+        private static BattleSystem CreateSampleBattle(BattleSimulationSettings settings, IRandomProvider random)
+        {
             var player = new PlayerCharacter(settings.PlayerHp, new Vector2Int(0, 0));
             var enemy = new Enemy("sample/enemy", "CLI検証敵", settings.EnemyHp, ElementType.Earth, new Vector2Int(2, 0));
             var deck = new Deck();
             deck.AddCard(new Card("sword", "ソード", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Sword, 20, "外部シナリオ", startupFrames: 2, recoveryFrames: 3));
             deck.AddCard(new Card("heal", "回復", 1, CardRarity.Normal, CardCategory.Defense, ElementType.None, CardSeries.None, 5, "外部シナリオ", startupFrames: 1, recoveryFrames: 2));
-            deck.Shuffle(Random);
-            Battle = new BattleSystem(player, new List<Enemy> { enemy }, deck, randomProvider: Random);
-            Battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(2, 3));
-            Battle.CardUsage.EnqueueCards(deck.GetAllCards().ToList());
+            deck.Shuffle(random);
+            var battle = new BattleSystem(player, new List<Enemy> { enemy }, deck, randomProvider: random);
+            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(2, 3)); battle.CardUsage.EnqueueCards(deck.GetAllCards().ToList());
             enemy.ApplyStatus(new StatusEffect(StatusEffectType.Poison, 2000, damagePerTick: 1, poisonIntervalFrames: 30));
-            Battle.Field.ChangePanelType(new Vector2Int(2, 0), PanelType.Grass, new BattlePanelValues(heal: 1));
-            player.OnHpChanged += (hp, max) => events.Add("player-hp:" + hp);
-            enemy.OnHpChanged += (hp, max) => events.Add("enemy-hp:" + hp);
-            enemy.OnDamaged += (damage, multiplier) => events.Add("enemy-hit:" + damage + ":" + multiplier.ToString("R", CultureInfo.InvariantCulture));
-            Battle.OnPlayerAttack += (target, damage) => events.Add("basic:" + target.EnemyId + ":" + damage);
-            Battle.CardUsage.OnCardUsed += card => events.Add("card:" + card.Id);
-            Battle.OnBattleEnd += result => events.Add("end:" + result);
+            battle.Field.ChangePanelType(new Vector2Int(2, 0), PanelType.Grass, new BattlePanelValues(heal: 1));
+            return battle;
         }
         public BattleFrameObservation Step(BattleFrameCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (stepping) throw new InvalidOperationException("Stepは再入できません");
             var input = command.Input.Copy();
-            if (input.CustomScreenButtonDown) throw new NotSupportedException("この最初の入口ではカスタム選択コマンドをまだ扱いません");
             stepping = true;
             try {
                 StepIndex = checked(StepIndex + 1); events.Clear();
                 if (command.UserPaused == true) { Battle.Pause(BattlePauseReason.User); attack.Suspend(); }
                 if (command.UserPaused == false) Battle.Resume(BattlePauseReason.User);
+                if (command.Custom != null) {
+                    // 操作受付は論理フレームとは別。確定/復帰を受け付けたStepでも戦闘時間は進めない。
+                    var result = Battle.CustomScreen.Commands.Execute(command.Custom);
+                    if (Battle.IsPaused) attack.Suspend();
+                    events.AddRange(result.Events); events.Add("custom-state:" + result.Canonical);
+                    return new BattleFrameObservation(StepIndex, Battle, Random, attack, events.ToArray());
+                }
+                if (input.CustomScreenButtonDown) {
+                    // 通常戦闘入力の受付拒否は、その論理フレーム自体を失わせない。
+                    var result = Battle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open));
+                    events.AddRange(result.Events);
+                }
                 int milliseconds = (int)(StepIndex * 1000 / 60 - (StepIndex - 1) * 1000 / 60);
                 Battle.RunLogicalFrame(() => {
                     attack.Tick(Battle, input, Settings.ChargeFrames, Settings.IntervalFrames);
