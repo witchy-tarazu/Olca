@@ -202,13 +202,7 @@ namespace Olca.Core.Logic.Dungeon
             if((type==PanelType.Magma&&element==ElementType.Fire)||(type==PanelType.Grass&&element==ElementType.Earth))playerCharacter.Heal(terrain.Heal);
             else if(type==PanelType.Magma)playerCharacter.TakeDamage(terrain.Damage,affectsPoise:false);
         }
-        private void InitializeBattleTerrain(BattleSystem battle,int origin)
-        {
-            for(int x=0;x<BattleField.GRID_WIDTH;x++){
-                var terrain=map.GetTerrain(origin+x);
-                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),map.GetTerrainType(origin+x),new BattlePanelValues(terrain.Heal,terrain.Damage));
-            }
-        }
+        private void InitializeBattleTerrain(BattleSystem battle,int origin) => CheckpointBattleFactory.ApplyTerrain(battle,map,origin);
         private readonly bool hasFieldItems;
         private readonly HashSet<int> collectedItemCells = new HashSet<int>();
         public bool IsItemCollected(int cell) => collectedItemCells.Contains(cell);
@@ -1030,9 +1024,6 @@ namespace Olca.Core.Logic.Dungeon
             cardRewardSystem.GetCurrentDeck().RestoreCheckpointOrder(restored.Deck.GetAllCards(), restored.FirstHand);
             cardRewardSystem.RestoreObtained(restored.Obtained);
             var participants = plan.ParticipantCells.Select(i => map.GetCell(i).Enemy).ToList();
-            foreach (var e in snapshot.Enemies.Where(e => plan.ParticipantCells.Contains(e.CellIndex)))
-                map.GetCell(e.CellIndex).Enemy.MoveTo(new Vector2Int(e.GridX, e.GridY));
-            playerCharacter.MoveTo(new Vector2Int(snapshot.Player.GridX, snapshot.Player.GridY));
             currentContactInfo = new ContactInfo { Enemy = map.GetCell(plan.ContactCell).Enemy, EnemyCellIndex = plan.ContactCell,
                 ContactPositionX = plan.GridOriginX, IsDashContact = plan.DashContact,
                 DashEffect = plan.DashEffect.HasValue ? (ActionSystem.DashContactEffect?)plan.DashEffect.Value : null, DashValue = plan.DashValue };
@@ -1042,10 +1033,8 @@ namespace Olca.Core.Logic.Dungeon
             PendingItemReward=null;itemCardSelection=null;
             initialItemTargets=participants.Where(e=>!e.IsSummoned&&checkpointSession.Definitions.ItemQualifyingCells(plan.ParticipantCells,hasNextFloor).Any(i=>ReferenceEquals(map.GetCell(i).Enemy,e))).ToList();
             plannedItemReward=plan.ItemRewardIndex.HasValue?map.ItemRewards[plan.ItemRewardIndex.Value].Item:null;
-            currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
-                randomProvider, logger, exceedSystem, tuningSystem, fusionSystem, cardDatabase: cardDatabase);
-            InitializeBattleTerrain(currentBattle,(int)plan.GridOriginX);
-            currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
+            currentBattle = CheckpointBattleFactory.Create(playerCharacter,map,cardRewardSystem.GetCurrentDeck(),snapshot,restored.FirstHand,
+                randomProvider,logger:logger,exceed:exceedSystem,tuning:tuningSystem,fusion:fusionSystem,cardDatabase:cardDatabase);
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
             var started = currentBattle;
             OnBattleStart?.Invoke(currentContactInfo);
@@ -1128,6 +1117,8 @@ namespace Olca.Core.Logic.Dungeon
     /// <summary>内容を固定した復元定義。製品値を補完せず、呼出側が既存定義を登録する。</summary>
     public sealed class CheckpointDefinitions
     {
+        internal IReadOnlyDictionary<string, Card> PortableCards => cards;
+        internal int PortableGrantCount => grants.Count;
         public string Revision { get; }
         public string DungeonId { get; }
         public string MapHash { get; }

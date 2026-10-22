@@ -13,7 +13,8 @@ namespace Olca.Core.Logic.Battle
     {
         public uint State { get; private set; }
         public long Draws { get; private set; }
-        public SeededBattleRandom(uint seed) { State = seed == 0 ? 0x9e3779b9u : seed; }
+        public SeededBattleRandom(uint seed, uint? state = null, long draws = 0)
+        { if(state==0||draws<0||(!state.HasValue&&draws!=0))throw new ArgumentException("乱数状態が不正です");State = state ?? (seed == 0 ? 0x9e3779b9u : seed); Draws=draws; }
         private uint Next()
         {
             uint x = State; x ^= x << 13; x ^= x >> 17; x ^= x << 5; State = x; Draws++; return x;
@@ -87,9 +88,9 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>初期状態と既存の定義を呼出元から注入する。同じコア以外に判定を持たせない。</summary>
         public BattleSimulation(BattleSimulationSettings settings, uint seed, Func<IRandomProvider, BattleSystem> createBattle,
-            bool openInitialCustom, BasicAttackInputState attack = null)
+            bool openInitialCustom, BasicAttackInputState attack = null, uint? randomState = null, long randomDraws = 0)
         {
-            Settings = settings ?? throw new ArgumentNullException(nameof(settings)); Random = new SeededBattleRandom(seed); this.attack = attack ?? new BasicAttackInputState();
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings)); Random = new SeededBattleRandom(seed,randomState,randomDraws); this.attack = attack ?? new BasicAttackInputState();
             Battle = (createBattle ?? throw new ArgumentNullException(nameof(createBattle)))(Random) ?? throw new ArgumentException("初期戦闘が必要です");
             Battle.Player.OnTransformationDefenseEnded += () => events.Add("transformation-ended");
             Battle.Transformations.OnPreviewChanged += () => events.Add("transformation-preview:" + (Battle.Transformations.PendingId ?? "-"));

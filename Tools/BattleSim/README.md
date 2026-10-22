@@ -75,3 +75,15 @@ SHA256: `4597d866f2c40ce9f2624e4e61942ee73efd10ecd9872c9585457f4ef48d8edc`
 入力例は `new CustomScreenCommand(CustomCommandKind.PreviewTransformation, "fixture-a")`、取消は `CancelTransformation`。選択カードがあれば1枚解除し、次の取消でその画面の仮変身を戻す既存規則です。発動は`Confirm`、画面終了は`ReturnToBattle`です。確定済み変身の任意解除コマンドはありません。弱点命中・持続回数切れ・戦闘終了の解除は同じ戦闘Coreが行い、観測とイベントに出ます。
 
 変身の残回数/使用済みID/演出残時間/耐性/攻撃性能は各受付・フレームの状態に含まれます。定義は作成時に`battle.Transformations.Configure(...)`で明示注入し、製品DB/保存復帰の投入経路はまだ別残件です。Unity側の通常Viewも同じ選択/取消コマンドを利用しますが、この検証でGUIコピーや物理実機を同期・操作したことにはなりません。
+
+### 製品定義と既存戦闘開始セーブの輸送（最初の区切り）
+
+`ExportProductBattle.cs`はUnity Editor側だけで実行する取得アダプターです。CLIのビルド対象には含めません。正規シーン`Assets/Scenes/DungeonScene.unity`を保存しないPreview Sceneで読み、実際のControllerの製品ファクトリー・マップ生成・定義登録を呼びます。値表をCLIへ手で複製しません。公開`Export(scenePath, sourceCheckpointPath, dedicatedRoot, replaySeed)`へ引数を明示できます。`Main`はこの作業の専用コピーと出力ルートを使う再現入口です。Unity MCP `run_script`のfileにこのファイル、entryに`ExportProductBattle.Main`を指定します。元セーブは読み取りのみで専用コピーを作り、出力は既存ValidationStorageGuardで制限。Play、Controller起動、Scene保存、設定操作はしません。
+
+実証した出力は`/workspace/work/Olca-portable-product-proof-20261022/product-battle.json`です。既存手順でビルドしたDLLに `--package /workspace/work/Olca-portable-product-proof-20261022/product-battle.json --verify` を渡すと、Unity DLLなしで365ステップを再生します。`--batch`と`--work`が使えます。専用の比較シナリオのため`--frames`は使いません。CLIは入力を読みstdoutへトレースを出すだけで、ゲームの保存や設定を書きません。
+
+DTOは正規カードの全コンストラクター値・Modifier・定義キー/hash、固定敵・耐性/強靭度/接敵定義、マップ/アイテム/ショップ/イベント/地形、必要な戦闘ルールを運びます。再構成したマップhash・カードカタログhashと既存CheckpointCodecの検証を通した後だけ開始します。同ID別定義はキー/hashで復元し、IDだけでは曖昧なDB検索を拒否します。保存の封筒codecもUnityと純C#で共通です。
+
+**乱数の限界:** 旧チェックポイントにはゲーム用System.Randomのseed/内部状態がありません。初回手札・報酬候補は保存値を保ち再抽選せず、以後の比較用seedを輸送DTOに明示します。これは旧ライブセッションの全乱数列の復元ではありません。輸送DTOの`RandomState`/`RandomDraws`を明示した場合は、今回の純C#乱数状態から継続できます。元の保存形式にフィールドを追加したり、推測seedで元保存を書き換えたりしません。
+
+**未対応:** 最初の入口は通常接触のBattleStart境界だけです。ダッシュ初撃、複数階層の封筒、加工付与/調律履歴定義の輸送、製品の融合/超越/調律ルール・変身定義、報酬受領後の攻略/永続保存への復帰コマンドは未対応です。欠損や未対応は例外/拒否として扱い、未定義データを作りません。任意の戦闘途中セーブは新設していません。既存保存層・DungeonSystemの開始時配置/地形/初回手札処理を共用し、通常経路の回帰はUnity MCPの全件テストで確認します。GUIコピーと実機は別の未確認です。
