@@ -25,6 +25,14 @@ namespace Olca.Core.Logic.Dungeon
         { using(var sha=SHA256.Create())return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-",""); }
         public static byte[] Encode(CheckpointDto value)
         {var payload=Serialize(value);return Serialize(new Envelope{Version=1,Payload=Encoding.UTF8.GetString(payload),Sha256=Hash(payload)});}
+        public static byte[] Encode(FloorSequenceCheckpointDto value)
+        {var payload=Serialize(value);return Serialize(new Envelope{Version=1,Payload=Encoding.UTF8.GetString(payload),Sha256=Hash(payload)});}
+        public static FloorSequenceCheckpointDto DecodeFloor(byte[] bytes)
+        {
+            var e=Deserialize<Envelope>(bytes);
+            if(e==null||e.Version!=1||e.Payload==null||Hash(Encoding.UTF8.GetBytes(e.Payload))!=e.Sha256)throw new InvalidDataException("保存形式が未対応、または整合性検証に失敗しました");
+            return Deserialize<FloorSequenceCheckpointDto>(Encoding.UTF8.GetBytes(e.Payload));
+        }
         public static CheckpointDto Decode(byte[] bytes)
         {
             var e=Deserialize<Envelope>(bytes);

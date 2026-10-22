@@ -142,6 +142,7 @@ namespace Olca.Core.Logic.Dungeon
     public sealed class PortableBattlePackage
     {
         public int Version=1;public string Revision,MapHash,CatalogHash;public PortableMapDefinition Map;public PortableCardDefinition[] Cards;
+        public PortableFloorRoute FloorRoute;
         public byte[] CheckpointEnvelope;public uint ReplaySeed;public uint? RandomState;public long RandomDraws;public PortableBattleRules Rules;
         public static PortableBattlePackage Capture(CheckpointDefinitions definitions,byte[] checkpoint,PortableBattleRules rules,uint replaySeed)
         {
@@ -152,12 +153,26 @@ namespace Olca.Core.Logic.Dungeon
             if(saved!=null){saved.Validate();result.ReplaySeed=saved.Seed;result.RandomState=saved.State;result.RandomDraws=saved.Draws;}
             result.Restore(out _);return result;
         }
+        public static PortableBattlePackage Capture(FloorSequenceDefinitions definitions,byte[] checkpoint,PortableBattleRules rules,uint replaySeed)
+        {
+            var envelope=PortableCheckpointJson.DecodeFloor(checkpoint);
+            if(!definitions.TryRestore(envelope,out var restored,out var error))throw new InvalidDataException(error);
+            var result=Capture(definitions.Floor(envelope.FloorIndex),PortableCheckpointJson.Encode(envelope.State),rules,replaySeed);
+            result.FloorRoute=PortableFloorRoute.Capture(definitions,checkpoint);
+            result.Restore(out _);return result;
+        }
         public RestoredCheckpoint Restore(out PortableCardCatalog catalog)
         {
             if(Version!=1||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");Rules.Validate();
             if(RandomState==0||RandomDraws<0||(!RandomState.HasValue&&RandomDraws!=0))throw new ArgumentException("乱数状態が不正です");
             var defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());
             if(defs.MapHash!=MapHash||defs.CardCatalogHash!=CatalogHash)throw new ArgumentException("輸送された製品定義のhashが一致しません");
+            if(FloorRoute!=null) {
+                var selected=FloorRoute.Restore(out var state);
+                if(selected.Revision!=Revision||selected.MapHash!=MapHash||selected.CardCatalogHash!=CatalogHash||
+                    !PortableCheckpointJson.Encode(state).SequenceEqual(CheckpointEnvelope))
+                    throw new ArgumentException("階層封筒と選択された戦闘定義が一致しません");
+            }
             if(!CheckpointCodec.TryRestore(PortableCheckpointJson.Decode(CheckpointEnvelope),defs,out var restored,out var error))throw new InvalidDataException(error);
             if(restored.Snapshot.Boundary!=CheckpointBoundary.BattleStart)throw new NotSupportedException("この入口は戦闘開始チェックポイントのみ対応します");
             var saved=restored.Snapshot.Battle.Random;

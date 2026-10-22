@@ -1783,13 +1783,23 @@ namespace Olca.Core.Logic.Dungeon
             floors = list.Select(map => DungeonCheckpointSession.CreateDefault(map, initialDeck).Definitions).ToArray();
             foreach (var floor in floors) foreach (var card in extras) floor.RegisterCard(card.Key, card.Value);
             RouteId = routeId; Revision = revision;
-            RouteHash = CheckpointValues.Hash(w => {
-                w.Write(RouteId); w.Write(Revision); w.Write(floors.Length);
-                foreach (var floor in floors) {
-                    w.Write(floor.DungeonId); w.Write(floor.MapHash); w.Write(floor.SchemaVersion); w.Write(floor.CardCatalogHash);
-                }
-            });
+            RouteHash = ComputeRouteHash();
         }
+        // 正規カタログを値DTOから戻す入口。階層ごとの定義キーを再採番しない。
+        internal FloorSequenceDefinitions(string routeId,string revision,CheckpointDefinitions[] definitions)
+        {
+            if(string.IsNullOrWhiteSpace(routeId)||string.IsNullOrWhiteSpace(revision)||definitions==null||definitions.Length==0||definitions.Any(d=>d==null))
+                throw new ArgumentException("階層列の定義が欠損しています");
+            floors=(CheckpointDefinitions[])definitions.Clone();
+            floors[floors.Length-1].CreateInitialMap().ValidateFinalFloorForDeparture();
+            RouteId=routeId;Revision=revision;RouteHash=ComputeRouteHash();
+        }
+        private string ComputeRouteHash() => CheckpointValues.Hash(w => {
+            w.Write(RouteId); w.Write(Revision); w.Write(floors.Length);
+            foreach (var floor in floors) {
+                w.Write(floor.DungeonId); w.Write(floor.MapHash); w.Write(floor.SchemaVersion); w.Write(floor.CardCatalogHash);
+            }
+        });
         public DungeonConfig CreateInitialMap(int index)
         {
             var floor = Floor(index);
