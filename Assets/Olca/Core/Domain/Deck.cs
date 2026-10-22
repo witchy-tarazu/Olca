@@ -556,15 +556,33 @@ namespace Olca.Core.Domain
             this.materialCards=materialCards?.Select(c=>c.Clone()).ToArray();this.resultCard=resultCard?.Clone();
             Id=id;ResultId=resultId;ResultLevel=resultLevel;this.materials=materials?.ToArray();
             if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(resultId)||this.materials==null||this.materials.Length!=2||this.materials.Any(string.IsNullOrWhiteSpace)||
-                resultLevel==ExceedLevel.Lv3||!Enum.IsDefined(typeof(ExceedLevel),resultLevel))throw new ArgumentException("図鑑レシピ定義が不正です");
+                resultLevel==ExceedLevel.Lv3||!Enum.IsDefined(typeof(ExceedLevel),resultLevel)||
+                (resultCard!=null&&(resultCard.Id!=resultId||resultCard.ExceedLevel!=resultLevel)))throw new ArgumentException("図鑑レシピ定義が不正です");
         }
         public bool IsResultKnown(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) => resultCard==null?
-            (profile.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>c.Id==ResultId&&c.Level==ResultLevel):CollectionDisplay.IsKnown(profile,resultCard,catalog);
-        public string MaterialName(ClearReturnProfile profile,int index) => materialCards==null?CollectionDisplay.Name(profile,materials[index]):
-            CollectionDisplay.MetadataKnown(profile,materialCards[index])?materialCards[index].Name:"？？？";
-        public string ResultName(ClearReturnProfile profile) => resultCard==null?CollectionDisplay.Name(profile,ResultId,ResultLevel):
-            CollectionDisplay.MetadataKnown(profile,resultCard)?resultCard.Name:"？？？";
+            (profile?.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>c.Id==ResultId&&c.Level==ResultLevel):CollectionDisplay.IsKnown(profile,resultCard,catalog);
+        public bool IsRevealed(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) =>
+            (profile?.RevealedRecipes??Array.Empty<string>()).Contains(Id)||IsResultKnown(profile,catalog);
+        public string MaterialName(ClearReturnProfile profile,int index,IReadOnlyList<Card> catalog=null) => materialCards==null?CollectionDisplay.Name(profile,materials[index]):
+            CollectionDisplay.IsKnown(profile,materialCards[index],catalog)?materialCards[index].Name:"？？？";
+        public string ResultName(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null) => !IsRevealed(profile,catalog)?"？？？":
+            resultCard==null?CollectionDisplay.Name(profile,ResultId,ResultLevel):resultCard.Name;
+        // 公開履歴はレシピIDに対する知識。結果定義を特定できない旧定義から性能を推測しない。
+        public bool TryGetResult(ClearReturnProfile profile,out Card result,IReadOnlyList<Card> catalog=null)
+        {
+            result=IsRevealed(profile,catalog)?resultCard?.Clone():null;return result!=null;
+        }
+        public string ResultPerformance(ClearReturnProfile profile,IReadOnlyList<Card> catalog=null)
+        {
+            if(!TryGetResult(profile,out var card,catalog))return null;
+            var description=card.Description??"";
+            if(materialCards==null)description="素材定義未特定のため説明は非表示";
+            else foreach(var material in materialCards.Where(c=>!CollectionDisplay.IsKnown(profile,c,catalog)))
+                if(!string.IsNullOrEmpty(material.Name))description=description.Replace(material.Name,"？？？");
+            return CollectionDisplay.PerformanceText(card,description);
+        }
         public bool Matches(IReadOnlyList<Card> input,Card output) => input!=null&&output!=null&&output.Id==ResultId&&output.ExceedLevel==ResultLevel&&
+            (resultCard==null||CollectionDisplay.DefinitionHash(output)==CollectionDisplay.DefinitionHash(resultCard))&&
             input.All(c=>c!=null)&&input.Select(c=>c.Id).OrderBy(x=>x).SequenceEqual(materials.OrderBy(x=>x));
     }
     public static class CollectionDisplay
@@ -598,9 +616,23 @@ namespace Olca.Core.Domain
                 .Where(known=>!catalog.Any(c=>EntryKnown(known,c,catalog))).GroupBy(c=>(c.Id,c.Level,c.Rarity,c.Name))
                 .Select(g=>g.Key.Name+"　登録済み（詳細定義未特定）")).ToArray();
         }
-        public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe)
-            => !(profile?.RevealedRecipes??Array.Empty<string>()).Contains(recipe.Id)?"？？？　未公開レシピ":
-                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i)))+" → "+recipe.ResultName(profile);
+        public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe,IReadOnlyList<Card> catalog=null)
+            => !recipe.IsRevealed(profile,catalog)?"？？？　未公開レシピ":
+                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i,catalog)))+" → "+recipe.ResultName(profile,catalog);
+        public static CollectionRecipeRow[] RecipeRows(ClearReturnProfile profile,IEnumerable<CollectionRecipe> recipes,IReadOnlyList<Card> catalog=null)
+            => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
+        public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+
+            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+card.Element+"　シリーズ "+card.Series?.Name+
+            "\n"+(description??card.Description);
+    }
+    /// <summary>公開判定後の表示専用値。未公開行には結果定義自体を渡さない。</summary>
+    public sealed class CollectionRecipeRow
+    {
+        public string Text { get; }
+        private readonly Card result;
+        public Card Result => result?.Clone();
+        public string Performance { get; }
+        internal CollectionRecipeRow(string text,Card result,string performance){Text=text;this.result=result?.Clone();Performance=performance;}
     }
     public interface IClearReturnStore
     {

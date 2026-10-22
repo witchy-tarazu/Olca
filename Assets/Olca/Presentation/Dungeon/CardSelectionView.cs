@@ -211,25 +211,73 @@ namespace Olca.Presentation.Dungeon
         }
         private int collectionPage;
         private bool recipesTab;
-        public void RenderCollection(string[] cards,string[] recipes,bool pending,string error,Action close,Action retrySave)
+        private Action collectionBackAction;
+        private void Update()
+        {
+            if(collectionBackAction!=null&&content!=null&&content.activeInHierarchy&&
+                UnityEngine.Input.GetKeyDown(KeyCode.Escape))collectionBackAction();
+        }
+        private void CollectionContent(string name)
         {
             if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
-            content=new GameObject("CardCollectionContents",typeof(RectTransform));content.transform.SetParent(transform,false);
+            content=new GameObject(name,typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+        }
+        private void CollectionFocus(string name)
+        {
+            var buttons=content.GetComponentsInChildren<Button>();
+            var active=buttons.Where(b=>b.IsInteractable()).ToArray();
+            foreach(var button in buttons)button.navigation=new Navigation{mode=Navigation.Mode.None};
+            for(int i=0;i<active.Length;i++){
+                var previous=active[(i+active.Length-1)%active.Length];var next=active[(i+1)%active.Length];
+                active[i].navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=previous,selectOnLeft=previous,selectOnDown=next,selectOnRight=next};
+            }
+            var first=active.FirstOrDefault(b=>b.name==name)??active.FirstOrDefault();
+            if(first!=null)first.Select();
+        }
+        private void CollectionIcon(string name,Card card,float x,float y,float size,Func<Card,Sprite> icon)
+        {
+            var sprite=icon?.Invoke(card);if(sprite==null)return;
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(content.transform,false);
+            var image=obj.GetComponent<Image>();image.sprite=sprite;image.preserveAspect=true;image.raycastTarget=false;
+            var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(x,y);rect.sizeDelta=new Vector2(size,size);
+        }
+        public void RenderCollection(string[] cards,CollectionRecipeRow[] recipes,bool pending,string error,Action close,Action retrySave,Func<Card,Sprite> icon=null,string focus=null)
+        {
+            CollectionContent("CardCollectionContents");collectionBackAction=pending?null:close;
             Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
             Text("CollectionStatus",error??"永続入手で登録。融合の公開履歴はカード入手と別に保存します。",0,360,1700,80,24);
-            Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave);});
-            Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave);});
-            var rows=recipesTab?recipes:cards;const int perPage=4;int pages=Math.Max(1,(rows.Length+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
-            for(int n=0;n<perPage&&collectionPage*perPage+n<rows.Length;n++)Text("CollectionRow_"+n,rows[collectionPage*perPage+n],0,155-n*110,1740,100,25);
-            Button("PreviousCollectionPage","前へ",-430,-330,500,60,()=>{collectionPage--;RenderCollection(cards,recipes,pending,error,close,retrySave);}).interactable=collectionPage>0;
-            Button("NextCollectionPage","次へ",430,-330,500,60,()=>{collectionPage++;RenderCollection(cards,recipes,pending,error,close,retrySave);}).interactable=collectionPage+1<pages;
+            Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"CardCollectionTab");});
+            Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeCollectionTab");});
+            int count=recipesTab?recipes.Length:cards.Length;const int perPage=4;int pages=Math.Max(1,(count+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
+            for(int n=0;n<perPage&&collectionPage*perPage+n<count;n++){
+                int index=collectionPage*perPage+n;float y=155-n*110;
+                if(!recipesTab){Text("CollectionRow_"+n,cards[index],0,y,1740,100,25);continue;}
+                var row=recipes[index];var result=row.Result;
+                Text("CollectionRow_"+n,row.Text,-100,y,1300,100,25);
+                if(result!=null){
+                    CollectionIcon("RecipeResultIcon_"+index,result,-805,y,70,icon);
+                    Button("RecipeDetails_"+index,"結果の性能",740,y,260,70,()=>{
+                        CollectionContent("RecipeResultDetails");
+                        Text("RecipeDetailsTitle","融合結果の性能",0,430,1500,80,36);
+                        CollectionIcon("RecipeDetailIcon",result,0,245,170,icon);
+                        Text("RecipePerformance",row.Performance,0,-15,1600,320,30);
+                        Text("RecipeKnowledgeNotice","レシピの公開情報です。カード本体の入手済み登録とは別です。",0,-250,1650,80,24);
+                        Action back=()=>RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeDetails_"+index);
+                        collectionBackAction=back;Button("CloseRecipeDetails","レシピへ戻る（Esc）",0,-430,850,75,back);CollectionFocus("CloseRecipeDetails");
+                    });
+                }
+            }
+            Button("PreviousCollectionPage","前へ",-430,-330,500,60,()=>{collectionPage--;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"PreviousCollectionPage");}).interactable=collectionPage>0;
+            Button("NextCollectionPage","次へ",430,-330,500,60,()=>{collectionPage++;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"NextCollectionPage");}).interactable=collectionPage+1<pages;
             Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
             Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
             if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-515,850,55,retrySave);
+            CollectionFocus(focus??"CardCollectionTab");
         }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
+            collectionBackAction=null;
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;
             lastRun = flow?.RunId; lastStage = flow?.Stage;
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }

@@ -525,8 +525,9 @@ namespace Olca.Application.Dungeon
         {
             var p=clearReturnSession.Snapshot;var cards=CurrentCollectionDefinitions();
             var rows=CollectionDisplay.CardRows(p,cards);
-            cardCollectionView.RenderCollection(rows,new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes.Select(r=>CollectionDisplay.RecipeText(p,r)).ToArray(),
-                clearReturnSession.HasPendingSave,clearReturnSession.Error,CloseCardCollection,()=>{clearReturnSession.Retry();ShowCardCollection();});
+            cardCollectionView.RenderCollection(rows,CollectionDisplay.RecipeRows(p,new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes,cards),
+                clearReturnSession.HasPendingSave,clearReturnSession.Error,CloseCardCollection,()=>{clearReturnSession.Retry();ShowCardCollection();},
+                card=>customScreenView!=null?customScreenView.GetCardIcon(card.Id):null);
             cardCollectionView.transform.SetAsLastSibling();
         }
         private void CloseCardCollection()

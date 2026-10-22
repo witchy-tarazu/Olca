@@ -4035,9 +4035,50 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(session.DeleteDeck(original.Id));Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));
         }
 
-        private static CollectionRecipe[] CollectionRecipes() => new[]{
-            new CollectionRecipe("one",new[]{"sword","bomb"},"fire_sword"),
-            new CollectionRecipe("special",new[]{"shield","heal"},"fire_sword")};
+        private static CollectionRecipe[] CollectionRecipes()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();
+            CollectionRecipe Recipe(string id,string a,string b)=>new CollectionRecipe(id,new[]{a,b},"fire_sword",
+                materialCards:new[]{f.CreateById(a),f.CreateById(b)},resultCard:f.CreateById("fire_sword"));
+            return new[]{Recipe("one","sword","bomb"),Recipe("special","shield","heal")};
+        }
+        [Test]
+        public void 融合公開は結果詳細だけを許可し未知素材と未入手カード本体は隠す()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var recipes=CollectionRecipes();var session=new ClearReturnSession(Store(),recipes);
+            Assert.IsTrue(CollectionDisplay.RecipeRows(session.Snapshot,recipes).All(r=>r.Result==null));
+            Assert.IsTrue(session.RecordFusion("one"));var p=session.Snapshot;var rows=CollectionDisplay.RecipeRows(p,recipes);
+            StringAssert.Contains("？？？ ＋ ？？？ → ファイアソード",rows[0].Text);
+            Assert.AreEqual(60,rows[0].Result.Power);StringAssert.Contains("威力 60",rows[0].Performance);
+            StringAssert.Contains("（？？？＋？？？の融合）",rows[0].Performance);
+            Assert.IsNull(rows[1].Result);Assert.AreEqual("？？？　未公開レシピ",rows[1].Text);
+            Assert.IsEmpty(p.Owned);Assert.IsEmpty(p.DiscoveredCards);Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(p,f.CreateById("fire_sword")));
+            rows[0].Result.Modifier.BonusDamage=999;Assert.AreEqual(60,rows[0].Result.GetFinalPower());
+            var resumed=new ClearReturnSession(Store(),recipes);Assert.IsTrue(resumed.EnsureCollection());
+            Assert.AreEqual(60,CollectionDisplay.RecipeRows(resumed.Snapshot,recipes)[0].Result.Power);Assert.IsEmpty(resumed.Snapshot.DiscoveredCards);
+        }
+        [Test]
+        public void 同ID同名別性能の入手履歴や融合結果では別定義レシピを公開しない()
+        {
+            var f=new Olca.Application.Battle.SimpleCardFactory();var actual=f.CreateById("fire_sword");
+            var other=new Card(actual.Id,actual.Name,actual.Cost,actual.Rarity,actual.Category,actual.Element,actual.Series,999,actual.Description);
+            var recipe=new CollectionRecipe("other",new[]{"sword","bomb"},other.Id,resultCard:other);
+            var catalog=f.CollectionCards.Concat(new[]{other}).ToArray();
+            var known=new DiscoveredCard{Id=actual.Id,Name=actual.Name,Level=actual.ExceedLevel,Rarity=actual.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(actual)};
+            var p=new ClearReturnProfile{DiscoveredCards=new[]{known}};
+            Assert.IsFalse(recipe.IsResultKnown(p,catalog));Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{recipe},catalog)[0].Result);
+            Assert.IsFalse(CollectionRecipes()[0].Matches(new[]{f.CreateById("sword"),f.CreateById("bomb")},other));
+            known.DefinitionHash=null;Assert.IsFalse(recipe.IsResultKnown(p,catalog));
+            var materialRecipe=new CollectionRecipe("material",new[]{actual.Id,"bomb"},"sword",materialCards:new[]{other,f.CreateById("bomb")},resultCard:f.CreateById("sword"));
+            p.RevealedRecipes=new[]{"material"};Assert.AreEqual("？？？",materialRecipe.MaterialName(p,0,catalog));
+        }
+        [Test]
+        public void 結果定義のない旧レシピは公開履歴だけから性能を推測しない()
+        {
+            var old=new CollectionRecipe("legacy",new[]{"a","b"},"fire_sword");var p=new ClearReturnProfile{RevealedRecipes=new[]{"legacy"}};
+            Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{old})[0].Result);
+            Assert.AreEqual("公開済み：？？？ ＋ ？？？ → ？？？",CollectionDisplay.RecipeText(p,old));
+        }
         [Test]
         public void 図鑑はスターターを登録し未入手のカード性能とレシピ素材を公開しない()
         {
@@ -4069,7 +4110,8 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(cs.ExecuteFusion(new[]{sword,bomb}).IsSuccess);Assert.AreEqual(1,events);Assert.IsTrue(session.HasPendingSave);
             Assert.IsEmpty(session.Snapshot.RevealedRecipes??new string[0]);Assert.IsTrue(cs.TryUndoCustomization());Assert.AreEqual(2,cs.CurrentHand.Count);
             io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual("one",session.Snapshot.RevealedRecipes.Single());Assert.IsEmpty(session.Snapshot.Owned);
-            Assert.IsEmpty(session.Snapshot.DiscoveredCards);StringAssert.DoesNotContain("ソード",CollectionDisplay.RecipeText(session.Snapshot,CollectionRecipes()[0]));
+            Assert.IsEmpty(session.Snapshot.DiscoveredCards);StringAssert.Contains("？？？ ＋ ？？？ → ファイアソード",CollectionDisplay.RecipeText(session.Snapshot,CollectionRecipes()[0]));
+            Assert.AreEqual(60,CollectionDisplay.RecipeRows(session.Snapshot,CollectionRecipes())[0].Result.Power);
             session=new ClearReturnSession(Store(),CollectionRecipes());Assert.IsTrue(session.EnsureCollection());Assert.AreEqual("one",session.Snapshot.RevealedRecipes.Single());
         }
         [TestCase(false)][TestCase(true)]
