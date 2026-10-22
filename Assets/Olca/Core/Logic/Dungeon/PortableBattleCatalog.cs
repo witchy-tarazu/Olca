@@ -138,8 +138,8 @@ namespace Olca.Core.Logic.Dungeon
     public sealed class PortableBattleRules
     {
         public int ChargeFrames,IntervalFrames,HitInvincibilityMs,StartupFrames,RecoveryFrames;public int? CancelAfterFrames;
-        public float GaugeSpeed;
-        public void Validate(){if(ChargeFrames<1||IntervalFrames<1||HitInvincibilityMs<0||float.IsNaN(GaugeSpeed)||float.IsInfinity(GaugeSpeed)||GaugeSpeed<=0)throw new ArgumentException("戦闘ルール値が不正です");_ = new PlayerAttackTiming(StartupFrames,RecoveryFrames,CancelAfterFrames);}
+        public float GaugeSpeed;public int? ExplorationNormalSpeedMilliPerSecond;
+        public void Validate(){if((ExplorationNormalSpeedMilliPerSecond.HasValue&&ExplorationNormalSpeedMilliPerSecond.Value<=0)||ChargeFrames<1||IntervalFrames<1||HitInvincibilityMs<0||float.IsNaN(GaugeSpeed)||float.IsInfinity(GaugeSpeed)||GaugeSpeed<=0)throw new ArgumentException("戦闘ルール値が不正です");_ = new PlayerAttackTiming(StartupFrames,RecoveryFrames,CancelAfterFrames);}
     }
     public sealed class PortableBattlePackage
     {

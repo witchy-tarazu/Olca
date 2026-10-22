@@ -17,10 +17,12 @@ namespace Olca.Core.Logic.Dungeon
                 CheckpointEnvelope=(byte[])checkpoint.Clone(),Floors=Enumerable.Range(0,definitions.FloorCount).Select(i=>PortableFloorDefinition.Capture(definitions.Floor(i))).ToArray()};
             result.Restore(out _);return result;
         }
-        public CheckpointDefinitions Restore(out CheckpointDto state)
+        public FloorSequenceDefinitions CreateDefinitions(){Restore(out _,out var definitions);return definitions;}
+        public CheckpointDefinitions Restore(out CheckpointDto state)=>Restore(out state,out _);
+        private CheckpointDefinitions Restore(out CheckpointDto state,out FloorSequenceDefinitions definitions)
         {
             if(Version!=1||Floors==null||Floors.Length==0||Floors.Any(f=>f==null)||CheckpointEnvelope==null)throw new ArgumentException("階層輸送の版または内容が不正です");
-            var definitions=new FloorSequenceDefinitions(RouteId,Revision,Floors.Select(f=>f.Restore()).ToArray());
+            definitions=new FloorSequenceDefinitions(RouteId,Revision,Floors.Select(f=>f.Restore()).ToArray());
             if(definitions.RouteHash!=RouteHash)throw new ArgumentException("階層列の製品定義hashが一致しません");
             var envelope=PortableCheckpointJson.DecodeFloor(CheckpointEnvelope);
             if(!definitions.TryRestore(envelope,out var restored,out var error))throw new InvalidDataException(error);

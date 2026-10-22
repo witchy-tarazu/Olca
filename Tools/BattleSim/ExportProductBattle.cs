@@ -13,7 +13,7 @@ public static class ExportProductBattle {
    int Value(string name)=>(int)type.GetField(name,flags).GetValue(controller);
    if(Value("basicAttackChargeMultiplier")!=2)throw new Exception("charge multiplier is not supported by this transport");
    var factory=(SimpleCardFactory)Call("CreateCardFactory");var map=(DungeonConfig)Call("CreateDefaultDungeon",false);var defs=(CheckpointDefinitions)Call("CreateSingleDefinitions",map,factory.CreateStarterDeck());
-   var timing=CheckpointBattleFactory.ProductBasicTiming;var rules=new PortableBattleRules{ChargeFrames=Value("basicAttackChargeFrames"),IntervalFrames=Value("basicAttackIntervalFrames"),HitInvincibilityMs=Value("commonHitInvincibilityMs"),StartupFrames=timing.StartupFrames,RecoveryFrames=timing.RecoveryFrames,CancelAfterFrames=timing.CancelAfterFrames,GaugeSpeed=CheckpointBattleFactory.DefaultGaugeSpeed};
+   var timing=CheckpointBattleFactory.ProductBasicTiming;var rules=new PortableBattleRules{ExplorationNormalSpeedMilliPerSecond=Value("explorationNormalSpeedMilliPerSecond"),ChargeFrames=Value("basicAttackChargeFrames"),IntervalFrames=Value("basicAttackIntervalFrames"),HitInvincibilityMs=Value("commonHitInvincibilityMs"),StartupFrames=timing.StartupFrames,RecoveryFrames=timing.RecoveryFrames,CancelAfterFrames=timing.CancelAfterFrames,GaugeSpeed=CheckpointBattleFactory.DefaultGaugeSpeed};
    var package=PortableBattlePackage.Capture(defs,File.ReadAllBytes(input),rules,seed);
    package.Processing=PortableProcessingCatalog.Capture("product/processing","v1",factory.FusionCards.Concat(package.Cards.Select(c=>c.Restore())),factory,new SimpleFusionRecipeProvider(factory).FusionDefinitions,factory.GetTuningDefinition);
    package.Restore(out _);var packed=PortableCheckpointJson.Serialize(package);
