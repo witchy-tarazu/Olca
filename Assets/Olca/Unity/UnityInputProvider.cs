@@ -597,4 +597,40 @@ namespace Olca.Unity
             }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
         }
     }
+    public sealed class DialogueTextSettingsStore
+    {
+        [System.Runtime.Serialization.DataContract] private sealed class Document {
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Version;
+            [System.Runtime.Serialization.DataMember(IsRequired=true)] public int Speed;
+        }
+        private readonly string directory;
+        private readonly CheckpointFileIo io;
+        private bool writing;
+        public string ActivePath => System.IO.Path.Combine(directory,"dialogue-text.json");
+        private string BackupPath => ActivePath+".backup";
+        public DialogueTextSettingsStore(string directory,CheckpointFileIo io=null)
+        {this.directory=System.IO.Path.GetFullPath(directory);this.io=io??new CheckpointFileIo();}
+        private static byte[] Encode(Olca.Core.Domain.DialogueTextSpeed speed){using(var stream=new System.IO.MemoryStream()){
+            new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).WriteObject(stream,new Document{Version=1,Speed=(int)speed});return stream.ToArray();}}
+        private static Olca.Core.Domain.DialogueTextSpeed Decode(byte[] bytes){if(bytes.Length==0||bytes.Length>4096)throw new System.IO.InvalidDataException();
+            using(var stream=new System.IO.MemoryStream(bytes)){var doc=(Document)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).ReadObject(stream);
+                if(doc==null||doc.Version!=1)throw new System.IO.InvalidDataException();if(!System.Enum.IsDefined(typeof(Olca.Core.Domain.DialogueTextSpeed),doc.Speed))throw new System.IO.InvalidDataException();return (Olca.Core.Domain.DialogueTextSpeed)doc.Speed;}}
+        private static bool Failure(System.Exception e)=>e is System.IO.IOException||e is System.IO.InvalidDataException||e is System.UnauthorizedAccessException||e is System.Runtime.Serialization.SerializationException||e is System.Xml.XmlException||e is System.ArgumentException||e is System.Security.SecurityException;
+        public bool TryRead(out Olca.Core.Domain.DialogueTextSpeed speed,out string error){speed=Olca.Core.Domain.DialogueTextSpeed.Normal;error=null;try{
+            if(!System.IO.File.Exists(ActivePath)){if(System.IO.Directory.Exists(ActivePath)||System.IO.File.Exists(BackupPath)||System.IO.Directory.Exists(BackupPath))throw new System.IO.IOException();return true;}
+            speed=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
+        }catch(System.Exception e)when(Failure(e)){error="文字表示速度の設定を読めません。保存内容は変更していません。";return false;}}
+        public bool TrySave(Olca.Core.Domain.DialogueTextSpeed speed,out string error){error=null;if(!System.Enum.IsDefined(typeof(Olca.Core.Domain.DialogueTextSpeed),speed)){error="文字表示速度が不正です";return false;}if(writing){error="文字表示速度設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
+            var bytes=Encode(speed);string temporary=null;writing=true;try{
+                System.IO.Directory.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".dialogue-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
+                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
+                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
+            }catch(System.Exception e)when(Failure(e)){
+                try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                error="文字表示速度設定を保存できません。現在の設定を維持します。";return false;
+            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+        }
+    }
+
 }

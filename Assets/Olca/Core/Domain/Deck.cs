@@ -1012,4 +1012,63 @@ namespace Olca.Core.Domain
             } finally { writing = false; }
         }
     }
+
+    public enum DialogueTextSpeed { Slow,Normal,Fast,Instant }
+    public enum DialogueEndReason { Completed,Skipped,Interrupted }
+    public sealed class DialogueChoice
+    {
+        public string Label { get; } public int NextIndex { get; }
+        public DialogueChoice(string label,int nextIndex){if(string.IsNullOrWhiteSpace(label))throw new ArgumentException();Label=label;NextIndex=nextIndex;}
+    }
+    public sealed class DialogueLine
+    {
+        public string Speaker { get; } public string Text { get; } public IReadOnlyList<DialogueChoice> Choices { get; }
+        public DialogueLine(string text,string speaker="",IEnumerable<DialogueChoice> choices=null){if(string.IsNullOrWhiteSpace(text))throw new ArgumentException();Text=text;Speaker=speaker??"";Choices=Array.AsReadOnly((choices??Array.Empty<DialogueChoice>()).ToArray());if(Choices.Any(c=>c==null)||Choices.Count>4)throw new ArgumentException("選択肢は4件以内です");}
+    }
+    public sealed class DialogueScript
+    {
+        public string Id { get; } public IReadOnlyList<DialogueLine> Lines { get; }
+        public bool CanSkip=>!Lines.Any(l=>l.Choices.Select(c=>c.NextIndex).Distinct().Count()>1);
+        public DialogueScript(string id,IEnumerable<DialogueLine> lines){if(string.IsNullOrWhiteSpace(id)||lines==null)throw new ArgumentException();Id=id;var list=lines.ToArray();if(list.Length==0||list.Any(l=>l==null))throw new ArgumentException();
+            for(int n=0;n<list.Length;n++)if(list[n].Choices.Any(c=>c.NextIndex<=n||c.NextIndex>list.Length))throw new ArgumentException("会話の選択先は後続または終了に限ります");Lines=Array.AsReadOnly(list);}
+    }
+    /// <summary>会話の表示時計と操作。ゲーム進行・報酬・永続保存は所有しない。</summary>
+    public sealed class DialogueSession
+    {
+        public DialogueScript Script { get; } public DialogueTextSpeed Speed { get; private set; }
+        public bool IsOpen { get; private set; }=true; public bool IsPaused { get; set; }
+        public bool BacklogOpen { get; private set; } public bool SkipConfirmationOpen { get; private set; }
+        public bool FastForward { get; private set; } public long Version { get; private set; }
+        public int Index { get; private set; } public int VisibleElements { get; private set; }
+        public DialogueEndReason EndReason { get; private set; }
+        private int[] elements;private int frames;private bool recorded;
+        private readonly List<string> backlog=new List<string>();private readonly List<int> choices=new List<int>();
+        public IReadOnlyList<int> SelectedChoices=>choices.ToArray();
+        public DialogueLine Current=>IsOpen?Script.Lines[Index]:null;
+        public bool TextComplete=>IsOpen&&VisibleElements==elements.Length;
+        public bool WaitingForChoice=>TextComplete&&Current.Choices.Count>0;
+        public string VisibleText=>!IsOpen?"":VisibleElements>=elements.Length?Current.Text:Current.Text.Substring(0,elements[VisibleElements]);
+        public IReadOnlyList<string> Backlog=>!IsOpen?Array.Empty<string>():backlog.Concat(!recorded&&VisibleElements>0?new[]{Entry(VisibleText)}:Array.Empty<string>()).ToArray();
+        private string Entry(string text)=>string.IsNullOrEmpty(Current.Speaker)?text:Current.Speaker+"\n"+text;
+        private bool CanAct=>IsOpen&&!IsPaused&&!BacklogOpen&&!SkipConfirmationOpen;
+        public DialogueSession(DialogueScript script,DialogueTextSpeed speed=DialogueTextSpeed.Normal){Script=script??throw new ArgumentNullException(nameof(script));SetSpeed(speed);Enter(0);}
+        public void SetSpeed(DialogueTextSpeed speed){if(!Enum.IsDefined(typeof(DialogueTextSpeed),speed))throw new ArgumentOutOfRangeException();Speed=speed;frames=0;Version++;}
+        private void Enter(int index){Index=index;frames=0;recorded=false;VisibleElements=0;elements=System.Globalization.StringInfo.ParseCombiningCharacters(Current.Text);Version++;if(Speed==DialogueTextSpeed.Instant)Reveal();}
+        private void Record(){if(recorded)return;backlog.Add(Entry(Current.Text));recorded=true;}
+        private void Reveal(){VisibleElements=elements.Length;Record();frames=0;Version++;}
+        private void Move(int index){if(index>=Script.Lines.Count){End(DialogueEndReason.Completed);return;}Enter(index);}
+        public bool Decide(){if(!CanAct)return false;if(!TextComplete){Reveal();return true;}if(WaitingForChoice)return false;Move(Index+1);return true;}
+        public bool Choose(int index){if(!CanAct||!WaitingForChoice||index<0||index>=Current.Choices.Count)return false;var next=Current.Choices[index].NextIndex;choices.Add(index);Move(next);return true;}
+        public bool ToggleFastForward(){if(!CanAct)return false;FastForward=!FastForward;frames=0;Version++;return true;}
+        public bool ToggleBacklog(){if(!IsOpen||IsPaused||SkipConfirmationOpen)return false;BacklogOpen=!BacklogOpen;Version++;return true;}
+        public bool RequestSkip(){if(!CanAct||!Script.CanSkip)return false;SkipConfirmationOpen=true;Version++;return true;}
+        public bool CancelSkip(){if(!IsOpen||IsPaused||!SkipConfirmationOpen)return false;SkipConfirmationOpen=false;Version++;return true;}
+        public bool ConfirmSkip(){if(!IsOpen||IsPaused||!SkipConfirmationOpen||!Script.CanSkip)return false;End(DialogueEndReason.Skipped);return true;}
+        public void Interrupt(){if(IsOpen)End(DialogueEndReason.Interrupted);}
+        private void End(DialogueEndReason reason){EndReason=reason;IsOpen=false;FastForward=BacklogOpen=SkipConfirmationOpen=false;backlog.Clear();VisibleElements=0;Version++;}
+        public void AdvanceFrame(){if(!CanAct)return;if(!TextComplete){frames++;int interval=Speed==DialogueTextSpeed.Slow?4:Speed==DialogueTextSpeed.Normal?2:1;
+                if(Speed==DialogueTextSpeed.Instant){Reveal();return;}if(FastForward||frames>=interval){VisibleElements=Math.Min(elements.Length,VisibleElements+(FastForward?4:1));frames=0;Version++;if(TextComplete)Record();}return;}
+            if(FastForward&&!WaitingForChoice&&++frames>=12)Move(Index+1);
+        }
+    }
 }

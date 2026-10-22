@@ -365,6 +365,29 @@ namespace Olca.Application.Dungeon
             }
         }
 
+        private DialogueSession dialogue;private DialogueView dialogueView;private System.Action<DialogueEndReason> dialogueFinished;private bool finishingDialogue;
+        private readonly UnityLogicalLoop dialogueLoop=new UnityLogicalLoop(observeEditor:true);
+        private DialogueTextSettingsStore dialogueSettings;private DialogueTextSpeed dialogueSpeed=DialogueTextSpeed.Normal;private string dialogueSettingsError;
+        public DialogueSession CurrentDialogue=>dialogue;private bool DialogueOpen=>dialogue!=null;
+        public bool TryStartDialogue(DialogueScript script,System.Action<DialogueEndReason> finished=null)
+        {
+            if(script==null||DialogueOpen||finishingDialogue||manager==null||IsUserPaused||clearReturnVisible||awaitingCheckpointChoice||manager.IsSuspended||manager.Dungeon.IsCheckpointBlocked||manager.Dungeon.ActiveVisit!=null||
+                (manager.CurrentPhase!=GamePhase.Dungeon&&manager.CurrentPhase!=GamePhase.Battle)||manager.CurrentPhase==GamePhase.Battle&&!battleFieldReady)return false;
+            logicalLoop.Observe(false);logicalLoop.ReleaseInput();ResetTouchInput();dialogue=new DialogueSession(script,dialogueSpeed);dialogueFinished=finished;dialogueLoop.StartNewTimeline();GameplayPause.SetPaused(true);inputProvider.QueueSnapshot();dialogueView.Bind(dialogue);return true;
+        }
+        private void FinishDialogue(bool interrupt=false)
+        {
+            if(dialogue==null)return;var current=dialogue;if(interrupt)current.Interrupt();if(current.IsOpen)return;
+            dialogue=null;if(dialogueView!=null)dialogueView.Bind(null);var callback=dialogueFinished;dialogueFinished=null;logicalLoop.Observe(false);ResetTouchInput();GameplayPause.SetPaused(IsUserPaused);inputProvider?.QueueSnapshot();
+            finishingDialogue=true;try{callback?.Invoke(current.EndReason);}finally{finishingDialogue=false;}
+        }
+        private void UpdateDialogue()
+        {
+            bool active=DialogueOpen&&!IsUserPaused&&!dialogue.BacklogOpen&&!dialogue.SkipConfirmationOpen;
+            dialogueLoop.PumpTimestamped(active,null,(frame,ms,input)=>dialogue?.AdvanceFrame(),()=>DialogueOpen&&dialogue.IsOpen&&!IsUserPaused&&!dialogue.BacklogOpen&&!dialogue.SkipConfirmationOpen);
+            if(!DialogueOpen)return;if(!dialogue.IsOpen){FinishDialogue();return;}
+            if(dialogueView!=null){dialogueView.gameObject.SetActive(!IsUserPaused);if(!IsUserPaused){dialogueView.Refresh();dialogueView.transform.SetAsLastSibling();}}
+        }
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
         private string gameplaySettingsDirectoryOverride;
         private KeyboardBindingFileStore keyboardSettings;
@@ -413,11 +436,13 @@ namespace Olca.Application.Dungeon
         public void SetUserPaused(bool paused)
         {
             if (manager == null || manager.IsUserPaused == paused) return;
-            logicalLoop.Observe(!manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
+            logicalLoop.Observe(!DialogueOpen && !manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
             ResetTouchInput(preserveCharge: true);
             manager.SetUserPaused(paused);
+            if(dialogue!=null)dialogue.IsPaused=paused;
+            dialogueLoop.Observe(false);
             gameplayAudio?.SetPaused(paused);
-            GameplayPause.SetPaused(paused);
+            GameplayPause.SetPaused(paused||DialogueOpen);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
             else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();if(audioSettingsView!=null)audioSettingsView.DiscardAndClose(); }
             // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
@@ -530,6 +555,10 @@ namespace Olca.Application.Dungeon
             ((RectTransform)retryCheckpointButton.transform).sizeDelta = new Vector2(320, 70);
             retryCheckpointButton.onClick.AddListener(() => { RetryMemoryCheckpoint(); ShowCheckpointStatus(); });
             CreateProgressActions(font,MakeButton);
+            var dialoguePanel=new GameObject("DialoguePanel",typeof(RectTransform));dialoguePanel.transform.SetParent(pauseCanvas.transform,false);dialogueView=dialoguePanel.AddComponent<DialogueView>();dialogueView.Initialize(font,()=>SetUserPaused(true));
+            var textSpeedButton=MakeButton("DialogueTextSpeedButton","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-400));((RectTransform)textSpeedButton.transform).sizeDelta=new Vector2(420,70);
+            void RefreshTextSpeed(){textSpeedButton.GetComponentInChildren<Text>().text=dialogueSettingsError??"文字表示："+new[]{"ゆっくり","標準","速い","即時"}[(int)dialogueSpeed];}
+            textSpeedButton.onClick.AddListener(()=>{var candidate=(DialogueTextSpeed)(((int)dialogueSpeed+1)%4);if(dialogueSettings.TrySave(candidate,out dialogueSettingsError)){dialogueSpeed=candidate;dialogue?.SetSpeed(candidate);}RefreshTextSpeed();});RefreshTextSpeed();
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
@@ -550,7 +579,7 @@ namespace Olca.Application.Dungeon
         private Text progressActionMessage;
         private bool progressDialogOpen,newGameConfirmation,newGameSavePending,manualSavePending;
         private long confirmedProgressRevision;
-        private bool IsProgressHub => !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool IsProgressHub => !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
@@ -1121,6 +1150,7 @@ namespace Olca.Application.Dungeon
             keyboardSettings = new KeyboardBindingFileStore(gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             transformationSettings=new TransformationPresentationFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             transformationSettings.TryRead(out shortTransformationPresentation,out transformationSettingsError);
+            dialogueSettings=new DialogueTextSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));dialogueSettings.TryRead(out dialogueSpeed,out dialogueSettingsError);
             audioSettingsStore=new AudioVolumeFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             audioSettingsStore.TryRead(out audioVolumes,out var audioError);GameplayAudioSettingsError=audioError;
             gameplayAudio=new GameplayAudioRouter(transform);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(dungeonBgm);
@@ -1279,8 +1309,9 @@ namespace Olca.Application.Dungeon
         {
             if (manager == null) return;
             RefreshTouchContext();
-            bool active = manager.Dungeon.ActiveVisit==null && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
-            logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
+            UpdateDialogue();
+            bool active = !DialogueOpen && manager.Dungeon.ActiveVisit==null && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
+            logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !DialogueOpen && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
                 () => manager.Dungeon.ActiveVisit==null && (manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused)));
             ApplyPendingFloor();
             RefreshDungeonVisit();
@@ -1289,10 +1320,12 @@ namespace Olca.Application.Dungeon
             RefreshBasicAttackHud();
             RefreshProgressActions();
             if(AudioSettingsOpen)audioSettingsView.transform.SetAsLastSibling();
+            if(DialogueOpen&&!IsUserPaused)dialogueView.transform.SetAsLastSibling();
         }
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
         {
+            if(DialogueOpen)return;
             if (GameplayPause.InputBlocked) { basicAttackInput.Suspend(); uiAttackHeld = uiAttackDown = uiAttackUp = false; input = new LogicalInput(); queuedBasicAttackTap = false;queuedTouchJump=queuedTouchDash=queuedTouchCard=false; }
             if(queuedTouchJump||queuedTouchDash||queuedTouchCard) {
                 input=input.Copy();
@@ -1373,7 +1406,7 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!AudioSettingsOpen && !progressDialogOpen && !cardCollectionOpen && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!DialogueOpen && !AudioSettingsOpen && !progressDialogOpen && !cardCollectionOpen && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
@@ -1807,6 +1840,7 @@ namespace Olca.Application.Dungeon
 
         private void ReplaceManager(DungeonBattleManager restored, DungeonCheckpointSession candidate)
         {
+            FinishDialogue(interrupt:true);
             if (IsUserPaused) SetUserPaused(false);
             transitionCts?.Cancel(); battleSession?.Detach();
             manager.OnBattleStarted -= OnBattleStarted; manager.OnBattleEnded -= OnBattleEnded;
@@ -1838,6 +1872,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            FinishDialogue(interrupt:true);dialogueLoop.Dispose();
             gameplayAudio?.Dispose();
             inputProvider?.Dispose();
             logicalLoop.Dispose();
