@@ -970,6 +970,7 @@ namespace Olca.Presentation.Field
         /// <summary>探索・戦闘・報酬・終了を問わず、同じ更新で実状態を表示する。</summary>
         private UnityEngine.UI.Text instructionText;
         private InputBindingProfile displayedKeyboardProfile;
+        private InputBindingProfile displayedGamepadProfile;
         private GamePhase displayedInstructionPhase;
 
         public static string FormatGameplayInstructions(InputBindingProfile profile, GamePhase phase)
@@ -985,12 +986,13 @@ namespace Olca.Presentation.Field
                 }
                 return string.Join(" / ", values);
             }
+            string Pad(string context,string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad",context,action)]);
             if (phase == GamePhase.Battle)
                 return $"{Keys("battle", "LeftPrimary", "LeftSecondary")}: 左  {Keys("battle", "RightPrimary", "RightSecondary")}: 右  " +
-                    $"{Keys("battle", "UpPrimary", "UpSecondary")}: 上  {Keys("battle", "DownPrimary", "DownSecondary")}: 下  パッド: Lスティック / 十字\n" +
-                    $"{Keys("battle", "AttackPrimary")}: 固有攻撃 (West)  {Keys("battle", "CardPrimary")}: カード使用 (RB)  {Keys("battle", "CustomPrimary", "CustomSecondary")}: カスタム (North)";
+                    $"{Keys("battle", "UpPrimary", "UpSecondary")}: 上  {Keys("battle", "DownPrimary", "DownSecondary")}: 下  パッド: Lスティック / {Pad("battle","LeftPrimary")} 左 / {Pad("battle","RightPrimary")} 右 / {Pad("battle","UpPrimary")} 上 / {Pad("battle","DownPrimary")} 下\n" +
+                    $"{Keys("battle", "AttackPrimary")}: 固有攻撃 ({Pad("battle","AttackPrimary")})  {Keys("battle", "CardPrimary")}: カード使用 ({Pad("battle","CardPrimary")})  {Keys("battle", "CustomPrimary", "CustomSecondary")}: カスタム ({Pad("battle","CustomPrimary")}) / ポーズ {Pad("battle","Pause")}";
             if (phase == GamePhase.Dungeon)
-                return $"自動前進  {Keys("exploration", "JumpPrimary")}: ジャンプ  {Keys("exploration", "DashPrimary", "DashSecondary")}: ダッシュ  パッド: South ジャンプ / L押込 ダッシュ";
+                return $"自動前進  {Keys("exploration", "JumpPrimary")}: ジャンプ  {Keys("exploration", "DashPrimary", "DashSecondary")}: ダッシュ  パッド: {Pad("exploration","JumpPrimary")} ジャンプ / {Pad("exploration","DashPrimary")} ダッシュ / {Pad("exploration","Pause")} ポーズ";
             return string.Empty;
         }
 
@@ -1007,8 +1009,8 @@ namespace Olca.Presentation.Field
                 rect.anchorMin = new Vector2(.05f, 0); rect.anchorMax = new Vector2(.95f, 0);
                 rect.sizeDelta = new Vector2(0, 52); rect.anchoredPosition = new Vector2(0, 30);
             }
-            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && displayedInstructionPhase == phase) return;
-            displayedKeyboardProfile = appliedProfile; displayedInstructionPhase = phase;
+            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase) return;
+            displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;
             instructionText.text = FormatGameplayInstructions(appliedProfile, phase);
         }
 
@@ -1052,6 +1054,8 @@ namespace Olca.Presentation.Field
     // ゲーム操作の既存スロットを編集する画面。重複/必須判定と保存は既存モデル・Controllerへ委譲する。
     public sealed class GameplayKeyboardSettingsView : MonoBehaviour
     {
+        private bool gamepad;private string captureTopology;
+        private InputBindingProfile Defaults()=>gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
         private InputBindingProfile applied;
         private InputBindingEdit edit;
         private System.Func<InputBindingProfile, string> save;
@@ -1066,36 +1070,39 @@ namespace Olca.Presentation.Field
         private Olca.Unity.MenuPadScope menu;private bool navigationDirty;private int assignedFrame=-1;private string normalFocus="CloseKeyboardSettings";
         private void InvalidateNavigation(){var name=menu?.FocusName;if(name!=null&&name!="CancelCapture"&&name!="ConfirmKeyboardReset"&&name!="CancelKeyboardReset")normalFocus=name;menu?.Suspend();navigationDirty=true;}
         private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
-        private void LateUpdate(){if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(assignedFrame!=Time.frameCount)menu.Tick();}
+        private void LateUpdate(){if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
         private void OnDisable(){menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
 
-        public void Initialize(Font font, System.Func<InputBindingProfile, string> save)
+        public void Initialize(Font font, System.Func<InputBindingProfile, string> save, bool gamepad=false)
         {
-            this.font = font; this.save = save;
+            this.font = font; this.save = save;this.gamepad=gamepad;
             var root = (RectTransform)transform;
             root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
             gameObject.AddComponent<UnityEngine.UI.Image>().color = Olca.Presentation.Dungeon.UiLook.Surface;
-            MakeText("Title", "キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38);
+            MakeText("Title", gamepad?"パッド設定（キーボードと独立保存）":"キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38);
             status = MakeText("Status", "", transform, new Vector2(0, 360), new Vector2(1740, 100), 26);
-            var defaults = Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
-            int[] rows = { 0, 0, 0 };
+            var defaults = Defaults();
+            int[] rows = { 0, 0, 0, 0 };
+            if(gamepad){string[] names={"探索","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++)MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);}
+            else {
             MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28);
             MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28);
             MakeText("ActionTitle", "戦闘：行動", transform, new Vector2(560, 285), new Vector2(520, 50), 28);
+            }
             foreach (var slot in defaults.Bindings.Keys)
             {
-                int column = slot.Context == "exploration" ? 0 :
+                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context):slot.Context == "exploration" ? 0 :
                     (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
-                float x = (column - 1) * 560, y = 215 - rows[column]++ * 70;
-                MakeText("Action_" + slot.Action, Label(slot.Action), transform, new Vector2(x - 165, y), new Vector2(180, 55), 24);
-                var button = MakeButton("Bind_" + slot.Context + "_" + slot.Action, "", transform, new Vector2(x + 15, y), new Vector2(175, 54));
+                float x = gamepad?(column-1.5f)*450:(column-1)*560, y = 215 - rows[column]++ * (gamepad?40:70);
+                MakeText("Action_" + slot.Action, Label(slot.Action), transform, new Vector2(x - (gamepad?145:165), y), new Vector2(gamepad?150:180, gamepad?38:55), gamepad?20:24);
+                var button = MakeButton("Bind_" + slot.Context + "_" + slot.Action, "", transform, new Vector2(x + 15, y), new Vector2(gamepad?155:175, gamepad?38:54));
                 labels.Add(slot, button.GetComponentInChildren<UnityEngine.UI.Text>());
                 button.onClick.AddListener(() => BeginCapture(slot));
-                MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + 195, y), new Vector2(100, 54))
+                MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + (gamepad?155:195), y), new Vector2(gamepad?85:100, gamepad?38:54))
                     .onClick.AddListener(() => { listening = null; Assign(slot, null); });
             }
-            MakeButton("CancelCapture", "キー入力を取消", transform, new Vector2(-560, -175), new Vector2(400, 55))
+            MakeButton("CancelCapture", gamepad?"ボタン入力を取消":"キー入力を取消", transform, new Vector2(-560, gamepad?-345:-175), new Vector2(400, 55))
                 .onClick.AddListener(() => { listening = null; Refresh("キー入力を取り消しました。"); });
             saveButton = MakeButton("SaveKeyboardSettings", "保存・適用", transform, new Vector2(-560, -420), new Vector2(400, 70));
             saveButton.onClick.AddListener(Save);
@@ -1112,7 +1119,7 @@ namespace Olca.Presentation.Field
                 new Vector2(0, 100), new Vector2(1500, 150), 34);
             MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75))
                 .onClick.AddListener(() => {
-                    edit = Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile().BeginEdit();
+                    edit = Defaults().BeginEdit();
                     resetConfirmation.SetActive(false); Refresh("初期配置を表示しました。保存・適用で確定します。");
                 });
             MakeButton("CancelKeyboardReset", "やめる", resetConfirmation.transform, new Vector2(280, -80), new Vector2(450, 75))
@@ -1126,18 +1133,19 @@ namespace Olca.Presentation.Field
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             resetConfirmation.SetActive(false); gameObject.SetActive(true);
             transform.SetAsLastSibling(); // ポーズの遮蔽面より前へ出し、設定の操作を受け取る。
-            Refresh("変更するキーを選んでください。同じ場面の割り当ては交換されます。");
+            Refresh(gamepad?"変更するボタンを選んでください。同じ場面の割り当ては交換されます。":"変更するキーを選んでください。同じ場面の割り当ては交換されます。");
         }
         public void BeginCapture((string Device, string Context, string Action) slot)
         {
-            listening = slot; awaitRelease = true;
+            listening = slot; awaitRelease = true;captureTopology=Olca.Unity.UnityInputProvider.GamepadTopology();
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-            Refresh("押しているキーを離してから、新しいキーを1つ押してください。");
+            Refresh(gamepad?"全ボタン・スティックを戻し、新しいボタンを1つ押してください。取消はマウス／Esc。":"押しているキーを離してから、新しいキーを1つ押してください。");
         }
         private void Update()
         {
             if (!gameObject.activeSelf || !listening.HasValue) return;
-            var keys = Olca.Unity.UnityInputProvider.CaptureBindingKey();
+            var keys = gamepad?Olca.Unity.UnityInputProvider.CaptureGamepadBinding():Olca.Unity.UnityInputProvider.CaptureBindingKey();
+            if(gamepad&&captureTopology!=Olca.Unity.UnityInputProvider.GamepadTopology()){captureTopology=Olca.Unity.UnityInputProvider.GamepadTopology();awaitRelease=true;return;}
             if (awaitRelease) { if (keys.HeldCount == 0) awaitRelease = false; return; }
             if (keys.HeldCount == 0) return;
             if (keys.HeldCount != 1) { awaitRelease = true; Refresh("新しいキーを1つだけ押してください。"); return; }
@@ -1162,12 +1170,14 @@ namespace Olca.Presentation.Field
         }
         private void Refresh(string message)
         {
-            foreach (var pair in labels) pair.Value.text = edit.Draft[pair.Key] ?? "未割当";
+            foreach (var pair in labels) pair.Value.text = gamepad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(edit.Draft[pair.Key]):edit.Draft[pair.Key] ?? "未割当";
             status.text = message; saveButton.interactable = !listening.HasValue;InvalidateNavigation();
         }
         private static string Label(string action)
         {
             bool second = action.EndsWith("Secondary"); string suffix = second ? " 2" : " 1";
+            if(action=="Pause")return "ポーズ";
+            if(action=="Decide")return "決定";if(action=="Cancel")return "取消";if(action=="Confirm")return "確定";if(action=="Customize")return "加工";if(action=="Undo")return "Undo";if(action=="Details")return "詳細";if(action=="Transform")return "変身";if(action=="PageUp")return "前ページ";if(action=="PageDown")return "次ページ";
             if (action.StartsWith("Dash")) return "ダッシュ" + suffix;
             if (action.StartsWith("Left")) return "左移動" + suffix;
             if (action.StartsWith("Right")) return "右移動" + suffix;

@@ -138,6 +138,44 @@ namespace Olca.Unity
             Add("battle", "CustomPrimary", Key.LeftAlt); Add("battle", "CustomSecondary", Key.RightAlt);
             return new Olca.Core.Domain.InputBindingProfile(slots, new (string, string, string)[0]);
         }
+        public static readonly GamepadButton[] BindingButtons = { GamepadButton.DpadUp,GamepadButton.DpadDown,GamepadButton.DpadLeft,GamepadButton.DpadRight,GamepadButton.North,GamepadButton.East,GamepadButton.South,GamepadButton.West,GamepadButton.LeftStick,GamepadButton.RightStick,GamepadButton.LeftShoulder,GamepadButton.RightShoulder,GamepadButton.Start,GamepadButton.Select,GamepadButton.LeftTrigger,GamepadButton.RightTrigger };
+        // 列挙型の同値別名（A/X等）は実行系依存なので、保存IDは位置名に固定する。
+        public static string GamepadButtonId(GamepadButton key){switch(key){case GamepadButton.South:return "South";case GamepadButton.North:return "North";case GamepadButton.East:return "East";case GamepadButton.West:return "West";default:return key.ToString();}}
+        public static Olca.Core.Domain.InputBindingProfile ActiveGamepadProfile { get; private set; } = CreateDefaultGamepadProfile();
+        public static int GamepadProfileVersion { get; private set; }
+        public Olca.Core.Domain.InputBindingProfile GamepadProfile { get; private set; } = CreateDefaultGamepadProfile();
+        public static IEnumerable<(string,string,string)> RequiredGamepadSlots() => CreateDefaultGamepadSlots().Keys.Where(k=>k.Item3=="Pause"||((k.Item2=="menu"||k.Item2=="custom")&&(new[]{"Left","Right","Up","Down","Decide","Cancel","Confirm"}).Contains(k.Item3)));
+        private static Dictionary<(string,string,string),string> CreateDefaultGamepadSlots()
+        {
+            var slots=new Dictionary<(string,string,string),string>();
+            void Add(string context,string action,GamepadButton key)=>slots.Add(("gamepad",context,action),GamepadButtonId(key));
+            Add("exploration","JumpPrimary",GamepadButton.South);Add("exploration","DashPrimary",GamepadButton.LeftStick);Add("exploration","Pause",GamepadButton.Start);
+            Add("battle","LeftPrimary",GamepadButton.DpadLeft);Add("battle","RightPrimary",GamepadButton.DpadRight);Add("battle","UpPrimary",GamepadButton.DpadUp);Add("battle","DownPrimary",GamepadButton.DpadDown);
+            Add("battle","AttackPrimary",GamepadButton.West);Add("battle","CardPrimary",GamepadButton.RightShoulder);Add("battle","CustomPrimary",GamepadButton.North);Add("battle","Pause",GamepadButton.Start);
+            foreach(string context in new[]{"menu","custom"}) {
+                Add(context,"Left",GamepadButton.DpadLeft);Add(context,"Right",GamepadButton.DpadRight);Add(context,"Up",GamepadButton.DpadUp);Add(context,"Down",GamepadButton.DpadDown);
+                Add(context,"Decide",GamepadButton.South);Add(context,"Cancel",GamepadButton.East);Add(context,"Confirm",GamepadButton.Start);Add(context,"Customize",GamepadButton.North);Add(context,"Undo",GamepadButton.West);Add(context,"Details",GamepadButton.RightStick);Add(context,"Transform",GamepadButton.Select);Add(context,"PageUp",GamepadButton.LeftShoulder);Add(context,"PageDown",GamepadButton.RightShoulder);
+            }
+            return slots;
+        }
+        public static Olca.Core.Domain.InputBindingProfile CreateDefaultGamepadProfile()=>new Olca.Core.Domain.InputBindingProfile(CreateDefaultGamepadSlots(),RequiredGamepadSlots());
+        public static bool ValidateGamepadProfile(Olca.Core.Domain.InputBindingProfile profile,out string error)
+        {
+            error=null;var defaults=CreateDefaultGamepadSlots();
+            if(profile==null||profile.Bindings.Count!=defaults.Count||profile.Bindings.Keys.Any(k=>!defaults.ContainsKey(k))||profile.Bindings.Values.Any(v=>v!=null&&!BindingButtons.Any(b=>GamepadButtonId(b)==v))) {error="パッド操作スロットまたはボタンが不正です";return false;}
+            try {new Olca.Core.Domain.InputBindingProfile(profile.Bindings,RequiredGamepadSlots());return true;}catch(System.ArgumentException e){error=e.Message;return false;}
+        }
+        private void ApplyGamepad(Olca.Core.Domain.InputBindingProfile profile){GamepadProfile=profile;ActiveGamepadProfile=profile;GamepadProfileVersion++;gamepadPausePending=false;}
+        public bool TryRestoreGamepadProfile(Olca.Core.Domain.InputBindingProfile profile,out string error){if(capturing){error="入力開始後は保存・適用を使用してください";return false;}if(!ValidateGamepadProfile(profile,out error))return false;ApplyGamepad(profile);return true;}
+        public bool TryApplyGamepadProfile(Olca.Core.Domain.InputBindingProfile profile,out string error){if(!GameplayPause.IsPaused){error="ユーザーポーズ中のみ適用できます";return false;}if(!ValidateGamepadProfile(profile,out error))return false;ApplyGamepad(profile);events.Clear();QueueSnapshot();return true;}
+        public static string GamepadBindingLabel(string value){if(value==null)return "未割当";switch(value){case "LeftShoulder":return "LB";case "RightShoulder":return "RB";case "LeftTrigger":return "LT";case "RightTrigger":return "RT";case "LeftStick":return "L3";case "RightStick":return "R3";case "DpadLeft":return "十字左";case "DpadRight":return "十字右";case "DpadUp":return "十字上";case "DpadDown":return "十字下";default:return value;}}
+        public static string GamepadTopology()=>string.Join(",",InputSystem.devices.OfType<Gamepad>().Where(d=>d.enabled).Select(d=>d.deviceId));
+        public static (int HeldCount,string Key) CaptureGamepadBinding(){int count=0;string key=null;foreach(var pad in InputSystem.devices.OfType<Gamepad>().Where(p=>p.enabled)){foreach(var b in BindingButtons)if(pad[b].isPressed){count++;key=GamepadButtonId(b);}if(pad.leftStick.ReadValue().sqrMagnitude>.04f||pad.rightStick.ReadValue().sqrMagnitude>.04f)count+=2;}return(count,key);}
+        public System.Func<string> GamepadContext {get;set;}
+        public System.Func<bool> GamepadPauseAvailable {get;set;}
+        private bool gamepadPausePending;
+        public bool ConsumeGamepadPause(){bool value=gamepadPausePending;gamepadPausePending=false;return value;}
+        private bool PadActionHeld(string context,string action)=>GamepadProfile.Bindings.TryGetValue(("gamepad",context,action),out var key)&&key!=null&&PadHeld(System.Enum.Parse<GamepadButton>(key));
         // 設定画面専用の単一キー取得。ゲーム入力や論理時計へは流さない。
         public static (int HeldCount, string Key) CaptureBindingKey()
         {
@@ -189,8 +227,7 @@ namespace Olca.Unity
         private bool ActionHeld(string context,string action)
         {
             if(Held(context,action))return true;
-            if(context=="exploration")return action=="JumpPrimary"?PadHeld(GamepadButton.South):action=="DashPrimary"&&PadHeld(GamepadButton.LeftStick);
-            return action=="AttackPrimary"?PadHeld(GamepadButton.West):action=="CardPrimary"?PadHeld(GamepadButton.RightShoulder):action=="CustomPrimary"&&PadHeld(GamepadButton.North);
+            return PadActionHeld(context,action);
         }
         private bool PadNeutral(InputDevice device)=>!buttons.Any(p=>p.Key.device==device&&p.Value)&&(!sticks.TryGetValue(device,out var stick)||stick.sqrMagnitude<.19f*.19f);
         public void StartEventCapture()
@@ -224,6 +261,7 @@ namespace Olca.Unity
         private static StickControl Stick(InputDevice device) => device is Gamepad pad ? pad.leftStick : (device as Joystick)?.stick;
         public void QueueSnapshot()
         {
+            gamepadPausePending=false;
             SnapshotTouches(); blockedGamepads.RemoveWhere(d=>!InputSystem.devices.Contains(d));buttons.Clear(); sticks.Clear();
             foreach (var device in InputSystem.devices.Where(d=>d.enabled))
             {
@@ -245,8 +283,8 @@ namespace Olca.Unity
         {
             float x = (Held("battle", "RightPrimary") || Held("battle", "RightSecondary") ? 1 : 0) - (Held("battle", "LeftPrimary") || Held("battle", "LeftSecondary") ? 1 : 0);
             float y = (Held("battle", "UpPrimary") || Held("battle", "UpSecondary") ? 1 : 0) - (Held("battle", "DownPrimary") || Held("battle", "DownSecondary") ? 1 : 0);
-            x += (PadHeld(GamepadButton.DpadRight)?1:0)-(PadHeld(GamepadButton.DpadLeft)?1:0);
-            y += (PadHeld(GamepadButton.DpadUp)?1:0)-(PadHeld(GamepadButton.DpadDown)?1:0);
+            x += (PadActionHeld("battle","RightPrimary")?1:0)-(PadActionHeld("battle","LeftPrimary")?1:0);
+            y += (PadActionHeld("battle","UpPrimary")?1:0)-(PadActionHeld("battle","DownPrimary")?1:0);
             x=Mathf.Clamp(x,-1,1);y=Mathf.Clamp(y,-1,1);
             foreach (var sample in sticks.Where(p=>p.Key.enabled&&!blockedGamepads.Contains(p.Key)))
             {
@@ -267,6 +305,7 @@ namespace Olca.Unity
             // 実ゲーム中のSouthを、以前フォーカスしたUIのSubmitへ重ねて送らない。
             if(device is Gamepad&&GamepadGameplayActive?.Invoke()==true)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            string padContext=GamepadContext?.Invoke()??"battle";bool pauseBefore=PadActionHeld(padContext,"Pause");
             bool enter = KeyHeld(Key.Enter), numpadEnter = KeyHeld(Key.NumpadEnter), space = KeyHeld(Key.Space), escape = KeyHeld(Key.Escape);
             var pointer = device as Pointer;
             bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
@@ -287,6 +326,7 @@ namespace Olca.Unity
             int previousTouchCount=physicalTouches.Count;
             float touchDown=0; bool touchCanceled=false;
             if(device is Touchscreen screen) CaptureTouches(evt,screen,out touchDown,out touchCanceled);
+            if(device is Gamepad&&!pauseBefore&&PadActionHeld(padContext,"Pause")&&GamepadPauseAvailable?.Invoke()==true)gamepadPausePending=true;
             var next = BuildState();
             // タッチの短い押下/取消はキーボードの立ち上がりと独立に併合する。
             next.TouchHorizontalDown=touchDown; next.CancelTouchTap=touchCanceled;
@@ -430,8 +470,13 @@ namespace Olca.Unity
 namespace Olca.Unity
 {
     /// <summary>ゲーム保存と独立したキーボード設定。未知版・破損を上書きしない。</summary>
-    public sealed class KeyboardBindingFileStore
+    public sealed class KeyboardBindingFileStore : GameplayBindingFileStore { public KeyboardBindingFileStore(string directory,CheckpointFileIo io=null):base(directory,false,io){} }
+    public sealed class GamepadBindingFileStore : GameplayBindingFileStore { public GamepadBindingFileStore(string directory,CheckpointFileIo io=null):base(directory,true,io){} }
+    public class GameplayBindingFileStore
     {
+        private readonly bool gamepad;
+        private string Device=>gamepad?"gamepad":"keyboard";
+        private bool ValidateProfile(Olca.Core.Domain.InputBindingProfile value,out string error)=>gamepad?UnityInputProvider.ValidateGamepadProfile(value,out error):UnityInputProvider.ValidateKeyboardProfile(value,out error);
         [System.Runtime.Serialization.DataContract]
         private sealed class Document
         {
@@ -448,30 +493,31 @@ namespace Olca.Unity
         }
         private readonly CheckpointFileIo io;
         public string DirectoryPath { get; }
-        public string ActivePath => System.IO.Path.Combine(DirectoryPath,"keyboard-gameplay.json");
-        private string BackupPath => System.IO.Path.Combine(DirectoryPath,"keyboard-gameplay.backup.json");
-        public KeyboardBindingFileStore(string directory, CheckpointFileIo io=null)
+        public string ActivePath => System.IO.Path.Combine(DirectoryPath,Device+"-gameplay.json");
+        private string BackupPath => System.IO.Path.Combine(DirectoryPath,Device+"-gameplay.backup.json");
+        protected GameplayBindingFileStore(string directory, bool gamepad, CheckpointFileIo io=null)
         {
+            this.gamepad=gamepad;
             DirectoryPath=System.IO.Path.GetFullPath(directory ?? throw new System.ArgumentNullException(nameof(directory)));
             this.io=io ?? new CheckpointFileIo();
         }
-        private static byte[] Encode(Olca.Core.Domain.InputBindingProfile profile)
+        private byte[] Encode(Olca.Core.Domain.InputBindingProfile profile)
         {
-            var doc=new Document{Version=1,Device="keyboard",Slots=profile.Bindings.OrderBy(p=>p.Key.Context,System.StringComparer.Ordinal)
+            var doc=new Document{Version=1,Device=Device,Slots=profile.Bindings.OrderBy(p=>p.Key.Context,System.StringComparer.Ordinal)
                 .ThenBy(p=>p.Key.Action,System.StringComparer.Ordinal).Select(p=>new Slot{Context=p.Key.Context,Action=p.Key.Action,Key=p.Value}).ToArray()};
             using(var stream=new System.IO.MemoryStream()){
                 new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).WriteObject(stream,doc);return stream.ToArray();}
         }
-        private static Olca.Core.Domain.InputBindingProfile Decode(byte[] bytes)
+        private Olca.Core.Domain.InputBindingProfile Decode(byte[] bytes)
         {
             if(bytes.Length==0 || bytes.Length>65536)throw new System.IO.InvalidDataException();
             Document doc;using(var stream=new System.IO.MemoryStream(bytes))
                 doc=(Document)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(Document)).ReadObject(stream);
-            if(doc==null || doc.Version!=1 || doc.Device!="keyboard" || doc.Slots==null)throw new System.IO.InvalidDataException();
+            if(doc==null || doc.Version!=1 || doc.Device!=Device || doc.Slots==null)throw new System.IO.InvalidDataException();
             var slots=new Dictionary<(string Device,string Context,string Action),string>();
-            foreach(var slot in doc.Slots){if(slot==null)throw new System.IO.InvalidDataException();slots.Add(("keyboard",slot.Context,slot.Action),slot.Key);}
-            var profile=new Olca.Core.Domain.InputBindingProfile(slots,new (string,string,string)[0]);
-            if(!UnityInputProvider.ValidateKeyboardProfile(profile,out _))throw new System.IO.InvalidDataException();
+            foreach(var slot in doc.Slots){if(slot==null)throw new System.IO.InvalidDataException();slots.Add((Device,slot.Context,slot.Action),slot.Key);}
+            var profile=new Olca.Core.Domain.InputBindingProfile(slots,gamepad?UnityInputProvider.RequiredGamepadSlots():new (string,string,string)[0]);
+            if(!ValidateProfile(profile,out _))throw new System.IO.InvalidDataException();
             return profile;
         }
         private static bool Failure(System.Exception e) => e is System.IO.IOException || e is System.IO.InvalidDataException || e is System.UnauthorizedAccessException ||
@@ -482,22 +528,22 @@ namespace Olca.Unity
             try{
                 if(!System.IO.File.Exists(ActivePath)){
                     if(System.IO.Directory.Exists(ActivePath) || System.IO.File.Exists(BackupPath) || System.IO.Directory.Exists(BackupPath))throw new System.IO.InvalidDataException();
-                    profile=UnityInputProvider.CreateDefaultKeyboardProfile();return true;}
+                    profile=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();return true;}
                 profile=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
-            }catch(System.Exception e)when(Failure(e)){error="キー設定を読み込めません。保存済みデータは変更していません。";return false;}
+            }catch(System.Exception e)when(Failure(e)){error="操作設定を読み込めません。保存済みデータは変更していません。";return false;}
         }
         private bool writing;
         public bool TrySave(Olca.Core.Domain.InputBindingProfile profile,out string error)
         {
             error=null;
             if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;
-            if(writing){error="キー設定を保存中です";return false;}
-            if(!UnityInputProvider.ValidateKeyboardProfile(profile,out error))return false;
+            if(writing){error="操作設定を保存中です";return false;}
+            if(!ValidateProfile(profile,out error))return false;
             if(!TryRead(out _,out error))return false;
             var bytes=Encode(profile);string temporary=null;writing=true;
             try{
                 io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(DirectoryPath);
-                temporary=System.IO.Path.Combine(DirectoryPath,".keyboard-"+System.Guid.NewGuid().ToString("N")+".tmp");
+                temporary=System.IO.Path.Combine(DirectoryPath,"."+Device+"-"+System.Guid.NewGuid().ToString("N")+".tmp");
                 io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
                 if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
                 if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();
@@ -505,7 +551,7 @@ namespace Olca.Unity
             }catch(System.Exception e)when(Failure(e)){
                 // OSが置換後に失敗を返した場合は、確定済み内容を照合して二重保存を避ける。
                 try{if(System.IO.File.Exists(ActivePath) && System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
-                error="キー設定を保存できません。現在の割当を維持します。";return false;
+                error="操作設定を保存できません。現在の割当を維持します。";return false;
             }finally{
                 writing=false;
                 if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){}
@@ -668,17 +714,19 @@ namespace Olca.Unity
     public sealed class CustomGamepadInput:System.IDisposable
     {
         private sealed class State {public readonly Dictionary<GamepadButton,bool> Buttons=new Dictionary<GamepadButton,bool>();public Vector2 Stick;public bool Armed;public int X,Y;}
-        private static readonly GamepadButton[] Keys={GamepadButton.South,GamepadButton.East,GamepadButton.West,GamepadButton.North,GamepadButton.Start,GamepadButton.Select,GamepadButton.RightStick,GamepadButton.LeftShoulder,GamepadButton.RightShoulder,GamepadButton.DpadLeft,GamepadButton.DpadRight,GamepadButton.DpadUp,GamepadButton.DpadDown};
+        private static readonly GamepadButton[] Keys=UnityInputProvider.BindingButtons;
+        private readonly string context;private int profileVersion=-1;
         private readonly HashSet<Gamepad> neutralRequired=new HashSet<Gamepad>();
         private readonly System.Func<bool> ownsKeyboard;
         private readonly System.Func<bool> usable,ownsUi;private readonly Dictionary<Gamepad,State> states=new Dictionary<Gamepad,State>();private readonly List<CustomPadEvent> pending=new List<CustomPadEvent>();private bool active,disposed;private readonly double offset;
         public int Epoch{get;private set;}
         public bool HasGamepad=>InputSystem.devices.OfType<Gamepad>().Any(p=>p.enabled);
-        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null){this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
+        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null,string context="custom"){this.context=context;this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
         private static bool Neutral(State state)=>!state.Buttons.Values.Any(v=>v)&&state.Stick.sqrMagnitude<.25f;
         public void Reset(){Epoch++;pending.Clear();states.Clear();active=false;}
         private bool CheckActive()
         {
+            if(profileVersion!=UnityInputProvider.GamepadProfileVersion){Reset();profileVersion=UnityInputProvider.GamepadProfileVersion;}
             bool now=!disposed&&usable();if(!now){if(active)Reset();return false;}if(active)return true;active=true;Epoch++;
             foreach(var pad in InputSystem.devices.OfType<Gamepad>().Where(p=>p.enabled)){var state=new State{Stick=pad.leftStick.ReadValue()};foreach(var key in Keys)state.Buttons[key]=pad[key].isPressed;state.Armed=Neutral(state)&&!neutralRequired.Contains(pad);states[pad]=state;}return true;
         }
@@ -702,11 +750,13 @@ namespace Olca.Unity
             if(!state.Armed){if(Neutral(state)){state.Armed=true;neutralRequired.Remove(pad);}return;}
             long stamp=(long)System.Math.Round((evt.time+offset)*System.Diagnostics.Stopwatch.Frequency);
             void Add(CustomPadCommand command)=>pending.Add(new CustomPadEvent(command,stamp,Epoch));
-            bool Held(GamepadButton key)=>state.Buttons[key];bool Down(GamepadButton key)=>Held(key)&&!before[key];
-            int nextX=Held(GamepadButton.DpadRight)?1:Held(GamepadButton.DpadLeft)?-1:state.Stick.x>.5f?1:state.Stick.x<-.5f?-1:0;
-            int nextY=Held(GamepadButton.DpadUp)?1:Held(GamepadButton.DpadDown)?-1:state.Stick.y>.5f?1:state.Stick.y<-.5f?-1:0;
+            bool Held(string action)=>UnityInputProvider.ActiveGamepadProfile.Bindings.TryGetValue(("gamepad",context,action),out var value)&&value!=null&&state.Buttons[System.Enum.Parse<GamepadButton>(value)];
+            bool Down(string action)=>UnityInputProvider.ActiveGamepadProfile.Bindings.TryGetValue(("gamepad",context,action),out var value)&&value!=null&&Held(action)&&!before[System.Enum.Parse<GamepadButton>(value)];
+            int nextX=Held("Right")?1:Held("Left")?-1:state.Stick.x>.5f?1:state.Stick.x<-.5f?-1:0;
+            int nextY=Held("Up")?1:Held("Down")?-1:state.Stick.y>.5f?1:state.Stick.y<-.5f?-1:0;
             if(nextX!=0&&nextX!=state.X)Add(nextX>0?CustomPadCommand.Right:CustomPadCommand.Left);else if(nextY!=0&&nextY!=state.Y)Add(nextY>0?CustomPadCommand.Up:CustomPadCommand.Down);state.X=nextX;state.Y=nextY;
-            if(Down(GamepadButton.East))Add(CustomPadCommand.Cancel);else if(Down(GamepadButton.LeftShoulder))Add(CustomPadCommand.PageUp);else if(Down(GamepadButton.RightShoulder))Add(CustomPadCommand.PageDown);else if(Down(GamepadButton.RightStick))Add(CustomPadCommand.Details);else if(Down(GamepadButton.Select))Add(CustomPadCommand.Transform);else if(Down(GamepadButton.North))Add(CustomPadCommand.Customize);else if(Down(GamepadButton.West))Add(CustomPadCommand.Undo);else if(Down(GamepadButton.Start))Add(CustomPadCommand.Confirm);else if(Down(GamepadButton.South))Add(CustomPadCommand.Decide);
+            foreach(var command in new[]{CustomPadCommand.Cancel,CustomPadCommand.PageUp,CustomPadCommand.PageDown,CustomPadCommand.Details,CustomPadCommand.Transform,CustomPadCommand.Customize,CustomPadCommand.Undo,CustomPadCommand.Confirm,CustomPadCommand.Decide})if(Down(command.ToString())){Add(command);break;}
+
         }
         public CustomPadEvent[] Read(){CheckActive();var result=pending.ToArray();pending.Clear();return result;}
         public void Dispose(){if(disposed)return;disposed=true;InputSystem.onEvent-=OnEvent;InputSystem.onDeviceChange-=Changed;Reset();neutralRequired.Clear();}
@@ -730,7 +780,7 @@ namespace Olca.Unity
             return hits.Count==0||hits[0].gameObject.transform==root||hits[0].gameObject.transform.IsChildOf(root);
         }
         public MenuPadScope(System.Func<bool> top,System.Func<IEnumerable<UnityEngine.UI.Button>> external=null,System.Func<bool> keyboardOwned=null)
-        {this.top=top;this.external=external;input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false,keyboardOwned:keyboardOwned);}
+        {this.top=top;this.external=external;input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false,keyboardOwned:keyboardOwned,context:"menu");}
         private bool Typing()=>root!=null&&root.GetComponentsInChildren<UnityEngine.UI.InputField>().Any(f=>f.isFocused);
         private bool Usable()=>root!=null&&root.gameObject.activeInHierarchy&&top()&&!Typing();
         private UnityEngine.UI.Selectable[] Buttons()=>root==null?System.Array.Empty<UnityEngine.UI.Selectable>():root.GetComponentsInChildren<UnityEngine.UI.Selectable>().Concat((external?.Invoke()??System.Array.Empty<UnityEngine.UI.Button>()).Cast<UnityEngine.UI.Selectable>()).Where(b=>b!=null&&(b is UnityEngine.UI.Button||b is UnityEngine.UI.Slider||b is UnityEngine.UI.Toggle)&&b.gameObject.activeInHierarchy&&b.IsInteractable()).Distinct().ToArray();

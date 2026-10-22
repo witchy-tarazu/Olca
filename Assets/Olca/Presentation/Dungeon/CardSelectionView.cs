@@ -641,6 +641,8 @@ namespace Olca.Presentation.Dungeon
         {
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
+            string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","exploration",action)]);
+            jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ\nPad "+Pad("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ\nPad "+Pad("DashPrimary");
             jumpButton.interactable=dashButton.interactable=available;
         }
         public void Render(string key, string value, bool available, bool canUseCard=false)
@@ -648,7 +650,8 @@ namespace Olca.Presentation.Dungeon
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
-            title.text = "攻撃 [" + (key ?? "未割当") + "] / West  カード [RB]\nNorth: カスタム"; state.text = value; button.interactable = available;
+            string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","battle",action)]);
+            title.text = "攻撃 [" + (key ?? "未割当") + "] / "+Pad("AttackPrimary")+"  カード ["+Pad("CardPrimary")+"]\n"+Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ"; state.text = value; button.interactable = available;
             state.color = UiLook.Ink;
         }
     }
