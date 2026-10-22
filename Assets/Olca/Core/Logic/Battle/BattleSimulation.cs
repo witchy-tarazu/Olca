@@ -11,10 +11,12 @@ namespace Olca.Core.Logic.Battle
     /// <summary>プラットフォームのRandom実装を使わず、seedと状態を明示する乱数。</summary>
     public sealed class SeededBattleRandom : IRandomProvider
     {
+        public uint Seed { get; }
         public uint State { get; private set; }
         public long Draws { get; private set; }
         public SeededBattleRandom(uint seed, uint? state = null, long draws = 0)
-        { if(state==0||draws<0||(!state.HasValue&&draws!=0))throw new ArgumentException("乱数状態が不正です");State = state ?? (seed == 0 ? 0x9e3779b9u : seed); Draws=draws; }
+        { if(state==0||draws<0||(!state.HasValue&&draws!=0))throw new ArgumentException("乱数状態が不正です");Seed=seed; State = state ?? (seed == 0 ? 0x9e3779b9u : seed); Draws=draws; }
+        public BattleRandomStateDto CaptureState()=>new BattleRandomStateDto{Algorithm=BattleRandomStateDto.AlgorithmId,Version=1,Seed=Seed,State=State,Draws=Draws};
         private uint Next()
         {
             uint x = State; x ^= x << 13; x ^= x >> 17; x ^= x << 5; State = x; Draws++; return x;

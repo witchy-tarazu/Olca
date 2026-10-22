@@ -154,6 +154,8 @@ namespace Olca.Core.Domain
 
     public sealed class CheckpointBattleDto
     {
+        public int? RandomVersion; // nullは旧保存、1は状態必須。
+        public BattleRandomStateDto Random; // nullは旧保存。推測した状態を追記しない。
         public int ContactCell;
         public int[] ParticipantCells = new int[0];
         public int[] CurrencyAmounts; // 旧保存の欠落は通貨報酬0として扱う。
@@ -168,6 +170,7 @@ namespace Olca.Core.Domain
         public bool RewardOffered;
         public string[] RewardCandidates = new string[0];
         public CheckpointBattleDto Copy() => new CheckpointBattleDto {
+            RandomVersion=RandomVersion,Random=Random?.Copy(),
             CurrencyAmounts = CurrencyAmounts == null ? null : (int[])CurrencyAmounts.Clone(),
             ItemRewardIndex=ItemRewardIndex,ItemRewardHasNextFloor=ItemRewardHasNextFloor,
             ContactCell = ContactCell, ParticipantCells = ParticipantCells == null ? null : (int[])ParticipantCells.Clone(),

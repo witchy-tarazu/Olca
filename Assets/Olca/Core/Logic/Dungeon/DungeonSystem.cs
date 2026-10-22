@@ -1587,6 +1587,8 @@ namespace Olca.Core.Logic.Dungeon
         }
         internal static void ValidateEncounter(CheckpointBattleDto b, CheckpointPlayerDto p, IReadOnlyDictionary<int, Enemy> enemies)
         {
+            if(b==null)throw new ArgumentException("接敵情報が不完全です");
+            BattleRandomStateDto.ValidateRecord(b.RandomVersion,b.Random);
             CheckpointValues.Require(b != null && b.ParticipantCells != null && b.ParticipantCells.Length > 0 &&
                 b.ParticipantCells.Distinct().Count() == b.ParticipantCells.Length && b.ParticipantCells.Contains(b.ContactCell), "接敵情報が不完全です");
             CheckpointValues.Require(b.CurrencyAmounts == null || (b.CurrencyAmounts.Length == b.ParticipantCells.Length && b.CurrencyAmounts.All(v => v >= 0)), "通貨報酬定義が不正です");
@@ -1668,7 +1670,7 @@ namespace Olca.Core.Logic.Dungeon
                 var d = restored.Snapshot;
                 d.Sequence = checked(d.Sequence + 1); d.Boundary = CheckpointBoundary.BattleStart;
                 d.Battle = encounter.Copy(); d.Battle.FirstHand = new string[0]; d.Battle.RewardCandidates = new string[0];
-                d.Battle.RewardOffered = false;
+                d.Battle.RewardOffered = false; d.Battle.Random = null; d.Battle.RandomVersion=null;
                 CheckpointCodec.ValidateEncounter(d.Battle, d.Player, restored.Enemies);
                 var random = new PlanningRandom(planningSeed);
                 var deck = restored.Deck;
@@ -1695,6 +1697,9 @@ namespace Olca.Core.Logic.Dungeon
                 d.Battle.ItemRewardIndex=null;d.Battle.ItemRewardHasNextFloor=definitions.ItemRewards.Count>0?(bool?)hasNextFloor:null;
                 if(definitions.ItemQualifyingCells(encounter.ParticipantCells,hasNextFloor).Length>0)
                     d.Battle.ItemRewardIndex=ItemRewardEntry.Pick(definitions.ItemRewards,definitions.ItemRewardChance,random);
+                // 計画抽選は従来System.Randomのまま。新規保存の戦闘用streamを別に固定する。
+                d.Battle.RandomVersion=1;
+                d.Battle.Random = new SeededBattleRandom(unchecked((uint)planningSeed)).CaptureState();
                 if (!CheckpointCodec.TryRestore(d, definitions, out _, out error)) return false;
                 plan = new CheckpointBattlePlan(d, random.Calls); return true;
             }

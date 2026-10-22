@@ -63,7 +63,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void 旧保存にない乱数は明示seedで分離し状態指定時は呼出回数を引き継ぐ()
         {
-            var p=Package();var random=new SeededBattleRandom(456);for(int i=0;i<7;i++)random.Range(0,13);
+            var p=Package();var legacy=PortableCheckpointJson.Decode(p.CheckpointEnvelope);legacy.Battle.Random=null;legacy.Battle.RandomVersion=null;p.CheckpointEnvelope=PortableCheckpointJson.Encode(legacy);var random=new SeededBattleRandom(456);for(int i=0;i<7;i++)random.Range(0,13);
             p.RandomState=random.State;p.RandomDraws=random.Draws;var s=p.CreateSimulation();Assert.AreEqual(random.State,s.Random.State);Assert.AreEqual(7,s.Random.Draws,"保存済み初回手札を引き直さない");
             Assert.AreEqual(random.Range(0,100),s.Random.Range(0,100));p.RandomState=0;Assert.Throws<ArgumentException>(()=>p.CreateSimulation());
         }

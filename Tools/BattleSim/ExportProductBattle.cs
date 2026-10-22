@@ -18,7 +18,7 @@ public static class ExportProductBattle {
    // 実際のBCLシリアライズ復元後にも全定義・保存を再検証する。
    var reread=PortableCheckpointJson.Deserialize<PortableBattlePackage>(packed);var restored=reread.Restore(out _);
    if(File.Exists(output)){if(!File.ReadAllBytes(output).SequenceEqual(packed))throw new Exception("existing export differs");}else io.WriteAndFlush(output,packed);
-   return "product scene="+scenePath+"; map="+defs.MapHash+"; cards="+package.Cards.Length+"; boundary="+restored.Snapshot.Boundary+"; firstHand="+restored.FirstHand.Count+"; source SHA256="+PortableCheckpointJson.Hash(bytes)+"; replay seed="+seed+" (legacy RNG state absent)";
+   return "product scene="+scenePath+"; map="+defs.MapHash+"; cards="+package.Cards.Length+"; boundary="+restored.Snapshot.Boundary+"; firstHand="+restored.FirstHand.Count+"; source SHA256="+PortableCheckpointJson.Hash(bytes)+"; replay seed="+reread.ReplaySeed+"; saved RNG="+(restored.Snapshot.Battle.Random!=null);
   }finally{EditorSceneManager.ClosePreviewScene(scene);}
  }
 }

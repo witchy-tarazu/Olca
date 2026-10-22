@@ -50,6 +50,9 @@ namespace Olca.Core.Logic.Battle
         private readonly EnemyAISystem enemyAI;
         private readonly DelayedEffectSystem delayedEffects;
         private readonly IRandomProvider randomProvider;
+        private bool checkpointRandom;
+        public BattleRandomStateDto CheckpointRandomState => checkpointRandom ? ((SeededBattleRandom)randomProvider).CaptureState() : null;
+        internal void UseCheckpointRandom() { if (!(randomProvider is SeededBattleRandom)) throw new InvalidOperationException("復帰済み戦闘乱数が必要です"); checkpointRandom=true; }
         private readonly IGameLogger logger;
 
         private BattlePauseReason pauseReasons;
@@ -577,7 +580,7 @@ namespace Olca.Core.Logic.Battle
             if (customScreen.IsOpen || Transformations.IsActivating) return;
             // 未使用カードを取得してカスタム画面に渡す
             var remainingCards = cardUsage.GetRemainingCards();
-            customScreen.Open(remainingCards, random);
+            customScreen.Open(remainingCards, checkpointRandom ? randomProvider : random);
             Pause();
         }
 

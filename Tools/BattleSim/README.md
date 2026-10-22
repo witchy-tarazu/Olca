@@ -87,3 +87,13 @@ DTOは正規カードの全コンストラクター値・Modifier・定義キー
 **乱数の限界:** 旧チェックポイントにはゲーム用System.Randomのseed/内部状態がありません。初回手札・報酬候補は保存値を保ち再抽選せず、以後の比較用seedを輸送DTOに明示します。これは旧ライブセッションの全乱数列の復元ではありません。輸送DTOの`RandomState`/`RandomDraws`を明示した場合は、今回の純C#乱数状態から継続できます。元の保存形式にフィールドを追加したり、推測seedで元保存を書き換えたりしません。
 
 **未対応:** 最初の入口は通常接触のBattleStart境界だけです。ダッシュ初撃、複数階層の封筒、加工付与/調律履歴定義の輸送、製品の融合/超越/調律ルール・変身定義、報酬受領後の攻略/永続保存への復帰コマンドは未対応です。欠損や未対応は例外/拒否として扱い、未定義データを作りません。任意の戦闘途中セーブは新設していません。既存保存層・DungeonSystemの開始時配置/地形/初回手札処理を共用し、通常経路の回帰はUnity MCPの全件テストで確認します。GUIコピーと実機は別の未確認です。
+
+### 新規保存に含まれるRNG状態
+
+新しく作るBattleStart計画は`RandomVersion=1`と`Random`状態を保存します。algorithm=`olca.xorshift32`/version=1、seed/state/Draws（32bit出力回数）が明示されます。マーカーがあるのに状態がない場合や未知版/不正値は拒否。必須JSONメンバー欠落も拒否します。初回手札・報酬の計画抽選は既存System.Randomのまま、戦闘専用streamの開始状態を別に固定し、保存タイミングは変えません。
+
+新形式を`PortableBattlePackage.Capture`で輸送すると保存状態を取り込み、呼出元のfallback seedでは上書きしません。Unityの通常CheckpointBattleFactory復帰とCLIは同じ状態を復元します。カスタムを開く際の外部RNG指定も、新形式戦闘の追加ドローでは保存由来streamへ揃えます。現在の敵AIは優先順評価でRNG消費0であり、将来のためにAIContextへ同じstreamを渡すだけで新しい抽選を追加しません。
+
+旧保存は状態/マーカーなしのまま互換読込し、Unityは従来外部RNG、CLIは明示fallbackを使います。旧ライブ列の完全復元はできません。元保存を書き換えず、保存済み手札・報酬を保持します。ライブstateを同じ境界ファイルへ自動書込する機能はなく、途中セーブを新設していません。
+
+今回の新形式実証データは`/workspace/work/Olca-saved-battle-rng-proof-20261022/replay/product-battle.json`、隣接条件を明示した別fixtureは同ルートの`fixture/product-battle.json`です。既存DLL実行例の`--package`へ指定して`--verify`を付けます。製品配置での到達範囲と隣接fixtureを混同しないでください。旧GUIコピーは未同期です。

@@ -148,6 +148,8 @@ namespace Olca.Core.Logic.Dungeon
             if(definitions==null||definitions.PortableGrantCount!=0)throw new NotSupportedException("調律履歴定義の輸送は未対応です");
             var result=new PortableBattlePackage{Revision=definitions.Revision,MapHash=definitions.MapHash,CatalogHash=definitions.CardCatalogHash,Map=PortableMapDefinition.Capture(definitions.CreateInitialMap()),
                 Cards=definitions.PortableCards.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableCardDefinition.Capture(p.Key,p.Value)).ToArray(),CheckpointEnvelope=(byte[])checkpoint.Clone(),Rules=rules,ReplaySeed=replaySeed};
+            var saved=PortableCheckpointJson.Decode(checkpoint).Battle?.Random;
+            if(saved!=null){saved.Validate();result.ReplaySeed=saved.Seed;result.RandomState=saved.State;result.RandomDraws=saved.Draws;}
             result.Restore(out _);return result;
         }
         public RestoredCheckpoint Restore(out PortableCardCatalog catalog)
@@ -158,13 +160,15 @@ namespace Olca.Core.Logic.Dungeon
             if(defs.MapHash!=MapHash||defs.CardCatalogHash!=CatalogHash)throw new ArgumentException("輸送された製品定義のhashが一致しません");
             if(!CheckpointCodec.TryRestore(PortableCheckpointJson.Decode(CheckpointEnvelope),defs,out var restored,out var error))throw new InvalidDataException(error);
             if(restored.Snapshot.Boundary!=CheckpointBoundary.BattleStart||restored.Snapshot.Battle.DashContact)throw new NotSupportedException("この入口は通常接触の戦闘開始チェックポイントのみ対応します");
+            var saved=restored.Snapshot.Battle.Random;
+            if(saved!=null&&(ReplaySeed!=saved.Seed||RandomState!=saved.State||RandomDraws!=saved.Draws))throw new ArgumentException("輸送側の乱数指定が保存状態と一致しません");
             catalog=new PortableCardCatalog(Cards.Select(c=>c.Restore()));return restored;
         }
         public BattleSimulation CreateSimulation()
         {
             var restored=Restore(out var catalog);var r=Rules;var settings=new BattleSimulationSettings(restored.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames);
             return new BattleSimulation(settings,ReplaySeed,random=>{
-                var battle=CheckpointBattleFactory.Create(restored.Player,new DungeonMap(restored.Map),restored.Deck,restored.Snapshot,restored.FirstHand,random,r.GaugeSpeed,cardDatabase:catalog);
+                var battle=CheckpointBattleFactory.Create(restored.Player,new DungeonMap(restored.Map),restored.Deck,restored.Snapshot,restored.FirstHand,random,r.GaugeSpeed,cardDatabase:catalog,checkpointRandomRestored:restored.Snapshot.Battle.Random!=null);
                 battle.ConfigureDefaultHitInvincibility(r.HitInvincibilityMs);battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(r.StartupFrames,r.RecoveryFrames,r.CancelAfterFrames));return battle;
             },true,randomState:RandomState,randomDraws:RandomDraws);
         }
