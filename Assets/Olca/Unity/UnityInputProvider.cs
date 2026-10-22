@@ -721,6 +721,12 @@ namespace Olca.Unity
         private UnityEngine.UI.Button[] linked=System.Array.Empty<UnityEngine.UI.Button>();
         private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Button focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
         public string FocusName=>focused!=null?focused.name:null;
+        public static bool IsTopmost(Transform root)
+        {
+            if(root==null||!root.gameObject.activeInHierarchy)return false;var es=UnityEngine.EventSystems.EventSystem.current;if(es==null)return true;
+            var hits=new List<UnityEngine.EventSystems.RaycastResult>();es.RaycastAll(new UnityEngine.EventSystems.PointerEventData(es){position=new Vector2(Screen.width/2f,Screen.height/2f)},hits);
+            return hits.Count==0||hits[0].gameObject.transform==root||hits[0].gameObject.transform.IsChildOf(root);
+        }
         public MenuPadScope(System.Func<bool> top,System.Func<IEnumerable<UnityEngine.UI.Button>> external=null)
         {this.top=top;this.external=external;input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false);}
         private bool Typing()=>root!=null&&root.GetComponentsInChildren<UnityEngine.UI.InputField>().Any(f=>f.isFocused);
@@ -730,7 +736,8 @@ namespace Olca.Unity
         private static UnityEngine.UI.Button Near(UnityEngine.UI.Button from,Vector2 direction,UnityEngine.UI.Button[] buttons)
         {var p=Point(from);return buttons.Where(b=>b!=from&&Vector2.Dot(Point(b)-p,direction)>.01f).OrderByDescending(b=>Vector2.Dot(Point(b)-p,direction)/(Point(b)-p).sqrMagnitude).FirstOrDefault();}
         public void Bind(Transform root,string preferred,System.Action cancel,UnityEngine.UI.ScrollRect scroll=null,bool restorePosition=false)
-        {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;linked=System.Array.Empty<UnityEngine.UI.Button>();focused=null;if(!restorePosition)havePoint=false;Refresh();}
+        {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;linked=System.Array.Empty<UnityEngine.UI.Button>();focused=null;if(!restorePosition)havePoint=false;
+            if(Usable()){var initial=Buttons().FirstOrDefault(b=>b.name==preferred);if(initial!=null)Focus(initial);}Refresh();}
         public void Suspend(){version++;input.Reset();root=null;focused=null;cancel=null;scroll=null;}
         private void Focus(UnityEngine.UI.Button button)
         {focused=button;if(button==null)return;preferred=button.name;lastPoint=Point(button);havePoint=true;button.Select();Follow(button);}

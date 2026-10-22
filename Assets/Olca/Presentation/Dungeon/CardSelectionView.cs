@@ -24,6 +24,7 @@ namespace Olca.Presentation.Dungeon
 
         private UniTaskCompletionSource<Card> selectionTcs;
         private Button skipButton;
+        private Olca.Unity.MenuPadScope rewardMenu;
 
         /// <summary>
         /// カード選択画面を表示し、選択が完了するまで待機する
@@ -58,6 +59,7 @@ namespace Olca.Presentation.Dungeon
                 if (i < choices.Count)
                 {
                     cardItems[i].Setup(choices[i]);
+                    var choiceButton=cardItems[i].GetComponentInChildren<Button>(true);if(choiceButton!=null)choiceButton.name="CardRewardChoice_"+i;
                     cardItems[i].gameObject.SetActive(true);
                 }
             }
@@ -77,6 +79,8 @@ namespace Olca.Presentation.Dungeon
                 await FadeAsync(canvasGroup, 0f, 1f, fadeInDuration, ct);
             }
 
+            if(rewardMenu==null)rewardMenu=new Olca.Unity.MenuPadScope(()=>!Olca.Unity.GameplayPause.InputBlocked&&Olca.Unity.MenuPadScope.IsTopmost(containerRoot!=null?containerRoot.transform:transform));
+            rewardMenu.Bind(containerRoot!=null?containerRoot.transform:transform,"SkipCardReward",()=>OnItemClicked(null));
             // キャンセル時は null を返す
             ct.Register(() => selectionTcs.TrySetResult(null));
 
@@ -86,6 +90,7 @@ namespace Olca.Presentation.Dungeon
         private void LateUpdate()
         {
             if (containerRoot != null && containerRoot.activeInHierarchy) UpdateChoiceLayout();
+            rewardMenu?.Tick();
         }
 
         private void UpdateChoiceLayout()
@@ -124,6 +129,7 @@ namespace Olca.Presentation.Dungeon
         /// </summary>
         public void Hide()
         {
+            rewardMenu?.Suspend();
             selectionTcs?.TrySetResult(null);
             if (containerRoot != null)
                 containerRoot.SetActive(false);
@@ -137,6 +143,7 @@ namespace Olca.Presentation.Dungeon
             if (Olca.Unity.GameplayPause.InputBlocked) return;
             // 受取とスキップの競合も最初の確定だけを既存Controllerへ渡す。
             if (selectionTcs == null || !selectionTcs.TrySetResult(card)) return;
+            rewardMenu?.Suspend();
             if (containerRoot != null) containerRoot.SetActive(false);
         }
 
@@ -177,8 +184,10 @@ namespace Olca.Presentation.Dungeon
             group.alpha = to;
         }
 
+        private void OnDisable(){rewardMenu?.Suspend();}
         private void OnDestroy()
         {
+            rewardMenu?.Dispose();
             selectionTcs?.TrySetCanceled();
         }
     }
@@ -398,6 +407,7 @@ namespace Olca.Presentation.Dungeon
             Button("ConfirmVisit","選択を確定",-560,-440,520,72,confirmVisit).interactable=!blocked&&canConfirm;
             Button("CancelVisit","選択取消",0,-440,520,72,cancelVisit).interactable=!blocked&&selected>=0;
             Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit).interactable=!blocked&&canExit;
+            SetMenu(content.transform,blocked?null:selected>=0?cancelVisit:canExit?exitVisit:null,selected>=0?"VisitOption_"+selected:"VisitOption_0");
         }
 
         private int removalPage;
@@ -419,6 +429,7 @@ namespace Olca.Presentation.Dungeon
             Text("RemovalHelp",$"{removalPage+1}/{pages}ページ / {System.Array.FindAll(selected,x=>x).Length}/{needed}枚選択\n確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-340,1750,110,25);
             Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-460,800,72,confirm).interactable=!blocked&&canConfirm;
             Button("CancelVisitRemoval","確定せず戻る",430,-460,800,72,cancel).interactable=!blocked;
+            SetMenu(content.transform,blocked?null:cancel,"CancelVisitRemoval");
         }
 
         private int exchangePage;
@@ -450,6 +461,7 @@ namespace Olca.Presentation.Dungeon
             Button("CancelTokenExchange","選択取消",0,-440,520,72,cancel).interactable=!blocked&&selected!=null;
             Button("CloseTokenExchange","拠点へ戻る",560,-440,520,72,close).interactable=!blocked;
             if(error!=null||blocked)Button("RetryTokenExchange","保存を再試行",0,-525,800,55,retrySave);
+            SetMenu(content.transform,blocked?null:selected!=null?cancel:close,selected==null?"CloseTokenExchange":"ExchangeOffer_"+selected);
         }
 
         private int stylePage;
@@ -476,6 +488,7 @@ namespace Olca.Presentation.Dungeon
             Button("ConfirmStyleSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
             Button("CancelStyleSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
             if (error != null || blocked) Button("RetryStyleDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);
+            SetMenu(content.transform,blocked?null:cancelSelection,"StyleChoice_"+selected);
         }
 
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,

@@ -1062,6 +1062,14 @@ namespace Olca.Application.Dungeon
         private UniTaskCompletionSource<bool> itemRewardChoice;
         private Text currencyRewardText, currencyBalanceText;
         private Button receiveCurrencyButton;
+        private MenuPadScope resourceRewardMenu;
+        private Transform resourceRewardRoot;
+        private void BindResourceReward(GameObject root,string preferred,System.Action skip)
+        {
+            resourceRewardRoot=root.transform;
+            if(resourceRewardMenu==null)resourceRewardMenu=new MenuPadScope(()=>!GameplayPause.InputBlocked&&MenuPadScope.IsTopmost(resourceRewardRoot));
+            resourceRewardMenu.Bind(root.transform,preferred,skip);
+        }
         private UniTaskCompletionSource<bool> currencyChoice;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
@@ -1327,6 +1335,7 @@ namespace Olca.Application.Dungeon
             RefreshProgressActions();
             if(AudioSettingsOpen)audioSettingsView.transform.SetAsLastSibling();
             if(DialogueOpen&&!IsUserPaused)dialogueView.transform.SetAsLastSibling();
+            resourceRewardMenu?.Tick();
         }
 
         private void TickLogicalFrame(long frame, int deltaTimeMs, LogicalInput input)
@@ -1626,9 +1635,9 @@ namespace Olca.Application.Dungeon
                     var item=manager.Dungeon.PendingItemReward;
                     itemRewardChoice=new UniTaskCompletionSource<bool>();var choice=itemRewardChoice;
                     itemRewardText.text=$"アイテム報酬: {item.Name}\nHP回復 {item.Heal} / 現在HP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\n満タンでも受取時に消費します";
-                    itemRewardOverlay.SetActive(true);itemRewardOverlay.transform.SetAsLastSibling();bool receive;
+                    itemRewardOverlay.SetActive(true);itemRewardOverlay.transform.SetAsLastSibling();BindResourceReward(itemRewardOverlay,"SkipItemReward",()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});bool receive;
                     try{using(ct.Register(()=>choice.TrySetCanceled(ct)))receive=await choice.Task;}
-                    finally{if(itemRewardOverlay!=null)itemRewardOverlay.SetActive(false);itemRewardChoice=null;}
+                    finally{resourceRewardMenu?.Suspend();if(itemRewardOverlay!=null)itemRewardOverlay.SetActive(false);itemRewardChoice=null;}
                     await GameplayPause.WaitAsync(ct);
                     logicalLoop.Schedule(()=>{if(ReferenceEquals(manager,owner)){owner.SelectItemReward(receive);ScheduleExplorationResume();}});
                     while(manager.CurrentPhase==GamePhase.CardReward&&manager.Dungeon.PendingCurrencyReward==0)await GameplayPause.NextFrame(ct);
@@ -1641,9 +1650,10 @@ namespace Olca.Application.Dungeon
                     currencyRewardText.text = $"通貨報酬: {manager.Dungeon.PendingCurrencyReward}\n所持: {manager.Dungeon.Currency}（攻略中のみ）";
                     receiveCurrencyButton.interactable = manager.Dungeon.PendingCurrencyReward <= long.MaxValue - manager.Dungeon.Currency;
                     currencyOverlay.SetActive(true); currencyOverlay.transform.SetAsLastSibling();
+                    BindResourceReward(currencyOverlay,"SkipCurrencyButton",()=>{if(!GameplayPause.InputBlocked)currencyChoice?.TrySetResult(false);});
                     bool receive;
                     try { using (ct.Register(() => choice.TrySetCanceled(ct))) receive = await choice.Task; }
-                    finally { if (currencyOverlay != null) currencyOverlay.SetActive(false); currencyChoice = null; }
+                    finally { resourceRewardMenu?.Suspend();if (currencyOverlay != null) currencyOverlay.SetActive(false); currencyChoice = null; }
                     await GameplayPause.WaitAsync(ct);
                     logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCurrencyReward(receive); ScheduleExplorationResume(); } });
                     while (manager.CurrentPhase == GamePhase.CardReward) await GameplayPause.NextFrame(ct);
@@ -1878,6 +1888,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            resourceRewardMenu?.Dispose();
             FinishDialogue(interrupt:true);dialogueLoop.Dispose();
             gameplayAudio?.Dispose();
             inputProvider?.Dispose();
