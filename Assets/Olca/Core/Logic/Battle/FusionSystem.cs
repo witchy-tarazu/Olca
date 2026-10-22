@@ -23,6 +23,17 @@ namespace Olca.Core.Logic.Battle
             this.cardFactory = cardFactory ?? throw new ArgumentNullException(nameof(cardFactory));
         }
 
+        /// <summary>通常選択・直接実行で共通の素材役割の排他条件。</summary>
+        public static string MaterialRoleError(IReadOnlyList<Card> cards)
+        {
+            if(cards==null||cards.Count<2||cards.Any(c=>c==null))return null;
+            int count=cards.Count(TuningSystem.IsMaterial);
+            if(count>0&&count!=cards.Count)return "調律素材とそれ以外の融合はできません";
+            if(count==cards.Count&&cards.Select(c=>c.Series?.Name).Distinct().Count()!=cards.Count)
+                return "同じシリーズの調律素材は融合できません";
+            return null;
+        }
+
         /// <summary>
         /// 融合可能かどうかを検証する
         /// </summary>
@@ -33,6 +44,8 @@ namespace Olca.Core.Logic.Battle
             if (materials.Any(c => c == null))
                 return FusionValidationResult.Fail("カードにnullが含まれています");
 
+            var materialError=MaterialRoleError(materials);
+            if(materialError!=null)return FusionValidationResult.Fail(materialError);
             var ids = materials.Select(c => c.Id).ToList();
             string resultId = recipeProvider.FindResultCardId(ids);
             if (resultId == null)

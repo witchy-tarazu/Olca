@@ -1079,7 +1079,7 @@ namespace Olca.Presentation.CustomScreen
                             highlightType = CardHighlightType.ExceedMaterial;
                             break;
                         case CustomizationOperation.Tuning:
-                            highlightType = card.Category == CardCategory.Tuning
+                            highlightType = customScreen.IsTuningMaterial(card)
                                 ? CardHighlightType.TuningMaterial
                                 : CardHighlightType.TuningTarget;
                             break;

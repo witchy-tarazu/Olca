@@ -54,8 +54,8 @@ namespace Olca.Application.Battle
         }
 
         public TuningGrantDefinition GetTuningDefinition(Card card)
-            => card != null && card.Id == Tuning && card.Category == CardCategory.Tuning &&
-                card.ExceedLevel == ExceedLevel.Normal ? StandardTuning : null;
+            => card != null && card.Id == Tuning && catalog.TryGetValue(Tuning,out var definition) &&
+                CollectionDisplay.DefinitionHash(card)==CollectionDisplay.DefinitionHash(definition) ? StandardTuning : null;
 
         public bool HasExceededDefinition(Card card, ExceedLevel nextLevel)
             => card != null && card.Id == Sword && card.Series == CardSeries.Sword &&
