@@ -155,8 +155,8 @@ namespace Olca.Core.Logic.Battle
                 }
                 int milliseconds = (int)(StepIndex * 1000 / 60 - (StepIndex - 1) * 1000 / 60);
                 Battle.RunLogicalFrame(() => {
-                    attack.Tick(Battle, input, Settings.ChargeFrames, Settings.IntervalFrames);
-                    if (!Battle.IsPaused && input.CardUseButtonDown) Battle.CardUsage.TryUseCurrentCardAsync().Forget();
+                    attack.ProcessInput(Battle, input, Settings.ChargeFrames, Settings.IntervalFrames, 2,
+                        () => Battle.CardUsage.TryUseCurrentCardAsync().Forget());
                     Battle.TickFrame(milliseconds, input);
                 });
                 return new BattleFrameObservation(StepIndex, Battle, Random, attack, events.ToArray());

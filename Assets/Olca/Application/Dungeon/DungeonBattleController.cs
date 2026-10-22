@@ -1453,10 +1453,9 @@ namespace Olca.Application.Dungeon
                     if (input.CustomScreenButtonDown)
                         battleSession?.TryOpenCustomScreen();
 
-                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackChargeFrames, basicAttackIntervalFrames, basicAttackChargeMultiplier);
-                    // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
-                    if (input.CardUseButtonDown)
-                        battleSession?.UseCardFromInput();
+                    // 入力優先とカード振分けはstandaloneと同じCore。完了通知/例外処理だけセッションへ委譲。
+                    basicAttackInput.ProcessInput(manager.CurrentBattle, input, basicAttackChargeFrames, basicAttackIntervalFrames,
+                        basicAttackChargeMultiplier, () => battleSession?.UseCardFromInput());
                     break;
 
                 case GamePhase.CardReward:

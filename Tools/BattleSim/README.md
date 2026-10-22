@@ -168,3 +168,11 @@ Unity側で登録済みの階層列を渡し、各階層の定義を`PortableFlo
 正規取得は`ExportProductReturn.cs`が本シーンのReturnSettingsと既存の保存を読む。受領済み製品ケースの再処理は再付与なしの確認であり、新規クリア実入力と区別する。初回付与・上限超過・再クリア・損失は明示fixture進行で確認する。
 
 純C#での接続済み範囲は戦闘整数Step、カスタム／変身コマンド、正規DB・加工ルール・保存済み戦闘RNG、単階層／階層移行保存、成功／敗北／撤退の永続帰還。未接続はGUI状態同期・通常入力の一巡、帰還後の新しい出撃スナップショットを作るコマンド、未登録の製品変身／通常融合表など。戦闘開始リプレイは分析入口として維持し、ゲームの再開可否は永続台帳／帰還アダプターのRunClosedで判断する。既存の探索全体RNGは保存されていないため、次戦・次周回の旧ライブ抽選列まで保証しない。任意途中保存は増やさない。
+
+## GUIとの共用境界（2026-10-22）
+
+GUIは `DungeonBattleController` → `DungeonBattleManager.TickFrame` → `BattleSystem.TickFrame`、CLIは `PortableBattleSession` → `BattleSimulation.Step` → 同じ `BattleSystem.TickFrame` を呼ぶ。ダメージ合算の `RunLogicalFrame`、カード効果・敵AI・地形・状態異常・戦闘RNG・カスタム/変身/加工コマンドも同じCoreソースであり、GUI用の別の戦闘ルールは作っていない。基本攻撃とカード優先入力の振分けは `BasicAttackInputState.ProcessInput` に集約した。GUIのカード非同期完了通知/例外表示とCLIの通知方法はアダプターに残す。
+
+「portable経路へのGUI同期」という残件は、GUIが輸送DTO/`PortableBattleSession`を直接読み、`BattleFrameObservation`から描画する汎用フロントエンドになっていない、という意味。現在のGUIは既存Manager/Storeのモデルとイベントを描画し、カスタム閉じ演出の論理フレーム通知も既存アダプターが扱う。これはCoreの複製ではない。実入力→コマンド列の全記録/再投入とportable観測列からのGUI再描画は未接続で、Unity内の同一Coreトレース比較と製品GUI操作回帰を別の確認として扱う。
+
+輸送設定の限界: 現行製品とCLIの非変身タメ倍率はともに既定2倍。GUIの `basicAttackChargeMultiplier` を非既定値に変更した場合の値は現在の `PortableBattleRules` に含まれず、非既定倍率の再現保証はない。未登録の製品変身/通常融合表/複数階層、新規出撃CLI、将来の探索RNG継続も従来の残件である。

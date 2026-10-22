@@ -13,6 +13,13 @@ namespace Olca.Core.Logic.Battle
         public void CancelCharge() { armed = resumePending = false; ChargeFrames = 0; }
         public void Suspend() { if (armed) { armed = false; resumePending = true; } }
         public void Reset() { current?.CancelBasicAction(); current = null; form = null; CancelCharge(); CooldownFrames = 0; }
+        /// <summary>GUIとstandaloneの共通入力振分け。非同期完了の通知だけを呼出元へ委譲する。</summary>
+        public void ProcessInput(BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input,
+            int chargeFrames, int intervalFrames, int chargeMultiplier, System.Action useCard)
+        {
+            Tick(battle, input, chargeFrames, intervalFrames, chargeMultiplier);
+            if (battle != null && !battle.IsPaused && input.CardUseButtonDown) useCard?.Invoke();
+        }
         public void Tick(Olca.Core.Logic.Battle.BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input,
             int chargeFrames, int intervalFrames, int chargeMultiplier = 2)
         {

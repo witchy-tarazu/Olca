@@ -17,6 +17,22 @@ namespace Olca.Tests.Battle
         private static async FrameTask<int> Ordered(FrameCompletionSource first, FrameCompletionSource second, List<string> trace)
         { trace.Add("begin"); await first.Task; trace.Add("first"); await second.Task; trace.Add("second"); return 7; }
         [Test]
+        public void 共通入力振分けはカードを優先しポーズ中のカードを発生させない()
+        {
+            var simulation = new Olca.Core.Logic.Battle.BattleSimulation(new Olca.Core.Logic.Battle.BattleSimulationSettings(), 123);
+            var attack = new Olca.Core.Logic.Battle.BasicAttackInputState();
+            var input = new Olca.Core.Logic.Integration.LogicalInput { BasicAttackButtonDown = true, BasicAttackButton = true };
+            int uses = 0;
+            attack.ProcessInput(simulation.Battle, input, 15, 12, 2, () => uses++);
+            Assert.IsTrue(attack.IsCharging);
+            input.CardUseButtonDown = true;
+            attack.ProcessInput(simulation.Battle, input, 15, 12, 2, () => uses++);
+            Assert.IsFalse(attack.IsCharging); Assert.AreEqual(1, uses);
+            simulation.Battle.Pause(Olca.Core.Logic.Battle.BattlePauseReason.User);
+            attack.ProcessInput(simulation.Battle, input, 15, 12, 2, () => uses++);
+            Assert.AreEqual(1, uses);
+        }
+        [Test]
         public void 待機は呼出元Contextや描画に送らず完了フレーム内で順番通り継続する()
         {
             var old = SynchronizationContext.Current; var host = new HostContext(); SynchronizationContext.SetSynchronizationContext(host);
