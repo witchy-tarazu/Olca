@@ -72,6 +72,23 @@ namespace Olca.Tests
         }
 
         [Test]
+        public void 共通UI素材は指定フォントとウェイトサイズ自動縮小とマテリアルを置き換えない()
+        {
+            var root=new GameObject("AssignedTypeface",typeof(RectTransform),typeof(Text));
+            try{var text=root.GetComponent<Text>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");Assert.IsNotNull(font);
+                text.font=font;text.fontSize=31;text.fontStyle=FontStyle.Bold;text.resizeTextForBestFit=true;text.resizeTextMinSize=16;text.resizeTextMaxSize=35;var material=text.material;
+                UiLook.Label(text);Assert.AreSame(font,text.font);Assert.AreEqual(FontStyle.Bold,text.fontStyle);Assert.AreEqual(31,text.fontSize);Assert.IsTrue(text.resizeTextForBestFit);Assert.AreEqual(16,text.resizeTextMinSize);Assert.AreEqual(35,text.resizeTextMaxSize);Assert.AreSame(material,text.material);
+                text.font=null;UiLook.Label(text);Assert.AreSame(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),text.font);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 手札コストの元フォント参照を共通UIの都合で別書体へ差し替えない()
+        {
+            var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");
+            var cost=prefab.GetComponentInChildren<Text>(true);Assert.IsNotNull(cost);Assert.AreEqual("Assets/Font/JikiTourai.ttf",UnityEditor.AssetDatabase.GetAssetPath(cost.font));
+        }
+
+        [Test]
         public void 共通ボタン素材は専用カードアイコンを上書きしない()
         {
             var root=new GameObject("DedicatedCardButton",typeof(RectTransform),typeof(Image),typeof(Button));

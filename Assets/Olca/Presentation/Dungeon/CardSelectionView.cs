@@ -717,23 +717,11 @@ namespace Olca.Presentation.Dungeon
         public static readonly Color Chosen = new Color(.34f,.75f,.81f,1f);
         public static readonly Color Ink = new Color(.055f,.17f,.22f,1f);
         public static readonly Color Edge = new Color(.17f,.63f,.71f,.75f);
-        private static Font typeface;
-        private static bool fontChecked;
-        public static Font Typeface {
-            get {
-                if(!fontChecked){
-                    fontChecked=true;
-                    var installed=Font.GetOSInstalledFontNames();
-                    foreach(var name in new[]{"Noto Sans CJK JP","Noto Sans JP","Yu Gothic","Meiryo"})
-                        if(System.Array.IndexOf(installed,name)>=0){typeface=Font.CreateDynamicFontFromOSFont(name,28);break;}
-                }
-                return typeface;
-            }
-        }
         public static void Label(UnityEngine.UI.Text label)
         {
             if(label==null)return;
-            if(Typeface!=null)label.font=Typeface;
+            // 共通の色や枠の適用で、Scene/Prefab/呼出元の指定フォントを置き換えない。
+            if(label.font==null)label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.color=Ink; label.raycastTarget=false;
             label.horizontalOverflow=HorizontalWrapMode.Wrap;
         }
