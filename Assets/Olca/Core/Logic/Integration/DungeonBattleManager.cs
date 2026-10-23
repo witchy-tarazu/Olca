@@ -373,6 +373,13 @@ namespace Olca.Core.Logic.Integration
         public const long WallTicksPerSecond = 10000000;
         private long credit;
         private bool advancing;
+        public int DebugSpeedPercent { get; private set; } = 100;
+        /// <summary>開発用の供給率。取得済みフレームと端数は再換算しない。</summary>
+        public bool TrySetDebugSpeedPercent(int percent)
+        {
+            if(percent!=50 && percent!=100 && percent!=200)return false;
+            DebugSpeedPercent=percent;return true;
+        }
         public long Frame { get; private set; }
         public long PendingFrames => credit / WallTicksPerSecond;
         public long InputFrame => Frame + PendingFrames + 1;
@@ -380,7 +387,8 @@ namespace Olca.Core.Logic.Integration
         public void Accumulate(long elapsedWallTicks)
         {
             if (elapsedWallTicks < 0) throw new ArgumentOutOfRangeException(nameof(elapsedWallTicks));
-            credit = checked(credit + elapsedWallTicks * FramesPerSecond);
+            // 30/60/120はいずれも整数。描画分割でも端数や取得済み時間を失わない。
+            credit = checked(credit + elapsedWallTicks * (FramesPerSecond * DebugSpeedPercent / 100));
         }
         public int Drain(Action<long, int> tick, int budget = 240, Func<bool> canAdvance = null)
         {

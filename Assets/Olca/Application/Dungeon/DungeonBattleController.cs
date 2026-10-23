@@ -451,6 +451,28 @@ namespace Olca.Application.Dungeon
             return true;
         }
 
+        /// <summary>Editor／Development Build専用。MCP等の開発入口から呼び、通常設定へ保存しない。</summary>
+        public bool TryExecuteDebugGameSpeedCommand(string command, out string error)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            int percent;
+            switch(command) {
+                case "game-speed 0.5": percent=50;break;
+                case "game-speed 1": case "game-speed reset":percent=100;break;
+                case "game-speed 2":percent=200;break;
+                default:error="game-speed 0.5 | 1 | 2 | reset のみ使用できます";return false;
+            }
+            // 変更要求時点までを旧速度で確定。停止中の壁時計時間を回収しない。
+            logicalLoop.Observe(manager!=null && !DialogueOpen && manager.Dungeon.ActiveVisit==null && !clearReturnVisible &&
+                !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale>0);
+            logicalLoop.Clock.TrySetDebugSpeedPercent(percent);
+            error=null;return true;
+#else
+            error="開発ビルド専用コマンドです";return false;
+#endif
+        }
+        public int DebugGameSpeedPercent => logicalLoop.Clock.DebugSpeedPercent;
+
         public void SetUserPaused(bool paused)
         {
             if (manager == null || manager.IsUserPaused == paused) return;
