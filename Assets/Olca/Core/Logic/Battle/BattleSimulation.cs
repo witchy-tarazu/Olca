@@ -42,10 +42,11 @@ namespace Olca.Core.Logic.Battle
         public int EnemyHp { get; }
         public int ChargeFrames { get; }
         public int IntervalFrames { get; }
-        public BattleSimulationSettings(int playerHp = 100, int enemyHp = 120, int chargeFrames = 15, int intervalFrames = 12)
+        public int ChargeMultiplier { get; }
+        public BattleSimulationSettings(int playerHp = 100, int enemyHp = 120, int chargeFrames = 15, int intervalFrames = 12, int chargeMultiplier = 2)
         {
-            if (playerHp < 1 || enemyHp < 1 || chargeFrames < 1 || intervalFrames < 1) throw new ArgumentOutOfRangeException();
-            PlayerHp = playerHp; EnemyHp = enemyHp; ChargeFrames = chargeFrames; IntervalFrames = intervalFrames;
+            if (playerHp < 1 || enemyHp < 1 || chargeFrames < 1 || intervalFrames < 1 || chargeMultiplier < 1) throw new ArgumentOutOfRangeException();
+            PlayerHp = playerHp; EnemyHp = enemyHp; ChargeFrames = chargeFrames; IntervalFrames = intervalFrames; ChargeMultiplier = chargeMultiplier;
         }
     }
     public sealed class BattleFrameCommand
@@ -155,7 +156,7 @@ namespace Olca.Core.Logic.Battle
                 }
                 int milliseconds = (int)(StepIndex * 1000 / 60 - (StepIndex - 1) * 1000 / 60);
                 Battle.RunLogicalFrame(() => {
-                    attack.ProcessInput(Battle, input, Settings.ChargeFrames, Settings.IntervalFrames, 2,
+                    attack.ProcessInput(Battle, input, Settings.ChargeFrames, Settings.IntervalFrames, Settings.ChargeMultiplier,
                         () => Battle.CardUsage.TryUseCurrentCardAsync().Forget());
                     Battle.TickFrame(milliseconds, input);
                 });

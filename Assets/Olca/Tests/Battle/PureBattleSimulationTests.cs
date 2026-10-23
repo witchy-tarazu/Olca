@@ -16,6 +16,59 @@ namespace Olca.Tests.Battle
         }
         private static async FrameTask<int> Ordered(FrameCompletionSource first, FrameCompletionSource second, List<string> trace)
         { trace.Add("begin"); await first.Task; trace.Add("first"); await second.Task; trace.Add("second"); return 7; }
+        [TestCase(2)] [TestCase(3)]
+        public void 輸送先設定のタメ倍率が実際の攻撃ダメージへ反映される(int multiplier)
+        {
+            var simulation=new BattleSimulation(new BattleSimulationSettings(chargeMultiplier:multiplier),123);int damage=0;
+            simulation.Battle.OnPlayerAttack+=(target,value)=>damage=value;
+            for(int frame=1;frame<=50;frame++){
+                var input=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true};
+                if(frame==1)input.Horizontal=input.HorizontalDown=1;
+                if(frame>=30&&frame<45)input.BasicAttackButton=true;if(frame==30)input.BasicAttackButtonDown=true;if(frame==45)input.BasicAttackButtonUp=true;
+                simulation.Step(new BattleFrameCommand(input));
+            }
+            Assert.AreEqual(simulation.Battle.Player.AttackPower*multiplier,damage);
+        }
+        [TestCase(1)] [TestCase(3)] [TestCase(7)]
+        public void タメ倍率はDTO往復と両復帰入口の設定へ届く(int multiplier)
+        {
+            var p=PortableProcessingTests.Package();p.Rules.ChargeMultiplierVersion=1;p.Rules.ChargeMultiplier=multiplier;
+            var decoded=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<Olca.Core.Logic.Dungeon.PortableBattlePackage>(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(p));
+            Assert.AreEqual(multiplier,decoded.CreateSimulation().Settings.ChargeMultiplier);
+            Assert.AreEqual(multiplier,new Olca.Core.Logic.Dungeon.PortableBattleSession(decoded).Simulation.Settings.ChargeMultiplier);
+        }
+        [Test]
+        public void 倍率フィールドのない旧カタログだけ従来二倍として読む()
+        {
+            var r=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<Olca.Core.Logic.Dungeon.PortableBattleRules>(System.Text.Encoding.UTF8.GetBytes("{}"));
+            Assert.AreEqual(2,r.ResolveChargeMultiplier());
+            var p=PortableProcessingTests.Package();p.Version=1;p.Rules.ChargeMultiplierVersion=null;p.Rules.ChargeMultiplier=null;
+            var old=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<Olca.Core.Logic.Dungeon.PortableBattlePackage>(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(p));
+            Assert.AreEqual(2,old.CreateSimulation().Settings.ChargeMultiplier);
+            Assert.AreEqual(2,new Olca.Core.Logic.Dungeon.PortableBattleSession(old).Simulation.Settings.ChargeMultiplier);
+        }
+        [TestCase(1,0)] [TestCase(1,-1)] [TestCase(2,3)] [TestCase(0,3)]
+        public void 不正な倍率または未知版は復帰前に拒否する(int version,int value)
+        {
+            var p=PortableProcessingTests.Package();p.Rules.ChargeMultiplierVersion=version;p.Rules.ChargeMultiplier=value;
+            Assert.Throws<ArgumentException>(()=>p.CreateSimulation());
+            Assert.Throws<ArgumentException>(()=>new Olca.Core.Logic.Dungeon.PortableBattleSession(p));
+        }
+        [Test]
+        public void 新旧パケット版の混在と新形式の倍率欠損と未知版を拒否する()
+        {
+            var p=PortableProcessingTests.Package();Assert.AreEqual(2,p.Version);Assert.AreEqual(1,p.Rules.ChargeMultiplierVersion);
+            p.Version=1;Assert.Throws<ArgumentException>(()=>p.CreateSimulation());
+            p.Version=2;p.Rules.ChargeMultiplierVersion=null;p.Rules.ChargeMultiplier=null;Assert.Throws<ArgumentException>(()=>p.CreateSimulation());
+            p.Version=99;Assert.Throws<ArgumentException>(()=>p.CreateSimulation());
+        }
+        [Test]
+        public void 倍率と版の片方だけの欠損は旧形式と誤認しない()
+        {
+            var r=new Olca.Core.Logic.Dungeon.PortableBattleRules{ChargeMultiplier=3};Assert.Throws<ArgumentException>(()=>r.ResolveChargeMultiplier());
+            r.ChargeMultiplier=null;r.ChargeMultiplierVersion=1;Assert.Throws<ArgumentException>(()=>r.ResolveChargeMultiplier());
+            Assert.Throws<ArgumentOutOfRangeException>(()=>new BattleSimulationSettings(chargeMultiplier:0));
+        }
         [Test]
         public void 共通入力振分けはカードを優先しポーズ中のカードを発生させない()
         {

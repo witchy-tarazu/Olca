@@ -139,18 +139,29 @@ namespace Olca.Core.Logic.Dungeon
     {
         public int ChargeFrames,IntervalFrames,HitInvincibilityMs,StartupFrames,RecoveryFrames;public int? CancelAfterFrames;
         public float GaugeSpeed;public int? ExplorationNormalSpeedMilliPerSecond;
-        public void Validate(){if((ExplorationNormalSpeedMilliPerSecond.HasValue&&ExplorationNormalSpeedMilliPerSecond.Value<=0)||ChargeFrames<1||IntervalFrames<1||HitInvincibilityMs<0||float.IsNaN(GaugeSpeed)||float.IsInfinity(GaugeSpeed)||GaugeSpeed<=0)throw new ArgumentException("戦闘ルール値が不正です");_ = new PlayerAttackTiming(StartupFrames,RecoveryFrames,CancelAfterFrames);}
+        public int? ChargeMultiplierVersion,ChargeMultiplier;
+        public int ResolveChargeMultiplier(){
+            // 旧Exporterは2倍以外を拒否していた。両方欠損の場合だけ、その旧契約を維持する。
+            if(!ChargeMultiplierVersion.HasValue&&!ChargeMultiplier.HasValue)return 2;
+            if(ChargeMultiplierVersion!=1||!ChargeMultiplier.HasValue||ChargeMultiplier.Value<1)throw new ArgumentException("タメ倍率の版または値が不正です");
+            return ChargeMultiplier.Value;
+        }
+        public PortableBattleRules CaptureVersioned(){
+            Validate();return new PortableBattleRules{ChargeMultiplierVersion=1,ChargeMultiplier=ResolveChargeMultiplier(),
+                ChargeFrames=ChargeFrames,IntervalFrames=IntervalFrames,HitInvincibilityMs=HitInvincibilityMs,StartupFrames=StartupFrames,RecoveryFrames=RecoveryFrames,CancelAfterFrames=CancelAfterFrames,GaugeSpeed=GaugeSpeed,ExplorationNormalSpeedMilliPerSecond=ExplorationNormalSpeedMilliPerSecond};
+        }
+        public void Validate(){_ = ResolveChargeMultiplier();if((ExplorationNormalSpeedMilliPerSecond.HasValue&&ExplorationNormalSpeedMilliPerSecond.Value<=0)||ChargeFrames<1||IntervalFrames<1||HitInvincibilityMs<0||float.IsNaN(GaugeSpeed)||float.IsInfinity(GaugeSpeed)||GaugeSpeed<=0)throw new ArgumentException("戦闘ルール値が不正です");_ = new PlayerAttackTiming(StartupFrames,RecoveryFrames,CancelAfterFrames);}
     }
     public sealed class PortableBattlePackage
     {
-        public int Version=1;public string Revision,MapHash,CatalogHash;public PortableMapDefinition Map;public PortableCardDefinition[] Cards;
+        public int Version=2;public string Revision,MapHash,CatalogHash;public PortableMapDefinition Map;public PortableCardDefinition[] Cards;
         public PortableFloorRoute FloorRoute;public PortableProcessingCatalog Processing;public PortableTuningGrant[] Grants;
         public byte[] CheckpointEnvelope;public uint ReplaySeed;public uint? RandomState;public long RandomDraws;public PortableBattleRules Rules;
         public static PortableBattlePackage Capture(CheckpointDefinitions definitions,byte[] checkpoint,PortableBattleRules rules,uint replaySeed)
         {
             if(definitions==null)throw new ArgumentNullException(nameof(definitions));
             var result=new PortableBattlePackage{Revision=definitions.Revision,MapHash=definitions.MapHash,CatalogHash=definitions.CardCatalogHash,Map=PortableMapDefinition.Capture(definitions.CreateInitialMap()),
-                Grants=definitions.PortableGrants.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableTuningGrant.Capture(p.Key,p.Value)).ToArray(),Cards=definitions.PortableCards.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableCardDefinition.Capture(p.Key,p.Value)).ToArray(),CheckpointEnvelope=(byte[])checkpoint.Clone(),Rules=rules,ReplaySeed=replaySeed};
+                Grants=definitions.PortableGrants.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableTuningGrant.Capture(p.Key,p.Value)).ToArray(),Cards=definitions.PortableCards.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableCardDefinition.Capture(p.Key,p.Value)).ToArray(),CheckpointEnvelope=(byte[])checkpoint.Clone(),Rules=(rules??throw new ArgumentNullException(nameof(rules))).CaptureVersioned(),ReplaySeed=replaySeed};
             var saved=PortableCheckpointJson.Decode(checkpoint).Battle?.Random;
             if(saved!=null){saved.Validate();result.ReplaySeed=saved.Seed;result.RandomState=saved.State;result.RandomDraws=saved.Draws;}
             result.Restore(out _);return result;
@@ -167,7 +178,11 @@ namespace Olca.Core.Logic.Dungeon
         public RestoredCheckpoint Restore(out PortableCardCatalog catalog)=>Restore(out catalog,out _);
         internal RestoredCheckpoint Restore(out PortableCardCatalog catalog,out CheckpointDefinitions defs)
         {
-            if(Version!=1||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");Rules.Validate();
+            if((Version!=1&&Version!=2)||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");
+            bool multiplierRecord=Rules.ChargeMultiplierVersion.HasValue||Rules.ChargeMultiplier.HasValue;
+            // 新形式を旧readerが2倍として黙って読むことを防ぐ。旧形式は従来の欠損契約だけ許可する。
+            if((Version==1&&multiplierRecord)||(Version==2&&(!Rules.ChargeMultiplierVersion.HasValue||!Rules.ChargeMultiplier.HasValue)))throw new ArgumentException("輸送版とタメ倍率情報が一致しません");
+            Rules.Validate();
             if(RandomState==0||RandomDraws<0||(!RandomState.HasValue&&RandomDraws!=0))throw new ArgumentException("乱数状態が不正です");
             defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());
             if(Grants!=null)foreach(var grant in Grants)defs.RegisterGrant(grant.Key,grant.Restore());
@@ -187,7 +202,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         public BattleSimulation CreateSimulation()
         {
-            var restored=Restore(out var catalog);var processing=Processing?.Restore();var r=Rules;var settings=new BattleSimulationSettings(restored.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames);
+            var restored=Restore(out var catalog);var processing=Processing?.Restore();var r=Rules;var settings=new BattleSimulationSettings(restored.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames,r.ResolveChargeMultiplier());
             return new BattleSimulation(settings,ReplaySeed,random=>{
                 var battle=CheckpointBattleFactory.Create(restored.Player,new DungeonMap(restored.Map),restored.Deck,restored.Snapshot,restored.FirstHand,random,r.GaugeSpeed,exceed:processing?.Exceed,tuning:processing?.Tuning,fusion:processing?.Fusion,cardDatabase:catalog,checkpointRandomRestored:restored.Snapshot.Battle.Random!=null);
                 battle.ConfigureDefaultHitInvincibility(r.HitInvincibilityMs);battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(r.StartupFrames,r.RecoveryFrames,r.CancelAfterFrames));return battle;

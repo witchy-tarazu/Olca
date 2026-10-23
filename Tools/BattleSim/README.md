@@ -2,6 +2,32 @@
 
 `Assets/Olca/Core/**/*.cs` を直接コンパイルする。戦闘の模倣版やUnity型のスタブ、Unity DLLは使わない。ロジックの複製も行わない。
 
+## このVMで確認した最短起動
+
+既存の.NET 6ランタイムとビルド済みCLIを使う（Unity起動、SDK追加、ネットワーク取得は不要）。
+
+```sh
+env -u DISPLAY -u XAUTHORITY \
+  DOTNET_ROOT=/workspace/work/Olca-pure-battle-proof-20261022/toolchain/runtime \
+  /workspace/work/Olca-pure-battle-proof-20261022/toolchain/runtime/dotnet \
+  /workspace/work/Olca-charge-multiplier-final-proof-20261023/standalone/bin/Olca.BattleSim.dll \
+  --seed 123 --frames 240 --verify
+```
+
+これは固定サンプルの入力列を再生する入口で、キーボードやゲーム画面から入力するCLIではない。`--seed`/`--frames`はこのサンプル用。正規データ/戦闘開始保存を輸送したパッケージでは、パッケージ内の定義・設定・保存済み乱数状態（旧保存では明示seed）と組込みコマンド列を使用する。
+
+再ビルドはリポジトリルートで以下を実行する。出力は専用ルートのみ。共通設定・元保存へは出力しない。
+
+```sh
+python3 Tools/BattleSim/build_existing_runtime.py \
+  --runtime-root /workspace/work/Olca-pure-battle-proof-20261022/toolchain/runtime \
+  --compiler-root /workspace/work/Olca-pure-battle-proof-20261022/toolchain/compiler \
+  --output-root /workspace/work/Olca-charge-multiplier-final-proof-20261023/standalone \
+  --forbidden-root /workspace/.olca-cloud/config/unity3d/DefaultCompany/Olca/Olca
+```
+
+既存Microsoft .NET 6/Roslyn 4.3のコピーを使い、Unity DLL/型スタブ/追加NuGet依存は使わない。上の`env`指定はそのプロセスだけに作用し、環境の認証/通信設定を変更しない。
+
 ## 通常の.NET SDK
 
 .NET 6参照パックを持つSDKで実行する（外部NuGet依存なし）。この作業VMにはSDKがなく、この経路自体は未実行。下の既存ランタイム経路で実コンパイル・実行を確認した。
@@ -175,4 +201,24 @@ GUIは `DungeonBattleController` → `DungeonBattleManager.TickFrame` → `Battl
 
 「portable経路へのGUI同期」という残件は、GUIが輸送DTO/`PortableBattleSession`を直接読み、`BattleFrameObservation`から描画する汎用フロントエンドになっていない、という意味。現在のGUIは既存Manager/Storeのモデルとイベントを描画し、カスタム閉じ演出の論理フレーム通知も既存アダプターが扱う。これはCoreの複製ではない。実入力→コマンド列の全記録/再投入とportable観測列からのGUI再描画は未接続で、Unity内の同一Coreトレース比較と製品GUI操作回帰を別の確認として扱う。
 
-輸送設定の限界: 現行製品とCLIの非変身タメ倍率はともに既定2倍。GUIの `basicAttackChargeMultiplier` を非既定値に変更した場合の値は現在の `PortableBattleRules` に含まれず、非既定倍率の再現保証はない。未登録の製品変身/通常融合表/複数階層、新規出撃CLI、将来の探索RNG継続も従来の残件である。
+輸送設定: `basicAttackChargeMultiplier` は正規Exporterが実際のシリアライズ値を読み、版付きで輸送する。現在の製品値2は変更しない。旧パケット版1（倍率情報なし）は従来2倍で読み、新パケット版2は倍率レコード版1と正の値を必須とする。旧readerはパケット版2を拒否するため、非既定倍率を黙って2へ落とさない。欠損片側・不正値・未知版・新旧の混在は拒否し、元データを書き換えない。未登録の製品変身/通常融合表/複数階層、新規出撃CLI、将来の探索RNG継続も従来の残件である。
+
+
+## タメ倍率輸送の検証入力
+
+通常のパッケージ再生は `--package /absolute/path/product-battle.json --verify`。倍率だけを調べる固定入力列は以下を使う。
+
+```sh
+env -u DISPLAY -u XAUTHORITY \
+  DOTNET_ROOT=/workspace/work/Olca-pure-battle-proof-20261022/toolchain/runtime \
+  /workspace/work/Olca-pure-battle-proof-20261022/toolchain/runtime/dotnet \
+  /workspace/work/Olca-charge-multiplier-final-proof-20261023/standalone/bin/Olca.BattleSim.dll \
+  --package /workspace/work/Olca-charge-multiplier-final-proof-20261023/package-3.json \
+  --charge-probe --verify
+```
+
+`package-3.json`は現在の製品Sceneのプレビュー内だけで倍率3を指定した検証用コピー。製品Sceneは保存せず、製品値2を維持した。入力列は空選択でカスタムを閉じ、通常移動後に定義のタメフレームぶん保持/解放する。ルールやダメージ計算は通常と同じCore。probeの最大タメ10000フレームは検証ループの保護であり、ゲーム側の新しい上限ではない。
+
+確認範囲は、正規Exporterの倍率取得→パケット版2/倍率レコード版1→両復帰入口→同一コマンド列のCore実行。現在の製品設定2と、プレビュー専用3でUnity/CLI各125行byte一致、成長後攻撃11のタメ22/33を確認した。旧パケット版1の同じ入力列は旧/新CLIで一致し、旧CLIは版2を拒否する。未公開WIPの「パケット版1に新倍率フィールドを付けたもの」は混在形式として拒否し、正式な版2を生成し直す。
+
+保証は同じ初期状態・設定・seed/保存済み乱数状態・明示入力列に対する整数フレームの結果。異なる描画負荷/フレーム分割でも一致を検証する。元の旧ライブ乱数列、新規出撃CLI、将来の探索RNG継続、portable DTO汎用GUI、未登録製品データは保証/実装範囲に追加しない。

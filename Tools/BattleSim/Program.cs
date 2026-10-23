@@ -9,8 +9,9 @@ internal static class Program
     {
         try {
             PortableBattlePackage package = null;string returnPackage=null,inspectReturn=null;string outputRoot=null,forbiddenRoot=null,inspectResult=null;bool postBattle=false,receive=false,finishFloor=false;
-            uint seed = 123; int frames = 240, batch = 1, work = 0; bool verify = false, custom = false, transformation = false, processing = false;
+            uint seed = 123; int frames = 240, batch = 1, work = 0; bool verify = false, custom = false, transformation = false, processing = false, chargeProbe = false;
             for (int i = 0; i < args.Length; i++) {
+                if (args[i] == "--charge-probe") { chargeProbe=true; continue; }
                 if (args[i] == "--finish-floor") { finishFloor=true; continue; }
                 if (args[i] == "--post-battle") { postBattle=true; continue; }
                 if (args[i] == "--receive-rewards") { receive=true; continue; }
@@ -37,12 +38,13 @@ internal static class Program
                 Console.Write(traceReturn);return 0;
             }
             if(inspectResult!=null){var result=PortableCheckpointJson.Deserialize<PortableRunCheckpoint>(System.IO.File.ReadAllBytes(inspectResult));Console.WriteLine(result.Canonical());return 0;}
+            if(chargeProbe&&(package==null||postBattle||processing||transformation||custom))throw new ArgumentException("charge-probeにはpackageだけを指定します");
             if(postBattle&&package==null)throw new ArgumentException("結果保存にはpackageが必要です");
             if (work < 0 || work > 1000000) throw new ArgumentOutOfRangeException(nameof(work));
             var references = typeof(BattleSimulation).Assembly.GetReferencedAssemblies();
             if (references.Any(a => a.Name.StartsWith("Unity", StringComparison.Ordinal) || a.Name.Contains("UniTask"))) throw new InvalidOperationException("Unity依存が混入しています");
             void Work(int load) { long scratch = 1; for (int n = 0; n < load; n++) scratch = unchecked(scratch * 33 + n); GC.KeepAlive(scratch); }
-            string Run(int size, int load) => postBattle ? PortablePostBattleReplay.Trace(package,receive,size,()=>Work(load),finishFloor:finishFloor) : package != null ? (processing ? PortableProcessingReplay.Trace(package,size,()=>Work(load)) : PortableBattleReplay.Trace(package, size, () => Work(load))) : transformation ? TransformationBattleReplay.Trace(seed, size, () => Work(load)) : custom ? CustomBattleReplay.Trace(seed, size, () => Work(load)) : BattleSimulation.SampleTrace(seed, frames, size, () => Work(load));
+            string Run(int size, int load) => postBattle ? PortablePostBattleReplay.Trace(package,receive,size,()=>Work(load),finishFloor:finishFloor) : package != null ? (chargeProbe ? PortableBattleReplay.ChargeTrace(package,size,()=>Work(load)) : processing ? PortableProcessingReplay.Trace(package,size,()=>Work(load)) : PortableBattleReplay.Trace(package, size, () => Work(load))) : transformation ? TransformationBattleReplay.Trace(seed, size, () => Work(load)) : custom ? CustomBattleReplay.Trace(seed, size, () => Work(load)) : BattleSimulation.SampleTrace(seed, frames, size, () => Work(load));
             string trace = Run(batch, work);
             if (verify) {
                 foreach (int size in new[] { 1, 7, 31, 240 }) if (trace != Run(size, 2000)) throw new InvalidOperationException("バッチ/負荷で状態が変化しました");

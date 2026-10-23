@@ -28,5 +28,22 @@ namespace Olca.Core.Logic.Battle
             if(batch<1)throw new ArgumentOutOfRangeException(nameof(batch));var simulation=package.CreateSimulation();var commands=Commands(package);var trace=new StringBuilder();trace.Append(simulation.InitialObservation.Canonical).Append('\n');
             for(int start=0;start<commands.Count;start+=batch){renderWork?.Invoke();for(int i=start;i<Math.Min(commands.Count,start+batch);i++)trace.Append(simulation.Step(commands[i]).Canonical).Append('\n');}return trace.ToString();
         }
+        /// <summary>倍率輸送の検証用入力列。ゲームルールを持たず既存Stepだけへ渡す。</summary>
+        public static string ChargeTrace(PortableBattlePackage package,int batch=1,Action renderWork=null)
+        {
+            if(batch<1||package.Rules.ChargeFrames>10000)throw new ArgumentOutOfRangeException();
+            var simulation=package.CreateSimulation();var commands=new List<BattleFrameCommand>{
+                new BattleFrameCommand(custom:new CustomScreenCommand(CustomCommandKind.Confirm)),
+                new BattleFrameCommand(custom:new CustomScreenCommand(CustomCommandKind.ReturnToBattle))};
+            int release=40+package.Rules.ChargeFrames;
+            for(int i=1;i<=release+package.Rules.StartupFrames+package.Rules.RecoveryFrames+10;i++){
+                var input=new LogicalInput{HasInputSample=true};if(i<=36)input.Horizontal=1;if(i==1)input.HorizontalDown=1;
+                if(i>=40&&i<release)input.BasicAttackButton=true;if(i==40)input.BasicAttackButtonDown=true;if(i==release)input.BasicAttackButtonUp=true;
+                commands.Add(new BattleFrameCommand(input));
+            }
+            var trace=new StringBuilder();trace.Append(simulation.InitialObservation.Canonical).Append('\n');
+            for(int start=0;start<commands.Count;start+=batch){renderWork?.Invoke();for(int i=start;i<Math.Min(commands.Count,start+batch);i++)trace.Append(simulation.Step(commands[i]).Canonical).Append('\n');}
+            return trace.ToString();
+        }
     }
 }

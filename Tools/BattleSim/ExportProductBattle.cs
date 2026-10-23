@@ -10,10 +10,8 @@ public static class ExportProductBattle {
    controller.ConfigureCheckpointDirectory(root+"/never-start/checkpoint");controller.ConfigureProgressDirectory(root+"/never-start/progress");controller.ConfigureGameplaySettingsDirectory(root+"/never-start/settings");
    var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
    object Call(string name,params object[] args)=>type.GetMethod(name,flags).Invoke(controller,args);
-   int Value(string name)=>(int)type.GetField(name,flags).GetValue(controller);
-   if(Value("basicAttackChargeMultiplier")!=2)throw new Exception("charge multiplier is not supported by this transport");
    var factory=(SimpleCardFactory)Call("CreateCardFactory");var map=(DungeonConfig)Call("CreateDefaultDungeon",false);var defs=(CheckpointDefinitions)Call("CreateSingleDefinitions",map,factory.CreateStarterDeck());
-   var timing=CheckpointBattleFactory.ProductBasicTiming;var rules=new PortableBattleRules{ExplorationNormalSpeedMilliPerSecond=Value("explorationNormalSpeedMilliPerSecond"),ChargeFrames=Value("basicAttackChargeFrames"),IntervalFrames=Value("basicAttackIntervalFrames"),HitInvincibilityMs=Value("commonHitInvincibilityMs"),StartupFrames=timing.StartupFrames,RecoveryFrames=timing.RecoveryFrames,CancelAfterFrames=timing.CancelAfterFrames,GaugeSpeed=CheckpointBattleFactory.DefaultGaugeSpeed};
+   var rules=CaptureRules(controller);
    var package=PortableBattlePackage.Capture(defs,File.ReadAllBytes(input),rules,seed);
    package.Processing=PortableProcessingCatalog.Capture("product/processing","v1",factory.FusionCards.Concat(package.Cards.Select(c=>c.Restore())),factory,new SimpleFusionRecipeProvider(factory).FusionDefinitions,factory.GetTuningDefinition);
    package.Restore(out _);var packed=PortableCheckpointJson.Serialize(package);
@@ -22,5 +20,10 @@ public static class ExportProductBattle {
    if(File.Exists(output)){if(!File.ReadAllBytes(output).SequenceEqual(packed))throw new Exception("existing export differs");}else io.WriteAndFlush(output,packed);
    return "product scene="+scenePath+"; map="+defs.MapHash+"; cards="+package.Cards.Length+"; boundary="+restored.Snapshot.Boundary+"; firstHand="+restored.FirstHand.Count+"; source SHA256="+PortableCheckpointJson.Hash(bytes)+"; replay seed="+reread.ReplaySeed+"; saved RNG="+(restored.Snapshot.Battle.Random!=null);
   }finally{EditorSceneManager.ClosePreviewScene(scene);}
+ }
+ public static PortableBattleRules CaptureRules(DungeonBattleController controller){
+  int Value(string name)=>(int)controller.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(controller);
+  var t=CheckpointBattleFactory.ProductBasicTiming;
+  var rules=new PortableBattleRules{ChargeMultiplierVersion=1,ChargeMultiplier=Value("basicAttackChargeMultiplier"),ExplorationNormalSpeedMilliPerSecond=Value("explorationNormalSpeedMilliPerSecond"),ChargeFrames=Value("basicAttackChargeFrames"),IntervalFrames=Value("basicAttackIntervalFrames"),HitInvincibilityMs=Value("commonHitInvincibilityMs"),StartupFrames=t.StartupFrames,RecoveryFrames=t.RecoveryFrames,CancelAfterFrames=t.CancelAfterFrames,GaugeSpeed=CheckpointBattleFactory.DefaultGaugeSpeed};rules.Validate();return rules;
  }
 }

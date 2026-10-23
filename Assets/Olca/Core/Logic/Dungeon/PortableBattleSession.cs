@@ -62,7 +62,7 @@ namespace Olca.Core.Logic.Dungeon
             Manager=manager;if(source.Rules.ExplorationNormalSpeedMilliPerSecond.HasValue)Manager.Dungeon.ConfigureNormalMovementSpeed(source.Rules.ExplorationNormalSpeedMilliPerSecond.Value);manager.OnCardRewardPresented+=cards=>pendingCards=cards.ToArray();manager.OnFloorCompleted+=()=>floorSwapPending=true;
             manager.OnBattleStarted+=(battle,contact)=>{
                 var r=source.Rules;battle.ConfigureDefaultHitInvincibility(r.HitInvincibilityMs);battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(r.StartupFrames,r.RecoveryFrames,r.CancelAfterFrames));
-                Simulation=new BattleSimulation(new BattleSimulationSettings(battle.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames),source.ReplaySeed,_=>battle,true,randomState:source.RandomState,randomDraws:source.RandomDraws);
+                Simulation=new BattleSimulation(new BattleSimulationSettings(battle.Player.MaxHp,1,r.ChargeFrames,r.IntervalFrames,r.ResolveChargeMultiplier()),source.ReplaySeed,_=>battle,true,randomState:source.RandomState,randomDraws:source.RandomDraws);
             };
         }
         private void ApplyPendingFloor()
