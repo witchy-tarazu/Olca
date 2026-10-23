@@ -23,6 +23,34 @@ namespace Olca.Tests.Battle
             return PortableBattlePackage.Capture(session.Definitions,PortableCheckpointJson.Encode(plan.Snapshot),new PortableBattleRules{ChargeFrames=60,IntervalFrames=12,HitInvincibilityMs=600,StartupFrames=timing.StartupFrames,RecoveryFrames=timing.RecoveryFrames,CancelAfterFrames=timing.CancelAfterFrames,GaugeSpeed=CheckpointBattleFactory.DefaultGaugeSpeed},123);
         }
         private static PortableBattlePackage Copy(PortableBattlePackage p)=>PortableCheckpointJson.Deserialize<PortableBattlePackage>(PortableCheckpointJson.Serialize(p));
+        [TestCase(0)] [TestCase(2)]
+        public void 開始チェックポイントと純Csharp輸送から延長を復元して同じ確定回数になる(int bonus)
+        {
+            var source=Package();var definitions=source.CreateCheckpointDefinitions();var state=PortableCheckpointJson.Decode(source.CheckpointEnvelope);
+            state.Player.Style=new DepartureStyleDefinition("basic","基本 / 無属性",null,transformationPhaseBonus:bonus).Capture();
+            var store=new MemoryCheckpointStore(definitions);Assert.IsTrue(store.TryWrite(state,out var error),error);
+            var package=PortableBattlePackage.Capture(definitions,PortableCheckpointJson.Encode(store.Read()),source.Rules,source.ReplaySeed);
+            Assert.AreEqual(bonus==0?2:3,package.Version);package=Copy(package);
+            Assert.AreEqual(bonus,package.Restore(out _).Player.DepartureStyle.TransformationPhaseBonus);
+            var simulation=package.CreateSimulation();var fixture=TransformationBattleReplay.Create(weakness:false);
+            simulation.Battle.Transformations.Configure(fixture.Battle.Transformations.AvailableDefinitions);
+            simulation.Step(new BattleFrameCommand(custom:new CustomScreenCommand(CustomCommandKind.PreviewTransformation,"fixture-a")));
+            simulation.Step(new BattleFrameCommand(custom:new CustomScreenCommand(CustomCommandKind.Confirm)));
+            Assert.AreEqual(3+bonus,simulation.Battle.Transformations.RemainingPhases);
+            Assert.AreEqual(bonus,state.Player.Style.Restore().TransformationPhaseBonus);
+        }
+        [TestCase("old-version")] [TestCase("missing-record")] [TestCase("unknown-record")] [TestCase("negative")] [TestCase("too-large")]
+        public void 非ゼロ延長を旧輸送版で黙って三回へ戻さず不正レコードを拒否する(string invalid)
+        {
+            var p=Package();var state=PortableCheckpointJson.Decode(p.CheckpointEnvelope);state.Player.Style=new DepartureStyleDefinition("basic","基本",null,transformationPhaseBonus:2).Capture();p.Version=3;
+            if(invalid=="old-version")p.Version=2;
+            if(invalid=="missing-record"){state.Player.Style.TransformationPhaseBonusVersion=null;state.Player.Style.TransformationPhaseBonus=null;}
+            if(invalid=="unknown-record")state.Player.Style.TransformationPhaseBonusVersion=999;
+            if(invalid=="negative")state.Player.Style.TransformationPhaseBonus=-1;
+            if(invalid=="too-large")state.Player.Style.TransformationPhaseBonus=int.MaxValue;
+            p.CheckpointEnvelope=PortableCheckpointJson.Encode(state);Assert.Catch(()=>p.CreateSimulation());
+        }
+
         [TestCase(1)] [TestCase(7)] [TestCase(31)] [TestCase(240)]
         public void 正規製品ファクトリーの定義と保存境界はJSON復元と負荷分割で一致する(int batch)
         {

@@ -162,7 +162,9 @@ namespace Olca.Core.Logic.Dungeon
             if(definitions==null)throw new ArgumentNullException(nameof(definitions));
             var result=new PortableBattlePackage{Revision=definitions.Revision,MapHash=definitions.MapHash,CatalogHash=definitions.CardCatalogHash,Map=PortableMapDefinition.Capture(definitions.CreateInitialMap()),
                 Grants=definitions.PortableGrants.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableTuningGrant.Capture(p.Key,p.Value)).ToArray(),Cards=definitions.PortableCards.OrderBy(p=>p.Key,StringComparer.Ordinal).Select(p=>PortableCardDefinition.Capture(p.Key,p.Value)).ToArray(),CheckpointEnvelope=(byte[])checkpoint.Clone(),Rules=(rules??throw new ArgumentNullException(nameof(rules))).CaptureVersioned(),ReplaySeed=replaySeed};
-            var saved=PortableCheckpointJson.Decode(checkpoint).Battle?.Random;
+            var checkpointState=PortableCheckpointJson.Decode(checkpoint);
+            if(checkpointState.Player?.Style?.HasTransformationPhaseBonusRecord==true)result.Version=3;
+            var saved=checkpointState.Battle?.Random;
             if(saved!=null){saved.Validate();result.ReplaySeed=saved.Seed;result.RandomState=saved.State;result.RandomDraws=saved.Draws;}
             result.Restore(out _);return result;
         }
@@ -178,10 +180,13 @@ namespace Olca.Core.Logic.Dungeon
         public RestoredCheckpoint Restore(out PortableCardCatalog catalog)=>Restore(out catalog,out _);
         internal RestoredCheckpoint Restore(out PortableCardCatalog catalog,out CheckpointDefinitions defs)
         {
-            if((Version!=1&&Version!=2)||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");
+            if((Version!=1&&Version!=2&&Version!=3)||Map==null||Cards==null||Rules==null||CheckpointEnvelope==null)throw new ArgumentException("未対応版または欠損した輸送データです");
             bool multiplierRecord=Rules.ChargeMultiplierVersion.HasValue||Rules.ChargeMultiplier.HasValue;
             // 新形式を旧readerが2倍として黙って読むことを防ぐ。旧形式は従来の欠損契約だけ許可する。
-            if((Version==1&&multiplierRecord)||(Version==2&&(!Rules.ChargeMultiplierVersion.HasValue||!Rules.ChargeMultiplier.HasValue)))throw new ArgumentException("輸送版とタメ倍率情報が一致しません");
+            if((Version==1&&multiplierRecord)||(Version>=2&&(!Rules.ChargeMultiplierVersion.HasValue||!Rules.ChargeMultiplier.HasValue)))throw new ArgumentException("輸送版とタメ倍率情報が一致しません");
+            // 延長情報のある新パケットを旧CLIが3回へ黙って戻して読まないよう版を分離する。
+            bool phaseRecord=PortableCheckpointJson.Decode(CheckpointEnvelope).Player?.Style?.HasTransformationPhaseBonusRecord==true;
+            if((Version==3)!=phaseRecord)throw new ArgumentException("輸送版と変身持続延長情報が一致しません");
             Rules.Validate();
             if(RandomState==0||RandomDraws<0||(!RandomState.HasValue&&RandomDraws!=0))throw new ArgumentException("乱数状態が不正です");
             defs=new CheckpointDefinitions(Revision,Map.Restore());foreach(var card in Cards)defs.RegisterCard(card.Key,card.Restore());

@@ -14,6 +14,51 @@ namespace Olca.Tests.Battle
         private static BattleFrameObservation Command(BattleSimulation s,CustomCommandKind kind)=>s.Step(new BattleFrameCommand(custom:new CustomScreenCommand(kind)));
         private static void Frames(BattleSimulation s,int count){for(int i=0;i<count;i++)s.Step(new BattleFrameCommand());}
         private static void Activate(BattleSimulation s,string id="fixture-a") { Form(s,id);Command(s,CustomCommandKind.Confirm);Command(s,CustomCommandKind.ReturnToBattle);Frames(s,12); }
+        [TestCase(0)] [TestCase(2)] [TestCase(97)]
+        public void 出撃固定の延長は確定時だけ反映し取消切替使用済み拒否と満了でも二重加算しない(int bonus)
+        {
+            var s=TransformationBattleReplay.Create(weakness:false);var state=s.Battle.Transformations;
+            s.Battle.Player.SetDepartureStyle(new DepartureStyleDefinition("basic","基本 / 無属性",null,transformationPhaseBonus:bonus));
+            int total=3+bonus;Form(s,"fixture-a");Assert.AreEqual(0,state.RemainingPhases);Command(s,CustomCommandKind.CancelTransformation);Assert.AreEqual(0,state.RemainingPhases);
+            Form(s,"fixture-a");Command(s,CustomCommandKind.Confirm);Assert.AreEqual(total,state.RemainingPhases);Command(s,CustomCommandKind.Confirm);Assert.AreEqual(total,state.RemainingPhases);
+            Command(s,CustomCommandKind.ReturnToBattle);Frames(s,12);
+            s.Battle.CustomGauge.SetGaugeMs(CustomGaugeSystem.MAX_GAUGE_MS);Command(s,CustomCommandKind.Open);Assert.AreEqual(total-1,state.RemainingPhases);
+            Form(s,"fixture-b");Command(s,CustomCommandKind.CancelTransformation);Assert.AreEqual("fixture-a",state.ActiveId);Assert.AreEqual(total-1,state.RemainingPhases);
+            Form(s,"fixture-b");Command(s,CustomCommandKind.Confirm);Assert.AreEqual(total,state.RemainingPhases);Assert.AreEqual(2,state.UsedIds.Count);Command(s,CustomCommandKind.ReturnToBattle);Frames(s,12);
+            for(int phase=1;phase<=total;phase++){
+                s.Battle.CustomGauge.SetGaugeMs(CustomGaugeSystem.MAX_GAUGE_MS);Command(s,CustomCommandKind.Open);Assert.AreEqual(total-phase,state.RemainingPhases);
+                Form(s,"fixture-a");Form(s,"fixture-b");Assert.IsNull(state.PendingId,"使用済みを再選択して持続を更新しない");
+                if(phase==total){Assert.IsNull(state.ActiveId);break;}
+                Command(s,CustomCommandKind.Confirm);Command(s,CustomCommandKind.ReturnToBattle);Frames(s,12);
+            }
+        }
+        [Test]
+        public void 延長中の弱点解除もゼロへ終了し表示と使用済みを維持する()
+        {
+            var s=TransformationBattleReplay.Create(weakness:false);
+            s.Battle.Player.SetDepartureStyle(new DepartureStyleDefinition("basic","基本",null,transformationPhaseBonus:2));
+            Activate(s);Assert.AreEqual(5,s.Battle.Transformations.RemainingPhases);StringAssert.Contains("5",s.Battle.Transformations.ActiveStatusText);
+            s.Battle.Player.TakeDamage(10,attackElement:ElementType.Fire);
+            Assert.AreEqual(0,s.Battle.Transformations.RemainingPhases);Assert.IsNull(s.Battle.Transformations.ActiveId);Assert.IsTrue(s.Battle.Transformations.IsUsed("fixture-a"));
+        }
+        [TestCase(-1)] [TestCase(98)] [TestCase(int.MaxValue)]
+        public void 延長入力の負値過大値は状態変更前に拒否する(int bonus)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(()=>new DepartureStyleDefinition("basic","基本",null,transformationPhaseBonus:bonus));
+            var dto=DepartureStyleDefinition.Basic.Capture();dto.TransformationPhaseBonusVersion=1;dto.TransformationPhaseBonus=bonus;
+            Assert.Throws<ArgumentException>(()=>dto.Restore());
+        }
+        [Test]
+        public void 延長レコードの旧省略はゼロ未知版片側欠損は拒否しDTOコピーは独立する()
+        {
+            var old=DepartureStyleDefinition.Basic.Capture();Assert.AreEqual(0,old.Restore().TransformationPhaseBonus);
+            var dto=new DepartureStyleDefinition("basic","基本",null,transformationPhaseBonus:2).Capture();var copy=dto.Copy();Assert.AreEqual(2,copy.Restore().TransformationPhaseBonus);
+            dto.TransformationPhaseBonus=3;Assert.AreEqual(2,copy.Restore().TransformationPhaseBonus);
+            copy.TransformationPhaseBonusVersion=999;Assert.Throws<ArgumentException>(()=>copy.Restore());
+            copy.TransformationPhaseBonusVersion=null;Assert.Throws<ArgumentException>(()=>copy.Restore());
+            copy.TransformationPhaseBonus=null;copy.TransformationPhaseBonusVersion=1;Assert.Throws<ArgumentException>(()=>copy.Restore());
+        }
+
         [TestCase(1)] [TestCase(7)] [TestCase(31)] [TestCase(240)]
         public void 変身弱点解除と期間終了の同じ列は負荷と分割に依存しない(int batch)
         {

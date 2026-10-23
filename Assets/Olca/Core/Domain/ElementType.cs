@@ -257,15 +257,19 @@ namespace Olca.Core.Domain
         public string Name { get; }
         public string RequiredClear { get; }
         public TransformationAttackDefinition Attack { get; }
-        public DepartureStyleDefinition(string id, string name, string requiredClear, TransformationAttackDefinition attack = null)
+        public int TransformationPhaseBonus { get; }
+        public DepartureStyleDefinition(string id, string name, string requiredClear, TransformationAttackDefinition attack = null, int transformationPhaseBonus = 0)
         {
             if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name) || (requiredClear != null && string.IsNullOrWhiteSpace(requiredClear)))
                 throw new System.ArgumentException("スタイルID・名称・解放条件が不正です");
+            if(transformationPhaseBonus<0||transformationPhaseBonus>PlayerCharacter.MaxTransformationPhaseBonus)
+                throw new System.ArgumentOutOfRangeException(nameof(transformationPhaseBonus));
             if (id == BasicId && (requiredClear != null || attack != null)) throw new System.ArgumentException("基本スタイルは既存の無属性攻撃を維持します");
-            Id = id; Name = name; RequiredClear = requiredClear; Attack = attack;
+            Id = id; Name = name; RequiredClear = requiredClear; Attack = attack; TransformationPhaseBonus=transformationPhaseBonus;
         }
         public bool IsUnlocked(ClearReturnProfile profile) => RequiredClear == null || System.Array.IndexOf(profile?.ClearedDungeons ?? System.Array.Empty<string>(), RequiredClear) >= 0;
         public DepartureStyleDto Capture() => new DepartureStyleDto { Id = Id, Name = Name, Element = Attack?.Element ?? ElementType.None,
+            TransformationPhaseBonusVersion=TransformationPhaseBonus==0?(int?)null:1, TransformationPhaseBonus=TransformationPhaseBonus==0?(int?)null:TransformationPhaseBonus,
             HasAttack = Attack != null, NormalPercent = Attack?.NormalPowerPercent ?? 100, ChargedPercent = Attack?.ChargedPowerPercent ?? 200,
             ChargeFrames = Attack?.ChargeFrames ?? 60, IntervalFrames = Attack?.IntervalFrames ?? 12,
             HasTiming = Attack?.Timing != null, StartupFrames = Attack?.Timing?.StartupFrames ?? 0,
@@ -279,6 +283,15 @@ namespace Olca.Core.Domain
         public bool HasAttack, HasTiming;
         public int NormalPercent, ChargedPercent, ChargeFrames, IntervalFrames, StartupFrames, RecoveryFrames;
         public int? CancelAfterFrames;
+        public int? TransformationPhaseBonusVersion,TransformationPhaseBonus;
+        public bool HasTransformationPhaseBonusRecord => TransformationPhaseBonusVersion.HasValue||TransformationPhaseBonus.HasValue;
+        public int ResolveTransformationPhaseBonus()
+        {
+            if(!HasTransformationPhaseBonusRecord)return 0; // 旧保存省略は延長なし。
+            if(TransformationPhaseBonusVersion!=1||!TransformationPhaseBonus.HasValue||TransformationPhaseBonus<0||TransformationPhaseBonus>PlayerCharacter.MaxTransformationPhaseBonus)
+                throw new System.ArgumentException("変身持続延長の版または値が不正です");
+            return TransformationPhaseBonus.Value;
+        }
         public DepartureStyleDto Copy() => (DepartureStyleDto)MemberwiseClone();
         public DepartureStyleDefinition Restore()
         {
@@ -286,7 +299,7 @@ namespace Olca.Core.Domain
                 throw new System.ArgumentException("スタイル属性・攻撃定義が不正です");
             var timing = new PlayerAttackTiming(StartupFrames, RecoveryFrames, CancelAfterFrames);
             return new DepartureStyleDefinition(Id, Name, null, HasAttack ? new TransformationAttackDefinition(Element, NormalPercent,
-                ChargedPercent, ChargeFrames, IntervalFrames, HasTiming ? timing : null) : null);
+                ChargedPercent, ChargeFrames, IntervalFrames, HasTiming ? timing : null) : null, ResolveTransformationPhaseBonus());
         }
     }
 
