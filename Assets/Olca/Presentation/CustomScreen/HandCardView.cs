@@ -78,6 +78,7 @@ namespace Olca.Presentation.CustomScreen
             costText.text = $"{card.GetFinalCost()}";
             Olca.Presentation.Dungeon.UiLook.Label(costText);
             if(cardButton!=null)Olca.Presentation.Dungeon.UiLook.Button(cardButton);
+            costText.color=Color.white;
 
             // クリックイベント
             cardButton.onClick.AddListener(() => parentView.OnCardClicked(card));

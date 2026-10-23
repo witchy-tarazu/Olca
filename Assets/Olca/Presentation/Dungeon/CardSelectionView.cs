@@ -597,8 +597,8 @@ namespace Olca.Presentation.Dungeon
         {
             var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = new UnityEngine.Vector2(1,0);
             rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,210); rect.anchoredPosition = new UnityEngine.Vector2(-280,135);
-            var face = gameObject.AddComponent<UnityEngine.UI.Image>(); face.color = UiLook.Surface; face.raycastTarget = false;
-            var edge = gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
+            var face = gameObject.AddComponent<UnityEngine.UI.Image>(); UiLook.Face(face); face.raycastTarget = false;
+            var edge = gameObject.GetComponent<UnityEngine.UI.Outline>() ?? gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
             UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
             {
                 var o = new UnityEngine.GameObject(name, typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text)); o.transform.SetParent(transform,false);
@@ -740,15 +740,24 @@ namespace Olca.Presentation.Dungeon
         public static void Face(Image image)
         {
             if(image==null)return;
-            image.color=Surface;
+            var sprite=Resources.Load<Sprite>("OlcaUI/window");
+            image.sprite=sprite;image.type=Image.Type.Sliced;image.color=sprite!=null?Color.white:Surface;
             var edge=image.GetComponent<Outline>()??image.gameObject.AddComponent<Outline>();
-            edge.effectColor=Edge;edge.effectDistance=new Vector2(1,-1);edge.useGraphicAlpha=true;
+            edge.enabled=sprite==null;edge.effectColor=Edge;edge.effectDistance=new Vector2(1,-1);edge.useGraphicAlpha=true;
         }
         public static void Button(Button button)
         {
             if(button==null)return;
             var image=button.targetGraphic as Image;
-            if(image!=null){Face(image);image.color=Color.white;}
+            // 絵そのものがtargetGraphicのカードでは、素材を差し替えない。
+            bool artwork=image!=null&&image.sprite!=null&&image.sprite.name!="UISprite"&&image.sprite.name!="window"&&!image.sprite.name.StartsWith("button-");
+            if(image!=null&&!artwork){Face(image);image.color=Color.white;}
+            var normal=Resources.Load<Sprite>("OlcaUI/button-normal");
+            if(normal!=null&&image!=null&&!artwork){
+                image.sprite=normal;image.type=Image.Type.Sliced;image.color=Color.white;
+                button.transition=Selectable.Transition.SpriteSwap;
+                button.spriteState=new SpriteState{highlightedSprite=Resources.Load<Sprite>("OlcaUI/button-selected"),selectedSprite=Resources.Load<Sprite>("OlcaUI/button-selected"),pressedSprite=Resources.Load<Sprite>("OlcaUI/button-pressed"),disabledSprite=Resources.Load<Sprite>("OlcaUI/button-disabled")};
+            }
             var colors=button.colors;colors.normalColor=ButtonFace;
             colors.highlightedColor=new Color(.83f,.98f,1f,1f);
             colors.selectedColor=Chosen;colors.pressedColor=new Color(.46f,.72f,.79f,1f);

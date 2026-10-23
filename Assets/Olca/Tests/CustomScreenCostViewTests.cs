@@ -17,6 +17,15 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 共通ボタン素材は専用カードアイコンを上書きしない()
+        {
+            var root=new GameObject("DedicatedCardButton",typeof(RectTransform),typeof(Image),typeof(Button));
+            var texture=new Texture2D(2,2);var icon=Sprite.Create(texture,new Rect(0,0,2,2),Vector2.one*.5f);icon.name="dedicated-card-mini";
+            try {var image=root.GetComponent<Image>();image.sprite=icon;var button=root.GetComponent<Button>();button.targetGraphic=image;
+                Olca.Presentation.Dungeon.UiLook.Button(button);Assert.AreSame(icon,image.sprite);Assert.AreNotEqual(Selectable.Transition.SpriteSwap,button.transition);
+            } finally {Object.DestroyImmediate(root);Object.DestroyImmediate(icon);Object.DestroyImmediate(texture);}
+        }
+        [Test]
         public void 表示生成前の決定は先頭手札を選び再選択と後続カーソルを演出完了で変えない()
         {
             var root=new GameObject("EarlyCustomInput",typeof(RectTransform));
@@ -114,7 +123,7 @@ namespace Olca.Tests
                 Assert.AreEqual(total, model.GetTotalUsedCost());
                 Assert.AreEqual(limit - total, model.RemainingCost);
                 Assert.AreEqual($"コスト: {total} / {limit}", text.text);
-                Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink, text.color);
+                Assert.AreEqual(Color.white, text.color);
                 Assert.AreEqual(count, model.SelectedCards.Count);
                 var expected = new List<Card>(model.SelectedCards);
                 model.Confirm();
@@ -174,7 +183,7 @@ namespace Olca.Tests
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(b);
                 Assert.AreEqual("コスト: 5 / 5", text.text);
-                Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink, text.color);
+                Assert.AreEqual(Color.white, text.color);
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(c);
                 Assert.AreEqual("コスト: 3 / 5", text.text);
