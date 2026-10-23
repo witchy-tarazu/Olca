@@ -1404,6 +1404,27 @@ namespace Olca.Tests.Dungeon
             ContactCell = 3, ParticipantCells = new[] { 3 }, HandLimit = 2, GridOriginX = -1,
             DashContact = true, DashEffect = (int)ActionSystem.DashContactEffect.InitialDamage };
 
+        [TestCase(-5000,false)] [TestCase(5000,true)]
+        public void 外部報酬率を反映した開始計画はDTOに結果だけ保持し復元と別補正で再抽選しない(int bonus,bool offered)
+        {
+            Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure,Encounter(),definitions,3,null,c=>"reward/v1/"+c.Id,out var plan,out var error,normalRewardRateBonusBasisPoints:bonus),error);
+            var saved=plan.Snapshot;Assert.AreEqual(offered,saved.Battle.RewardOffered);Assert.AreEqual(departure.SchemaVersion,saved.SchemaVersion);
+            var store=new MemoryCheckpointStore(definitions);Assert.IsTrue(store.TryWrite(saved,out error),error);
+            Assert.IsFalse(store.TryWrite(saved,out error),"同一世代の再保存は拒否");
+            Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure,Encounter(),definitions,3,null,c=>"reward/v1/"+c.Id,out var opposite,out error,normalRewardRateBonusBasisPoints:-bonus),error);
+            Assert.AreEqual(!offered,opposite.Snapshot.Battle.RewardOffered);
+            Assert.IsTrue(CheckpointCodec.TryRestore(store.Read(),definitions,out var restored,out error),error);
+            Assert.AreEqual(offered,restored.Snapshot.Battle.RewardOffered);CollectionAssert.AreEqual(saved.Battle.RewardCandidates,restored.Snapshot.Battle.RewardCandidates);
+            CollectionAssert.AreEqual(saved.Battle.FirstHand,restored.Snapshot.Battle.FirstHand);
+        }
+        [Test]
+        public void 開始計画の無補正引数省略と明示ゼロは同じ保存結果と乱数状態になる()
+        {
+            Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure,Encounter(),definitions,3,null,c=>"reward/v1/"+c.Id,out var legacy,out var error),error);
+            Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure,Encounter(),definitions,3,null,c=>"reward/v1/"+c.Id,out var zero,out error,normalRewardRateBonusBasisPoints:0),error);
+            CollectionAssert.AreEqual(PortableCheckpointJson.Serialize(legacy.Snapshot),PortableCheckpointJson.Serialize(zero.Snapshot));
+        }
+
         private CheckpointBattlePlan FindPlan(bool offered)
         {
             for (int seed = 0; seed < 100; seed++)

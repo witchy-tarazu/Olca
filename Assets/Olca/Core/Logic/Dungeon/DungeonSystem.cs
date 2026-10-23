@@ -1620,7 +1620,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         public static bool TryCreate(CheckpointDto state, CheckpointBattleDto encounter, CheckpointDefinitions definitions,
             int planningSeed, ICardPool rewardPool, Func<Card, string> rewardDefinitionKey,
-            out CheckpointBattlePlan plan, out string error, bool hasNextFloor=false)
+            out CheckpointBattlePlan plan, out string error, bool hasNextFloor=false, int normalRewardRateBonusBasisPoints=0)
         {
             plan = null;
             if (!CheckpointCodec.TryRestore(state, definitions, out var restored, out error)) return false;
@@ -1641,7 +1641,7 @@ namespace Olca.Core.Logic.Dungeon
                 d.Battle.FirstHand = deck.DrawCards(d.Battle.HandLimit, random).Select(c => reverse[c]).ToArray();
                 var rewards = new CardRewardSystem(new Deck(), random, rewardPool);
                 var enemy = restored.Enemies[encounter.ContactCell];
-                d.Battle.RewardOffered = rewards.ShouldDropCard(enemy);
+                d.Battle.RewardOffered = rewards.ShouldDropCard(enemy, normalRewardRateBonusBasisPoints);
                 if (d.Battle.RewardOffered)
                 {
                     var choices = rewards.GenerateCardChoices(enemy);
