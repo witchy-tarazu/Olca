@@ -13,6 +13,47 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class CardRewardSystemTests
     {
+        private sealed class RewardRateRandom : IRandomProvider
+        {
+            public float Roll;public int FloatCalls,IntCalls;
+            public float Range(float min,float max){FloatCalls++;return Roll;}
+            public int Range(int min,int max){IntCalls++;return min;}
+            public float Value=>Roll;
+        }
+        [TestCase(0,.4999f,true)] [TestCase(0,.5f,false)]
+        [TestCase(2500,.7499f,true)] [TestCase(2500,.75f,false)]
+        [TestCase(-2500,.2499f,true)] [TestCase(-2500,.25f,false)]
+        [TestCase(-5000,0f,false)] [TestCase(5000,1f,true)]
+        [TestCase(int.MinValue,0f,false)] [TestCase(int.MaxValue,1f,true)]
+        public void 通常報酬率の外部差分は基本半分へ加算して範囲制限し一回だけ抽選する(int bonus,float roll,bool expected)
+        {
+            var random=new RewardRateRandom{Roll=roll};var rewards=new CardRewardSystem(CreateTestDeck(),random);
+            var enemy=new Enemy("slime","敵",10,ElementType.None,new Vector2Int(3,0));
+            Assert.AreEqual(expected,rewards.ShouldDropCard(enemy,bonus));Assert.AreEqual(1,random.FloatCalls);Assert.AreEqual(0,random.IntCalls);
+            Assert.That(CardRewardSystem.NormalDropRateBasisPoints(bonus),Is.InRange(0,10000));
+        }
+        [Test]
+        public void 補正を渡さない呼出しは半分へ戻りボス保証とnull判定は補正に関係なく乱数を使わない()
+        {
+            var random=new RewardRateRandom{Roll=.6f};var rewards=new CardRewardSystem(CreateTestDeck(),random);
+            var enemy=new Enemy("slime","敵",10,ElementType.None,new Vector2Int(3,0));
+            Assert.IsTrue(rewards.ShouldDropCard(enemy,2500));Assert.IsFalse(rewards.ShouldDropCard(enemy));Assert.AreEqual(2,random.FloatCalls);
+            Assert.IsTrue(rewards.ShouldDropCard(new Enemy("boss","ボス",10,ElementType.None,new Vector2Int(3,0)),int.MinValue));
+            Assert.IsFalse(rewards.ShouldDropCard(null,int.MaxValue));Assert.AreEqual(2,random.FloatCalls);
+        }
+        [Test]
+        public void 出現率入力は候補の定義レアリティ重みと乱数呼出順を変えない()
+        {
+            var enemy=new Enemy("slime","敵",10,ElementType.None,new Vector2Int(3,0));
+            var definitions=new[]{"sword","heal","shield","fire"}.Select(id=>CardRewardSystem.CreateFallbackCard(id,CardRarity.Normal)).ToList();
+            var a=new RewardRateRandom{Roll=.1f};var b=new RewardRateRandom{Roll=.1f};
+            var x=new CardRewardSystem(CreateTestDeck(),a,new SimpleCardPool(definitions,c=>c.Id=="heal"?4:1));
+            var y=new CardRewardSystem(CreateTestDeck(),b,new SimpleCardPool(definitions,c=>c.Id=="heal"?4:1));
+            Assert.IsTrue(x.ShouldDropCard(enemy));Assert.IsTrue(y.ShouldDropCard(enemy,2500));
+            CollectionAssert.AreEqual(x.GenerateCardChoices(enemy).Select(CollectionDisplay.DefinitionHash),y.GenerateCardChoices(enemy).Select(CollectionDisplay.DefinitionHash));
+            Assert.AreEqual(a.FloatCalls,b.FloatCalls);Assert.AreEqual(a.IntCalls,b.IntCalls);
+        }
+
         [TestCase(0, "sword")]
         [TestCase(1, "heal")]
         [TestCase(4, "heal")]

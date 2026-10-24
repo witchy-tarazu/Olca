@@ -101,7 +101,7 @@ namespace Olca.Application.Dungeon
         [SerializeField, Min(1)] private int basicAttackChargeFrames = 60;
         [SerializeField, Min(1)] private int basicAttackChargeMultiplier = 2;
         [SerializeField, Min(1)] private int basicAttackIntervalFrames = 12;
-        private readonly BasicAttackInputState basicAttackInput = new BasicAttackInputState();
+        private readonly Olca.Core.Logic.Battle.BasicAttackInputState basicAttackInput = new Olca.Core.Logic.Battle.BasicAttackInputState();
         private BasicAttackHud basicAttackHud;
         private bool queuedTouchJump, queuedTouchDash, queuedTouchCard;
         private bool ExplorationUiAvailable => manager?.Dungeon.ActiveVisit==null && manager?.CurrentPhase==GamePhase.Dungeon && !IsUserPaused && !GameplayPause.InputBlocked &&
@@ -450,6 +450,28 @@ namespace Olca.Application.Dungeon
             ResetTouchInput();
             return true;
         }
+
+        /// <summary>Editor／Development Build専用。MCP等の開発入口から呼び、通常設定へ保存しない。</summary>
+        public bool TryExecuteDebugGameSpeedCommand(string command, out string error)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            int percent;
+            switch(command) {
+                case "game-speed 0.5": percent=50;break;
+                case "game-speed 1": case "game-speed reset":percent=100;break;
+                case "game-speed 2":percent=200;break;
+                default:error="game-speed 0.5 | 1 | 2 | reset のみ使用できます";return false;
+            }
+            // 変更要求時点までを旧速度で確定。停止中の壁時計時間を回収しない。
+            logicalLoop.Observe(manager!=null && !DialogueOpen && manager.Dungeon.ActiveVisit==null && !clearReturnVisible &&
+                !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale>0);
+            logicalLoop.Clock.TrySetDebugSpeedPercent(percent);
+            error=null;return true;
+#else
+            error="開発ビルド専用コマンドです";return false;
+#endif
+        }
+        public int DebugGameSpeedPercent => logicalLoop.Clock.DebugSpeedPercent;
 
         public void SetUserPaused(bool paused)
         {
@@ -1453,10 +1475,9 @@ namespace Olca.Application.Dungeon
                     if (input.CustomScreenButtonDown)
                         battleSession?.TryOpenCustomScreen();
 
-                    basicAttackInput.Tick(manager.CurrentBattle, input, basicAttackChargeFrames, basicAttackIntervalFrames, basicAttackChargeMultiplier);
-                    // 既存Spaceバインドを保ち、実行中の再入制御はセッションに委譲する。
-                    if (input.CardUseButtonDown)
-                        battleSession?.UseCardFromInput();
+                    // 入力優先とカード振分けはstandaloneと同じCore。完了通知/例外処理だけセッションへ委譲。
+                    basicAttackInput.ProcessInput(manager.CurrentBattle, input, basicAttackChargeFrames, basicAttackIntervalFrames,
+                        basicAttackChargeMultiplier, () => battleSession?.UseCardFromInput());
                     break;
 
                 case GamePhase.CardReward:
@@ -1515,11 +1536,11 @@ namespace Olca.Application.Dungeon
             gameplayAudio?.PlayBgm(battleBgm!=null?battleBgm:dungeonBgm);
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
-            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(0, 12, 6));
+            battle.ConfigureBasicAttackTiming(CheckpointBattleFactory.ProductBasicTiming);
             battleFieldReady = false;
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
-            if (!battle.CustomScreen.IsOpen) battle.OpenCustomScreen(randomProvider);
+            if (!battle.CustomScreen.IsOpen) battle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open), randomProvider);
             battle.CustomScreen.OnFusionExecuted += (materials,output)=>{if(ReferenceEquals(manager?.CurrentBattle,battle)&&!manager.IsSuspended)RecordFusionDiscovery(materials,output);};
             battle.Transformations.ShortPresentation=shortTransformationPresentation;
             battleSession?.Attach(battle);

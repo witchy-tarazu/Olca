@@ -39,6 +39,9 @@ namespace Olca.Core.Domain
         }
         public bool HasTransformationDefense => transformationResistances != null;
         /// <summary>確定後に残る戦闘フェーズ数。フレーム数ではない。</summary>
+        public const int BaseTransformationPhases = 3;
+        // 未指定の安全上限。製品の延長量ではない。
+        public const int MaxTransformationPhaseBonus = 97;
         public int RemainingTransformationPhases { get; private set; }
         private ElementResistances transformationResistances;
         private TransformationWeakness transformationWeakness;
@@ -55,7 +58,7 @@ namespace Olca.Core.Domain
             if (HasAura) throw new InvalidOperationException("オーラと変身の優先順は未対応です");
             transformationResistances = value ?? throw new ArgumentNullException(nameof(value));
             transformationWeakness = weakness;
-            RemainingTransformationPhases = 3;
+            RemainingTransformationPhases = BaseTransformationPhases + DepartureStyle.TransformationPhaseBonus;
         }
         internal void AdvanceTransformationPhase()
         {

@@ -96,6 +96,7 @@ namespace Olca.Presentation.Battle
         {
             DetachBattleEvents();
             Olca.Presentation.Dungeon.UiLook.Label(playerHpText);
+            if(playerHpText!=null)playerHpText.color=Color.white;
             if(customGaugeLabel!=null){var label=customGaugeLabel.GetComponent<Text>();if(label!=null){Olca.Presentation.Dungeon.UiLook.Label(label);label.fontSize=26;label.text="CUSTOM";}}
             ResetGaugeVisual();
             gaugeResetting = false;

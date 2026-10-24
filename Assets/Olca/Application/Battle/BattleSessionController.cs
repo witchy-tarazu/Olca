@@ -96,8 +96,8 @@ namespace Olca.Application.Battle
             if (!currentBattle.CustomGauge.IsFull) return;
             if (currentBattle.CustomScreen.IsOpen) return;
 
-            currentBattle.OpenCustomScreen(randomProvider);
-            battleView.OpenCustomScreen();
+            var result = currentBattle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open), randomProvider);
+            if (result.Accepted) battleView.OpenCustomScreen();
         }
 
         /// <summary>カード入力を含む通常ゲーム経路の一論理フレーム。</summary>
@@ -148,6 +148,10 @@ namespace Olca.Application.Battle
             // 意図: アニメーションを待ってから CustomScreen.Close() を呼ぶことで
             // バトルの Resume() が正しいタイミングで呼ばれる
             if (currentBattle == null || isClosing) return;
+            if (!currentBattle.CustomScreen.IsConfirming) {
+                var confirmed = currentBattle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));
+                if (!confirmed.Accepted || isClosing) return;
+            }
             isClosing = true;
             if (scheduleLogical == null) CloseCustomScreenAsync().Forget();
             else
@@ -156,7 +160,10 @@ namespace Olca.Application.Battle
                 // 表示の終了通知ではなく既存演出時間を換算した論理フレームで再開する。
                 scheduleLogical(closeDurationFrames, () => {
                     if (version != sessionVersion || !ReferenceEquals(currentBattle, closing)) return;
-                    closing.CustomScreen.Close(); isClosing = false;
+                    closing.CustomScreen.Commands.AfterCurrentCommand(() => {
+                        if (version != sessionVersion || !ReferenceEquals(currentBattle, closing)) return;
+                        closing.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.ReturnToBattle)); isClosing = false;
+                    });
                 });
                 CloseVisualOnlyAsync().Forget();
             }
@@ -177,7 +184,10 @@ namespace Olca.Application.Battle
             {
                 await battleView.CloseCustomScreenAsync();
                 if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
-                    closingBattle?.CustomScreen.Close();
+                    closingBattle?.CustomScreen.Commands.AfterCurrentCommand(() => {
+                        if (version == sessionVersion && ReferenceEquals(currentBattle, closingBattle))
+                            closingBattle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.ReturnToBattle));
+                    });
             }
             catch (OperationCanceledException)
             {
@@ -198,51 +208,6 @@ namespace Olca.Application.Battle
 
 namespace Olca.Application.Battle
 {
-    // 短押し/タメと確定済み変身の性能を共通入力へ接続。拘束中に予約せずカードを優先する。
-    public sealed class BasicAttackInputState
-    {
-        private Olca.Core.Logic.Battle.BattleSystem current;
-        private bool armed, resumePending;
-        private string form;
-        public int ChargeFrames { get; private set; }
-        public bool IsCharging => armed;
-        public bool IsResumePending => resumePending;
-        public int CooldownFrames { get; private set; }
-        public void CancelCharge() { armed = resumePending = false; ChargeFrames = 0; }
-        public void Suspend() { if (armed) { armed = false; resumePending = true; } }
-        public void Reset() { current?.CancelBasicAction(); current = null; form = null; CancelCharge(); CooldownFrames = 0; }
-        public void Tick(Olca.Core.Logic.Battle.BattleSystem battle, Olca.Core.Logic.Integration.LogicalInput input,
-            int chargeFrames, int intervalFrames, int chargeMultiplier = 2)
-        {
-            if (chargeFrames < 1 || intervalFrames < 1 || chargeMultiplier < 1) throw new System.ArgumentOutOfRangeException();
-            if (!ReferenceEquals(current, battle)) { Reset(); current = battle; form = battle?.Transformations.ActiveId; }
-            if (battle == null) return;
-            chargeFrames = battle.ResolveBasicChargeFrames(chargeFrames);
-            intervalFrames = battle.ResolveBasicIntervalFrames(intervalFrames);
-            if (form != battle.Transformations.ActiveId) { CancelCharge(); battle.CancelBasicStartupForFormChange(); form = battle.Transformations.ActiveId; }
-            if (!battle.IsPaused && CooldownFrames > 0) CooldownFrames--;
-            if (input.CardUseButtonDown) { CancelCharge(); return; }
-            if (battle.IsGameOver || battle.Player.IsDead || battle.Player.IsActionPrevented || (battle.CardUsage.InFlightCard != null && !battle.CanCancelPlayerRecovery))
-            { CancelCharge(); return; }
-            // カスタム/ポーズは量だけ保持。復帰時の自動解放で発射せず、新しい押下で再開する。
-            if (battle.IsPaused || input.CustomScreenButtonDown) { Suspend(); return; }
-            if (resumePending && !input.BasicAttackButtonDown) return;
-            if (input.BasicAttackButtonDown && !armed)
-            {
-                bool cancelRecovery = battle.CanCancelPlayerRecovery;
-                if ((CooldownFrames > 0 && !cancelRecovery) || !battle.TryPreparePlayerAttack()) { CancelCharge(); return; }
-                if (cancelRecovery) CooldownFrames = 0;
-                armed = true; resumePending = false;
-            }
-            if (armed && input.BasicAttackButton) ChargeFrames = System.Math.Min(chargeFrames, ChargeFrames + 1);
-            if (input.BasicAttackButtonUp && !input.BasicAttackButton)
-            {
-                bool fire = armed && CooldownFrames == 0 && battle.CanPlayerBasicAttack;
-                bool charged = ChargeFrames >= chargeFrames;
-                CancelCharge();
-                if (fire) { CooldownFrames = intervalFrames; battle.TryStartPlayerBasicAttack(charged, chargeMultiplier); }
-            }
-            else if (!input.BasicAttackButton) CancelCharge();
-        }
-    }
+    // 既存呼出元の互換アダプター。判定・時間はCoreの同一実装を使用する。
+    public sealed class BasicAttackInputState : Olca.Core.Logic.Battle.BasicAttackInputState { }
 }

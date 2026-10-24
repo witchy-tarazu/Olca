@@ -13,6 +13,15 @@ namespace Olca.Unity
     {
         private static readonly HashSet<TouchUiCancelGuard> active=new HashSet<TouchUiCancelGuard>();
         private static readonly Dictionary<(int Device,int Finger),int> canceled=new Dictionary<(int,int),int>();
+        public static bool IsTouchPointer(UnityEngine.EventSystems.PointerEventData data)=>
+            data is UnityEngine.InputSystem.UI.ExtendedPointerEventData touch && touch.device is Touchscreen;
+        public static int PressedTouchCount()
+        {
+            int count=0;
+            foreach(var device in InputSystem.devices)if(device is Touchscreen screen)
+                foreach(var touch in screen.touches)if(touch.press.isPressed)count++;
+            return count;
+        }
         public static void BeginTouch(int deviceId,int touchId){canceled.Remove((deviceId,touchId));}
         private readonly Dictionary<int,UnityEngine.EventSystems.PointerEventData> presses=new Dictionary<int,UnityEngine.EventSystems.PointerEventData>();
         public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data)

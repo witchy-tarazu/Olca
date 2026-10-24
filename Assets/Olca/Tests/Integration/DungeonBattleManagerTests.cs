@@ -1522,6 +1522,67 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class LogicalFrameClockTests
     {
+        [TestCase(50,30)][TestCase(100,60)][TestCase(200,120)]
+        public void デバッグ速度は時間供給だけを変え分割負荷が異なっても同じ二百四十ステップになる(int percent,int fps)
+        {
+            var clock=new LogicalFrameClock();Assert.IsTrue(clock.TrySetDebugSpeedPercent(percent));
+            var simulation=new BattleSimulation(new BattleSimulationSettings(),123);var trace=new System.Text.StringBuilder();
+            for(int render=0;clock.Frame<240&&render<2000;render++){
+                clock.Accumulate(render==2?10000000:10000000/fps);
+                long work=0;for(int i=0;i<render%30;i++)work+=i;System.GC.KeepAlive(work);
+                clock.Drain((f,ms)=>trace.Append(simulation.Step(BattleSimulation.SampleCommand((int)f)).Canonical).Append('\n'),(int)System.Math.Min(7,240-clock.Frame));
+            }
+            Assert.AreEqual(240,clock.Frame);Assert.AreEqual(BattleSimulation.SampleTrace(),trace.ToString());
+        }
+        [Test]
+        public void 速度切替は取得済み時間と端数を再換算せず極端値を拒否し等速へ戻せる()
+        {
+            var clock=new LogicalFrameClock();clock.Accumulate(10000000);Assert.IsTrue(clock.TrySetDebugSpeedPercent(200));Assert.AreEqual(60,clock.PendingFrames);
+            clock.Accumulate(5000000);Assert.AreEqual(120,clock.PendingFrames);Assert.IsTrue(clock.TrySetDebugSpeedPercent(50));clock.Accumulate(1);
+            double remainder=clock.Interpolation;
+            foreach(int invalid in new[]{int.MinValue,-1,0,1,99,201,int.MaxValue}){Assert.IsFalse(clock.TrySetDebugSpeedPercent(invalid));Assert.AreEqual(50,clock.DebugSpeedPercent);Assert.AreEqual(remainder,clock.Interpolation);}
+            Assert.AreEqual(0,clock.Drain((f,ms)=>Assert.Fail("blocked"),canAdvance:()=>false));Assert.AreEqual(120,clock.PendingFrames);
+            Assert.IsTrue(clock.TrySetDebugSpeedPercent(100));clock.Drain((f,ms)=>{});Assert.AreEqual(120,clock.Frame);Assert.AreEqual(remainder,clock.Interpolation);
+            clock.Accumulate(10000000);clock.Drain((f,ms)=>{});Assert.AreEqual(180,clock.Frame);
+        }
+        [TestCase(50)][TestCase(100)][TestCase(200)]
+        public void 速度変更後もカスタムとユーザーポーズ中の戦闘時間と乱数を進めない(int percent)
+        {
+            var clock=new LogicalFrameClock();clock.TrySetDebugSpeedPercent(percent);
+            var custom=TransformationBattleReplay.Create(weakness:false);long frame=custom.Battle.LogicalFrame,draws=custom.Random.Draws;
+            clock.Accumulate(10000000);clock.Drain((f,ms)=>custom.Step(new BattleFrameCommand()));
+            Assert.AreEqual(frame,custom.Battle.LogicalFrame);Assert.AreEqual(draws,custom.Random.Draws);
+            var paused=new BattleSimulation(new BattleSimulationSettings(),123);paused.Step(new BattleFrameCommand(userPaused:true));frame=paused.Battle.LogicalFrame;draws=paused.Random.Draws;
+            clock.Accumulate(10000000);clock.Drain((f,ms)=>paused.Step(new BattleFrameCommand()));
+            Assert.AreEqual(frame,paused.Battle.LogicalFrame);Assert.AreEqual(draws,paused.Random.Draws);
+        }
+        [TestCase(50)][TestCase(100)][TestCase(200)]
+        public void 時刻付き入力の割当は速度に従い会話等の非active期間は加算しない(int percent)
+        {
+            using(var loop=new Olca.Unity.UnityLogicalLoop()){
+                long now=0;var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(System.Func<long>)(()=>now));
+                typeof(Olca.Unity.UnityLogicalLoop).GetField("observed",flags).SetValue(loop,0L);loop.Clock.TrySetDebugSpeedPercent(percent);
+                var presses=new List<long>();long frequency=System.Diagnostics.Stopwatch.Frequency;now=frequency*2;
+                loop.PumpTimestamped(true,new[]{new Olca.Unity.TimestampedLogicalInput(frequency,new LogicalInput{DashButtonDown=true})},(f,ms,input)=>{if(input.DashButtonDown)presses.Add(f);});
+                CollectionAssert.AreEqual(new long[]{60*percent/100+1},presses);long frame=loop.Clock.Frame;
+                now+=frequency*20;loop.PumpTimestamped(false,null,(f,ms,input)=>Assert.Fail("inactive"));Assert.AreEqual(frame,loop.Clock.Frame);
+                loop.PumpTimestamped(true,null,(f,ms,input)=>Assert.Fail("stopped wall time"));Assert.AreEqual(frame,loop.Clock.Frame);
+                loop.StartNewTimeline();Assert.AreEqual(100,loop.Clock.DebugSpeedPercent);
+            }
+        }
+        [Test]
+        public void 開発コマンドは通常設定に保存せず厳密な候補とresetだけを受け付ける()
+        {
+            var host=new UnityEngine.GameObject("debug-command-disabled");host.SetActive(false);
+            try{var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();string error;
+                Assert.IsTrue(controller.TryExecuteDebugGameSpeedCommand("game-speed 2",out error));Assert.IsNull(error);Assert.AreEqual(200,controller.DebugGameSpeedPercent);
+                foreach(string invalid in new[]{null,"game-speed 0","game-speed NaN","game-speed Infinity","game-speed 100000","game-speed 2 extra"}){Assert.IsFalse(controller.TryExecuteDebugGameSpeedCommand(invalid,out error));Assert.IsNotNull(error);Assert.AreEqual(200,controller.DebugGameSpeedPercent);}
+                Assert.IsTrue(controller.TryExecuteDebugGameSpeedCommand("game-speed 0.5",out error));Assert.AreEqual(50,controller.DebugGameSpeedPercent);
+                Assert.IsTrue(controller.TryExecuteDebugGameSpeedCommand("game-speed reset",out error));Assert.AreEqual(100,controller.DebugGameSpeedPercent);
+            }finally{UnityEngine.Object.DestroyImmediate(host);}
+        }
+
         [TestCase(0)][TestCase(1)][TestCase(2)]
         public void 十七msの待機は開始位相によらず二論理フレーム待つ(int phase)
         {
@@ -1530,11 +1591,11 @@ namespace Olca.Tests.Integration
             var clock = new LogicalFrameClock(); clock.Accumulate(10000000);
             if (phase > 0) clock.Drain((f, ms) => battle.TickFrame(ms), phase);
             var method = typeof(BattleSystem).GetMethod("WaitForActionAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var wait = (UniTask)method.Invoke(battle, new object[] { .017f, System.Threading.CancellationToken.None });
+            var wait = (Olca.Core.Interfaces.FrameTask)method.Invoke(battle, new object[] { .017f, System.Threading.CancellationToken.None });
             clock.Drain((f, ms) => battle.TickFrame(ms), 1);
-            Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
+            Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Pending, wait.Status);
             clock.Drain((f, ms) => battle.TickFrame(ms), 1);
-            Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
+            Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Succeeded, wait.Status);
         }
         [Test]
         public void ゲージ速度小数部を毎フレーム切り捨てず一秒分蓄積する()
@@ -1588,10 +1649,10 @@ namespace Olca.Tests.Integration
             var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy> {
                 new Enemy("frame", "fixture", 100, ElementType.None, new Vector2Int(5, 2)) }, new Deck());
             var method = typeof(BattleSystem).GetMethod("WaitForActionAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var wait = (UniTask)method.Invoke(battle, new object[] { .1f, System.Threading.CancellationToken.None });
+            var wait = (Olca.Core.Interfaces.FrameTask)method.Invoke(battle, new object[] { .1f, System.Threading.CancellationToken.None });
             battle.Tick(50); battle.TickFrame(16); battle.TickFrame(17);
-            Assert.AreEqual(UniTaskStatus.Pending, wait.Status);
-            battle.TickFrame(17); Assert.AreEqual(UniTaskStatus.Succeeded, wait.Status);
+            Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Pending, wait.Status);
+            battle.TickFrame(17); Assert.AreEqual(Olca.Core.Interfaces.FrameTaskStatus.Succeeded, wait.Status);
         }
         private static List<string> TimestampedTrace(int fps, bool stall)
         {

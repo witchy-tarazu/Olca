@@ -2,9 +2,8 @@ using Olca.Core.Logic.CardEffects;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Cysharp.Threading.Tasks;
-using Olca.Core.Domain;
 using Olca.Core.Interfaces;
+using Olca.Core.Domain;
 
 namespace Olca.Core.Logic.Battle
 {
@@ -51,6 +50,10 @@ namespace Olca.Core.Logic.Battle
         private readonly EnemyAISystem enemyAI;
         private readonly DelayedEffectSystem delayedEffects;
         private readonly IRandomProvider randomProvider;
+        private bool checkpointRandom;
+        internal SeededBattleRandom SimulationRandom => randomProvider as SeededBattleRandom;
+        public BattleRandomStateDto CheckpointRandomState => checkpointRandom ? ((SeededBattleRandom)randomProvider).CaptureState() : null;
+        internal void UseCheckpointRandom() { if (!(randomProvider is SeededBattleRandom)) throw new InvalidOperationException("復帰済み戦闘乱数が必要です"); checkpointRandom=true; }
         private readonly IGameLogger logger;
 
         private BattlePauseReason pauseReasons;
@@ -77,6 +80,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>カスタム画面システム</summary>
         public CustomScreenSystem CustomScreen => customScreen;
+        public BattleStartEffects StartEffects { get; }
         public TransformationSelectionState Transformations { get; }
 
         /// <summary>カード使用システム</summary>
@@ -156,7 +160,7 @@ namespace Olca.Core.Logic.Battle
             ResolveBasicActionAsync(percent, timing, Transformations.ActiveId).Forget();
             return true;
         }
-        private async UniTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form)
+        private async FrameTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form)
         {
             var cts = new CancellationTokenSource(); var owner = BeginPlayerAction(true, () => cts.Cancel());
             try {
@@ -175,6 +179,7 @@ namespace Olca.Core.Logic.Battle
         public BattleState State => state;
 
         /// <summary>一時停止中か</summary>
+        public bool IsUserPaused => (pauseReasons & BattlePauseReason.User) != 0;
         public bool IsPaused => pauseReasons != BattlePauseReason.None;
 
         /// <summary>バトル終了したか</summary>
@@ -195,6 +200,7 @@ namespace Olca.Core.Logic.Battle
             FusionSystem fusionSystem = null,
             IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null)
         {
+            StartEffects = new BattleStartEffects(this,logger);
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
             this.battleField = new BattleField(initialPermanentHoles);
@@ -203,6 +209,7 @@ namespace Olca.Core.Logic.Battle
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
+            customScreen.Commands.AttachBattle(this, randomProvider);
             Transformations = new TransformationSelectionState(player, customScreen);
             Transformations.OnActivationPresentation += PauseForTransformation;
             customScreen.OnOpening += OnTransformationPhaseOpening;
@@ -519,17 +526,17 @@ namespace Olca.Core.Logic.Battle
         private sealed class ActionWait
         {
             public long Deadline;
-            public readonly UniTaskCompletionSource Completion = new UniTaskCompletionSource();
+            public readonly FrameCompletionSource Completion = new FrameCompletionSource();
             public CancellationTokenRegistration Registration;
         }
         private readonly List<ActionWait> actionWaits = new List<ActionWait>();
 
         // Unity PlayerLoopのWaitUntilを使わず、期限に達した論理更新内で継続する。
-        internal UniTask WaitForActionAsync(float seconds, CancellationToken ct)
+        internal FrameTask WaitForActionAsync(float seconds, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
-            if (seconds <= 0) return UniTask.CompletedTask;
+            if (IsGameOver) return FrameTask.FromCanceled(new CancellationToken(true));
+            if (seconds <= 0) return FrameTask.CompletedTask;
             // 1フレーム=50単位。float秒の表現誤差のみを除き、入力境界で一度だけ変換する。
             // 旧ms APIと交互に呼ばれても同じ時計で期限を判定する。
             var wait = new ActionWait {
@@ -539,11 +546,11 @@ namespace Olca.Core.Logic.Battle
             if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
             return wait.Completion.Task;
         }
-        internal UniTask WaitForActionFramesAsync(int frames, CancellationToken ct)
+        internal FrameTask WaitForActionFramesAsync(int frames, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            if (IsGameOver) return UniTask.FromCanceled(new CancellationToken(true));
-            if (frames <= 0) return UniTask.CompletedTask;
+            if (IsGameOver) return FrameTask.FromCanceled(new CancellationToken(true));
+            if (frames <= 0) return FrameTask.CompletedTask;
             var wait = new ActionWait { Deadline = actionTimeUnits + frames * 50L };
             actionWaits.Add(wait);
             if (ct.CanBeCanceled) wait.Registration = ct.Register(() => wait.Completion.TrySetCanceled(ct));
@@ -554,7 +561,7 @@ namespace Olca.Core.Logic.Battle
             // 継続内で追加された次の待機には、このフレームの時間を二重適用しない。
             foreach (var wait in actionWaits.ToArray())
             {
-                if (wait.Completion.Task.Status != UniTaskStatus.Pending || wait.Deadline <= actionTimeUnits || IsGameOver)
+                if (wait.Completion.Task.Status != FrameTaskStatus.Pending || wait.Deadline <= actionTimeUnits || IsGameOver)
                 {
                     actionWaits.Remove(wait); wait.Registration.Dispose();
                     if (IsGameOver) wait.Completion.TrySetCanceled(); else wait.Completion.TrySetResult();
@@ -576,7 +583,7 @@ namespace Olca.Core.Logic.Battle
             if (customScreen.IsOpen || Transformations.IsActivating) return;
             // 未使用カードを取得してカスタム画面に渡す
             var remainingCards = cardUsage.GetRemainingCards();
-            customScreen.Open(remainingCards, random);
+            customScreen.Open(remainingCards, checkpointRandom ? randomProvider : random);
             Pause();
         }
 

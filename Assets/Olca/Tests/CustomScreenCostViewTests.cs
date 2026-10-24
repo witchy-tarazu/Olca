@@ -17,6 +17,87 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void タッチ短押しはクリックを残し長押しは一度だけ詳細を開いて解放クリックを拒否する()
+        {
+            WithTouchHold((hold,screen,group,opened,valid)=>{
+                var tap=Touch(screen,1);hold.OnPointerDown(tap);hold.OnPointerUp(tap);
+                Assert.IsTrue(tap.eligibleForClick);Assert.AreEqual(0,opened());
+                var press=Touch(screen,2);hold.OnPointerDown(press);AdvanceHold(hold);AdvanceHold(hold);
+                Assert.AreEqual(1,opened());Assert.IsFalse(press.eligibleForClick);hold.OnPointerUp(press);Assert.AreEqual(1,opened());
+                var mouse=new UnityEngine.InputSystem.UI.ExtendedPointerEventData(null){pointerId=-1,eligibleForClick=true};
+                hold.OnPointerDown(mouse);AdvanceHold(hold);hold.OnPointerUp(mouse);Assert.IsTrue(mouse.eligibleForClick);Assert.AreEqual(1,opened());
+            });
+        }
+        [Test]
+        public void 長押しの離脱ドラッグ取消無効化とOS取消は詳細もクリックも発生させない()
+        {
+            WithTouchHold((hold,screen,group,opened,valid)=>{
+                for(int i=0;i<8;i++){
+                    var press=Touch(screen,10+i);hold.OnPointerDown(press);
+                    if(i==0)hold.OnPointerExit(press);
+                    else if(i==1){press.position=new Vector2(100,100);hold.OnPointerMove(press);}
+                    else if(i==2)hold.OnCancel(null);
+                    else if(i==3){valid(false);}
+                    else if(i==4)hold.enabled=false;
+                    else if(i==5)hold.GetComponent<Button>().enabled=false;
+                    else if(i==6)hold.GetComponent<Button>().interactable=false;
+                    else {var guard=hold.GetComponent<Olca.Unity.TouchUiCancelGuard>();guard.OnPointerDown(press);Olca.Unity.TouchUiCancelGuard.CancelTouch(screen.deviceId,press.touchId);}
+                    AdvanceHold(hold);hold.OnPointerUp(press);Assert.IsFalse(press.eligibleForClick,"case "+i);Assert.AreEqual(0,opened());hold.enabled=true;hold.GetComponent<Button>().enabled=true;hold.GetComponent<Button>().interactable=true;valid(true);
+                }
+                valid(false);var invalid=Touch(screen,20);hold.OnPointerDown(invalid);Assert.IsFalse(invalid.eligibleForClick);AdvanceHold(hold);Assert.AreEqual(0,opened());
+            });
+        }
+        [Test]
+        public void 複数指は両方の長押しとクリックを抑え全解放後の新規押下だけを受け付ける()
+        {
+            WithTouchHold((hold,screen,group,opened,valid)=>{
+                var other=new GameObject("SecondTouchDetail",typeof(RectTransform),typeof(Image),typeof(Button));
+                try{var second=other.AddComponent<CustomDetailHold>();second.Configure(other.GetComponent<Button>(),()=>true,()=>Assert.Fail("second finger opened"),group);
+                    var a=Touch(screen,1);var b=Touch(screen,2);hold.OnPointerDown(a);second.OnPointerDown(b);AdvanceHold(hold);AdvanceHold(second);
+                    Assert.IsFalse(a.eligibleForClick);Assert.IsFalse(b.eligibleForClick);Assert.AreEqual(0,opened());
+                    hold.OnPointerUp(a);second.OnPointerUp(b);var fresh=Touch(screen,3);hold.OnPointerDown(fresh);AdvanceHold(hold);Assert.AreEqual(1,opened());hold.OnPointerUp(fresh);
+                }finally{Object.DestroyImmediate(other);}
+            });
+        }
+        private static UnityEngine.InputSystem.UI.ExtendedPointerEventData Touch(UnityEngine.InputSystem.Touchscreen screen,int id)=>
+            new UnityEngine.InputSystem.UI.ExtendedPointerEventData(null){device=screen,touchId=id,pointerId=id,eligibleForClick=true};
+        private static void AdvanceHold(CustomDetailHold hold)=>typeof(CustomDetailHold).GetMethod("Advance",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(hold,new object[]{double.MaxValue});
+        private static void WithTouchHold(System.Action<CustomDetailHold,UnityEngine.InputSystem.Touchscreen,HashSet<CustomDetailHold>,System.Func<int>,System.Action<bool>> action)
+        {
+            var screen=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Touchscreen>();
+            var root=new GameObject("CustomTouchDetails",typeof(RectTransform),typeof(Image),typeof(Button));
+            try{int count=0;bool valid=true;var group=new HashSet<CustomDetailHold>();var hold=root.AddComponent<CustomDetailHold>();
+                hold.Configure(root.GetComponent<Button>(),()=>valid,()=>count++,group);action(hold,screen,group,()=>count,v=>valid=v);
+            }finally{Object.DestroyImmediate(root);UnityEngine.InputSystem.InputSystem.RemoveDevice(screen);}
+        }
+
+        [Test]
+        public void 共通UI素材は指定フォントとウェイトサイズ自動縮小とマテリアルを置き換えない()
+        {
+            var root=new GameObject("AssignedTypeface",typeof(RectTransform),typeof(Text));
+            try{var text=root.GetComponent<Text>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");Assert.IsNotNull(font);
+                text.font=font;text.fontSize=31;text.fontStyle=FontStyle.Bold;text.resizeTextForBestFit=true;text.resizeTextMinSize=16;text.resizeTextMaxSize=35;var material=text.material;
+                UiLook.Label(text);Assert.AreSame(font,text.font);Assert.AreEqual(FontStyle.Bold,text.fontStyle);Assert.AreEqual(31,text.fontSize);Assert.IsTrue(text.resizeTextForBestFit);Assert.AreEqual(16,text.resizeTextMinSize);Assert.AreEqual(35,text.resizeTextMaxSize);Assert.AreSame(material,text.material);
+                text.font=null;UiLook.Label(text);Assert.AreSame(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),text.font);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 手札コストの元フォント参照を共通UIの都合で別書体へ差し替えない()
+        {
+            var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");
+            var cost=prefab.GetComponentInChildren<Text>(true);Assert.IsNotNull(cost);Assert.AreEqual("Assets/Font/JikiTourai.ttf",UnityEditor.AssetDatabase.GetAssetPath(cost.font));
+        }
+
+        [Test]
+        public void 共通ボタン素材は専用カードアイコンを上書きしない()
+        {
+            var root=new GameObject("DedicatedCardButton",typeof(RectTransform),typeof(Image),typeof(Button));
+            var texture=new Texture2D(2,2);var icon=Sprite.Create(texture,new Rect(0,0,2,2),Vector2.one*.5f);icon.name="dedicated-card-mini";
+            try {var image=root.GetComponent<Image>();image.sprite=icon;var button=root.GetComponent<Button>();button.targetGraphic=image;
+                Olca.Presentation.Dungeon.UiLook.Button(button);Assert.AreSame(icon,image.sprite);Assert.AreNotEqual(Selectable.Transition.SpriteSwap,button.transition);
+            } finally {Object.DestroyImmediate(root);Object.DestroyImmediate(icon);Object.DestroyImmediate(texture);}
+        }
+        [Test]
         public void 表示生成前の決定は先頭手札を選び再選択と後続カーソルを演出完了で変えない()
         {
             var root=new GameObject("EarlyCustomInput",typeof(RectTransform));
@@ -114,7 +195,7 @@ namespace Olca.Tests
                 Assert.AreEqual(total, model.GetTotalUsedCost());
                 Assert.AreEqual(limit - total, model.RemainingCost);
                 Assert.AreEqual($"コスト: {total} / {limit}", text.text);
-                Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink, text.color);
+                Assert.AreEqual(Color.white, text.color);
                 Assert.AreEqual(count, model.SelectedCards.Count);
                 var expected = new List<Card>(model.SelectedCards);
                 model.Confirm();
@@ -174,7 +255,7 @@ namespace Olca.Tests
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(b);
                 Assert.AreEqual("コスト: 5 / 5", text.text);
-                Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink, text.color);
+                Assert.AreEqual(Color.white, text.color);
                 Assert.IsTrue(button.interactable);
                 view.OnCardClicked(c);
                 Assert.AreEqual("コスト: 3 / 5", text.text);

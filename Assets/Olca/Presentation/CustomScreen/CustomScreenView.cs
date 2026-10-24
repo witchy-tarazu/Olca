@@ -102,10 +102,10 @@ namespace Olca.Presentation.CustomScreen
                 var button = obj.GetComponent<Button>(); button.onClick = new Button.ButtonClickedEvent();
                 button.navigation = new Navigation { mode = Navigation.Mode.None };
                 button.onClick.AddListener(() => {
-                    if (Olca.Unity.GameplayPause.InputBlocked || handAnimating || customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
+                    if (!CanOpenTouchDetails()) return;
                     var state = transformations; var id = state.AvailableDefinitions[index].Id;
                     System.Action select = () => {
-                        if (this != null && ReferenceEquals(state, transformations) && !Olca.Unity.GameplayPause.InputBlocked) state.TryPreview(id);
+                        if (this != null && ReferenceEquals(state, transformations) && !Olca.Unity.GameplayPause.InputBlocked) customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.PreviewTransformation, id));
                     };
                     if (queueConfirmation == null) select(); else queueConfirmation(pointerClickTimestamp(), select);
                 });
@@ -119,6 +119,7 @@ namespace Olca.Presentation.CustomScreen
                     label.rectTransform.offsetMin=new Vector2(8,4);label.rectTransform.offsetMax=new Vector2(-8,-4);
                     label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;
                 }
+                ConfigureTouchDetails(button, () => ShowTouchTransformationDetails(index));
                 transformationButtons.Add(button);
             }
             for (int i=0;i<transformationButtons.Count;i++) {
@@ -168,7 +169,7 @@ namespace Olca.Presentation.CustomScreen
             if (lastModeInputFrame==Time.frameCount||lastDetailsCloseFrame==Time.frameCount||lastPadFrame==Time.frameCount||(detailsPanel!=null&&detailsPanel.activeSelf)||queueConfirmation == null || customScreen == null || !customScreen.IsOpen ||
                 Olca.Unity.GameplayPause.InputBlocked || (customizeModeView != null && customizeModeView.IsActive)) return;
             if (input.MenuDecideButtonDown) OnDecidePressed(true);
-            if (input.MenuConfirmButtonDown) customScreen.Confirm();
+            if (input.MenuConfirmButtonDown) customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));
             if (input.MenuCancelButtonDown) CancelSelection();
         }
         private List<HandCardView> handCardViews = new List<HandCardView>();
@@ -186,16 +187,17 @@ namespace Olca.Presentation.CustomScreen
 
         public void Initialize(CustomScreenSystem customScreen)
         {
+            foreach(var text in GetComponentsInChildren<Text>(true))text.color=Color.white;
             Olca.Presentation.Dungeon.UiLook.Button(confirmButton);
             if(confirmButton!=null){var label=confirmButton.GetComponentInChildren<Text>();if(label!=null)label.text="確定";}
-            if(cursorIndicator!=null){var image=cursorIndicator.GetComponent<Image>();if(image!=null)image.color=new Color(.18f,.62f,.7f,.24f);}
+            if(cursorIndicator!=null){var image=cursorIndicator.GetComponent<Image>();if(image!=null){image.sprite=Resources.Load<Sprite>("OlcaUI/button-selected");image.type=Image.Type.Sliced;image.fillCenter=false;image.color=Color.white;}}
             Olca.Presentation.Dungeon.UiLook.Label(costDisplay);
             Olca.Presentation.Dungeon.UiLook.Label(selectedCardDescription);
             if(costDisplay!=null){costDisplay.fontSize=30;costDisplay.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,56);}
             if(selectedCardDescription!=null)selectedCardDescription.fontSize=28;
-            foreach(var face in GetComponentsInChildren<Image>(true))if(face.name=="BgCustom"){
-                face.sprite=null;Olca.Presentation.Dungeon.UiLook.Face(face);
-            }
+            // BgCustomはSceneに保存された元のsprite/colorを保持する。背景を共通部品で上書きしない。
+            if(costDisplay!=null)costDisplay.color=Color.white;
+            if(selectedCardDescription!=null)selectedCardDescription.color=Color.white;
 
             // 再初期化時は既存の購読を解除
             if (this.customScreen != null)
@@ -320,7 +322,7 @@ namespace Olca.Presentation.CustomScreen
             if (customScreen == null || !customScreen.CanUndoCustomization || undoInProgress || lastUndoFrame == Time.frameCount) return;
             undoInProgress = true;
             lastUndoFrame = Time.frameCount;
-            try { customScreen.TryUndoCustomization(); }
+            try { customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Undo)); }
             finally { undoInProgress = false; UpdateUndoButton(); }
         }
 
@@ -342,7 +344,7 @@ namespace Olca.Presentation.CustomScreen
         private int padTransformationIndex=-1,lastPadFrame=-1,padViewVersion,lastModeInputFrame=-1;
         private int lastDetailsCloseFrame=-1;
         private GameObject detailsPanel,padGuidePanel;private Text padDetailsText,padGuide;private ScrollRect padDetailsScroll;
-        private void ResetCustomPad(bool resetFocus=true){padViewVersion++;gamepadInput?.Reset();if(resetFocus)padTransformationIndex=-1;ClosePadDetails();SetScreenVisibility(true);}
+        private void ResetCustomPad(bool resetFocus=true){foreach(var hold in touchDetailHolds)hold.CancelPress();padViewVersion++;gamepadInput?.Reset();if(resetFocus)padTransformationIndex=-1;ClosePadDetails();SetScreenVisibility(true);}
         private void OnDisable(){ResetCustomPad();}
         private bool HandleCustomGamepad()
         {
@@ -365,15 +367,15 @@ namespace Olca.Presentation.CustomScreen
             }
             if(command==Olca.Unity.CustomPadCommand.Details){ShowPadDetails();return;}
             if(command==Olca.Unity.CustomPadCommand.Transform){if(!mode&&transformations?.AvailableDefinitions.Count>0){padTransformationIndex=padTransformationIndex<0?0:-1;RefreshTransformationButtons();}return;}
-            if(command==Olca.Unity.CustomPadCommand.Cancel){if(mode)OnCustomizeModeCancelled();else if(padTransformationIndex>=0){transformations?.TryCancelPending();RefreshTransformationButtons();}else CancelSelection();return;}
+            if(command==Olca.Unity.CustomPadCommand.Cancel){if(mode)OnCustomizeModeCancelled();else if(padTransformationIndex>=0){customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelTransformation));RefreshTransformationButtons();}else CancelSelection();return;}
             if(command==Olca.Unity.CustomPadCommand.Customize){if(mode)OnCustomizeModeCancelled();else{padTransformationIndex=-1;EnterCustomizeMode();}return;}
             if(command==Olca.Unity.CustomPadCommand.Undo){if(mode)OnCustomizeModeCancelled();OnUndoClicked();return;}
-            if(command==Olca.Unity.CustomPadCommand.Confirm){if(mode){if(customScreen.PreviewCustomization(customizeSelectedCards).CanExecute)OnCustomizeExecuteRequested();}else if(customScreen.CanConfirm())customScreen.Confirm();return;}
+            if(command==Olca.Unity.CustomPadCommand.Confirm){if(mode){if(PreviewFromCommand(customizeSelectedCards).CanExecute)OnCustomizeExecuteRequested();}else if(customScreen.CanConfirm())customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));return;}
             if(padTransformationIndex>=0&&transformations?.AvailableDefinitions.Count>0){
                 int count=transformations.AvailableDefinitions.Count;
                 if(command==Olca.Unity.CustomPadCommand.Left||command==Olca.Unity.CustomPadCommand.Up)padTransformationIndex=(padTransformationIndex+count-1)%count;
                 else if(command==Olca.Unity.CustomPadCommand.Right||command==Olca.Unity.CustomPadCommand.Down)padTransformationIndex=(padTransformationIndex+1)%count;
-                else if(command==Olca.Unity.CustomPadCommand.Decide){var id=transformations.AvailableDefinitions[padTransformationIndex].Id;if(!transformations.IsUsed(id))transformations.TryPreview(id);}
+                else if(command==Olca.Unity.CustomPadCommand.Decide){var id=transformations.AvailableDefinitions[padTransformationIndex].Id;if(!transformations.IsUsed(id))customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.PreviewTransformation, id));}
                 RefreshTransformationButtons();return;
             }
             if(command==Olca.Unity.CustomPadCommand.Left)cursor.MoveLeft();else if(command==Olca.Unity.CustomPadCommand.Right)cursor.MoveRight();else if(command==Olca.Unity.CustomPadCommand.Up)cursor.MoveUp();else if(command==Olca.Unity.CustomPadCommand.Down)cursor.MoveDown();
@@ -382,12 +384,32 @@ namespace Olca.Presentation.CustomScreen
         private void EnsurePadGuide()
         {
             if(padGuide==null){
-                padGuidePanel=new GameObject("CustomPadGuidePanel",typeof(RectTransform),typeof(Image));padGuidePanel.transform.SetParent(transform,false);var area=(RectTransform)padGuidePanel.transform;area.anchorMin=new Vector2(.02f,.94f);area.anchorMax=new Vector2(.98f,.995f);area.offsetMin=area.offsetMax=Vector2.zero;var face=padGuidePanel.GetComponent<Image>();face.color=Olca.Presentation.Dungeon.UiLook.Surface;face.raycastTarget=false;
+                padGuidePanel=new GameObject("CustomPadGuidePanel",typeof(RectTransform),typeof(Image));padGuidePanel.transform.SetParent(transform,false);var area=(RectTransform)padGuidePanel.transform;area.anchorMin=new Vector2(.02f,.94f);area.anchorMax=new Vector2(.98f,.995f);area.offsetMin=area.offsetMax=Vector2.zero;var face=padGuidePanel.GetComponent<Image>();Olca.Presentation.Dungeon.UiLook.Face(face);face.raycastTarget=false;
                 var obj=new GameObject("CustomPadGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(padGuidePanel.transform,false);padGuide=obj.GetComponent<Text>();padGuide.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padGuide.fontSize=18;padGuide.alignment=TextAnchor.MiddleCenter;padGuide.raycastTarget=false;Olca.Presentation.Dungeon.UiLook.Label(padGuide);var r=padGuide.rectTransform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=new Vector2(8,2);r.offsetMax=new Vector2(-8,-2);
             }
             padGuidePanel.SetActive(gamepadInput.HasGamepad&&!Olca.Unity.GameplayPause.InputBlocked);string Key(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom",action)]);
             padGuide.text=$"Pad {Key("Decide")}: 選択 / {Key("Cancel")}: 取消 / {Key("Confirm")}: 確定・加工 / {Key("Customize")}: 加工切替\n{Key("Undo")}: Undo / {Key("Transform")}: 手札・変身 / {Key("Details")}: 詳細 / 方向は1押下1移動";
             if(detailsPanel!=null){var close=detailsPanel.transform.Find("CloseCustomPadDetails")?.GetComponentInChildren<Text>();if(close!=null)close.text="閉じる / "+Key("Cancel")+"・"+Key("Details");}
+        }
+        private readonly HashSet<CustomDetailHold> touchDetailHolds = new HashSet<CustomDetailHold>();
+        private bool CanOpenTouchDetails()=>IsCustomPadUiActive()&&!handAnimating&&!(detailsPanel!=null&&detailsPanel.activeSelf);
+        public void ConfigureTouchDetails(Button button, System.Action show)
+        {
+            if(button==null)return;
+            var hold=button.GetComponent<CustomDetailHold>()??button.gameObject.AddComponent<CustomDetailHold>();
+            hold.Configure(button,CanOpenTouchDetails,show,touchDetailHolds);
+        }
+        public void ShowTouchCardDetails(HandCardView view)
+        {
+            if(!CanOpenTouchDetails()||view==null)return;
+            int index=inputHand.IndexOf(view.Card);
+            if(index<0||!handCardViews.Contains(view))return;
+            padTransformationIndex=-1;cursor.MoveToCard(index);ShowPadDetails();
+        }
+        private void ShowTouchTransformationDetails(int index)
+        {
+            if(!CanOpenTouchDetails()||transformations==null||index<0||index>=transformations.AvailableDefinitions.Count||transformations.IsUsed(transformations.AvailableDefinitions[index].Id))return;
+            padTransformationIndex=index;ShowPadDetails();
         }
         private void ClosePadDetails(){if(detailsPanel!=null){if(detailsPanel.activeSelf)lastDetailsCloseFrame=Time.frameCount;detailsPanel.SetActive(false);if(padDetailsText!=null)padDetailsText.text="";}}
         private void ShowPadDetails()
@@ -396,9 +418,9 @@ namespace Olca.Presentation.CustomScreen
             if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{d.Id}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
             else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {card.Rarity} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
             if(detailsPanel==null){
-                detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;detailsPanel.GetComponent<Image>().color=Olca.Presentation.Dungeon.UiLook.Surface;
+                detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=detailsPanel.GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
                 var area=new GameObject("CustomPadDetailsScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(detailsPanel.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.04f,.18f);ar.anchorMax=new Vector2(.96f,.96f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
-                var text=new GameObject("CustomPadDetailsText",typeof(RectTransform),typeof(Text));text.transform.SetParent(area.transform,false);padDetailsText=text.GetComponent<Text>();padDetailsText.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padDetailsText.fontSize=28;padDetailsText.supportRichText=false;padDetailsText.color=Olca.Presentation.Dungeon.UiLook.Ink;padDetailsText.alignment=TextAnchor.UpperLeft;padDetailsText.rectTransform.anchorMin=new Vector2(0,1);padDetailsText.rectTransform.anchorMax=Vector2.one;padDetailsText.rectTransform.pivot=new Vector2(.5f,1);padDetailsText.rectTransform.anchoredPosition=Vector2.zero;padDetailsText.rectTransform.sizeDelta=Vector2.zero;
+                var text=new GameObject("CustomPadDetailsText",typeof(RectTransform),typeof(Text));text.transform.SetParent(area.transform,false);padDetailsText=text.GetComponent<Text>();padDetailsText.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padDetailsText.fontSize=28;padDetailsText.supportRichText=false;padDetailsText.color=Color.white;padDetailsText.alignment=TextAnchor.UpperLeft;padDetailsText.rectTransform.anchorMin=new Vector2(0,1);padDetailsText.rectTransform.anchorMax=Vector2.one;padDetailsText.rectTransform.pivot=new Vector2(.5f,1);padDetailsText.rectTransform.anchoredPosition=Vector2.zero;padDetailsText.rectTransform.sizeDelta=Vector2.zero;
                 padDetailsScroll=area.GetComponent<ScrollRect>();padDetailsScroll.viewport=ar;padDetailsScroll.content=padDetailsText.rectTransform;padDetailsScroll.horizontal=false;padDetailsScroll.movementType=ScrollRect.MovementType.Clamped;
                 var close=Instantiate(confirmButton.gameObject,detailsPanel.transform);close.name="CloseCustomPadDetails";var button=close.GetComponent<Button>();button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(ClosePadDetails);var cr=(RectTransform)close.transform;cr.anchorMin=cr.anchorMax=new Vector2(.5f,.08f);cr.anchoredPosition=Vector2.zero;cr.sizeDelta=new Vector2(500,64);close.GetComponentInChildren<Text>().text="閉じる / "+Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom","Cancel")])+"・"+Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom","Details")]);
             }
@@ -524,7 +546,7 @@ namespace Olca.Presentation.CustomScreen
                 // 確定ボタンで決定 → 選択確定
                 if (customScreen.CanConfirm())
                 {
-                    if (logical) customScreen.Confirm(); else OnConfirmClicked();
+                    if (logical) customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm)); else OnConfirmClicked();
                 }
             }
             else
@@ -548,10 +570,10 @@ namespace Olca.Presentation.CustomScreen
             var selected = customScreen.SelectedCards;
             if (selected.Count == 0)
             {
-                transformations?.TryCancelPending();
+                customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelTransformation));
                 return;
             }
-            if (!customScreen.TryDeselectCard(selected[selected.Count - 1])) return;
+            if (!customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Deselect, customScreen.Commands.HandleOf(selected[selected.Count - 1]))).Accepted) return;
             RefreshSelection();
         }
 
@@ -952,7 +974,7 @@ namespace Olca.Presentation.CustomScreen
         public void OnCardClicked(Card card)
         {
             padTransformationIndex=-1;
-            if (Olca.Unity.GameplayPause.InputBlocked) return;
+            if (Olca.Unity.GameplayPause.InputBlocked || (detailsPanel!=null&&detailsPanel.activeSelf)) return;
             // カスタマイズモード中はカスタマイズ選択へ転送
             if (customizeModeView != null && customizeModeView.IsActive)
             {
@@ -969,11 +991,11 @@ namespace Olca.Presentation.CustomScreen
             // 通常モード: カード選択トグル
             if (customScreen.SelectedCards.Any(c => c == card))
             {
-                customScreen.TryDeselectCard(card);
+                customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Deselect, customScreen.Commands.HandleOf(card)));
             }
             else
             {
-                customScreen.TrySelectCard(card);
+                customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Select, customScreen.Commands.HandleOf(card)));
             }
 
             // View更新（選択状態のハイライト）
@@ -1032,7 +1054,7 @@ namespace Olca.Presentation.CustomScreen
                 if (customizeSelectedCards.Count > 0 &&
                     !customScreen.IsCompatibleWithCurrentSelection(customizeSelectedCards, card))
                 {
-                    var invalid = customScreen.PreviewCustomization(customizeSelectedCards.Concat(new[] { card }).ToArray());
+                    var invalid = PreviewFromCommand(customizeSelectedCards.Concat(new[] { card }).ToArray());
                     customizeModeView.ShowError(invalid.Reason ?? "このカードは現在の選択と組み合わせできません");
                     UpdateCursorCardDisplay(handCardViews.FindIndex(v => v.Card == card));
                     return;
@@ -1043,7 +1065,7 @@ namespace Olca.Presentation.CustomScreen
 
             // 操作種別を判定してUIに反映
             var opType = DetectCustomizeOperation();
-            bool canExecute = customScreen.PreviewCustomization(customizeSelectedCards).CanExecute;
+            bool canExecute = PreviewFromCommand(customizeSelectedCards).CanExecute;
             customizeModeView.UpdateExecuteButton(canExecute);
             customizeModeView.UpdateOperationHint(GetOperationHint(opType));
 
@@ -1055,7 +1077,7 @@ namespace Olca.Presentation.CustomScreen
         /// 選択中のカードから操作種別を自動判定する
         /// </summary>
         private CustomizationOperation DetectCustomizeOperation()
-            => customScreen.PreviewCustomization(customizeSelectedCards).Operation;
+            => PreviewFromCommand(customizeSelectedCards).Operation;
 
         /// <summary>操作種別に応じたガイドテキストを返す</summary>
         private string GetOperationHint(CustomizationOperation opType)
@@ -1076,11 +1098,20 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>
         /// 実行ボタン押下: 自動判定した操作種別でカスタマイズを実行する
         /// </summary>
+        private CustomizationPreview PreviewFromCommand(IReadOnlyList<Card> materials)
+        {
+            if (materials == null || materials.Count != 2) return CustomizationPreview.Invalid("素材を2枚選んでください");
+            var response = customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.PreviewCustomization,
+                materials.Select(customScreen.Commands.HandleOf).ToArray()));
+            return response.Preview ?? CustomizationPreview.Invalid(response.Reason);
+        }
+
         private void OnCustomizeExecuteRequested()
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
             lastModeInputFrame=Time.frameCount;
-            var result = customScreen.ExecuteCustomization(customizeSelectedCards);
+            var response = customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.ExecuteCustomization, customizeSelectedCards.Select(customScreen.Commands.HandleOf).ToArray()));
+            var result = response.Preview ?? CustomizationPreview.Invalid(response.Reason);
             if (!result.CanExecute)
             {
                 UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
@@ -1116,6 +1147,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void OnCustomizeModeCancelled()
         {
+            customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelCustomization));
             lastModeInputFrame=Time.frameCount;
             customizeSelectedCards.Clear();
             customizeModeView.Exit();
@@ -1242,7 +1274,7 @@ namespace Olca.Presentation.CustomScreen
                 }
                 else
                 {
-                    costDisplay.color = Olca.Presentation.Dungeon.UiLook.Ink;
+                    costDisplay.color = Color.white;
                 }
             }
         }
@@ -1345,7 +1377,7 @@ namespace Olca.Presentation.CustomScreen
                 if (!materials.Contains(candidate)) materials.Add(candidate);
             }
             customizeModeView.ClearError();
-            customizeModeView.UpdateExecuteButton(customScreen.PreviewCustomization(customizeSelectedCards).CanExecute);
+            customizeModeView.UpdateExecuteButton(PreviewFromCommand(customizeSelectedCards).CanExecute);
             if (materials.Count < 2)
             {
                 string guide = materials.Count == 0 ? "最初の素材を選んでください" : "2枚目にカーソルを合わせてください";
@@ -1353,7 +1385,7 @@ namespace Olca.Presentation.CustomScreen
                 if (selectedCardDescription != null) selectedCardDescription.text = guide;
                 return;
             }
-            var preview = customScreen.PreviewCustomization(materials);
+            var preview = PreviewFromCommand(materials);
             string operation = preview.Operation == CustomizationOperation.Exceed ? "超越" :
                 preview.Operation == CustomizationOperation.Tuning ? "調律" : "融合";
             if (!preview.CanExecute)
@@ -1378,11 +1410,11 @@ namespace Olca.Presentation.CustomScreen
         private void OnConfirmClicked()
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
-            if (queueConfirmation == null) { customScreen.Confirm(); return; }
+            if (queueConfirmation == null) { customScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm)); return; }
             var requestedScreen = customScreen;
             queueConfirmation(pointerClickTimestamp(), () => {
                 if (this == null || !ReferenceEquals(customScreen, requestedScreen) || Olca.Unity.GameplayPause.InputBlocked) return;
-                requestedScreen.Confirm();
+                requestedScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Confirm));
             });
         }
 

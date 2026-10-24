@@ -72,12 +72,14 @@ namespace Olca.Presentation.CustomScreen
             this.Card = card;
             this.parentView = parent;
 
+            parent.ConfigureTouchDetails(cardButton, () => parent.ShowTouchCardDetails(this));
             RefreshArtwork();
 
             // カード情報表示（コストのみ）
             costText.text = $"{card.GetFinalCost()}";
             Olca.Presentation.Dungeon.UiLook.Label(costText);
             if(cardButton!=null)Olca.Presentation.Dungeon.UiLook.Button(cardButton);
+            costText.color=Color.white;
 
             // クリックイベント
             cardButton.onClick.AddListener(() => parentView.OnCardClicked(card));
@@ -309,4 +311,67 @@ namespace Olca.Presentation.CustomScreen
         }
     }
 
+}
+
+namespace Olca.Presentation.CustomScreen
+{
+    /// <summary>詳細用のタッチ長押し。UIの実時間だけを観測し、ゲームの論理フレームは進めない。</summary>
+    public sealed class CustomDetailHold : MonoBehaviour, IPointerDownHandler, IPointerUpHandler,
+        IPointerExitHandler, IPointerMoveHandler, ICancelHandler
+    {
+        // 未指定の操作感の暫定値。画面の見た目やゲームルールから独立させる。
+        public const double HoldSeconds = .5;
+        private Button button;
+        private System.Func<bool> canOpen;
+        private System.Action open;
+        private System.Collections.Generic.HashSet<CustomDetailHold> group;
+        private PointerEventData press;
+        private Vector2 origin;
+        private double began;
+        private bool canceled;
+
+        public void Configure(Button target, System.Func<bool> valid, System.Action show,
+            System.Collections.Generic.HashSet<CustomDetailHold> peers)
+        {
+            Release(); button=target; canOpen=valid; open=show; group=peers;
+            if(GetComponent<Olca.Unity.TouchUiCancelGuard>()==null)gameObject.AddComponent<Olca.Unity.TouchUiCancelGuard>();
+        }
+        private bool Valid()=>isActiveAndEnabled && button!=null && button.IsActive() && button.IsInteractable() && canOpen!=null && canOpen();
+        public void OnPointerDown(PointerEventData data)
+        {
+            // 新Input Systemのタッチだけ。マウス・パッドの既存クリックは変更しない。
+            if(!Olca.Unity.TouchUiCancelGuard.IsTouchPointer(data))return;
+            if(press!=null){CancelPress();data.eligibleForClick=false;return;}
+            if(!Valid()){data.eligibleForClick=false;return;}
+            press=data;origin=data.position;began=Time.realtimeSinceStartupAsDouble;canceled=false;group.Add(this);
+            if(group.Count>1)foreach(var hold in group)hold.CancelPress();
+        }
+        private void Update()=>Advance(Time.realtimeSinceStartupAsDouble);
+        private void Advance(double now)
+        {
+            if(press==null||canceled)return;
+            if(!press.eligibleForClick||!Valid()||press.dragging){CancelPress();return;}
+            if(Olca.Unity.TouchUiCancelGuard.PressedTouchCount()>1){foreach(var hold in group)hold.CancelPress();return;}
+            if(now-began<HoldSeconds)return;
+            // InputSystemUIInputModuleが解放時に発行するクリックを成立前に無効化する。
+            CancelPress();open();
+        }
+        public void OnPointerMove(PointerEventData data)
+        {
+            if(press==null||press.pointerId!=data.pointerId)return;
+            int threshold=EventSystem.current!=null?EventSystem.current.pixelDragThreshold:10;
+            if(data.dragging||(data.position-origin).sqrMagnitude>threshold*threshold)CancelPress();
+        }
+        public void OnPointerExit(PointerEventData data){if(press?.pointerId==data.pointerId)CancelPress();}
+        public void OnPointerUp(PointerEventData data)
+        {
+            if(press?.pointerId!=data.pointerId)return;
+            Advance(Time.realtimeSinceStartupAsDouble);Release(false);
+        }
+        public void OnCancel(BaseEventData data)=>CancelPress();
+        public void CancelPress(){canceled=true;if(press!=null)press.eligibleForClick=false;}
+        private void Release(bool cancel=true){if(cancel)CancelPress();group?.Remove(this);press=null;}
+        private void OnDisable()=>Release();
+        private void OnApplicationFocus(bool focused){if(!focused)CancelPress();}
+    }
 }

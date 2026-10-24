@@ -19,7 +19,7 @@ namespace Olca.Core.Logic.Dungeon
 
         private static readonly string[] FallbackCardIds = { "sword", "heal", "shield", "fire", "ice" };
         private const int REWARD_CHOICE_COUNT = 3;  // 選択肢の枚数
-        private const float NORMAL_ENEMY_DROP_RATE = 0.5f;  // 雑魚戦の基本ドロップ率（50%）
+        private const int NORMAL_ENEMY_DROP_RATE_BASIS_POINTS = 5000;  // 雑魚戦の基本ドロップ率（50%）
 
         /// <summary>
         /// コンストラクタ
@@ -39,7 +39,8 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>
         /// カードドロップ判定
         /// </summary>
-        public bool ShouldDropCard(Enemy defeatedEnemy)
+        /// <param name="normalRateBonusBasisPoints">付与元で合成した率差分。1は0.01パーセントポイント。状態は保持しない。</param>
+        public bool ShouldDropCard(Enemy defeatedEnemy, int normalRateBonusBasisPoints = 0)
         {
             if (defeatedEnemy == null) return false;
 
@@ -51,8 +52,14 @@ namespace Olca.Core.Logic.Dungeon
 
             // 雑魚戦は戦闘ごとに1回、基本50%の確率でドロップ
             float roll = random.Range(0f, 1f);
-            return roll < NORMAL_ENEMY_DROP_RATE;
+            int rate = NormalDropRateBasisPoints(normalRateBonusBasisPoints);
+            // 端でも通常戦の乱数消費を一回に保つ。100%は乱数実装の上端1も確実に含む。
+            return rate > 0 && (rate == 10000 || roll < rate / 10000f);
         }
+
+        /// <summary>率だけを補正し0〜100%へ制限する。候補の質・重み・バフの期間は所有しない。</summary>
+        public static int NormalDropRateBasisPoints(int bonusBasisPoints) =>
+            (int)Math.Max(0L, Math.Min(10000L, NORMAL_ENEMY_DROP_RATE_BASIS_POINTS + (long)bonusBasisPoints));
 
         /// <summary>
         /// カード選択肢を生成

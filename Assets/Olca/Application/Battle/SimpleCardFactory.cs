@@ -60,7 +60,7 @@ namespace Olca.Application.Battle
                 CollectionDisplay.DefinitionHash(card)==CollectionDisplay.DefinitionHash(definition) ? StandardTuning : null;
 
         public bool HasExceededDefinition(Card card, ExceedLevel nextLevel)
-            => card != null && card.Id == Sword && card.Series == CardSeries.Sword &&
+            => card != null && card.Id == Sword && card.Series?.Equals(CardSeries.Sword) == true &&
                 nextLevel == (ExceedLevel)((int)card.ExceedLevel + 1) && swordUpgrades.ContainsKey(nextLevel);
 
         public SimpleCardFactory() : this(null, false) { }

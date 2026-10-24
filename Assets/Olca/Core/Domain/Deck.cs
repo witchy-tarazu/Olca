@@ -652,14 +652,16 @@ namespace Olca.Core.Domain
         private readonly CollectionRecipe[] collectionRecipes;
         private Card[] collectionDefinitions;
         private bool writing;
+        private readonly Func<string> commitIdFactory;
         public bool Ready { get; private set; }
         public string Error { get; private set; }
         public bool HasPendingSave => pending != null;
         public ClearReturnProfile Snapshot => current?.Copy();
         public ClearReturnData DisplayFlow => (pending?.Flow != null && pending.Flow.RunId != current?.Flow?.RunId
             ? pending.Flow : current?.Flow ?? pending?.Flow)?.Copy();
-        public ClearReturnSession(IClearReturnStore store, IReadOnlyList<CollectionRecipe> recipes=null, IReadOnlyList<Card> definitions=null)
+        public ClearReturnSession(IClearReturnStore store, IReadOnlyList<CollectionRecipe> recipes=null, IReadOnlyList<Card> definitions=null,Func<string> commitIdFactory=null)
         {
+            this.commitIdFactory=commitIdFactory??(()=>Guid.NewGuid().ToString("N"));
             ConfigureCollectionDefinitions(definitions);
             collectionRecipes=recipes?.ToArray()??Array.Empty<CollectionRecipe>();
             if(collectionRecipes.Any(r=>r==null)||collectionRecipes.Select(r=>r.Id).Distinct().Count()!=collectionRecipes.Length)throw new ArgumentException("重複しない図鑑レシピが必要です");
@@ -792,16 +794,23 @@ namespace Olca.Core.Domain
         }
         private bool Fail(string error) { Error = error; return false; }
         private bool Available() => Ready && !writing && pending == null;
+        /// <summary>通常帰還とstandaloneで同じ終了境界を検証する。</summary>
+        public static void ValidateSource(Olca.Core.Logic.Dungeon.RestoredCheckpoint source,string dungeonKey,ClearReturnSettings settings,RunReturnOutcome outcome)
+        {
+            if(settings==null)throw new ArgumentNullException(nameof(settings));settings.Validate();var dto=source?.Snapshot;
+            if(dto==null||string.IsNullOrWhiteSpace(dungeonKey)||!Enum.IsDefined(typeof(RunReturnOutcome),outcome))throw new ArgumentException("帰還元の保存と終了種別が必要です");
+            if(outcome==RunReturnOutcome.Cleared){
+                if(dto.Boundary!=CheckpointBoundary.Terminal||dto.Player.Hp<=0)throw new ArgumentException("生存した最終クリア境界が必要です");
+                var boss=source.Map.MapCells.LastOrDefault(c=>c.Type==CellType.Boss)?.Enemy;
+                if(boss!=null?!boss.IsDead:source.Enemies.Values.Any(e=>!e.IsDead))throw new ArgumentException("最終クリアが確定していません");
+            }else if(outcome==RunReturnOutcome.Defeated?dto.Boundary!=CheckpointBoundary.Terminal||dto.Player.Hp!=0:dto.Boundary==CheckpointBoundary.Terminal)
+                throw new ArgumentException("敗北境界または未終了攻略の撤退が必要です");
+        }
         public bool Begin(Olca.Core.Logic.Dungeon.RestoredCheckpoint source, string dungeonKey, ClearReturnSettings settings)
         {
             if (!Available()) return Fail("未保存の処理を先に再試行してください");
             try {
-                if (settings == null) throw new ArgumentNullException(nameof(settings));
-                settings.Validate(); var dto = source?.Snapshot;
-                if (dto == null || dto.Boundary != CheckpointBoundary.Terminal || dto.Player.Hp <= 0 || string.IsNullOrWhiteSpace(dungeonKey))
-                    throw new ArgumentException("生存した最終クリア境界が必要です");
-                var boss = source.Map.MapCells.LastOrDefault(c => c.Type == CellType.Boss)?.Enemy;
-                if (boss != null ? !boss.IsDead : source.Enemies.Values.Any(e => !e.IsDead)) throw new ArgumentException("最終クリアが確定していません");
+                ValidateSource(source,dungeonKey,settings,RunReturnOutcome.Cleared);var dto=source.Snapshot;
                 var definitions = dto.Cards.ToDictionary(c => c.InstanceId);
                 var candidates = dto.ObtainedOrder.Select(id => {
                     var card = source.Cards[id];
@@ -828,11 +837,8 @@ namespace Olca.Core.Domain
         {
             if (!Available()) return Fail("未保存の処理を先に再試行してください");
             try {
-                if (settings == null) throw new ArgumentNullException(nameof(settings)); settings.Validate();
-                var dto = source?.Snapshot;
-                if (dto == null || string.IsNullOrWhiteSpace(dungeonKey) || !Enum.IsDefined(typeof(RunReturnOutcome), outcome) || outcome == RunReturnOutcome.Cleared ||
-                    (outcome == RunReturnOutcome.Defeated ? dto.Boundary != CheckpointBoundary.Terminal || dto.Player.Hp != 0 : dto.Boundary == CheckpointBoundary.Terminal))
-                    throw new ArgumentException("敗北境界または未終了攻略の撤退が必要です");
+                if(outcome==RunReturnOutcome.Cleared)throw new ArgumentException("敗北境界または未終了攻略の撤退が必要です");
+                ValidateSource(source,dungeonKey,settings,outcome);var dto=source.Snapshot;
                 string fingerprint = Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w => {
                     w.Write("non-clear-return-v1"); w.Write(dto.RunId); w.Write(dto.Sequence); w.Write(dto.MapHash); w.Write(dungeonKey); w.Write((int)outcome);
                 });
@@ -998,7 +1004,7 @@ namespace Olca.Core.Domain
         }
         private bool Stage(ClearReturnProfile next)
         {
-            try { NormalizeOwned(next); UpdateCollection(next); next.Revision = checked(current.Revision + 1); next.CommitId = Guid.NewGuid().ToString("N"); ClearReturnProfile.Validate(next); }
+            try { NormalizeOwned(next); UpdateCollection(next); next.Revision = checked(current.Revision + 1); next.CommitId = commitIdFactory(); ClearReturnProfile.Validate(next); }
             catch (Exception e) when (e is ArgumentException || e is OverflowException) { return Fail(e.Message); }
             pending = next.Copy(); return Retry();
         }

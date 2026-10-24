@@ -202,13 +202,7 @@ namespace Olca.Core.Logic.Dungeon
             if((type==PanelType.Magma&&element==ElementType.Fire)||(type==PanelType.Grass&&element==ElementType.Earth))playerCharacter.Heal(terrain.Heal);
             else if(type==PanelType.Magma)playerCharacter.TakeDamage(terrain.Damage,affectsPoise:false);
         }
-        private void InitializeBattleTerrain(BattleSystem battle,int origin)
-        {
-            for(int x=0;x<BattleField.GRID_WIDTH;x++){
-                var terrain=map.GetTerrain(origin+x);
-                if(terrain!=null)battle.Field.ChangePanelType(new Vector2Int(x,0),map.GetTerrainType(origin+x),new BattlePanelValues(terrain.Heal,terrain.Damage));
-            }
-        }
+        private void InitializeBattleTerrain(BattleSystem battle,int origin) => CheckpointBattleFactory.ApplyTerrain(battle,map,origin);
         private readonly bool hasFieldItems;
         private readonly HashSet<int> collectedItemCells = new HashSet<int>();
         public bool IsItemCollected(int cell) => collectedItemCells.Contains(cell);
@@ -560,6 +554,7 @@ namespace Olca.Core.Logic.Dungeon
                 fusionSystem: fusionSystem, cardDatabase: cardDatabase
             );
 
+            currentBattle.StartEffects.Configure(contactInfo.IsDashContact,(int?)contactInfo.DashEffect,contactInfo.DashValue);
             InitializeBattleTerrain(currentBattle,(int)contactInfo.ContactPositionX);
             // バトル終了イベントを購読
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
@@ -573,10 +568,9 @@ namespace Olca.Core.Logic.Dungeon
             OnBattleStart?.Invoke(contactInfo);
 
             // 開始通知中に敗北・終了した場合は初撃で結果を上書きしない。
-            if (IsInBattle && ReferenceEquals(currentBattle, startedBattle) && !startedBattle.IsGameOver
-                && contactInfo.IsDashContact && contactInfo.DashEffect.HasValue)
+            if (IsInBattle && ReferenceEquals(currentBattle, startedBattle) && !startedBattle.IsGameOver)
             {
-                ApplyDashEffect(contactInfo.DashEffect.Value, enemies, contactInfo.DashValue);
+                startedBattle.StartEffects.Complete();
             }
         }
 
@@ -644,46 +638,6 @@ namespace Olca.Core.Logic.Dungeon
                     logger.LogInfo($"  - {enemies[i].Name}位置: ({nextEnemyX}, 0)");
                     nextEnemyX--;
                 }
-            }
-        }
-
-        /// <summary>
-        /// ダッシュ接敵の効果をバトルに適用
-        /// </summary>
-        private void ApplyDashEffect(ActionSystem.DashContactEffect effect, List<Enemy> enemies, int? value)
-        {
-            int amount=ActionSystem.ResolveDashDefinition(effect,value).Value;
-            switch (effect)
-            {
-                case ActionSystem.DashContactEffect.InitialDamage:
-                    // 全敵に初期ダメージ
-                    int DASH_DAMAGE = amount; // 未指定の旧定義は15を維持
-                    foreach (var enemy in enemies)
-                    {
-                        enemy.TakeDamage(DASH_DAMAGE, ElementType.None);
-                        logger.LogInfo($"  - {enemy.Name}に{DASH_DAMAGE}ダメージ！（ダッシュ接敵）");
-                    }
-                    break;
-
-                case ActionSystem.DashContactEffect.Stun:
-                    // 全敵に3秒スタンを付与
-                    int STUN_FRAMES = amount;
-                    foreach (var enemy in enemies)
-                    {
-                        enemy.ApplyStunFrames(STUN_FRAMES);
-                    }
-                    logger.LogInfo($"  - 敵をスタン（{STUN_FRAMES}フレーム）！（ダッシュ接敵）");
-                    break;
-
-                case ActionSystem.DashContactEffect.PlayerDamage:
-                    // 既存防御/無敵を経由。未指定の強靭度削りは0として新しいのけぞりを足さない。
-                    playerCharacter.TakeDamage(amount,poiseDamage:0);
-                    break;
-                case ActionSystem.DashContactEffect.FirstStrike:
-                    // カスタムゲージを満タンにして先制攻撃権を付与
-                    currentBattle.SetFirstStrike();
-                    logger.LogInfo("  - 先制攻撃！カスタムゲージ満タン（ダッシュ接敵）");
-                    break;
             }
         }
 
@@ -1030,9 +984,6 @@ namespace Olca.Core.Logic.Dungeon
             cardRewardSystem.GetCurrentDeck().RestoreCheckpointOrder(restored.Deck.GetAllCards(), restored.FirstHand);
             cardRewardSystem.RestoreObtained(restored.Obtained);
             var participants = plan.ParticipantCells.Select(i => map.GetCell(i).Enemy).ToList();
-            foreach (var e in snapshot.Enemies.Where(e => plan.ParticipantCells.Contains(e.CellIndex)))
-                map.GetCell(e.CellIndex).Enemy.MoveTo(new Vector2Int(e.GridX, e.GridY));
-            playerCharacter.MoveTo(new Vector2Int(snapshot.Player.GridX, snapshot.Player.GridY));
             currentContactInfo = new ContactInfo { Enemy = map.GetCell(plan.ContactCell).Enemy, EnemyCellIndex = plan.ContactCell,
                 ContactPositionX = plan.GridOriginX, IsDashContact = plan.DashContact,
                 DashEffect = plan.DashEffect.HasValue ? (ActionSystem.DashContactEffect?)plan.DashEffect.Value : null, DashValue = plan.DashValue };
@@ -1042,15 +993,13 @@ namespace Olca.Core.Logic.Dungeon
             PendingItemReward=null;itemCardSelection=null;
             initialItemTargets=participants.Where(e=>!e.IsSummoned&&checkpointSession.Definitions.ItemQualifyingCells(plan.ParticipantCells,hasNextFloor).Any(i=>ReferenceEquals(map.GetCell(i).Enemy,e))).ToList();
             plannedItemReward=plan.ItemRewardIndex.HasValue?map.ItemRewards[plan.ItemRewardIndex.Value].Item:null;
-            currentBattle = new BattleSystem(playerCharacter, participants, cardRewardSystem.GetCurrentDeck(), 2f,
-                randomProvider, logger, exceedSystem, tuningSystem, fusionSystem, cardDatabase: cardDatabase);
-            InitializeBattleTerrain(currentBattle,(int)plan.GridOriginX);
-            currentBattle.CustomScreen.RestoreCheckpointHand(restored.FirstHand);
+            currentBattle = CheckpointBattleFactory.Create(playerCharacter,map,cardRewardSystem.GetCurrentDeck(),snapshot,restored.FirstHand,
+                randomProvider,logger:logger,exceed:exceedSystem,tuning:tuningSystem,fusion:fusionSystem,cardDatabase:cardDatabase);
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
             var started = currentBattle;
             OnBattleStart?.Invoke(currentContactInfo);
-            if (IsInBattle && ReferenceEquals(currentBattle, started) && !started.IsGameOver && plan.DashContact && currentContactInfo.DashEffect.HasValue)
-                ApplyDashEffect(currentContactInfo.DashEffect.Value, participants, currentContactInfo.DashValue);
+            if (IsInBattle && ReferenceEquals(currentBattle, started) && !started.IsGameOver)
+                started.StartEffects.Complete();
         }
         public void ActivateCheckpoint()
         {
@@ -1128,6 +1077,9 @@ namespace Olca.Core.Logic.Dungeon
     /// <summary>内容を固定した復元定義。製品値を補完せず、呼出側が既存定義を登録する。</summary>
     public sealed class CheckpointDefinitions
     {
+        internal IReadOnlyDictionary<string, Card> PortableCards => cards;
+        internal int PortableGrantCount => grants.Count;
+        internal IEnumerable<KeyValuePair<string,TuningGrantDefinition>> PortableGrants => grants;
         public string Revision { get; }
         public string DungeonId { get; }
         public string MapHash { get; }
@@ -1596,6 +1548,8 @@ namespace Olca.Core.Logic.Dungeon
         }
         internal static void ValidateEncounter(CheckpointBattleDto b, CheckpointPlayerDto p, IReadOnlyDictionary<int, Enemy> enemies)
         {
+            if(b==null)throw new ArgumentException("接敵情報が不完全です");
+            BattleRandomStateDto.ValidateRecord(b.RandomVersion,b.Random);
             CheckpointValues.Require(b != null && b.ParticipantCells != null && b.ParticipantCells.Length > 0 &&
                 b.ParticipantCells.Distinct().Count() == b.ParticipantCells.Length && b.ParticipantCells.Contains(b.ContactCell), "接敵情報が不完全です");
             CheckpointValues.Require(b.CurrencyAmounts == null || (b.CurrencyAmounts.Length == b.ParticipantCells.Length && b.CurrencyAmounts.All(v => v >= 0)), "通貨報酬定義が不正です");
@@ -1666,7 +1620,7 @@ namespace Olca.Core.Logic.Dungeon
         }
         public static bool TryCreate(CheckpointDto state, CheckpointBattleDto encounter, CheckpointDefinitions definitions,
             int planningSeed, ICardPool rewardPool, Func<Card, string> rewardDefinitionKey,
-            out CheckpointBattlePlan plan, out string error, bool hasNextFloor=false)
+            out CheckpointBattlePlan plan, out string error, bool hasNextFloor=false, int normalRewardRateBonusBasisPoints=0)
         {
             plan = null;
             if (!CheckpointCodec.TryRestore(state, definitions, out var restored, out error)) return false;
@@ -1677,7 +1631,7 @@ namespace Olca.Core.Logic.Dungeon
                 var d = restored.Snapshot;
                 d.Sequence = checked(d.Sequence + 1); d.Boundary = CheckpointBoundary.BattleStart;
                 d.Battle = encounter.Copy(); d.Battle.FirstHand = new string[0]; d.Battle.RewardCandidates = new string[0];
-                d.Battle.RewardOffered = false;
+                d.Battle.RewardOffered = false; d.Battle.Random = null; d.Battle.RandomVersion=null;
                 CheckpointCodec.ValidateEncounter(d.Battle, d.Player, restored.Enemies);
                 var random = new PlanningRandom(planningSeed);
                 var deck = restored.Deck;
@@ -1687,7 +1641,7 @@ namespace Olca.Core.Logic.Dungeon
                 d.Battle.FirstHand = deck.DrawCards(d.Battle.HandLimit, random).Select(c => reverse[c]).ToArray();
                 var rewards = new CardRewardSystem(new Deck(), random, rewardPool);
                 var enemy = restored.Enemies[encounter.ContactCell];
-                d.Battle.RewardOffered = rewards.ShouldDropCard(enemy);
+                d.Battle.RewardOffered = rewards.ShouldDropCard(enemy, normalRewardRateBonusBasisPoints);
                 if (d.Battle.RewardOffered)
                 {
                     var choices = rewards.GenerateCardChoices(enemy);
@@ -1704,6 +1658,9 @@ namespace Olca.Core.Logic.Dungeon
                 d.Battle.ItemRewardIndex=null;d.Battle.ItemRewardHasNextFloor=definitions.ItemRewards.Count>0?(bool?)hasNextFloor:null;
                 if(definitions.ItemQualifyingCells(encounter.ParticipantCells,hasNextFloor).Length>0)
                     d.Battle.ItemRewardIndex=ItemRewardEntry.Pick(definitions.ItemRewards,definitions.ItemRewardChance,random);
+                // 計画抽選は従来System.Randomのまま。新規保存の戦闘用streamを別に固定する。
+                d.Battle.RandomVersion=1;
+                d.Battle.Random = new SeededBattleRandom(unchecked((uint)planningSeed)).CaptureState();
                 if (!CheckpointCodec.TryRestore(d, definitions, out _, out error)) return false;
                 plan = new CheckpointBattlePlan(d, random.Calls); return true;
             }
@@ -1794,7 +1751,7 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
                 Visits=dungeon.CaptureVisits(),
-                Player = new CheckpointPlayerDto { AttackGrowth=player.AttackGrowth?.Capture(), Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
+                Player = new CheckpointPlayerDto { AttackGrowth=player.AttackGrowth?.Capture(), Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId && player.DepartureStyle.TransformationPhaseBonus == 0 ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
                     Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
                     WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
@@ -1827,13 +1784,23 @@ namespace Olca.Core.Logic.Dungeon
             floors = list.Select(map => DungeonCheckpointSession.CreateDefault(map, initialDeck).Definitions).ToArray();
             foreach (var floor in floors) foreach (var card in extras) floor.RegisterCard(card.Key, card.Value);
             RouteId = routeId; Revision = revision;
-            RouteHash = CheckpointValues.Hash(w => {
-                w.Write(RouteId); w.Write(Revision); w.Write(floors.Length);
-                foreach (var floor in floors) {
-                    w.Write(floor.DungeonId); w.Write(floor.MapHash); w.Write(floor.SchemaVersion); w.Write(floor.CardCatalogHash);
-                }
-            });
+            RouteHash = ComputeRouteHash();
         }
+        // 正規カタログを値DTOから戻す入口。階層ごとの定義キーを再採番しない。
+        internal FloorSequenceDefinitions(string routeId,string revision,CheckpointDefinitions[] definitions)
+        {
+            if(string.IsNullOrWhiteSpace(routeId)||string.IsNullOrWhiteSpace(revision)||definitions==null||definitions.Length==0||definitions.Any(d=>d==null))
+                throw new ArgumentException("階層列の定義が欠損しています");
+            floors=(CheckpointDefinitions[])definitions.Clone();
+            floors[floors.Length-1].CreateInitialMap().ValidateFinalFloorForDeparture();
+            RouteId=routeId;Revision=revision;RouteHash=ComputeRouteHash();
+        }
+        private string ComputeRouteHash() => CheckpointValues.Hash(w => {
+            w.Write(RouteId); w.Write(Revision); w.Write(floors.Length);
+            foreach (var floor in floors) {
+                w.Write(floor.DungeonId); w.Write(floor.MapHash); w.Write(floor.SchemaVersion); w.Write(floor.CardCatalogHash);
+            }
+        });
         public DungeonConfig CreateInitialMap(int index)
         {
             var floor = Floor(index);

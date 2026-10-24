@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Cysharp.Threading.Tasks;
+using Olca.Core.Interfaces;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
 
@@ -44,7 +44,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 "TemporaryMoveAttackEffectは非同期専用です。CardUsageSystem.TryUseCurrentCardAsync()を使用してください。");
         }
 
-        public async UniTask ExecuteAsync(
+        public async FrameTask ExecuteAsync(
             BattleContext context,
             CancellationToken ct)
         {

@@ -11,7 +11,7 @@
 
 ## 技術スタック
 
-- **Unity**: 6000.0.60f1 (Unity 6)
+- **Unity**: 6000.3.26f1 (Unity 6、changeset `de8167e7440c`。現在の検証済みバージョン)
 - **C#**: .NET Standard 2.1
 - **アーキテクチャ**: Core層（Unity非依存）+ Application層 + Presentation層
 - **テスト**: NUnit
@@ -33,6 +33,9 @@ Planning/             # 仕様書・設計ドキュメント
 ```
 
 ## ドキュメント
+
+- [環境移行チェックポイント](Tools/Migration/README.md) - ignore対象のProjectSettings復元、検証条件、移行対象外データ
+- [フォント復元後のFHD／4K画像](.Codex/screenshots/font-restore-20261023/README.md)
 
 ### 開発者向け
 - [CLAUDE.md](CLAUDE.md) - アーキテクチャ原則・コーディング規約

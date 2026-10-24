@@ -148,6 +148,11 @@ namespace Olca.Core.Logic.Battle
         }
         private readonly Dictionary<string,Entry> cards=new Dictionary<string,Entry>();
         private readonly Dictionary<string,string> normal=new Dictionary<string,string>();
+        private readonly List<(string A,string B,CardRarity Regulation,string Series)> normalDefinitions=new List<(string,string,CardRarity,string)>();
+        private readonly List<(string Id,Card A,Card B,Card Result)> specialDefinitions=new List<(string,Card,Card,Card)>();
+        internal IEnumerable<(Card Card,string Family,string Series,int Level)> PortableCards=>cards.Values.Select(e=>(e.Card.Clone(),e.Family,e.Series,e.Level));
+        internal IEnumerable<(string A,string B,CardRarity Regulation,string Series)> PortableNormal=>normalDefinitions;
+        internal IEnumerable<(string Id,Card A,Card B,Card Result)> PortableSpecial=>specialDefinitions.Select(e=>(e.Id,e.A.Clone(),e.B.Clone(),e.Result.Clone()));
         private readonly Dictionary<string,(string id,Card result)> special=new Dictionary<string,(string,Card)>();
         private static string Hash(Card card)=>CollectionDisplay.DefinitionHash(card.CreateUntunedDefinitionCopy());
         private static string Pair(string a,string b)=>string.CompareOrdinal(a,b)<0?a.Length+":"+a+b.Length+":"+b:b.Length+":"+b+a.Length+":"+a;
@@ -162,12 +167,12 @@ namespace Olca.Core.Logic.Battle
         public void RegisterNormal(string familyA,string familyB,CardRarity regulation,string resultSeries)
         {
             if(string.IsNullOrWhiteSpace(familyA)||string.IsNullOrWhiteSpace(familyB)||string.IsNullOrWhiteSpace(resultSeries)||!Enum.IsDefined(typeof(CardRarity),regulation))throw new ArgumentException("通常融合表が不正です");
-            string key=Rule(familyA,familyB,regulation);if(normal.ContainsKey(key))throw new ArgumentException("通常融合表が重複しています");normal.Add(key,resultSeries);
+            string key=Rule(familyA,familyB,regulation);if(normal.ContainsKey(key))throw new ArgumentException("通常融合表が重複しています");normal.Add(key,resultSeries);normalDefinitions.Add((familyA,familyB,regulation,resultSeries));
         }
         public void RegisterSpecial(string recipeId,Card a,Card b,Card result)
         {
             if(string.IsNullOrWhiteSpace(recipeId)||a==null||b==null||result==null||!cards.ContainsKey(Hash(a))||!cards.ContainsKey(Hash(b))||!cards.ContainsKey(Hash(result)))throw new ArgumentException("特殊融合の定義が不足しています");
-            string key=Pair(Hash(a),Hash(b));if(special.ContainsKey(key))throw new ArgumentException("特殊融合が重複しています");special.Add(key,(recipeId,result.CreateUntunedDefinitionCopy()));
+            string key=Pair(Hash(a),Hash(b));if(special.ContainsKey(key))throw new ArgumentException("特殊融合が重複しています");special.Add(key,(recipeId,result.CreateUntunedDefinitionCopy()));specialDefinitions.Add((recipeId,a.CreateUntunedDefinitionCopy(),b.CreateUntunedDefinitionCopy(),result.CreateUntunedDefinitionCopy()));
         }
         public FusionValidationResult Validate(IReadOnlyList<Card> materials)
         {
