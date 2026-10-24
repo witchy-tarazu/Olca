@@ -720,6 +720,7 @@ namespace Olca.Presentation.Dungeon
         public static void Label(UnityEngine.UI.Text label)
         {
             if(label==null)return;
+            if(label.GetComponent<UiKanaLabel>()==null)label.gameObject.AddComponent<UiKanaLabel>();
             // 共通の色や枠の適用で、Scene/Prefab/呼出元の指定フォントを置き換えない。
             if(label.font==null)label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.color=Ink; label.raycastTarget=false;
@@ -756,5 +757,18 @@ namespace Olca.Presentation.Dungeon
                 label.resizeTextForBestFit=true;label.resizeTextMinSize=20;label.resizeTextMaxSize=label.fontSize;
             }
         }
+    }
+}
+
+namespace Olca.Presentation.Dungeon
+{
+    /// <summary>データやフォントを変更せず、描画するUI文字だけを既存用語のカナ表記へそろえる。</summary>
+    public sealed class UiKanaLabel : UnityEngine.MonoBehaviour
+    {
+        private UnityEngine.UI.Text label;
+        private string applied;
+        private void OnEnable(){label=GetComponent<UnityEngine.UI.Text>();UnityEngine.Canvas.willRenderCanvases+=Apply;Apply();}
+        private void OnDisable(){UnityEngine.Canvas.willRenderCanvases-=Apply;}
+        private void Apply(){if(label==null||label.text==applied)return;applied=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);label.text=applied;}
     }
 }

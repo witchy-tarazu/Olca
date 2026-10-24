@@ -17,6 +17,76 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 閉じた画面の内部クリーンアップは末尾解除を拒否せず仮選択を戻せる()
+        {
+            var card=Create("sword",CardSeries.Sword);var model=new CustomScreenSystem(new Deck(new List<Card>{card}));
+            model.Open(new Card[0],new MockRandomProvider(0));Assert.IsTrue(model.TrySelectCard(card));model.CompleteClose();
+            Assert.IsFalse(model.IsOpen);Assert.IsTrue(model.TryDeselectCard(card));Assert.IsEmpty(model.SelectedCards);
+            Assert.Contains(card,model.CurrentHand.ToList());
+        }
+
+        [Test]
+        public void 選択済みスロットは対応アイコンを表示しクリックした同名カード一枚だけ解除して順序とフォーカスを揃える()
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+            Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            var root=new GameObject("SelectedSlots",typeof(RectTransform));
+            try {
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("sword",CardSeries.Sword),Create("sword",CardSeries.Sword),Create("heal",CardSeries.Sword)}));
+                model.Open(new Card[0],new MockRandomProvider(0));var hand=model.CurrentHand.ToList();
+                foreach(var card in hand)Assert.IsTrue(model.TrySelectCard(card));
+                Assert.IsFalse(model.TryDeselectCard(hand[1]),"既存の取消は末尾だけを解除する契約を保つ");
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);
+                typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,hand);
+                var cursor=new CustomScreenCursor();cursor.Initialize(hand.Count);typeof(CustomScreenView).GetField("cursor",flags).SetValue(view,cursor);
+                var cost=new GameObject("Cost",typeof(RectTransform),typeof(Text));cost.transform.SetParent(root.transform,false);
+                typeof(CustomScreenView).GetField("costDisplay",flags).SetValue(view,cost.GetComponent<Text>());
+                var indicator=new GameObject("SelectionIndicator",typeof(RectTransform));indicator.transform.SetParent(root.transform,false);
+                var slots=new List<Image>();for(int i=0;i<3;i++){var slot=new GameObject("Slot"+i,typeof(RectTransform),typeof(Image));slot.transform.SetParent(indicator.transform,false);((RectTransform)slot.transform).anchoredPosition=new Vector2(50*i,0);slots.Add(slot.GetComponent<Image>());}
+                typeof(CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags).Invoke(view,null);
+                for(int i=0;i<3;i++)Assert.AreSame(view.GetCardIcon(hand[i].Id),slots[i].sprite);
+                slots[1].GetComponent<Button>().onClick.Invoke();
+                CollectionAssert.AreEqual(new[]{hand[0],hand[2]},model.SelectedCards);
+                Assert.AreSame(view.GetCardIcon(hand[2].Id),slots[1].sprite);Assert.IsNull(slots[2].sprite);Assert.IsFalse(slots[2].raycastTarget);
+                Assert.AreEqual(1,cursor.CurrentIndex);StringAssert.Contains(model.GetTotalUsedCost().ToString(),cost.GetComponent<Text>().text);
+                slots[0].GetComponent<Button>().onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[2]},model.SelectedCards);
+            } finally {Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void フォーカス枠は背景より前で手札アイコンより後ろに描きポインター入力を遮らない()
+        {
+            var root=new GameObject("FocusOrder",typeof(RectTransform));
+            try {var background=new GameObject("BgCustom",typeof(RectTransform),typeof(Image));background.transform.SetParent(root.transform,false);
+                var cards=new GameObject("Cards",typeof(RectTransform));cards.transform.SetParent(root.transform,false);
+                var focus=new GameObject("Focus",typeof(RectTransform),typeof(Image));focus.transform.SetParent(root.transform,false);
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+                typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,cards.transform);
+                typeof(CustomScreenView).GetField("cursorIndicator",flags).SetValue(view,focus);
+                for(int i=0;i<3;i++)typeof(CustomScreenView).GetMethod("UpdateCursorIndicator",flags).Invoke(view,new object[]{-1});
+                Assert.Less(background.transform.GetSiblingIndex(),focus.transform.GetSiblingIndex());Assert.Less(focus.transform.GetSiblingIndex(),cards.transform.GetSiblingIndex());Assert.IsFalse(focus.GetComponent<Image>().raycastTarget);
+            } finally {Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void カスタム停止は戦闘Animatorの元速度を復元しUIアニメと入力を止めない()
+        {
+            var world=new GameObject("BattleCharacter",typeof(Animator));var ui=new GameObject("Ui",typeof(Canvas),typeof(Animator));var a=new object();var b=new object();
+            try {world.GetComponent<Animator>().speed=.55f;ui.GetComponent<Animator>().speed=.8f;
+                bool inputBlocked=Olca.Unity.GameplayPause.InputBlocked;
+                Olca.Unity.BattleVisualClock.SetPaused(a,true);Olca.Unity.BattleVisualClock.SetPaused(b,true);
+                Assert.AreEqual(0f,world.GetComponent<Animator>().speed);Assert.AreEqual(.8f,ui.GetComponent<Animator>().speed);Assert.AreEqual(0f,Olca.Unity.BattleVisualClock.DeltaTime);Assert.AreEqual(inputBlocked,Olca.Unity.GameplayPause.InputBlocked);
+                Olca.Unity.BattleVisualClock.SetPaused(a,false);Assert.AreEqual(0f,world.GetComponent<Animator>().speed);
+                Olca.Unity.BattleVisualClock.SetPaused(b,false);Assert.AreEqual(.55f,world.GetComponent<Animator>().speed);
+            } finally {Olca.Unity.BattleVisualClock.SetPaused(a,false);Olca.Unity.BattleVisualClock.SetPaused(b,false);Object.DestroyImmediate(world);Object.DestroyImmediate(ui);}
+        }
+        [TestCase("選択したカードを確定します","センタクシタカードヲカクテイシマス")]
+        [TestCase("前方1マス炎属性攻撃","ゼンポウ1マスホノオゾクセイコウゲキ")]
+        [TestCase("使用済み / 手札上限","シヨウズミ / テフダジョウゲン")]
+        [TestCase("十字左 / 獲得: 3枚 / 通貨: 0","ジュウジヒダリ / カクトク: 3マイ / ツウカ: 0")]
+        public void 指定フォントを交換せず既存カスタム文言をカナで表示する(string source,string expected)
+            =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
+
+        [Test]
         public void タッチ短押しはクリックを残し長押しは一度だけ詳細を開いて解放クリックを拒否する()
         {
             WithTouchHold((hold,screen,group,opened,valid)=>{

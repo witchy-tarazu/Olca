@@ -577,7 +577,7 @@ namespace Olca.Presentation.Field
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
-            UpdatePlayerHitEffect(Olca.Unity.GameplayPause.DeltaTime);
+            UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -758,7 +758,7 @@ namespace Olca.Presentation.Field
             if (!cameraFollowEnabled && battleCameraTargetX.HasValue && fieldCamera != null)
             {
                 Vector3 camPos = fieldCamera.transform.position;
-                camPos.x = Mathf.Lerp(camPos.x, battleCameraTargetX.Value, Olca.Unity.GameplayPause.DeltaTime * cameraFollowSpeed);
+                camPos.x = Mathf.Lerp(camPos.x, battleCameraTargetX.Value, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeed);
                 fieldCamera.transform.position = camPos;
             }
 
@@ -830,6 +830,7 @@ namespace Olca.Presentation.Field
         }
         private void UpdatePlayerSprite()
         {
+            if(Olca.Unity.BattleVisualClock.IsPaused)return;
             if (dungeonSystem != null && dungeonSystem.IsObstacleStopped && !dungeonSystem.IsInBattle) {
                 if (!obstaclePoseActive) { obstaclePoseActive = true; obstacleAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled; }
                 if (playerAnimator != null) playerAnimator.enabled = false;
@@ -849,7 +850,7 @@ namespace Olca.Presentation.Field
             bool isDashing = dungeonSystem != null
                 && dungeonSystem.IsDashing
                 && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
-                && Olca.Unity.GameplayPause.DeltaTime > 0f;
+                && Olca.Unity.BattleVisualClock.DeltaTime > 0f;
 
             // Animatorを設定した場合は、状態だけを渡してスプライトの再生を任せる。
             // 未設定のシーンでは従来のモック画像表示を使用する。
@@ -880,7 +881,7 @@ namespace Olca.Presentation.Field
         {
             // 60Hz論理更新のない描画フレームも自動前進は継続中。
             // 座標差0や描画DeltaTimeでの速度推定を停止判定に使わない。
-            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (currentBattle == null && dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
+            isMoving = playerTransform != null && Olca.Unity.BattleVisualClock.DeltaTime > 0f && (currentBattle == null && dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
                 && dungeonSystem.PlayerHeight <= 0.001f);
         }
 
@@ -918,10 +919,10 @@ namespace Olca.Presentation.Field
             else
             {
                 // ダッシュ中: Lerpで追従（ダッシュ開始・終了の切り替えをなめらかに）
-                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.GameplayPause.DeltaTime * cameraFollowSpeedTransition);
+                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeedTransition);
                 fieldCamera.transform.position = Vector3.Lerp(
                     fieldCamera.transform.position, targetPos,
-                    Olca.Unity.GameplayPause.DeltaTime * currentFollowSpeed);
+                    Olca.Unity.BattleVisualClock.DeltaTime * currentFollowSpeed);
             }
 
             // 定期ログ（60フレームに1回）
@@ -1011,7 +1012,7 @@ namespace Olca.Presentation.Field
             }
             if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase) return;
             displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;
-            instructionText.text = FormatGameplayInstructions(appliedProfile, phase);
+            instructionText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(FormatGameplayInstructions(appliedProfile, phase));
         }
 
         public void RefreshDebugUI(GamePhase phase)
@@ -1030,10 +1031,10 @@ namespace Olca.Presentation.Field
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 group.alpha = Mathf.Lerp(from, to, t);
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             group.alpha = to;
         }

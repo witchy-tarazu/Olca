@@ -108,7 +108,7 @@ namespace Olca.Tests.Application
         }
 
         [Test]
-        public void 選択枚数の四角はコストや残数でなく選択枚数だけ黄色になる()
+        public void 選択済みスロットはコストや残数でなく選択枚数だけアイコン色になる()
         {
             var root=new UnityEngine.GameObject("selection-count");root.SetActive(false);var view=root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
             var row=new UnityEngine.GameObject("SelectionIndicator",typeof(UnityEngine.RectTransform));row.transform.SetParent(root.transform,false);
@@ -119,7 +119,7 @@ namespace Olca.Tests.Application
             var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
             typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetField("customScreen",flags).SetValue(view,screen);
             var refresh=typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags);
-            void Check(int n){refresh.Invoke(view,null);for(int i=0;i<5;i++)Assert.AreEqual(i<n,images[i].color==UnityEngine.Color.yellow);}
+            void Check(int n){refresh.Invoke(view,null);for(int i=0;i<5;i++)Assert.AreEqual(i<n,images[i].color==UnityEngine.Color.white);}
             try{screen.Open(System.Array.Empty<Card>(),new MockRandomProvider());Check(0);Assert.IsTrue(screen.TrySelectCard(a));Check(1);Assert.AreEqual(3,screen.GetTotalUsedCost());Assert.IsTrue(screen.TrySelectCard(b));Check(2);Assert.IsTrue(screen.TryDeselectCard(b));Check(1);screen.Confirm();Check(0);screen.CompleteClose();screen.Open(new System.Collections.Generic.List<Card>(screen.AvailableCards),new MockRandomProvider());Check(0);}
             finally{UnityEngine.Object.DestroyImmediate(root);}
         }

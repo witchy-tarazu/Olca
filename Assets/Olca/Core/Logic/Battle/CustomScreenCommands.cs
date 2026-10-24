@@ -6,7 +6,7 @@ using Olca.Core.Interfaces;
 
 namespace Olca.Core.Logic.Battle
 {
-    public enum CustomCommandKind { Open, Select, Deselect, PreviewCustomization, ExecuteCustomization, CancelCustomization, Undo, Confirm, ReturnToBattle, PreviewTransformation, CancelTransformation }
+    public enum CustomCommandKind { Open, Select, Deselect, PreviewCustomization, ExecuteCustomization, CancelCustomization, Undo, Confirm, ReturnToBattle, PreviewTransformation, CancelTransformation, RemoveSelectedCard }
     public enum CustomCommandRejection { None, InvalidCommand, Busy, BattleUnavailable, UserPaused, GaugeNotFull, ScreenClosed, Confirming, NotConfirming, CardUnavailable, RuleRejected }
 
     /// <summary>カードIDではなく、この戦闘内の個体ハンドルで対象を指定する不変入力。</summary>
@@ -136,7 +136,7 @@ namespace Olca.Core.Logic.Battle
                 sequence = checked(sequence + 1); Refresh();
                 CustomCommandResult Result(CustomCommandRejection code = CustomCommandRejection.None, string reason = null, CustomizationPreview preview = null)
                     => new CustomCommandResult(sequence, command, code, reason, preview, Observe());
-                int expected = command.Kind == CustomCommandKind.Select || command.Kind == CustomCommandKind.Deselect ? 1 :
+                int expected = command.Kind == CustomCommandKind.Select || command.Kind == CustomCommandKind.Deselect || command.Kind == CustomCommandKind.RemoveSelectedCard ? 1 :
                     command.Kind == CustomCommandKind.PreviewCustomization || command.Kind == CustomCommandKind.ExecuteCustomization ? 2 : 0;
                 if ((command.Kind == CustomCommandKind.PreviewTransformation ? string.IsNullOrWhiteSpace(command.TransformationId) : command.TransformationId != null) || !Enum.IsDefined(typeof(CustomCommandKind), command.Kind) || command.Cards.Count != expected || command.Cards.Distinct().Count() != command.Cards.Count)
                     return Result(CustomCommandRejection.InvalidCommand, "操作または対象数が不正です");
@@ -169,6 +169,8 @@ namespace Olca.Core.Logic.Battle
                         return transformations.TryCancelPending() ? Result() : Result(CustomCommandRejection.RuleRejected, "この画面で新しく選んだ変身だけ取り消せます");
                     case CustomCommandKind.Select:
                         return screen.TrySelectCard(targets[0]) ? Result() : Result(CustomCommandRejection.RuleRejected, "手札・選択枚数・コスト条件を満たしません");
+                    case CustomCommandKind.RemoveSelectedCard:
+                        return screen.TryRemoveSelectedCard(targets[0]) ? Result() : Result(CustomCommandRejection.RuleRejected,"指定したカードの選択を解除できません");
                     case CustomCommandKind.Deselect:
                         return screen.TryDeselectCard(targets[0]) ? Result() : Result(CustomCommandRejection.RuleRejected, "最後に選択したカードだけ解除できます");
                     case CustomCommandKind.PreviewCustomization:

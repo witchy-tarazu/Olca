@@ -838,3 +838,51 @@ namespace Olca.Unity
         public void Dispose(){input.Dispose();Suspend();}
     }
 }
+
+namespace Olca.Unity
+{
+    /// <summary>カスタム中の戦闘描画だけを停止する時計。UI入力とUI演出は既存時計を使う。</summary>
+    public static class BattleVisualClock
+    {
+        private static readonly System.Collections.Generic.HashSet<object> owners=new System.Collections.Generic.HashSet<object>();
+        private static readonly System.Collections.Generic.Dictionary<UnityEngine.Animator,float> animators=new System.Collections.Generic.Dictionary<UnityEngine.Animator,float>();
+        private static readonly System.Collections.Generic.HashSet<UnityEngine.ParticleSystem> particles=new System.Collections.Generic.HashSet<UnityEngine.ParticleSystem>();
+        public static bool IsPaused=>owners.Count>0;
+        public static float DeltaTime=>IsPaused?0f:GameplayPause.DeltaTime;
+        public static void SetPaused(object owner,bool paused)
+        {
+            if(paused){owners.Add(owner);Refresh();return;}
+            owners.Remove(owner);if(IsPaused)return;
+            foreach(var entry in animators)if(entry.Key!=null)entry.Key.speed=entry.Value;
+            foreach(var particle in particles)if(particle!=null&&particle.isPaused)particle.Play(false);
+            animators.Clear();particles.Clear();
+        }
+        public static void Refresh()
+        {
+            if(!IsPaused)return;
+            foreach(var animator in UnityEngine.Object.FindObjectsByType<UnityEngine.Animator>(UnityEngine.FindObjectsSortMode.None)){
+                if(animator.GetComponentInParent<UnityEngine.Canvas>()!=null)continue;
+                if(!animators.ContainsKey(animator))animators.Add(animator,animator.speed);
+                animator.speed=0f;
+            }
+            foreach(var particle in UnityEngine.Object.FindObjectsByType<UnityEngine.ParticleSystem>(UnityEngine.FindObjectsSortMode.None)){
+                if(particle.GetComponentInParent<UnityEngine.Canvas>()!=null||!particle.isPlaying)continue;
+                particles.Add(particle);particle.Pause(false);
+            }
+        }
+        public static async Cysharp.Threading.Tasks.UniTask NextFrame(System.Threading.CancellationToken ct=default)
+        {
+            await GameplayPause.NextFrame(ct);
+            while(IsPaused)await GameplayPause.NextFrame(ct);
+        }
+        public static async Cysharp.Threading.Tasks.UniTask Delay(int milliseconds,System.Threading.CancellationToken cancellationToken=default)
+        {
+            while(IsPaused)await NextFrame(cancellationToken);
+            await GameplayPause.WaitAsync(cancellationToken);
+            float remaining=milliseconds/1000f;
+            while(remaining>0f){await NextFrame(cancellationToken);remaining-=DeltaTime;}
+        }
+        public static Cysharp.Threading.Tasks.UniTask Delay(System.TimeSpan duration,System.Threading.CancellationToken cancellationToken=default)
+            =>Delay((int)duration.TotalMilliseconds,cancellationToken);
+    }
+}

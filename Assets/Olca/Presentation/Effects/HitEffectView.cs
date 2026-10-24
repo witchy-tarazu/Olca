@@ -96,11 +96,11 @@ namespace Olca.Presentation.Effects
 
                 // フラッシュ色に変更
                 targetImage.color = flashColor;
-                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: ct);
+                await Olca.Unity.BattleVisualClock.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: ct);
 
                 // 元の色に戻す
                 targetImage.color = originalColor;
-                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: ct);
+                await Olca.Unity.BattleVisualClock.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: ct);
             }
 
             // 最終的に元の色に戻す
@@ -125,7 +125,7 @@ namespace Olca.Presentation.Effects
                 rectTransform.localPosition = originalPosition + new Vector3(offsetX, offsetY, 0f);
 
                 elapsed += interval;
-                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(interval), cancellationToken: ct);
+                await Olca.Unity.BattleVisualClock.Delay(System.TimeSpan.FromSeconds(interval), cancellationToken: ct);
             }
 
             // 元の位置に戻す
@@ -145,11 +145,11 @@ namespace Olca.Presentation.Effects
             {
                 if (ct.IsCancellationRequested) break;
 
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = elapsed / halfDuration;
                 rectTransform.localScale = Vector3.Lerp(originalScale, originalScale * scalePulseAmount, t);
 
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
 
             elapsed = 0f;
@@ -159,11 +159,11 @@ namespace Olca.Presentation.Effects
             {
                 if (ct.IsCancellationRequested) break;
 
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = elapsed / halfDuration;
                 rectTransform.localScale = Vector3.Lerp(originalScale * scalePulseAmount, originalScale, t);
 
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
 
             // 元のスケールに戻す

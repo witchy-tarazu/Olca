@@ -31,7 +31,7 @@ namespace Olca.Tests.Integration
                 Assert.Throws<System.IO.IOException>(() => guard.Require((string)null));
                 if(System.IO.Path.DirectorySeparatorChar == '/')
                     Assert.Throws<System.IO.IOException>(() => guard.Require(System.IO.Path.Combine(container,"OWN","settings")));
-                Assert.Throws<System.IO.IOException>(() => Olca.Unity.ValidationStorageGuard.RequireEditorStartup(own,own,own,true));
+                Assert.Throws<System.IO.IOException>(() => Olca.Unity.ValidationStorageGuard.RequireEditorStartup(null,null,null,true));
                 Assert.Throws<System.IO.IOException>(() => new Olca.Unity.ValidationStorageGuard("",mockDefault));
                 Assert.Throws<System.IO.IOException>(() => new Olca.Unity.ValidationStorageGuard(container,mockDefault));
                 string settings = System.IO.Path.Combine(own,"settings");
@@ -184,6 +184,7 @@ namespace Olca.Tests.Integration
             var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
             var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
             var type = controller.GetType(); controller.ConfigureDungeon(config); controller.ConfigureCheckpointDirectory(directory);
+            controller.ConfigureGameplaySettingsDirectory(System.IO.Path.Combine(directory,"settings"));
             var deck = (Deck)type.GetMethod("CreateInitialDeck", flags).Invoke(controller, null);
             var definitions = DungeonCheckpointSession.CreateDefault(config, deck).Definitions;
             var files = new Olca.Unity.FileCheckpointStore(definitions, directory);
@@ -3876,7 +3877,7 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(0, next.Dungeon.PlayerPosition); Assert.IsFalse(next.Dungeon.IsJumping); Assert.IsFalse(next.Dungeon.IsDashing);
             Assert.AreSame(next.Dungeon, Get(Get(controller, "gameFieldView"), "dungeonSystem"));
             Assert.IsTrue((bool)Get(Get(controller, "gameFieldView"), "playerPositionUpdateEnabled"));
-            StringAssert.Contains("2階", ((UnityEngine.UI.Text)Get(Get(controller, "dungeonHudView"), "progressText")).text);
+            StringAssert.Contains("2カイ", ((UnityEngine.UI.Text)Get(Get(controller, "dungeonHudView"), "progressText")).text);
             Assert.IsFalse(controller.RetryMemoryCheckpoint()); old.SelectCardReward(null); old.TickFrame(17);
             Assert.AreEqual(1, transfers); Assert.AreEqual(1, Store(controller).Read().FloorIndex);
             Tick(controller, new LogicalInput { DashButtonDown = true }); Assert.IsTrue(next.Dungeon.IsDashing);
@@ -3960,11 +3961,11 @@ namespace Olca.Tests.Integration
                 Assert.IsNull(Get(hud, "progressText"), "既定単階層の表示を増やさない");
                 hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(100, 100, 1, 6, false, false, 6, 0, 1));
                 var label = (UnityEngine.UI.Text)Get(hud, "progressText");
-                Assert.IsNotNull(label); Assert.AreEqual("1階  1 / 6", label.text);
+                Assert.IsNotNull(label); Assert.AreEqual("1カイ  1 / 6", label.text);
                 Assert.IsFalse(label.raycastTarget); Assert.AreSame(hud.transform, label.transform.parent);
                 Assert.AreSame(((UnityEngine.UI.Text)Get(hud, "deckCountText")).font, label.font);
                 hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(63, 100, 0, 20, false, false, 7, 1, 2));
-                Assert.AreSame(label, Get(hud, "progressText")); Assert.AreEqual("2階  0 / 20", label.text);
+                Assert.AreSame(label, Get(hud, "progressText")); Assert.AreEqual("2カイ  0 / 20", label.text);
                 Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "FloorProgressText"));
             }
             finally { UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true); }

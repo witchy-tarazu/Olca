@@ -219,9 +219,9 @@ namespace Olca.Presentation.Field
             for (int i = 0; i < 2; i++)
             {
                 bodyRenderer.color = Color.white;
-                await Olca.Unity.GameplayPause.Delay(50, cancellationToken: ct);
+                await Olca.Unity.BattleVisualClock.Delay(50, cancellationToken: ct);
                 bodyRenderer.color = originalColor;
-                await Olca.Unity.GameplayPause.Delay(50, cancellationToken: ct);
+                await Olca.Unity.BattleVisualClock.Delay(50, cancellationToken: ct);
             }
         }
 
@@ -235,9 +235,9 @@ namespace Olca.Presentation.Field
             // 拡大フェーズ
             while (elapsed < halfDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 transform.localScale = Vector3.Lerp(originalScale, peakScale, elapsed / halfDuration);
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
 
             elapsed = 0f;
@@ -245,9 +245,9 @@ namespace Olca.Presentation.Field
             // 縮小フェーズ
             while (elapsed < halfDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 transform.localScale = Vector3.Lerp(peakScale, originalScale, elapsed / halfDuration);
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
 
             transform.localScale = originalScale;

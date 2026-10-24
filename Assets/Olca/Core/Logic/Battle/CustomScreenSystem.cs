@@ -240,11 +240,19 @@ namespace Olca.Core.Logic.Battle
             if (IsConfirming || selectedCards.Count == 0 || !ReferenceEquals(selectedCards[selectedCards.Count - 1], card))
                 return false;
 
-            selectedCards.RemoveAt(selectedCards.Count - 1);
-            currentHand.Add(card);
+            selectedCards.RemoveAt(selectedCards.Count-1);
+            currentHand.Add(card);OnCardDeselected?.Invoke(card);return true;
+        }
 
-            OnCardDeselected?.Invoke(card);
-            return true;
+        /// <summary>選択済みスロットから指定した個体一枚だけを戻す。残りの使用順は維持する。</summary>
+        public bool TryRemoveSelectedCard(Card card)
+        {
+            if(card==null)throw new ArgumentNullException(nameof(card));
+            if(!IsOpen||IsConfirming)return false;
+            int index=selectedCards.FindIndex(value=>ReferenceEquals(value,card));
+            if(index<0)return false;
+            selectedCards.RemoveAt(index);currentHand.Add(card);
+            OnCardDeselected?.Invoke(card);return true;
         }
 
         /// <summary>

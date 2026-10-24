@@ -54,7 +54,7 @@ namespace Olca.Presentation.Effects
                 {
                     if (animCts.Token.IsCancellationRequested) break;
 
-                    elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                    elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                     float t = Mathf.Clamp01(elapsed / duration);
 
                     // 上昇（Ease-out: 最初速く、途中で減速して止まる）
@@ -66,7 +66,7 @@ namespace Olca.Presentation.Effects
                     c.a = 1f - t;
                     textMesh.color = c;
 
-                    await Olca.Unity.GameplayPause.NextFrame(animCts.Token);
+                    await Olca.Unity.BattleVisualClock.NextFrame(animCts.Token);
                 }
             }
             catch (System.OperationCanceledException) { }
