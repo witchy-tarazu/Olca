@@ -3101,7 +3101,7 @@ namespace Olca.Tests.Integration
             var c=StartSelection();long revision=c.PersistentProgress.Revision;
             var first=SelectionButton(c,"DungeonChoice_0").GetComponentInChildren<UnityEngine.UI.Text>().text;
             var locked=SelectionButton(c,"DungeonChoice_1").GetComponentInChildren<UnityEngine.UI.Text>().text;
-            StringAssert.Contains("ミクリア",first);StringAssert.Contains("？？？",locked);StringAssert.DoesNotContain("selection-b",locked);StringAssert.Contains("ヒトツマエノダンジョンヲクリア",locked);
+            StringAssert.Contains("ミクリア",first);StringAssert.Contains("？？？",locked);StringAssert.DoesNotContain("selection-b",locked);StringAssert.Contains("ヒトつマエのダンジョンをクリア",locked);
             var help=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Text>(false).Single(t=>t.name=="DungeonSelectionHelp").text;
             StringAssert.Contains("テキゾクセイ: ムゾクセイ",help);StringAssert.Contains("チケイ: ノーマル",help);
             KeyboardButton(c,"DungeonChoice_1");Assert.AreEqual(0,Get(c,"selectedDungeon"));Assert.AreEqual(revision,c.PersistentProgress.Revision);Assert.IsNull(c.PersistentProgress.NextDeparture);
@@ -3115,7 +3115,7 @@ namespace Olca.Tests.Integration
             var profile=c.PersistentProgress;long revision=profile.Revision;profile.ClearedDungeons=new[]{"selection-a"};profile.Revision++;profile.CommitId=System.Guid.NewGuid().ToString("N");
             Assert.IsTrue(((Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore")).TryWrite(revision,profile,out var error),error);
             c=StartSelection();
-            StringAssert.Contains("クリアズミ",SelectionButton(c,"DungeonChoice_0").GetComponentInChildren<UnityEngine.UI.Text>().text);
+            StringAssert.Contains("クリアズみ",SelectionButton(c,"DungeonChoice_0").GetComponentInChildren<UnityEngine.UI.Text>().text);
             StringAssert.Contains("ミクリア",SelectionButton(c,"DungeonChoice_1").GetComponentInChildren<UnityEngine.UI.Text>().text);
             StringAssert.Contains("？？？",SelectionButton(c,"DungeonChoice_2").GetComponentInChildren<UnityEngine.UI.Text>().text);
             CollectionAssert.AreEqual(new[]{"selection-a"},c.PersistentProgress.ClearedDungeons);
@@ -3842,7 +3842,7 @@ namespace Olca.Tests.Integration
             c.SetUserPaused(true); KeyboardButton(c, "OwnedCardsButton");
             Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf, "透過一覧の背後へメニューを重ねない");
             var view = (Olca.Presentation.Dungeon.ClearReturnView)Get(c, "clearReturnView");
-            Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text.Contains("1/4枚")));
+            Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text.Contains("1/4マイ")));
             Assert.IsFalse(view.GetComponentsInChildren<UnityEngine.UI.Button>(true).Any(b => b.name == "NextDeparture" && b.gameObject.activeSelf));
             KeyboardButton(c, "CloseOwnedCards"); Assert.IsTrue(c.IsUserPaused); Assert.IsTrue(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf); c.SetUserPaused(false);
             c = route ? Start() : Start(configure: setup);

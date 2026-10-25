@@ -40,6 +40,7 @@ namespace Olca.Presentation.Field
         private static readonly int IsMovingParameter = Animator.StringToHash("isMoving");
         private static readonly int JumpPhaseParameter = Animator.StringToHash("jumpPhase");
         [SerializeField] private Sprite[] contactKnockbackSprites;
+        [SerializeField] private Sprite[] somersaultSprites;
         private Sprite contactPoseSprite;
         private Sprite contactPreviousSprite;
         private bool contactAnimatorWasEnabled;
@@ -58,9 +59,9 @@ namespace Olca.Presentation.Field
                 if (playerAnimator != null && playerAnimator.enabled && playerAnimator.runtimeAnimatorController != null) playerAnimator.Update(0f);
                 return;
             }
-            Sprite[] frames = contactKnockbackSprites;
+            Sprite[] frames = phase==Olca.Presentation.Dungeon.ContactVisualPhase.Somersault?somersaultSprites:contactKnockbackSprites;
             Sprite sprite = frames == null || frames.Length == 0 ? null : frames[SelectContactFrame(phase, progress, frames.Length)];
-            if (sprite == null) return; // 専用素材の未設定を別モーションの完成扱いにしない。
+            if(sprite==null){if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f);return;} // 未登録は別モーションや回転で代替しない。
             if (!contactPoseActive) {
                 contactPreviousSprite = playerSprite != null ? playerSprite.sprite : null;
                 contactAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled;
@@ -1022,7 +1023,7 @@ namespace Olca.Presentation.Field
         public static string FormatGameplayInstructionsForDevice(InputBindingProfile profile,GamePhase phase,Olca.Unity.InputGuideDevice device)
         {
             if(profile==null||(phase!=GamePhase.Battle&&phase!=GamePhase.Dungeon))return string.Empty;
-            if(device==Olca.Unity.InputGuideDevice.Touch)return "タッチ: ガメンノボタンデソウサ";
+            if(device==Olca.Unity.InputGuideDevice.Touch)return "タッチ: 画面のボタンで操作";
             string Key(string context,params string[] actions)=>string.Join(" / ",actions.Select(a=>profile.Bindings[("keyboard",context,a)]??"ミワリアテ"));
             string Pad(string context,string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad",context,action)]);
             if(device==Olca.Unity.InputGuideDevice.Gamepad){

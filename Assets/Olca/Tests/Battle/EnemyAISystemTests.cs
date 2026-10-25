@@ -828,7 +828,7 @@ namespace Olca.Tests.Battle
         {Setup();battle.Field.ChangePanelType(new Vector2Int(2,0),PanelType.Hole);Install(new EnemyCardAction(Move(mode:MovePenetrationMode.Blocking),1000));Frames(1);Assert.IsFalse(source.IsInTemporaryMove);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Frames(6);Assert.AreEqual(500,player.CurrentHp);}
         [Test]
         public void 敵詳細の集中はカナと実効倍率を表示しプレイヤーの状態を参照しない()
-        {Setup();source.SetConcentrateBuff(2);string text=Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(source);StringAssert.Contains("シュウチュウ: ツギノカード 2 バイ",text);Assert.IsFalse(player.IsConcentrating);Assert.IsFalse(other.IsConcentrating);}
+        {Setup();source.SetConcentrateBuff(2);string text=Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(source);StringAssert.Contains("シュウチュウ: ツギのカード 2 バイ",text);Assert.IsFalse(player.IsConcentrating);Assert.IsFalse(other.IsConcentrating);}
         [TestCase(30)] [TestCase(60)] [TestCase(120)]
         public void 一時移動集中予告の反復は描画分割と追いつきで同じ論理状態になる(int fps)
         {

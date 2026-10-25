@@ -72,6 +72,19 @@ namespace Olca.Tests.Dungeon
         }
 
         [TestCase(false)][TestCase(true)]
+        public void 宙返りは専用コマだけを使い回転倍率位置を変えず未登録は代替しない(bool configured)
+        {
+            var root=new UnityEngine.GameObject("somersault");var texture=new UnityEngine.Texture2D(2,2);var idle=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,2,2),UnityEngine.Vector2.one/2);var frame=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,2,2),UnityEngine.Vector2.one/2);
+            try{var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var renderer=root.AddComponent<UnityEngine.SpriteRenderer>();renderer.sprite=idle;var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                void Set(string name,object value)=>typeof(Olca.Presentation.Field.GameFieldView).GetField(name,flags).SetValue(view,value);
+                Set("playerSprite",renderer);Set("idlePlayerSprite",idle);Set("contactKnockbackSprites",new[]{idle});if(configured)Set("somersaultSprites",new[]{frame,frame,frame});
+                var rotation=UnityEngine.Quaternion.Euler(0,0,17);root.transform.rotation=rotation;root.transform.localScale=new UnityEngine.Vector3(-.8f,.8f,1);var position=root.transform.position;
+                for(int i=0;i<=12;i++){view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.Somersault,i/12f);Assert.AreSame(configured?frame:idle,renderer.sprite);Assert.AreEqual(rotation,root.transform.rotation);Assert.AreEqual(new UnityEngine.Vector3(-.8f,.8f,1),root.transform.localScale);Assert.AreEqual(position,root.transform.position);}
+                view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0);Assert.AreSame(idle,renderer.sprite);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(idle);UnityEngine.Object.DestroyImmediate(frame);UnityEngine.Object.DestroyImmediate(texture);}
+        }
+
+        [TestCase(false)][TestCase(true)]
         public void ジャンプ表示の参照で軌道と速度を変えず停止と着地に追従する(bool dash)
         {
             var movement=new PlayerMovement();if(dash)movement.StartDash();movement.Jump();
