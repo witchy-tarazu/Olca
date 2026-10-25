@@ -17,6 +17,56 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 非アクティブな親でも手札初期化と選択がAwakeに依存せず再表示で寿命を作り直さない()
+        {
+            var root=new GameObject("InactiveCustom",typeof(RectTransform));root.SetActive(false);
+            try {
+                var parent=root.AddComponent<CustomScreenView>();
+                var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");
+                var obj=Object.Instantiate(prefab,root.transform);var hand=obj.GetComponent<HandCardView>();
+                var card=Create("sword",CardSeries.Sword);
+                hand.Initialize(card,parent);
+                var field=typeof(HandCardView).GetField("destroyCts",BindingFlags.Instance|BindingFlags.NonPublic);
+                var lifetime=field.GetValue(hand);Assert.IsNotNull(lifetime);
+                Assert.DoesNotThrow(()=>hand.UpdateSelection(false));
+                Assert.DoesNotThrow(()=>hand.UpdateHighlight(CardHighlightType.None));
+                root.SetActive(true);Assert.AreSame(lifetime,field.GetValue(hand));
+                root.SetActive(false);hand.Initialize(card,parent);root.SetActive(true);
+                Assert.AreSame(lifetime,field.GetValue(hand));Assert.AreSame(card,hand.Card);
+            } finally {Object.DestroyImmediate(root);}
+        }
+
+        [TestCase("close")] [TestCase("disable")] [TestCase("destroy")] [TestCase("reinitialize")]
+        public async System.Threading.Tasks.Task 手札射出中に閉じる無効化破棄しても後続カードを生成しない(string ending)
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);
+            var root=new GameObject("CustomLifetime",typeof(RectTransform));
+            try {
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var confirm=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));confirm.transform.SetParent(root.transform,false);
+                var container=new GameObject("Hand",typeof(RectTransform));container.transform.SetParent(root.transform,false);
+                typeof(CustomScreenView).GetField("confirmButton",flags).SetValue(view,confirm.GetComponent<Button>());
+                typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,container.transform);
+                typeof(CustomScreenView).GetField("handCardPrefab",flags).SetValue(view,UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab"));
+                typeof(CustomScreenView).GetField("cardShootInterval",flags).SetValue(view,.15f);
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("a",CardSeries.Sword),Create("b",CardSeries.Sword),Create("c",CardSeries.Sword)}));
+                view.Initialize(model);model.Open(new Card[0],new MockRandomProvider(0));
+                var cards=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);
+                Assert.AreEqual(1,cards.Count,"最初のカードの射出中に終了させる");
+                if(ending=="close")model.Close();
+                else if(ending=="disable"){
+                    // EditModeでは通常のMonoBehaviour通知をUnityが実行しないため明示する。
+                    typeof(CustomScreenView).GetMethod("OnDisable",flags).Invoke(view,null);root.SetActive(false);
+                }
+                else if(ending=="reinitialize")view.Initialize(new CustomScreenSystem(new Deck(new List<Card>())));
+                else {typeof(CustomScreenView).GetMethod("OnDestroy",flags).Invoke(view,null);Object.DestroyImmediate(root);root=null;}
+                await System.Threading.Tasks.Task.Delay(600);
+                Assert.AreEqual(1,cards.Count,"旧タスクが画面終了後もカードを追加してはならない");
+                if(root!=null)Assert.IsFalse((bool)typeof(CustomScreenView).GetField("handAnimating",flags).GetValue(view));
+            } finally {if(root!=null){typeof(CustomScreenView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(root.GetComponent<CustomScreenView>(),null);Object.DestroyImmediate(root);}Olca.Unity.BattleVisualClock.Refresh();}
+        }
+
+        [Test]
         public void 左上の本絵はマウスと共通カーソル移動で切替わり未登録時はミニを流用しない()
         {
             Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
@@ -492,6 +542,12 @@ namespace Olca.Tests
                 Object.DestroyImmediate(go);
             }
         }
+
+        [TestCase("敗北して帰還しました","ハイボクシテキカンシマシタ")]
+        [TestCase("総経験値 0 / 永続所持カード / 装備 / トークン交換所 / カード図鑑","ソウケイケンチ 0 / エイゾクショジカード / ソウビ / トークンコウカンジョ / カードズカン")]
+        [TestCase("基本 / 無属性 / 再出撃 / 前へ / 次へ","キホン / ムゾクセイ / サイシュツゲキ / マエヘ / ツギヘ")]
+        public void 帰還画面の既存用語をフォント変更せずカナで表示する(string source,string expected)
+            =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
 
         [TestCase(0L,"ゲキハタイム: 00:00.00")]
         [TestCase(1L,"ゲキハタイム: 00:00.01")]

@@ -220,6 +220,45 @@ namespace Olca.Tests
             await Task.Delay(100); Assert.AreEqual(0, Active.Count);
         }
 
+        [Test]
+        public async Task 撃破演出中は敵表示を保持し再初期化で旧演出が新しい敵を消さない()
+        {
+            var go=new GameObject("DeathView");
+            var body=go.AddComponent<SpriteRenderer>();var visual=go.AddComponent<Olca.Presentation.Battle.EnemyView>();
+            typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",Private).SetValue(visual,body);
+            var view=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
+            typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView",Private).SetValue(view,visual);
+            typeof(Olca.Presentation.Field.WorldEnemyView).GetField("deathFadeDuration",Private).SetValue(view,60f);
+            try {
+                var enemy=new Olca.Core.Domain.Enemy("dead","テスト",10,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0));
+                view.Initialize(enemy,0);enemy.TakeDamage(10,Olca.Core.Domain.ElementType.None);visual.Refresh();
+                Assert.IsTrue(go.activeSelf,"HP0でも演出完了まで表示を残す");
+                var pending=view.WaitForDeathPresentationAsync(false,CancellationToken.None).AsTask();Assert.IsFalse(pending.IsCompleted);
+                var next=new Olca.Core.Domain.Enemy("next","テスト",10,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0));
+                view.Initialize(next,0);await Completed(pending);
+                Assert.IsTrue(go.activeSelf);Assert.AreSame(next,view.TrackedEnemy);Assert.AreEqual(1f,body.color.a);
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+
+        [Test]
+        public async Task 通常の消滅演出は戦闘停止に従い終端演出は別時計で完了する()
+        {
+            var go=new GameObject("DeathClock");var owner=new object();
+            var body=go.AddComponent<SpriteRenderer>();var visual=go.AddComponent<Olca.Presentation.Battle.EnemyView>();
+            typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",Private).SetValue(visual,body);
+            var view=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
+            typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView",Private).SetValue(view,visual);
+            typeof(Olca.Presentation.Field.WorldEnemyView).GetField("deathFadeDuration",Private).SetValue(view,.05f);
+            try {
+                view.Initialize(new Olca.Core.Domain.Enemy("dead","テスト",10,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)),0);
+                Olca.Unity.BattleVisualClock.SetPaused(owner,true);
+                view.TrackedEnemy.TakeDamage(10,Olca.Core.Domain.ElementType.None);
+                await Task.Delay(100);Assert.AreEqual(1f,body.color.a);Assert.IsTrue(go.activeSelf);
+                await Completed(view.WaitForDeathPresentationAsync(true,CancellationToken.None).AsTask());
+                Assert.IsFalse(go.activeSelf);Assert.IsTrue(view.IsDeathPresentationComplete);
+            } finally {Olca.Unity.BattleVisualClock.SetPaused(owner,false);UnityEngine.Object.DestroyImmediate(go);}
+        }
+
         private static async Task Completed(Task task)
         {
             Assert.AreSame(task, await Task.WhenAny(task, Task.Delay(3000)), "表示の終了待ちが完了しない");

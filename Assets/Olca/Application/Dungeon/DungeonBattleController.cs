@@ -475,7 +475,7 @@ namespace Olca.Application.Dungeon
 
         public void SetUserPaused(bool paused)
         {
-            if (manager == null || manager.IsUserPaused == paused) return;
+            if (manager == null || manager.IsUserPaused == paused || (paused&&manager.IsBattleEndPresentationPending)) return;
             systemMenu?.Suspend();systemMenuRoot=null;if(paused)pauseFocus="ResumeButton";
             logicalLoop.Observe(!DialogueOpen && !manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
             ResetTouchInput(preserveCharge: true);
@@ -1320,10 +1320,12 @@ namespace Olca.Application.Dungeon
                     ? (dungeonConfig.Visits.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
 
+            manager.RequireBattleEndPresentation();
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
             manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
 
             // イベント購読
+            manager.OnBattleEndPresentationRequested += OnBattleEndPresentationRequested;
             manager.OnBattleStarted += OnBattleStarted;
             manager.OnBattleEnded += OnBattleEnded;
             manager.OnCardRewardPresented += OnCardRewardPresented;
@@ -1625,11 +1627,52 @@ namespace Olca.Application.Dungeon
 
         // ==================== バトル終了遷移 ====================
 
+        private CancellationTokenSource outcomePresentationCts;
+        private DungeonBattleManager outcomePresentationOwner;
+        private void CancelOutcomePresentation()
+        {
+            outcomePresentationCts?.Cancel();
+            BattleVisualClock.SetPaused(this,false);
+        }
+        private void OnBattleEndPresentationRequested(BattleResult result)
+        {
+            if(outcomePresentationOwner!=null)return;
+            PlayBattleOutcomeAsync(result).Forget();
+        }
+        private async UniTask PlayBattleOutcomeAsync(BattleResult result)
+        {
+            var owner=manager;
+            if(owner==null||!owner.IsBattleEndPresentationPending)return;
+            var cts=CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            outcomePresentationCts=cts;outcomePresentationOwner=owner;
+            try
+            {
+                if(IsUserPaused)SetUserPaused(false);
+                transitionCts?.Cancel();battleSession?.Detach();
+                if(gameFieldView!=null)await gameFieldView.HideHUDAsync(0,cts.Token);
+                BattleVisualClock.SetPaused(this,true);
+                var terminal=gameFieldView!=null?gameFieldView.PlayBattleOutcomeAsync(result,cts.Token):UniTask.CompletedTask;
+                if(battleView!=null)await battleView.CloseCustomScreenAsync();
+                await terminal;
+                cts.Token.ThrowIfCancellationRequested();
+                if(!ReferenceEquals(manager,owner))return;
+                if(result==BattleResult.Defeat){gameFieldView?.OnBattleEnded();battleView?.gameObject.SetActive(false);battleFieldReady=false;}
+                owner.CompleteBattleEndPresentation();
+            }
+            catch(System.OperationCanceledException){}
+            finally
+            {
+                if(ReferenceEquals(outcomePresentationCts,cts)){outcomePresentationCts=null;outcomePresentationOwner=null;BattleVisualClock.SetPaused(this,false);}
+                cts.Dispose();
+            }
+        }
+
         private void OnBattleEnded()
         {
             pendingBattleElapsedFrames = manager?.Dungeon.CurrentBattle?.LogicalFrame;
             gameplayAudio?.PlayBgm(dungeonBgm);
             ResetTouchInput();
+            if(manager.LastBattleResult==BattleResult.Defeat)return;
             if (manager.CurrentPhase == GamePhase.Dungeon) ScheduleExplorationResume();
             HandleBattleEndAsync().Forget();
         }
@@ -1929,8 +1972,10 @@ namespace Olca.Application.Dungeon
         private void ReplaceManager(DungeonBattleManager restored, DungeonCheckpointSession candidate)
         {
             FinishDialogue(interrupt:true);
+            CancelOutcomePresentation();
             if (IsUserPaused) SetUserPaused(false);
             transitionCts?.Cancel(); battleSession?.Detach();
+            manager.OnBattleEndPresentationRequested -= OnBattleEndPresentationRequested;
             manager.OnBattleStarted -= OnBattleStarted; manager.OnBattleEnded -= OnBattleEnded;
             manager.OnCardRewardPresented -= OnCardRewardPresented; manager.OnGameOver -= OnGameOver;
             manager.OnDungeonClearCompleted -= OnDungeonCleared;
@@ -1942,11 +1987,13 @@ namespace Olca.Application.Dungeon
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
             manager = restored;
+            manager.RequireBattleEndPresentation();
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
             manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;
             ShowCheckpointStatus();
+            manager.OnBattleEndPresentationRequested += OnBattleEndPresentationRequested;
             manager.OnBattleStarted += OnBattleStarted; manager.OnBattleEnded += OnBattleEnded;
             manager.OnCardRewardPresented += OnCardRewardPresented; manager.OnGameOver += OnGameOver;
             manager.OnDungeonClearCompleted += OnDungeonCleared;
@@ -1960,6 +2007,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            CancelOutcomePresentation();
             systemMenu?.Dispose();
             resourceRewardMenu?.Dispose();
             FinishDialogue(interrupt:true);dialogueLoop.Dispose();
@@ -1974,7 +2022,8 @@ namespace Olca.Application.Dungeon
 
             if (manager != null)
             {
-                manager.OnBattleStarted -= OnBattleStarted;
+                manager.OnBattleEndPresentationRequested -= OnBattleEndPresentationRequested;
+            manager.OnBattleStarted -= OnBattleStarted;
                 manager.OnBattleEnded -= OnBattleEnded;
                 manager.OnCardRewardPresented -= OnCardRewardPresented;
                 manager.OnGameOver -= OnGameOver;

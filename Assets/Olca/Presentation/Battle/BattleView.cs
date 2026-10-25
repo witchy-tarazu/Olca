@@ -250,6 +250,8 @@ namespace Olca.Presentation.Battle
 
         public async UniTask CloseCustomScreenAsync()
         {
+            // 勝敗による強制終了でも、画面外で手札を生成し続けない。
+            TransformationVisualSource?.StopHandPresentation();
             if (!isCustomScreenOpen) return;
             isCustomScreenOpen = false;
             if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(false);

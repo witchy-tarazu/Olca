@@ -17,6 +17,8 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
+        private bool deathPresentationActive;
+        public void SetDeathPresentationActive(bool active)=>deathPresentationActive=active;
 
         /// <summary>WorldEnemyView がダメージフラッシュに使う SpriteRenderer</summary>
         public SpriteRenderer BodyRenderer => enemyImage;
@@ -68,7 +70,7 @@ namespace Olca.Presentation.Battle
             if (enemy == null) return;
             if (hpText != null)
                 hpText.text = $"{enemy.CurrentHp}";
-            gameObject.SetActive(!enemy.IsDead);
+            gameObject.SetActive(!enemy.IsDead||deathPresentationActive);
         }
 
         /// <summary>バトル開始時に呼ぶ（名前・HP表示）</summary>

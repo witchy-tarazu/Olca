@@ -644,6 +644,19 @@ namespace Olca.Core.Logic.Dungeon
         /// <summary>
         /// BattleSystemからのバトル終了イベントハンドラ
         /// </summary>
+        private bool requireBattleEndPresentation;
+        public BattleResult? PendingBattleEndPresentation { get; private set; }
+        /// <summary>通常画面だけが有効にする表示完了待ち。論理勝敗と時間は既に確定済み。</summary>
+        public void RequireBattleEndPresentation() => requireBattleEndPresentation=true;
+        public bool CompleteBattleEndPresentation()
+        {
+            if(!PendingBattleEndPresentation.HasValue||checkpointSuspended)return false;
+            var result=PendingBattleEndPresentation.Value;
+            PendingBattleEndPresentation=null;
+            OnBattleCompleted(result==BattleResult.Victory);
+            return true;
+        }
+
         private void OnBattleEndFromBattleSystem(BattleResult result)
         {
             // イベント購読解除
@@ -653,6 +666,7 @@ namespace Olca.Core.Logic.Dungeon
             }
 
             // OnBattleCompletedを呼び出す（内部でOnBattleEndが発火される）
+            if(requireBattleEndPresentation){PendingBattleEndPresentation=result;return;}
             OnBattleCompleted(result == BattleResult.Victory);
         }
 
@@ -661,7 +675,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void OnBattleCompleted(bool victory)
         {
-            if (checkpointSuspended) return;
+            if (checkpointSuspended||PendingBattleEndPresentation.HasValue) return;
             if (checkpointSession != null) { CompleteCheckpointBattle(victory); return; }
             // 通知先が同期再入しても、同じ戦闘の抽選・終了を繰り返さない。
             if (!IsInBattle) return;
