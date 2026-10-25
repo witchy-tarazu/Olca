@@ -36,7 +36,7 @@ namespace Olca.Presentation.Dungeon
             if (cardNameText != null) cardNameText.text = card.Name;
             if (cardCostText != null) cardCostText.text = $"コスト: {card.Cost}";
             if (cardDescText != null) cardDescText.text = card.Description;
-            if (cardRarityText != null) cardRarityText.text = card.Rarity.ToString();
+            if (cardRarityText != null) cardRarityText.text = Olca.Presentation.CustomScreen.CustomDisplay.Regulation(card.Rarity);
         }
 
         private void OnClicked()

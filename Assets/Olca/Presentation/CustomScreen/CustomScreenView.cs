@@ -14,7 +14,7 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>
     /// カスタム画面（カード選択UI）
     /// </summary>
-    public class CustomScreenView : MonoBehaviour, ICustomScreenView
+    public class CustomScreenView : MonoBehaviour, ICustomScreenView, ICombatantInspectionView
     {
         /// <summary>
         /// 確定ボタンが押されてカスタム画面が確定された時に発行されるイベント。
@@ -310,11 +310,57 @@ namespace Olca.Presentation.CustomScreen
             if(customScreen!=null&&customScreen.IsOpen)Olca.Unity.BattleVisualClock.Refresh();
             bool padHandled=HandleCustomGamepad();
             UpdateUndoButton();
+            UpdateInspectionButton();
             RefreshTransformationButtons();
             // 未初期化またはカスタム画面が開いていない場合は入力を受け付けない
             if (customScreen == null || !customScreen.IsOpen || customScreen.IsConfirming) return;
 
             if(!padHandled)HandleInput();
+        }
+
+        private BattleSystem inspectionBattle;
+        private Button inspectionButton;
+        private int inspectionIndex = -1; // -1は既存のカード/変身詳細、0は自分、1以降は生存敵。
+        public void BindCombatants(BattleSystem battle)
+        {
+            inspectionBattle=battle;ClosePadDetails();UpdateInspectionButton();
+        }
+        private Enemy[] InspectionEnemies()=>inspectionBattle?.Enemies.Where(e=>!e.IsDead).ToArray()??System.Array.Empty<Enemy>();
+        private void UpdateInspectionButton()
+        {
+            bool visible=inspectionBattle!=null&&!inspectionBattle.IsGameOver&&customScreen!=null&&customScreen.IsOpen&&!customScreen.IsConfirming;
+            if(inspectionButton==null&&confirmButton!=null){
+                var obj=Instantiate(confirmButton.gameObject,transform);obj.name="InspectCombatants";inspectionButton=obj.GetComponent<Button>();
+                inspectionButton.onClick=new Button.ButtonClickedEvent();inspectionButton.onClick.AddListener(()=>OpenCombatantDetails(0));
+                inspectionButton.navigation=new Navigation{mode=Navigation.Mode.None};
+                var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.42f,.89f);rect.anchoredPosition=Vector2.zero;rect.sizeDelta=new Vector2(220,52);
+                var label=obj.GetComponentInChildren<Text>();if(label!=null){label.text="ジョウタイ";label.fontSize=26;}
+                Olca.Presentation.Dungeon.UiLook.Button(inspectionButton);
+            }
+            if(inspectionButton!=null){inspectionButton.gameObject.SetActive(visible);inspectionButton.interactable=visible&&IsCustomPadUiActive()&&!handAnimating;}
+            if(detailsPanel!=null&&detailsPanel.activeSelf&&inspectionIndex>=0){
+                if(!visible){ClosePadDetails();return;}
+                var enemies=InspectionEnemies();inspectionIndex=Mathf.Min(inspectionIndex,enemies.Length);
+                string value=inspectionIndex==0?CustomDisplay.CombatantDetails(inspectionBattle.Player):CustomDisplay.CombatantDetails(enemies[inspectionIndex-1]);
+                if(padDetailsText.text!=value){padDetailsText.text=value;Canvas.ForceUpdateCanvases();padDetailsText.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(padDetailsScroll.viewport.rect.height,padDetailsText.preferredHeight+20));}
+            }
+        }
+        public void OpenCombatantDetails(int index)
+        {
+            if(!IsCustomPadUiActive()||handAnimating||inspectionBattle==null||inspectionBattle.IsGameOver||index<0)return;
+            var enemies=InspectionEnemies();if(index>enemies.Length)return;
+            inspectionIndex=index;
+            ShowDetailsValue(index==0?CustomDisplay.CombatantDetails(inspectionBattle.Player):CustomDisplay.CombatantDetails(enemies[index-1]));
+        }
+        private void CycleInspection(int direction)
+        {
+            if(!IsCustomPadUiActive()||inspectionBattle==null||inspectionBattle.IsGameOver)return;
+            if(inputHand.Count==0&&(transformations==null||padTransformationIndex<0)){
+                int targets=InspectionEnemies().Length+1;OpenCombatantDetails(((Mathf.Max(0,inspectionIndex)+direction)%targets+targets)%targets);return;
+            }
+            int count=InspectionEnemies().Length+2;
+            int next=((inspectionIndex+1+direction)%count+count)%count-1;
+            if(next<0){inspectionIndex=-1;ShowPadDetails();}else OpenCombatantDetails(next);
         }
 
         private void EnsureUndoButton()
@@ -410,6 +456,8 @@ namespace Olca.Presentation.CustomScreen
             bool mode=customizeModeView!=null&&customizeModeView.IsActive;
             if(detailsPanel!=null&&detailsPanel.activeSelf){
                 if(command==Olca.Unity.CustomPadCommand.Cancel||command==Olca.Unity.CustomPadCommand.Details)ClosePadDetails();
+                else if(command==Olca.Unity.CustomPadCommand.Left)CycleInspection(-1);
+                else if(command==Olca.Unity.CustomPadCommand.Right)CycleInspection(1);
                 else if(command==Olca.Unity.CustomPadCommand.Up)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition+.2f);
                 else if(command==Olca.Unity.CustomPadCommand.Down)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition-.2f);
                 return;
@@ -460,12 +508,17 @@ namespace Olca.Presentation.CustomScreen
             if(!CanOpenTouchDetails()||transformations==null||index<0||index>=transformations.AvailableDefinitions.Count||transformations.IsUsed(transformations.AvailableDefinitions[index].Id))return;
             padTransformationIndex=index;ShowPadDetails();
         }
-        private void ClosePadDetails(){if(detailsPanel!=null){if(detailsPanel.activeSelf)lastDetailsCloseFrame=Time.frameCount;detailsPanel.SetActive(false);if(padDetailsText!=null)padDetailsText.text="";}}
+        private void ClosePadDetails(){inspectionIndex=-1;if(detailsPanel!=null){if(detailsPanel.activeSelf)lastDetailsCloseFrame=Time.frameCount;detailsPanel.SetActive(false);if(padDetailsText!=null)padDetailsText.text="";}}
         private void ShowPadDetails()
         {
             string value;
             if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{GetTransformationName(d.Id)}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
-            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {card.Rarity} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
+            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {CustomDisplay.Regulation(card.Rarity)} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
+            ShowDetailsValue(value);
+        }
+        private void ShowDetailsValue(string value)
+        {
+            if(confirmButton==null)return;
             if(detailsPanel==null){
                 detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=detailsPanel.GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
                 var area=new GameObject("CustomPadDetailsScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(detailsPanel.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.04f,.18f);ar.anchorMax=new Vector2(.96f,.96f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
@@ -473,13 +526,32 @@ namespace Olca.Presentation.CustomScreen
                 padDetailsScroll=area.GetComponent<ScrollRect>();padDetailsScroll.viewport=ar;padDetailsScroll.content=padDetailsText.rectTransform;padDetailsScroll.horizontal=false;padDetailsScroll.movementType=ScrollRect.MovementType.Clamped;
                 var close=Instantiate(confirmButton.gameObject,detailsPanel.transform);close.name="CloseCustomPadDetails";var button=close.GetComponent<Button>();button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(ClosePadDetails);var cr=(RectTransform)close.transform;cr.anchorMin=cr.anchorMax=new Vector2(.5f,.08f);cr.anchoredPosition=Vector2.zero;cr.sizeDelta=new Vector2(500,64);close.GetComponentInChildren<Text>().text="閉じる / "+Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom","Cancel")])+"・"+Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom","Details")]);
             }
+            if(inspectionBattle!=null&&detailsPanel.transform.Find("PreviousInspection")==null){
+                foreach(bool next in new[]{false,true}){
+                    var obj=Instantiate(confirmButton.gameObject,detailsPanel.transform);obj.name=next?"NextInspection":"PreviousInspection";
+                    var button=obj.GetComponent<Button>();button.onClick=new Button.ButtonClickedEvent();int direction=next?1:-1;button.onClick.AddListener(()=>CycleInspection(direction));
+                    var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(next ? .75f : .25f,.18f);rect.anchoredPosition=Vector2.zero;rect.sizeDelta=new Vector2(320,64);
+                    var label=obj.GetComponentInChildren<Text>();if(label!=null)label.text=next?"ツギノタイショウ":"マエノタイショウ";
+                    Olca.Presentation.Dungeon.UiLook.Button(button);
+                }
+            }
+            if(inspectionBattle!=null){
+                var backing=detailsPanel.transform.Find("CombatantDetailsBacking");
+                if(backing==null){
+                    var obj=new GameObject("CombatantDetailsBacking",typeof(RectTransform),typeof(Image));obj.transform.SetParent(detailsPanel.transform,false);obj.transform.SetAsFirstSibling();backing=obj.transform;
+                    var rect=(RectTransform)obj.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(8,8);rect.offsetMax=new Vector2(-8,-8);
+                    var ink=Olca.Presentation.Dungeon.UiLook.Ink;obj.GetComponent<Image>().color=new Color(ink.r,ink.g,ink.b,.97f);
+                }
+                backing.gameObject.SetActive(inspectionIndex>=0);
+                padDetailsScroll.viewport.anchorMin=new Vector2(.04f,.28f);
+            }
             detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();padDetailsText.text=value;Canvas.ForceUpdateCanvases();padDetailsText.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(padDetailsScroll.viewport.rect.height,padDetailsText.preferredHeight+20));padDetailsScroll.verticalNormalizedPosition=1;
         }
 
         private void HandleInput()
         {
             if (Olca.Unity.GameplayPause.InputBlocked) return;
-            if(detailsPanel!=null&&detailsPanel.activeSelf){if(Input.GetKeyDown(KeyCode.Escape))ClosePadDetails();return;}
+            if(detailsPanel!=null&&detailsPanel.activeSelf){if(Input.GetKeyDown(KeyCode.Escape))ClosePadDetails();else if(Input.GetKeyDown(KeyCode.LeftArrow))CycleInspection(-1);else if(Input.GetKeyDown(KeyCode.RightArrow))CycleInspection(1);return;}
             if(Input.GetKeyDown(KeyCode.LeftArrow)||Input.GetKeyDown(KeyCode.RightArrow)||Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.A)||Input.GetKeyDown(KeyCode.D)||Input.GetKeyDown(KeyCode.W)||Input.GetKeyDown(KeyCode.S))padTransformationIndex=-1;
             // カスタマイズモード中
             if (customizeModeView != null && customizeModeView.IsActive)
@@ -720,6 +792,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnBattleScreenClosed(List<Card> cards)
         {
+            ClosePadDetails();
             StopHandPresentation();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
         }
@@ -1577,6 +1650,39 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>既存のカード・カスタムUI用語を、指定フォントで読めるカナ表記へ変換する。</summary>
     public static class CustomDisplay
     {
+        private static string ElementName(ElementType value)=>value==ElementType.Fire?"ヒ":value==ElementType.Water?"ミズ":value==ElementType.Wind?"カゼ":value==ElementType.Earth?"ツチ":"ムゾクセイ";
+        private static string Resistances(ElementResistances value,TimedStatusResistances status)
+            =>$"ゾクセイタイセイ (%)\nヒ {value.Get(ElementType.Fire)} / ミズ {value.Get(ElementType.Water)} / カゼ {value.Get(ElementType.Wind)} / ツチ {value.Get(ElementType.Earth)}"+(status==null?"":$"\nジョウタイタイセイ (%)\nドク {status.Poison} / マヒ {status.Paralyze} / コンラン {status.Confusion} / モウモク {status.Blind}");
+        private static string Statuses(IReadOnlyList<StatusEffectSnapshot> values)
+        {
+            if(values.Count==0)return "ジョウタイイジョウ: ナシ";
+            return "ジョウタイイジョウ\n"+string.Join("\n",values.Select(v=>v.Type==StatusEffectType.Poison
+                ?$"ドク ({v.Kind}) / ダメージ {v.Damage}"+(v.IntervalFrames.HasValue?$" / カンカク {v.IntervalFrames} フレーム":"")
+                :v.Type==StatusEffectType.Paralyze?"マヒ":v.Type==StatusEffectType.Confusion?"コンラン":"モウモク"));
+        }
+        private static string Protection(bool guard,int barrier,int aura,bool invincible,bool floating)
+        {
+            var values=new List<string>();if(guard)values.Add("ガード");if(barrier>0)values.Add("バリア HP "+barrier);if(aura>0)values.Add("オーラ キジュン "+aura);
+            if(invincible)values.Add("ムテキ");if(floating)values.Add("フロート");return values.Count==0?"ボウギョ・ホジョ: ナシ":"ボウギョ・ホジョ\n"+string.Join(" / ",values);
+        }
+        public static string CombatantDetails(Enemy value)
+        {
+            if(value==null||value.IsDead)return "テキナシ";
+            return Katakana($"{value.Name}\nHP {value.CurrentHp}/{value.MaxHp} / ゾクセイ {ElementName(value.Element)}\nキョウジンド "+(value.Poise.HasValue?(value.IsStaggered?0:System.Math.Max(0,value.Poise.Value-value.AccumulatedPoiseDamage))+"/"+value.Poise.Value:"ミテイギ")+
+                "\n"+Resistances(value.Resistances,value.StatusResistances)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(value.Guard.IsActive,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+(value.IsStaggered?"\nノケゾリ":""));
+        }
+        public static string CombatantDetails(PlayerCharacter value)
+        {
+            if(value==null)return "プレイヤーナシ";
+            return Katakana($"ジブン\nHP {value.CurrentHp}/{value.MaxHp} / コウゲキ {value.AttackPower} / ゾクセイ {ElementName(value.ActiveElement)}\nキョウジンド {(value.IsStaggered?0:System.Math.Max(0,value.Poise-value.AccumulatedDamage))}/{value.Poise} / カスタムソクド {value.CustomSpeed}\n"+
+                Resistances(value.ActiveResistances,null)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(false,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+
+                (value.IsConcentrating?"\nシュウチュウ: ツギノカード "+value.NextCardMultiplier.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture)+" バイ":"")+(value.IsStaggered?"\nノケゾリ":""));
+        }
+
+        // 表示用の呼称だけを変換し、既存enum・保存・マスターの識別子は維持する。
+        public static string Regulation(CardRarity value) => value == CardRarity.Normal ? "スタンダード"
+            : value == CardRarity.Limited ? "リミテッド" : value == CardRarity.Ultimate ? "アルティメット" : "？？？";
+
         private static readonly System.Collections.Generic.Dictionary<string,string> readings=CreateReadings();
         private static System.Collections.Generic.Dictionary<string,string> CreateReadings()
         {

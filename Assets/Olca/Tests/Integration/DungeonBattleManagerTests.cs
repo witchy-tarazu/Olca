@@ -2679,6 +2679,25 @@ namespace Olca.Tests.Integration
             Assert.IsFalse(b.IsHitStopped);Assert.IsFalse(b.IsDarkening);Assert.AreEqual(hitstop?0:1,resolved);
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 撤退確定は開閉途中の旧バトル表示を取消して帰還の背面操作を残さない(bool closing)
+        {
+            var c=Start();ToBattle(c);
+            var root=new UnityEngine.GameObject("retreat-battle-view",typeof(UnityEngine.RectTransform));root.transform.SetParent(c.transform,false);
+            var custom=new UnityEngine.GameObject("CustomScreenContainer",typeof(UnityEngine.RectTransform));custom.transform.SetParent(root.transform,false);
+            var view=root.AddComponent<Olca.Presentation.Battle.BattleView>();
+            var cts=new System.Threading.CancellationTokenSource();var token=cts.Token;
+            Set(view,"customScreenContainer",(UnityEngine.RectTransform)custom.transform);
+            Set(view,"animationCts",cts);Set(view,"isCustomScreenOpen",!closing);Set(view,"gaugeResetting",closing);
+            Set(c,"battleView",view);
+            c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");
+            Assert.AreEqual(RunReturnOutcome.Retreated,c.PersistentProgress.Flow.Outcome);
+            Assert.IsFalse(root.activeSelf);Assert.IsTrue(token.IsCancellationRequested);
+            Assert.IsNull(Get(view,"animationCts"));Assert.IsFalse((bool)Get(view,"isCustomScreenOpen"));Assert.IsFalse((bool)Get(view,"gaugeResetting"));
+            Assert.IsFalse((bool)Get(c,"battleFieldReady"));
+            long revision=c.PersistentProgress.Revision;Call(c,"ConfirmRetreat");Assert.AreEqual(revision,c.PersistentProgress.Revision);
+        }
+
         [Test] public void 会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない(){var c=Start();var m=Model(c);var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));int ended=0;var script=new DialogueScript("external",new[]{new DialogueLine("検証")});Assert.IsTrue(c.TryStartDialogue(script,r=>ended++));Assert.IsFalse(c.TryStartDialogue(script));float x=m.Dungeon.PlayerPosition;for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,DashButtonDown=true});Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.SetUserPaused(true);c.CurrentDialogue.AdvanceFrame();Assert.AreEqual(0,c.CurrentDialogue.VisibleElements);c.SetUserPaused(false);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));}
         [Test] public void 会話中のチェックポイント再開は会話とバックログを復元せず既存保存を保持する(){var c=Start();int ended=0;DialogueEndReason reason=DialogueEndReason.Completed;Assert.IsTrue(c.TryStartDialogue(new DialogueScript("external",new[]{new DialogueLine("復元しない文章")}),r=>{ended++;reason=r;}));var old=c.CurrentDialogue;old.Decide();c.SetUserPaused(true);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);Assert.AreEqual(DialogueEndReason.Interrupted,reason);Assert.IsEmpty(old.Backlog);}
         private static void ToBattle(Olca.Application.Dungeon.DungeonBattleController controller)

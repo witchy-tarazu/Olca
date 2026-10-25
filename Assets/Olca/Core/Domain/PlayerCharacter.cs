@@ -86,6 +86,17 @@ namespace Olca.Core.Domain
             }
             state.ApplyPersistent(effect, intervalFrames);
         }
+        public IReadOnlyList<StatusEffectSnapshot> InspectStatuses()
+        {
+            var result=new List<StatusEffectSnapshot>();
+            if(IsDead)return result.AsReadOnly();
+            var kinds=new List<string>(poisons.Keys);kinds.Sort(StringComparer.Ordinal);
+            foreach(var kind in kinds){var value=poisons[kind].Inspect(kind);if(value!=null)result.Add(value);}
+            if(IsParalyzed)result.Add(new StatusEffectSnapshot(StatusEffectType.Paralyze,null,ParalysisRemainingFrames));
+            if(IsConfused)result.Add(new StatusEffectSnapshot(StatusEffectType.Confusion,null,ConfusionRemainingFrames));
+            if(IsBlind)result.Add(new StatusEffectSnapshot(StatusEffectType.Blind,null,BlindRemainingFrames));
+            return result.AsReadOnly();
+        }
         public PlayerPoisonDto[] CapturePoisons()
         {
             var result = new List<PlayerPoisonDto>();

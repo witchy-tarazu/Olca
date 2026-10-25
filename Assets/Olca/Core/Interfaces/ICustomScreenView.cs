@@ -7,6 +7,11 @@ namespace Olca.Core.Interfaces
     /// カスタム画面Viewの抽象インターフェース。
     /// Application層がPresentation層のCustomScreenViewに依存しないようにするための抽象化。
     /// </summary>
+    public interface ICombatantInspectionView
+    {
+        void BindCombatants(BattleSystem battle);
+    }
+
     public interface ICustomScreenView
     {
         /// <summary>

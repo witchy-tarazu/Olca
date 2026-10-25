@@ -315,6 +315,17 @@ namespace Olca.Core.Domain
                 return null;
             }
         }
+        public IReadOnlyList<StatusEffectSnapshot> InspectStatuses()
+        {
+            var result=new List<StatusEffectSnapshot>();
+            if(IsDead)return result.AsReadOnly();
+            var kinds=new List<string>(poisons.Keys);kinds.Sort(StringComparer.Ordinal);
+            foreach(var kind in kinds){var status=poisons[kind].Status;if(status.RemainingFrames>0)result.Add(new StatusEffectSnapshot(StatusEffectType.Poison,kind,status.RemainingFrames,status.DamagePerTick,status.PoisonIntervalFrames));}
+            foreach(StatusEffectType type in Enum.GetValues(typeof(StatusEffectType)))
+                if(type!=StatusEffectType.Poison&&statuses.TryGetValue(type,out var status)&&status.RemainingFrames>0)
+                    result.Add(new StatusEffectSnapshot(type,null,status.RemainingFrames));
+            return result.AsReadOnly();
+        }
         public StatusEffect GetStatus(StatusEffectType type)
         {
             if (type != StatusEffectType.Poison) return statuses.TryGetValue(type, out var status) ? status : null;
