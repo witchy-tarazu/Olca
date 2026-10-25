@@ -336,6 +336,10 @@ namespace Olca.Core.Logic.Battle
         public bool TrySwitchEnemyActionPattern(Enemy enemy,List<IEnemyAIAction> actions)
             => !IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.TrySwitchActionPattern(enemy,actions);
 
+        /// <summary>HP条件を通常AI更新へ接続する。停止中には評価も行動も進めない。</summary>
+        public bool ConfigureEnemyHpPatterns(Enemy enemy,IReadOnlyList<EnemyHpActionPattern> patterns)
+            => !IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.ConfigureHpPatterns(enemy,patterns);
+
         private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
         {
             enemy.IsOnGrass = () => battleField.GetPanelType(enemy.GridPosition) == PanelType.Grass;
@@ -512,7 +516,7 @@ namespace Olca.Core.Logic.Battle
                 }
 
                 // 敵のAI更新
-                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider, tickParticipants, logicalFrameTick);
+                enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider, tickParticipants, logicalFrameTick, this);
             }
             finally { EndResolution(); }
         }

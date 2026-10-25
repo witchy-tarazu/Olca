@@ -97,12 +97,12 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private void RegisterProductBomb(BattleContext context)
         {
             var origin = context.GetEffectivePlayerPosition();
-            var target = new Vector2Int(origin.X + 3, origin.Y);
+            var target = new Vector2Int(origin.X + 3 * context.ForwardX, origin.Y);
             // 投擲物そのものは無害。既存Powerは着弾時の3マス爆風へ一度だけ渡す。
             var delayed = new Battle.DelayedEffect(1500, target, true) { SourcePosition = origin, BlastRadius = 1 };
             delayed.ExecuteAction = () => {
                 if (!context.Field.IsInBounds(target)) return;
-                var blastContext = new BattleContext(context.Battle, context.UsedCard) { TemporaryPlayerPosition = target, CardDatabase = context.CardDatabase };
+                var blastContext = context.ForCard(context.UsedCard); blastContext.TemporaryPlayerPosition = target;
                 new ModifiableCardEffect(target,hitStopFrames).ExecuteCardEffect(blastContext);
                 for (int x = target.X - 1; x <= target.X + 1; x++) {
                     var position = new Vector2Int(x, target.Y);
@@ -171,7 +171,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 e.EffectType == AdditionalEffectType.Spread ||
                 e.EffectType == AdditionalEffectType.DelayedProjectile); // 遅延投擲は着弾時にダメージ処理
 
-            var immediateReceipts = context.Battle.Enemies.ToDictionary(e => e,
+            var immediateReceipts = context.GetAliveOpponents().ToDictionary(e => e,
                 e => (hits: e.TotalHitsTaken, damage: e.TotalDamageTaken));
 
             // 1. Immediate効果を先に実行（パネル変化など）
@@ -181,8 +181,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             }
 
             // 2. ダメージ処理
-            List<Enemy> hitTargets = new List<Enemy>();
-            List<Enemy> damagedTargets = new List<Enemy>();
+            List<CardTarget> hitTargets = new List<CardTarget>();
+            List<CardTarget> damagedTargets = new List<CardTarget>();
 
             bool needsHitTracking = onHitEffects.Count > 0 || onDamageEffects.Count > 0
                 || afterActionIfHitEffects.Count > 0 || afterActionIfDamagedEffects.Count > 0;
@@ -273,10 +273,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 基本的な対象リストを取得
         /// </summary>
-        private List<Enemy> GetBaseTargets(BattleContext context, DamageTargetType targetType)
+        private List<CardTarget> GetBaseTargets(BattleContext context, DamageTargetType targetType)
         {
-            var aliveEnemies = context.Battle.GetAliveEnemies();
-            var targets = new List<Enemy>();
+            var aliveEnemies = context.GetAliveOpponents();
+            var targets = new List<CardTarget>();
 
             if (explosionCenter.HasValue) {
                 var center = explosionCenter.Value;
@@ -287,8 +287,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
             switch (targetType)
             {
                 case DamageTargetType.Single:
-                    var nearest = context.GetNearestForwardEnemy();
-                    if (nearest != null) targets.Add(nearest);
+                    var nearest = context.GetNearestForwardOpponent();
+                    if (nearest.HasValue) targets.Add(nearest.Value);
                     break;
 
                 case DamageTargetType.All:
@@ -314,7 +314,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 基本攻撃の命中パネルを取得。前方マス攻撃は空マスも含める。
         /// </summary>
-        private IEnumerable<Vector2Int> GetBaseHitPanels(BattleContext context, List<Enemy> targets)
+        private IEnumerable<Vector2Int> GetBaseHitPanels(BattleContext context, List<CardTarget> targets)
         {
             if (explosionCenter.HasValue) {
                 var center = explosionCenter.Value;
@@ -332,7 +332,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 var origin = context.GetEffectivePlayerPosition();
                 for (int offset = 1; offset <= range; offset++)
                 {
-                    var position = new Vector2Int(origin.X + offset, origin.Y);
+                    var position = new Vector2Int(origin.X + offset * context.ForwardX, origin.Y);
                     if (context.Field.IsInBounds(position)) yield return position;
                 }
             }
@@ -341,15 +341,15 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     if (context.Field.IsInBounds(position)) yield return position;
         }
 
-        private List<Enemy> GetEnemiesInTileRange(BattleContext context, int range)
+        private List<CardTarget> GetEnemiesInTileRange(BattleContext context, int range)
         {
-            var result = new List<Enemy>();
+            var result = new List<CardTarget>();
             var playerPos = context.GetEffectivePlayerPosition();  // TemporaryPlayerPositionを考慮
-            var aliveEnemies = context.Battle.GetAliveEnemies();
+            var aliveEnemies = context.GetAliveOpponents();
 
             for (int i = 1; i <= range; i++)
             {
-                Vector2Int targetPos = new Vector2Int(playerPos.X + i, playerPos.Y);
+                Vector2Int targetPos = new Vector2Int(playerPos.X + i * context.ForwardX, playerPos.Y);
                 foreach (var enemy in aliveEnemies)
                 {
                     if (enemy.GridPosition.Equals(targetPos))
@@ -368,7 +368,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private void ApplyAdditionalEffect(
             BattleContext context,
             AdditionalEffect effect,
-            ref List<Enemy> targets,
+            ref List<CardTarget> targets,
             int damage,
             ElementType element)
         {
@@ -468,13 +468,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// スプレッド効果を適用
         /// </summary>
-        private void ApplySpreadEffect(BattleContext context, List<Enemy> baseTargets, int damage, ElementType element)
+        private void ApplySpreadEffect(BattleContext context, List<CardTarget> baseTargets, int damage, ElementType element)
         {
             if (baseTargets.Count == 0) return;
 
-            var affectedEnemies = new HashSet<Enemy>();
+            var affectedEnemies = new HashSet<CardTarget>();
             var hitPanels = new HashSet<Vector2Int>();
-            var aliveEnemies = context.Battle.GetAliveEnemies();
+            var aliveEnemies = context.GetAliveOpponents();
 
             // 各ターゲットの着弾地点から前後1マスに拡散
             foreach (var target in baseTargets)
@@ -503,20 +503,20 @@ namespace Olca.Core.Logic.CardEffects.Effects
             var burningPanels = element == ElementType.Fire
                 ? hitPanels.Where(p => context.Field.GetPanelType(p) == PanelType.Grass).ToArray()
                 : new Vector2Int[0];
-            DealDamageToTargets(new List<Enemy>(affectedEnemies), damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
+            DealDamageToTargets(new List<CardTarget>(affectedEnemies), damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
             // 拡散の全対象へ補正を判定した後、敵がいない命中マスも含めて燃やす。
             foreach (var panel in burningPanels)
                 if (context.Field.GetPanelType(panel) == PanelType.Grass)
                     context.Field.ChangePanelType(panel, PanelType.Normal);
         }
 
-        private void ApplyPenetratingDamage(BattleContext context, List<Enemy> targets, int damage, ElementType element)
+        private void ApplyPenetratingDamage(BattleContext context, List<CardTarget> targets, int damage, ElementType element)
         {
             var burningPanels = new List<Vector2Int>();
             var origin = context.GetEffectivePlayerPosition();
             if (element == ElementType.Fire)
             {
-                for (int x = origin.X + 1; x < BattleField.GRID_WIDTH; x++)
+                for (int x = origin.X + context.ForwardX; x >= 0 && x < BattleField.GRID_WIDTH; x+=context.ForwardX)
                 {
                     var panel = new Vector2Int(x, origin.Y);
                     if (context.Field.IsInBounds(panel) && context.Field.GetPanelType(panel) == PanelType.Grass)
@@ -533,15 +533,15 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 貫通する敵リストを取得
         /// </summary>
-        private List<Enemy> GetPenetratingTargets(BattleContext context)
+        private List<CardTarget> GetPenetratingTargets(BattleContext context)
         {
-            var result = new List<Enemy>();
+            var result = new List<CardTarget>();
             var playerPos = context.GetEffectivePlayerPosition();
-            var aliveEnemies = context.Battle.GetAliveEnemies();
+            var aliveEnemies = context.GetAliveOpponents();
 
             foreach (var enemy in aliveEnemies)
             {
-                if (enemy.GridPosition.X > playerPos.X && enemy.GridPosition.Y == playerPos.Y)
+                if ((enemy.GridPosition.X - playerPos.X)*context.ForwardX > 0 && enemy.GridPosition.Y == playerPos.Y)
                 {
                     result.Add(enemy);
                 }
@@ -553,7 +553,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 対象リストにダメージを与える
         /// </summary>
-        private void DealDamageToTargets(List<Enemy> targets, int damage, ElementType element, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, AttackInfluence influence)
+        private void DealDamageToTargets(List<CardTarget> targets, int damage, ElementType element, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, AttackInfluence influence)
         {
             foreach (var target in targets)
             {
@@ -567,7 +567,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 多段ヒットダメージを与える
         /// </summary>
-        private void DealMultiHitDamage(List<Enemy> targets, int damagePerHit, ElementType element, int hitCount, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, bool[] hitInvincibilityStages, AttackInfluence influence)
+        private void DealMultiHitDamage(List<CardTarget> targets, int damagePerHit, ElementType element, int hitCount, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, bool[] hitInvincibilityStages, AttackInfluence influence)
         {
             foreach (var target in targets)
             {
@@ -585,7 +585,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// パネル変化を適用（対象の位置のみ）
         /// </summary>
-        private void ApplyPanelChange(BattleContext context, List<Enemy> targets, PanelType panelType)
+        private void ApplyPanelChange(BattleContext context, List<CardTarget> targets, PanelType panelType)
         {
             foreach (var target in targets)
             {
@@ -615,7 +615,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private void ApplyDerivativeEffect(
             BattleContext context,
             AdditionalEffect effect,
-            List<Enemy> targets,
+            List<CardTarget> targets,
             int damage,
             ElementType element)
         {
@@ -733,7 +733,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// チェイン効果を実行（別のカードを連鎖発動）
         /// </summary>
-        private void ExecuteChainEffect(BattleContext context, AdditionalEffect effect, List<Enemy> hitTargets)
+        private void ExecuteChainEffect(BattleContext context, AdditionalEffect effect, List<CardTarget> hitTargets)
         {
 #if UNITY_EDITOR || DEBUG
             System.Diagnostics.Debug.WriteLine($"[ExecuteChainEffect] 開始 hitTargets={hitTargets.Count}, ChainId={effect.ChainCardId}, Origin={effect.EffectOrigin}");
@@ -795,7 +795,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     System.Diagnostics.Debug.WriteLine($"[ExecuteChainEffect] {target.Name}位置{target.GridPosition}からチェイン");
 #endif
                     // チェインカード用の新しいBattleContextを作成
-                    var chainContext = new BattleContext(context.Battle, chainCard);
+                    var chainContext = context.ForCard(chainCard);
                     chainContext.InheritDerivatives(context);
 
                     // ヒットした敵の位置を一時的なプレイヤー位置として設定
@@ -819,7 +819,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             {
                 // プレイヤー位置から発動: 元の位置を基準に発動
                 // 自分自身を再発動する場合はhitTargetsの数だけ実行しない（1回だけ実行）
-                var chainContext = new BattleContext(context.Battle, chainCard);
+                var chainContext = context.ForCard(chainCard);
                 chainContext.InheritDerivatives(context);
 
                 // 多段の派生でも、実プレイヤーではなく直前のカードの発動位置を継承する。
@@ -842,7 +842,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             // 着弾位置を計算（プレイヤー位置 + 相対オフセット）
             Vector2Int playerPos = context.GetEffectivePlayerPosition();
             Vector2Int targetPosition = new Vector2Int(
-                playerPos.X + effect.TargetOffset.X,
+                playerPos.X + effect.TargetOffset.X * context.ForwardX,
                 playerPos.Y + effect.TargetOffset.Y
             );
 
@@ -880,7 +880,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 #endif
 
             // 着弾地点の敵を取得
-            var landingTargets = context.Battle.Enemies
+            var landingTargets = context.GetAliveOpponents()
                 .Where(e => !e.IsDead && e.GridPosition == landingPosition)
                 .ToList();
 
@@ -923,7 +923,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 return;
             }
 
-            var chainContext = new BattleContext(context.Battle, chainCard);
+            var chainContext = context.ForCard(chainCard);
             chainContext.TemporaryPlayerPosition = position; // 着弾位置から発動
             chainContext.CardDatabase = context.CardDatabase;
 

@@ -95,6 +95,12 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public IReadOnlyList<DelayedEffect> GetActiveEffects() => activeEffects;
 
+        internal void Cancel(DelayedEffect effect)
+        {
+            if(!activeEffects.Remove(effect))return;
+            try{effect.OnCancelled?.Invoke();}finally{effect.Finish();}
+        }
+
         /// <summary>
         /// すべての遅延効果をクリア（バトル終了時など）
         /// </summary>

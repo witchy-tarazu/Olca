@@ -48,6 +48,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             BattleContext context,
             CancellationToken ct)
         {
+            if(context.EnemySource!=null)throw new NotSupportedException("敵の一時移動所有は未実装です");
             var player = context.Player;
             var field = context.Field;
             var enemies = context.Enemies;

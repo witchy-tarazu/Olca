@@ -27,7 +27,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
             // プレイヤーを回復
             // 上限処理はHP反映時に行う。同フレームの未確定ダメージを失わない。
-            context.Player.Heal(healAmount);
+            if(!context.Battle.IsGameOver&&!context.User.IsDead)context.User.Heal(healAmount);
         }
     }
 }

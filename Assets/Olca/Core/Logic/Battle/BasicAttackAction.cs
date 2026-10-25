@@ -1,4 +1,8 @@
 using Olca.Core.Domain;
+using System;
+using System.Threading;
+using Olca.Core.Interfaces;
+using Olca.Core.Logic.CardEffects;
 
 namespace Olca.Core.Logic.Battle
 {
@@ -90,4 +94,77 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public float GetCooldown() => cooldownMs / 1000f;
     }
+    /// <summary>同じカード効果を敵の使用者・向きで実行する。期間はカード定義の論理前後隙を使う。</summary>
+    public sealed class EnemyCardAction : IContinuingEnemyAIAction
+    {
+        private readonly Card card;
+        private readonly ICardDatabase database;
+        private readonly int cooldownMs;
+        private CancellationTokenSource cancellation;
+        private FrameTask task;
+        public bool IsRunning {get{ObserveCompletion();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        public EnemyCardAction(Card card,int cooldownMs,ICardDatabase database=null)
+        {
+            if(cooldownMs<0)throw new ArgumentOutOfRangeException(nameof(cooldownMs));
+            this.card=card?.Clone()??throw new ArgumentNullException(nameof(card));
+            this.cooldownMs=cooldownMs;this.database=database;
+            ValidateCard(this.card);
+        }
+        internal static void ValidateCard(Card value)
+        {
+            // 未接続の効果をプレイヤー固定の実装へ流さない。判断待ちでなく実装残として明示する。
+            if(value.MoveMotionTime>0||value.AttackMotionTime>0||value.Category==CardCategory.Support)
+                throw new NotSupportedException("敵の一時移動/Supportカード接続は未実装です");
+        }
+        public bool CanExecute(AIContext context)
+        {
+            if(context.Battle==null||context.Battle.IsGameOver||context.Self==null||context.Self.IsDead||IsRunning)return false;
+            if(card.Category==CardCategory.Defense)return true;
+            if(!context.HasVisiblePlayer)return false;
+            if(card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single&&(context.Self.GridPosition.Y!=context.Player.GridPosition.Y||context.Self.GridPosition.X==context.Player.GridPosition.X))return false;
+            int range=card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile?1:card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTwoTiles?2:card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontThreeTiles?3:0;
+            if((card.Id=="sword"||card.Id=="fire_sword")&&card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single)range=1;
+            return range==0||context.Self.GridPosition.Y==context.Player.GridPosition.Y&&Math.Abs(context.Self.GridPosition.X-context.Player.GridPosition.X)<=range;
+        }
+        public void Execute(AIContext context)
+        {
+            if(!CanExecute(context))return;
+            cancellation?.Dispose();cancellation=new CancellationTokenSource();
+            int forward=context.Player.GridPosition.X<context.Self.GridPosition.X?-1:1;
+            forward=context.ResolveDirectionalInput(new Vector2Int(forward,0)).X;
+            var effectContext=new BattleContext(context.Battle,card,context.Self,forward){CardDatabase=database,ActionCancellation=cancellation.Token,TemporaryPlayerPosition=context.Self.GridPosition,LockedSingleTarget=context.Player.GridPosition};
+            task=UseAsync(effectContext,cancellation.Token);
+            ObserveCompletion();
+        }
+        private async FrameTask UseAsync(BattleContext context,CancellationToken ct)
+        {
+            var effect=CardEffectFactory.CreateEffect(card);
+            if(effect is IAsyncCardEffect asyncEffect)await asyncEffect.ExecuteAsync(context,ct);
+            else{
+                if(!card.IsInstantEffect){if(card.StartupFrames.HasValue)await context.Battle.WaitForActionFramesAsync(card.StartupFrames.Value,ct);else if(card.StartupTime>0)await context.Battle.WaitForActionAsync(card.StartupTime,ct);}
+                ct.ThrowIfCancellationRequested();effect.Execute(context);
+                if(!card.IsInstantEffect){if(card.RecoveryFrames.HasValue)await context.Battle.WaitForActionFramesAsync(card.RecoveryFrames.Value,ct);else if(card.RecoveryTime>0)await context.Battle.WaitForActionAsync(card.RecoveryTime,ct);}
+            }
+        }
+        private void ObserveCompletion(){if(task.Status!=FrameTaskStatus.Pending){if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation?.Dispose();cancellation=null;}}
+        public void Tick(int milliseconds,AIContext context,bool logicalFrame)=>ObserveCompletion();
+        public void Cancel(AIContext context){var source=cancellation;cancellation=null;if(source==null)return;source.Cancel();source.Dispose();if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
+        public int GetCooldownMs()=>cooldownMs;
+        public float GetCooldown()=>cooldownMs/1000f;
+    }
+
+    /// <summary>仕様§5.1の設定例。使用カード/待ちを呼出し元から受け取り、製品の既定AIは変更しない。</summary>
+    public static class EnemyActionPatternSamples
+    {
+        public static System.Collections.Generic.List<IEnemyAIAction> Slime(Card closeAttack,int cooldownMs,ICardDatabase database=null)
+            => new System.Collections.Generic.List<IEnemyAIAction>{new EnemyStayAction(),new EnemyCardAction(closeAttack,cooldownMs,database)};
+        private sealed class EnemyStayAction : IEnemyAIAction
+        {
+            public bool CanExecute(AIContext context)=>true;
+            public void Execute(AIContext context){}
+            public int GetCooldownMs()=>0;
+            public float GetCooldown()=>0;
+        }
+    }
+
 }

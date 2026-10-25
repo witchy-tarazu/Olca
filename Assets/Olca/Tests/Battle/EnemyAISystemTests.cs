@@ -654,3 +654,110 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+namespace Olca.Tests.Battle
+{
+    [NUnit.Framework.TestFixture]
+    public class EnemyCardPatternConnectionTests
+    {
+        private PlayerCharacter player;private Enemy enemy,other;private BattleSystem battle;
+        private Card Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType target=Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,CardCategory category=CardCategory.Attack,int power=7,CardModifier modifier=null,int startup=0,int recovery=0,int invincible=0)
+            =>new Card("fixture","テスト",1,CardRarity.Normal,category,ElementType.None,CardSeries.Sword,power,"",targetType:target,modifier:modifier,startupFrames:startup,recoveryFrames:recovery,poiseDamage:0,hitInvincibilityMs:invincible);
+        private void Setup(int sourceX=3)
+        {
+            player=new PlayerCharacter(500,new Vector2Int(2,0));enemy=new Enemy("source","テスト",100,ElementType.None,new Vector2Int(sourceX,0),poiseDefinition:new EnemyPoiseDefinition(30,3));other=new Enemy("other","テスト",100,ElementType.None,new Vector2Int(4,0));
+            battle=new BattleSystem(player,new List<Enemy>{enemy,other},new Deck(),customGaugeSpeed:0,randomProvider:new MockRandomProvider());
+            battle.TrySwitchEnemyActionPattern(other,new List<IEnemyAIAction>{new CountAction()});
+            battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{new CountAction()});
+        }
+        private AIContext Context()=>new AIContext(enemy,player,battle.Field,new MockRandomProvider(),null,battle);
+        private sealed class CountAction:IEnemyAIAction{public int Count;public bool CanExecute(AIContext c)=>true;public void Execute(AIContext c)=>Count++;public int GetCooldownMs()=>1000;public float GetCooldown()=>1;}
+        private void Frames(int count){for(int i=0;i<count;i++)battle.TickFrame(17);}
+        [TestCase(1)] [TestCase(3)]
+        public void 敵カードは使用者の左右から相手だけへ命中し味方を傷つけない(int sourceX)
+        {Setup(sourceX);new EnemyCardAction(Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile),0).Execute(Context());Assert.AreEqual(493,player.CurrentHp);Assert.AreEqual(100,enemy.CurrentHp);Assert.AreEqual(100,other.CurrentHp);}
+        [Test]
+        public void 射程外と盲目は不可で自己回復は相手視認を必要としない()
+        {Setup(5);Assert.IsFalse(new EnemyCardAction(Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile),0).CanExecute(Context()));enemy.ApplyStatus(new StatusEffect(StatusEffectType.Blind,1000));Assert.IsFalse(new EnemyCardAction(Make(),0).CanExecute(Context()));Assert.IsTrue(new EnemyCardAction(Make(category:CardCategory.Defense),0).CanExecute(Context()));}
+        [Test]
+        public void 混乱では攻撃方向が反転し相手や味方の所属は反転しない()
+        {Setup();enemy.ApplyStatus(new StatusEffect(StatusEffectType.Confusion,1000));new EnemyCardAction(Make(),0).Execute(Context());Assert.AreEqual(500,player.CurrentHp);Assert.AreEqual(100,other.CurrentHp);}
+        [Test]
+        public void 回復とバリアは使用した敵自身だけに適用する()
+        {Setup();enemy.TakeDamage(40,ElementType.None);player.TakeDamage(30,affectsPoise:false);new EnemyCardAction(Make(category:CardCategory.Defense,power:9),0).Execute(Context());Assert.AreEqual(69,enemy.CurrentHp);Assert.AreEqual(470,player.CurrentHp);var card=new Card("barrier_test","テスト",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.Sword,12,"");new EnemyCardAction(card,0).Execute(Context());Assert.AreEqual(12,enemy.BarrierHp);Assert.AreEqual(0,player.BarrierHp);Assert.AreEqual(0,other.BarrierHp);}
+        private Card Multi(int invincible=0)
+        {var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.MultiHit,HitCount=3});return Make(modifier:m,invincible:invincible);}
+        [Test]
+        public void 敵の多段と被弾無敵は同フレーム集計と次フレーム拒否を維持する()
+        {Setup();battle.RunLogicalFrame(()=>new EnemyCardAction(Multi(1000),0).Execute(Context()));Assert.AreEqual(479,player.CurrentHp);new EnemyCardAction(Make(),0).Execute(Context());Assert.AreEqual(479,player.CurrentHp);}
+        [Test]
+        public void ガードとバリアで完全防御したカードの付随状態は発生しない()
+        {Setup();var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.Paralyze,Trigger=DerivativeTrigger.OnHit,Duration=1});player.SetBarrier(100);new EnemyCardAction(Make(modifier:m),0).Execute(Context());Assert.AreEqual(500,player.CurrentHp);Assert.IsFalse(player.IsParalyzed);}
+        [Test]
+        public void 命中派生の状態はプレイヤー側耐性へ接続する()
+        {Setup();player.SetBattleStatusResistances(new TimedStatusResistances(paralyze:50));var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.Paralyze,Trigger=DerivativeTrigger.OnHit,Duration=1});battle.RunLogicalFrame(()=>new EnemyCardAction(Make(modifier:m),0).Execute(Context()));Assert.IsTrue(player.IsParalyzed);Assert.AreEqual(30,player.ParalysisRemainingFrames);Assert.IsFalse(enemy.IsParalyzed);}
+        [Test]
+        public void 前後隙中は次行動とHP切替を待ち新AIへ旧待ちを移植しない()
+        {Setup();var old=new EnemyCardAction(Make(startup:2,recovery:3),900);var next=new CountAction();battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{old});Frames(1);Assert.IsTrue(old.IsRunning);Assert.AreEqual(500,player.CurrentHp);battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(5000,true,new[]{next}),new EnemyHpActionPattern(10000,true,new IEnemyAIAction[]{old})});enemy.TakeDamage(50,ElementType.None,poiseDamage:0);Frames(1);Assert.AreEqual(0,next.Count);Frames(1);Assert.AreEqual(493,player.CurrentHp);Frames(3);Assert.AreEqual(0,next.Count);Frames(1);Assert.AreEqual(1,next.Count);}
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void 停止中は前隙とHP条件を進めず再開で一度だけ接続する(BattlePauseReason reason)
+        {Setup();var old=new EnemyCardAction(Make(startup:3),0);var next=new CountAction();battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{old});Frames(1);battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(5000,true,new[]{next}),new EnemyHpActionPattern(10000,true,new IEnemyAIAction[]{old})});battle.Pause(reason);enemy.TakeDamage(50,ElementType.None,poiseDamage:0);Frames(20);Assert.AreEqual(500,player.CurrentHp);Assert.AreEqual(0,next.Count);battle.Resume(reason);Frames(6);Assert.AreEqual(493,player.CurrentHp);Assert.AreEqual(1,next.Count);}
+        [Test]
+        public void 暗転とヒットストップはカード前隙もHP自動選択も進めない()
+        {Setup();var a=new EnemyCardAction(Make(startup:3),0);battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{a});Frames(1);battle.TryStartDarkeningEffect(DarkeningSide.Opponent,0,3,()=>{});Frames(3);Assert.AreEqual(500,player.CurrentHp);battle.RunLogicalFrame(()=>enemy.TakeDamage(1,ElementType.None,poiseDamage:0,hitStopFrames:3));Frames(3);Assert.AreEqual(500,player.CurrentHp);Frames(3);Assert.AreEqual(493,player.CurrentHp);}
+        [TestCase(false)] [TestCase(true)]
+        public void 死亡または撤退で前隙を取消し後からプレイヤーを傷つけない(bool retreat)
+        {Setup();var a=new EnemyCardAction(Make(startup:5),0);battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{a});Frames(1);if(retreat)typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(battle,null);else enemy.TakeDamage(1000,ElementType.None);Assert.IsFalse(a.IsRunning);Frames(20);Assert.AreEqual(500,player.CurrentHp);}
+        [Test]
+        public void のけぞりでカード前隙を取消し発動予約を残さない()
+        {Setup();enemy.SetPoise(30);var a=new EnemyCardAction(Make(startup:5),1000);battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{a});Frames(1);enemy.TakeDamage(40,ElementType.None);Assert.IsFalse(a.IsRunning);Frames(8);Assert.AreEqual(500,player.CurrentHp);}
+        [TestCase(true,1)] [TestCase(false,0)]
+        public void HP境界の包含は設定を使い整数比較で丸めない(bool include,int expected)
+        {Setup();var low=new CountAction();var high=new CountAction();battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(5000,include,new[]{low}),new EnemyHpActionPattern(10000,true,new[]{high})});enemy.TakeDamage(50,ElementType.None,poiseDamage:0);Frames(1);Assert.AreEqual(expected,low.Count);Assert.AreEqual(1-expected,high.Count);}
+        [Test]
+        public void HP区間を飛び越える被弾と回復で各対象列を選び同じ列を毎回先頭に戻さない()
+        {Setup();var low=new CountAction();var mid=new CountAction();var high=new CountAction();battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(3000,true,new[]{low}),new EnemyHpActionPattern(7000,true,new[]{mid}),new EnemyHpActionPattern(10000,true,new[]{high})});Frames(1);enemy.TakeDamage(80,ElementType.None,poiseDamage:0);Frames(1);Assert.AreEqual(1,low.Count);Assert.AreEqual(0,mid.Count);Frames(3);Assert.AreEqual(1,low.Count);enemy.Heal(80);Frames(1);Assert.AreEqual(2,high.Count);}
+        [Test]
+        public void HP設定はコピーし重複逆順空列最大HP不足を拒否する()
+        {Setup();var a=new CountAction();var list=new List<IEnemyAIAction>{a};var pattern=new EnemyHpActionPattern(10000,true,list);list.Clear();Assert.IsTrue(battle.ConfigureEnemyHpPatterns(enemy,new[]{pattern}));Frames(1);Assert.AreEqual(1,a.Count);Assert.Throws<System.ArgumentException>(()=>battle.ConfigureEnemyHpPatterns(enemy,new[]{pattern,pattern}));Assert.Throws<System.ArgumentException>(()=>battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(5000,true,new[]{a})}));}
+        [Test]
+        public void スライム設定例は既存カードと指定待ちだけを使用する()
+        {Setup();battle.TrySwitchEnemyActionPattern(enemy,EnemyActionPatternSamples.Slime(Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile),2000));Frames(1);Assert.AreEqual(500,player.CurrentHp);Frames(1);Assert.AreEqual(493,player.CurrentHp);Frames(2);Assert.AreEqual(493,player.CurrentHp);}
+        [Test]
+        public void 未接続の敵専用移動やSupportはプレイヤー用実装へ誤流入しない()
+        {Assert.Throws<System.NotSupportedException>(()=>new EnemyCardAction(Make(category:CardCategory.Support),0));var card=new Card("move","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,7,"",moveMotionTime:1);Assert.Throws<System.NotSupportedException>(()=>new EnemyCardAction(card,0));}
+        private sealed class Database:Olca.Core.Logic.CardEffects.ICardDatabase
+        {public Card Value;public Card GetCardById(string id)=>Value?.Id==id?Value:null;}
+        [TestCase(false)] [TestCase(true)]
+        public void 別カード派生は発動位置を変えても敵使用者と対象側を保持する(bool hitOrigin)
+        {Setup();var child=Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All);var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.ChainCard,ChainCardId=child.Id,Power=100,EffectOrigin=hitOrigin?ChainEffectOrigin.HitPosition:ChainEffectOrigin.PlayerPosition,Trigger=DerivativeTrigger.OnHit});var source=new Card("parent","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,3,"",modifier:m,poiseDamage:0);new EnemyCardAction(source,0,new Database{Value=child}).Execute(Context());Assert.AreEqual(490,player.CurrentHp);Assert.AreEqual(100,enemy.CurrentHp);Assert.AreEqual(100,other.CurrentHp);}
+        [Test]
+        public void 遅延投擲の相対位置を敵の向きへ変換し着弾もプレイヤーだけに適用する()
+        {Setup();var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.DelayedProjectile,DelayTime=0.05f,TargetOffset=new Vector2Int(1,0)});new EnemyCardAction(Make(modifier:m),1000).Execute(Context());Assert.AreEqual(new Vector2Int(2,0),battle.DelayedEffects.GetActiveEffects()[0].TargetPosition);Assert.AreEqual(500,player.CurrentHp);Frames(3);Assert.AreEqual(493,player.CurrentHp);Assert.AreEqual(100,other.CurrentHp);}
+        [Test]
+        public void 敵の前方パネル効果はプレイヤーのマスへ適用する()
+        {Setup();var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.PanelIce});new EnemyCardAction(Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile,category:CardCategory.Field,power:0,modifier:m),0).Execute(Context());Assert.AreEqual(PanelType.Ice,battle.Field.GetPanelType(player.GridPosition));Assert.AreEqual(PanelType.Normal,battle.Field.GetPanelType(other.GridPosition));}
+        [Test]
+        public void 未登録死亡終了後のHP設定とカード実行を拒否する()
+        {Setup();var values=new[]{new EnemyHpActionPattern(10000,true,new[]{new CountAction()})};Assert.IsFalse(battle.ConfigureEnemyHpPatterns(new Enemy("x","テスト",100,ElementType.None,new Vector2Int(0,0)),values));enemy.TakeDamage(1000,ElementType.None);Assert.IsFalse(battle.ConfigureEnemyHpPatterns(enemy,values));Assert.IsFalse(new EnemyCardAction(Make(),0).CanExecute(Context()));}
+        [Test]
+        public void HPは同フレーム被弾と回復の確定値で選び中間の閾値通過では切り替えない()
+        {Setup();var low=new CountAction();var high=new CountAction();battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(5000,true,new[]{low}),new EnemyHpActionPattern(10000,true,new[]{high})});battle.RunLogicalFrame(()=>{enemy.TakeDamage(70,ElementType.None,poiseDamage:0);enemy.Heal(50);});Frames(1);Assert.AreEqual(80,enemy.CurrentHp);Assert.AreEqual(0,low.Count);Assert.AreEqual(1,high.Count);}
+        [TestCase(false)] [TestCase(true)]
+        public void 勝敗確定で残る前隙を解除し終了後に発動しない(bool defeat)
+        {Setup();var a=new EnemyCardAction(Make(startup:10),0);battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{a});Frames(1);battle.RunLogicalFrame(()=>{if(defeat)player.TakeDamage(10000);else{enemy.TakeDamage(10000,ElementType.None);other.TakeDamage(10000,ElementType.None);}});Assert.IsTrue(battle.IsGameOver);Assert.IsFalse(a.IsRunning);Frames(20);Assert.IsFalse(a.IsRunning);}
+        [Test]
+        public void 派生前隙の待機中断は子カードの予約も解除する()
+        {Setup();var child=Make(startup:5);var m=new CardModifier();m.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.ChainCard,ChainCardId=child.Id,Power=100,Trigger=DerivativeTrigger.Immediate});var parent=new Card("parent","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,0,"",modifier:m,extendRecoveryDuringDerivative:true,poiseDamage:0);var a=new EnemyCardAction(parent,1000,new Database{Value=child});battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{a});Frames(1);Assert.IsTrue(a.IsRunning);Assert.AreEqual(1,battle.DelayedEffects.ActiveEffectCount);enemy.TakeDamage(40,ElementType.None);Assert.IsFalse(a.IsRunning);Assert.AreEqual(0,battle.DelayedEffects.ActiveEffectCount);Frames(8);Assert.AreEqual(500,player.CurrentHp);}
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void HP切替とカード前後隙の結果は描画分割に依存しない(int fps)
+        {Setup();var a=new EnemyCardAction(Make(startup:2,recovery:3),1000);var low=new CountAction();battle.ConfigureEnemyHpPatterns(enemy,new[]{new EnemyHpActionPattern(5000,true,new[]{low}),new EnemyHpActionPattern(10000,true,new IEnemyAIAction[]{a})});var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();long last=0;for(int i=1;i<=fps;i++){long now=i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(now-last);last=now;clock.Drain((frame,ms)=>{if(frame==2)enemy.TakeDamage(50,ElementType.None,poiseDamage:0);battle.TickFrame(ms);},3);}while(clock.PendingFrames>0)clock.Drain((frame,ms)=>{if(frame==2)enemy.TakeDamage(50,ElementType.None,poiseDamage:0);battle.TickFrame(ms);},3);Assert.AreEqual(493,player.CurrentHp);Assert.AreEqual(1,low.Count);}
+        [TestCase(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single)]
+        [TestCase(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile)]
+        public void 前隙中にプレイヤーが離れたマスへ攻撃を追尾させない(Olca.Core.Logic.CardEffects.Effects.DamageTargetType target)
+        {Setup();var a=new EnemyCardAction(Make(target,startup:3),1000);battle.TrySwitchEnemyActionPattern(enemy,new List<IEnemyAIAction>{a});Frames(1);player.MoveTo(new Vector2Int(1,0));Frames(3);Assert.AreEqual(500,player.CurrentHp);}
+        [Test]
+        public void 単体射撃は発動位置と同じマスを前方の相手として取得しない()
+        {Setup();enemy.MoveTo(player.GridPosition);Assert.IsFalse(new EnemyCardAction(Make(),0).CanExecute(Context()));}
+    }
+}

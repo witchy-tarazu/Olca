@@ -19,6 +19,30 @@ namespace Olca.Core.Logic.Battle
         private AIContext runningContext;
         private FrameCountdown cooldown;
         private int nextActionIndex;
+        private List<EnemyHpActionPattern> hpPatterns;
+        private EnemyHpActionPattern selectedHpPattern;
+
+        public bool ConfigureHpPatterns(IReadOnlyList<EnemyHpActionPattern> patterns)
+        {
+            if(disposed||enemy.IsDead)return false;
+            if(patterns==null||patterns.Count==0)throw new ArgumentException("HP区間が必要です",nameof(patterns));
+            var copy=new List<EnemyHpActionPattern>(patterns);
+            int last=-1;
+            foreach(var value in copy){if(value==null||value.MaximumHpBasisPoints<=last)throw new ArgumentException("HP上限は昇順・重複なしです",nameof(patterns));last=value.MaximumHpBasisPoints;}
+            if(last!=10000||!copy[copy.Count-1].IncludesBoundary)throw new ArgumentException("最大HPまでの区間が必要です",nameof(patterns));
+            hpPatterns=copy;selectedHpPattern=null;return true;
+        }
+        private void EvaluateHpPattern()
+        {
+            if(hpPatterns==null||pendingPattern!=null)return;
+            foreach(var value in hpPatterns){
+                long hp=(long)enemy.CurrentHp*10000, boundary=(long)enemy.MaxHp*value.MaximumHpBasisPoints;
+                if(hp<boundary||(value.IncludesBoundary&&hp==boundary)){
+                    if(!ReferenceEquals(value,selectedHpPattern)&&TrySwitchActionPattern(value.CopyActions()))selectedHpPattern=value;
+                    return;
+                }
+            }
+        }
 
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
@@ -77,6 +101,7 @@ namespace Olca.Core.Logic.Battle
         {
             if(disposed)return;
             if(enemy.IsDead){Dispose();return;}
+            EvaluateHpPattern();
             if(enemy.IsStunned){
                 InterruptActiveAction();
                 if(logicalFrame)enemy.TickStunFrame();else enemy.TickStun(deltaTimeMs);
@@ -125,7 +150,7 @@ namespace Olca.Core.Logic.Battle
         public void Dispose()
         {
             if(disposed)return;
-            disposed=true;pendingPattern=null;
+            disposed=true;pendingPattern=null;hpPatterns=null;selectedHpPattern=null;
             enemy.OnStaggered-=InterruptActiveAction;enemy.OnDeath-=Dispose;
             if(executingAction){interruptRequested=true;return;}
             EndActiveAction(true);

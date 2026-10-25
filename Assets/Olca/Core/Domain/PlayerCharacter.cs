@@ -452,6 +452,9 @@ namespace Olca.Core.Domain
         public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitStopFrames = 0)
             => TryTakeDamage(damage, forceStagger, affectsPoise, attackElement, attackProperties, poiseDamage, hitStopFrames);
 
+        internal long TotalHitsTaken { get; private set; }
+        internal long TotalDamageTaken { get; private set; }
+
         /// <summary>防御で遮断されなかったヒットだけtrue。付随効果と被弾無敵の判定に使う。</summary>
         public bool TryTakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitStopFrames = 0)
         {
@@ -488,6 +491,7 @@ namespace Olca.Core.Domain
                 damage = bodyDamage;
                 if (originalDamage > 0 && damage == 0) { ReportCombatFeedback(CombatFeedbackKind.Immune); return false; } // 耐性無効は強靭度・付随効果へ進めない。
 
+                TotalHitsTaken++; TotalDamageTaken+=damage;
                 if(damage>0)RequestHitStop(hitStopFrames);
                 ReportCombatFeedback(CombatFeedbackKind.Damage,damage);
                 if (frameHp.Active) frameHp.Damage(damage);

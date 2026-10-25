@@ -42,4 +42,20 @@ namespace Olca.Core.Logic.Battle
         void Cancel(AIContext context);
     }
 
+    /// <summary>HP上限と行動列。境界を含むかも定義元が明示し、サンプル値を製品へ登録しない。</summary>
+    public sealed class EnemyHpActionPattern
+    {
+        public int MaximumHpBasisPoints { get; }
+        public bool IncludesBoundary { get; }
+        private readonly System.Collections.Generic.List<IEnemyAIAction> actions;
+        public EnemyHpActionPattern(int maximumHpBasisPoints,bool includesBoundary,System.Collections.Generic.IEnumerable<IEnemyAIAction> actions)
+        {
+            if(maximumHpBasisPoints<0||maximumHpBasisPoints>10000)throw new System.ArgumentOutOfRangeException(nameof(maximumHpBasisPoints));
+            this.actions=actions==null?throw new System.ArgumentNullException(nameof(actions)):new System.Collections.Generic.List<IEnemyAIAction>(actions);
+            if(this.actions.Count==0||this.actions.Exists(a=>a==null))throw new System.ArgumentException("行動列が必要です",nameof(actions));
+            MaximumHpBasisPoints=maximumHpBasisPoints;IncludesBoundary=includesBoundary;
+        }
+        internal System.Collections.Generic.List<IEnemyAIAction> CopyActions()=>new System.Collections.Generic.List<IEnemyAIAction>(actions);
+    }
+
 }

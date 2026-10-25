@@ -40,15 +40,15 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
         private void ExecuteHitbox(BattleContext context)
         {
-            var aliveEnemies = context.Battle.GetAliveEnemies();
+            var aliveEnemies = context.GetAliveOpponents();
             if (aliveEnemies.Count == 0) return;
 
             switch (targetType)
             {
                 case DamageTargetType.Single:
                     // 単体射撃は実際の発動位置より前方の最寄り1体。
-                    var nearest = context.GetNearestForwardEnemy();
-                    if (nearest != null) DealDamageToEnemy(nearest, context);
+                    var nearest = context.GetNearestForwardOpponent();
+                    if (nearest.HasValue) DealDamageToEnemy(nearest.Value, context);
                     break;
 
                 case DamageTargetType.All:
@@ -89,7 +89,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// 敵にダメージを与える
         /// 属性耐性と地形の補正はEnemy.TakeDamage内で計算される
         /// </summary>
-        private void DealDamageToEnemy(Enemy enemy, BattleContext context)
+        private void DealDamageToEnemy(CardTarget enemy, BattleContext context)
         {
             // baseDamageには既にカードのPowerが含まれている（CardEffectFactoryで設定済み）
             int finalDamage = baseDamage;
@@ -108,10 +108,15 @@ namespace Olca.Core.Logic.CardEffects.Effects
             // TODO: プレイヤーの位置情報が実装されたら、正確な座標計算に変更
             // 現在は簡易実装: 敵陣の最前列からN マス分を攻撃範囲とする
 
-            var aliveEnemies = context.Battle.GetAliveEnemies();
+            var aliveEnemies = context.GetAliveOpponents();
             if (aliveEnemies.Count == 0) return;
 
             // 最前列の敵のX座標を基準にする
+            if(context.EnemySource!=null){
+                var origin=context.GetEffectivePlayerPosition();
+                foreach(var target in aliveEnemies){int distance=(target.GridPosition.X-origin.X)*context.ForwardX;if(target.GridPosition.Y==origin.Y&&distance>0&&distance<=tileRange)DealDamageToEnemy(target,context);}
+                return;
+            }
             int frontX = aliveEnemies[0].GridPosition.X;
             int maxX = frontX + tileRange - 1;
 

@@ -54,6 +54,13 @@ namespace Olca.Core.Logic.Battle
             return behavior!=null&&behavior.TrySwitchActionPattern(actions);
         }
 
+        /// <summary>外部定義されたHP区間を登録する。値や製品の切替先は生成しない。</summary>
+        public bool ConfigureHpPatterns(Enemy enemy, IReadOnlyList<EnemyHpActionPattern> patterns)
+        {
+            var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));
+            return behavior!=null&&behavior.ConfigureHpPatterns(patterns);
+        }
+
         /// <summary>
         /// 敵をAI管理から除外（死亡時に呼び出される）
         /// </summary>
@@ -79,7 +86,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="field">バトルフィールド</param>
         /// <param name="random">乱数プロバイダー</param>
         public void Tick(int deltaTimeMs, PlayerCharacter player, BattleField field, IRandomProvider random,
-            IList<Enemy> tickParticipants = null, bool logicalFrame = false)
+            IList<Enemy> tickParticipants = null, bool logicalFrame = false, BattleSystem battle = null)
         {
             if (player == null || field == null) return;
 
@@ -92,7 +99,7 @@ namespace Olca.Core.Logic.Battle
                     || (tickParticipants != null && !tickParticipants.Contains(behavior.Enemy))) continue;
 
                 // 敵ごとのコンテキストを作成
-                var context = new AIContext(behavior.Enemy, player, field, random, logger);
+                var context = new AIContext(behavior.Enemy, player, field, random, logger, battle);
 
                 // AI更新
                 behavior.Update(deltaTimeMs, context, logicalFrame);
