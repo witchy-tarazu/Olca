@@ -2948,6 +2948,31 @@ namespace Olca.Tests.Integration
         private static UnityEngine.UI.Button SelectionButton(Olca.Application.Dungeon.DungeonBattleController c,string name)
             => ((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(false).Single(b=>b.name==name);
         [Test]
+        public void 出撃前は未解放名を隠して解放条件と既存マップ情報を示し保存しない()
+        {
+            var c=StartSelection();long revision=c.PersistentProgress.Revision;
+            var first=SelectionButton(c,"DungeonChoice_0").GetComponentInChildren<UnityEngine.UI.Text>().text;
+            var locked=SelectionButton(c,"DungeonChoice_1").GetComponentInChildren<UnityEngine.UI.Text>().text;
+            StringAssert.Contains("ミクリア",first);StringAssert.Contains("？？？",locked);StringAssert.DoesNotContain("selection-b",locked);StringAssert.Contains("ヒトツマエノダンジョンヲクリア",locked);
+            var help=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Text>(false).Single(t=>t.name=="DungeonSelectionHelp").text;
+            StringAssert.Contains("テキゾクセイ: ムゾクセイ",help);StringAssert.Contains("チケイ: ノーマル",help);
+            KeyboardButton(c,"DungeonChoice_1");Assert.AreEqual(0,Get(c,"selectedDungeon"));Assert.AreEqual(revision,c.PersistentProgress.Revision);Assert.IsNull(c.PersistentProgress.NextDeparture);
+        }
+        [Test]
+        public void クリア表示は永続履歴だけを読みデバッグ全開放や再読込で履歴を捏造しない()
+        {
+            var c=StartSelection(true);
+            Assert.IsTrue(SelectionButton(c,"DungeonChoice_2").interactable);
+            StringAssert.Contains("ミクリア",SelectionButton(c,"DungeonChoice_2").GetComponentInChildren<UnityEngine.UI.Text>().text);Assert.IsEmpty(c.PersistentProgress.ClearedDungeons);
+            var profile=c.PersistentProgress;long revision=profile.Revision;profile.ClearedDungeons=new[]{"selection-a"};profile.Revision++;profile.CommitId=System.Guid.NewGuid().ToString("N");
+            Assert.IsTrue(((Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore")).TryWrite(revision,profile,out var error),error);
+            c=StartSelection();
+            StringAssert.Contains("クリアズミ",SelectionButton(c,"DungeonChoice_0").GetComponentInChildren<UnityEngine.UI.Text>().text);
+            StringAssert.Contains("ミクリア",SelectionButton(c,"DungeonChoice_1").GetComponentInChildren<UnityEngine.UI.Text>().text);
+            StringAssert.Contains("？？？",SelectionButton(c,"DungeonChoice_2").GetComponentInChildren<UnityEngine.UI.Text>().text);
+            CollectionAssert.AreEqual(new[]{"selection-a"},c.PersistentProgress.ClearedDungeons);
+        }
+        [Test]
         public void ダンジョンの初回選択取消と未解放拒否は保存せず同じ選択先で出撃再開する()
         {
             var c=StartSelection();Assert.IsTrue((bool)Get(c,"initialHub"));Assert.IsTrue(SelectionButton(c,"DungeonChoice_0").interactable);

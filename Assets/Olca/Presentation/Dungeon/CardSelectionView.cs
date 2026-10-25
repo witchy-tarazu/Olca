@@ -398,26 +398,42 @@ namespace Olca.Presentation.Dungeon
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -493, 800, 58, retry);
                     SetMenu(content.transform,collectionOnly?closeCollection:null,collectionOnly?"CloseOwnedCards":"SavedDeckMenu");
         }
+        public static string FormatDungeonInformation(DungeonDeparturePreview info)
+        {
+            if(info==null)throw new ArgumentNullException(nameof(info));
+            string Element(ElementType value) => value==ElementType.None?"ムゾクセイ":value==ElementType.Fire?"ヒ":value==ElementType.Water?"ミズ":value==ElementType.Wind?"カゼ":value==ElementType.Earth?"ツチ":"？？？";
+            string Terrain(PanelType value) => value==PanelType.Normal?"ノーマル":value==PanelType.Grass?"クサムラ":value==PanelType.Ice?"コオリ":value==PanelType.Magma?"マグマ":value==PanelType.Cracked?"ヒビ":value==PanelType.Hole?"アナ":"？？？";
+            return "テキゾクセイ: "+(info.EnemyElements.Count==0?"ジョウホウナシ":string.Join(" / ",System.Linq.Enumerable.Select(info.EnemyElements,Element)))+
+                "　チケイ: "+(info.TerrainTypes.Count==0?"ジョウホウナシ":string.Join(" / ",System.Linq.Enumerable.Select(info.TerrainTypes,Terrain)));
+        }
         private int dungeonPage;
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
-            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null)
+            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
+            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null)
         {
+            if(names==null||unlocked==null||names.Length!=unlocked.Length||
+                (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
+                throw new ArgumentException("ダンジョン一覧の表示情報が一致しません");
             StopMenu();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             gameObject.SetActive(true);
             Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
-            Text("DungeonSelectionHelp", error ?? ("クリアに応じて次のダンジョンが解放されます。 / " + styleName), 0, 350, 1700, 80, 25);
+            string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
+            Text("DungeonSelectionHelp", error ?? ("クリアニオウジテカイホウ / " + styleName + (string.IsNullOrEmpty(info)?"":"\n"+info)), 0, 350, 1700, 80, 25);
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
                 int index = dungeonPage * rows + row;
-                var button = Button("DungeonChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
+                string label = unlocked[index]
+                    ? (selected==index ? "［センタクチュウ］ " : "［センタク］ ")+names[index]+(cleared==null?"":cleared[index]?" / クリアズミ":" / ミクリア")
+                    : "［ミカイホウ］ ？？？" + (unlockConditions==null||string.IsNullOrEmpty(unlockConditions[index])?"":"\nカイホウ: "+unlockConditions[index]);
+                var button = Button("DungeonChoice_" + index, label, 0, 240 - row * 95, 1450, 78, () => choose(index));
                 button.interactable = !blocked && unlocked[index];
                 if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
-            Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange); }).interactable = !blocked && dungeonPage > 0;
-            Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions); }).interactable = !blocked && dungeonPage + 1 < pages;
             Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, -285, 250, 60, 24);
             Button("ConfirmDungeonSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
             Button("CancelDungeonSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;

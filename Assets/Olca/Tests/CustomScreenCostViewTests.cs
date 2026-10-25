@@ -17,6 +17,52 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 出撃前情報は全階層の実定義を読むだけで敵や地形を変えず独立した一覧を返す()
+        {
+            var cells=Enumerable.Range(0,8).Select(i=>new MapCell(i)).ToList();
+            var fire=new Enemy("fire","テスト",100,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0));
+            cells[3]=new MapCell(3,fire);cells[4]=new MapCell(4,new Enemy("summon","テスト",10,ElementType.Earth,new Olca.Core.Domain.Vector2Int(4,0),true));
+            var terrain=new[]{new ExplorationTerrainCell(0,PanelType.Grass),new ExplorationTerrainCell(1,PanelType.Grass),new ExplorationTerrainCell(2,PanelType.Grass),new ExplorationTerrainCell(5,PanelType.Ice)};
+            var a=new DungeonConfig("a","テスト",8,cells,explorationTerrain:terrain);
+            var bCells=Enumerable.Range(0,4).Select(i=>new MapCell(i)).ToList();bCells[3]=new MapCell(3,new Enemy("water","テスト",100,ElementType.Water,new Olca.Core.Domain.Vector2Int(3,0)));
+            var b=new DungeonConfig("b","テスト",4,bCells,explorationTerrain:new[]{new ExplorationTerrainCell(0,PanelType.Magma),new ExplorationTerrainCell(1,PanelType.Magma),new ExplorationTerrainCell(2,PanelType.Ice),new ExplorationTerrainCell(3,PanelType.Ice)});
+            var info=new DungeonDeparturePreview(new[]{a,b});
+            CollectionAssert.AreEqual(new[]{ElementType.Fire,ElementType.Water},info.EnemyElements);
+            CollectionAssert.AreEqual(new[]{PanelType.Normal,PanelType.Ice,PanelType.Grass,PanelType.Magma},info.TerrainTypes);
+            Assert.AreEqual(100,fire.CurrentHp);CollectionAssert.AreEqual(terrain,a.ExplorationTerrain);
+            a.MapCells[3]=new MapCell(3);CollectionAssert.AreEqual(new[]{ElementType.Fire,ElementType.Water},info.EnemyElements);
+            Assert.Throws<System.NotSupportedException>(()=>((IList<ElementType>)info.EnemyElements).Add(ElementType.Wind));
+            var text=ClearReturnView.FormatDungeonInformation(info);StringAssert.Contains("ヒ / ミズ",text);StringAssert.Contains("ノーマル / コオリ / クサムラ / マグマ",text);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(text,"[一-鿿]"));
+        }
+        [Test]
+        public void 敵や地形の情報がない場合に属性や推奨レベルを捏造しない()
+        {
+            var info=new DungeonDeparturePreview(new[]{new DungeonConfig("empty","テスト",0,new List<MapCell>())});
+            Assert.IsEmpty(info.EnemyElements);Assert.IsEmpty(info.TerrainTypes);
+            Assert.AreEqual("テキゾクセイ: ジョウホウナシ　チケイ: ジョウホウナシ",ClearReturnView.FormatDungeonInformation(info));
+            Assert.Throws<System.ArgumentNullException>(()=>new DungeonDeparturePreview(null));
+            Assert.Throws<System.ArgumentException>(()=>new DungeonDeparturePreview(new DungeonConfig[0]));
+            Assert.Throws<System.ArgumentException>(()=>new DungeonDeparturePreview(new DungeonConfig[]{null}));
+        }
+        [Test]
+        public void 未解放名と詳細はページを変えても露出せず解放条件とクリア履歴を保持する()
+        {
+            var root=new GameObject("DungeonSelectionPreview",typeof(RectTransform));ClearReturnView view=null;
+            try {
+                view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);
+                var names=Enumerable.Range(0,7).Select(i=>"secret-name-"+i).ToArray();var unlocked=new[]{true,false,false,false,false,false,false};var cleared=new[]{true,false,false,false,false,false,false};
+                var conditions=Enumerable.Repeat("ヒトツマエノダンジョンヲクリア",7).ToArray();var descriptions=Enumerable.Range(0,7).Select(i=>"secret-info-"+i).ToArray();
+                view.RenderDungeonSelection(names,unlocked,0,_=>{},()=>{},()=>{},false,null,()=>{},cleared:cleared,unlockConditions:conditions,descriptions:descriptions);
+                var first=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_0");StringAssert.Contains("クリアズミ",first.GetComponentInChildren<Text>().text);
+                var locked=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_1");Assert.IsFalse(locked.interactable);StringAssert.Contains("？？？",locked.GetComponentInChildren<Text>().text);StringAssert.DoesNotContain(names[1],locked.GetComponentInChildren<Text>().text);
+                root.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDungeonPage").onClick.Invoke();
+                var all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(t=>t.text));StringAssert.DoesNotContain(names[5],all);StringAssert.DoesNotContain(names[6],all);StringAssert.Contains(conditions[6],all);
+                view.RenderDungeonSelection(names,unlocked,6,_=>{},()=>{},()=>{},false,null,()=>{},cleared:cleared,unlockConditions:conditions,descriptions:descriptions);
+                all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(t=>t.text));StringAssert.DoesNotContain(descriptions[6],all);
+            }finally{if(view!=null)typeof(ClearReturnView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Object.DestroyImmediate(root);}
+        }
+
+        [Test]
         public void 非アクティブな親でも手札初期化と選択がAwakeに依存せず再表示で寿命を作り直さない()
         {
             var root=new GameObject("InactiveCustom",typeof(RectTransform));root.SetActive(false);
