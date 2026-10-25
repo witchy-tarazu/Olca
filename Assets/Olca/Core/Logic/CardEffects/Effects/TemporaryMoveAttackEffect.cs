@@ -48,10 +48,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
             BattleContext context,
             CancellationToken ct)
         {
-            if(context.EnemySource!=null)throw new NotSupportedException("敵の一時移動所有は未実装です");
-            var player = context.Player;
+            var player = context.User;
             var field = context.Field;
-            var enemies = context.Enemies;
+            var enemies = context.GetMovementBlockers();
             var originalPosition = player.GridPosition;
 
             // 1. 移動先を計算
@@ -59,7 +58,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 originalPosition,
                 field,
                 enemies,
-                player.TerrainState);
+                player.TerrainState, context.EnemySource==null?1:context.ForwardX);
 
             // 移動先が元の位置と同じ場合（移動失敗）
             if (targetPosition == originalPosition)
@@ -72,12 +71,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
             }
 
             bool attackResolved = false;
+            var originOwner=new object();
             try
             {
                 // 2. パネル保護を設定（一時移動中は移動元を保護）
                 if (targetPosition != originalPosition)
                 {
-                    field.SetProtectedPosition(originalPosition);
+                    field.ProtectTemporaryOrigin(originOwner,originalPosition);
                 }
 
                 // 3. 一時移動実行
@@ -93,16 +93,15 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 }
 
                 // 5. 攻撃実行（移動先の位置で）
-                var targetEnemy = GetEnemyAtPosition(
-                    player.GridPosition,
-                    enemies);
+                context.ResolveAttackPreview();
+                var targetEnemy = GetEnemyAtPosition(player.GridPosition,context.GetAliveOpponents());
 
-                if (targetEnemy != null && !targetEnemy.IsDead)
+                if (targetEnemy.HasValue && !targetEnemy.Value.IsDead)
                 {
                     int damage = context.UsedCard.GetFinalPower();
                     ElementType attackElement = context.UsedCard.GetFinalElement();
                     using (var influence = new AttackInfluence())
-                        targetEnemy.TakeDamage(damage, attackElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, influence: influence);
+                        targetEnemy.Value.TakeDamage(damage, attackElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, influence: influence);
                 }
 
                 attackResolved = true;
@@ -127,25 +126,28 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 }
 
                 // 8. パネル保護を解除
-                field.SetProtectedPosition(null);
+                field.ReleaseTemporaryOrigin(originOwner);
             }
         }
 
         /// <summary>
         /// 移動先の位置を計算（貫通モードを考慮）
         /// </summary>
+        internal Vector2Int PreviewTarget(BattleContext context)
+            =>CalculateTargetPosition(context.User.GridPosition,context.Field,context.GetMovementBlockers(),context.User.TerrainState,context.EnemySource==null?1:context.ForwardX);
+
         private Vector2Int CalculateTargetPosition(
             Vector2Int start,
             BattleField field,
-            IReadOnlyList<Enemy> enemies,
-            BattleTerrainState terrain)
+            IReadOnlyList<CardTarget> enemies,
+            BattleTerrainState terrain, int forwardX)
         {
             Vector2Int currentPos = start;
 
             for (int i = 0; i < moveDistance; i++)
             {
                 Vector2Int nextPos = new Vector2Int(
-                    currentPos.X + moveDirection.X,
+                    currentPos.X + moveDirection.X * forwardX,
                     currentPos.Y + moveDirection.Y);
 
                 // グリッド範囲外チェック
@@ -179,11 +181,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
             return currentPos;
         }
 
-        private bool IsEnemyAt(Vector2Int position, IReadOnlyList<Enemy> enemies)
+        private bool IsEnemyAt(Vector2Int position, IReadOnlyList<CardTarget> enemies)
         {
             foreach (var enemy in enemies)
             {
-                if (enemy.GridPosition == position && !enemy.IsDead)
+                if (enemy.LogicalPosition == position && !enemy.IsDead)
                 {
                     return true;
                 }
@@ -191,9 +193,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
             return false;
         }
 
-        private Enemy GetEnemyAtPosition(
+        private CardTarget? GetEnemyAtPosition(
             Vector2Int position,
-            IReadOnlyList<Enemy> enemies)
+            IReadOnlyList<CardTarget> enemies)
         {
             foreach (var enemy in enemies)
             {

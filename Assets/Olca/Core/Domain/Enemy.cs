@@ -80,6 +80,32 @@ namespace Olca.Core.Domain
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
         public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
 
+        private Vector2Int? temporaryPosition;
+        public bool IsInTemporaryMove => temporaryPosition.HasValue;
+        public Vector2Int GetLogicalPosition()=>gridPosition;
+        public void MoveTemporarily(Vector2Int position)
+        {
+            if(IsInTemporaryMove)throw new InvalidOperationException("既に一時移動中です");
+            temporaryPosition=position;OnPositionChanged?.Invoke(GridPosition);
+        }
+        public void ReturnToOriginalPosition()
+        {
+            if(!IsInTemporaryMove)throw new InvalidOperationException("一時移動中ではありません");
+            temporaryPosition=null;OnPositionChanged?.Invoke(GridPosition);
+        }
+        private float nextCardMultiplier=1f;
+        private float? pendingConcentrateMultiplier;
+        private bool clearConcentratePending;
+        public bool IsConcentrating=>nextCardMultiplier>1f;
+        public float NextCardMultiplier=>nextCardMultiplier;
+        public void SetConcentrateBuff(float multiplier)
+        {
+            float value=Math.Max(1f,multiplier);
+            if(frameHp.Active){if(value<=1f)clearConcentratePending=true;else pendingConcentrateMultiplier=value;return;}
+            nextCardMultiplier=value;pendingConcentrateMultiplier=null;clearConcentratePending=false;
+        }
+        public float ConsumeConcentrateBuff(){float value=nextCardMultiplier;nextCardMultiplier=1f;return value;}
+
         public BattleGuardState Guard { get; } = new BattleGuardState();
         private readonly BattleProtectionState protection = new BattleProtectionState();
         public int BarrierHp => protection.BarrierHp;
@@ -153,6 +179,7 @@ namespace Olca.Core.Domain
         // 死亡確定時に解除し、HP/死亡の購読側にも残留状態を見せない。
         private void ClearDeathReaction()
         {
+            SetConcentrateBuff(1f);
             Guard.Clear();
             ClearProtection();
             ClearInvincibility();
@@ -171,6 +198,9 @@ namespace Olca.Core.Domain
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
+            if(IsDead||clearConcentratePending)nextCardMultiplier=1f;
+            else if(pendingConcentrateMultiplier.HasValue)nextCardMultiplier=pendingConcentrateMultiplier.Value;
+            pendingConcentrateMultiplier=null;clearConcentratePending=false;
             protection.CommitFrame();
             if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
             pendingInvincibilityMs = 0;
@@ -284,7 +314,7 @@ namespace Olca.Core.Domain
         public ElementType Element => element;
 
         /// <summary>グリッド上の位置</summary>
-        public Vector2Int GridPosition => gridPosition;
+        public Vector2Int GridPosition => temporaryPosition ?? gridPosition;
 
         /// <summary>死亡しているか</summary>
         public bool IsDead => currentHp <= 0;

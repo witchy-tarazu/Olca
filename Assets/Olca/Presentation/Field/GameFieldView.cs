@@ -494,10 +494,11 @@ namespace Olca.Presentation.Field
         private void OnEnable()
         {
             if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
+            battleGridView?.BindTelegraphs(currentBattle);
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
             ClearTerrainVisuals(); ClearBombVisuals();
@@ -569,6 +570,7 @@ namespace Olca.Presentation.Field
             UpdateCameraFraming();
             RefreshObstacleVisuals(); RefreshVisitVisuals();
             RefreshEnemyPerception(); RefreshBombVisuals(); RefreshTerrainVisuals();
+            battleGridView?.ShowTelegraphs(currentBattle!=null&&!currentBattle.IsGameOver?currentBattle.EnemyAttackTiles:System.Array.Empty<Olca.Core.Domain.Vector2Int>());
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
@@ -658,6 +660,7 @@ namespace Olca.Presentation.Field
                 originX = playerTransform.position.x - LogicalToWorld(battle.Player.GridPosition.X);
 
             battleGridView?.Show(battle.Field, originX);
+            battleGridView?.BindTelegraphs(battle);
 
             Debug.Log($"[Camera] OnBattleStarted: playerPos={playerTransform?.position.x:F2}, gridColumn={battle.Player.GridPosition.X}, originX={originX:F2}, gridCenterX={battleGridView?.GridCenterWorldX:F2}, cameraX={fieldCamera?.transform.position.x:F2}, CameraOffsetX={CameraOffsetX:F2}");
 

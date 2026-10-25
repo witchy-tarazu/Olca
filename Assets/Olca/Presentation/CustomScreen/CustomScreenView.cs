@@ -1786,7 +1786,7 @@ namespace Olca.Presentation.CustomScreen
         {
             if(value==null||value.IsDead)return "テキナシ";
             return Katakana($"{value.Name}\nHP {value.CurrentHp}/{value.MaxHp} / ゾクセイ {ElementName(value.Element)}\nキョウジンド "+(value.Poise.HasValue?(value.IsStaggered?0:System.Math.Max(0,value.Poise.Value-value.AccumulatedPoiseDamage))+"/"+value.Poise.Value:"ミテイギ")+
-                "\n"+Resistances(value.Resistances,value.StatusResistances)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(value.Guard.IsActive,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+(value.IsStaggered?"\nノケゾリ":""));
+                "\n"+Resistances(value.Resistances,value.StatusResistances)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(value.Guard.IsActive,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+(value.IsConcentrating?"\nシュウチュウ: ツギノカード "+value.NextCardMultiplier.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture)+" バイ":"")+(value.IsStaggered?"\nノケゾリ":""));
         }
         public static string CombatantDetails(PlayerCharacter value)
         {

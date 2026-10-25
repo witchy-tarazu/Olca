@@ -723,9 +723,6 @@ namespace Olca.Tests.Battle
         [Test]
         public void スライム設定例は既存カードと指定待ちだけを使用する()
         {Setup();battle.TrySwitchEnemyActionPattern(enemy,EnemyActionPatternSamples.Slime(Make(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile),2000));Frames(1);Assert.AreEqual(500,player.CurrentHp);Frames(1);Assert.AreEqual(493,player.CurrentHp);Frames(2);Assert.AreEqual(493,player.CurrentHp);}
-        [Test]
-        public void 未接続の敵専用移動やSupportはプレイヤー用実装へ誤流入しない()
-        {Assert.Throws<System.NotSupportedException>(()=>new EnemyCardAction(Make(category:CardCategory.Support),0));var card=new Card("move","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,7,"",moveMotionTime:1);Assert.Throws<System.NotSupportedException>(()=>new EnemyCardAction(card,0));}
         private sealed class Database:Olca.Core.Logic.CardEffects.ICardDatabase
         {public Card Value;public Card GetCardById(string id)=>Value?.Id==id?Value:null;}
         [TestCase(false)] [TestCase(true)]
@@ -759,5 +756,98 @@ namespace Olca.Tests.Battle
         [Test]
         public void 単体射撃は発動位置と同じマスを前方の相手として取得しない()
         {Setup();enemy.MoveTo(player.GridPosition);Assert.IsFalse(new EnemyCardAction(Make(),0).CanExecute(Context()));}
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class EnemyMotionBuffTelegraphTests
+    {
+        private PlayerCharacter player;private Enemy source,other;private BattleSystem battle;
+        private sealed class Idle:IEnemyAIAction{public int Count;public bool CanExecute(AIContext c)=>true;public void Execute(AIContext c){Count++;}public int GetCooldownMs()=>100000;public float GetCooldown()=>100;}
+        private void Setup(int sourceX=3)
+        {player=new PlayerCharacter(500,new Vector2Int(1,0));source=new Enemy("source","テスト",100,ElementType.None,new Vector2Int(sourceX,0),poiseDefinition:new EnemyPoiseDefinition(30,3));other=new Enemy("other","テスト",100,ElementType.None,new Vector2Int(5,0),poiseDefinition:new EnemyPoiseDefinition(30,3));battle=new BattleSystem(player,new List<Enemy>{source,other},new Deck(),customGaugeSpeed:0,randomProvider:new MockRandomProvider());battle.TrySwitchEnemyActionPattern(source,new List<IEnemyAIAction>{new Idle()});battle.TrySwitchEnemyActionPattern(other,new List<IEnemyAIAction>{new Idle()});}
+        private void Frames(int n){for(int i=0;i<n;i++)battle.TickFrame(17);}
+        private Card Attack(int startup=6,int recovery=3,CardModifier modifier=null,Olca.Core.Logic.CardEffects.Effects.DamageTargetType target=Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single)
+            =>new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,7,"",targetType:target,startupFrames:startup,recoveryFrames:recovery,poiseDamage:0,modifier:modifier);
+        private Card Move(float move=.05f,float after=.05f,int distance=2,MovePenetrationMode mode=MovePenetrationMode.Invincible)
+            =>new Card("move_fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,7,"",moveDirection:"Right",moveDistance:distance,moveMotionTime:move,attackMotionTime:after,penetrationMode:mode,poiseDamage:0);
+        private AIContext Context()=>new AIContext(source,player,battle.Field,new MockRandomProvider(),null,battle);
+        private void Install(EnemyCardAction a)=>battle.TrySwitchEnemyActionPattern(source,new List<IEnemyAIAction>{a});
+        [Test]
+        public void 敵集中は自身が所有し次の攻撃で一度だけ消費し回復では消費しない()
+        {Setup();var focus=new Card("concentrate_test","テスト",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.Sword,100,"");new EnemyCardAction(focus,0).Execute(Context());Assert.IsTrue(source.IsConcentrating);Assert.IsFalse(player.IsConcentrating);Assert.IsFalse(other.IsConcentrating);new EnemyCardAction(new Card("heal_test","テスト",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.Sword,5,""),0).Execute(Context());Assert.IsTrue(source.IsConcentrating);new EnemyCardAction(Attack(0,0),0).Execute(Context());Assert.AreEqual(486,player.CurrentHp);Assert.IsFalse(source.IsConcentrating);new EnemyCardAction(Attack(0,0),0).Execute(Context());Assert.AreEqual(479,player.CurrentHp);}
+        [Test]
+        public void 集中付与フレームでは旧倍率だけを使い次フレームに新倍率が確定する()
+        {Setup();battle.RunLogicalFrame(()=>{source.SetConcentrateBuff(2);new EnemyCardAction(Attack(0,0),0).Execute(Context());Assert.IsFalse(source.IsConcentrating);});Assert.AreEqual(493,player.CurrentHp);Assert.IsTrue(source.IsConcentrating);new EnemyCardAction(Attack(0,0),0).Execute(Context());Assert.AreEqual(479,player.CurrentHp);}
+        [TestCase(false)] [TestCase(true)]
+        public void 死亡または離脱で敵集中を解除し次戦へ持ち越さない(bool abandon)
+        {Setup();source.SetConcentrateBuff(2);if(abandon)typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(battle,null);else source.TakeDamage(1000,ElementType.None);Assert.IsFalse(source.IsConcentrating);}
+        [Test]
+        public void 敵一時移動は向きを反転し被弾座標だけを変えて完了後は元へ戻る()
+        {Setup();var a=new EnemyCardAction(Move(),1000);Install(a);Frames(1);Assert.AreEqual(new Vector2Int(1,0),source.GridPosition);Assert.AreEqual(new Vector2Int(3,0),source.GetLogicalPosition());Assert.IsTrue(source.IsInTemporaryMove);Assert.AreEqual(500,player.CurrentHp);CollectionAssert.AreEqual(new[]{new Vector2Int(1,0)},battle.EnemyAttackTiles);Frames(3);Assert.AreEqual(493,player.CurrentHp);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Assert.IsTrue(source.IsInTemporaryMove);Frames(3);Assert.IsFalse(source.IsInTemporaryMove);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);}
+        [Test]
+        public void 一時移動先からプレイヤーが離れれば移動後の攻撃は追尾しない()
+        {Setup();Install(new EnemyCardAction(Move(),1000));Frames(1);player.MoveTo(new Vector2Int(0,0));Frames(3);Assert.AreEqual(500,player.CurrentHp);Frames(3);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);}
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void 停止中は移動先と予告を保持し再開後に一度だけ命中する(BattlePauseReason reason)
+        {Setup();Install(new EnemyCardAction(Move(),1000));Frames(1);battle.Pause(reason);Frames(20);Assert.IsTrue(source.IsInTemporaryMove);Assert.AreEqual(1,battle.EnemyAttackTiles.Count);Assert.AreEqual(500,player.CurrentHp);battle.Resume(reason);Frames(6);Assert.AreEqual(493,player.CurrentHp);Assert.IsFalse(source.IsInTemporaryMove);}
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void のけぞり死亡離脱で一時位置と予告と移動元保護を即解除する(int kind)
+        {Setup();var a=new EnemyCardAction(Move(),1000);Install(a);Frames(1);if(kind==0)source.TakeDamage(40,ElementType.None);else if(kind==1)source.TakeDamage(1000,ElementType.None);else typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(battle,null);Assert.IsFalse(source.IsInTemporaryMove);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Frames(8);Assert.AreEqual(500,player.CurrentHp);}
+        [Test]
+        public void 移動元を穴に変更しても保護し同時二体の片方終了で他方の保護を失わない()
+        {Setup(4);player.MoveTo(new Vector2Int(0,0));other.MoveTo(new Vector2Int(5,0));var a=new EnemyCardAction(Move(.05f,.05f,2),1000);var b=new EnemyCardAction(Move(.2f,.1f,2),1000);Install(a);battle.TrySwitchEnemyActionPattern(other,new List<IEnemyAIAction>{b});Frames(1);Assert.IsTrue(source.IsInTemporaryMove);Assert.IsTrue(other.IsInTemporaryMove);battle.Field.ChangePanelType(new Vector2Int(4,0),PanelType.Hole);battle.Field.ChangePanelType(new Vector2Int(5,0),PanelType.Hole);Assert.AreEqual(PanelType.Cracked,battle.Field.GetPanelType(new Vector2Int(4,0)));Assert.AreEqual(PanelType.Cracked,battle.Field.GetPanelType(new Vector2Int(5,0)));Frames(6);Assert.IsFalse(source.IsInTemporaryMove);Assert.IsTrue(other.IsInTemporaryMove);battle.Field.ChangePanelType(new Vector2Int(5,0),PanelType.Hole);Assert.AreEqual(PanelType.Cracked,battle.Field.GetPanelType(new Vector2Int(5,0)));}
+        [Test]
+        public void Blockingはプレイヤー論理位置の手前で止まり範囲外や穴へ侵入しない()
+        {Setup();Install(new EnemyCardAction(Move(mode:MovePenetrationMode.Blocking),1000));Frames(1);Assert.AreEqual(new Vector2Int(2,0),source.GridPosition);Frames(6);Assert.AreEqual(500,player.CurrentHp);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);}
+        [Test]
+        public void 移動してもヒット判定用の敵座標にカードが命中する()
+        {Setup();Install(new EnemyCardAction(Move(),1000));Frames(1);var attack=new Card("player_fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,7,"",targetType:Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All,poiseDamage:0);new Olca.Core.Logic.CardEffects.Effects.ModifiableCardEffect(Olca.Core.Logic.CardEffects.Effects.DamageTargetType.All).Execute(new Olca.Core.Logic.CardEffects.BattleContext(battle,attack));Assert.AreEqual(93,source.CurrentHp);}
+        [Test]
+        public void 予告は開始時のマスに固定し発動前にプレイヤーが移動しても追尾しない()
+        {Setup();Install(new EnemyCardAction(Attack(),1000));Frames(1);CollectionAssert.AreEqual(new[]{new Vector2Int(1,0)},battle.EnemyAttackTiles);player.MoveTo(new Vector2Int(0,0));Frames(2);CollectionAssert.AreEqual(new[]{new Vector2Int(1,0)},battle.EnemyAttackTiles);Frames(4);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Assert.AreEqual(500,player.CurrentHp);}
+        [Test]
+        public void 同一マスへの複数予告は一つに統合し一体中断後も他方の予告を維持する()
+        {Setup();Install(new EnemyCardAction(Attack(10),1000));battle.TrySwitchEnemyActionPattern(other,new List<IEnemyAIAction>{new EnemyCardAction(Attack(15),1000)});Frames(1);Assert.AreEqual(1,battle.EnemyAttackTiles.Count);source.TakeDamage(40,ElementType.None);Assert.AreEqual(1,battle.EnemyAttackTiles.Count);other.TakeDamage(40,ElementType.None);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);}
+        [Test]
+        public void 前隙ゼロの瞬時攻撃は予告時間を捏造せず同じ更新で解除する()
+        {Setup();Install(new EnemyCardAction(Attack(0,0),1000));Frames(1);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Assert.AreEqual(493,player.CurrentHp);}
+        [Test]
+        public void 暗転とヒットストップは予告と移動待機を保持する()
+        {Setup();Install(new EnemyCardAction(Move(),1000));Frames(1);battle.TryStartDarkeningEffect(DarkeningSide.Opponent,0,3,()=>{});Frames(3);Assert.AreEqual(1,battle.EnemyAttackTiles.Count);Assert.AreEqual(500,player.CurrentHp);battle.RunLogicalFrame(()=>source.TakeDamage(1,ElementType.None,poiseDamage:0,hitStopFrames:3));Frames(3);Assert.AreEqual(1,battle.EnemyAttackTiles.Count);Assert.AreEqual(500,player.CurrentHp);Frames(6);Assert.AreEqual(493,player.CurrentHp);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);}
+        [Test]
+        public void 一時移動と集中を同じ行動列で反復しても二重移動やバフ残留を起こさない()
+        {Setup();var focus=new Card("concentrate_test","テスト",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.Sword,100,"");battle.TrySwitchEnemyActionPattern(source,new List<IEnemyAIAction>{new EnemyCardAction(focus,0),new EnemyCardAction(Move(),0)});Frames(17);Assert.LessOrEqual(player.CurrentHp,472);Assert.AreEqual(new Vector2Int(3,0),source.GetLogicalPosition());}
+        [Test]
+        public void HP切替は一時移動攻撃を途中解除せず元位置へ戻った後に新行動を実行する()
+        {Setup();var a=new EnemyCardAction(Move(),1000);var low=new Idle();Install(a);Frames(1);battle.ConfigureEnemyHpPatterns(source,new[]{new EnemyHpActionPattern(5000,true,new[]{low}),new EnemyHpActionPattern(10000,true,new IEnemyAIAction[]{a})});source.TakeDamage(50,ElementType.None,poiseDamage:0);Frames(5);Assert.AreEqual(0,low.Count);Assert.IsTrue(source.IsInTemporaryMove);Frames(1);Assert.IsFalse(source.IsInTemporaryMove);Assert.AreEqual(0,low.Count);Frames(1);Assert.AreEqual(1,low.Count);}
+        [Test]
+        public void 範囲外へ進まず穴の手前で止まり復帰不能な位置を作らない()
+        {Setup();battle.Field.ChangePanelType(new Vector2Int(2,0),PanelType.Hole);Install(new EnemyCardAction(Move(mode:MovePenetrationMode.Blocking),1000));Frames(1);Assert.IsFalse(source.IsInTemporaryMove);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Frames(6);Assert.AreEqual(500,player.CurrentHp);}
+        [Test]
+        public void 敵詳細の集中はカナと実効倍率を表示しプレイヤーの状態を参照しない()
+        {Setup();source.SetConcentrateBuff(2);string text=Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(source);StringAssert.Contains("シュウチュウ: ツギノカード 2 バイ",text);Assert.IsFalse(player.IsConcentrating);Assert.IsFalse(other.IsConcentrating);}
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void 一時移動集中予告の反復は描画分割と追いつきで同じ論理状態になる(int fps)
+        {
+            string Replay(int hz){Setup();var focus=new Card("concentrate_test","テスト",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.Sword,100,"");battle.TrySwitchEnemyActionPattern(source,new List<IEnemyAIAction>{new EnemyCardAction(focus,0),new EnemyCardAction(Move(),100)});var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();long last=0;var trace=new List<string>();void Step(long frame,int ms){if(frame==8)battle.Pause(BattlePauseReason.User);if(frame==12)battle.Resume(BattlePauseReason.User);battle.TickFrame(ms);trace.Add(player.CurrentHp+":"+source.GridPosition+":"+source.IsConcentrating+":"+battle.EnemyAttackTiles.Count);}for(int i=1;i<=hz;i++){long now=i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/hz;clock.Accumulate(now-last);last=now;clock.Drain(Step,3);}while(clock.PendingFrames>0)clock.Drain(Step,3);return string.Join("|",trace);}
+            Assert.AreEqual(Replay(60),Replay(fps));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 新しい敵の途中状態を黙って保存せず解除後は同じ保存契約を保つ(bool temporary)
+        {
+            var map=DungeonConfig.CreateTestDungeon(8,30,7);var deck=new Deck();var defaults=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck);var hash=defaults.Definitions.MapHash;
+            var store=new Olca.Core.Logic.Dungeon.MemoryCheckpointStore(defaults.Definitions);var session=new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(defaults.Definitions,store);var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
+            var capture=typeof(Olca.Core.Logic.Dungeon.DungeonCheckpointSession).GetMethod("Capture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            Olca.Core.Domain.CheckpointDto Capture()=>(Olca.Core.Domain.CheckpointDto)capture.Invoke(session,new object[]{manager.Dungeon,Olca.Core.Domain.CheckpointBoundary.Departure,null});
+            var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(Capture());var enemy=map.MapCells[7].Enemy;
+            if(temporary)enemy.MoveTemporarily(new Vector2Int(4,0));else enemy.SetConcentrateBuff(2);
+            Assert.Throws<System.ArgumentException>(()=>Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck));
+            var error=Assert.Throws<System.Reflection.TargetInvocationException>(()=>Capture());Assert.IsInstanceOf<System.ArgumentException>(error.InnerException);
+            if(temporary)enemy.ReturnToOriginalPosition();else enemy.SetConcentrateBuff(1);
+            CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(Capture()));Assert.AreEqual(hash,Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(map,deck).Definitions.MapHash);
+        }
     }
 }

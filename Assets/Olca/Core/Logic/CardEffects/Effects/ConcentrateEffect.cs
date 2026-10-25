@@ -21,10 +21,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
         public void Execute(BattleContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
-            if(context.EnemySource!=null)throw new NotSupportedException("敵の集中所有は未実装です");
             // 旧戦闘の遅延処理が次戦のプレイヤーへ再付与することを防ぐ。
             if (context.Battle.IsGameOver) return;
-            context.Player.SetConcentrateBuff(multiplier);
+            if(!context.User.IsDead)context.User.SetConcentrateBuff(multiplier);
         }
     }
 }

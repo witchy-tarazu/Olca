@@ -1195,7 +1195,7 @@ namespace Olca.Core.Logic.Dungeon
                     w.Write((int)cell.Type); w.Write(cell.Height);
                     if (cell.Enemy == null) continue;
                     var e = cell.Enemy;
-                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || (e.PoiseRecoveryDelayFrames != e.PoiseDefinition?.RecoveryDelayFrames || e.PoiseRecoveryRemainingFrames > 0) || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum)
+                    if (string.IsNullOrWhiteSpace(e.EnemyId) || e.MaxHp <= 0 || e.IsSummoned || e.IsInTemporaryMove || e.IsConcentrating || e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || (e.PoiseRecoveryDelayFrames != e.PoiseDefinition?.RecoveryDelayFrames || e.PoiseRecoveryRemainingFrames > 0) || e.CurrentHp != e.MaxHp || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum)
                         throw new ArgumentException("敵の標準定義が必要です");
                     enemies.Add(i, new Enemy(e.EnemyId, e.Name, e.MaxHp, e.Element, e.GridPosition, resistances: e.Resistances, statusResistances: e.StatusResistances, poiseDefinition: e.PoiseDefinition, dashContact: e.DashContact));
                     heights.Add(i, cell.Height);
@@ -1750,7 +1750,7 @@ namespace Olca.Core.Logic.Dungeon
             foreach (var pair in Definitions.Enemies)
             {
                 var e = mapped.TryGetValue(pair.Key, out var live) ? live : null;
-                if (e != null && (e.IsSummoned || (!e.IsDead && (e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || (e.PoiseRecoveryDelayFrames != e.PoiseDefinition?.RecoveryDelayFrames || e.PoiseRecoveryRemainingFrames > 0) || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum))))
+                if (e != null && (e.IsSummoned || (!e.IsDead && (e.IsInTemporaryMove || e.IsConcentrating || e.Guard.IsActive || e.HasBarrier || e.HasAura || e.IsInvincible || (e.PoiseRecoveryDelayFrames != e.PoiseDefinition?.RecoveryDelayFrames || e.PoiseRecoveryRemainingFrames > 0) || e.ActiveStatus != null || e.IsStunned || e.TerrainState.IsFloating || e.AccumulatedPoiseDamage != 0 || e.Poise != e.PoiseDefinition?.Maximum))))
                     throw new ArgumentException("未対応の敵状態を保存できません");
                 enemyStates.Add(new CheckpointEnemyDto { CellIndex = pair.Key, EnemyId = pair.Value.EnemyId,
                     Hp = e?.CurrentHp ?? 0, GridX = e?.GridPosition.X ?? pair.Value.GridPosition.X, GridY = e?.GridPosition.Y ?? pair.Value.GridPosition.Y });

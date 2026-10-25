@@ -112,15 +112,15 @@ namespace Olca.Core.Logic.Battle
         }
         internal static void ValidateCard(Card value)
         {
-            // 未接続の効果をプレイヤー固定の実装へ流さない。判断待ちでなく実装残として明示する。
-            if(value.MoveMotionTime>0||value.AttackMotionTime>0||value.Category==CardCategory.Support)
-                throw new NotSupportedException("敵の一時移動/Supportカード接続は未実装です");
+            if(value==null)throw new ArgumentNullException(nameof(value));
         }
         public bool CanExecute(AIContext context)
         {
             if(context.Battle==null||context.Battle.IsGameOver||context.Self==null||context.Self.IsDead||IsRunning)return false;
-            if(card.Category==CardCategory.Defense)return true;
+            if(context.Self.IsInTemporaryMove)return false;
+            if(card.Category==CardCategory.Defense||card.Category==CardCategory.Support)return true;
             if(!context.HasVisiblePlayer)return false;
+            if(card.MoveMotionTime>0||card.AttackMotionTime>0)return true;
             if(card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single&&(context.Self.GridPosition.Y!=context.Player.GridPosition.Y||context.Self.GridPosition.X==context.Player.GridPosition.X))return false;
             int range=card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile?1:card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTwoTiles?2:card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontThreeTiles?3:0;
             if((card.Id=="sword"||card.Id=="fire_sword")&&card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single)range=1;
@@ -132,19 +132,28 @@ namespace Olca.Core.Logic.Battle
             cancellation?.Dispose();cancellation=new CancellationTokenSource();
             int forward=context.Player.GridPosition.X<context.Self.GridPosition.X?-1:1;
             forward=context.ResolveDirectionalInput(new Vector2Int(forward,0)).X;
-            var effectContext=new BattleContext(context.Battle,card,context.Self,forward){CardDatabase=database,ActionCancellation=cancellation.Token,TemporaryPlayerPosition=context.Self.GridPosition,LockedSingleTarget=context.Player.GridPosition};
-            task=UseAsync(effectContext,cancellation.Token);
+            var used=card.Category==CardCategory.Attack&&context.Self.IsConcentrating?card.WithPowerMultiplier(context.Self.ConsumeConcentrateBuff()):card;
+            var effectContext=new BattleContext(context.Battle,used,context.Self,forward){CardDatabase=database,ActionCancellation=cancellation.Token,TemporaryPlayerPosition=context.Self.GridPosition,LockedSingleTarget=context.Player.GridPosition};
+            var effect=CardEffectFactory.CreateEffect(used);var previewOwner=new object();
+            effectContext.AttackResolved=()=>context.Battle.ClearEnemyAttackTelegraph(previewOwner);
+            if(used.Category==CardCategory.Attack||used.Category==CardCategory.Field){
+                if(effect is Olca.Core.Logic.CardEffects.Effects.ModifiableCardEffect modified)context.Battle.SetEnemyAttackTelegraph(previewOwner,modified.PreviewTargets(effectContext));
+                else if(effect is Olca.Core.Logic.CardEffects.Effects.TemporaryMoveAttackEffect movement)context.Battle.SetEnemyAttackTelegraph(previewOwner,new[]{movement.PreviewTarget(effectContext)});
+            }
+            task=UseAsync(effectContext,effect,previewOwner,cancellation.Token);
             ObserveCompletion();
         }
-        private async FrameTask UseAsync(BattleContext context,CancellationToken ct)
+        private async FrameTask UseAsync(BattleContext context,ICardEffect effect,object previewOwner,CancellationToken ct)
         {
-            var effect=CardEffectFactory.CreateEffect(card);
-            if(effect is IAsyncCardEffect asyncEffect)await asyncEffect.ExecuteAsync(context,ct);
-            else{
-                if(!card.IsInstantEffect){if(card.StartupFrames.HasValue)await context.Battle.WaitForActionFramesAsync(card.StartupFrames.Value,ct);else if(card.StartupTime>0)await context.Battle.WaitForActionAsync(card.StartupTime,ct);}
-                ct.ThrowIfCancellationRequested();effect.Execute(context);
-                if(!card.IsInstantEffect){if(card.RecoveryFrames.HasValue)await context.Battle.WaitForActionFramesAsync(card.RecoveryFrames.Value,ct);else if(card.RecoveryTime>0)await context.Battle.WaitForActionAsync(card.RecoveryTime,ct);}
-            }
+            var card=context.UsedCard;
+            try{
+                if(effect is IAsyncCardEffect asyncEffect)await asyncEffect.ExecuteAsync(context,ct);
+                else{
+                    if(!card.IsInstantEffect){if(card.StartupFrames.HasValue)await context.Battle.WaitForActionFramesAsync(card.StartupFrames.Value,ct);else if(card.StartupTime>0)await context.Battle.WaitForActionAsync(card.StartupTime,ct);}
+                    ct.ThrowIfCancellationRequested();context.ResolveAttackPreview();effect.Execute(context);
+                    if(!card.IsInstantEffect){if(card.RecoveryFrames.HasValue)await context.Battle.WaitForActionFramesAsync(card.RecoveryFrames.Value,ct);else if(card.RecoveryTime>0)await context.Battle.WaitForActionAsync(card.RecoveryTime,ct);}
+                }
+            }finally{context.Battle.ClearEnemyAttackTelegraph(previewOwner);}
         }
         private void ObserveCompletion(){if(task.Status!=FrameTaskStatus.Pending){if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation?.Dispose();cancellation=null;}}
         public void Tick(int milliseconds,AIContext context,bool logicalFrame)=>ObserveCompletion();

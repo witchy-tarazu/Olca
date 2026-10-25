@@ -58,6 +58,10 @@ namespace Olca.Core.Logic.Battle
         }
         private readonly bool[,] permanentHoles = new bool[GRID_WIDTH, GRID_HEIGHT];
         private Vector2Int? protectedPosition;
+        private readonly Dictionary<object,Vector2Int> temporaryOrigins=new Dictionary<object,Vector2Int>();
+        internal void ProtectTemporaryOrigin(object owner,Vector2Int position)=>temporaryOrigins.Add(owner,position);
+        internal void ReleaseTemporaryOrigin(object owner)=>temporaryOrigins.Remove(owner);
+        internal void ClearTemporaryOrigins()=>temporaryOrigins.Clear();
         private Func<Vector2Int, bool> occupancyQuery;
         private readonly Dictionary<string, FieldObstacle> obstacles = new Dictionary<string, FieldObstacle>();
 
@@ -247,7 +251,7 @@ namespace Olca.Core.Logic.Battle
         /// <summary>生存参加者と一時移動元を共通の占有判定に含める。</summary>
         public bool IsOccupied(Vector2Int position)
             => IsInBounds(position) && ((protectedPosition.HasValue && position == protectedPosition.Value)
-                || (occupancyQuery?.Invoke(position) ?? false));
+                || temporaryOrigins.ContainsValue(position) || (occupancyQuery?.Invoke(position) ?? false));
 
         // 戦闘終了時はnullに戻し、参加者への参照を残さない。
         internal void SetOccupancyQuery(Func<Vector2Int, bool> query) => occupancyQuery = query;

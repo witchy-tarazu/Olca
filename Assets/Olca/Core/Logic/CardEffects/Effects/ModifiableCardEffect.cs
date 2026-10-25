@@ -116,8 +116,25 @@ namespace Olca.Core.Logic.CardEffects.Effects
             context.Battle.DelayedEffects.RegisterDelayedEffect(delayed);
         }
 
+        /// <summary>発動開始時に固定する予告範囲。カード自身の既存対象/調律を使い、時間は生成しない。</summary>
+        internal System.Collections.Generic.IEnumerable<Vector2Int> PreviewTargets(BattleContext context)
+        {
+            var origin=context.GetEffectivePlayerPosition();var tiles=new HashSet<Vector2Int>();
+            if(productBomb){for(int dx=-1;dx<=1;dx++)tiles.Add(new Vector2Int(origin.X+3*context.ForwardX+dx,origin.Y));}
+            else if(baseTargetType==DamageTargetType.All){for(int x=0;x<BattleField.GRID_WIDTH;x++)for(int y=0;y<BattleField.GRID_HEIGHT;y++)tiles.Add(new Vector2Int(x,y));}
+            else foreach(var tile in GetBaseHitPanels(context,GetBaseTargets(context,baseTargetType)))tiles.Add(tile);
+            foreach(var effect in context.UsedCard.Modifier.AdditionalEffects){
+                if(effect.Trigger!=DerivativeTrigger.Immediate)continue;
+                if(effect.EffectType==AdditionalEffectType.DelayedProjectile){tiles.Clear();tiles.Add(new Vector2Int(origin.X+effect.TargetOffset.X*context.ForwardX,origin.Y+effect.TargetOffset.Y));}
+                if(effect.EffectType==AdditionalEffectType.Penetration){tiles.Clear();for(int x=origin.X+context.ForwardX;x>=0&&x<BattleField.GRID_WIDTH;x+=context.ForwardX)tiles.Add(new Vector2Int(x,origin.Y));}
+                if(effect.EffectType==AdditionalEffectType.Spread){foreach(var tile in tiles.ToArray()){tiles.Add(new Vector2Int(tile.X-1,tile.Y));tiles.Add(new Vector2Int(tile.X+1,tile.Y));}}
+            }
+            return tiles;
+        }
+
         private void ExecuteCardEffect(BattleContext context)
         {
+            context.ResolveAttackPreview();
             using (var influence = new AttackInfluence()) ExecuteHitbox(context.WithInfluence(influence));
         }
 

@@ -32,6 +32,8 @@ namespace Olca.Core.Logic.CardEffects
         public Enemy EnemySource { get; }
         public int ForwardX { get; }
         internal CancellationToken ActionCancellation { get; set; }
+        internal Action AttackResolved { get; set; }
+        internal void ResolveAttackPreview()=>AttackResolved?.Invoke();
         // 前隙のある敵単体攻撃は狙ったマスを保持し、相手の移動へ追尾しない。
         internal Vector2Int? LockedSingleTarget { get; set; }
         internal CardTarget User => EnemySource == null ? new CardTarget(Player) : new CardTarget(EnemySource);
@@ -40,6 +42,13 @@ namespace Olca.Core.Logic.CardEffects
             if (EnemySource != null) return Player.IsDead ? new List<CardTarget>() : new List<CardTarget>{new CardTarget(Player)};
             var result = new List<CardTarget>();
             foreach(var enemy in Enemies) if(!enemy.IsDead) result.Add(new CardTarget(enemy));
+            return result;
+        }
+        internal List<CardTarget> GetMovementBlockers()
+        {
+            var result=new List<CardTarget>();
+            if(EnemySource!=null&&!Player.IsDead)result.Add(new CardTarget(Player));
+            foreach(var enemy in Enemies)if(!enemy.IsDead&&!ReferenceEquals(enemy,EnemySource))result.Add(new CardTarget(enemy));
             return result;
         }
         internal CardTarget? GetNearestForwardOpponent()
@@ -173,6 +182,12 @@ namespace Olca.Core.Logic.CardEffects
         internal Vector2Int GridPosition => enemy!=null?enemy.GridPosition:player.GridPosition;
         internal long TotalHitsTaken => enemy!=null?enemy.TotalHitsTaken:player.TotalHitsTaken;
         internal long TotalDamageTaken => enemy!=null?enemy.TotalDamageTaken:player.TotalDamageTaken;
+        internal Vector2Int LogicalPosition=>enemy!=null?enemy.GetLogicalPosition():player.GetLogicalPosition();
+        internal BattleTerrainState TerrainState=>enemy!=null?enemy.TerrainState:player.TerrainState;
+        internal bool IsInTemporaryMove=>enemy!=null?enemy.IsInTemporaryMove:player.IsInTemporaryMove;
+        internal void MoveTemporarily(Vector2Int value){if(enemy!=null)enemy.MoveTemporarily(value);else player.MoveTemporarily(value);}
+        internal void ReturnToOriginalPosition(){if(enemy!=null)enemy.ReturnToOriginalPosition();else player.ReturnToOriginalPosition();}
+        internal void SetConcentrateBuff(float value){if(enemy!=null)enemy.SetConcentrateBuff(value);else player.SetConcentrateBuff(value);}
         internal void Heal(int amount){if(enemy!=null)enemy.Heal(amount);else player.Heal(amount);}
         internal void SetBarrier(int hp){if(enemy!=null)enemy.SetBarrier(hp);else player.SetBarrier(hp);}
         internal void TakeDamage(int damage,ElementType element,AttackProperty properties,int? poiseDamage,int invincibilityMs,int hitStopFrames=0,AttackInfluence influence=null)

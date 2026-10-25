@@ -277,8 +277,8 @@ namespace Olca.Core.Logic.Battle
             this.state = BattleState.InProgress;
 
             battleField.SetOccupancyQuery(position =>
-                (!player.IsDead && player.GridPosition == position) ||
-                this.enemies.Exists(enemy => !enemy.IsDead && enemy.GridPosition == position));
+                (!player.IsDead && (player.GridPosition == position||player.GetLogicalPosition()==position)) ||
+                this.enemies.Exists(enemy => !enemy.IsDead && (enemy.GridPosition == position||enemy.GetLogicalPosition()==position)));
             previousPlayerPosition = player.GridPosition;
             previousPlayerLogicalPosition = player.GetLogicalPosition();
             player.OnPositionChanged += OnPlayerPositionChanged;
@@ -340,6 +340,20 @@ namespace Olca.Core.Logic.Battle
         public bool ConfigureEnemyHpPatterns(Enemy enemy,IReadOnlyList<EnemyHpActionPattern> patterns)
             => !IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.ConfigureHpPatterns(enemy,patterns);
 
+        private readonly Dictionary<object,HashSet<Vector2Int>> enemyAttackTelegraphs=new Dictionary<object,HashSet<Vector2Int>>();
+        /// <summary>表示用の固定対象マス。重複攻撃でもマスごとに一つとし、所有者数を表示へ渡さない。</summary>
+        public IReadOnlyList<Vector2Int> EnemyAttackTiles
+        {
+            get{var tiles=new HashSet<Vector2Int>();foreach(var entry in enemyAttackTelegraphs.Values)tiles.UnionWith(entry);var result=new List<Vector2Int>(tiles);result.Sort((a,b)=>a.X!=b.X?a.X.CompareTo(b.X):a.Y.CompareTo(b.Y));return result.AsReadOnly();}
+        }
+        internal void SetEnemyAttackTelegraph(object owner,IEnumerable<Vector2Int> tiles)
+        {
+            if(IsGameOver)return;
+            var result=new HashSet<Vector2Int>();foreach(var tile in tiles)if(battleField.IsInBounds(tile))result.Add(tile);
+            if(result.Count>0)enemyAttackTelegraphs[owner]=result;
+        }
+        internal void ClearEnemyAttackTelegraph(object owner){if(owner!=null)enemyAttackTelegraphs.Remove(owner);}
+
         private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
         {
             enemy.IsOnGrass = () => battleField.GetPanelType(enemy.GridPosition) == PanelType.Grass;
@@ -348,18 +362,19 @@ namespace Olca.Core.Logic.Battle
             enemy.OnDamageProcessingStarted += BeginResolution;
             enemy.OnDamageProcessingCompleted += EndResolution;
             var previous = enemy.GridPosition;
+            var previousLogical=enemy.GetLogicalPosition();
             Action<Vector2Int> moved = position =>
             {
                 var from = previous;
                 previous = position;
-                if (!IsGameOver && !enemy.IsDead && from != position)
+                bool enteredLogical=previousLogical!=enemy.GetLogicalPosition();previousLogical=enemy.GetLogicalPosition();
+                if (!IsGameOver && !enemy.IsDead && (from != position||enteredLogical))
                 {
                     BeginResolution();
                     try
                     {
-                        panelEffects.OnCharacterMoved(enemy);
-                        panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
-                        panelEffects.ApplyOnEnemyEnterEffect(enemies, player, position);
+                        if(from!=position)panelEffects.ApplyOnLeaveEffect(enemy.TerrainState, from);
+                        if(enteredLogical){panelEffects.OnCharacterMoved(enemy);panelEffects.ApplyOnEnemyEnterEffect(enemies, player, enemy.GetLogicalPosition());}
                     }
                     finally { EndResolution(); }
                 }
@@ -796,6 +811,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            enemyAttackTelegraphs.Clear();
             simultaneousKills.Finish();
             hitStopRemainingFrames=pendingHitStopFrames=0;
             darkeningEffects.Clear();
@@ -805,6 +821,7 @@ namespace Olca.Core.Logic.Battle
                 entry.Key.CancelStatusFrame();
                 entry.Key.Guard.Clear();
                 entry.Key.ClearProtection();
+                entry.Key.SetConcentrateBuff(1f);
                 entry.Key.ClearInvincibility();
                 entry.Key.ClearPoiseRecovery();
                 entry.Key.IsOnGrass = null;
@@ -821,6 +838,7 @@ namespace Olca.Core.Logic.Battle
             player.OnPositionChanged -= OnPlayerPositionChanged;
             battleField.SetOccupancyQuery(null);
             battleField.SetProtectedPosition(null);
+            battleField.ClearTemporaryOrigins();
             player.IsOnGrass = null;
             player.BattleElement = null;
             player.Guard.Clear();

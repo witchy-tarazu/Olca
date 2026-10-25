@@ -548,11 +548,19 @@ namespace Olca.Tests.Battle
         public void 一時移動の経路も同じ穴判定を使う(bool floating, int expectedX)
         {
             player.TerrainState.IsFloating = floating;
-            field.ChangePanelType(new Vector2Int(2, 0), PanelType.Hole);
-            var effect = new Olca.Core.Logic.CardEffects.Effects.TemporaryMoveAttackEffect(new Vector2Int(1, 0), 2, 0, 0, MovePenetrationMode.Blocking);
-            var calculate = effect.GetType().GetMethod("CalculateTargetPosition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var result = (Vector2Int)calculate.Invoke(effect, new object[] { player.GridPosition, field, enemies, player.TerrainState });
-            Assert.AreEqual(expectedX, result.X);
+            var keeper=new Enemy("keeper","テスト",100,ElementType.None,new Vector2Int(5,0));
+            var battle=new BattleSystem(player,new System.Collections.Generic.List<Enemy>{keeper},new Deck());
+            battle.Field.ChangePanelType(new Vector2Int(2,0),PanelType.Hole);
+            var card=new Card("move_fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"");
+            var effect=new Olca.Core.Logic.CardEffects.Effects.TemporaryMoveAttackEffect(new Vector2Int(1,0),2,.1f,0,MovePenetrationMode.Blocking);
+            using(var cancellation=new System.Threading.CancellationTokenSource()){
+                var task=effect.ExecuteAsync(new Olca.Core.Logic.CardEffects.BattleContext(battle,card),cancellation.Token);
+                Assert.AreEqual(expectedX,player.GridPosition.X);
+                cancellation.Cancel();
+                if(floating)Assert.Throws<System.OperationCanceledException>(()=>task.GetAwaiter().GetResult());else task.GetAwaiter().GetResult();
+                Assert.AreEqual(new Vector2Int(1,0),player.GridPosition);
+                Assert.IsFalse(player.IsInTemporaryMove);
+            }
         }
         [TestCase(false)]
         [TestCase(true)]
