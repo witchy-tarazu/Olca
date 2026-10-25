@@ -36,6 +36,73 @@ namespace Olca.Tests.Battle
         }
 
 
+        [Test]
+        public void 個別ヒットと回復の表示通知は同フレームのHP一括更新と独立する()
+        {
+            var enemy = new Enemy("feedback", "テスト", 100, ElementType.None, new Vector2Int(3, 0));
+            var battle = CreateBattle(enemy);
+            var playerHits = new List<CombatFeedback>();
+            var enemyHits = new List<CombatFeedback>();
+            int playerUpdates = 0, enemyUpdates = 0;
+            player.OnCombatFeedback += playerHits.Add;
+            enemy.OnCombatFeedback += enemyHits.Add;
+            player.OnHpChanged += (_, __) => playerUpdates++;
+            enemy.OnHpChanged += (_, __) => enemyUpdates++;
+            battle.RunLogicalFrame(() => {
+                player.TakeDamage(10); player.TakeDamage(20); player.Heal(5);
+                enemy.TakeDamage(7, ElementType.None); enemy.TakeDamage(11, ElementType.None); enemy.Heal(4);
+                Assert.AreEqual(100, player.CurrentHp);
+                Assert.AreEqual(100, enemy.CurrentHp);
+            });
+            Assert.AreEqual(75, player.CurrentHp); Assert.AreEqual(86, enemy.CurrentHp);
+            Assert.AreEqual(1, playerUpdates); Assert.AreEqual(1, enemyUpdates);
+            CollectionAssert.AreEqual(new[] { 10, 20, 5 }, playerHits.Select(h => h.Amount));
+            CollectionAssert.AreEqual(new[] { 7, 11, 4 }, enemyHits.Select(h => h.Amount));
+            Assert.AreEqual(CombatFeedbackKind.Healing, playerHits.Last().Kind);
+            Assert.AreEqual(CombatFeedbackKind.Healing, enemyHits.Last().Kind);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 回復表示は実効量だけを各回復へ配分し満タン時には出さない(bool enemySide)
+        {
+            var enemy = new Enemy("feedback", "テスト", 100, ElementType.None, new Vector2Int(3, 0));
+            var battle = CreateBattle(enemy); var hits = new List<CombatFeedback>();
+            if (enemySide) enemy.OnCombatFeedback += hits.Add; else player.OnCombatFeedback += hits.Add;
+            void Heal(int n) { if (enemySide) enemy.Heal(n); else player.Heal(n); }
+            battle.RunLogicalFrame(() => Heal(100)); Assert.IsEmpty(hits);
+            battle.RunLogicalFrame(() => {
+                if (enemySide) enemy.TakeDamage(12, ElementType.None); else player.TakeDamage(12);
+                Heal(5); Heal(100);
+            });
+            CollectionAssert.AreEqual(new[] { 5, 7 }, hits.Where(h => h.Kind == CombatFeedbackKind.Healing).Select(h => h.Amount));
+            Assert.AreEqual(100, enemySide ? enemy.CurrentHp : player.CurrentHp);
+        }
+
+        [Test]
+        public void 完全防御の表示はガードとオーラとバリアを区別し本体HPを減らさない()
+        {
+            var enemy = new Enemy("feedback", "テスト", 100, ElementType.None, new Vector2Int(3, 0));
+            var hits = new List<CombatFeedback>(); enemy.OnCombatFeedback += hits.Add;
+            enemy.Guard.Set(true, false); enemy.TakeDamage(9, ElementType.None); enemy.Guard.Set(false, false);
+            enemy.SetAura(20); enemy.TakeDamage(9, ElementType.None); enemy.SetAura(0);
+            enemy.SetBarrier(20); enemy.TakeDamage(9, ElementType.None);
+            CollectionAssert.AreEqual(new[] { CombatFeedbackKind.Guard, CombatFeedbackKind.Immune, CombatFeedbackKind.BarrierDamage }, hits.Select(h => h.Kind));
+            Assert.AreEqual(9, hits.Last().Amount); Assert.AreEqual(100, enemy.CurrentHp);
+        }
+
+        [Test]
+        public void フレーム外の撃破通知でも表示をHP通知と購読解除より先に発行する()
+        {
+            var enemy = new Enemy("feedback", "テスト", 10, ElementType.None, new Vector2Int(3, 0));
+            var order = new List<string>();
+            enemy.OnCombatFeedback += hit => order.Add("hit:" + hit.Amount);
+            enemy.OnHpChanged += (_, __) => order.Add("hp");
+            enemy.OnDeath += () => order.Add("death");
+            enemy.TakeDamage(12, ElementType.None);
+            CollectionAssert.AreEqual(new[] { "hit:12", "hp", "death" }, order);
+        }
+
         private BattleSystem HandBonusBattle(out Deck deck, int bonus = 2)
         {
             deck = new Deck(Enumerable.Range(0,20).Select(i => new Card("fixture-"+i,"検証"+i,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,1,"検証")).ToList());

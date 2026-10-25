@@ -337,7 +337,6 @@ namespace Olca.Presentation.Field
         {foreach(var view in enemyViews)if(view!=null)view.SetHiddenByBlindness(false);}
 
         private PlayerCharacter damageTrackedPlayer;
-        private int previousPlayerHp;
         private CancellationTokenSource playerDamageCts;
         private Vector3 playerNormalScale;
         private Color playerNormalColor;
@@ -428,34 +427,30 @@ namespace Olca.Presentation.Field
         private float? battleCameraTargetX = null;  // バトル開始時のカメラ移動先（スムーズlerp用）
         private bool playerPositionUpdateEnabled = true;  // 復帰ジャンプ中はfalseにしてY座標の上書きを防ぐ
 
-        // HPの通知ごとに差分を取り、同フレームの連続被弾も個別に表示する。
+        // HPの一括通知とは独立した、個々の命中/回復/防御結果を表示する。
         private void BindPlayerDamage(PlayerCharacter player)
         {
             UnbindPlayerDamage();
             damageTrackedPlayer = player;
             if (player == null || !isActiveAndEnabled) return;
-            previousPlayerHp = player.CurrentHp;
             if (playerSprite != null)
             {
                 playerNormalScale = playerSprite.transform.localScale;
                 playerNormalColor = playerSprite.color;
             }
-            player.OnHpChanged += OnPlayerHpChanged;
+            player.OnCombatFeedback += OnPlayerCombatFeedback;
         }
 
-        private void OnPlayerHpChanged(int currentHp, int maxHp)
+        private void OnPlayerCombatFeedback(CombatFeedback feedback)
         {
-            int damage = previousPlayerHp - currentHp;
-            previousPlayerHp = currentHp;
-            if (damage <= 0 || !isActiveAndEnabled || playerSprite == null) return;
-
+            if(!isActiveAndEnabled||playerSprite==null)return;
             playerDamageCts ??= new CancellationTokenSource();
-            var bounds = playerSprite.bounds;
-            var position = new Vector3(bounds.center.x, bounds.max.y + 0.2f, bounds.center.z - 0.5f);
-            worldDamageNumberPool?.ShowDamage(damage, position, playerDamageCts.Token);
-            // 連続被弾でも倍率を累積させず、同じ基準サイズから再生する。
-            playerHitElapsed = 0f;
-            UpdatePlayerHitEffect(0f);
+            var bounds=playerSprite.bounds;
+            var position=new Vector3(bounds.center.x,bounds.max.y+.2f,bounds.center.z-.5f);
+            worldDamageNumberPool?.ShowFeedback(feedback,position,playerDamageCts.Token,damageTrackedPlayer);
+            if(feedback.Kind!=CombatFeedbackKind.Damage)return;
+            // 数値は各ヒット、点滅/倍率は同じ基準から更新して多段で累積させない。
+            playerHitElapsed=0f;UpdatePlayerHitEffect(0f);
         }
 
         private void UpdatePlayerHitEffect(float deltaTime)
@@ -477,11 +472,9 @@ namespace Olca.Presentation.Field
             }
         }
 
-        private void StopPlayerDamageFeedback()
+        private void StopPlayerDamageFeedback(bool cancelNumbers=true)
         {
-            playerDamageCts?.Cancel();
-            playerDamageCts?.Dispose();
-            playerDamageCts = null;
+            if(cancelNumbers){playerDamageCts?.Cancel();playerDamageCts?.Dispose();playerDamageCts=null;}
             if (playerHitElapsed >= 0f && playerSprite != null)
             {
                 playerSprite.transform.localScale = playerNormalScale;
@@ -493,7 +486,7 @@ namespace Olca.Presentation.Field
         private void UnbindPlayerDamage()
         {
             if (damageTrackedPlayer != null)
-                damageTrackedPlayer.OnHpChanged -= OnPlayerHpChanged;
+                damageTrackedPlayer.OnCombatFeedback -= OnPlayerCombatFeedback;
             damageTrackedPlayer = null;
             StopPlayerDamageFeedback();
         }
@@ -689,7 +682,7 @@ namespace Olca.Presentation.Field
         {
             ClearBombVisuals();
             SetBattleMoveVisibility(true);
-            StopPlayerDamageFeedback();
+            StopPlayerDamageFeedback(false);
             if (currentBattle != null)
             {
                 currentBattle.OnSummonAdded -= OnSummonAdded;
