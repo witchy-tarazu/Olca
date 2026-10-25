@@ -24,6 +24,9 @@ namespace Olca.Core.Logic.Integration
         public bool IsUserPaused { get; private set; }
         public bool IsBattleEndPresentationPending => dungeonSystem.PendingBattleEndPresentation.HasValue;
         public BattleResult? LastBattleResult { get; private set; }
+        public BattleEvaluationResult LastBattleEvaluation { get; private set; }
+        private readonly BattleEvaluationRules normalEvaluation, bossEvaluation;
+
         public void RequireBattleEndPresentation() => dungeonSystem.RequireBattleEndPresentation();
         public event Action<BattleResult> OnBattleEndPresentationRequested;
         public bool CompleteBattleEndPresentation()
@@ -67,9 +70,11 @@ namespace Olca.Core.Logic.Integration
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false, BattleEvaluationRules normalEvaluation = null, BattleEvaluationRules bossEvaluation = null)
         {
             this.player = player;
+            this.normalEvaluation = normalEvaluation ?? BattleEvaluationRules.ProvisionalNormal;
+            this.bossEvaluation = bossEvaluation ?? BattleEvaluationRules.ProvisionalBoss;
             this.randomProvider = randomProvider;
             this.logger = logger;
 
@@ -167,6 +172,7 @@ namespace Olca.Core.Logic.Integration
             ended=result=>{started.OnBattleEnd-=ended;if(ReferenceEquals(currentBattle,started))OnBattleEnd(result);};
             started.OnBattleEnd+=ended;
             LastBattleResult=null;
+            LastBattleEvaluation=null;
 
             // バトルフェーズに移行
             currentPhase = GamePhase.Battle;
@@ -187,6 +193,8 @@ namespace Olca.Core.Logic.Integration
         {
             logger?.LogInfo($"[DungeonBattleManager] バトル終了: {result}");
             LastBattleResult=result;
+            LastBattleEvaluation=result==BattleResult.Victory&&currentBattle!=null
+                ? (currentBattle.IsBossEncounter?bossEvaluation:normalEvaluation).Evaluate(currentBattle) : null;
             if(IsBattleEndPresentationPending)
             {
                 currentPhase=GamePhase.BattleOutcome;

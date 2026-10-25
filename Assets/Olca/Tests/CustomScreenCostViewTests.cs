@@ -45,24 +45,48 @@ namespace Olca.Tests
             p.InspectStatuses();e.InspectStatuses();Assert.AreEqual(frame,b.LogicalFrame);Assert.AreEqual(frames,p.InspectStatuses()[0].RemainingFrames);
             b.TickFrame(16);Assert.AreEqual(frames,own[0].RemainingFrames);Assert.Less(p.InspectStatuses()[0].RemainingFrames,frames);b.Transformations.Dispose();
         }
+        [Test]
+        public void 非表示切替と同一フレームの論理確定は復帰後もカスタムを閉じない()
+        {
+            var root=new GameObject("VisibilityInputBoundary",typeof(RectTransform),typeof(Canvas));var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+            var b=new BattleSystem(new PlayerCharacter(100),new List<Enemy>{new Enemy("test","テスト",50,ElementType.None,new Olca.Core.Domain.Vector2Int(3,0))},new Deck(new List<Card>()));
+            try {
+                Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,b.CustomScreen);b.CustomScreen.Open(new Card[0],new MockRandomProvider());
+                System.Action queued=null;view.ConfigureLogicalConfirmation((_,action)=>queued=action,()=>0L);
+                typeof(CustomScreenView).GetMethod("OnConfirmClicked",flags).Invoke(view,null);Assert.IsNotNull(queued);
+
+                view.ToggleCustomPresentation();Assert.IsTrue(view.IsCustomPresentationHidden);view.ToggleCustomPresentation();Assert.IsFalse(view.IsCustomPresentationHidden);
+                queued();Assert.IsFalse(b.CustomScreen.IsConfirming,"切替前のポインター確定も持ち越さない");
+                view.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput{MenuConfirmButtonDown=true});
+                Assert.IsTrue(b.CustomScreen.IsOpen,"表示復帰と同じ描画フレームの古い確定を通さない");Assert.IsFalse(b.CustomScreen.IsConfirming,"閉じる準備も開始しない");Assert.AreEqual(0,b.LogicalFrame);
+            }finally{typeof(CustomScreenView).GetMethod("OnDestroy",flags).Invoke(view,null);Object.DestroyImmediate(root);b.Transformations.Dispose();}
+        }
+
         [TestCase(false)] [TestCase(true)]
-        public void カスタム詳細は空手札でも自分と複数敵を切り替え停止と選択を保持し解除で閉じる(bool paused)
+        public void 非表示中の敵巡回は同じマスでも自分を含まず停止を保持し解除で復元する(bool paused)
         {
             var root=new GameObject("CombatInspection",typeof(RectTransform),typeof(Canvas));var flags=BindingFlags.NonPublic|BindingFlags.Instance;
-            var p=new PlayerCharacter(100);var e1=new Enemy("first","テキイチ",50,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0));var e2=new Enemy("second","テキニ",70,ElementType.Water,new Olca.Core.Domain.Vector2Int(4,0));
+            var p=new PlayerCharacter(100);var e1=new Enemy("first","テキイチ",50,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0));var e2=new Enemy("second","テキニ",70,ElementType.Water,new Olca.Core.Domain.Vector2Int(3,0));
             var b=new BattleSystem(p,new List<Enemy>{e1,e2},new Deck(new List<Card>()));CustomScreenView view=null;
             try {
                 Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
                 view=root.AddComponent<CustomScreenView>();var obj=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(root.transform,false);var label=new GameObject("Label",typeof(RectTransform),typeof(Text));label.transform.SetParent(obj.transform,false);label.GetComponent<Text>().font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");
                 typeof(CustomScreenView).GetField("confirmButton",flags).SetValue(view,obj.GetComponent<Button>());typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,b.CustomScreen);
                 b.CustomScreen.Open(new Card[0],new MockRandomProvider());view.BindCombatants(b);long frame=b.LogicalFrame;
+                if(!paused){view.ToggleCustomPresentation();view.OpenCombatantDetails(1);var firstNext=root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection");Assert.IsTrue(firstNext.targetGraphic.enabled);Assert.IsTrue(firstNext.targetGraphic.raycastTarget);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseCustomPadDetails").targetGraphic.enabled);view.ToggleCustomPresentation();}
+
                 view.OpenCombatantDetails(0);var details=root.GetComponentsInChildren<Text>().Single(t=>t.name=="CustomPadDetailsText");StringAssert.Contains("ジブン",details.text);
-                if(paused){Olca.Unity.GameplayPause.SetPaused(true);view.OpenCombatantDetails(1);StringAssert.Contains("ジブン",details.text);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
-                typeof(CustomScreenView).GetMethod("ApplyCustomPad",flags).Invoke(view,new object[]{Olca.Unity.CustomPadCommand.Right});StringAssert.Contains("テキイチ",details.text);
-                root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection").onClick.Invoke();StringAssert.Contains("テキニ",details.text);
-                root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection").onClick.Invoke();StringAssert.Contains("ジブン",details.text);
+                typeof(CustomScreenView).GetMethod("ApplyCustomPad",flags).Invoke(view,new object[]{Olca.Unity.CustomPadCommand.Right});StringAssert.Contains("ジブン",details.text,"自分を敵巡回へ混ぜない");
+                view.OpenCombatantDetails(1);StringAssert.Contains("ジブン",details.text,"敵詳細は非表示モードだけ");
+                typeof(CustomScreenView).GetMethod("ClosePadDetails",flags).Invoke(view,null);view.ToggleCustomPresentation();Assert.IsTrue(view.IsCustomPresentationHidden);Assert.IsFalse(obj.GetComponent<Image>().enabled);Assert.IsFalse(obj.GetComponent<Image>().raycastTarget);
+                view.OpenCombatantDetails(1);StringAssert.Contains("テキイチ",details.text);
+                if(paused){Olca.Unity.GameplayPause.SetPaused(true);view.OpenCombatantDetails(0);view.ToggleCustomPresentation();StringAssert.Contains("テキイチ",details.text);Assert.IsTrue(view.IsCustomPresentationHidden);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
+                typeof(CustomScreenView).GetMethod("ApplyCustomPad",flags).Invoke(view,new object[]{Olca.Unity.CustomPadCommand.Right});StringAssert.Contains("テキニ",details.text);
+                root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection").onClick.Invoke();StringAssert.Contains("テキイチ",details.text);
+                typeof(CustomScreenView).GetMethod("ApplyCustomPad",flags).Invoke(view,new object[]{Olca.Unity.CustomPadCommand.PageDown});StringAssert.Contains("ジブン",details.text);Assert.IsFalse(root.transform.Find("CustomPadDetails/NextInspection").gameObject.activeSelf);
                 Assert.AreEqual(frame,b.LogicalFrame);Assert.IsTrue(b.CustomScreen.IsOpen);Assert.IsEmpty(b.CustomScreen.SelectedCards);
-                view.BindCombatants(null);Assert.IsFalse(root.transform.Find("CustomPadDetails").gameObject.activeSelf);
+                view.BindCombatants(null);Assert.IsFalse(root.transform.Find("CustomPadDetails").gameObject.activeSelf);Assert.IsFalse(view.IsCustomPresentationHidden);Assert.IsTrue(obj.GetComponent<Image>().enabled);Assert.IsTrue(obj.GetComponent<Image>().raycastTarget);
             } finally {if(view!=null)typeof(CustomScreenView).GetMethod("OnDestroy",flags).Invoke(view,null);Object.DestroyImmediate(root);b.Transformations.Dispose();Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
         }
 

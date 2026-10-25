@@ -5395,3 +5395,90 @@ namespace Olca.Tests.Integration {
   [NUnit.Framework.Test] public void 再割当を通常イベントとメニューへ反映し保持と切断復帰で誤発動しない(){var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var provider=new Olca.Unity.UnityInputProvider();var input=new Olca.Unity.CustomGamepadInput(()=>true,context:"menu");try{var edit=Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();NUnit.Framework.Assert.IsTrue(edit.TryAssign(("gamepad","battle","AttackPrimary"),"RightTrigger",out _));NUnit.Framework.Assert.IsTrue(edit.TryAssign(("gamepad","menu","Decide"),"LeftTrigger",out _));NUnit.Framework.Assert.IsTrue(provider.TryRestoreGamepadProfile(edit.Preview(),out _));provider.GamepadContext=()=>"battle";provider.GamepadPauseAvailable=()=>true;provider.StartEventCapture();provider.CaptureTimestamped();input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.RightTrigger);NUnit.Framework.Assert.IsTrue(provider.CaptureTimestamped().Last().Input.BasicAttackButtonDown);State(pad);provider.CaptureTimestamped();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.Start);NUnit.Framework.Assert.IsTrue(provider.ConsumeGamepadPause());NUnit.Framework.Assert.IsFalse(provider.ConsumeGamepadPause());State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.Start);NUnit.Framework.Assert.IsFalse(provider.ConsumeGamepadPause());State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger);NUnit.Framework.Assert.AreEqual(Olca.Unity.CustomPadCommand.Decide,input.Read().Single().Command);UnityEngine.InputSystem.InputSystem.DisableDevice(pad);input.Read();UnityEngine.InputSystem.InputSystem.EnableDevice(pad);State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger);NUnit.Framework.Assert.IsEmpty(input.Read());State(pad);input.Read();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger);NUnit.Framework.Assert.AreEqual(Olca.Unity.CustomPadCommand.Decide,input.Read().Single().Command);}finally{input.Dispose();provider.Dispose();var reset=new Olca.Unity.UnityInputProvider();reset.TryRestoreGamepadProfile(Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile(),out _);reset.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}}
  }
 }
+
+namespace Olca.Tests.Integration
+{
+    public class BattleEvaluationTests
+    {
+        [TestCase(100,BattleEvaluationGrade.Excellent)] [TestCase(90,BattleEvaluationGrade.Excellent)]
+        [TestCase(89,BattleEvaluationGrade.Great)] [TestCase(75,BattleEvaluationGrade.Great)]
+        [TestCase(74,BattleEvaluationGrade.Good)] [TestCase(50,BattleEvaluationGrade.Good)]
+        [TestCase(49,BattleEvaluationGrade.Fair)] [TestCase(0,BattleEvaluationGrade.Fair)]
+        public void 暫定の評価境界は下限を含み四段階へ写像する(int points,BattleEvaluationGrade expected)
+            =>Assert.AreEqual(expected,BattleEvaluationRules.ProvisionalNormal.GradeForPoints(points));
+
+        [TestCase(0,100)] [TestCase(1800,100)] [TestCase(1801,99)]
+        [TestCase(4500,75)] [TestCase(7200,50)] [TestCase(long.MaxValue,50)]
+        public void 時間配点は論理フレームの両端と整数切捨てと上限を守る(long frames,int points)
+            =>Assert.AreEqual(points,BattleEvaluationRules.ProvisionalNormal.Evaluate(frames,0,1,1).Points);
+
+        [Test]
+        public void のけぞりと同時撃破は独立配点で単体戦と最大組だけを評価する()
+        {
+            var r=BattleEvaluationRules.ProvisionalNormal;
+            Assert.AreEqual(100,r.Evaluate(0,0,1,1).Points);
+            Assert.AreEqual(80,r.Evaluate(0,0,1,3).Points);
+            Assert.AreEqual(90,r.Evaluate(0,0,2,3).Points);
+            Assert.AreEqual(100,r.Evaluate(0,0,3,3).Points);
+            Assert.AreEqual(90,r.Evaluate(0,1,3,3).Points);
+            Assert.AreEqual(70,r.Evaluate(0,int.MaxValue,int.MaxValue,3).Points);
+        }
+        [Test]
+        public void 通常とボスの基準は独立して差替え可能で不正定義を拒否する()
+        {
+            Assert.AreEqual(66,BattleEvaluationRules.ProvisionalNormal.Evaluate(5400,0,1,1).Points);
+            Assert.AreEqual(91,BattleEvaluationRules.ProvisionalBoss.Evaluate(5400,0,1,1,true).Points);
+            var custom=new BattleEvaluationRules(100,0,0,1,2,1,99,98,97);
+            Assert.AreEqual(100,custom.Evaluate(1,100,0,5).Points);Assert.AreEqual(0,custom.Evaluate(2,0,5,5).Points);
+            Assert.Throws<System.ArgumentException>(()=>new BattleEvaluationRules(50,30,30,1,2,1,90,75,50));
+            Assert.Throws<System.ArgumentException>(()=>new BattleEvaluationRules(50,30,20,2,2,1,90,75,50));
+            Assert.Throws<System.ArgumentException>(()=>new BattleEvaluationRules(50,30,20,1,2,0,90,75,50));
+            Assert.Throws<System.ArgumentException>(()=>new BattleEvaluationRules(50,30,20,1,2,1,75,90,50));
+            Assert.Throws<System.ArgumentException>(()=>custom.Evaluate(-1,0,1,1));
+            Assert.Throws<System.ArgumentException>(()=>custom.Evaluate(0,0,0,0));
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void 評価は描画頻度と重複停止に依存せず召喚でも開始時分母と確定値を保持する(int fps)
+        {
+            var enemies=new List<Enemy>{new Enemy("a","テスト",10,ElementType.None,new Vector2Int(3,0)),new Enemy("b","テスト",10,ElementType.None,new Vector2Int(4,0))};
+            var b=new BattleSystem(new PlayerCharacter(10000,new Vector2Int(0,0)),enemies,new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:new MockRandomProvider());
+            var rules=new BattleEvaluationRules(50,30,20,0,120,10,90,75,50);
+            b.AddSummon(new Enemy("summon","テスト",10,ElementType.None,new Vector2Int(5,0),true),new List<IEnemyAIAction>{new BasicAttackAction(0,10000)});Assert.AreEqual(2,b.InitialEvaluationEnemyCount);
+            b.Pause(BattlePauseReason.CustomScreen);b.Pause(BattlePauseReason.User);for(int i=0;i<60;i++)b.TickFrame(17);
+            b.Resume(BattlePauseReason.User);for(int i=0;i<60;i++)b.TickFrame(17);Assert.AreEqual(0,b.LogicalFrame);b.Resume(BattlePauseReason.CustomScreen);
+            Assert.IsTrue(b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,6,()=>{}));
+            b.RunLogicalFrame(()=>enemies[0].TakeDamage(1,ElementType.None,hitStopFrames:6));for(int i=0;i<12;i++)b.TickFrame(17);Assert.AreEqual(0,b.LogicalFrame);
+            var clock=new LogicalFrameClock();long previous=0;
+            for(int render=1;render<=fps;render++){long now=render*LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(now-previous);previous=now;clock.Drain((_,ms)=>b.TickFrame(ms),3);}
+            while(clock.PendingFrames>0)clock.Drain((_,ms)=>b.TickFrame(ms),3);
+            Assert.AreEqual(60,b.LogicalFrame);
+            b.RunLogicalFrame(()=>{foreach(var e in enemies.ToArray())e.TakeDamage(1000,ElementType.None);});
+            var value=rules.Evaluate(b);Assert.AreEqual(75,value.Points);Assert.AreEqual(3,value.MaximumSimultaneousKills);Assert.AreEqual(2,value.InitialEnemyCount);
+            for(int i=0;i<60;i++)b.TickFrame(17);Assert.AreEqual(value.LogicalFrames,b.LogicalFrame);Assert.AreEqual(75,value.Points);
+        }
+        [TestCase(false,false)] [TestCase(true,false)] [TestCase(false,true)] [TestCase(true,true)]
+        public void 勝利評価は演出と報酬より先に一度確定し敗北は評価を作らない(bool boss,bool defeat)
+        {
+            var cells=Enumerable.Range(0,20).Select(i=>new MapCell(i)).ToList();
+            var e=new Enemy(boss?"boss":"slime","テスト",50,ElementType.None,new Vector2Int(3,0));cells[3]=new MapCell(3,e);
+            cells[19]=new MapCell(19,new Enemy("boss","テスト",500,ElementType.None,new Vector2Int(19,0)));
+            var m=new DungeonBattleManager(new DungeonConfig("evaluation","テスト",20,cells),new PlayerCharacter(100),new Deck(new List<Card>()),new MockRandomProvider(),new MockLogger(),
+                normalEvaluation:new BattleEvaluationRules(100,0,0,0,120,1,90,75,50),bossEvaluation:new BattleEvaluationRules(0,100,0,0,120,1,90,75,50));
+            m.RequireBattleEndPresentation();m.Dungeon.StartBattle(new ContactInfo{Enemy=e,EnemyCellIndex=3});var b=m.CurrentBattle;
+            Assert.IsNull(m.LastBattleEvaluation);b.RunLogicalFrame(()=>{e.TakeDamage(1000,ElementType.None);if(defeat)b.Player.TakeDamage(1000);});
+            Assert.IsTrue(m.IsBattleEndPresentationPending);
+            var snapshot=m.LastBattleEvaluation;if(defeat)Assert.IsNull(snapshot);else{Assert.AreEqual(100,snapshot.Points);Assert.AreEqual(boss,snapshot.IsBoss);}
+            Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsFalse(m.CompleteBattleEndPresentation());Assert.AreSame(snapshot,m.LastBattleEvaluation);
+            b.TickFrame(17);Assert.AreSame(snapshot,m.LastBattleEvaluation);
+        }
+        [Test]
+        public void 報酬サマリーは評価と確定論理時間だけをカナで表示する()
+        {
+            var value=BattleEvaluationRules.ProvisionalNormal.Evaluate(60,2,1,3);
+            string text=Olca.Presentation.Dungeon.CardSelectionView.FormatBattleSummary(999,value);
+            Assert.AreEqual("ヒョウカ: リョウ / ゲキハタイム: 00:01.00",text);
+            Assert.IsFalse(text.Contains("60"));Assert.IsFalse(text.Contains("ノケゾリ"));Assert.IsFalse(text.Contains("ドウジ"));
+            Assert.AreEqual("",Olca.Presentation.Dungeon.CardSelectionView.FormatBattleSummary(null));
+        }
+    }
+}

@@ -31,6 +31,14 @@ namespace Olca.Presentation.Battle
         private BattleSystem battleSystem;
         private bool isCustomScreenOpen = false;
         private Image customScreenBackdrop;
+        private bool customInspectionHidden;
+        public void SetCustomInspectionHidden(bool hidden)
+        {
+            customInspectionHidden=hidden;
+            if(customScreenBackdrop!=null)customScreenBackdrop.gameObject.SetActive(isCustomScreenOpen&&!hidden);
+            if(customGaugeContainer!=null)customGaugeContainer.gameObject.SetActive(!hidden);
+        }
+
         private CancellationTokenSource animationCts;
 
         private Slider gaugeSlider;
@@ -251,7 +259,7 @@ namespace Olca.Presentation.Battle
             if (isCustomScreenOpen) return;
             isCustomScreenOpen = true;
             EnsureCustomScreenBackdrop();
-            customScreenBackdrop.gameObject.SetActive(true);
+            customScreenBackdrop.gameObject.SetActive(!customInspectionHidden);
 
             // 前回のアニメーションをキャンセル
             animationCts?.Cancel();
@@ -293,7 +301,7 @@ namespace Olca.Presentation.Battle
                 if (ReferenceEquals(animationCts, closingCts))
                 {
                     isCustomScreenOpen = true;
-                    if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(true);
+                    if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(!customInspectionHidden);
                 }
                 throw;
             }
