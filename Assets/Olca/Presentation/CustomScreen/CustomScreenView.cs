@@ -259,11 +259,7 @@ namespace Olca.Presentation.CustomScreen
             if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
             if (selectedCardDescription != null)
             {
-                selectedCardDescription.resizeTextForBestFit = true;
-                selectedCardDescription.resizeTextMinSize = 14;
-                selectedCardDescription.resizeTextMaxSize = selectedCardDescription.fontSize;
-                selectedCardDescription.horizontalOverflow = HorizontalWrapMode.Wrap;
-                selectedCardDescription.verticalOverflow = VerticalWrapMode.Truncate;
+                EnsureCardDescriptionScroll();
             }
             EnsureUndoButton();
             UpdateUndoButton();
@@ -384,7 +380,7 @@ namespace Olca.Presentation.CustomScreen
                 if(!visible){ClosePadDetails();return;}
                 var enemies=InspectionEnemies();if(inspectionIndex>0&&enemies.Length==0){ClosePadDetails();return;}inspectionIndex=Mathf.Min(inspectionIndex,enemies.Length);
                 string value=inspectionIndex==0?CustomDisplay.CombatantDetails(inspectionBattle.Player):CustomDisplay.CombatantDetails(enemies[inspectionIndex-1]);
-                if(padDetailsText.text!=value){padDetailsText.text=value;Canvas.ForceUpdateCanvases();padDetailsText.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(padDetailsScroll.viewport.rect.height,padDetailsText.preferredHeight+20));}
+                if(padDetailsText.text!=value){padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);}
             }
         }
         public void OpenCombatantDetails(int index)
@@ -478,7 +474,44 @@ namespace Olca.Presentation.CustomScreen
                 if(cursor!=null&&handCardPrefab!=null)RefreshHandCardViews();
             }
         }
-        private void RefreshKana(){foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);}
+        private ScrollRect cardDescriptionScroll;
+        private string measuredCardDescription;
+        private float measuredCardWidth;
+        private void EnsureCardDescriptionScroll()
+        {
+            if(selectedCardDescription==null||cardDescriptionScroll!=null)return;
+            var text=selectedCardDescription.rectTransform;
+            var area=new GameObject("CardDescriptionScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));
+            var rect=(RectTransform)area.transform;rect.SetParent(text.parent,false);rect.SetSiblingIndex(text.GetSiblingIndex());
+            rect.anchorMin=text.anchorMin;rect.anchorMax=text.anchorMax;rect.pivot=text.pivot;rect.anchoredPosition=text.anchoredPosition;rect.sizeDelta=text.sizeDelta;rect.localScale=text.localScale;
+            area.GetComponent<Image>().color=Color.clear;
+            text.SetParent(rect,false);text.anchorMin=new Vector2(0,1);text.anchorMax=Vector2.one;text.pivot=new Vector2(.5f,1);text.anchoredPosition=Vector2.zero;text.sizeDelta=Vector2.zero;
+            selectedCardDescription.resizeTextForBestFit=false;selectedCardDescription.supportRichText=false;selectedCardDescription.raycastTarget=false;
+            selectedCardDescription.horizontalOverflow=HorizontalWrapMode.Wrap;selectedCardDescription.verticalOverflow=VerticalWrapMode.Overflow;
+            cardDescriptionScroll=area.GetComponent<ScrollRect>();cardDescriptionScroll.viewport=rect;cardDescriptionScroll.content=text;cardDescriptionScroll.horizontal=false;cardDescriptionScroll.scrollSensitivity=32;cardDescriptionScroll.movementType=ScrollRect.MovementType.Clamped;
+        }
+        private static void FitDetailContent(Text text,ScrollRect scroll)
+        {
+            // Canvas倍率の変更で同じ幅でも文字生成の丸めが変わる。毎描画で全行と余白を確保する。
+            text.verticalOverflow=VerticalWrapMode.Overflow;
+            float height=Mathf.Max(scroll.viewport.rect.height,Mathf.Ceil(text.preferredHeight)+text.fontSize*2);
+            if(!Mathf.Approximately(height,text.rectTransform.rect.height)){
+                float position=scroll.verticalNormalizedPosition;
+                text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,height);
+                scroll.verticalNormalizedPosition=position;
+            }
+        }
+        private void RefreshKana(){
+            foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);
+            if(cardDescriptionScroll!=null&&selectedCardDescription!=null){
+                float width=cardDescriptionScroll.viewport.rect.width;
+                bool changed=measuredCardDescription!=selectedCardDescription.text||!Mathf.Approximately(width,measuredCardWidth);
+                measuredCardDescription=selectedCardDescription.text;measuredCardWidth=width;
+                FitDetailContent(selectedCardDescription,cardDescriptionScroll);
+                if(changed){cardDescriptionScroll.StopMovement();cardDescriptionScroll.verticalNormalizedPosition=1;}
+            }
+            if(detailsPanel!=null&&detailsPanel.activeSelf&&padDetailsText!=null&&padDetailsScroll!=null)FitDetailContent(padDetailsText,padDetailsScroll);
+        }
         private void OnDisable(){StopHandPresentation();Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
         private bool HandleCustomGamepad()
         {
@@ -530,7 +563,7 @@ namespace Olca.Presentation.CustomScreen
                 padGuidePanel=new GameObject("CustomPadGuidePanel",typeof(RectTransform),typeof(Image));padGuidePanel.transform.SetParent(transform,false);var area=(RectTransform)padGuidePanel.transform;area.anchorMin=new Vector2(.02f,.94f);area.anchorMax=new Vector2(.98f,.995f);area.offsetMin=area.offsetMax=Vector2.zero;var face=padGuidePanel.GetComponent<Image>();Olca.Presentation.Dungeon.UiLook.Face(face);face.raycastTarget=false;
                 var obj=new GameObject("CustomPadGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(padGuidePanel.transform,false);padGuide=obj.GetComponent<Text>();padGuide.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padGuide.fontSize=18;padGuide.alignment=TextAnchor.MiddleCenter;padGuide.raycastTarget=false;Olca.Presentation.Dungeon.UiLook.Label(padGuide);var r=padGuide.rectTransform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=new Vector2(8,2);r.offsetMax=new Vector2(-8,-2);
             }
-            padGuidePanel.SetActive(gamepadInput.HasGamepad&&!Olca.Unity.GameplayPause.InputBlocked);string Key(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom",action)]);
+            padGuidePanel.SetActive(gamepadInput.HasGamepad&&!Olca.Unity.GameplayPause.InputBlocked&&!(detailsPanel!=null&&detailsPanel.activeSelf));string Key(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom",action)]);
             padGuide.text=$"Pad {Key("Decide")}: 選択 / {Key("Cancel")}: 取消 / {Key("Confirm")}: 確定・加工 / {Key("Customize")}: 加工切替\n{Key("Undo")}: Undo / {Key("Transform")}: 手札・変身 / {Key("Details")}: 詳細 / {Key("PageUp")}: ガメン / {Key("PageDown")}: ジブン";
             if(detailsPanel!=null){var close=detailsPanel.transform.Find("CloseCustomPadDetails")?.GetComponentInChildren<Text>();if(close!=null)close.text="閉じる / "+Key("Cancel")+"・"+Key("Details");}
         }
@@ -559,7 +592,7 @@ namespace Olca.Presentation.CustomScreen
         {
             string value;
             if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{GetTransformationName(d.Id)}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
-            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {CustomDisplay.Regulation(card.Rarity)} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
+            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=CustomDisplay.CardDetails(card);}
             ShowDetailsValue(value);
         }
         private static void RestoreInspectionButtonGraphics(GameObject button)
@@ -586,19 +619,19 @@ namespace Olca.Presentation.CustomScreen
                     Olca.Presentation.Dungeon.UiLook.Button(button);
                 }
             }
-            if(inspectionBattle!=null){
+            {
                 var backing=detailsPanel.transform.Find("CombatantDetailsBacking");
                 if(backing==null){
                     var obj=new GameObject("CombatantDetailsBacking",typeof(RectTransform),typeof(Image));obj.transform.SetParent(detailsPanel.transform,false);obj.transform.SetAsFirstSibling();backing=obj.transform;
                     var rect=(RectTransform)obj.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(8,8);rect.offsetMax=new Vector2(-8,-8);
                     var ink=Olca.Presentation.Dungeon.UiLook.Ink;obj.GetComponent<Image>().color=new Color(ink.r,ink.g,ink.b,.97f);
                 }
-                backing.gameObject.SetActive(inspectionIndex>=0);
-                padDetailsScroll.viewport.anchorMin=new Vector2(.04f,.28f);
+                backing.gameObject.SetActive(true);
+                padDetailsScroll.viewport.anchorMin=new Vector2(.04f,inspectionIndex>=0?.28f:.18f);
             }
             foreach(string name in new[]{"PreviousInspection","NextInspection"}){var control=detailsPanel.transform.Find(name);if(control!=null)control.gameObject.SetActive(!isScreenVisible&&inspectionIndex>0);}
             if(hiddenCustomControls!=null)hiddenCustomControls.SetActive(false);
-            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();padDetailsText.text=value;Canvas.ForceUpdateCanvases();padDetailsText.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(padDetailsScroll.viewport.rect.height,padDetailsText.preferredHeight+20));padDetailsScroll.verticalNormalizedPosition=1;
+            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);padDetailsScroll.verticalNormalizedPosition=1;
         }
 
         private void HandleInput()
@@ -1539,11 +1572,7 @@ namespace Olca.Presentation.CustomScreen
 
                 if (selectedCardDescription != null)
                 {
-                    // コスト、威力、説明を表示
-                    selectedCardDescription.text =
-                        $"{cursorCard.Name}\nコスト: {cursorCard.GetFinalCost()}\n" +
-                        $"威力: {cursorCard.GetFinalPower()}\n\n" +
-                        $"{cursorCard.Description}";
+                    selectedCardDescription.text = CustomDisplay.CardDetails(cursorCard);
                 }
 
                 // 本絵の登録だけを参照する。未登録時に専用miniやUI部品を本絵へ流用しない。
@@ -1621,14 +1650,10 @@ namespace Olca.Presentation.CustomScreen
                 return;
             }
             var result = preview.ResultCard;
-            string effects = string.Join("\n", result.Modifier.AdditionalEffects.Where(e => e != null)
-                .Select(e => $"{e.EffectType}: 威力{e.Power} / {e.Duration:0.##}秒"));
             customizeModeView.UpdateOperationHint(customizeSelectedCards.Count >= 2 ?
                 $"{operation}: Enterで実行" : $"{operation}: 2枚目を選択して確定");
             if (selectedCardDescription != null)
-                selectedCardDescription.text = $"{operation} 結果プレビュー\n{result.Name}\n" +
-                    $"コスト: {result.GetFinalCost()} / 威力: {result.GetFinalPower()}\n" +
-                    $"{result.Description}" + (effects.Length > 0 ? "\n" + effects : "");
+                selectedCardDescription.text = $"{operation} ケッカプレビュー\n" + CustomDisplay.CardDetails(result);
         }
 
         private void OnConfirmClicked()
@@ -1701,6 +1726,47 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>既存のカード・カスタムUI用語を、指定フォントで読めるカナ表記へ変換する。</summary>
     public static class CustomDisplay
     {
+        // モデルを変更せず現在のカード補正と各調律を同じ表示へ集約する。
+        public static string CardDetails(Card card)
+        {
+            if(card==null)return "カードナシ";
+            string Number(float value)=>value.ToString("G",System.Globalization.CultureInfo.InvariantCulture);
+            string Signed(int value)=>value.ToString("+0;-0;0",System.Globalization.CultureInfo.InvariantCulture);
+            string Modifier(CardModifier value){
+                var lines=new List<string>();
+                if(value.ZeroCost)lines.Add("コスト0カ");
+                if(value.CostAdjustment!=0)lines.Add("コスト "+Signed(value.CostAdjustment));
+                if(value.BonusDamage!=0)lines.Add("イリョク "+Signed(value.BonusDamage));
+                if(value.DamageMultiplier!=1f)lines.Add("イリョク バイリツ "+Number(value.DamageMultiplier));
+                if(value.ElementOverride.HasValue)lines.Add("ゾクセイ ヘンコウ "+ElementName(value.ElementOverride.Value));
+                foreach(var effect in value.AdditionalEffects??new List<AdditionalEffect>()){
+                    if(effect==null)continue;
+                    var names=new[]{"ナシ","スプレッド","カンツウ","タダンヒット","マヒ","ドク","コンラン","モウモク","コオリパネル","マグマパネル","クサパネル","ヒビパネル","アナパネル","ゼンタイコオリ","ゼンタイマグマ","ゼンタイクサ","ゼンタイヒビ","ゼンタイアナ","カードレンケイ","チエントウテキ"};
+                    int index=(int)effect.EffectType;string name=index>=0&&index<names.Length?names[index]:"ミテイギ";
+                    var triggers=new[]{"ソクジ","ヒットジ","ダメージジ","ドウサゴ・ヒットアリ","ドウサゴ・ダメージアリ"};int trigger=(int)effect.Trigger;
+                    string line=name+" / "+(trigger>=0&&trigger<triggers.Length?triggers[trigger]:"ミテイギ");
+                    if(effect.Power!=0)line+=" / イリョク "+effect.Power;
+                    if(effect.Duration!=0)line+=" / "+Number(effect.Duration)+" ビョウ";
+                    if(effect.EffectType==AdditionalEffectType.MultiHit)line+=" / "+(effect.HitCount>0?effect.HitCount:3)+" ヒット";
+                    if(effect.EffectType==AdditionalEffectType.Poison)line+=" / "+effect.PoisonKind+(effect.PoisonIntervalFrames.HasValue?" / "+effect.PoisonIntervalFrames+" フレーム":"");
+                    if(effect.EffectType==AdditionalEffectType.ChainCard)line+=" / "+(effect.ChainCardId??"ジブン")+" / "+(effect.EffectOrigin==ChainEffectOrigin.PlayerPosition?"ジブンイチ":"ヒットイチ");
+                    if(effect.EffectType==AdditionalEffectType.DelayedProjectile)line+=" / チエン "+Number(effect.DelayTime)+" ビョウ / イチ "+effect.TargetOffset.X+","+effect.TargetOffset.Y+(effect.CancelOnHole?" / アナデムコウ":"");
+                    lines.Add(line);
+                }
+                return lines.Count==0?"ナシ":string.Join("\n",lines);
+            }
+            string cost;try{cost=card.GetFinalCost().ToString(System.Globalization.CultureInfo.InvariantCulture);}catch(System.OverflowException){cost="ハンイガイ";}
+            float scaled=card.Power*card.Modifier.DamageMultiplier;
+            bool powerValid=!float.IsNaN(scaled)&&!float.IsInfinity(scaled)&&(double)scaled>=int.MinValue&&(double)scaled<=int.MaxValue;
+            long total=powerValid?(long)(int)scaled+card.Modifier.BonusDamage:0;
+            string power=powerValid&&total>=int.MinValue&&total<=int.MaxValue?card.GetFinalPower().ToString(System.Globalization.CultureInfo.InvariantCulture):"ハンイガイ";
+            var result=$"{card.Name}\nコスト: {cost} / イリョク: {power}\nゾクセイ {ElementName(card.GetFinalElement())} / {Regulation(card.Rarity)} / {card.Series} / {(card.ExceedLevel==ExceedLevel.Normal?"ツウジョウ":"チョウエツ "+(int)card.ExceedLevel)}\n\n{card.Description}\n\nカードホセイ (ゴウケイ)\n{Modifier(card.Modifier)}";
+            foreach(var grant in card.TuningHistory){
+                result+="\n\nチョウリツ / コスト "+Signed(grant.FixedCostAdjustment)+(grant.ZeroCost?" / コスト0カ":"");
+                foreach(var effect in grant.Effects){int stage=System.Math.Min(card.TuningCount,effect.MaxStage);result+="\nダンカイ "+stage+"\n"+(effect.TryGetStage(stage,out var value)?Modifier(value):"ミテイギ");}
+            }
+            return Katakana(result);
+        }
         private static string ElementName(ElementType value)=>value==ElementType.Fire?"ヒ":value==ElementType.Water?"ミズ":value==ElementType.Wind?"カゼ":value==ElementType.Earth?"ツチ":"ムゾクセイ";
         private static string Resistances(ElementResistances value,TimedStatusResistances status)
             =>$"ゾクセイタイセイ (%)\nヒ {value.Get(ElementType.Fire)} / ミズ {value.Get(ElementType.Water)} / カゼ {value.Get(ElementType.Wind)} / ツチ {value.Get(ElementType.Earth)}"+(status==null?"":$"\nジョウタイタイセイ (%)\nドク {status.Poison} / マヒ {status.Paralyze} / コンラン {status.Confusion} / モウモク {status.Blind}");
@@ -1726,7 +1792,7 @@ namespace Olca.Presentation.CustomScreen
         {
             if(value==null)return "プレイヤーナシ";
             return Katakana($"ジブン\nHP {value.CurrentHp}/{value.MaxHp} / コウゲキ {value.AttackPower} / ゾクセイ {ElementName(value.ActiveElement)}\nキョウジンド {(value.IsStaggered?0:System.Math.Max(0,value.Poise-value.AccumulatedDamage))}/{value.Poise} / カスタムソクド {value.CustomSpeed}\n"+
-                Resistances(value.ActiveResistances,null)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(value.Guard.IsActive,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+
+                Resistances(value.ActiveResistances,value.ActiveStatusResistances)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(value.Guard.IsActive,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+
                 (value.IsConcentrating?"\nシュウチュウ: ツギノカード "+value.NextCardMultiplier.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture)+" バイ":"")+(value.IsStaggered?"\nノケゾリ":""));
         }
 

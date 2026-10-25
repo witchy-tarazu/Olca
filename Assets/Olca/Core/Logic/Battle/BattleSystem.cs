@@ -332,6 +332,10 @@ namespace Olca.Core.Logic.Battle
             }
         }
 
+        /// <summary>確定した切替条件の解決元から呼ぶ。終了/未登録は拒否し、切替だけで停止時計を進めない。</summary>
+        public bool TrySwitchEnemyActionPattern(Enemy enemy,List<IEnemyAIAction> actions)
+            => !IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.TrySwitchActionPattern(enemy,actions);
+
         private void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
         {
             enemy.IsOnGrass = () => battleField.GetPanelType(enemy.GridPosition) == PanelType.Grass;
@@ -816,6 +820,7 @@ namespace Olca.Core.Logic.Battle
             player.IsOnGrass = null;
             player.BattleElement = null;
             player.Guard.Clear();
+            player.ClearBattleStatusResistances();
             player.ClearInvincibility();
             player.ClearStagger();
             player.ResetParalysis();

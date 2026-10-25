@@ -17,6 +17,51 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void カード詳細は全補正と複数効果をカナ表示し無敵削り値や敵補正を公開しない()
+        {
+            var card=Create("テスト",CardSeries.Sword);card.Modifier.BonusDamage=-5;card.Modifier.CostAdjustment=2;card.Modifier.DamageMultiplier=1.5f;card.Modifier.ElementOverride=ElementType.Fire;
+            foreach(var type in System.Enum.GetValues(typeof(AdditionalEffectType)).Cast<AdditionalEffectType>())card.Modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=type,Power=2,Duration=1.25f,HitCount=4,Trigger=DerivativeTrigger.OnDamage,PoisonIntervalFrames=30,TargetOffset=new Olca.Core.Domain.Vector2Int(-2,1),DelayTime=.5f,CancelOnHole=true});
+            var before=card.GetFinalPower();var text=CustomDisplay.CardDetails(card);StringAssert.Contains("コスト: 5 / イリョク: "+before,text);StringAssert.Contains("コスト +2",text);StringAssert.Contains("イリョク -5",text);StringAssert.Contains("バイリツ 1.5",text);StringAssert.Contains("ゾクセイ ヘンコウ ヒ",text);StringAssert.Contains("タダンヒット",text);StringAssert.Contains("4 ヒット",text);StringAssert.Contains("チエン 0.5",text);StringAssert.Contains("イチ -2,1",text);StringAssert.Contains("30 フレーム",text);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(text,"[一-鿿]"));StringAssert.DoesNotContain("ムテキ",text);StringAssert.DoesNotContain("キョウジンド",text);StringAssert.DoesNotContain("ヨソク",text);StringAssert.DoesNotContain("Normal",text);StringAssert.Contains("ツウジョウ",text);Assert.AreEqual(before,card.GetFinalPower());
+        }
+        [Test]
+        public void カード詳細は相殺する調律も現在段階ごとに残し表示で履歴を変更しない()
+        {
+            var target=Create("テスト",CardSeries.Sword);var table=new Dictionary<int,CardModifier>{{1,new CardModifier{BonusDamage=5}},{2,new CardModifier{BonusDamage=10}}};
+            var first=Olca.Core.Logic.Battle.TuningEvaluator.Evaluate(target,new TuningGrantDefinition("a",new[]{new TuningEffectDefinition("a",2,table)},fixedCostAdjustment:1));Assert.IsTrue(first.IsSuccess);
+            var second=Olca.Core.Logic.Battle.TuningEvaluator.Evaluate(first.ResultCard,new TuningGrantDefinition("b",new[]{new TuningEffectDefinition("b",1,new Dictionary<int,CardModifier>{{1,new CardModifier{BonusDamage=-10}}})},fixedCostAdjustment:-1));Assert.IsTrue(second.IsSuccess);
+            string text=CustomDisplay.CardDetails(second.ResultCard);StringAssert.Contains("ダンカイ 2",text);StringAssert.Contains("イリョク +10",text);StringAssert.Contains("イリョク -10",text);StringAssert.Contains("コスト +1",text);StringAssert.Contains("コスト -1",text);Assert.AreEqual(2,second.ResultCard.TuningCount);
+        }
+        [TestCase(-100,false,1)] [TestCase(100,true,0)] [TestCase(0,false,3)]
+        public void カード詳細の実効コストは最低値と専用ゼロ効果に従う(int change,bool zero,int expected)
+        {var card=Create("テスト",CardSeries.Sword);card.Modifier.CostAdjustment=change;card.Modifier.ZeroCost=zero;StringAssert.Contains("コスト: "+expected,CustomDisplay.CardDetails(card));}
+        [Test]
+        public void カード詳細は数値の表現範囲外でも画面を壊さず明示し桁と小数は文化に依存しない()
+        {
+            var card=Create("テスト",CardSeries.Sword);card.Modifier.CostAdjustment=int.MaxValue;card.Modifier.DamageMultiplier=float.MaxValue;var old=System.Globalization.CultureInfo.CurrentCulture;
+            try{System.Globalization.CultureInfo.CurrentCulture=new System.Globalization.CultureInfo("fr-FR");var text=CustomDisplay.CardDetails(card);StringAssert.Contains("コスト: ハンイガイ / イリョク: ハンイガイ",text);card.Modifier.DamageMultiplier=1.25f;StringAssert.Contains("バイリツ 1.25",CustomDisplay.CardDetails(card));}finally{System.Globalization.CultureInfo.CurrentCulture=old;}
+        }
+        [Test]
+        public void 長い調律詳細は既存枠内でスクロールしfocus切替で先頭へ戻る()
+        {
+            var root=new GameObject("DetailOverflow",typeof(RectTransform),typeof(Canvas));
+            try{
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;var view=root.AddComponent<CustomScreenView>();var obj=new GameObject("Description",typeof(RectTransform),typeof(Text));obj.transform.SetParent(root.transform,false);var text=obj.GetComponent<Text>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.fontSize=28;text.rectTransform.sizeDelta=new Vector2(300,100);
+                typeof(CustomScreenView).GetField("selectedCardDescription",flags).SetValue(view,text);typeof(CustomScreenView).GetMethod("EnsureCardDescriptionScroll",flags).Invoke(view,null);
+                var a=Create("テストA",CardSeries.Sword);for(int i=0;i<50;i++)a.Modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.Poison,Power=i+1,Duration=2});var b=Create("テストB",CardSeries.Sword);typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,new List<Card>{a,b});
+                typeof(CustomScreenView).GetMethod("UpdateCursorCardDisplay",flags).Invoke(view,new object[]{0});typeof(CustomScreenView).GetMethod("RefreshKana",flags).Invoke(view,null);var scroll=obj.GetComponentInParent<ScrollRect>();Assert.AreEqual(new Vector2(300,100),scroll.viewport.sizeDelta);Assert.Greater(text.rectTransform.rect.height,100);StringAssert.Contains("イリョク 50",text.text);Assert.IsFalse(text.resizeTextForBestFit);scroll.verticalNormalizedPosition=0;
+                typeof(CustomScreenView).GetMethod("UpdateCursorCardDisplay",flags).Invoke(view,new object[]{1});typeof(CustomScreenView).GetMethod("RefreshKana",flags).Invoke(view,null);StringAssert.StartsWith("テストB",text.text);Assert.AreEqual(1,scroll.verticalNormalizedPosition,.01);StringAssert.DoesNotContain("イリョク 50",text.text);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1f)] [TestCase(1.956f)] [TestCase(2f)]
+        public void 長文末尾はCanvas倍率変更でも文字生成から欠落せず詳細の高さを再計算する(float scale)
+        {
+            var root=new GameObject("ScaledDetail",typeof(RectTransform),typeof(Canvas));
+            try{var canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.scaleFactor=scale;var area=new GameObject("Area",typeof(RectTransform),typeof(ScrollRect),typeof(RectMask2D));area.transform.SetParent(root.transform,false);var rect=(RectTransform)area.transform;rect.sizeDelta=new Vector2(380,270);var obj=new GameObject("Text",typeof(RectTransform),typeof(Text));obj.transform.SetParent(area.transform,false);var text=obj.GetComponent<Text>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.fontSize=28;text.rectTransform.anchorMin=new Vector2(0,1);text.rectTransform.anchorMax=Vector2.one;text.rectTransform.pivot=new Vector2(.5f,1);text.rectTransform.sizeDelta=Vector2.zero;text.text=string.Join("\n",Enumerable.Range(0,50).Select(i=>"テスト "+i+" / イリョク 123 / 1.25 ビョウ"))+"\nサイゴノコウカ";
+                var scroll=area.GetComponent<ScrollRect>();scroll.viewport=rect;scroll.content=text.rectTransform;typeof(CustomScreenView).GetMethod("FitDetailContent",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{text,scroll});Canvas.ForceUpdateCanvases();typeof(CustomScreenView).GetMethod("FitDetailContent",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{text,scroll});
+                Assert.AreEqual(VerticalWrapMode.Overflow,text.verticalOverflow);Assert.GreaterOrEqual(text.rectTransform.rect.height,Mathf.Ceil(text.preferredHeight)+text.fontSize*2);scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01);Assert.Greater(text.rectTransform.rect.height,rect.rect.height);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
         public void 敵詳細は初遭遇でも全耐性を読み技や行動説明を含めず状態を変更しない()
         {
             var enemy=new Enemy("unseen","テストテキ",80,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0),resistances:new ElementResistances(fire:-50,water:100),statusResistances:new TimedStatusResistances(poison:25));
