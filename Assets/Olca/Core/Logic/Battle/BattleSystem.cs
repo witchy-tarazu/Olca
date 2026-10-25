@@ -57,6 +57,35 @@ namespace Olca.Core.Logic.Battle
         private readonly IGameLogger logger;
 
         private BattlePauseReason pauseReasons;
+        private readonly List<DarkeningEffect> darkeningEffects=new List<DarkeningEffect>();
+        private sealed class DarkeningEffect
+        {
+            public DarkeningSide Side;public int Window,Remaining;public Action Resolve;
+        }
+        public bool IsDarkening => darkeningEffects.Count>0;
+        public DarkeningSide? ActiveDarkeningSide => IsDarkening?darkeningEffects[darkeningEffects.Count-1].Side:(DarkeningSide?)null;
+        /// <summary>明示された時間定義だけを使う暗転入口。敵味方各一件、後入れ先出し。同陣営の古い予約は破棄する。</summary>
+        public bool TryStartDarkeningEffect(DarkeningSide side,int interruptionFrames,int presentationFrames,Action resolve)
+        {
+            if(!Enum.IsDefined(typeof(DarkeningSide),side))throw new ArgumentOutOfRangeException(nameof(side));
+            if(interruptionFrames<0||presentationFrames<=0||interruptionFrames>presentationFrames)throw new ArgumentOutOfRangeException(nameof(interruptionFrames));
+            if(resolve==null)throw new ArgumentNullException(nameof(resolve));
+            if(IsGameOver||pauseReasons!=BattlePauseReason.None)return false;
+            if(IsDarkening){var current=darkeningEffects[darkeningEffects.Count-1];if(current.Side==side||current.Window==0)return false;}
+            darkeningEffects.RemoveAll(effect=>effect.Side==side);
+            darkeningEffects.Add(new DarkeningEffect{Side=side,Window=interruptionFrames,Remaining=presentationFrames,Resolve=resolve});
+            return true;
+        }
+        private void AdvanceDarkeningFrame()
+        {
+            if(IsGameOver){darkeningEffects.Clear();return;}
+            if(pauseReasons!=BattlePauseReason.None||!IsDarkening)return;
+            var current=darkeningEffects[darkeningEffects.Count-1];
+            if(current.Window>0)current.Window--;
+            if(--current.Remaining>0)return;
+            darkeningEffects.RemoveAt(darkeningEffects.Count-1);
+            try {current.Resolve();}catch {darkeningEffects.Clear();throw;}
+        }
         private BattleState state;
         private long actionTimeUnits;
         private long actionFrame;
@@ -180,7 +209,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>一時停止中か</summary>
         public bool IsUserPaused => (pauseReasons & BattlePauseReason.User) != 0;
-        public bool IsPaused => pauseReasons != BattlePauseReason.None;
+        public bool IsPaused => pauseReasons != BattlePauseReason.None || IsDarkening;
 
         /// <summary>バトル終了したか</summary>
         public bool IsGameOver => state == BattleState.Victory || state == BattleState.Defeat;
@@ -386,6 +415,8 @@ namespace Olca.Core.Logic.Battle
         }
         public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
         {
+            // 暗転の時計だけを進める。この終了フレームも通常の戦闘時間へ加算しない。
+            if(IsDarkening){AdvanceDarkeningFrame();return;}
             RunLogicalFrame(() => {
                 logicalFrameTick = true;
                 try {
@@ -580,7 +611,7 @@ namespace Olca.Core.Logic.Battle
                 return;
             }
 
-            if (customScreen.IsOpen || Transformations.IsActivating) return;
+            if (customScreen.IsOpen || Transformations.IsActivating || IsDarkening) return;
             // 未使用カードを取得してカスタム画面に渡す
             var remainingCards = cardUsage.GetRemainingCards();
             customScreen.Open(remainingCards, checkpointRandom ? randomProvider : random);
@@ -714,6 +745,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            darkeningEffects.Clear();
             panelEffects.Clear();
             foreach (var entry in enemyDeathHandlers)
             {
@@ -817,4 +849,9 @@ namespace Olca.Core.Logic.Battle
     }
     [System.Flags]
     public enum BattlePauseReason { None = 0, CustomScreen = 1, User = 2, Transformation = 4 }
+}
+
+namespace Olca.Core.Logic.Battle
+{
+    public enum DarkeningSide { Player, Opponent }
 }

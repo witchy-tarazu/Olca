@@ -144,7 +144,7 @@ namespace Olca.Core.Logic.Battle
                 if (battle != null && battle.IsUserPaused && command.Kind != CustomCommandKind.ReturnToBattle) return Result(CustomCommandRejection.UserPaused, "ポーズ中は操作できません");
                 if (command.Kind == CustomCommandKind.Open) {
                     if (battle == null || (openingRandom ?? random) == null) return Result(CustomCommandRejection.BattleUnavailable, "戦闘と乱数を接続してください");
-                    if (screen.IsOpen || battle.Transformations.IsActivating) return Result(CustomCommandRejection.RuleRejected, "既に開いているか変身演出中です");
+                    if (screen.IsOpen || battle.Transformations.IsActivating || battle.IsDarkening) return Result(CustomCommandRejection.RuleRejected, "既に開いているか変身演出中です");
                     if (!battle.CustomGauge.IsFull) return Result(CustomCommandRejection.GaugeNotFull, "カスタムゲージが満タンではありません");
                     battle.OpenCustomScreen(openingRandom ?? random); return Result();
                 }

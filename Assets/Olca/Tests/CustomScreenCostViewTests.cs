@@ -17,6 +17,78 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public async System.Threading.Tasks.Task カスタム停止中もHUD退場遷移を完了してカスタム画面の登場を妨げない()
+        {
+            var root=new GameObject("HudTransition");var owner=new object();
+            using(var cancel=new System.Threading.CancellationTokenSource()){
+                try {
+                    Olca.Unity.GameplayPause.SetPaused(false);
+                    var group=root.AddComponent<CanvasGroup>();var field=root.AddComponent<GameFieldView>();
+                    typeof(GameFieldView).GetField("dungeonHudCanvasGroup",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(field,group);
+                    Olca.Unity.BattleVisualClock.SetPaused(owner,true);
+                    var task=field.HideHUDAsync(.001f,cancel.Token).AsTask();
+                    Assert.AreSame(task,await System.Threading.Tasks.Task.WhenAny(task,System.Threading.Tasks.Task.Delay(3000)));
+                    await task;Assert.AreEqual(0f,group.alpha);Assert.IsTrue(Olca.Unity.BattleVisualClock.IsPaused);
+                } finally {cancel.Cancel();Olca.Unity.BattleVisualClock.SetPaused(owner,false);Object.DestroyImmediate(root);}
+            }
+        }
+
+        [Test]
+        public void 描画前のカナ変換は文字データだけでなく同一フレームの文字メッシュにも反映する()
+        {
+            var root=new GameObject("KanaCanvas",typeof(RectTransform),typeof(Canvas));
+            try {
+                root.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;
+                var child=new GameObject("KanaText",typeof(RectTransform),typeof(Text));child.transform.SetParent(root.transform,false);
+                var label=child.GetComponent<Text>();label.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");label.fontSize=28;
+                label.rectTransform.sizeDelta=new Vector2(400,100);label.horizontalOverflow=HorizontalWrapMode.Overflow;
+                label.text="カナ";Canvas.ForceUpdateCanvases();UiLook.Label(label);
+                var kana=label.GetComponent<UiKanaLabel>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                typeof(UiKanaLabel).GetMethod("OnDisable",flags).Invoke(kana,null);
+                typeof(UiKanaLabel).GetMethod("OnEnable",flags).Invoke(kana,null);
+                label.text="通貨";Canvas.ForceUpdateCanvases();
+                Assert.AreEqual("ツウカ",label.text);Assert.AreEqual(3,label.cachedTextGenerator.characterCountVisible);
+            } finally {foreach(var kana in root.GetComponentsInChildren<UiKanaLabel>(true))typeof(UiKanaLabel).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(kana,null);Object.DestroyImmediate(root);}
+        }
+
+        [Test]
+        public void 変身の登録名称とアイコンは一覧とHUDへ連携し未登録素材を作らない()
+        {
+            var root=new GameObject("TransformationMetadata",typeof(RectTransform));
+            var texture=new Texture2D(1,1);var sprite=Sprite.Create(texture,new Rect(0,0,1,1),Vector2.one*.5f);
+            var player=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(0,0));
+            var battle=new BattleSystem(player,new List<Enemy>{new Enemy("fixtureEnemy","fixtureEnemy",50,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0))},new Deck(new List<Card>{Create("sword",CardSeries.Sword)}));
+            try {
+                var container=new GameObject("Custom",typeof(RectTransform));container.transform.SetParent(root.transform,false);
+                var view=container.AddComponent<CustomScreenView>();
+                var confirm=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));confirm.transform.SetParent(container.transform,false);
+                var text=new GameObject("Label",typeof(RectTransform),typeof(Text));text.transform.SetParent(confirm.transform,false);
+                var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+                typeof(CustomScreenView).GetField("confirmButton",flags).SetValue(view,confirm.GetComponent<Button>());
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,battle.CustomScreen);
+                var entry=new TransformationVisualEntry{Id="fixture",DisplayNameKana="テストヘンシン",Icon=sprite};
+                view.ConfigureTransformationVisuals(new[]{entry});entry.DisplayNameKana="カキカエ";
+                Assert.AreEqual("テストヘンシン",view.GetTransformationName("fixture"));Assert.IsNull(view.GetTransformationIcon("unregistered"));
+                Assert.Throws<System.ArgumentException>(()=>view.ConfigureTransformationVisuals(new[]{new TransformationVisualEntry{Id="fixture",DisplayNameKana="漢字"}}));
+                battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire)});
+                battle.SetFirstStrike();battle.CustomScreen.Open(new Card[0],new MockRandomProvider(0));view.BindTransformations(battle.Transformations);
+                var choice=container.transform.Find("TransformationChoice0");Assert.IsNotNull(choice);
+                StringAssert.Contains("テストヘンシン",choice.GetComponentInChildren<Text>().text);Assert.AreSame(sprite,choice.Find("TransformationIcon").GetComponent<Image>().sprite);
+                Assert.IsFalse(choice.Find("TransformationIcon").GetComponent<Image>().raycastTarget);
+                Assert.IsTrue(battle.Transformations.TryPreview("fixture"));battle.CustomScreen.Confirm();
+                var hud=root.AddComponent<Olca.Presentation.Battle.BattleView>();
+                typeof(Olca.Presentation.Battle.BattleView).GetField("customScreenContainer",flags).SetValue(hud,container.GetComponent<RectTransform>());
+                typeof(Olca.Presentation.Battle.BattleView).GetField("battleSystem",flags).SetValue(hud,battle);
+                typeof(Olca.Presentation.Battle.BattleView).GetMethod("UpdateTransformationVisual",flags).Invoke(hud,null);
+                var status=root.GetComponentsInChildren<Text>(true).Single(t=>t.name=="TransformationHud");StringAssert.Contains("テストヘンシン",status.text);
+                Assert.AreSame(sprite,root.GetComponentsInChildren<Image>(true).Single(i=>i.name=="TransformationHudIcon").sprite);
+                view.ConfigureTransformationVisuals(null);
+                typeof(Olca.Presentation.Battle.BattleView).GetMethod("UpdateTransformationVisual",flags).Invoke(hud,null);
+                Assert.IsFalse(root.GetComponentsInChildren<Image>(true).Single(i=>i.name=="TransformationHudIcon").gameObject.activeSelf);
+            } finally {battle.Transformations.Dispose();Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
+        }
+
+        [Test]
         public void 閉じた画面の内部クリーンアップは末尾解除を拒否せず仮選択を戻せる()
         {
             var card=Create("sword",CardSeries.Sword);var model=new CustomScreenSystem(new Deck(new List<Card>{card}));
@@ -374,16 +446,23 @@ namespace Olca.Tests
         public async System.Threading.Tasks.Task 報酬の受取と明示スキップは最初の入力だけで確定し再表示でもボタンを増やさない(bool skipFirst)
         {
             var root = new GameObject("RewardSkip", typeof(RectTransform));
+            var headingObject=new GameObject("TitleText",typeof(RectTransform),typeof(Text));headingObject.transform.SetParent(root.transform,false);
+            var heading=headingObject.GetComponent<Text>();heading.text="カードを1枚獲得";
+            heading.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var originalFont=heading.font;
             try {
                 var view = root.AddComponent<CardSelectionView>();
                 var flags = BindingFlags.Instance | BindingFlags.NonPublic;
                 typeof(CardSelectionView).GetField("containerRoot", flags).SetValue(view, root);
+                var countObject=new GameObject("DeckCount",typeof(RectTransform),typeof(Text));countObject.transform.SetParent(root.transform,false);
+                var countText=countObject.GetComponent<Text>();typeof(CardSelectionView).GetField("deckCountText",flags).SetValue(view,countText);
                 typeof(CardSelectionView).GetField("cardItems", flags).SetValue(view, new CardSelectionItemView[0]);
                 var card = Create("reward", CardSeries.Sword);
                 for (int repeat=0; repeat<2; repeat++) {
                     var task = view.ShowAsync(new[] { card }, 6).AsTask();
                     var button = root.GetComponentInChildren<Button>(true);
                     Assert.AreEqual("SkipCardReward", button.name);
+                    Assert.AreEqual("カードヲ1マイカクトク",heading.text);Assert.AreSame(originalFont,heading.font);Assert.AreEqual(Color.white,countText.color);
+                    Assert.AreEqual("ウケトラズニススム",button.GetComponentInChildren<Text>(true).text);
                     Assert.AreEqual(1, root.GetComponentsInChildren<Button>(true).Length);
                     // ポーズ中は明示スキップでも報酬を確定しない。
                     Olca.Unity.GameplayPause.SetPaused(true); button.onClick.Invoke(); Assert.IsFalse(task.IsCompleted);

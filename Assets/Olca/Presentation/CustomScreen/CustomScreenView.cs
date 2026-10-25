@@ -47,6 +47,29 @@ namespace Olca.Presentation.CustomScreen
             UpdateSelectedCardDisplay();
         }
 
+        [SerializeField] private TransformationVisualEntry[] transformationVisuals=System.Array.Empty<TransformationVisualEntry>();
+        public string GetTransformationName(string id)
+            => transformationVisuals?.FirstOrDefault(v=>v!=null&&v.Id==id)?.DisplayNameKana ?? CustomDisplay.Katakana(id);
+        public Sprite GetTransformationIcon(string id)
+            => transformationVisuals?.FirstOrDefault(v=>v!=null&&v.Id==id)?.Icon;
+        public void ConfigureTransformationVisuals(IEnumerable<TransformationVisualEntry> entries)
+        {
+            var values=(entries??System.Array.Empty<TransformationVisualEntry>()).ToArray();
+            var ids=new HashSet<string>();
+            foreach(var value in values){
+                if(value==null||string.IsNullOrWhiteSpace(value.Id)||!ids.Add(value.Id)||string.IsNullOrWhiteSpace(value.DisplayNameKana)||
+                    System.Text.RegularExpressions.Regex.IsMatch(value.DisplayNameKana,@"[一-鿿々ぁ-ゖ]"))
+                    throw new System.ArgumentException("変身のIDとカナ名称を重複なく指定してください");
+            }
+            transformationVisuals=values.Select(v=>v.Copy()).ToArray();RefreshTransformationButtons();
+        }
+        private string TransformationStatusText()
+        {
+            if(transformations==null)return "";
+            var value=transformations.HasActive?GetTransformationName(transformations.ActiveId)+" ノコリ "+transformations.RemainingPhases+" カイ":"ヘンシンナシ（ノコリ0カイ）";
+            return transformations.PendingId==null?value:value+"\nカリセンタク "+GetTransformationName(transformations.PendingId)+"（カクテイゴ3カイ）";
+        }
+
         [Header("カード配置")]
         [SerializeField] private Transform handCardContainer;
         [SerializeField] private GameObject handCardPrefab;
@@ -90,7 +113,7 @@ namespace Olca.Presentation.CustomScreen
             }
             if(transformationStatus!=null){
                 transformationStatus.gameObject.SetActive(transformations!=null&&customScreen!=null&&customScreen.IsOpen&&(count>0||transformations.HasActive));
-                transformationStatus.text=transformations?.CustomStatusText??"";
+                transformationStatus.text=TransformationStatusText();
             }
             while (transformationButtons.Count > count) {
                 var last = transformationButtons[transformationButtons.Count - 1];
@@ -129,7 +152,16 @@ namespace Olca.Presentation.CustomScreen
                 button.gameObject.SetActive(visible);
                 button.interactable=visible && !handAnimating && !transformations.IsUsed(definition.Id) && !Olca.Unity.GameplayPause.InputBlocked;
                 var label=button.GetComponentInChildren<Text>();
-                if(label!=null)label.text=(padTransformationIndex==i?"▶ ":"")+definition.Id+"\n"+(transformations.IsUsed(definition.Id)?"使用済み":transformations.PendingId==definition.Id?"選択中":$"手札+{definition.HandSizeBonus}");
+                if(label!=null)label.text=(padTransformationIndex==i?"▶ ":"")+GetTransformationName(definition.Id)+"\n"+(transformations.IsUsed(definition.Id)?"使用済み":transformations.PendingId==definition.Id?"選択中":$"手札+{definition.HandSizeBonus}");
+                var iconTransform=button.transform.Find("TransformationIcon");
+                var sprite=GetTransformationIcon(definition.Id);
+                if(iconTransform==null&&sprite!=null){
+                    var obj=new GameObject("TransformationIcon",typeof(RectTransform),typeof(Image));obj.transform.SetParent(button.transform,false);iconTransform=obj.transform;
+                    var rect=(RectTransform)iconTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.5f);rect.anchoredPosition=new Vector2(32,0);rect.sizeDelta=new Vector2(48,48);
+                }
+                if(iconTransform!=null){var image=iconTransform.GetComponent<Image>();image.sprite=sprite;image.preserveAspect=true;image.raycastTarget=false;iconTransform.gameObject.SetActive(sprite!=null);}
+                if(label!=null)label.rectTransform.offsetMin=new Vector2(sprite!=null?62:8,4);
+
             }
         }
         private void OnHandChanged()
@@ -351,9 +383,9 @@ namespace Olca.Presentation.CustomScreen
         private int lastDetailsCloseFrame=-1;
         private GameObject detailsPanel,padGuidePanel;private Text padDetailsText,padGuide;private ScrollRect padDetailsScroll;
         private void ResetCustomPad(bool resetFocus=true){foreach(var hold in touchDetailHolds)hold.CancelPress();padViewVersion++;gamepadInput?.Reset();if(resetFocus)padTransformationIndex=-1;ClosePadDetails();SetScreenVisibility(true);}
-        private void OnEnable(){Canvas.willRenderCanvases+=RefreshKana;if(customScreen!=null&&customScreen.IsOpen)Olca.Unity.BattleVisualClock.SetPaused(this,true);}
+        private void OnEnable(){Canvas.preWillRenderCanvases+=RefreshKana;if(customScreen!=null&&customScreen.IsOpen)Olca.Unity.BattleVisualClock.SetPaused(this,true);}
         private void RefreshKana(){foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);}
-        private void OnDisable(){Canvas.willRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
+        private void OnDisable(){Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
         private bool HandleCustomGamepad()
         {
             if(gamepadInput==null)return false;var commands=gamepadInput.Read();
@@ -423,7 +455,7 @@ namespace Olca.Presentation.CustomScreen
         private void ShowPadDetails()
         {
             string value;
-            if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{d.Id}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
+            if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{GetTransformationName(d.Id)}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
             else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {card.Rarity} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
             if(detailsPanel==null){
                 detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=detailsPanel.GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
@@ -1544,5 +1576,18 @@ namespace Olca.Presentation.CustomScreen
             for(int i=0;i<chars.Length;i++)if(chars[i]>='ぁ'&&chars[i]<='ゖ')chars[i]=(char)(chars[i]+0x60);
             return new string(chars);
         }
+    }
+}
+
+namespace Olca.Presentation.CustomScreen
+{
+    /// <summary>表示素材だけをIDに対応付ける。未登録の製品名称・画像を生成しない。</summary>
+    [System.Serializable]
+    public sealed class TransformationVisualEntry
+    {
+        public string Id;
+        public string DisplayNameKana;
+        public UnityEngine.Sprite Icon;
+        public TransformationVisualEntry Copy()=>new TransformationVisualEntry{Id=Id,DisplayNameKana=DisplayNameKana,Icon=Icon};
     }
 }

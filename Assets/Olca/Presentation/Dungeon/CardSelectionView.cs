@@ -41,6 +41,10 @@ namespace Olca.Presentation.Dungeon
             selectionTcs = new UniTaskCompletionSource<Card>();
             if(containerRoot!=null)UiLook.Face(containerRoot.GetComponent<Image>());
             UiLook.Label(deckCountText);
+            if(deckCountText!=null)deckCountText.color=Color.white; // 暗い背景へ直接重なる枚数表示を読める色にする。
+            // Sceneに置かれた見出しも、素材・フォント・配置を保ったままカナで表示する。
+            foreach(var label in (containerRoot!=null?containerRoot:gameObject).GetComponentsInChildren<Text>(true))
+                label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);
             EnsureSkipButton();
 
             // デッキ枚数表示
@@ -167,7 +171,7 @@ namespace Olca.Presentation.Dungeon
             label.font = deckCountText != null ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.fontSize = 28; label.alignment = TextAnchor.MiddleCenter;
             label.color = new Color(.9f, .97f, 1f); label.raycastTarget = false;
-            label.text = "受け取らずに進む"; UiLook.Button(skipButton);
+            label.text = "ウケトラズニススム"; UiLook.Button(skipButton);
         }
 
         private async UniTask FadeAsync(
@@ -767,8 +771,8 @@ namespace Olca.Presentation.Dungeon
     {
         private UnityEngine.UI.Text label;
         private string applied;
-        private void OnEnable(){label=GetComponent<UnityEngine.UI.Text>();UnityEngine.Canvas.willRenderCanvases+=Apply;Apply();}
-        private void OnDisable(){UnityEngine.Canvas.willRenderCanvases-=Apply;}
+        private void OnEnable(){label=GetComponent<UnityEngine.UI.Text>();UnityEngine.Canvas.preWillRenderCanvases+=Apply;Apply();}
+        private void OnDisable(){UnityEngine.Canvas.preWillRenderCanvases-=Apply;}
         private void Apply(){if(label==null||label.text==applied)return;applied=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);label.text=applied;}
     }
 }

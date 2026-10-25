@@ -1031,10 +1031,10 @@ namespace Olca.Presentation.Field
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
+                elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 group.alpha = Mathf.Lerp(from, to, t);
-                await Olca.Unity.BattleVisualClock.NextFrame(ct);
+                await Olca.Unity.GameplayPause.NextFrame(ct);
             }
             group.alpha = to;
         }
