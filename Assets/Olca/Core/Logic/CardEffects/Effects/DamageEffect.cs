@@ -9,6 +9,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
     public class DamageEffect : ICardEffect
     {
         private readonly int baseDamage;
+        private readonly int hitStopFrames;
         private readonly DamageTargetType targetType;
         private readonly int targetCount;
 
@@ -18,8 +19,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <param name="baseDamage">基本ダメージ</param>
         /// <param name="targetType">対象タイプ</param>
         /// <param name="targetCount">対象数（複数攻撃の場合）</param>
-        public DamageEffect(int baseDamage, DamageTargetType targetType = DamageTargetType.Single, int targetCount = 1)
+        public DamageEffect(int baseDamage, DamageTargetType targetType = DamageTargetType.Single, int targetCount = 1, int hitStopFrames = 0)
         {
+            if(hitStopFrames<0)throw new ArgumentOutOfRangeException(nameof(hitStopFrames));
+            this.hitStopFrames=hitStopFrames;
             this.baseDamage = baseDamage;
             this.targetType = targetType;
             this.targetCount = targetCount;
@@ -87,7 +90,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             int finalDamage = baseDamage;
 
             // GetFinalElement()でElementOverrideを考慮した最終属性を使用
-            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement(), context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement(), context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, hitStopFrames);
         }
 
         /// <summary>

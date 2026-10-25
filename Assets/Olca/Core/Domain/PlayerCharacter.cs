@@ -416,12 +416,13 @@ namespace Olca.Core.Domain
         /// <param name="forceStagger">強制的にのけぞるか（状態異常による強制のけぞり用）</param>
         /// <param name="affectsPoise">強靭度を削るか。地形などのHPダメージとは独立する。</param>
         /// <param name="poiseDamage">明示した強靭度削り量。nullは旧定義のHPダメージ連動を維持する。</param>
-        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
-            => TryTakeDamage(damage, forceStagger, affectsPoise, attackElement, attackProperties, poiseDamage);
+        public void TakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitStopFrames = 0)
+            => TryTakeDamage(damage, forceStagger, affectsPoise, attackElement, attackProperties, poiseDamage, hitStopFrames);
 
         /// <summary>防御で遮断されなかったヒットだけtrue。付随効果と被弾無敵の判定に使う。</summary>
-        public bool TryTakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null)
+        public bool TryTakeDamage(int damage, bool forceStagger = false, bool affectsPoise = true, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitStopFrames = 0)
         {
+            if(hitStopFrames<0)throw new ArgumentOutOfRangeException(nameof(hitStopFrames));
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
             bool breakTransformation = false;
@@ -434,18 +435,25 @@ namespace Olca.Core.Domain
                 if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return false;
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
+                bool protectionPresent=HasBarrier||HasAura, wasBreaking=protection.WillBreak;
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
-                if (HasAura && protection.Block(damage, grass, attackProperties)) { ReportCombatFeedback(CombatFeedbackKind.Immune); return false; }
+                if (HasAura && protection.Block(damage, grass, attackProperties)) {
+                    if(protectionPresent&&!wasBreaking&&(protection.WillBreak||(!HasBarrier&&!HasAura)))RequestHitStop(hitStopFrames);
+                    ReportCombatFeedback(CombatFeedbackKind.Immune); return false; }
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
                 // 元から威力0の状態専用ヒットはバリアを通過する。
-                if (HasBarrier && protection.Block(damage, grass, attackProperties)) { ReportCombatFeedback(CombatFeedbackKind.BarrierDamage,ElementResistances.Neutral.CalculateDamage(damage,ElementType.None,grass)); return false; }
+                if (HasBarrier && protection.Block(damage, grass, attackProperties)) {
+                    if(protectionPresent&&!wasBreaking&&(protection.WillBreak||(!HasBarrier&&!HasAura)))RequestHitStop(hitStopFrames);
+                    ReportCombatFeedback(CombatFeedbackKind.BarrierDamage,ElementResistances.Neutral.CalculateDamage(damage,ElementType.None,grass)); return false; }
+                if(protectionPresent&&!wasBreaking&&(protection.WillBreak||(!HasBarrier&&!HasAura)))RequestHitStop(hitStopFrames);
                 // 完全防御した弱点ヒットでは解除しない。受理したヒットだけ変身中耐性で計算後に解除する。
                 breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 damage = bodyDamage;
                 if (originalDamage > 0 && damage == 0) { ReportCombatFeedback(CombatFeedbackKind.Immune); return false; } // 耐性無効は強靭度・付随効果へ進めない。
 
+                if(damage>0)RequestHitStop(hitStopFrames);
                 ReportCombatFeedback(CombatFeedbackKind.Damage,damage);
                 if (frameHp.Active) frameHp.Damage(damage);
                 else
@@ -674,6 +682,9 @@ namespace Olca.Core.Domain
         /// <summary>
         /// HP変更時のイベント
         /// </summary>
+        /// <summary>明示設定のある攻撃が本体命中または防御解除を成立させた通知。</summary>
+        public event Action<int> OnHitStopRequested;
+        private void RequestHitStop(int frames) { if(frames>0)OnHitStopRequested?.Invoke(frames); }
         public event Action<CombatFeedback> OnCombatFeedback;
         private void ReportCombatFeedback(CombatFeedbackKind kind,int amount=0)
         { if((kind==CombatFeedbackKind.Damage||kind==CombatFeedbackKind.Healing)&&amount<=0)return;OnCombatFeedback?.Invoke(new CombatFeedback(kind,amount)); }
