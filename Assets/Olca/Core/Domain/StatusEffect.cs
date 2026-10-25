@@ -14,6 +14,18 @@ namespace Olca.Core.Domain
         Blind,      // 盲目
     }
 
+    /// <summary>表示用の独立した確定状態。読取りで付与予約やフレームを確定しない。</summary>
+    public sealed class StatusEffectSnapshot
+    {
+        public StatusEffectType Type { get; }
+        public string Kind { get; }
+        public int RemainingFrames { get; }
+        public int Damage { get; }
+        public int? IntervalFrames { get; }
+        internal StatusEffectSnapshot(StatusEffectType type, string kind, int frames, int damage = 0, int? interval = null)
+        { Type=type; Kind=kind; RemainingFrames=frames; Damage=damage; IntervalFrames=interval; }
+    }
+
     /// <summary>時間制の状態異常に対する軽減率。属性耐性とは独立する。</summary>
     public sealed class TimedStatusResistances
     {
@@ -61,6 +73,8 @@ namespace Olca.Core.Domain
         public bool IsActive => active != null && remainingUnits > 0;
         public bool HasPendingApplication => pending != null;
         public int RemainingFrames => (int)((remainingUnits + 49) / 50);
+        internal StatusEffectSnapshot Inspect(string kind) => IsActive
+            ? new StatusEffectSnapshot(StatusEffectType.Poison,kind,RemainingFrames,active.Damage,active.Interval) : null;
         public int FramesUntilDamage => active == null ? 0 : (int)((nextDamageUnits + 49) / 50);
 
         /// <summary>期間と量は既存効果から取得し、独立した間隔と終了時解除を明示させる。</summary>

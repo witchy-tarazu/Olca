@@ -17,6 +17,56 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 敵詳細は初遭遇でも全耐性を読み技や行動説明を含めず状態を変更しない()
+        {
+            var enemy=new Enemy("unseen","テストテキ",80,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0),resistances:new ElementResistances(fire:-50,water:100),statusResistances:new TimedStatusResistances(poison:25));
+            enemy.SetBarrier(12);enemy.Guard.Set(true,false);enemy.ApplyStatus(new StatusEffect(StatusEffectType.Blind,2000));
+            var before=enemy.GetStatus(StatusEffectType.Blind).RemainingFrames;var first=CustomDisplay.CombatantDetails(enemy);var second=CustomDisplay.CombatantDetails(enemy);
+            Assert.AreEqual(first,second);StringAssert.Contains("ヒ -50",first);StringAssert.Contains("ミズ 100",first);StringAssert.Contains("ドク 25",first);StringAssert.Contains("モウモク",first);StringAssert.Contains("バリア HP 12",first);StringAssert.Contains("ガード",first);
+            StringAssert.DoesNotContain("パターン",first);StringAssert.DoesNotContain("クールダウン",first);Assert.AreEqual(before,enemy.GetStatus(StatusEffectType.Blind).RemainingFrames);Assert.AreEqual(80,enemy.CurrentHp);
+        }
+        [Test]
+        public void 自分詳細は変身中の実耐性と集中防御を表示し未確定毒の予約を確定しない()
+        {
+            var p=new PlayerCharacter(100);p.SetElementResistances(new ElementResistances(fire:25));p.BeginTransformationDefense(new ElementResistances(water:-75),ElementType.Fire);p.SetConcentrateBuff(2);p.SetBarrier(9);
+            p.ApplyPoison("fixture",new StatusEffect(StatusEffectType.Poison,2000,3,poisonKind:"fixture",poisonIntervalFrames:30),30);
+            Assert.IsEmpty(p.InspectStatuses());var text=CustomDisplay.CombatantDetails(p);Assert.IsEmpty(p.InspectStatuses(),"表示は保存Captureや毒の確定処理を呼ばない");
+            StringAssert.Contains("ミズ -75",text);StringAssert.Contains("シュウチュウ",text);StringAssert.Contains("2 バイ",text);StringAssert.Contains("バリア HP 9",text);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(2,p.NextCardMultiplier);
+        }
+        [Test]
+        public void 状態詳細スナップショットは独立し複数毒と他状態を保持して読取専用で返る()
+        {
+            var p=new PlayerCharacter(100);var e=new Enemy("e","テキ",100,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0));
+            var b=new BattleSystem(p,new List<Enemy>{e},new Deck(new List<Card>()));
+            foreach(var kind in new[]{"b","a"}){p.ApplyPoison(kind,new StatusEffect(StatusEffectType.Poison,2000,1,poisonKind:kind,poisonIntervalFrames:60),60);e.ApplyStatus(new StatusEffect(StatusEffectType.Poison,2000,1,poisonKind:kind,poisonIntervalFrames:60));}
+            p.ApplyParalysis(120);e.ApplyStatus(new StatusEffect(StatusEffectType.Confusion,2000));b.TickFrame(16);
+            var own=p.InspectStatuses();var other=e.InspectStatuses();Assert.AreEqual(3,own.Count);Assert.AreEqual(3,other.Count);Assert.AreEqual("a",own[0].Kind);Assert.AreEqual("b",own[1].Kind);
+            int frames=own[0].RemainingFrames;long frame=b.LogicalFrame;Assert.Throws<System.NotSupportedException>(()=>((IList<StatusEffectSnapshot>)own).Clear());
+            p.InspectStatuses();e.InspectStatuses();Assert.AreEqual(frame,b.LogicalFrame);Assert.AreEqual(frames,p.InspectStatuses()[0].RemainingFrames);
+            b.TickFrame(16);Assert.AreEqual(frames,own[0].RemainingFrames);Assert.Less(p.InspectStatuses()[0].RemainingFrames,frames);b.Transformations.Dispose();
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void カスタム詳細は空手札でも自分と複数敵を切り替え停止と選択を保持し解除で閉じる(bool paused)
+        {
+            var root=new GameObject("CombatInspection",typeof(RectTransform),typeof(Canvas));var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+            var p=new PlayerCharacter(100);var e1=new Enemy("first","テキイチ",50,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0));var e2=new Enemy("second","テキニ",70,ElementType.Water,new Olca.Core.Domain.Vector2Int(4,0));
+            var b=new BattleSystem(p,new List<Enemy>{e1,e2},new Deck(new List<Card>()));CustomScreenView view=null;
+            try {
+                Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+                view=root.AddComponent<CustomScreenView>();var obj=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(root.transform,false);var label=new GameObject("Label",typeof(RectTransform),typeof(Text));label.transform.SetParent(obj.transform,false);label.GetComponent<Text>().font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");
+                typeof(CustomScreenView).GetField("confirmButton",flags).SetValue(view,obj.GetComponent<Button>());typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,b.CustomScreen);
+                b.CustomScreen.Open(new Card[0],new MockRandomProvider());view.BindCombatants(b);long frame=b.LogicalFrame;
+                view.OpenCombatantDetails(0);var details=root.GetComponentsInChildren<Text>().Single(t=>t.name=="CustomPadDetailsText");StringAssert.Contains("ジブン",details.text);
+                if(paused){Olca.Unity.GameplayPause.SetPaused(true);view.OpenCombatantDetails(1);StringAssert.Contains("ジブン",details.text);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
+                typeof(CustomScreenView).GetMethod("ApplyCustomPad",flags).Invoke(view,new object[]{Olca.Unity.CustomPadCommand.Right});StringAssert.Contains("テキイチ",details.text);
+                root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection").onClick.Invoke();StringAssert.Contains("テキニ",details.text);
+                root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection").onClick.Invoke();StringAssert.Contains("ジブン",details.text);
+                Assert.AreEqual(frame,b.LogicalFrame);Assert.IsTrue(b.CustomScreen.IsOpen);Assert.IsEmpty(b.CustomScreen.SelectedCards);
+                view.BindCombatants(null);Assert.IsFalse(root.transform.Find("CustomPadDetails").gameObject.activeSelf);
+            } finally {if(view!=null)typeof(CustomScreenView).GetMethod("OnDestroy",flags).Invoke(view,null);Object.DestroyImmediate(root);b.Transformations.Dispose();Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
+        }
+
+        [Test]
         public void 出撃前情報は全階層の実定義を読むだけで敵や地形を変えず独立した一覧を返す()
         {
             var cells=Enumerable.Range(0,8).Select(i=>new MapCell(i)).ToList();
