@@ -41,6 +41,10 @@ namespace Olca.Presentation.Dungeon
             selectionTcs = new UniTaskCompletionSource<Card>();
             if(containerRoot!=null)UiLook.Face(containerRoot.GetComponent<Image>());
             UiLook.Label(deckCountText);
+            if(deckCountText!=null)deckCountText.color=Color.white; // 暗い背景へ直接重なる枚数表示を読める色にする。
+            // Sceneに置かれた見出しも、素材・フォント・配置を保ったままカナで表示する。
+            foreach(var label in (containerRoot!=null?containerRoot:gameObject).GetComponentsInChildren<Text>(true))
+                label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);
             EnsureSkipButton();
 
             // デッキ枚数表示
@@ -167,7 +171,7 @@ namespace Olca.Presentation.Dungeon
             label.font = deckCountText != null ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.fontSize = 28; label.alignment = TextAnchor.MiddleCenter;
             label.color = new Color(.9f, .97f, 1f); label.raycastTarget = false;
-            label.text = "受け取らずに進む"; UiLook.Button(skipButton);
+            label.text = "ウケトラズニススム"; UiLook.Button(skipButton);
         }
 
         private async UniTask FadeAsync(
@@ -638,21 +642,29 @@ namespace Olca.Presentation.Dungeon
             title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,70);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=20;
             exploration.SetActive(false);
         }
-        public void RenderExploration(bool available)
+        public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","exploration",action)]);
-            jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ\nPad "+Pad("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ\nPad "+Pad("DashPrimary");
+            var profile=keyboardProfile??Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+            string Hint(string action)=>Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Touch?"":Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad?"\n"+Pad(action):"\n"+(profile.Bindings[("keyboard","exploration",action)]??"ミワリアテ");
+            jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ"+Hint("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ"+Hint("DashPrimary");
             jumpButton.interactable=dashButton.interactable=available;
         }
-        public void Render(string key, string value, bool available, bool canUseCard=false)
+        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null)
         {
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","battle",action)]);
-            title.text = "攻撃 [" + (key ?? "未割当") + "] / "+Pad("AttackPrimary")+"  カード ["+Pad("CardPrimary")+"]\n"+Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ"; state.text = value; button.interactable = available;
+            var profile=keyboardProfile??Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+            string Key(string action)=>profile.Bindings[("keyboard","battle",action)]??"ミワリアテ";
+            title.text=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad?
+                "コウゲキ ["+Pad("AttackPrimary")+"]  カード ["+Pad("CardPrimary")+"]\n"+Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ":
+                Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Touch?"タッチ: コウゲキ / カード / カスタム":
+                "コウゲキ ["+(key??"ミワリアテ")+"]  カード ["+Key("CardPrimary")+"]\n"+Key("CustomPrimary")+": カスタム / Escape: ポーズ";
+            state.text = value; button.interactable = available;
             state.color = UiLook.Ink;
         }
     }
@@ -720,6 +732,7 @@ namespace Olca.Presentation.Dungeon
         public static void Label(UnityEngine.UI.Text label)
         {
             if(label==null)return;
+            if(label.GetComponent<UiKanaLabel>()==null)label.gameObject.AddComponent<UiKanaLabel>();
             // 共通の色や枠の適用で、Scene/Prefab/呼出元の指定フォントを置き換えない。
             if(label.font==null)label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.color=Ink; label.raycastTarget=false;
@@ -756,5 +769,18 @@ namespace Olca.Presentation.Dungeon
                 label.resizeTextForBestFit=true;label.resizeTextMinSize=20;label.resizeTextMaxSize=label.fontSize;
             }
         }
+    }
+}
+
+namespace Olca.Presentation.Dungeon
+{
+    /// <summary>データやフォントを変更せず、描画するUI文字だけを既存用語のカナ表記へそろえる。</summary>
+    public sealed class UiKanaLabel : UnityEngine.MonoBehaviour
+    {
+        private UnityEngine.UI.Text label;
+        private string applied;
+        private void OnEnable(){label=GetComponent<UnityEngine.UI.Text>();UnityEngine.Canvas.preWillRenderCanvases+=Apply;Apply();}
+        private void OnDisable(){UnityEngine.Canvas.preWillRenderCanvases-=Apply;}
+        private void Apply(){if(label==null||label.text==applied)return;applied=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);label.text=applied;}
     }
 }

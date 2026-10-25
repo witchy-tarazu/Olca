@@ -241,6 +241,7 @@ namespace Olca.Unity
         private bool PadNeutral(InputDevice device)=>!buttons.Any(p=>p.Key.device==device&&p.Value)&&(!sticks.TryGetValue(device,out var stick)||stick.sqrMagnitude<.19f*.19f);
         public void StartEventCapture()
         {
+            InputGuideActivity.EnsureInitialized();
             if (capturing) return;
             eventClockOffset = System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency - Time.realtimeSinceStartupAsDouble;
             capturing = true; InputSystem.onEvent += CaptureEvent; InputSystem.onDeviceChange += DeviceChanged;
@@ -730,7 +731,7 @@ namespace Olca.Unity
         private readonly System.Func<bool> usable,ownsUi;private readonly Dictionary<Gamepad,State> states=new Dictionary<Gamepad,State>();private readonly List<CustomPadEvent> pending=new List<CustomPadEvent>();private bool active,disposed;private readonly double offset;
         public int Epoch{get;private set;}
         public bool HasGamepad=>InputSystem.devices.OfType<Gamepad>().Any(p=>p.enabled);
-        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null,string context="custom"){this.context=context;this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
+        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null,string context="custom"){InputGuideActivity.EnsureInitialized();this.context=context;this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
         private static bool Neutral(State state)=>!state.Buttons.Values.Any(v=>v)&&state.Stick.sqrMagnitude<.25f;
         public void Reset(){Epoch++;pending.Clear();states.Clear();active=false;}
         private bool CheckActive()
@@ -836,5 +837,84 @@ namespace Olca.Unity
             if(scroll!=null){if(directionScroll&&Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
         }
         public void Dispose(){input.Dispose();Suspend();}
+    }
+}
+
+namespace Olca.Unity
+{
+    /// <summary>カスタム中の戦闘描画だけを停止する時計。UI入力とUI演出は既存時計を使う。</summary>
+    public static class BattleVisualClock
+    {
+        private static readonly System.Collections.Generic.HashSet<object> owners=new System.Collections.Generic.HashSet<object>();
+        private static readonly System.Collections.Generic.Dictionary<UnityEngine.Animator,float> animators=new System.Collections.Generic.Dictionary<UnityEngine.Animator,float>();
+        private static readonly System.Collections.Generic.HashSet<UnityEngine.ParticleSystem> particles=new System.Collections.Generic.HashSet<UnityEngine.ParticleSystem>();
+        public static bool IsPaused=>owners.Count>0;
+        public static float DeltaTime=>IsPaused?0f:GameplayPause.DeltaTime;
+        public static void SetPaused(object owner,bool paused)
+        {
+            if(paused){owners.Add(owner);Refresh();return;}
+            owners.Remove(owner);if(IsPaused)return;
+            foreach(var entry in animators)if(entry.Key!=null)entry.Key.speed=entry.Value;
+            foreach(var particle in particles)if(particle!=null&&particle.isPaused)particle.Play(false);
+            animators.Clear();particles.Clear();
+        }
+        public static void Refresh()
+        {
+            if(!IsPaused)return;
+            foreach(var animator in UnityEngine.Object.FindObjectsByType<UnityEngine.Animator>(UnityEngine.FindObjectsSortMode.None)){
+                if(animator.GetComponentInParent<UnityEngine.Canvas>()!=null)continue;
+                if(!animators.ContainsKey(animator))animators.Add(animator,animator.speed);
+                animator.speed=0f;
+            }
+            foreach(var particle in UnityEngine.Object.FindObjectsByType<UnityEngine.ParticleSystem>(UnityEngine.FindObjectsSortMode.None)){
+                if(particle.GetComponentInParent<UnityEngine.Canvas>()!=null||!particle.isPlaying)continue;
+                particles.Add(particle);particle.Pause(false);
+            }
+        }
+        public static async Cysharp.Threading.Tasks.UniTask NextFrame(System.Threading.CancellationToken ct=default)
+        {
+            await GameplayPause.NextFrame(ct);
+            while(IsPaused)await GameplayPause.NextFrame(ct);
+        }
+        public static async Cysharp.Threading.Tasks.UniTask Delay(int milliseconds,System.Threading.CancellationToken cancellationToken=default)
+        {
+            while(IsPaused)await NextFrame(cancellationToken);
+            await GameplayPause.WaitAsync(cancellationToken);
+            float remaining=milliseconds/1000f;
+            while(remaining>0f){await NextFrame(cancellationToken);remaining-=DeltaTime;}
+        }
+        public static Cysharp.Threading.Tasks.UniTask Delay(System.TimeSpan duration,System.Threading.CancellationToken cancellationToken=default)
+            =>Delay((int)duration.TotalMilliseconds,cancellationToken);
+    }
+}
+
+namespace Olca.Unity
+{
+    public enum InputGuideDevice { KeyboardMouse, Gamepad, Touch }
+    /// <summary>入力の処理や割当を変えず、実際に操作した機器だけを表示側へ伝える。</summary>
+    public static class InputGuideActivity
+    {
+        public static InputGuideDevice Current { get; private set; } = InputGuideDevice.KeyboardMouse;
+        private static bool initialized;
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Reset()
+        {
+            UnityEngine.InputSystem.InputSystem.onEvent-=Observe;
+            initialized=false;Current=InputGuideDevice.KeyboardMouse;EnsureInitialized();
+        }
+        public static void EnsureInitialized()
+        {
+            if(initialized)return;initialized=true;UnityEngine.InputSystem.InputSystem.onEvent+=Observe;
+        }
+        private static void Observe(UnityEngine.InputSystem.LowLevel.InputEventPtr evt,UnityEngine.InputSystem.InputDevice device)
+        {
+            if(device==null||!device.enabled||(!evt.IsA<UnityEngine.InputSystem.LowLevel.StateEvent>()&&!evt.IsA<UnityEngine.InputSystem.LowLevel.DeltaStateEvent>()))return;
+            foreach(var control in evt.EnumerateChangedControls(device,magnitudeThreshold:.19f)){
+                if(control.noisy||control.synthetic)continue;
+                if(device is UnityEngine.InputSystem.Gamepad||device is UnityEngine.InputSystem.Joystick){Current=InputGuideDevice.Gamepad;return;}
+                if(device is UnityEngine.InputSystem.Keyboard||device is UnityEngine.InputSystem.Mouse){Current=InputGuideDevice.KeyboardMouse;return;}
+                if(device is UnityEngine.InputSystem.Touchscreen){Current=InputGuideDevice.Touch;return;}
+            }
+        }
     }
 }

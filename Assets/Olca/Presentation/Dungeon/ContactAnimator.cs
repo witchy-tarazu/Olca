@@ -69,15 +69,15 @@ namespace Olca.Presentation.Dungeon
             float bumpDuration = normalContactDuration * 0.25f;
             while (elapsed < bumpDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / bumpDuration);
                 playerTransform.position = Vector3.Lerp(startPos, bumpPos, EaseOutQuad(t));
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             playerTransform.position = bumpPos;
 
             // フェーズ2: 衝撃の一時停止
-            await Olca.Unity.GameplayPause.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
+            await Olca.Unity.BattleVisualClock.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
 
             // フェーズ3: ノックバック後退
             Vector3 knockbackPos = new Vector3(
@@ -88,13 +88,13 @@ namespace Olca.Presentation.Dungeon
             elapsed = 0f;
             while (elapsed < normalKnockbackDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / normalKnockbackDuration);
                 pose?.Invoke(ContactVisualPhase.Knockback, t);
                 float x = Mathf.Lerp(bumpPos.x, knockbackPos.x, EaseOutQuad(t));
                 float y = Mathf.Lerp(bumpPos.y, normalContactGroundY * units, EaseInQuad(t));
                 playerTransform.position = new Vector3(x, y, bumpPos.z);
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             playerTransform.position = knockbackPos;
         }
@@ -118,15 +118,15 @@ namespace Olca.Presentation.Dungeon
             float elapsed = 0f;
             while (elapsed < dashRushDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRushDuration);
                 playerTransform.position = Vector3.Lerp(rushStart, rushEnd, EaseInQuad(t));
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             playerTransform.position = rushEnd;
 
             // フェーズ2: 衝撃の一時停止
-            await Olca.Unity.GameplayPause.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
+            await Olca.Unity.BattleVisualClock.Delay((int)(pauseAfterContactDuration * 1000), cancellationToken: ct);
 
             // フェーズ3: プレイヤー宙返り戻り + 敵吹き飛び（同時）
             // ノックバック開始と同時にダメージエフェクトを発動（フェーズ2までの自動発動を抑制済み）
@@ -138,11 +138,14 @@ namespace Olca.Presentation.Dungeon
             Vector3 enemyStart = enemyTransform != null ? enemyTransform.position : Vector3.zero;
             Vector3 enemyEnd = enemyStart + new Vector3(dashEnemyKnockback * units, 0f, 0f);
 
+            var rotation=playerTransform.localRotation;
+            try {
             elapsed = 0f;
             while (elapsed < dashRollbackDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
+                playerTransform.localRotation=rotation*Quaternion.Euler(0f,0f,360f*t);
 
                 // プレイヤー: 放物線移動（X: 線形、Y: 放物線）
                 float x = Mathf.Lerp(rollStart.x, rollEnd.x, t);
@@ -153,11 +156,12 @@ namespace Olca.Presentation.Dungeon
                 if (enemyTransform != null)
                     enemyTransform.position = Vector3.Lerp(enemyStart, enemyEnd, EaseOutExpo(t));
 
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             playerTransform.position = rollEnd;
             if (enemyTransform != null)
                 enemyTransform.position = enemyEnd;
+            } finally { if(playerTransform!=null)playerTransform.localRotation=rotation; }
         }
 
         // ==================== バトル後復帰 ====================
@@ -176,20 +180,24 @@ namespace Olca.Presentation.Dungeon
             // X方向のみ目標位置へ移動、Y/Zは元の高さを維持
             Vector3 jumpEnd = new Vector3(targetPosition.x, jumpStart.y, jumpStart.z);
 
+            var rotation=playerTransform.localRotation;
+            try {
             float elapsed = 0f;
             while (elapsed < dashRollbackDuration)
             {
-                elapsed += Olca.Unity.GameplayPause.DeltaTime;
+                elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
+                playerTransform.localRotation=rotation*Quaternion.Euler(0f,0f,360f*t);
 
                 // X: 線形補間、Y: 放物線（ダッシュ宙返りと同じ）
                 float x = Mathf.Lerp(jumpStart.x, jumpEnd.x, t);
                 float y = jumpStart.y + jumpHeight * units * Mathf.Sin(t * Mathf.PI);
                 playerTransform.position = new Vector3(x, y, jumpStart.z);
 
-                await Olca.Unity.GameplayPause.NextFrame(ct);
+                await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             playerTransform.position = jumpEnd;
+            } finally { if(playerTransform!=null)playerTransform.localRotation=rotation; }
         }
 
         // ==================== イージング ====================

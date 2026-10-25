@@ -40,7 +40,10 @@ namespace Olca.Presentation.Battle
         private bool gaugeResetting;
 
         private Text transformationStatus, transformationCaption;
-        private Image transformationFrame, transformationSweep;
+        private Image transformationFrame, transformationSweep, transformationIcon;
+        private Olca.Presentation.CustomScreen.CustomScreenView TransformationVisualSource
+            => customScreenContainer==null?null:customScreenContainer.GetComponentInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true);
+        private string TransformationName(string id)=>TransformationVisualSource?.GetTransformationName(id)??Olca.Presentation.CustomScreen.CustomDisplay.Katakana(id);
         private Text PresentationText(string name,Transform parent,Vector2 position,Vector2 size,int fontSize)
         {
             var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(parent,false);
@@ -76,13 +79,22 @@ namespace Olca.Presentation.Battle
             if(battleSystem==null||battleSystem.IsGameOver){ResetTransformationVisual();return;}
             EnsureTransformationVisual();var state=battleSystem.Transformations;
             transformationStatus.transform.parent.gameObject.SetActive(state.HasActive||state.ReleaseFramesRemaining>0);
-            transformationStatus.text=state.ActiveStatusText;
+            transformationStatus.text=state.HasActive?TransformationName(state.ActiveId)+" ノコリ "+state.RemainingPhases+" カイ":"ヘンシンナシ（ノコリ0カイ）";
+            var sprite=state.HasActive?TransformationVisualSource?.GetTransformationIcon(state.ActiveId):null;
+            if(transformationIcon==null&&sprite!=null){
+                var icon=new GameObject("TransformationHudIcon",typeof(RectTransform),typeof(Image));icon.transform.SetParent(transformationStatus.transform.parent,false);
+                transformationIcon=icon.GetComponent<Image>();transformationIcon.preserveAspect=true;transformationIcon.raycastTarget=false;
+                var rect=(RectTransform)icon.transform;rect.anchorMin=rect.anchorMax=new Vector2(0,.5f);rect.anchoredPosition=new Vector2(32,0);rect.sizeDelta=new Vector2(48,48);
+            }
+            if(transformationIcon!=null){transformationIcon.sprite=sprite;transformationIcon.gameObject.SetActive(sprite!=null);}
+            transformationStatus.rectTransform.anchoredPosition=new Vector2(sprite!=null?26:0,0);
+            transformationStatus.rectTransform.sizeDelta=new Vector2(sprite!=null?428:480,60);
             bool activation=state.IsActivating&&!battleSystem.CustomScreen.IsOpen;
             bool release=state.ReleaseFramesRemaining>0;
             transformationFrame.gameObject.SetActive(activation||release);if(!activation&&!release)return;
             float progress=activation?1f-state.ActivationFramesRemaining/(float)state.ActivationDurationFrames:1f-state.ReleaseFramesRemaining/12f;
             transformationFrame.color=new Color(.6f,.92f,1f,activation ? .08f+.12f*Mathf.Sin(Mathf.PI*progress):.16f*(1f-progress));
-            transformationCaption.text=activation?"変身  "+state.ActiveId:"変身解除";
+            transformationCaption.text=activation?"ヘンシン  "+TransformationName(state.ActiveId):"変身解除";
             transformationSweep.rectTransform.anchoredPosition=new Vector2(-270f+540f*progress,0);
             transformationSweep.color=new Color(.25f,.85f,1f,.5f*(1f-progress));
         }
@@ -161,7 +173,7 @@ namespace Olca.Presentation.Battle
             var background=gaugeSlider.transform.Find("Background")?.GetComponent<Image>();
             if(background!=null){background.sprite=gaugeSprites.Track;background.color=Color.white;background.type=Image.Type.Simple;background.raycastTarget=false;}
         }
-        private void Update() {UpdateGaugeVisual();UpdateTransformationVisual();}
+        private void Update() {Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&battleSystem.IsDarkening);UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
         private void UpdateGaugeVisual()
         {
             if(gaugeFill==null)return;
@@ -175,9 +187,9 @@ namespace Olca.Presentation.Battle
             if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
-        private void OnBattleEnded(BattleResult result) {ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnBattleEnded(BattleResult result) {Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
-        private void OnDisable() {ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnDisable() {Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()
         {

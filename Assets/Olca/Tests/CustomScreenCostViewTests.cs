@@ -17,6 +17,199 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 左上の本絵はマウスと共通カーソル移動で切替わり未登録時はミニを流用しない()
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            var root=new GameObject("IllustrationBinding",typeof(RectTransform));var texture=new Texture2D(2,1);
+            var a=Sprite.Create(texture,new Rect(0,0,1,1),Vector2.one*.5f);var b=Sprite.Create(texture,new Rect(1,0,1,1),Vector2.one*.5f);
+            try {
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("sword",CardSeries.Sword),Create("heal",CardSeries.Sword)}));model.Open(new Card[0],new MockRandomProvider(0));
+                var hand=model.CurrentHand.ToList();typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,hand);
+                var imageObject=new GameObject("FocusedCardIllustration",typeof(RectTransform),typeof(Image));imageObject.transform.SetParent(root.transform,false);var image=imageObject.GetComponent<Image>();image.rectTransform.sizeDelta=new Vector2(280,280);
+                typeof(CustomScreenView).GetField("selectedCardImage",flags).SetValue(view,image);
+                var cursor=new CustomScreenCursor();typeof(CustomScreenView).GetField("cursor",flags).SetValue(view,cursor);
+                cursor.OnCursorMoved+=index=>typeof(CustomScreenView).GetMethod("OnCursorMoved",flags).Invoke(view,new object[]{index});cursor.Initialize(2);
+                view.ConfigureCardVisuals(new[]{new CardVisualEntry{CardId=hand[0].Id,Illustration=a},new CardVisualEntry{CardId=hand[1].Id,Illustration=b}});
+                Assert.AreSame(a,image.sprite);Assert.AreEqual(Color.white,image.color);Assert.IsTrue(image.isActiveAndEnabled);Assert.IsTrue(image.preserveAspect);
+                cursor.MoveRight();Assert.AreSame(b,image.sprite);
+                var handViews=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);
+                for(int i=0;i<2;i++){var obj=new GameObject("Hand"+i);obj.transform.SetParent(root.transform,false);var h=obj.AddComponent<HandCardView>();typeof(HandCardView).GetField("parentView",flags).SetValue(h,view);typeof(HandCardView).GetField("<Card>k__BackingField",flags).SetValue(h,hand[i]);handViews.Add(h);}
+                handViews[0].OnPointerEnter(null);Assert.AreSame(a,image.sprite);Assert.AreEqual(0,cursor.CurrentIndex);
+                cursor.MoveToConfirmButton();Assert.IsNull(image.sprite);cursor.MoveToCard(1);Assert.AreSame(b,image.sprite);
+                view.ConfigureCardVisuals(null);Assert.IsNull(image.sprite);Assert.AreEqual(new Vector2(280,280),image.rectTransform.sizeDelta);
+            }finally{Object.DestroyImmediate(root);Object.DestroyImmediate(a);Object.DestroyImmediate(b);Object.DestroyImmediate(texture);}
+        }
+        [Test]
+        public void 操作した機器だけでガイドが切替わり離し入力や微小スティック揺れでは奪い返さない()
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var mouse=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();
+            Olca.Unity.InputGuideActivity.EnsureInitialized();
+            try {
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.A));UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.KeyboardMouse,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.West));UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.Gamepad,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.Gamepad,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState{delta=Vector2.right,position=new Vector2(10,20)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.KeyboardMouse,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=new Vector2(.01f,0)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.KeyboardMouse,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=new Vector2(.6f,0)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.Gamepad,Olca.Unity.InputGuideActivity.Current);
+            } finally {UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);typeof(Olca.Unity.InputGuideActivity).GetMethod("Reset",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);}
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ガイドは最後の機器だけを表示し既存の再割当とカナ表記を維持する(bool battle)
+        {
+            var profile=Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();var phase=battle?Olca.Core.Logic.Integration.GamePhase.Battle:Olca.Core.Logic.Integration.GamePhase.Dungeon;
+            var keyboard=GameFieldView.FormatGameplayInstructionsForDevice(profile,phase,Olca.Unity.InputGuideDevice.KeyboardMouse);
+            var pad=GameFieldView.FormatGameplayInstructionsForDevice(profile,phase,Olca.Unity.InputGuideDevice.Gamepad);
+            StringAssert.Contains("Escape",keyboard);StringAssert.DoesNotContain("West",keyboard);StringAssert.DoesNotContain("South",keyboard);StringAssert.DoesNotContain("Escape",pad);
+            StringAssert.Contains(battle?"West":"South",pad);
+            var edit=profile.BeginEdit();Assert.IsTrue(edit.TryAssign(("keyboard",battle?"battle":"exploration",battle?"AttackPrimary":"JumpPrimary"),"J",out _));
+            StringAssert.Contains("J",GameFieldView.FormatGameplayInstructionsForDevice(edit.Preview(),phase,Olca.Unity.InputGuideDevice.KeyboardMouse));
+            var rendered=CustomDisplay.Katakana(pad);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(rendered,"[一-鿿]"));
+        }
+
+        [Test]
+        public async System.Threading.Tasks.Task カスタム停止中もHUD退場遷移を完了してカスタム画面の登場を妨げない()
+        {
+            var root=new GameObject("HudTransition");var owner=new object();
+            using(var cancel=new System.Threading.CancellationTokenSource()){
+                try {
+                    Olca.Unity.GameplayPause.SetPaused(false);
+                    var group=root.AddComponent<CanvasGroup>();var field=root.AddComponent<GameFieldView>();
+                    typeof(GameFieldView).GetField("dungeonHudCanvasGroup",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(field,group);
+                    Olca.Unity.BattleVisualClock.SetPaused(owner,true);
+                    var task=field.HideHUDAsync(.001f,cancel.Token).AsTask();
+                    Assert.AreSame(task,await System.Threading.Tasks.Task.WhenAny(task,System.Threading.Tasks.Task.Delay(3000)));
+                    await task;Assert.AreEqual(0f,group.alpha);Assert.IsTrue(Olca.Unity.BattleVisualClock.IsPaused);
+                } finally {cancel.Cancel();Olca.Unity.BattleVisualClock.SetPaused(owner,false);Object.DestroyImmediate(root);}
+            }
+        }
+
+        [Test]
+        public void 描画前のカナ変換は文字データだけでなく同一フレームの文字メッシュにも反映する()
+        {
+            var root=new GameObject("KanaCanvas",typeof(RectTransform),typeof(Canvas));
+            try {
+                root.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;
+                var child=new GameObject("KanaText",typeof(RectTransform),typeof(Text));child.transform.SetParent(root.transform,false);
+                var label=child.GetComponent<Text>();label.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");label.fontSize=28;
+                label.rectTransform.sizeDelta=new Vector2(400,100);label.horizontalOverflow=HorizontalWrapMode.Overflow;
+                label.text="カナ";Canvas.ForceUpdateCanvases();UiLook.Label(label);
+                var kana=label.GetComponent<UiKanaLabel>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                typeof(UiKanaLabel).GetMethod("OnDisable",flags).Invoke(kana,null);
+                typeof(UiKanaLabel).GetMethod("OnEnable",flags).Invoke(kana,null);
+                label.text="通貨";Canvas.ForceUpdateCanvases();
+                Assert.AreEqual("ツウカ",label.text);Assert.AreEqual(3,label.cachedTextGenerator.characterCountVisible);
+            } finally {foreach(var kana in root.GetComponentsInChildren<UiKanaLabel>(true))typeof(UiKanaLabel).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(kana,null);Object.DestroyImmediate(root);}
+        }
+
+        [Test]
+        public void 変身の登録名称とアイコンは一覧とHUDへ連携し未登録素材を作らない()
+        {
+            var root=new GameObject("TransformationMetadata",typeof(RectTransform));
+            var texture=new Texture2D(1,1);var sprite=Sprite.Create(texture,new Rect(0,0,1,1),Vector2.one*.5f);
+            var player=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(0,0));
+            var battle=new BattleSystem(player,new List<Enemy>{new Enemy("fixtureEnemy","fixtureEnemy",50,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0))},new Deck(new List<Card>{Create("sword",CardSeries.Sword)}));
+            try {
+                var container=new GameObject("Custom",typeof(RectTransform));container.transform.SetParent(root.transform,false);
+                var view=container.AddComponent<CustomScreenView>();
+                var confirm=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));confirm.transform.SetParent(container.transform,false);
+                var text=new GameObject("Label",typeof(RectTransform),typeof(Text));text.transform.SetParent(confirm.transform,false);
+                var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+                typeof(CustomScreenView).GetField("confirmButton",flags).SetValue(view,confirm.GetComponent<Button>());
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,battle.CustomScreen);
+                var entry=new TransformationVisualEntry{Id="fixture",DisplayNameKana="テストヘンシン",Icon=sprite};
+                view.ConfigureTransformationVisuals(new[]{entry});entry.DisplayNameKana="カキカエ";
+                Assert.AreEqual("テストヘンシン",view.GetTransformationName("fixture"));Assert.IsNull(view.GetTransformationIcon("unregistered"));
+                Assert.Throws<System.ArgumentException>(()=>view.ConfigureTransformationVisuals(new[]{new TransformationVisualEntry{Id="fixture",DisplayNameKana="漢字"}}));
+                battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire)});
+                battle.SetFirstStrike();battle.CustomScreen.Open(new Card[0],new MockRandomProvider(0));view.BindTransformations(battle.Transformations);
+                var choice=container.transform.Find("TransformationChoice0");Assert.IsNotNull(choice);
+                StringAssert.Contains("テストヘンシン",choice.GetComponentInChildren<Text>().text);Assert.AreSame(sprite,choice.Find("TransformationIcon").GetComponent<Image>().sprite);
+                Assert.IsFalse(choice.Find("TransformationIcon").GetComponent<Image>().raycastTarget);
+                Assert.IsTrue(battle.Transformations.TryPreview("fixture"));battle.CustomScreen.Confirm();
+                var hud=root.AddComponent<Olca.Presentation.Battle.BattleView>();
+                typeof(Olca.Presentation.Battle.BattleView).GetField("customScreenContainer",flags).SetValue(hud,container.GetComponent<RectTransform>());
+                typeof(Olca.Presentation.Battle.BattleView).GetField("battleSystem",flags).SetValue(hud,battle);
+                typeof(Olca.Presentation.Battle.BattleView).GetMethod("UpdateTransformationVisual",flags).Invoke(hud,null);
+                var status=root.GetComponentsInChildren<Text>(true).Single(t=>t.name=="TransformationHud");StringAssert.Contains("テストヘンシン",status.text);
+                Assert.AreSame(sprite,root.GetComponentsInChildren<Image>(true).Single(i=>i.name=="TransformationHudIcon").sprite);
+                view.ConfigureTransformationVisuals(null);
+                typeof(Olca.Presentation.Battle.BattleView).GetMethod("UpdateTransformationVisual",flags).Invoke(hud,null);
+                Assert.IsFalse(root.GetComponentsInChildren<Image>(true).Single(i=>i.name=="TransformationHudIcon").gameObject.activeSelf);
+            } finally {battle.Transformations.Dispose();Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
+        }
+
+        [Test]
+        public void 閉じた画面の内部クリーンアップは末尾解除を拒否せず仮選択を戻せる()
+        {
+            var card=Create("sword",CardSeries.Sword);var model=new CustomScreenSystem(new Deck(new List<Card>{card}));
+            model.Open(new Card[0],new MockRandomProvider(0));Assert.IsTrue(model.TrySelectCard(card));model.CompleteClose();
+            Assert.IsFalse(model.IsOpen);Assert.IsTrue(model.TryDeselectCard(card));Assert.IsEmpty(model.SelectedCards);
+            Assert.Contains(card,model.CurrentHand.ToList());
+        }
+
+        [Test]
+        public void 選択済みスロットは対応アイコンを表示しクリックした同名カード一枚だけ解除して順序とフォーカスを揃える()
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+            Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            var root=new GameObject("SelectedSlots",typeof(RectTransform));
+            try {
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("sword",CardSeries.Sword),Create("sword",CardSeries.Sword),Create("heal",CardSeries.Sword)}));
+                model.Open(new Card[0],new MockRandomProvider(0));var hand=model.CurrentHand.ToList();
+                foreach(var card in hand)Assert.IsTrue(model.TrySelectCard(card));
+                Assert.IsFalse(model.TryDeselectCard(hand[1]),"既存の取消は末尾だけを解除する契約を保つ");
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+                typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);
+                typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,hand);
+                var cursor=new CustomScreenCursor();cursor.Initialize(hand.Count);typeof(CustomScreenView).GetField("cursor",flags).SetValue(view,cursor);
+                var cost=new GameObject("Cost",typeof(RectTransform),typeof(Text));cost.transform.SetParent(root.transform,false);
+                typeof(CustomScreenView).GetField("costDisplay",flags).SetValue(view,cost.GetComponent<Text>());
+                var indicator=new GameObject("SelectionIndicator",typeof(RectTransform));indicator.transform.SetParent(root.transform,false);
+                var slots=new List<Image>();for(int i=0;i<3;i++){var slot=new GameObject("Slot"+i,typeof(RectTransform),typeof(Image));slot.transform.SetParent(indicator.transform,false);((RectTransform)slot.transform).anchoredPosition=new Vector2(50*i,0);slots.Add(slot.GetComponent<Image>());}
+                typeof(CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags).Invoke(view,null);
+                for(int i=0;i<3;i++)Assert.AreSame(view.GetCardIcon(hand[i].Id),slots[i].sprite);
+                slots[1].GetComponent<Button>().onClick.Invoke();
+                CollectionAssert.AreEqual(new[]{hand[0],hand[2]},model.SelectedCards);
+                Assert.AreSame(view.GetCardIcon(hand[2].Id),slots[1].sprite);Assert.IsNull(slots[2].sprite);Assert.IsFalse(slots[2].raycastTarget);
+                Assert.AreEqual(1,cursor.CurrentIndex);StringAssert.Contains(model.GetTotalUsedCost().ToString(),cost.GetComponent<Text>().text);
+                slots[0].GetComponent<Button>().onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[2]},model.SelectedCards);
+            } finally {Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void フォーカス枠は背景より前で手札アイコンより後ろに描きポインター入力を遮らない()
+        {
+            var root=new GameObject("FocusOrder",typeof(RectTransform));
+            try {var background=new GameObject("BgCustom",typeof(RectTransform),typeof(Image));background.transform.SetParent(root.transform,false);
+                var cards=new GameObject("Cards",typeof(RectTransform));cards.transform.SetParent(root.transform,false);
+                var focus=new GameObject("Focus",typeof(RectTransform),typeof(Image));focus.transform.SetParent(root.transform,false);
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+                typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,cards.transform);
+                typeof(CustomScreenView).GetField("cursorIndicator",flags).SetValue(view,focus);
+                for(int i=0;i<3;i++)typeof(CustomScreenView).GetMethod("UpdateCursorIndicator",flags).Invoke(view,new object[]{-1});
+                Assert.Less(background.transform.GetSiblingIndex(),focus.transform.GetSiblingIndex());Assert.Less(focus.transform.GetSiblingIndex(),cards.transform.GetSiblingIndex());Assert.IsFalse(focus.GetComponent<Image>().raycastTarget);
+            } finally {Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void カスタム停止は戦闘Animatorの元速度を復元しUIアニメと入力を止めない()
+        {
+            var world=new GameObject("BattleCharacter",typeof(Animator));var ui=new GameObject("Ui",typeof(Canvas),typeof(Animator));var a=new object();var b=new object();
+            try {world.GetComponent<Animator>().speed=.55f;ui.GetComponent<Animator>().speed=.8f;
+                bool inputBlocked=Olca.Unity.GameplayPause.InputBlocked;
+                Olca.Unity.BattleVisualClock.SetPaused(a,true);Olca.Unity.BattleVisualClock.SetPaused(b,true);
+                Assert.AreEqual(0f,world.GetComponent<Animator>().speed);Assert.AreEqual(.8f,ui.GetComponent<Animator>().speed);Assert.AreEqual(0f,Olca.Unity.BattleVisualClock.DeltaTime);Assert.AreEqual(inputBlocked,Olca.Unity.GameplayPause.InputBlocked);
+                Olca.Unity.BattleVisualClock.SetPaused(a,false);Assert.AreEqual(0f,world.GetComponent<Animator>().speed);
+                Olca.Unity.BattleVisualClock.SetPaused(b,false);Assert.AreEqual(.55f,world.GetComponent<Animator>().speed);
+            } finally {Olca.Unity.BattleVisualClock.SetPaused(a,false);Olca.Unity.BattleVisualClock.SetPaused(b,false);Object.DestroyImmediate(world);Object.DestroyImmediate(ui);}
+        }
+        [TestCase("選択したカードを確定します","センタクシタカードヲカクテイシマス")]
+        [TestCase("前方1マス炎属性攻撃","ゼンポウ1マスホノオゾクセイコウゲキ")]
+        [TestCase("使用済み / 手札上限","シヨウズミ / テフダジョウゲン")]
+        [TestCase("十字左 / 獲得: 3枚 / 通貨: 0","ジュウジヒダリ / カクトク: 3マイ / ツウカ: 0")]
+        public void 指定フォントを交換せず既存カスタム文言をカナで表示する(string source,string expected)
+            =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
+
+        [Test]
         public void タッチ短押しはクリックを残し長押しは一度だけ詳細を開いて解放クリックを拒否する()
         {
             WithTouchHold((hold,screen,group,opened,valid)=>{
@@ -304,16 +497,23 @@ namespace Olca.Tests
         public async System.Threading.Tasks.Task 報酬の受取と明示スキップは最初の入力だけで確定し再表示でもボタンを増やさない(bool skipFirst)
         {
             var root = new GameObject("RewardSkip", typeof(RectTransform));
+            var headingObject=new GameObject("TitleText",typeof(RectTransform),typeof(Text));headingObject.transform.SetParent(root.transform,false);
+            var heading=headingObject.GetComponent<Text>();heading.text="カードを1枚獲得";
+            heading.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var originalFont=heading.font;
             try {
                 var view = root.AddComponent<CardSelectionView>();
                 var flags = BindingFlags.Instance | BindingFlags.NonPublic;
                 typeof(CardSelectionView).GetField("containerRoot", flags).SetValue(view, root);
+                var countObject=new GameObject("DeckCount",typeof(RectTransform),typeof(Text));countObject.transform.SetParent(root.transform,false);
+                var countText=countObject.GetComponent<Text>();typeof(CardSelectionView).GetField("deckCountText",flags).SetValue(view,countText);
                 typeof(CardSelectionView).GetField("cardItems", flags).SetValue(view, new CardSelectionItemView[0]);
                 var card = Create("reward", CardSeries.Sword);
                 for (int repeat=0; repeat<2; repeat++) {
                     var task = view.ShowAsync(new[] { card }, 6).AsTask();
                     var button = root.GetComponentInChildren<Button>(true);
                     Assert.AreEqual("SkipCardReward", button.name);
+                    Assert.AreEqual("カードヲ1マイカクトク",heading.text);Assert.AreSame(originalFont,heading.font);Assert.AreEqual(Color.white,countText.color);
+                    Assert.AreEqual("ウケトラズニススム",button.GetComponentInChildren<Text>(true).text);
                     Assert.AreEqual(1, root.GetComponentsInChildren<Button>(true).Length);
                     // ポーズ中は明示スキップでも報酬を確定しない。
                     Olca.Unity.GameplayPause.SetPaused(true); button.onClick.Invoke(); Assert.IsFalse(task.IsCompleted);

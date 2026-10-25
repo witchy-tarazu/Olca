@@ -577,7 +577,7 @@ namespace Olca.Presentation.Field
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
-            UpdatePlayerHitEffect(Olca.Unity.GameplayPause.DeltaTime);
+            UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -758,7 +758,7 @@ namespace Olca.Presentation.Field
             if (!cameraFollowEnabled && battleCameraTargetX.HasValue && fieldCamera != null)
             {
                 Vector3 camPos = fieldCamera.transform.position;
-                camPos.x = Mathf.Lerp(camPos.x, battleCameraTargetX.Value, Olca.Unity.GameplayPause.DeltaTime * cameraFollowSpeed);
+                camPos.x = Mathf.Lerp(camPos.x, battleCameraTargetX.Value, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeed);
                 fieldCamera.transform.position = camPos;
             }
 
@@ -830,6 +830,7 @@ namespace Olca.Presentation.Field
         }
         private void UpdatePlayerSprite()
         {
+            if(Olca.Unity.BattleVisualClock.IsPaused)return;
             if (dungeonSystem != null && dungeonSystem.IsObstacleStopped && !dungeonSystem.IsInBattle) {
                 if (!obstaclePoseActive) { obstaclePoseActive = true; obstacleAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled; }
                 if (playerAnimator != null) playerAnimator.enabled = false;
@@ -849,7 +850,7 @@ namespace Olca.Presentation.Field
             bool isDashing = dungeonSystem != null
                 && dungeonSystem.IsDashing
                 && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
-                && Olca.Unity.GameplayPause.DeltaTime > 0f;
+                && Olca.Unity.BattleVisualClock.DeltaTime > 0f;
 
             // Animatorを設定した場合は、状態だけを渡してスプライトの再生を任せる。
             // 未設定のシーンでは従来のモック画像表示を使用する。
@@ -880,7 +881,7 @@ namespace Olca.Presentation.Field
         {
             // 60Hz論理更新のない描画フレームも自動前進は継続中。
             // 座標差0や描画DeltaTimeでの速度推定を停止判定に使わない。
-            isMoving = playerTransform != null && Olca.Unity.GameplayPause.DeltaTime > 0f && (currentBattle == null && dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
+            isMoving = playerTransform != null && Olca.Unity.BattleVisualClock.DeltaTime > 0f && (currentBattle == null && dungeonSystem != null && dungeonSystem.IsExplorationMoving && playerPositionUpdateEnabled && cameraFollowEnabled
                 && dungeonSystem.PlayerHeight <= 0.001f);
         }
 
@@ -918,10 +919,10 @@ namespace Olca.Presentation.Field
             else
             {
                 // ダッシュ中: Lerpで追従（ダッシュ開始・終了の切り替えをなめらかに）
-                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.GameplayPause.DeltaTime * cameraFollowSpeedTransition);
+                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeedTransition);
                 fieldCamera.transform.position = Vector3.Lerp(
                     fieldCamera.transform.position, targetPos,
-                    Olca.Unity.GameplayPause.DeltaTime * currentFollowSpeed);
+                    Olca.Unity.BattleVisualClock.DeltaTime * currentFollowSpeed);
             }
 
             // 定期ログ（60フレームに1回）
@@ -972,6 +973,7 @@ namespace Olca.Presentation.Field
         private InputBindingProfile displayedKeyboardProfile;
         private InputBindingProfile displayedGamepadProfile;
         private GamePhase displayedInstructionPhase;
+        private Olca.Unity.InputGuideDevice? displayedInputDevice;
 
         public static string FormatGameplayInstructions(InputBindingProfile profile, GamePhase phase)
         {
@@ -996,6 +998,20 @@ namespace Olca.Presentation.Field
             return string.Empty;
         }
 
+        public static string FormatGameplayInstructionsForDevice(InputBindingProfile profile,GamePhase phase,Olca.Unity.InputGuideDevice device)
+        {
+            if(profile==null||(phase!=GamePhase.Battle&&phase!=GamePhase.Dungeon))return string.Empty;
+            if(device==Olca.Unity.InputGuideDevice.Touch)return "タッチ: ガメンノボタンデソウサ";
+            string Key(string context,params string[] actions)=>string.Join(" / ",actions.Select(a=>profile.Bindings[("keyboard",context,a)]??"ミワリアテ"));
+            string Pad(string context,string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad",context,action)]);
+            if(device==Olca.Unity.InputGuideDevice.Gamepad){
+                if(phase==GamePhase.Dungeon)return $"ジドウゼンシン  {Pad("exploration","JumpPrimary")}: ジャンプ  {Pad("exploration","DashPrimary")}: ダッシュ  {Pad("exploration","Pause")}: ポーズ";
+                return $"Lスティック / {Pad("battle","LeftPrimary")} / {Pad("battle","RightPrimary")} / {Pad("battle","UpPrimary")} / {Pad("battle","DownPrimary")}: イドウ\n{Pad("battle","AttackPrimary")}: コユウコウゲキ  {Pad("battle","CardPrimary")}: カード  {Pad("battle","CustomPrimary")}: カスタム  {Pad("battle","Pause")}: ポーズ";
+            }
+            if(phase==GamePhase.Dungeon)return $"ジドウゼンシン  {Key("exploration","JumpPrimary")}: ジャンプ  {Key("exploration","DashPrimary","DashSecondary")}: ダッシュ  Escape: ポーズ";
+            return $"{Key("battle","LeftPrimary","LeftSecondary")}: ヒダリ  {Key("battle","RightPrimary","RightSecondary")}: ミギ  {Key("battle","UpPrimary","UpSecondary")}: ウエ  {Key("battle","DownPrimary","DownSecondary")}: シタ\n{Key("battle","AttackPrimary")}: コユウコウゲキ  {Key("battle","CardPrimary")}: カード  {Key("battle","CustomPrimary","CustomSecondary")}: カスタム  Escape: ポーズ";
+        }
+
         public void RefreshGameplayInstructions(InputBindingProfile appliedProfile, GamePhase phase)
         {
             if (instructionText == null)
@@ -1009,9 +1025,9 @@ namespace Olca.Presentation.Field
                 rect.anchorMin = new Vector2(.05f, 0); rect.anchorMax = new Vector2(.95f, 0);
                 rect.sizeDelta = new Vector2(0, 52); rect.anchoredPosition = new Vector2(0, 30);
             }
-            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase) return;
-            displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;
-            instructionText.text = FormatGameplayInstructions(appliedProfile, phase);
+            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase && displayedInputDevice==Olca.Unity.InputGuideActivity.Current) return;
+            displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;displayedInputDevice=Olca.Unity.InputGuideActivity.Current;
+            instructionText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(FormatGameplayInstructionsForDevice(appliedProfile, phase,displayedInputDevice.Value));
         }
 
         public void RefreshDebugUI(GamePhase phase)

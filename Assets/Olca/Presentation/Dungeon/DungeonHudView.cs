@@ -54,7 +54,7 @@ namespace Olca.Presentation.Dungeon
                 hpText.text = $"HP: {data.CurrentHp} / {data.MaxHp}";
 
             if (progressText != null)
-                progressText.text = (data.FloorNumber > 0 ? $"{data.FloorNumber}階  " : "") + $"{data.PlayerPosition:F0} / {data.DungeonLength:F0}";
+                progressText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana((data.FloorNumber > 0 ? $"{data.FloorNumber}階  " : "") + $"{data.PlayerPosition:F0} / {data.DungeonLength:F0}");
 
             if (dashStateText != null)
             {
@@ -64,7 +64,7 @@ namespace Olca.Presentation.Dungeon
             }
 
             if (deckCountText != null)
-                deckCountText.text = $"デッキ: {data.DeckCount}枚\n獲得: {data.ObtainedCardCount}枚";
+                deckCountText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana($"デッキ: {data.DeckCount}枚\n獲得: {data.ObtainedCardCount}枚");
         }
     }
 
