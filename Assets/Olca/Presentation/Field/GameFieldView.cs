@@ -973,6 +973,7 @@ namespace Olca.Presentation.Field
         private InputBindingProfile displayedKeyboardProfile;
         private InputBindingProfile displayedGamepadProfile;
         private GamePhase displayedInstructionPhase;
+        private Olca.Unity.InputGuideDevice? displayedInputDevice;
 
         public static string FormatGameplayInstructions(InputBindingProfile profile, GamePhase phase)
         {
@@ -997,6 +998,20 @@ namespace Olca.Presentation.Field
             return string.Empty;
         }
 
+        public static string FormatGameplayInstructionsForDevice(InputBindingProfile profile,GamePhase phase,Olca.Unity.InputGuideDevice device)
+        {
+            if(profile==null||(phase!=GamePhase.Battle&&phase!=GamePhase.Dungeon))return string.Empty;
+            if(device==Olca.Unity.InputGuideDevice.Touch)return "タッチ: ガメンノボタンデソウサ";
+            string Key(string context,params string[] actions)=>string.Join(" / ",actions.Select(a=>profile.Bindings[("keyboard",context,a)]??"ミワリアテ"));
+            string Pad(string context,string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad",context,action)]);
+            if(device==Olca.Unity.InputGuideDevice.Gamepad){
+                if(phase==GamePhase.Dungeon)return $"ジドウゼンシン  {Pad("exploration","JumpPrimary")}: ジャンプ  {Pad("exploration","DashPrimary")}: ダッシュ  {Pad("exploration","Pause")}: ポーズ";
+                return $"Lスティック / {Pad("battle","LeftPrimary")} / {Pad("battle","RightPrimary")} / {Pad("battle","UpPrimary")} / {Pad("battle","DownPrimary")}: イドウ\n{Pad("battle","AttackPrimary")}: コユウコウゲキ  {Pad("battle","CardPrimary")}: カード  {Pad("battle","CustomPrimary")}: カスタム  {Pad("battle","Pause")}: ポーズ";
+            }
+            if(phase==GamePhase.Dungeon)return $"ジドウゼンシン  {Key("exploration","JumpPrimary")}: ジャンプ  {Key("exploration","DashPrimary","DashSecondary")}: ダッシュ  Escape: ポーズ";
+            return $"{Key("battle","LeftPrimary","LeftSecondary")}: ヒダリ  {Key("battle","RightPrimary","RightSecondary")}: ミギ  {Key("battle","UpPrimary","UpSecondary")}: ウエ  {Key("battle","DownPrimary","DownSecondary")}: シタ\n{Key("battle","AttackPrimary")}: コユウコウゲキ  {Key("battle","CardPrimary")}: カード  {Key("battle","CustomPrimary","CustomSecondary")}: カスタム  Escape: ポーズ";
+        }
+
         public void RefreshGameplayInstructions(InputBindingProfile appliedProfile, GamePhase phase)
         {
             if (instructionText == null)
@@ -1010,9 +1025,9 @@ namespace Olca.Presentation.Field
                 rect.anchorMin = new Vector2(.05f, 0); rect.anchorMax = new Vector2(.95f, 0);
                 rect.sizeDelta = new Vector2(0, 52); rect.anchoredPosition = new Vector2(0, 30);
             }
-            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase) return;
-            displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;
-            instructionText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(FormatGameplayInstructions(appliedProfile, phase));
+            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase && displayedInputDevice==Olca.Unity.InputGuideActivity.Current) return;
+            displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;displayedInputDevice=Olca.Unity.InputGuideActivity.Current;
+            instructionText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(FormatGameplayInstructionsForDevice(appliedProfile, phase,displayedInputDevice.Value));
         }
 
         public void RefreshDebugUI(GamePhase phase)

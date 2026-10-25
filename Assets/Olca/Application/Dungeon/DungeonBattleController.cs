@@ -166,13 +166,13 @@ namespace Olca.Application.Dungeon
             bool visible = manager?.Dungeon.ActiveVisit==null && (manager?.CurrentPhase == GamePhase.Battle || manager?.CurrentPhase == GamePhase.Dungeon) && !clearReturnVisible && !collectionOpen &&
                 (keyboardSettingsView == null || !keyboardSettingsView.gameObject.activeSelf) && (gamepadSettingsView==null||!gamepadSettingsView.gameObject.activeSelf);
             basicAttackHud.gameObject.SetActive(visible); if (!visible) return;
-            if(manager.CurrentPhase==GamePhase.Dungeon) { basicAttackHud.RenderExploration(ExplorationUiAvailable); return; }
+            if(manager.CurrentPhase==GamePhase.Dungeon) { basicAttackHud.RenderExploration(ExplorationUiAvailable,GameplayKeyboardProfile); return; }
             var battle = manager.CurrentBattle;
             string state = IsUserPaused ? "ポーズ中" : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中" :
                 battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中" :
                 battle.CardUsage.InFlightCard != null ? "カード使用中" : basicAttackInput.CooldownFrames > 0 ? "再使用待ち" :
                 GameplayPause.InputBlocked ? "キーを離してください" : basicAttackInput.IsResumePending ? "再押下でタメ再開" : basicAttackInput.IsCharging ? $"タメ {basicAttackInput.ChargeFrames}/{battle.ResolveBasicChargeFrames(basicAttackChargeFrames)}" : "短押し / 長押しでタメ";
-            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable);
+            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable,GameplayKeyboardProfile);
         }
         private bool battleFieldReady;
         private GameObject pauseCanvas;

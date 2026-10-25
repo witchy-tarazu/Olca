@@ -241,6 +241,7 @@ namespace Olca.Unity
         private bool PadNeutral(InputDevice device)=>!buttons.Any(p=>p.Key.device==device&&p.Value)&&(!sticks.TryGetValue(device,out var stick)||stick.sqrMagnitude<.19f*.19f);
         public void StartEventCapture()
         {
+            InputGuideActivity.EnsureInitialized();
             if (capturing) return;
             eventClockOffset = System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency - Time.realtimeSinceStartupAsDouble;
             capturing = true; InputSystem.onEvent += CaptureEvent; InputSystem.onDeviceChange += DeviceChanged;
@@ -730,7 +731,7 @@ namespace Olca.Unity
         private readonly System.Func<bool> usable,ownsUi;private readonly Dictionary<Gamepad,State> states=new Dictionary<Gamepad,State>();private readonly List<CustomPadEvent> pending=new List<CustomPadEvent>();private bool active,disposed;private readonly double offset;
         public int Epoch{get;private set;}
         public bool HasGamepad=>InputSystem.devices.OfType<Gamepad>().Any(p=>p.enabled);
-        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null,string context="custom"){this.context=context;this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
+        public CustomGamepadInput(System.Func<bool> usable,System.Func<bool> ownsUi=null,bool ownsKeyboard=true,System.Func<bool> keyboardOwned=null,string context="custom"){InputGuideActivity.EnsureInitialized();this.context=context;this.ownsKeyboard=keyboardOwned??(()=>ownsKeyboard);this.usable=usable??throw new System.ArgumentNullException(nameof(usable));this.ownsUi=ownsUi??usable;offset=System.Diagnostics.Stopwatch.GetTimestamp()/(double)System.Diagnostics.Stopwatch.Frequency-Time.realtimeSinceStartupAsDouble;InputSystem.onEvent+=OnEvent;InputSystem.onDeviceChange+=Changed;}
         private static bool Neutral(State state)=>!state.Buttons.Values.Any(v=>v)&&state.Stick.sqrMagnitude<.25f;
         public void Reset(){Epoch++;pending.Clear();states.Clear();active=false;}
         private bool CheckActive()
@@ -884,5 +885,36 @@ namespace Olca.Unity
         }
         public static Cysharp.Threading.Tasks.UniTask Delay(System.TimeSpan duration,System.Threading.CancellationToken cancellationToken=default)
             =>Delay((int)duration.TotalMilliseconds,cancellationToken);
+    }
+}
+
+namespace Olca.Unity
+{
+    public enum InputGuideDevice { KeyboardMouse, Gamepad, Touch }
+    /// <summary>入力の処理や割当を変えず、実際に操作した機器だけを表示側へ伝える。</summary>
+    public static class InputGuideActivity
+    {
+        public static InputGuideDevice Current { get; private set; } = InputGuideDevice.KeyboardMouse;
+        private static bool initialized;
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Reset()
+        {
+            UnityEngine.InputSystem.InputSystem.onEvent-=Observe;
+            initialized=false;Current=InputGuideDevice.KeyboardMouse;EnsureInitialized();
+        }
+        public static void EnsureInitialized()
+        {
+            if(initialized)return;initialized=true;UnityEngine.InputSystem.InputSystem.onEvent+=Observe;
+        }
+        private static void Observe(UnityEngine.InputSystem.LowLevel.InputEventPtr evt,UnityEngine.InputSystem.InputDevice device)
+        {
+            if(device==null||!device.enabled||(!evt.IsA<UnityEngine.InputSystem.LowLevel.StateEvent>()&&!evt.IsA<UnityEngine.InputSystem.LowLevel.DeltaStateEvent>()))return;
+            foreach(var control in evt.EnumerateChangedControls(device,magnitudeThreshold:.19f)){
+                if(control.noisy||control.synthetic)continue;
+                if(device is UnityEngine.InputSystem.Gamepad||device is UnityEngine.InputSystem.Joystick){Current=InputGuideDevice.Gamepad;return;}
+                if(device is UnityEngine.InputSystem.Keyboard||device is UnityEngine.InputSystem.Mouse){Current=InputGuideDevice.KeyboardMouse;return;}
+                if(device is UnityEngine.InputSystem.Touchscreen){Current=InputGuideDevice.Touch;return;}
+            }
+        }
     }
 }

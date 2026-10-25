@@ -642,21 +642,29 @@ namespace Olca.Presentation.Dungeon
             title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,70);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=20;
             exploration.SetActive(false);
         }
-        public void RenderExploration(bool available)
+        public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","exploration",action)]);
-            jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ\nPad "+Pad("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ\nPad "+Pad("DashPrimary");
+            var profile=keyboardProfile??Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+            string Hint(string action)=>Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Touch?"":Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad?"\n"+Pad(action):"\n"+(profile.Bindings[("keyboard","exploration",action)]??"ミワリアテ");
+            jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ"+Hint("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ"+Hint("DashPrimary");
             jumpButton.interactable=dashButton.interactable=available;
         }
-        public void Render(string key, string value, bool available, bool canUseCard=false)
+        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null)
         {
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","battle",action)]);
-            title.text = "攻撃 [" + (key ?? "未割当") + "] / "+Pad("AttackPrimary")+"  カード ["+Pad("CardPrimary")+"]\n"+Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ"; state.text = value; button.interactable = available;
+            var profile=keyboardProfile??Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+            string Key(string action)=>profile.Bindings[("keyboard","battle",action)]??"ミワリアテ";
+            title.text=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad?
+                "コウゲキ ["+Pad("AttackPrimary")+"]  カード ["+Pad("CardPrimary")+"]\n"+Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ":
+                Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Touch?"タッチ: コウゲキ / カード / カスタム":
+                "コウゲキ ["+(key??"ミワリアテ")+"]  カード ["+Key("CardPrimary")+"]\n"+Key("CustomPrimary")+": カスタム / Escape: ポーズ";
+            state.text = value; button.interactable = available;
             state.color = UiLook.Ink;
         }
     }

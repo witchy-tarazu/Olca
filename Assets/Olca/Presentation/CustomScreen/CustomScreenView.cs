@@ -1398,7 +1398,7 @@ namespace Olca.Presentation.CustomScreen
                         $"{cursorCard.Description}";
                 }
 
-                // 画像は現時点では設定なし（将来的にカードイラストを表示）
+                // 本絵の登録だけを参照する。未登録時に専用miniやUI部品を本絵へ流用しない。
                 if (selectedCardImage != null)
                 {
                     selectedCardImage.color = Color.white;

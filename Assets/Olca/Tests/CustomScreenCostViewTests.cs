@@ -17,6 +17,57 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 左上の本絵はマウスと共通カーソル移動で切替わり未登録時はミニを流用しない()
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            var root=new GameObject("IllustrationBinding",typeof(RectTransform));var texture=new Texture2D(2,1);
+            var a=Sprite.Create(texture,new Rect(0,0,1,1),Vector2.one*.5f);var b=Sprite.Create(texture,new Rect(1,0,1,1),Vector2.one*.5f);
+            try {
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("sword",CardSeries.Sword),Create("heal",CardSeries.Sword)}));model.Open(new Card[0],new MockRandomProvider(0));
+                var hand=model.CurrentHand.ToList();typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,hand);
+                var imageObject=new GameObject("FocusedCardIllustration",typeof(RectTransform),typeof(Image));imageObject.transform.SetParent(root.transform,false);var image=imageObject.GetComponent<Image>();image.rectTransform.sizeDelta=new Vector2(280,280);
+                typeof(CustomScreenView).GetField("selectedCardImage",flags).SetValue(view,image);
+                var cursor=new CustomScreenCursor();typeof(CustomScreenView).GetField("cursor",flags).SetValue(view,cursor);
+                cursor.OnCursorMoved+=index=>typeof(CustomScreenView).GetMethod("OnCursorMoved",flags).Invoke(view,new object[]{index});cursor.Initialize(2);
+                view.ConfigureCardVisuals(new[]{new CardVisualEntry{CardId=hand[0].Id,Illustration=a},new CardVisualEntry{CardId=hand[1].Id,Illustration=b}});
+                Assert.AreSame(a,image.sprite);Assert.AreEqual(Color.white,image.color);Assert.IsTrue(image.isActiveAndEnabled);Assert.IsTrue(image.preserveAspect);
+                cursor.MoveRight();Assert.AreSame(b,image.sprite);
+                var handViews=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);
+                for(int i=0;i<2;i++){var obj=new GameObject("Hand"+i);obj.transform.SetParent(root.transform,false);var h=obj.AddComponent<HandCardView>();typeof(HandCardView).GetField("parentView",flags).SetValue(h,view);typeof(HandCardView).GetField("<Card>k__BackingField",flags).SetValue(h,hand[i]);handViews.Add(h);}
+                handViews[0].OnPointerEnter(null);Assert.AreSame(a,image.sprite);Assert.AreEqual(0,cursor.CurrentIndex);
+                cursor.MoveToConfirmButton();Assert.IsNull(image.sprite);cursor.MoveToCard(1);Assert.AreSame(b,image.sprite);
+                view.ConfigureCardVisuals(null);Assert.IsNull(image.sprite);Assert.AreEqual(new Vector2(280,280),image.rectTransform.sizeDelta);
+            }finally{Object.DestroyImmediate(root);Object.DestroyImmediate(a);Object.DestroyImmediate(b);Object.DestroyImmediate(texture);}
+        }
+        [Test]
+        public void 操作した機器だけでガイドが切替わり離し入力や微小スティック揺れでは奪い返さない()
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var mouse=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();
+            Olca.Unity.InputGuideActivity.EnsureInitialized();
+            try {
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.A));UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.KeyboardMouse,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.West));UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.Gamepad,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.Gamepad,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState{delta=Vector2.right,position=new Vector2(10,20)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.KeyboardMouse,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=new Vector2(.01f,0)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.KeyboardMouse,Olca.Unity.InputGuideActivity.Current);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=new Vector2(.6f,0)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(Olca.Unity.InputGuideDevice.Gamepad,Olca.Unity.InputGuideActivity.Current);
+            } finally {UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);typeof(Olca.Unity.InputGuideActivity).GetMethod("Reset",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);}
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ガイドは最後の機器だけを表示し既存の再割当とカナ表記を維持する(bool battle)
+        {
+            var profile=Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();var phase=battle?Olca.Core.Logic.Integration.GamePhase.Battle:Olca.Core.Logic.Integration.GamePhase.Dungeon;
+            var keyboard=GameFieldView.FormatGameplayInstructionsForDevice(profile,phase,Olca.Unity.InputGuideDevice.KeyboardMouse);
+            var pad=GameFieldView.FormatGameplayInstructionsForDevice(profile,phase,Olca.Unity.InputGuideDevice.Gamepad);
+            StringAssert.Contains("Escape",keyboard);StringAssert.DoesNotContain("West",keyboard);StringAssert.DoesNotContain("South",keyboard);StringAssert.DoesNotContain("Escape",pad);
+            StringAssert.Contains(battle?"West":"South",pad);
+            var edit=profile.BeginEdit();Assert.IsTrue(edit.TryAssign(("keyboard",battle?"battle":"exploration",battle?"AttackPrimary":"JumpPrimary"),"J",out _));
+            StringAssert.Contains("J",GameFieldView.FormatGameplayInstructionsForDevice(edit.Preview(),phase,Olca.Unity.InputGuideDevice.KeyboardMouse));
+            var rendered=CustomDisplay.Katakana(pad);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(rendered,"[一-鿿]"));
+        }
+
+        [Test]
         public async System.Threading.Tasks.Task カスタム停止中もHUD退場遷移を完了してカスタム画面の登場を妨げない()
         {
             var root=new GameObject("HudTransition");var owner=new object();
