@@ -28,6 +28,21 @@ namespace Olca.Core.Domain
             DepartureStyle = style ?? throw new ArgumentNullException(nameof(style)); departureStyleFixed = true;
         }
 
+        /// <summary>生成時に指定する基礎耐性。製品値・装備の登録は所有しない。</summary>
+        public TimedStatusResistances StatusResistances { get; }
+        public TimedStatusResistances BattleStatusResistances { get; private set; } = TimedStatusResistances.Neutral;
+        public TimedStatusResistances ActiveStatusResistances => TimedStatusResistances.Combine(StatusResistances, BattleStatusResistances);
+        /// <summary>外部で期間・重複を解決した戦闘中の合算値。既存状態へ遡及しない。</summary>
+        public void SetBattleStatusResistances(TimedStatusResistances value)
+            => BattleStatusResistances = value ?? throw new ArgumentNullException(nameof(value));
+        internal void ClearBattleStatusResistances() => BattleStatusResistances = TimedStatusResistances.Neutral;
+        private int ResistStatusFrames(StatusEffectType type, int durationFrames, int sourceResistance = 0)
+        {
+            if(durationFrames <= 0 || sourceResistance < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
+            long total=(long)ActiveStatusResistances.Get(type)+sourceResistance;
+            return (int)((long)durationFrames*(100-Math.Min(100L,total))/100);
+        }
+
         public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
         public ElementResistances ActiveResistances => previewTransformationResistances ?? transformationResistances ?? Resistances;
         public bool HasTransformationPreview => previewTransformationResistances != null;
@@ -78,6 +93,8 @@ namespace Olca.Core.Domain
         public void ApplyPoison(string kind, StatusEffect effect, int intervalFrames)
         {
             if (string.IsNullOrWhiteSpace(kind)) throw new ArgumentException("毒種が必要です");
+            if (effect == null) throw new ArgumentNullException(nameof(effect));
+            effect = effect.WithTargetResistance(ActiveStatusResistances.Poison);
             if (IsDead) return;
             if (!poisons.TryGetValue(kind, out var state)) {
                 state = new TimedPoisonState();
@@ -144,9 +161,9 @@ namespace Olca.Core.Domain
         /// <summary>外部で確定した有効期間を予約する。付与フレームには行動を中断しない。</summary>
         public void ApplyParalysis(int durationFrames)
         {
-            if (durationFrames <= 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
-            if (IsDead) return;
-            pendingParalysisFrames = durationFrames;
+            int frames=ResistStatusFrames(StatusEffectType.Paralyze,durationFrames);
+            if (IsDead || frames==0) return;
+            pendingParalysisFrames = frames;
             // 既存の敵状態処理と同じく、フレーム内の解除予約を再付与で打ち消さない。
             if (!paralysisFrameOpen) clearParalysisPending = false;
         }
@@ -190,8 +207,7 @@ namespace Olca.Core.Domain
         /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
         public void ApplyConfusion(int durationFrames, int durationResistancePercent = 0)
         {
-            if (durationFrames <= 0 || durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
-            int frames=(int)((long)durationFrames*(100-Math.Min(100,durationResistancePercent))/100);
+            int frames=ResistStatusFrames(StatusEffectType.Confusion,durationFrames,durationResistancePercent);
             if(IsDead || frames==0)return;
             pendingConfusionFrames=frames;
             if(!confusionFrameOpen)clearConfusionPending=false;
@@ -224,8 +240,7 @@ namespace Olca.Core.Domain
         /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
         public void ApplyBlindness(int durationFrames, int durationResistancePercent = 0)
         {
-            if (durationFrames <= 0 || durationResistancePercent < 0) throw new ArgumentOutOfRangeException(nameof(durationFrames));
-            int frames=(int)((long)durationFrames*(100-Math.Min(100,durationResistancePercent))/100);
+            int frames=ResistStatusFrames(StatusEffectType.Blind,durationFrames,durationResistancePercent);
             if(IsDead || frames==0)return;
             pendingBlindnessFrames=frames;
             if(!blindnessFrameOpen)clearBlindnessPending=false;
@@ -275,7 +290,7 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             foreach(var state in poisons.Values) { state.EndFrame(); if (IsDead) state.Reset(); }
-            if (IsDead) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); }
+            if (IsDead) { Guard.Clear(); ClearBattleStatusResistances(); ResetParalysis(); ResetConfusion(); ResetBlindness(); }
             // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
             if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;
             else if (pendingConcentrateMultiplier.HasValue) nextCardMultiplier = pendingConcentrateMultiplier.Value;
@@ -305,7 +320,7 @@ namespace Olca.Core.Domain
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
+            if (died) { Guard.Clear(); ClearBattleStatusResistances(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -394,8 +409,8 @@ namespace Olca.Core.Domain
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
         /// <param name="poise">強靭度（デフォルト30）</param>
-        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null)
-            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise, staggerDurationFrames, poiseRecoveryDelayFrames)
+        public PlayerCharacter(int maxHp, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null, TimedStatusResistances statusResistances = null)
+            : this(maxHp, Vector2Int.Zero, attackPower, customSpeed, poise, staggerDurationFrames, poiseRecoveryDelayFrames, statusResistances)
         {
         }
 
@@ -407,9 +422,10 @@ namespace Olca.Core.Domain
         /// <param name="attackPower">攻撃力</param>
         /// <param name="customSpeed">カスタムゲージ速度</param>
         /// <param name="poise">強靭度（デフォルト30）</param>
-        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null)
+        public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null, TimedStatusResistances statusResistances = null)
         {
             if (staggerDurationFrames < 0) throw new ArgumentOutOfRangeException(nameof(staggerDurationFrames));
+            StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
             StaggerDurationFrames = staggerDurationFrames;
             poiseRecovery.Configure(poiseRecoveryDelayFrames);
             PoiseRecoveryDefinitionFrames = poiseRecoveryDelayFrames;
@@ -478,7 +494,7 @@ namespace Olca.Core.Domain
                 else
                 {
                     currentHp = Math.Max(0, currentHp - damage);
-                    if (IsDead) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); }
+                    if (IsDead) { Guard.Clear(); ClearBattleStatusResistances(); ResetParalysis(); ResetConfusion(); ResetBlindness(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
@@ -511,7 +527,7 @@ namespace Olca.Core.Domain
 
                 if (!frameHp.Active && IsDead)
                 {
-                    Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke();
+                    Guard.Clear(); ClearBattleStatusResistances(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke();
                 }
                 return true;
             }
@@ -531,7 +547,7 @@ namespace Olca.Core.Domain
             if (frameHp.Active) { frameHp.Damage(damage); return; }
             currentHp = Math.Max(0, currentHp - damage);
             OnHpChanged?.Invoke(currentHp, maxHp);
-            if (IsDead) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
+            if (IsDead) { Guard.Clear(); ClearBattleStatusResistances(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
 
         /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>

@@ -1494,3 +1494,80 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+namespace Olca.Tests.Battle
+{
+    public class PlayerStatusResistanceTests
+    {
+        private static StatusEffect Poison(int frames,int damage=3,int durationResistancePercent=0) => new StatusEffect(StatusEffectType.Poison,frames*1000/60,damage,durationResistancePercent);
+        private static BattleSystem Battle(PlayerCharacter p) => new BattleSystem(p,new List<Enemy>{new Enemy("e","テスト",1000,ElementType.None,new Vector2Int(4,0))},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:new MockRandomProvider());
+        [TestCase(0,101)] [TestCase(1,99)] [TestCase(50,50)] [TestCase(99,1)] [TestCase(100,0)] [TestCase(150,0)]
+        public void 全状態は付与時の合算耐性だけで時間短縮し端数を切り捨てる(int resistance,int expected)
+        {
+            var p=new PlayerCharacter(100,statusResistances:new TimedStatusResistances(resistance,resistance,resistance,resistance));var b=Battle(p);
+            var poison=Poison(101,damage:3);
+            p.ApplyPoison("poison",poison,10);p.ApplyParalysis(101);p.ApplyConfusion(101);p.ApplyBlindness(101);
+            Assert.IsFalse(p.IsParalyzed||p.IsConfused||p.IsBlind);b.RunLogicalFrame(()=>{});
+            Assert.AreEqual(expected,p.ParalysisRemainingFrames);Assert.AreEqual(expected,p.ConfusionRemainingFrames);Assert.AreEqual(expected,p.BlindRemainingFrames);
+            var v=p.InspectStatuses().FirstOrDefault(x=>x.Type==StatusEffectType.Poison);Assert.AreEqual(expected,v?.RemainingFrames??0);if(v!=null){Assert.AreEqual(3,v.Damage);Assert.AreEqual(10,v.IntervalFrames);}
+            Assert.AreEqual(101,poison.RemainingFrames,"付与元を変更しない");
+        }
+        [Test]
+        public void 基礎と戦闘と既存付与元の耐性を加算し付与後の変更は遡及しない()
+        {
+            var p=new PlayerCharacter(100,statusResistances:new TimedStatusResistances(20,20,20,20));var b=Battle(p);p.SetBattleStatusResistances(new TimedStatusResistances(30,30,30,30));
+            p.ApplyPoison("poison",Poison(100,3,durationResistancePercent:10),10);p.ApplyParalysis(100);p.ApplyConfusion(100,10);p.ApplyBlindness(100,10);
+            p.SetBattleStatusResistances(new TimedStatusResistances(100,100,100,100));b.RunLogicalFrame(()=>{});
+            Assert.AreEqual(50,p.ParalysisRemainingFrames);Assert.AreEqual(40,p.ConfusionRemainingFrames);Assert.AreEqual(40,p.BlindRemainingFrames);Assert.AreEqual(40,p.InspectStatuses().First(v=>v.Type==StatusEffectType.Poison).RemainingFrames);
+            p.ApplyPoison("poison",Poison(200,3),10);p.ApplyParalysis(200);p.ApplyConfusion(200);p.ApplyBlindness(200);b.RunLogicalFrame(()=>{});
+            Assert.AreEqual(50,p.ParalysisRemainingFrames);Assert.AreEqual(40,p.ConfusionRemainingFrames);Assert.AreEqual(40,p.BlindRemainingFrames);
+            Assert.AreEqual(120,p.ActiveStatusResistances.Poison);Assert.AreEqual(20,p.StatusResistances.Poison);
+        }
+        [Test]
+        public void 同種再付与と同フレーム解除は既存予約境界を維持し毒上位種も共通耐性を使う()
+        {
+            var p=new PlayerCharacter(100);var b=Battle(p);p.SetBattleStatusResistances(new TimedStatusResistances(50,50,50,50));
+            p.ApplyPoison("poison",Poison(100,3),10);p.ApplyPoison("venom",Poison(100,4),12);p.ApplyParalysis(100);p.ApplyConfusion(100);p.ApplyBlindness(100);b.RunLogicalFrame(()=>{});
+            b.RunLogicalFrame(()=>{p.ApplyPoison("poison",Poison(60,3),10);p.ApplyParalysis(60);p.ApplyConfusion(60);p.ApplyBlindness(60);});Assert.AreEqual(30,p.ParalysisRemainingFrames);Assert.AreEqual(30,p.ConfusionRemainingFrames);Assert.AreEqual(30,p.BlindRemainingFrames);
+            b.RunLogicalFrame(()=>{p.ApplyParalysis(100);p.ClearParalysis();p.ApplyConfusion(100);p.ClearConfusion();p.ApplyBlindness(100);p.ClearBlindness();p.ApplyPoison("poison",Poison(100,3),10);p.ClearPoisons();});
+            Assert.IsEmpty(p.InspectStatuses());
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 戦闘耐性は勝敗通知前と離脱で解除し基礎値と付与済み毒を再短縮しない(bool win)
+        {
+            var p=new PlayerCharacter(100,statusResistances:new TimedStatusResistances(poison:25));var b=Battle(p);p.SetBattleStatusResistances(new TimedStatusResistances(25,100,100,100));p.ApplyPoison("poison",Poison(100,3),10);b.RunLogicalFrame(()=>{});
+            bool? cleared=null;b.OnBattleEnd+=_=>cleared=p.BattleStatusResistances.IsNeutral;b.RunLogicalFrame(()=>{if(win)b.Enemies[0].TakeDamage(10000,ElementType.None);else p.TakeDamage(10000);});Assert.AreEqual(true,cleared);Assert.AreEqual(25,p.ActiveStatusResistances.Poison);
+            if(win)Assert.AreEqual(50,p.InspectStatuses().First(v=>v.Type==StatusEffectType.Poison).RemainingFrames);
+            var next=Battle(p=new PlayerCharacter(100));p.SetBattleStatusResistances(new TimedStatusResistances(poison:50));typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(next,null);Assert.IsTrue(p.ActiveStatusResistances.IsNeutral);
+        }
+        [Test]
+        public void 敵と同じ元効果軽減加算で毒時間を計算し復元済み毒へ再適用しない()
+        {
+            var r=new TimedStatusResistances(poison:35);var p=new PlayerCharacter(100,statusResistances:r);var b=Battle(p);var enemy=new Enemy("x","テスト",100,ElementType.None,new Vector2Int(4,0),statusResistances:r);var effect=new StatusEffect(StatusEffectType.Poison,2000,3,15,poisonIntervalFrames:10);
+            p.ApplyPoison("poison",effect,10);enemy.ApplyStatus(effect);b.RunLogicalFrame(()=>{});Assert.AreEqual(enemy.InspectStatuses().First().RemainingFrames,p.InspectStatuses().First().RemainingFrames);
+            var dto=p.CapturePoisons();var restored=new PlayerCharacter(100,statusResistances:new TimedStatusResistances(poison:100));restored.RestorePoisons(dto);Assert.AreEqual(p.InspectStatuses().First().RemainingFrames,restored.InspectStatuses().First().RemainingFrames);
+        }
+        [Test]
+        public void 未保存の耐性を黙って欠落させずCaptureを拒否し戦闘解除後は既存保存できる()
+        {
+            var config=DungeonConfig.CreateTestDungeon(10);var deck=new Deck(new List<Card>());var session=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(config,deck);var m=new Olca.Core.Logic.Integration.DungeonBattleManager(config,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);var p=m.Dungeon.Player;
+            var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(session.Store.Read());var capture=session.GetType().GetMethod("Capture",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);p.SetBattleStatusResistances(new TimedStatusResistances(poison:50));
+            var ex=Assert.Throws<System.Reflection.TargetInvocationException>(()=>capture.Invoke(session,new object[]{m.Dungeon,CheckpointBoundary.RewardCompleted,null}));Assert.IsInstanceOf<System.ArgumentException>(ex.InnerException);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(session.Store.Read()));p.SetBattleStatusResistances(TimedStatusResistances.Neutral);Assert.IsNotNull(capture.Invoke(session,new object[]{m.Dungeon,CheckpointBoundary.RewardCompleted,null}));
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void 短縮済み状態時計は停止暗転ヒットストップと描画頻度によらず一致する(int fps)
+        {
+            string Replay(int rendering){var p=new PlayerCharacter(100);p.SetBattleStatusResistances(new TimedStatusResistances(50,50,50,50));var b=Battle(p);p.ApplyPoison("poison",Poison(120,2),10);p.ApplyConfusion(120);p.ApplyBlindness(120);var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();long previous=0;var trace=new List<string>();
+                void Step(long frame,int ms){if(frame==1)b.Pause(BattlePauseReason.CustomScreen);if(frame==10)b.Resume(BattlePauseReason.CustomScreen);if(frame==11)b.Pause(BattlePauseReason.User);if(frame==20)b.Resume(BattlePauseReason.User);if(frame==21)Assert.IsTrue(b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,4,()=>{}));if(frame==30)b.RunLogicalFrame(()=>b.Enemies[0].TakeDamage(1,ElementType.None,hitStopFrames:6));b.TickFrame(ms);trace.Add($"{b.LogicalFrame}:{p.CurrentHp}:{p.ConfusionRemainingFrames}:{p.BlindRemainingFrames}:{b.HitStopRemainingFrames}");}
+                for(int i=1;i<=rendering;i++){long now=i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/rendering;clock.Accumulate(now-previous);previous=now;clock.Drain(Step,3);}while(clock.PendingFrames>0)clock.Drain(Step,3);Assert.Less(p.CurrentHp,100);return string.Join("|",trace);}
+            Assert.AreEqual(Replay(60),Replay(fps));
+        }
+        [Test]
+        public void 自分詳細は合算した実値だけをカナで表示し外部入力不正値を拒否する()
+        {
+            var p=new PlayerCharacter(100,statusResistances:new TimedStatusResistances(10,20,30,40));p.SetBattleStatusResistances(new TimedStatusResistances(5,10,15,20));var text=Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(p);StringAssert.Contains("ドク 15 / マヒ 30 / コンラン 45 / モウモク 60",text);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(text,"[一-鿿]"));
+            Assert.Throws<System.ArgumentNullException>(()=>p.SetBattleStatusResistances(null));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new TimedStatusResistances(-1));
+            p.SetBattleStatusResistances(new TimedStatusResistances(int.MaxValue,int.MaxValue,int.MaxValue,int.MaxValue));p.ApplyParalysis(int.MaxValue);p.ApplyConfusion(int.MaxValue,int.MaxValue);p.ApplyBlindness(int.MaxValue,int.MaxValue);Assert.IsFalse(p.IsParalyzed||p.IsConfused||p.IsBlind);
+        }
+    }
+}

@@ -816,6 +816,7 @@ namespace Olca.Core.Logic.Battle
             player.IsOnGrass = null;
             player.BattleElement = null;
             player.Guard.Clear();
+            player.ClearBattleStatusResistances();
             player.ClearInvincibility();
             player.ClearStagger();
             player.ResetParalysis();
