@@ -66,6 +66,7 @@ namespace Olca.Core.Logic.Battle
             if (behavior != null)
             {
                 aiBehaviors.Remove(behavior);
+                behavior.Dispose();
                 logger?.LogInfo($"敵 {enemy.Name} をAI管理から除外");
             }
         }

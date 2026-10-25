@@ -9,12 +9,14 @@ namespace Olca.Core.Logic.Battle
     /// クールダウン管理、行動決定、実行を担当
     /// 整数ベース（ミリ秒）で時間を管理し、浮動小数点の累積誤差を回避
     /// </summary>
-    public class EnemyAIBehavior
+    public class EnemyAIBehavior : IDisposable
     {
         private readonly Enemy enemy;
         private List<IEnemyAIAction> actions;
         private List<IEnemyAIAction> pendingPattern;
-        private bool executingAction;
+        private bool executingAction, interruptRequested, endingAction, disposed;
+        private IContinuingEnemyAIAction runningAction;
+        private AIContext runningContext;
         private FrameCountdown cooldown;
         private int nextActionIndex;
 
@@ -22,7 +24,7 @@ namespace Olca.Core.Logic.Battle
         public Enemy Enemy => enemy;
 
         /// <summary>行動可能か（クールダウン終了・生存中・麻痺していない）</summary>
-        public bool CanAct => !cooldown.IsActive && !enemy.IsDead && !enemy.IsParalyzed && !enemy.IsStunned;
+        public bool CanAct => !disposed && runningAction==null && !cooldown.IsActive && !enemy.IsDead && !enemy.IsParalyzed && !enemy.IsStunned;
 
         /// <summary>現在のクールダウン時間（ミリ秒）</summary>
         public int CurrentCooldownMs => cooldown.Milliseconds;
@@ -46,16 +48,18 @@ namespace Olca.Core.Logic.Battle
 
             if(this.actions.Exists(action=>action==null))throw new ArgumentException("AI行動が欠落しています",nameof(actions));
             this.cooldown = new FrameCountdown();
+            enemy.OnStaggered+=InterruptActiveAction;
+            enemy.OnDeath+=Dispose;
         }
 
-        /// <summary>定義済み行動列への切替。同期行動中は完了まで保留し、旧行動後の待ちは引き継がない。</summary>
+        /// <summary>定義済み行動列への切替。同期/継続行動の完了まで保留し、旧行動後の待ちは引き継がない。</summary>
         public bool TrySwitchActionPattern(List<IEnemyAIAction> nextActions)
         {
             if(nextActions==null||nextActions.Count==0||nextActions.Exists(action=>action==null))
                 throw new ArgumentException("切替先の行動定義が必要です",nameof(nextActions));
-            if(enemy.IsDead||pendingPattern!=null)return false;
+            if(disposed||enemy.IsDead||pendingPattern!=null)return false;
             pendingPattern=new List<IEnemyAIAction>(nextActions);
-            if(!executingAction)ApplyPendingPattern();
+            if(!executingAction&&runningAction==null)ApplyPendingPattern();
             return true;
         }
         private void ApplyPendingPattern()
@@ -71,23 +75,60 @@ namespace Olca.Core.Logic.Battle
         /// <param name="context">AI判断に必要な情報</param>
         public void Update(int deltaTimeMs, AIContext context, bool logicalFrame = false)
         {
-            if (enemy.IsDead) return;
-
-            // スタン中はスタン時間をカウントダウンし、行動をスキップ
-            if (enemy.IsStunned)
-            {
-                if (logicalFrame) enemy.TickStunFrame(); else enemy.TickStun(deltaTimeMs);
+            if(disposed)return;
+            if(enemy.IsDead){Dispose();return;}
+            if(enemy.IsStunned){
+                InterruptActiveAction();
+                if(logicalFrame)enemy.TickStunFrame();else enemy.TickStun(deltaTimeMs);
                 return;
             }
-
-            // クールダウン減少
-            if (logicalFrame) cooldown.TickFrame(); else cooldown.Tick(deltaTimeMs);
-
-            // 行動可能な場合、行動を決定して実行
-            if (CanAct)
-            {
-                ExecuteAction(context);
+            if(enemy.IsParalyzed)InterruptActiveAction();
+            if(runningAction!=null){
+                runningContext=context;
+                if(!runningAction.IsRunning)EndActiveAction(false);
+                else RunActiveStep(()=>runningAction.Tick(deltaTimeMs,context,logicalFrame));
+                return;
             }
+            if(logicalFrame)cooldown.TickFrame();else cooldown.Tick(deltaTimeMs);
+            if(CanAct)ExecuteAction(context);
+        }
+
+        private void FinishAction(IEnemyAIAction action)
+        {
+            if(disposed)return;
+            if(pendingPattern!=null)ApplyPendingPattern();
+            else{nextActionIndex=(nextActionIndex+1)%actions.Count;cooldown.SetMilliseconds(action.GetCooldownMs());}
+        }
+        private void RunActiveStep(Action update)
+        {
+            executingAction=true;
+            try{update();}finally{executingAction=false;}
+            if(disposed)EndActiveAction(true);
+            else if(interruptRequested)EndActiveAction(true);
+            else if(runningAction!=null&&!runningAction.IsRunning)EndActiveAction(false);
+        }
+        private void EndActiveAction(bool cancel)
+        {
+            var action=runningAction;
+            if(action==null)return;
+            endingAction=executingAction=true;
+            try{if(cancel&&action.IsRunning)action.Cancel(runningContext);}
+            finally{runningAction=null;runningContext=default;endingAction=executingAction=interruptRequested=false;}
+            FinishAction(action);
+        }
+        private void InterruptActiveAction()
+        {
+            if(endingAction)return;
+            if(executingAction){interruptRequested=true;return;}
+            EndActiveAction(true);
+        }
+        public void Dispose()
+        {
+            if(disposed)return;
+            disposed=true;pendingPattern=null;
+            enemy.OnStaggered-=InterruptActiveAction;enemy.OnDeath-=Dispose;
+            if(executingAction){interruptRequested=true;return;}
+            EndActiveAction(true);
         }
 
         /// <summary>
@@ -96,20 +137,20 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void ExecuteAction(AIContext context)
         {
-            for(int attempted=0;attempted<actions.Count;attempted++)
+            for(int attempted=0,limit=actions.Count;attempted<limit;attempted++)
             {
                 var action=actions[nextActionIndex];
                 if(!action.CanExecute(context)){
                     nextActionIndex=(nextActionIndex+1)%actions.Count;
                     continue;
                 }
-                executingAction=true;
-                try{action.Execute(context);}finally{executingAction=false;}
-                // 完了後にだけ切替。旧待ちを移植したり、新AIとは別の待ちを追加したりしない。
-                if(pendingPattern!=null)ApplyPendingPattern();
-                else{
-                    nextActionIndex=(nextActionIndex+1)%actions.Count;
-                    cooldown.SetMilliseconds(action.GetCooldownMs());
+                if(action is IContinuingEnemyAIAction continuing){
+                    runningAction=continuing;runningContext=context;interruptRequested=false;
+                    RunActiveStep(()=>action.Execute(context));
+                }else{
+                    executingAction=true;
+                    try{action.Execute(context);}finally{executingAction=false;interruptRequested=false;}
+                    FinishAction(action);
                 }
                 return;
             }

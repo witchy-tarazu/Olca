@@ -95,6 +95,75 @@ namespace Olca.Tests.Battle
         {
             var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);int called=0;Assert.IsTrue(b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,3,()=>{}));Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>called++}}));while(b.IsDarkening){b.TickFrame(17);Assert.AreEqual(0,called);}b.RunLogicalFrame(()=>e.TakeDamage(1,ElementType.None,hitStopFrames:3));Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>called++}}));while(b.IsHitStopped){b.TickFrame(17);Assert.AreEqual(0,called);}b.TickFrame(17);Assert.AreEqual(1,called);
         }
+        private sealed class ContinuingAction : IContinuingEnemyAIAction
+        {
+            public int Frames=3,Remaining,Starts,Ticks,Cancels,Wait=200;public System.Action Started,Advanced,Cancelled;
+            public bool IsRunning{get;private set;}
+            public bool CanExecute(AIContext context)=>true;
+            public void Execute(AIContext context){Starts++;Remaining=Frames;IsRunning=Frames>0;Started?.Invoke();}
+            public void Tick(int ms,AIContext context,bool logical){Ticks++;if(--Remaining<=0)IsRunning=false;Advanced?.Invoke();}
+            public void Cancel(AIContext context){Cancels++;IsRunning=false;Cancelled?.Invoke();}
+            public int GetCooldownMs()=>Wait;public float GetCooldown()=>Wait/1000f;
+        }
+        [Test]
+        public void 継続行動の完了まで切替を保持し終了フレームには次行動を実行しない()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var action=new ContinuingAction();var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{action});var context=new AIContext(e,player,field,random,logger);int next=0;
+            ai.Update(17,context,true);Assert.IsTrue(action.IsRunning);Assert.IsFalse(ai.CanAct);Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction{Wait=70,Run=()=>next++}}));
+            for(int i=0;i<3;i++){ai.Update(17,context,true);Assert.AreEqual(0,next);}Assert.IsFalse(action.IsRunning);Assert.AreEqual(0,ai.CurrentCooldownMs);Assert.AreEqual(1,action.Starts);Assert.AreEqual(3,action.Ticks);ai.Update(17,context,true);Assert.AreEqual(1,next);Assert.AreEqual(70,ai.CurrentCooldownMs);
+        }
+        [Test]
+        public void 切替しない継続行動は完了時からだけ元行動の待ちを開始する()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var a=new ContinuingAction{Frames=2,Wait=100};var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a});var context=new AIContext(e,player,field,random,logger);ai.Update(0,context);ai.Update(0,context);Assert.AreEqual(0,ai.CurrentCooldownMs);ai.Update(0,context);Assert.AreEqual(100,ai.CurrentCooldownMs);ai.Update(99,context);Assert.AreEqual(1,a.Starts);ai.Update(1,context);Assert.AreEqual(2,a.Starts);
+        }
+        [Test]
+        public void Tick内の完了と切替要求も旧待ちを入れず次更新で新行動を開始する()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var a=new ContinuingAction{Frames=1};var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a});var context=new AIContext(e,player,field,random,logger);int next=0;a.Advanced=()=>Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction{Run=()=>next++}}));ai.Update(0,context);ai.Update(0,context);Assert.AreEqual(0,next);ai.Update(0,context);Assert.AreEqual(1,next);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void のけぞりと麻痺の確定で継続行動を一度だけ中断し予約を解放する(bool paralysis)
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0),poiseDefinition:new EnemyPoiseDefinition(10,3));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);var a=new ContinuingAction{Frames=30};Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{a}));b.TickFrame(17);int next=0;Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>next++}}));
+            if(paralysis){b.RunLogicalFrame(()=>e.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000)));b.TickFrame(17);}else b.RunLogicalFrame(()=>e.TakeDamage(1,ElementType.None,poiseDamage:10));
+            Assert.AreEqual(1,a.Cancels);Assert.IsFalse(a.IsRunning);int ticks=a.Ticks;for(int i=0;i<2;i++)b.TickFrame(17);Assert.AreEqual(ticks,a.Ticks);Assert.AreEqual(1,a.Cancels);Assert.AreEqual(0,next);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 死亡と敗北終了で継続行動を一度だけ解除し通知後や再登録へ残さない(bool defeat)
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);var a=new ContinuingAction{Frames=30};b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{a});b.TickFrame(17);bool? runningAtEnd=null;b.OnBattleEnd+=_=>runningAtEnd=a.IsRunning;
+            b.RunLogicalFrame(()=>{if(defeat)player.TakeDamage(10000);else e.TakeDamage(10000,ElementType.None);});Assert.AreEqual(false,runningAtEnd);Assert.AreEqual(1,a.Cancels);Assert.IsFalse(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction()}));
+        }
+        [Test]
+        public void 行動開始中の死亡も戻り時にキャンセルし破棄を重ねても二重解放しない()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var a=new ContinuingAction();var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a});a.Started=()=>e.TakeDamage(10000,ElementType.None);ai.Update(0,new AIContext(e,player,field,random,logger));ai.Dispose();Assert.AreEqual(1,a.Cancels);Assert.IsFalse(a.IsRunning);
+        }
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void 停止中は継続行動の時計も切替完了も進めない(BattlePauseReason reason)
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);var a=new ContinuingAction();b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{a});b.TickFrame(17);b.Pause(reason);int next=0;b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>next++}});for(int i=0;i<10;i++)b.TickFrame(17);Assert.AreEqual(0,a.Ticks);Assert.IsTrue(a.IsRunning);Assert.AreEqual(0,next);b.Resume(reason);for(int i=0;i<3;i++)b.TickFrame(17);Assert.IsFalse(a.IsRunning);Assert.AreEqual(0,next);b.TickFrame(17);Assert.AreEqual(1,next);
+        }
+        [Test]
+        public void 暗転とヒットストップとチェックポイント離脱で継続行動の寿命を守る()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);var a=new ContinuingAction{Frames=30};b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{a});b.TickFrame(17);b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,3,()=>{});for(int i=0;i<3;i++)b.TickFrame(17);Assert.AreEqual(0,a.Ticks);b.RunLogicalFrame(()=>e.TakeDamage(1,ElementType.None,hitStopFrames:3));for(int i=0;i<3;i++)b.TickFrame(17);Assert.AreEqual(0,a.Ticks);
+            typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(b,null);Assert.AreEqual(1,a.Cancels);Assert.IsFalse(a.IsRunning);
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void 継続行動と切替の時計は描画分割や追いつきで一致する(int fps)
+        {
+            string Replay(int hz){var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var p=new PlayerCharacter(100);var b=new BattleSystem(p,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:new MockRandomProvider());var a=new ContinuingAction{Frames=12};int next=0;b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{a});var c=new Olca.Core.Logic.Integration.LogicalFrameClock();var trace=new List<string>();long old=0;
+                void Step(long frame,int ms){if(frame==2){b.Pause(BattlePauseReason.User);b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Wait=100,Run=()=>next++}});}if(frame==5)b.Resume(BattlePauseReason.User);if(frame==10)b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,3,()=>{});if(frame==15)b.RunLogicalFrame(()=>e.TakeDamage(1,ElementType.None,hitStopFrames:3));b.TickFrame(ms);trace.Add($"{b.LogicalFrame}:{a.Remaining}:{a.Cancels}:{next}");}
+                for(int i=1;i<=hz;i++){long now=i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/hz;c.Accumulate(now-old);old=now;c.Drain(Step,3);}while(c.PendingFrames>0)c.Drain(Step,3);Assert.IsFalse(a.IsRunning);Assert.Greater(next,0);return string.Join("|",trace);}
+            Assert.AreEqual(Replay(60),Replay(fps));
+        }
+        [Test]
+        public void 中断クリーンアップからの切替要求も完了後だけ適用し二重中断しない()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0),poiseDefinition:new EnemyPoiseDefinition(10,3));var a=new ContinuingAction{Frames=30};var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a});var context=new AIContext(e,player,field,random,logger);int next=0;a.Cancelled=()=>Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction{Run=()=>next++}}));ai.Update(0,context);e.TakeDamage(1,ElementType.None,poiseDamage:10);Assert.AreEqual(1,a.Cancels);Assert.AreEqual(0,next);for(int i=0;i<3;i++)ai.Update(17,context,true);ai.Update(17,context,true);Assert.AreEqual(1,next);Assert.AreEqual(1,a.Cancels);
+        }
         [Test]
         public void 敵を登録できる()
         {

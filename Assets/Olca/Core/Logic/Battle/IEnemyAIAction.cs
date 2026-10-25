@@ -32,4 +32,14 @@ namespace Olca.Core.Logic.Battle
         /// <returns>クールダウン時間（秒）</returns>
         float GetCooldown();
     }
+    /// <summary>継続行動だけが実装する論理寿命。期間/効果は行動の定義元が所有する。</summary>
+    public interface IContinuingEnemyAIAction : IEnemyAIAction
+    {
+        bool IsRunning { get; }
+        /// <summary>停止していないAI更新だけで呼ぶ。logicalFrame時は固定1フレームとして進める。</summary>
+        void Tick(int milliseconds, AIContext context, bool logicalFrame);
+        /// <summary>中断/死亡/戦闘離脱時に予約効果や一時状態を解放する。描画完了を待たない。</summary>
+        void Cancel(AIContext context);
+    }
+
 }
