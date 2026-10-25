@@ -23,6 +23,32 @@ namespace Olca.Presentation.Field
         private WorldBattleGridView gridView;  // バトル中のみセットされる
         private int previousHp;
         private int pendingContactDamage;     // バトル開始前に適用されたダッシュダメージ（フェーズ3で発動）
+        private bool battleStarted,feedbackSubscribed,hitReactionRunning;
+        private readonly System.Collections.Generic.List<CombatFeedback> pendingContactFeedback=new System.Collections.Generic.List<CombatFeedback>();
+        private void SubscribeFeedback(){if(enemy!=null&&!feedbackSubscribed&&isActiveAndEnabled){enemy.OnCombatFeedback+=OnCombatFeedback;feedbackSubscribed=true;}}
+        private void UnsubscribeFeedback(){if(enemy!=null&&feedbackSubscribed)enemy.OnCombatFeedback-=OnCombatFeedback;feedbackSubscribed=false;}
+        private void OnEnable()=>SubscribeFeedback();
+        private void OnCombatFeedback(CombatFeedback feedback)
+        {
+            if(!isActiveAndEnabled||hiddenForBattle)return;
+            if(!battleStarted){pendingContactFeedback.Add(feedback);return;}
+            PresentFeedback(feedback);
+        }
+        private void PresentFeedback(CombatFeedback feedback)
+        {
+            if(!hiddenByBlindness)
+            {
+                // 名前・現在HPの上から積み、既存の常時表示と重ねない。
+                float top=transform.position.y+.4f;
+                foreach(var renderer in GetComponentsInChildren<Renderer>())
+                    if(renderer.enabled)top=Mathf.Max(top,renderer.bounds.max.y);
+                var position=new Vector3(transform.position.x,top+.2f,transform.position.z-.5f);
+                damageNumberPool?.ShowFeedback(feedback,position,CancellationToken.None,this);
+            }
+            if(feedback.Kind==CombatFeedbackKind.Damage&&feedback.Amount>0)
+                PlayDamageEffectAsync(feedback.Amount,(destroyCts??=new CancellationTokenSource()).Token).Forget();
+        }
+
         private bool positionAnimating;       // trueの間はRefreshによる位置上書きを禁止
         private bool hiddenForBattle;         // バトル不参加のため一時非表示中
         private CancellationTokenSource destroyCts;
@@ -52,7 +78,7 @@ namespace Olca.Presentation.Field
             }
             damageNumberPool?.SetOwnerVisible(this,!hidden);
         }
-        private void OnDisable(){SetHiddenByBlindness(false);}
+        private void OnDisable(){UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
 
         private void Awake()
         {
@@ -72,11 +98,13 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン配置時に呼ぶ</summary>
         public void Initialize(Enemy enemy, float dungeonX)
         {
+            UnsubscribeFeedback();pendingContactFeedback.Clear();battleStarted=false;
             SetHiddenByBlindness(false);
             this.enemy = enemy;
             this.dungeonWorldX = dungeonX;
             this.gridView = null;
             this.previousHp = enemy.CurrentHp;
+            SubscribeFeedback();
             SetStrongEnemy(false);
 
             // Prefab 経由では Sprite がシリアライズされないためランタイムで生成
@@ -128,7 +156,8 @@ namespace Olca.Presentation.Field
             // バトル開始前（ダッシュ接触時）に適用済みのダメージをここで保存し、
             // Refresh() による自動エフェクト発動を防ぐ。
             // エフェクトは TriggerPendingDamageEffect() でノックバックと同時に発動させる。
-            pendingContactDamage = previousHp - enemy.CurrentHp;
+            battleStarted=true;
+            pendingContactDamage = pendingContactFeedback.Count==0?previousHp-enemy.CurrentHp:0;
             previousHp = enemy.CurrentHp;
             // GridPosition.X がグリッド範囲外の敵はバトルに参加しない → 一時非表示
             if (enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
@@ -146,6 +175,7 @@ namespace Olca.Presentation.Field
         /// <summary>バトル終了時 - ダンジョン座標モードに戻す。撃破済みの敵は非表示にする。</summary>
         public void OnBattleEnded()
         {
+            battleStarted=false;pendingContactFeedback.Clear();pendingContactDamage=0;
             SetHiddenByBlindness(false);
             gridView = null;
             SetStrongEnemy(strongEnemy);
@@ -178,12 +208,7 @@ namespace Olca.Presentation.Field
 
             if (!positionAnimating) UpdatePosition();
 
-            // HP変化を検出してダメージエフェクト
-            int currentHp = enemy.CurrentHp;
-            int damage = previousHp - currentHp;
-            if (damage > 0)
-                PlayDamageEffectAsync(damage, destroyCts.Token).Forget();
-            previousHp = currentHp;
+            previousHp = enemy.CurrentHp;
         }
 
         // ==================== エフェクト ====================
@@ -194,23 +219,20 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void TriggerPendingDamageEffect()
         {
-            if (pendingContactDamage <= 0) return;
-            PlayDamageEffectAsync(pendingContactDamage, destroyCts.Token).Forget();
-            pendingContactDamage = 0;
+            if(pendingContactDamage>0)pendingContactFeedback.Add(new CombatFeedback(CombatFeedbackKind.Damage,pendingContactDamage));
+            pendingContactDamage=0;
+            var pending=pendingContactFeedback.ToArray();pendingContactFeedback.Clear();
+            foreach(var feedback in pending)PresentFeedback(feedback);
         }
 
-        private async UniTaskVoid PlayDamageEffectAsync(int damage, CancellationToken ct)
+        private async UniTaskVoid PlayDamageEffectAsync(int damage,CancellationToken ct)
         {
-            var bodyRenderer = enemyView?.BodyRenderer;
-            if (bodyRenderer == null) return;
-
-            ShowWorldDamageNumber(damage);
-
-            // 点滅 + スケールパルスを並行実行（ヒット感）
-            await UniTask.WhenAll(
-                FlashEffectAsync(bodyRenderer, ct),
-                ScalePulseEffectAsync(ct)
-            );
+            var bodyRenderer=enemyView?.BodyRenderer;
+            if(bodyRenderer==null||hitReactionRunning)return;
+            hitReactionRunning=true;
+            var scale=transform.localScale;var color=bodyRenderer.color;
+            try {await UniTask.WhenAll(FlashEffectAsync(bodyRenderer,ct),ScalePulseEffectAsync(ct));}
+            finally {if(this!=null){transform.localScale=scale;if(bodyRenderer!=null)bodyRenderer.color=color;}hitReactionRunning=false;}
         }
 
         private async UniTask FlashEffectAsync(SpriteRenderer bodyRenderer, CancellationToken ct)
@@ -253,13 +275,6 @@ namespace Olca.Presentation.Field
             transform.localScale = originalScale;
         }
 
-        private void ShowWorldDamageNumber(int damage)
-        {
-            if (damageNumberPool == null || hiddenByBlindness) return;
-            var position = transform.position + new Vector3(0f, 0.6f, -0.5f);
-            damageNumberPool.ShowOwnedDamage(damage, position, destroyCts.Token,this);
-        }
-
         // ==================== 座標計算 ====================
 
         private void UpdatePosition()
@@ -273,6 +288,7 @@ namespace Olca.Presentation.Field
 
         private void OnDestroy()
         {
+            UnsubscribeFeedback();
             SetHiddenByBlindness(false);
             destroyCts?.Cancel();
             destroyCts?.Dispose();

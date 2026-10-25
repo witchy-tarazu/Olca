@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Linq;
+using Olca.Core.Domain;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
@@ -38,6 +40,16 @@ namespace Olca.Presentation.Effects
         public void ShowOwnedDamage(int damage,Vector3 position,CancellationToken ct,object owner)
             => ShowOwnedDamageAsync(damage,position,ct,owner).Forget();
 
+        /// <summary>合算前の一効果を表示する。同一対象の同時表示をずらし、一時的な連続ヒットは破棄しない。</summary>
+        public void ShowFeedback(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner=null)
+            =>ShowFeedbackAsync(feedback,position,ct,owner).Forget();
+        private UniTask ShowFeedbackAsync(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner)
+        {
+            string text=feedback.Kind==CombatFeedbackKind.Immune?"ムコウ":feedback.Kind==CombatFeedbackKind.Guard?"ガード":
+                feedback.Kind==CombatFeedbackKind.Healing?"+"+feedback.Amount:feedback.Amount.ToString();
+            return ShowOwnedTextAsync(text,position,ct,owner,true);
+        }
+
         private void Awake()
         {
             if (poolParent == null)
@@ -60,17 +72,24 @@ namespace Olca.Presentation.Effects
 
         private UniTask ShowDamageAsync(int damage, Vector3 worldPosition, CancellationToken ct)
             => ShowOwnedDamageAsync(damage,worldPosition,ct,null);
-        private async UniTask ShowOwnedDamageAsync(int damage,Vector3 worldPosition,CancellationToken ct,object owner)
+        private UniTask ShowOwnedDamageAsync(int damage,Vector3 worldPosition,CancellationToken ct,object owner)
+            =>ShowOwnedTextAsync(damage.ToString(),worldPosition,ct,owner,false);
+        private async UniTask ShowOwnedTextAsync(string text,Vector3 worldPosition,CancellationToken ct,object owner,bool perEffect)
         {
             if (isDestroyed || (owner!=null && hiddenOwners.Contains(owner))) return;
-            var instance = Get();
+            var instance = TakeInstance(!perEffect);
             if (instance == null) return;
+            if(perEffect&&owner!=null){
+                int count=owners.Count(pair=>ReferenceEquals(pair.Value,owner)&&pair.Key!=null&&pair.Key.gameObject.activeSelf);
+                var renderer=instance.GetComponentInChildren<Renderer>(true);
+                worldPosition.y+=count*Mathf.Max(.1f,renderer!=null?renderer.bounds.size.y:0f);
+            }
             owners[instance]=owner;
 
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, clearCts.Token);
             try
             {
-                await instance.ShowAsync(damage, worldPosition, linkedCts.Token);
+                await instance.ShowTextAsync(text, worldPosition, linkedCts.Token);
             }
             finally
             {
@@ -78,7 +97,8 @@ namespace Olca.Presentation.Effects
             }
         }
 
-        private WorldDamageNumberView Get()
+        private WorldDamageNumberView Get()=>TakeInstance(true);
+        private WorldDamageNumberView TakeInstance(bool enforceLimit)
         {
             if (isDestroyed) return null;
             WorldDamageNumberView instance = null;
@@ -89,7 +109,7 @@ namespace Olca.Presentation.Effects
             if (instance == null)
             {
                 activeInstances.RemoveWhere(view => view == null);
-                if (activeInstances.Count >= maxPoolSize)
+                if (enforceLimit && activeInstances.Count >= maxPoolSize)
                 {
                     Debug.LogWarning($"[WorldDamageNumberPool] 最大プールサイズ({maxPoolSize})に達しています。");
                     return null;
@@ -108,6 +128,8 @@ namespace Olca.Presentation.Effects
             owners.Remove(instance);
             if (instance == null || isDestroyed) return;
             instance.gameObject.SetActive(false);
+            // 同時ヒットの一時超過は表示するが、待機プールの保持数は増やさない。
+            if(pool.Count>=maxPoolSize){DestroyInstance(instance);return;}
             pool.Enqueue(instance);
         }
 

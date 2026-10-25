@@ -159,6 +159,67 @@ namespace Olca.Tests
             var enemy=Owned(10);var player=Show(100,cts.Token);var enemyView=Active.Single(v=>v.GetComponent<TextMesh>().text=="10");var playerView=Active.Single(v=>v.GetComponent<TextMesh>().text=="100");pool.SetOwnerVisible(enemyOwner,false);Assert.IsFalse(enemyView.gameObject.activeSelf);Assert.IsTrue(playerView.gameObject.activeSelf);var rejected=Owned(20);Assert.IsTrue(rejected.IsCompleted);Assert.AreEqual(2,Active.Count);pool.SetOwnerVisible(enemyOwner,true);Assert.IsFalse(enemyView.gameObject.activeSelf);var next=Owned(30);Assert.IsTrue(Active.Single(v=>v.GetComponent<TextMesh>().text=="30").gameObject.activeSelf);Assert.IsTrue(playerView.gameObject.activeSelf);cts.Cancel();await Completed(Task.WhenAll(enemy,player,rejected,next));Assert.AreEqual(0,Active.Count);Assert.AreEqual(Waiting.Count,Waiting.Distinct().Count());
         }
 
+        [Test]
+        public async Task 個別表示は二十ヒットを超えても欠落せず返却後の保持数を制限する()
+        {
+            using var cts = new CancellationTokenSource();
+            var owner = new object();
+            var tasks = Enumerable.Range(1, 25).Select(i => ((UniTask)Invoke("ShowFeedbackAsync",
+                new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage, i),
+                Vector3.zero, cts.Token, owner)).AsTask()).ToArray();
+            Assert.AreEqual(25, Active.Count);
+            Assert.AreEqual(25, Active.Select(v => v.transform.position.y).Distinct().Count());
+            CollectionAssert.AreEquivalent(Enumerable.Range(1, 25).Select(i => i.ToString()), Active.Select(v => v.GetComponent<TextMesh>().text));
+            cts.Cancel(); await Completed(Task.WhenAll(tasks));
+            Assert.AreEqual(0, Active.Count); Assert.AreEqual(20, Waiting.Count);
+            Assert.AreEqual(20, Waiting.Distinct().Count());
+        }
+
+        [Test]
+        public async Task 回復と完全防御の表示はカナと正符号を使い既存数値と共存する()
+        {
+            using var cts = new CancellationTokenSource();
+            var values = new[] {
+                new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Healing, 7),
+                new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Immune),
+                new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Guard),
+                new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.BarrierDamage, 12) };
+            var tasks = values.Select(v => ((UniTask)Invoke("ShowFeedbackAsync", v, Vector3.zero, cts.Token, new object())).AsTask()).ToArray();
+            CollectionAssert.AreEquivalent(new[] { "+7", "ムコウ", "ガード", "12" }, Active.Select(v => v.GetComponent<TextMesh>().text));
+            cts.Cancel(); await Completed(Task.WhenAll(tasks)); Assert.AreEqual(0, Active.Count);
+        }
+
+        [Test]
+        public async Task 敵Viewは個別ヒットを購読し接触演出後や毎フレーム更新で二重表示しない()
+        {
+            var go = new GameObject("FeedbackEnemy");
+            var view = go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
+            var header = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            header.transform.SetParent(go.transform, false);
+            header.transform.localPosition = new Vector3(0, 5, 0);
+            var enemy = new Olca.Core.Domain.Enemy("feedback", "テスト", 100, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(3, 0));
+            try {
+                view.SetDamageNumberPool(pool); view.Initialize(enemy, 0);
+                enemy.TakeDamage(3, Olca.Core.Domain.ElementType.None);
+                enemy.TakeDamage(4, Olca.Core.Domain.ElementType.None);
+                Assert.AreEqual(0, Active.Count, "接触ダメージは演出開始まで保留");
+                view.OnBattleStarted(null); view.TriggerPendingDamageEffect(); view.TriggerPendingDamageEffect();
+                view.Refresh(); Assert.AreEqual(2, Active.Count);
+                Assert.IsTrue(Active.All(v => v.transform.position.y > header.GetComponent<Renderer>().bounds.max.y), "名前/HPの表示範囲より上に出す");
+                enemy.TakeDamage(5, Olca.Core.Domain.ElementType.None); view.Refresh();
+                Assert.AreEqual(3, Active.Count);
+                view.SetHiddenByBlindness(true); enemy.TakeDamage(6, Olca.Core.Domain.ElementType.None);
+                Assert.AreEqual(3, Active.Count, "遮蔽中は数字を追加しない");
+                view.SetHiddenByBlindness(false);
+                view.Initialize(new Olca.Core.Domain.Enemy("next", "テスト", 100, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(3, 0)), 0);
+                enemy.TakeDamage(7, Olca.Core.Domain.ElementType.None);
+                Assert.AreEqual(3, Active.Count, "古い敵の購読を解除する");
+            } finally {
+                UnityEngine.Object.DestroyImmediate(go); pool.ClearAll();
+            }
+            await Task.Delay(100); Assert.AreEqual(0, Active.Count);
+        }
+
         private static async Task Completed(Task task)
         {
             Assert.AreSame(task, await Task.WhenAny(task, Task.Delay(3000)), "表示の終了待ちが完了しない");

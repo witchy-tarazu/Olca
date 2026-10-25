@@ -181,7 +181,7 @@ namespace Olca.Core.Domain
         internal void PublishHpFrame()
         {
             bool changed = frameHp.TakeNotification(out bool died);
-            try { frameHp.PublishPoisonHits(); }
+            try { frameHp.PublishPoisonHits();frameHp.PublishHealingHits(); }
             finally
             {
                 if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
@@ -379,8 +379,9 @@ namespace Olca.Core.Domain
         {
             if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             if (IsDead) return;
-            if (frameHp.Active) { frameHp.Heal(amount); return; }
-            currentHp = (int)Math.Min(maxHp, (long)currentHp + amount);
+            if (frameHp.Active) { frameHp.Heal(amount,accepted=>ReportCombatFeedback(CombatFeedbackKind.Healing,accepted)); return; }
+            int before=currentHp;currentHp = (int)Math.Min(maxHp, (long)currentHp + amount);
+            ReportCombatFeedback(CombatFeedbackKind.Healing,currentHp-before);
             OnHpChanged?.Invoke(currentHp, maxHp);
         }
 
@@ -398,23 +399,25 @@ namespace Olca.Core.Domain
                 // 属性相性によるダメージ補正
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // ガードを先に判定。通過したヒットだけ防御のフレーム合計へ入れる。
-                if (!poison && Guard.Blocks(damage, properties)) return;
-                if (!poison && protection.Block(damage, grass, properties)) return;
+                if (!poison && Guard.Blocks(damage, properties)) { ReportCombatFeedback(CombatFeedbackKind.Guard); return; }
+                bool barrier=HasBarrier;
+                if (!poison && protection.Block(damage, grass, properties)) {ReportCombatFeedback(barrier?CombatFeedbackKind.BarrierDamage:CombatFeedbackKind.Immune,barrier?ElementResistances.Neutral.CalculateDamage(damage,ElementType.None,grass):0);return;}
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
-                if (damage > 0 && finalDamage == 0) return; // 元から威力0の状態異常専用効果とは区別。
+                if (damage > 0 && finalDamage == 0) {ReportCombatFeedback(CombatFeedbackKind.Immune);return;} // 元から威力0の状態異常専用効果とは区別。
 
                 if (poison && frameHp.Active)
                 {
                     frameHp.Poison(finalDamage, accepted => {
                         TotalDamageTaken += accepted;
                         TotalHitsTaken++;
-                        OnDamaged?.Invoke(accepted, multiplier);
+                        ReportCombatFeedback(CombatFeedbackKind.Damage,accepted);OnDamaged?.Invoke(accepted, multiplier);
                     });
                     return;
                 }
                 if (poison) finalDamage = Math.Min(finalDamage, Math.Max(0, currentHp - 1));
                 if (poison && finalDamage == 0) return;
+                ReportCombatFeedback(CombatFeedbackKind.Damage, finalDamage);
                 bool killedByThisHit = false;
                 if (frameHp.Active)
                 {
@@ -567,6 +570,10 @@ namespace Olca.Core.Domain
         /// <summary>
         /// HP変更時のイベント
         /// </summary>
+        public event Action<CombatFeedback> OnCombatFeedback;
+        private void ReportCombatFeedback(CombatFeedbackKind kind,int amount=0)
+        {if((kind==CombatFeedbackKind.Damage||kind==CombatFeedbackKind.Healing)&&amount<=0)return;OnCombatFeedback?.Invoke(new CombatFeedback(kind,amount));}
+
         public event Action<int, int> OnHpChanged; // (currentHp, maxHp)
 
         /// <summary>

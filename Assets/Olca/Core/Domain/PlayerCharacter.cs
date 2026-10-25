@@ -287,6 +287,7 @@ namespace Olca.Core.Domain
         internal void PublishHpFrame()
         {
             bool changed = frameHp.TakeNotification(out bool died);
+            frameHp.PublishPoisonHits();frameHp.PublishHealingHits();
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
@@ -434,17 +435,18 @@ namespace Olca.Core.Domain
 
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
-                if (HasAura && protection.Block(damage, grass, attackProperties)) return false;
+                if (HasAura && protection.Block(damage, grass, attackProperties)) { ReportCombatFeedback(CombatFeedbackKind.Immune); return false; }
                 int originalDamage = damage;
                 int bodyDamage = ActiveResistances.CalculateDamage(damage, attackElement, grass);
                 // 本体耐性を耐久計算に使わず地形補正だけで計上し、破壊した一発も全て防ぐ。
                 // 元から威力0の状態専用ヒットはバリアを通過する。
-                if (HasBarrier && protection.Block(damage, grass, attackProperties)) return false;
+                if (HasBarrier && protection.Block(damage, grass, attackProperties)) { ReportCombatFeedback(CombatFeedbackKind.BarrierDamage,ElementResistances.Neutral.CalculateDamage(damage,ElementType.None,grass)); return false; }
                 // 完全防御した弱点ヒットでは解除しない。受理したヒットだけ変身中耐性で計算後に解除する。
                 breakTransformation = (originalDamage == 0 || bodyDamage > 0) && HasTransformationDefense && transformationWeakness.Matches(attackElement, attackProperties);
                 damage = bodyDamage;
-                if (originalDamage > 0 && damage == 0) return false; // 耐性無効は強靭度・付随効果へ進めない。
+                if (originalDamage > 0 && damage == 0) { ReportCombatFeedback(CombatFeedbackKind.Immune); return false; } // 耐性無効は強靭度・付随効果へ進めない。
 
+                ReportCombatFeedback(CombatFeedbackKind.Damage,damage);
                 if (frameHp.Active) frameHp.Damage(damage);
                 else
                 {
@@ -498,6 +500,7 @@ namespace Olca.Core.Domain
         {
             if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
             if (IsDead || damage == 0) return;
+            ReportCombatFeedback(CombatFeedbackKind.Damage,damage);
             if (frameHp.Active) { frameHp.Damage(damage); return; }
             currentHp = Math.Max(0, currentHp - damage);
             OnHpChanged?.Invoke(currentHp, maxHp);
@@ -509,10 +512,11 @@ namespace Olca.Core.Domain
         {
             if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
             if (IsDead) return;
-            if (frameHp.Active) { frameHp.Poison(damage); return; }
+            if (frameHp.Active) { frameHp.Poison(damage,accepted=>ReportCombatFeedback(CombatFeedbackKind.Damage,accepted)); return; }
             int accepted = Math.Min(damage, Math.Max(0, currentHp - 1));
             if (accepted == 0) return;
             currentHp -= accepted;
+            ReportCombatFeedback(CombatFeedbackKind.Damage,accepted);
             OnHpChanged?.Invoke(currentHp, maxHp);
         }
 
@@ -524,8 +528,9 @@ namespace Olca.Core.Domain
         {
             if (amount < 0) throw new ArgumentException("回復量は0以上である必要があります", nameof(amount));
 
-            if (frameHp.Active) { frameHp.Heal(amount); return; }
-            currentHp = (int)Math.Min(maxHp, (long)currentHp + amount);
+            if (frameHp.Active) { frameHp.Heal(amount,accepted=>ReportCombatFeedback(CombatFeedbackKind.Healing,accepted)); return; }
+            int before=currentHp;currentHp = (int)Math.Min(maxHp, (long)currentHp + amount);
+            ReportCombatFeedback(CombatFeedbackKind.Healing,currentHp-before);
             OnHpChanged?.Invoke(currentHp, maxHp);
         }
 
@@ -669,6 +674,10 @@ namespace Olca.Core.Domain
         /// <summary>
         /// HP変更時のイベント
         /// </summary>
+        public event Action<CombatFeedback> OnCombatFeedback;
+        private void ReportCombatFeedback(CombatFeedbackKind kind,int amount=0)
+        { if((kind==CombatFeedbackKind.Damage||kind==CombatFeedbackKind.Healing)&&amount<=0)return;OnCombatFeedback?.Invoke(new CombatFeedback(kind,amount)); }
+
         public event Action<int, int> OnHpChanged; // (currentHp, maxHp)
 
         /// <summary>
@@ -699,10 +708,14 @@ namespace Olca.Core.Domain
         {
             if (Active) throw new InvalidOperationException("HPフレームが既に開始されています");
             initialHp = hp; damage = healing = poison = 0; touched = notify = died = false; Active = true;
-            poisonHits.Clear(); acceptedPoisonHits.Clear();
+            poisonHits.Clear(); acceptedPoisonHits.Clear();healingHits.Clear();acceptedHealingHits.Clear();
         }
         public void Damage(int amount) { damage += amount; touched = true; }
-        public void Heal(int amount) { healing += amount; touched = true; }
+        private readonly List<(int Amount,Action<int> Notify)> healingHits=new List<(int,Action<int>)>();
+        private readonly List<(int Amount,Action<int> Notify)> acceptedHealingHits=new List<(int,Action<int>)>();
+        public void Heal(int amount,Action<int> notifyHit=null) { healing += amount; touched = true;healingHits.Add((amount,notifyHit)); }
+        public void PublishHealingHits()
+        {var hits=acceptedHealingHits.ToArray();acceptedHealingHits.Clear();foreach(var hit in hits)hit.Notify?.Invoke(hit.Amount);}
         public void Poison(int amount, Action<int> notifyHit = null)
         {
             // 後から入る同フレーム回復も含め、受理量と通知を終端まで確定しない。
@@ -728,6 +741,10 @@ namespace Olca.Core.Domain
                 if (accepted > 0 && hit.Notify != null) acceptedPoisonHits.Add((accepted, hit.Notify));
             }
             poisonHits.Clear();
+            // 満タンを超える回復は表示量へ足さない。同フレームのダメージと受理毒による空きは含める。
+            long recovery=Math.Min(healing,Math.Max(0L,(long)maxHp-initialHp+damage+acceptedPoison));
+            foreach(var hit in healingHits){int accepted=(int)Math.Min(hit.Amount,recovery);recovery-=accepted;if(accepted>0&&hit.Notify!=null)acceptedHealingHits.Add((accepted,hit.Notify));}
+            healingHits.Clear();
             // 毒だけではHP1を割らず、通常ダメージはその下限とは独立して死亡させ得る。
             int result = (int)Math.Max(0L, Math.Min(maxHp, healedHp - acceptedPoison - damage));
             died = initialHp > 0 && result == 0;
@@ -737,4 +754,20 @@ namespace Olca.Core.Domain
         { death = died; bool result = notify; notify = died = false; return result; }
     }
 
+}
+
+namespace Olca.Core.Domain
+{
+    public enum CombatFeedbackKind { Damage, Healing, Immune, Guard, BarrierDamage }
+    /// <summary>HPのフレーム集計とは別の、個々の攻撃/回復による表示通知。</summary>
+    public readonly struct CombatFeedback
+    {
+        public CombatFeedbackKind Kind {get;}
+        public int Amount {get;}
+        public CombatFeedback(CombatFeedbackKind kind,int amount=0)
+        {
+            if(!System.Enum.IsDefined(typeof(CombatFeedbackKind),kind))throw new System.ArgumentOutOfRangeException(nameof(kind));
+            if(amount<0)throw new System.ArgumentOutOfRangeException(nameof(amount));Kind=kind;Amount=amount;
+        }
+    }
 }

@@ -32,13 +32,16 @@ namespace Olca.Presentation.Effects
         /// ダメージ値と World 座標を受け取り、アニメーションを再生する。
         /// 完了（またはキャンセル）まで await 可能。
         /// </summary>
-        public async UniTask ShowAsync(int damage, Vector3 worldPosition, CancellationToken ct)
+        public UniTask ShowAsync(int damage,Vector3 worldPosition,CancellationToken ct)
+            =>ShowTextAsync(damage.ToString(),worldPosition,ct);
+
+        public async UniTask ShowTextAsync(string text, Vector3 worldPosition, CancellationToken ct)
         {
             if (textMesh == null) return;
 
             // 初期化
             transform.position = worldPosition;
-            textMesh.text = damage.ToString();
+            textMesh.text = text;
             textMesh.color = originalColor;
             gameObject.SetActive(true);
 
