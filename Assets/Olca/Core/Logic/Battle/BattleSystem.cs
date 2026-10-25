@@ -97,6 +97,10 @@ namespace Olca.Core.Logic.Battle
         internal long ActionFrame => actionFrame;
         /// <summary>表示が参照する戦闘の論理時刻。停止中は進まない。</summary>
         public long LogicalFrame => actionFrame;
+        /// <summary>召喚や終了時のリスト破棄に左右されない、開始時の評価対象数。</summary>
+        public int InitialEvaluationEnemyCount { get; }
+        public bool IsBossEncounter { get; }
+
         private readonly SimultaneousKillCounter simultaneousKills = new SimultaneousKillCounter();
         public int EnemyKillCount => simultaneousKills.KillCount;
         /// <summary>HP被弾数ではなく、実際に成立した強靭度の中断回数。麻痺の強制成立も含む。</summary>
@@ -250,6 +254,9 @@ namespace Olca.Core.Logic.Battle
             StartEffects = new BattleStartEffects(this,logger);
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
+            InitialEvaluationEnemyCount = enemies.FindAll(e => !e.IsSummoned).Count;
+            IsBossEncounter = enemies.Exists(e => !e.IsSummoned && e.EnemyId == "boss");
+
             this.battleField = new BattleField(initialPermanentHoles);
             this.customGauge = new CustomGaugeSystem(customGaugeSpeed);
             this.customScreen = new CustomScreenSystem(deck,
@@ -937,5 +944,77 @@ namespace Olca.Core.Logic.Battle
         }
         public void Finish()
         { finished = true; groups.Clear(); killed.Clear(); }
+    }
+}
+
+namespace Olca.Core.Logic.Battle
+{
+    public enum BattleEvaluationGrade { Fair, Good, Great, Excellent }
+
+    /// <summary>確定時の独立値。表示や後続の報酬選択から戦闘時計を再参照しない。</summary>
+    public sealed class BattleEvaluationResult
+    {
+        public long LogicalFrames { get; }
+        public int Staggers { get; }
+        public int MaximumSimultaneousKills { get; }
+        public int InitialEnemyCount { get; }
+        public bool IsBoss { get; }
+        public int Points { get; }
+        public BattleEvaluationGrade Grade { get; }
+        internal BattleEvaluationResult(long frames,int staggers,int maximum,int enemies,bool boss,int points,BattleEvaluationGrade grade)
+        { LogicalFrames=frames;Staggers=staggers;MaximumSimultaneousKills=maximum;InitialEnemyCount=enemies;IsBoss=boss;Points=points;Grade=grade; }
+    }
+
+    /// <summary>§2で許可された調整用の暫定配点。製品確定値や報酬補正を含まない。</summary>
+    public sealed class BattleEvaluationRules
+    {
+        public int TimePoints { get; }
+        public int StaggerPoints { get; }
+        public int SimultaneousPoints { get; }
+        public int FullTimeFrames { get; }
+        public int ZeroTimeFrames { get; }
+        public int StaggerLoss { get; }
+        public int ExcellentThreshold { get; }
+        public int GreatThreshold { get; }
+        public int GoodThreshold { get; }
+        public static BattleEvaluationRules ProvisionalNormal => new BattleEvaluationRules(50,30,20,1800,7200,10,90,75,50);
+        public static BattleEvaluationRules ProvisionalBoss => new BattleEvaluationRules(50,30,20,3600,14400,10,90,75,50);
+        public BattleEvaluationRules(int timePoints,int staggerPoints,int simultaneousPoints,int fullTimeFrames,int zeroTimeFrames,
+            int staggerLoss,int excellentThreshold,int greatThreshold,int goodThreshold)
+        {
+            if(timePoints<0||staggerPoints<0||simultaneousPoints<0||(long)timePoints+staggerPoints+simultaneousPoints!=100)
+                throw new System.ArgumentException("評価配点の合計は100が必要です");
+            if(fullTimeFrames<0||zeroTimeFrames<=fullTimeFrames||staggerLoss<=0)
+                throw new System.ArgumentException("評価の時間と減点設定が不正です");
+            if(goodThreshold<1||greatThreshold<=goodThreshold||excellentThreshold<=greatThreshold||excellentThreshold>100)
+                throw new System.ArgumentException("評価境界は100以下の降順が必要です");
+            TimePoints=timePoints;StaggerPoints=staggerPoints;SimultaneousPoints=simultaneousPoints;
+            FullTimeFrames=fullTimeFrames;ZeroTimeFrames=zeroTimeFrames;StaggerLoss=staggerLoss;
+            ExcellentThreshold=excellentThreshold;GreatThreshold=greatThreshold;GoodThreshold=goodThreshold;
+        }
+        public BattleEvaluationGrade GradeForPoints(int points)
+        {
+            if(points<0||points>100)throw new System.ArgumentOutOfRangeException(nameof(points));
+            return points>=ExcellentThreshold?BattleEvaluationGrade.Excellent:points>=GreatThreshold?BattleEvaluationGrade.Great:
+                points>=GoodThreshold?BattleEvaluationGrade.Good:BattleEvaluationGrade.Fair;
+        }
+        public BattleEvaluationResult Evaluate(long frames,int staggers,int maximum,int enemies,bool boss=false)
+        {
+            if(frames<0||staggers<0||maximum<0||enemies<=0)throw new System.ArgumentException("評価の計測値が不正です");
+            // 時間は上限で先にクランプし、long最大値でも積算をオーバーフローさせない。
+            int time=frames<=FullTimeFrames?TimePoints:frames>=ZeroTimeFrames?0:
+                (int)((ZeroTimeFrames-frames)*TimePoints/(ZeroTimeFrames-(long)FullTimeFrames));
+            int stagger=(int)System.Math.Max(0,StaggerPoints-(long)staggers*StaggerLoss);
+            // 単体戦には不可能な複数撃破を要求しない。召喚は開始時の分母へ加算しない。
+            int simultaneous=enemies==1?SimultaneousPoints:
+                (int)(System.Math.Max(0L,System.Math.Min(maximum,(long)enemies)-1)*SimultaneousPoints/(enemies-1L));
+            int points=time+stagger+simultaneous;
+            return new BattleEvaluationResult(frames,staggers,maximum,enemies,boss,points,GradeForPoints(points));
+        }
+        public BattleEvaluationResult Evaluate(BattleSystem battle)
+        {
+            if(battle==null)throw new System.ArgumentNullException(nameof(battle));
+            return Evaluate(battle.LogicalFrame,battle.PlayerStaggerCount,battle.MaximumSimultaneousKills,battle.InitialEvaluationEnemyCount,battle.IsBossEncounter);
+        }
     }
 }

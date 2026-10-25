@@ -1160,6 +1160,7 @@ namespace Olca.Application.Dungeon
         }
         private UniTaskCompletionSource<bool> currencyChoice;
         private long? pendingBattleElapsedFrames;
+        private Olca.Core.Logic.Battle.BattleEvaluationResult pendingBattleEvaluation;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
@@ -1567,6 +1568,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleStarted(BattleSystem battle, ContactInfo contactInfo)
         {
+            pendingBattleEvaluation=null;pendingBattleElapsedFrames=null;
             gameplayAudio?.PlayBgm(battleBgm!=null?battleBgm:dungeonBgm);
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
@@ -1706,7 +1708,8 @@ namespace Olca.Application.Dungeon
                 automaticPauseOwner = null;
                 SetUserPaused(true);
             }
-            pendingBattleElapsedFrames = manager?.Dungeon.CurrentBattle?.LogicalFrame;
+            pendingBattleEvaluation = manager?.LastBattleEvaluation;
+            pendingBattleElapsedFrames = pendingBattleEvaluation?.LogicalFrames ?? pendingBattleElapsedFrames;
             gameplayAudio?.PlayBgm(dungeonBgm);
             ResetTouchInput();
             if(manager.LastBattleResult==BattleResult.Defeat)return;
@@ -1726,6 +1729,7 @@ namespace Olca.Application.Dungeon
         private void OnCardRewardPresented(IReadOnlyList<Card> choices)
         {
             pendingCardChoices = choices;
+            pendingBattleEvaluation = null;
             pendingBattleElapsedFrames = manager?.CurrentBattle?.LogicalFrame;
         }
 
@@ -1763,7 +1767,7 @@ namespace Olca.Application.Dungeon
                     if (cardSelectionView != null)
                     {
                         int deckCount = manager.Dungeon.GetCurrentDeck().TotalCount;
-                        Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct, pendingBattleElapsedFrames);
+                        Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct, pendingBattleElapsedFrames, pendingBattleEvaluation);
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(selectedCard); ScheduleExplorationResume(); } });
@@ -1785,7 +1789,7 @@ namespace Olca.Application.Dungeon
                     var item=manager.Dungeon.PendingItemReward;
                     itemRewardChoice=new UniTaskCompletionSource<bool>();var choice=itemRewardChoice;
                     itemRewardText.text=$"アイテムホウシュウ: {item.Name}\nHPカイフク {item.Heal} / ゲンザイHP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\nマンタンデモウケトリジニショウヒシマス";
-                    if(pendingBattleElapsedFrames.HasValue)itemRewardText.text+="\n"+CardSelectionView.FormatBattleTime(pendingBattleElapsedFrames);
+                    if(pendingBattleElapsedFrames.HasValue)itemRewardText.text+="\n"+CardSelectionView.FormatBattleSummary(pendingBattleElapsedFrames,pendingBattleEvaluation);
                     itemRewardOverlay.SetActive(true);itemRewardOverlay.transform.SetAsLastSibling();BindResourceReward(itemRewardOverlay,"SkipItemReward",()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});bool receive;
                     try{using(ct.Register(()=>choice.TrySetCanceled(ct)))receive=await choice.Task;}
                     finally{resourceRewardMenu?.Suspend();if(itemRewardOverlay!=null)itemRewardOverlay.SetActive(false);itemRewardChoice=null;}
@@ -1799,7 +1803,7 @@ namespace Olca.Application.Dungeon
                     currencyChoice = new UniTaskCompletionSource<bool>();
                     var choice = currencyChoice;
                     currencyRewardText.text = $"ツウカホウシュウ: {manager.Dungeon.PendingCurrencyReward}\nショジ: {manager.Dungeon.Currency}（コウリャクチュウノミ）";
-                    if(pendingBattleElapsedFrames.HasValue)currencyRewardText.text+="\n"+CardSelectionView.FormatBattleTime(pendingBattleElapsedFrames);
+                    if(pendingBattleElapsedFrames.HasValue)currencyRewardText.text+="\n"+CardSelectionView.FormatBattleSummary(pendingBattleElapsedFrames,pendingBattleEvaluation);
                     receiveCurrencyButton.interactable = manager.Dungeon.PendingCurrencyReward <= long.MaxValue - manager.Dungeon.Currency;
                     currencyOverlay.SetActive(true); currencyOverlay.transform.SetAsLastSibling();
                     BindResourceReward(currencyOverlay,"SkipCurrencyButton",()=>{if(!GameplayPause.InputBlocked)currencyChoice?.TrySetResult(false);});

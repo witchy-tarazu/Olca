@@ -37,7 +37,7 @@ namespace Olca.Presentation.Dungeon
         public async UniTask<Card> ShowAsync(
             IReadOnlyList<Card> choices,
             int currentDeckCount,
-            CancellationToken ct = default, long? battleLogicalFrames = null)
+            CancellationToken ct = default, long? battleLogicalFrames = null, Olca.Core.Logic.Battle.BattleEvaluationResult evaluation = null)
         {
             selectionTcs = new UniTaskCompletionSource<Card>();
             if(containerRoot!=null)UiLook.Face(containerRoot.GetComponent<Image>());
@@ -47,7 +47,7 @@ namespace Olca.Presentation.Dungeon
             foreach(var label in (containerRoot!=null?containerRoot:gameObject).GetComponentsInChildren<Text>(true))
                 label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);
             EnsureSkipButton();
-            UpdateBattleTime(battleLogicalFrames);
+            UpdateBattleTime(battleLogicalFrames,evaluation);
 
             // デッキ枚数表示
             if (deckCountText != null)
@@ -101,9 +101,18 @@ namespace Olca.Presentation.Dungeon
             long value=frames.Value;
             return $"ゲキハタイム: {value/3600:D2}:{value/60%60:D2}.{value%60*100/60:D2}";
         }
-        private void UpdateBattleTime(long? frames)
+        public static string FormatBattleSummary(long? frames,Olca.Core.Logic.Battle.BattleEvaluationResult evaluation=null)
         {
-            string text=FormatBattleTime(frames);
+            if(evaluation==null)return FormatBattleTime(frames);
+            string grade=evaluation.Grade==Olca.Core.Logic.Battle.BattleEvaluationGrade.Excellent?"シュウ":
+                evaluation.Grade==Olca.Core.Logic.Battle.BattleEvaluationGrade.Great?"ユウ":
+                evaluation.Grade==Olca.Core.Logic.Battle.BattleEvaluationGrade.Good?"リョウ":"カ";
+            return "ヒョウカ: "+grade+" / "+FormatBattleTime(evaluation.LogicalFrames);
+        }
+        private void UpdateBattleTime(long? frames,Olca.Core.Logic.Battle.BattleEvaluationResult evaluation)
+        {
+            if(evaluation!=null)frames=evaluation.LogicalFrames;
+            string text=FormatBattleSummary(frames,evaluation);
             if(battleTimeText==null&&frames.HasValue&&deckCountText!=null)
             {
                 var go=new GameObject("BattleTimeText",typeof(RectTransform),typeof(Text));
