@@ -465,7 +465,7 @@ namespace Olca.Presentation.CustomScreen
         {
             string value;
             if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{GetTransformationName(d.Id)}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
-            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {card.Rarity} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
+            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=$"{card.Name}\nコスト {card.GetFinalCost()} / 威力 {card.GetFinalPower()}\n属性 {card.Element} / {CustomDisplay.Regulation(card.Rarity)} / {card.Series} / {card.ExceedLevel}\n\n{card.Description}";}
             if(detailsPanel==null){
                 detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=detailsPanel.GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
                 var area=new GameObject("CustomPadDetailsScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(detailsPanel.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.04f,.18f);ar.anchorMax=new Vector2(.96f,.96f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
@@ -1577,6 +1577,10 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>既存のカード・カスタムUI用語を、指定フォントで読めるカナ表記へ変換する。</summary>
     public static class CustomDisplay
     {
+        // 表示用の呼称だけを変換し、既存enum・保存・マスターの識別子は維持する。
+        public static string Regulation(CardRarity value) => value == CardRarity.Normal ? "スタンダード"
+            : value == CardRarity.Limited ? "リミテッド" : value == CardRarity.Ultimate ? "アルティメット" : "？？？";
+
         private static readonly System.Collections.Generic.Dictionary<string,string> readings=CreateReadings();
         private static System.Collections.Generic.Dictionary<string,string> CreateReadings()
         {

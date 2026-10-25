@@ -189,6 +189,26 @@ namespace Olca.Presentation.Battle
 
         private void OnBattleEnded(BattleResult result) {Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
+        /// <summary>撤退等でセッションを破棄する。古い開閉処理が再表示しないよう所有権を先に外す。</summary>
+        public void EndSessionPresentation()
+        {
+            var previous = animationCts;
+            animationCts = null;
+            previous?.Cancel(); previous?.Dispose();
+            TransformationVisualSource?.StopHandPresentation();
+            isCustomScreenOpen = false; gaugeResetting = false;
+            if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(false);
+            if (customScreenContainer != null) {
+                var position = customScreenContainer.anchoredPosition;
+                position.x = CUSTOM_SCREEN_HIDDEN_X;
+                customScreenContainer.anchoredPosition = position;
+            }
+            if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
+            DetachBattleEvents(); battleSystem = null;
+            Olca.Unity.BattleVisualClock.SetPaused(this,false);
+            ResetGaugeVisual(); ResetTransformationVisual();
+        }
+
         private void OnDisable() {Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()

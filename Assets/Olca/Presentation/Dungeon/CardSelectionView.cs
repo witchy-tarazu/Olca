@@ -375,7 +375,7 @@ namespace Olca.Presentation.Dungeon
                 Text("ReturnStats", $"帰還後：HP {flow.ReturnedMaxHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}\n帰還を確定すると、攻略中の状態を解除して全回復します。", 0, -220, 1750, 130, 26);
                 Button("ConfirmReturn", "帰還を確定", 0, -420, 900, 75, finish).interactable = !blocked;
             } else {
-                Text("HomeStats", collectionOnly ? $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\n所持カードは攻略中に消費・減少しません。" : $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}\n{(flow.Outcome == RunReturnOutcome.Cleared ? "カード・経験値は保存済みです。" : "獲得カードは失いました。経験値+0。既存の所持・成長は保持します。")}", 0, 260, 1750, 130, 28);
+                Text("HomeStats", collectionOnly ? $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\n所持カードは攻略中に消費・減少しません。" : $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}{(flow.Outcome == RunReturnOutcome.Cleared ? "\nカード・経験値は保存済みです。" : "")}", 0, 260, 1750, 130, 28);
                 int pages = Math.Max(1, (profile.Owned.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
                 Text("OwnedTitle", "永続所持カード", 0, 180, 1500, 60, 28);
                 for (int row = 0; row < PageSize && page * PageSize + row < profile.Owned.Length; row++) {

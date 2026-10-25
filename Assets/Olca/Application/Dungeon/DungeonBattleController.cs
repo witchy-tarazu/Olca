@@ -942,6 +942,9 @@ namespace Olca.Application.Dungeon
                 if (outcome == RunReturnOutcome.Retreated && !manager.IsSuspended && !manager.SuspendForCheckpoint()) return;
                 if (IsUserPaused) SetUserPaused(false);
                 transitionCts?.Cancel(); battleSession?.Detach(); cardSelectionView?.Hide();
+                battleView?.EndSessionPresentation();
+                battleView?.gameObject.SetActive(false);
+                gameFieldView?.OnBattleEnded(); battleFieldReady = false;
                 manager.Dungeon.DiscardRunCurrency();
                 currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
                 itemRewardChoice?.TrySetCanceled();itemRewardOverlay?.SetActive(false);

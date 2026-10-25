@@ -594,6 +594,42 @@ namespace Olca.Tests
             }
         }
 
+        [TestCase(CardRarity.Normal,"スタンダード")]
+        [TestCase(CardRarity.Limited,"リミテッド")]
+        [TestCase(CardRarity.Ultimate,"アルティメット")]
+        public void カード報酬のレギュレーションは識別子を変えず確定したカナ名称を表示する(CardRarity value,string expected)
+        {
+            var root=new GameObject("RegulationFixture",typeof(RectTransform));
+            try {
+                var view=root.AddComponent<CardSelectionItemView>();var label=new GameObject("CardRarity",typeof(RectTransform),typeof(Text));label.transform.SetParent(root.transform,false);
+                typeof(CardSelectionItemView).GetField("cardRarityText",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,label.GetComponent<Text>());
+                var card=new Card("fixture","テスト",1,value,CardCategory.Attack,ElementType.None,CardSeries.None,1,"");view.Setup(card);
+                Assert.AreEqual(expected,label.GetComponent<Text>().text);Assert.AreEqual(value,card.Rarity);Assert.AreEqual("fixture",card.Id);
+                Assert.AreEqual(expected,CustomDisplay.Regulation(value));
+            }finally{Object.DestroyImmediate(root);}
+        }
+
+        [TestCase(RunReturnOutcome.Cleared)]
+        [TestCase(RunReturnOutcome.Defeated)]
+        [TestCase(RunReturnOutcome.Retreated)]
+        public void 帰還ホームの報酬まとめはクリアだけに表示し敗北撤退の現在能力と再出撃は保つ(RunReturnOutcome outcome)
+        {
+            var root=new GameObject("ReturnSummaryFixture",typeof(RectTransform));ClearReturnView view=null;int departures=0;
+            var profile=new ClearReturnProfile{Level=2,Experience=100,Tokens=7,ReturnedHp=105,Revision=4};
+            var flow=new ClearReturnData{RunId="fixture",Stage=ClearReturnStage.Returned,Outcome=outcome,ReturnedMaxHp=105,ReturnedAttack=11};
+            try {
+                view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null,()=>departures++);
+                view.Render(profile,flow,false,null);
+                var home=CustomDisplay.Katakana(root.GetComponentsInChildren<Text>().Single(t=>t.name=="HomeStats").text);
+                StringAssert.Contains("HP 105/105",home);StringAssert.Contains("11",home);
+                if(outcome==RunReturnOutcome.Cleared)StringAssert.Contains("ホゾンズミ",home);
+                else {StringAssert.DoesNotContain("+0",home);StringAssert.DoesNotContain("ウシナ",home);StringAssert.DoesNotContain("ホゾンズミ",home);}
+                Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(t=>t.name=="AwardSummary"||t.name=="AwardCards"));
+                root.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDeparture").onClick.Invoke();Assert.AreEqual(1,departures);
+                Assert.AreEqual(100,profile.Experience);Assert.AreEqual(7,profile.Tokens);Assert.AreEqual(4,profile.Revision);Assert.IsEmpty(profile.Owned);
+            }finally{if(view!=null)typeof(ClearReturnView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Object.DestroyImmediate(root);}
+        }
+
         [TestCase("敗北して帰還しました","ハイボクシテキカンシマシタ")]
         [TestCase("総経験値 0 / 永続所持カード / 装備 / トークン交換所 / カード図鑑","ソウケイケンチ 0 / エイゾクショジカード / ソウビ / トークンコウカンジョ / カードズカン")]
         [TestCase("基本 / 無属性 / 再出撃 / 前へ / 次へ","キホン / ムゾクセイ / サイシュツゲキ / マエヘ / ツギヘ")]
