@@ -118,6 +118,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
         private void ExecuteCardEffect(BattleContext context)
         {
+            using (var influence = new AttackInfluence()) ExecuteHitbox(context.WithInfluence(influence));
+        }
+
+        private void ExecuteHitbox(BattleContext context)
+        {
             var card = context.UsedCard;
             if (productBomb) { RegisterProductBomb(context); return; }
             foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
@@ -198,7 +203,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
                         long hitsBefore = target.TotalHitsTaken;
                         long damageBefore = target.TotalDamageTaken;
-                        target.TakeDamage(finalDamage, finalElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs,hitStopFrames);
+                        target.TakeDamage(finalDamage, finalElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs,hitStopFrames,context.Influence);
                         if (target.TotalHitsTaken > hitsBefore) hitTargets.Add(target);
 
                         // 実際にダメージが入った場合
@@ -211,7 +216,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 else
                 {
                     // 派生効果がない場合は通常のダメージ処理
-                    DealDamageToTargets(targets, finalDamage, finalElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, finalDamage, finalElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                 }
                 // 同一マスの全員へ地形補正を判定した後に燃やす。耐性100%でも消費する。
                 foreach (var panel in burningPanels)
@@ -388,63 +393,63 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 case AdditionalEffectType.MultiHit:
                     // 多段ヒット効果
                     int hitCount = effect.HitCount > 0 ? effect.HitCount : 3;
-                    DealMultiHitDamage(targets, damage, element, hitCount, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, effect.HitInvincibilityStages);
+                    DealMultiHitDamage(targets, damage, element, hitCount, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, effect.HitInvincibilityStages, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelIce:
                     // パネル変化: Ice
                     ApplyPanelChange(context, targets, PanelType.Ice);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelMagma:
                     // パネル変化: Magma
                     ApplyPanelChange(context, targets, PanelType.Magma);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelGrass:
                     // パネル変化: Grass
                     ApplyPanelChange(context, targets, PanelType.Grass);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelCracked:
                     // パネル変化: Cracked
                     ApplyPanelChange(context, targets, PanelType.Cracked);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelHole:
                     // パネル変化: Hole
                     ApplyPanelChange(context, targets, PanelType.Hole);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 // ========== 全パネル変化 ==========
                 case AdditionalEffectType.PanelIceAll:
                     ApplyPanelChangeAll(context, PanelType.Ice);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelMagmaAll:
                     ApplyPanelChangeAll(context, PanelType.Magma);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelGrassAll:
                     ApplyPanelChangeAll(context, PanelType.Grass);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelCrackedAll:
                     ApplyPanelChangeAll(context, PanelType.Cracked);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 case AdditionalEffectType.PanelHoleAll:
                     ApplyPanelChangeAll(context, PanelType.Hole);
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
 
                 // ========== 遅延効果 ==========
@@ -455,7 +460,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     break;
 
                 default:
-                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                    DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                     break;
             }
         }
@@ -498,7 +503,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             var burningPanels = element == ElementType.Fire
                 ? hitPanels.Where(p => context.Field.GetPanelType(p) == PanelType.Grass).ToArray()
                 : new Vector2Int[0];
-            DealDamageToTargets(new List<Enemy>(affectedEnemies), damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+            DealDamageToTargets(new List<Enemy>(affectedEnemies), damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
             // 拡散の全対象へ補正を判定した後、敵がいない命中マスも含めて燃やす。
             foreach (var panel in burningPanels)
                 if (context.Field.GetPanelType(panel) == PanelType.Grass)
@@ -518,7 +523,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                         burningPanels.Add(panel);
                 }
             }
-            DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+            DealDamageToTargets(targets, damage, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
             // 通過する全対象に地形補正を判定した後、空マスも含めて燃焼する。
             foreach (var panel in burningPanels)
                 if (context.Field.GetPanelType(panel) == PanelType.Grass)
@@ -548,13 +553,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 対象リストにダメージを与える
         /// </summary>
-        private void DealDamageToTargets(List<Enemy> targets, int damage, ElementType element, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs)
+        private void DealDamageToTargets(List<Enemy> targets, int damage, ElementType element, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, AttackInfluence influence)
         {
             foreach (var target in targets)
             {
                 if (!target.IsDead)
                 {
-                    target.TakeDamage(damage, element, properties, poiseDamage, hitInvincibilityMs,hitStopFrames);
+                    target.TakeDamage(damage, element, properties, poiseDamage, hitInvincibilityMs,hitStopFrames,influence);
                 }
             }
         }
@@ -562,7 +567,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 多段ヒットダメージを与える
         /// </summary>
-        private void DealMultiHitDamage(List<Enemy> targets, int damagePerHit, ElementType element, int hitCount, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, bool[] hitInvincibilityStages)
+        private void DealMultiHitDamage(List<Enemy> targets, int damagePerHit, ElementType element, int hitCount, AttackProperty properties, int? poiseDamage, int hitInvincibilityMs, bool[] hitInvincibilityStages, AttackInfluence influence)
         {
             foreach (var target in targets)
             {
@@ -571,7 +576,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     if (!target.IsDead)
                     {
                         int duration = hitInvincibilityStages == null || hitInvincibilityStages[i] ? hitInvincibilityMs : 0;
-                        target.TakeDamage(damagePerHit, element, properties, poiseDamage, duration,hitStopFrames);
+                        target.TakeDamage(damagePerHit, element, properties, poiseDamage, duration,hitStopFrames,influence);
                     }
                 }
             }
@@ -850,7 +855,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 ExecuteAction = () =>
                 {
                     // 着弾時の処理
-                    ExecuteProjectileLanding(context, effect, targetPosition);
+                    using (var influence = new AttackInfluence())
+                        ExecuteProjectileLanding(context.WithInfluence(influence), effect, targetPosition);
                 },
                 OnCancelled = () =>
                 {
@@ -887,7 +893,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 var element = context.UsedCard.GetFinalElement();
                 bool burnsGrass = element == ElementType.Fire && context.Field.IsInBounds(landingPosition)
                     && context.Field.GetPanelType(landingPosition) == PanelType.Grass;
-                DealDamageToTargets(landingTargets, context.UsedCard.Power, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                DealDamageToTargets(landingTargets, context.UsedCard.Power, element, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, context.Influence);
                 // 着弾時の全対象を判定してから燃焼。直接攻撃は空の着弾マスにも当たる。
                 if (burnsGrass && context.Field.GetPanelType(landingPosition) == PanelType.Grass)
                     context.Field.ChangePanelType(landingPosition, PanelType.Normal);

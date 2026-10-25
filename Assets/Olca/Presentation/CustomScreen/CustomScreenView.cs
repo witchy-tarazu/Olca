@@ -220,6 +220,7 @@ namespace Olca.Presentation.CustomScreen
 
         public void Initialize(CustomScreenSystem customScreen)
         {
+            StopHandPresentation();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
             foreach(var text in GetComponentsInChildren<Text>(true))text.color=Color.white;
             Olca.Presentation.Dungeon.UiLook.Button(confirmButton);
@@ -383,9 +384,17 @@ namespace Olca.Presentation.CustomScreen
         private int lastDetailsCloseFrame=-1;
         private GameObject detailsPanel,padGuidePanel;private Text padDetailsText,padGuide;private ScrollRect padDetailsScroll;
         private void ResetCustomPad(bool resetFocus=true){foreach(var hold in touchDetailHolds)hold.CancelPress();padViewVersion++;gamepadInput?.Reset();if(resetFocus)padTransformationIndex=-1;ClosePadDetails();SetScreenVisibility(true);}
-        private void OnEnable(){Canvas.preWillRenderCanvases+=RefreshKana;if(customScreen!=null&&customScreen.IsOpen)Olca.Unity.BattleVisualClock.SetPaused(this,true);}
+        private void OnEnable()
+        {
+            Canvas.preWillRenderCanvases+=RefreshKana;
+            if(customScreen!=null&&customScreen.IsOpen){
+                Olca.Unity.BattleVisualClock.SetPaused(this,true);
+                // 無効化前のタスクを再利用せず、現在の手札から表示を作り直す。
+                if(cursor!=null&&handCardPrefab!=null)RefreshHandCardViews();
+            }
+        }
         private void RefreshKana(){foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);}
-        private void OnDisable(){Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
+        private void OnDisable(){StopHandPresentation();Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
         private bool HandleCustomGamepad()
         {
             if(gamepadInput==null)return false;var commands=gamepadInput.Read();
@@ -699,7 +708,21 @@ namespace Olca.Presentation.CustomScreen
             if (inputHand.Count == 0) cursor.MoveToConfirmButton();
         }
 
-        private void OnBattleScreenClosed(List<Card> cards) => Olca.Unity.BattleVisualClock.SetPaused(this,false);
+        // スライドアウト開始・論理終了・再表示・破棄で同じ所有タスクを終了する。
+        public void StopHandPresentation()
+        {
+            var previous = animationCts;
+            animationCts = null;
+            previous?.Cancel();
+            previous?.Dispose();
+            handAnimating = false;
+        }
+
+        private void OnBattleScreenClosed(List<Card> cards)
+        {
+            StopHandPresentation();
+            Olca.Unity.BattleVisualClock.SetPaused(this,false);
+        }
 
         private void OnScreenOpened(List<Card> hand)
         {
@@ -711,7 +734,7 @@ namespace Olca.Presentation.CustomScreen
             if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);
             if (selectedCardDescription != null) selectedCardDescription.text = "カードを選択してください";
             // 前回のアニメーションをキャンセル
-            animationCts?.Cancel();
+            StopHandPresentation();
             animationCts = new CancellationTokenSource();
 
             // 既存の手札Viewをクリア
@@ -725,7 +748,7 @@ namespace Olca.Presentation.CustomScreen
             InitializeInputHand(hand);
             handAnimating = true;
             // 新しい手札View生成（アニメーション付き）
-            AnimateCardsShootAsync(hand, animationCts.Token).Forget();
+            if (isActiveAndEnabled) AnimateCardsShootAsync(new List<Card>(hand), animationCts.Token).Forget();
 
             // カーソルは非表示（アニメーション完了後に表示）
             if (cursorIndicator != null)
@@ -751,6 +774,7 @@ namespace Olca.Presentation.CustomScreen
         {
             for (int i = 0; i < hand.Count; i++)
             {
+                ct.ThrowIfCancellationRequested();
                 var card = hand[i];
                 var cardObj = Instantiate(handCardPrefab, handCardContainer);
                 var cardView = cardObj.GetComponent<HandCardView>();
@@ -782,6 +806,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private async UniTask AnimateCardShootAsync(HandCardView cardView, int index, CancellationToken ct)
         {
+            ct.ThrowIfCancellationRequested();
             var rectTransform = cardView.GetComponent<RectTransform>();
             Vector2 targetPos = GetCardPosition(index);
 
@@ -1214,7 +1239,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void RefreshHandCardViews()
         {
-            animationCts?.Cancel();
+            StopHandPresentation();
             foreach (var view in handCardViews)
                 Destroy(view.gameObject);
             handCardViews.Clear();
@@ -1496,6 +1521,7 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnConfirmed(List<Card> selectedCards)
         {
+            StopHandPresentation();
             ResetCustomPad();
             customizeSelectedCards.Clear();
             if (customizeModeView != null) customizeModeView.Exit();
@@ -1517,13 +1543,13 @@ namespace Olca.Presentation.CustomScreen
             BindTransformations(null);
             if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
             // アニメーション用CancellationTokenをキャンセル
-            animationCts?.Cancel();
-            animationCts?.Dispose();
+            StopHandPresentation();
 
             if (customScreen != null)
             {
                 customScreen.OnScreenOpened -= OnScreenOpened;
                 customScreen.OnScreenClosed -= OnBattleScreenClosed;
+                customScreen.OnHandChanged -= OnHandChanged;
                 customScreen.OnConfirmed -= OnConfirmed;
                 customScreen.OnExceeded -= OnCustomizeOperationCompleted;
                 customScreen.OnTuned -= OnCustomizeOperationCompleted;
@@ -1555,12 +1581,16 @@ namespace Olca.Presentation.CustomScreen
         private static System.Collections.Generic.Dictionary<string,string> CreateReadings()
         {
             var result=new System.Collections.Generic.Dictionary<string,string>();
-            foreach(var entry in "不正=フセイ|付与=フヨ|以上=イジョウ|位置=イチ|使用=シヨウ|使用予定=シヨウヨテイ|使用済=シヨウズ|別=ベツ|前方=ゼンポウ|加工=カコウ|加工切替=カコウキリカエ|取消=トリケシ|合=ア|回復=カイフク|固有攻撃=コユウコウゲキ|土=ツチ|壁=カベ|変身=ヘンシン|威力=イリョク|実行=ジッコウ|実行不可=ジッコウフカ|対象=タイショウ|専用=センヨウ|属性=ゾクセイ|弱点=ジャクテン|強化効果=キョウカコウカ|強靭度削=キョウジンドケズ|必要=ヒツヨウ|戻=モド|手札=テフダ|手札上限=テフダジョウゲン|押下=オウカ|攻撃=コウゲキ|方向=ホウコウ|既存=キソン|時間定義=ジカンテイギ|最初=サイショ|未定義=ミテイギ|本絵=ホンエ|枚目=マイメ|枚選=マイエラ|枚選択中=マイセンタクチュウ|水=ミズ|火=ヒ|炎属性攻撃=ホノオゾクセイコウゲキ|現在=ゲンザイ|用=ヨウ|確定=カクテイ|秒=ビョウ|移動=イドウ|範囲攻撃=ハンイコウゲキ|素材=ソザイ|組=ク|結果=ケッカ|融合=ユウゴウ|要素=ヨウソ|解除=カイジョ|設定=セッテイ|詳細=ショウサイ|調律=チョウリツ|超越=チョウエツ|通常=ツウジョウ|選=エラ|選択=センタク|選択中=センタクチュウ|配置=ハイチ|重複=チョウフク|閉=ト|防御=ボウギョ|風=カゼ|一度=イチド|上位=ジョウイ|上限=ジョウゲン|仮選択=カリセンタク|初回手札=ショカイテフダ|別々=ベツベツ|回=カイ|変身定義=ヘンシンテイギ|復元=フクゲン|性能=セイノウ|戦闘=セントウ|指定=シテイ|最大=サイダイ|最大選択枚数=サイダイセンタクマイスウ|枚=マイ|枚固定=マイコテイ|残=ノコ|画面状態=ガメンジョウタイ|確定後=カクテイゴ|融合先=ユウゴウサキ|超=コ|開始前=カイシマエ|中=チュウ|離=ハナ|再押下=サイオウカ|短押=タンオ|長押=ナガオ|再開=サイカイ|停止=テイシ|完了=カンリョウ|発動=ハツドウ|中断=チュウダン|待機=タイキ|説明=セツメイ|出撃=シュツゲキ|出発=シュッパツ|所持=ショジ|編成=ヘンセイ|新規=シンキ|攻略=コウリャク|開始=カイシ|試作=シサク|保存=ホゾン|続行=ゾッコウ|未設定=ミセッテイ|通貨=ツウカ|獲得=カクトク|未割当=ミワリアテ|左=ヒダリ|右=ミギ|上=ウエ|下=シタ|十字=ジュウジ|自動=ジドウ|前進=ゼンシン|階=カイ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
+            foreach(var entry in "不正=フセイ|付与=フヨ|以上=イジョウ|位置=イチ|使用=シヨウ|使用予定=シヨウヨテイ|使用済=シヨウズ|別=ベツ|前方=ゼンポウ|加工=カコウ|加工切替=カコウキリカエ|取消=トリケシ|合=ア|回復=カイフク|固有攻撃=コユウコウゲキ|土=ツチ|壁=カベ|変身=ヘンシン|威力=イリョク|実行=ジッコウ|実行不可=ジッコウフカ|対象=タイショウ|専用=センヨウ|属性=ゾクセイ|弱点=ジャクテン|強化効果=キョウカコウカ|強靭度削=キョウジンドケズ|必要=ヒツヨウ|戻=モド|手札=テフダ|手札上限=テフダジョウゲン|押下=オウカ|攻撃=コウゲキ|方向=ホウコウ|既存=キソン|時間定義=ジカンテイギ|最初=サイショ|未定義=ミテイギ|本絵=ホンエ|枚目=マイメ|枚選=マイエラ|枚選択中=マイセンタクチュウ|水=ミズ|火=ヒ|炎属性攻撃=ホノオゾクセイコウゲキ|現在=ゲンザイ|用=ヨウ|確定=カクテイ|秒=ビョウ|移動=イドウ|範囲攻撃=ハンイコウゲキ|素材=ソザイ|組=ク|結果=ケッカ|融合=ユウゴウ|要素=ヨウソ|解除=カイジョ|設定=セッテイ|詳細=ショウサイ|調律=チョウリツ|超越=チョウエツ|通常=ツウジョウ|選=エラ|選択=センタク|選択中=センタクチュウ|配置=ハイチ|重複=チョウフク|閉=ト|防御=ボウギョ|風=カゼ|一度=イチド|上位=ジョウイ|上限=ジョウゲン|仮選択=カリセンタク|初回手札=ショカイテフダ|別々=ベツベツ|回=カイ|変身定義=ヘンシンテイギ|復元=フクゲン|性能=セイノウ|戦闘=セントウ|指定=シテイ|最大=サイダイ|最大選択枚数=サイダイセンタクマイスウ|枚=マイ|枚固定=マイコテイ|残=ノコ|画面状態=ガメンジョウタイ|確定後=カクテイゴ|融合先=ユウゴウサキ|超=コ|開始前=カイシマエ|中=チュウ|離=ハナ|再押下=サイオウカ|短押=タンオ|長押=ナガオ|再開=サイカイ|停止=テイシ|完了=カンリョウ|発動=ハツドウ|中断=チュウダン|待機=タイキ|説明=セツメイ|出撃=シュツゲキ|出発=シュッパツ|所持=ショジ|編成=ヘンセイ|新規=シンキ|攻略=コウリャク|開始=カイシ|試作=シサク|保存=ホゾン|続行=ゾッコウ|未設定=ミセッテイ|敗北=ハイボク|撤退=テッタイ|帰還=キカン|総経験値=ソウケイケンチ|経験値=ケイケンチ|永続=エイゾク|装備=ソウビ|図鑑=ズカン|交換所=コウカンジョ|交換=コウカン|成長=セイチョウ|保持=ホジ|基本=キホン|無属性=ムゾクセイ|再=サイ|失=ウシナ|前回=ゼンカイ|次回=ジカイ|前=マエ|次=ツギ|通貨=ツウカ|獲得=カクトク|未割当=ミワリアテ|左=ヒダリ|右=ミギ|上=ウエ|下=シタ|十字=ジュウジ|自動=ジドウ|前進=ゼンシン|階=カイ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
+            foreach(var entry in "続=ツヅ|演出=エンシュツ|音量=オンリョウ|文字表示=モジヒョウジ|標準=ヒョウジュン|短縮=タンシュク|即時=ソクジ|速=ハヤ|失敗=シッパイ|再試行=サイシコウ|消去=ショウキョ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
+            foreach(var entry in "保存済=ホゾンズ|反映=ハンエイ|反映済=ハンエイズ|不可=フカ|予定=ヨテイ|超過変換=チョウカヘンカン|帰還後=キカンゴ|状態=ジョウタイ|全回復=ゼンカイフク".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
             return result;
         }
         public static string Katakana(string text)
         {
             if(string.IsNullOrEmpty(text))return text;
+            // 送り仮名込みで読む語だけ先に扱い、単漢字の多義な読みを増やさない。
+            text=text.Replace("持ち帰","モチカエ").Replace("同じ","オナジ");
             text=System.Text.RegularExpressions.Regex.Replace(text,@"[一-鿿々]+",m=>{
                 var result=new System.Text.StringBuilder();
                 for(int i=0;i<m.Value.Length;){bool found=false;

@@ -282,11 +282,15 @@ namespace Olca.Unity
             eventState = BuildState();
             events.Add(new TimestampedLogicalInput(System.Diagnostics.Stopwatch.GetTimestamp(), eventState.Copy()));
         }
+        public event System.Action OnGamepadDisconnected;
         private void DeviceChanged(InputDevice device, InputDeviceChange change)
         {
             if (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected ||
                 change == InputDeviceChange.Disabled || change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
                 QueueSnapshot();
+            // Disabledはフォーカス喪失でも届くため、物理切断の通知と区別する。
+            if (device is Gamepad && (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected))
+                OnGamepadDisconnected?.Invoke();
         }
         private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
         private Olca.Core.Logic.Integration.LogicalInput BuildState()

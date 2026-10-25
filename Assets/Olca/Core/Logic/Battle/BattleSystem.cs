@@ -97,6 +97,19 @@ namespace Olca.Core.Logic.Battle
         internal long ActionFrame => actionFrame;
         /// <summary>表示が参照する戦闘の論理時刻。停止中は進まない。</summary>
         public long LogicalFrame => actionFrame;
+        private readonly SimultaneousKillCounter simultaneousKills = new SimultaneousKillCounter();
+        public int EnemyKillCount => simultaneousKills.KillCount;
+        /// <summary>HP被弾数ではなく、実際に成立した強靭度の中断回数。麻痺の強制成立も含む。</summary>
+        public int PlayerStaggerCount { get; private set; }
+        public int MaximumSimultaneousKills => simultaneousKills.Maximum;
+        public int SimultaneousKillGraceFrames => simultaneousKills.GraceFrames;
+        /// <summary>計測開始前の調整入口。停止時間を除く戦闘の論理フレームだけを使用する。</summary>
+        public void ConfigureSimultaneousKillGraceFrames(int frames)
+        {
+            if (frames < 0) throw new ArgumentOutOfRangeException(nameof(frames));
+            if (actionFrame != 0 || EnemyKillCount != 0 || IsGameOver) throw new InvalidOperationException("同時撃破猶予は戦闘の計測開始前に設定してください");
+            simultaneousKills.GraceFrames = frames;
+        }
         private int resolutionDepth;
         private bool resolutionRequested;
 
@@ -341,6 +354,8 @@ namespace Olca.Core.Logic.Battle
             Action handler = null;
             handler = () =>
             {
+                // HP0確定後に敵個体を一度だけ数え、最終撃破も勝敗通知より前に反映する。
+                simultaneousKills.Record(enemy, actionFrame, enemy.DeathImpact);
                 // HP0は占有から既に除外されている。再通知で破壊を繰り返さない。
                 enemy.OnPositionChanged -= moved;
                 enemy.OnDeath -= handler;
@@ -363,7 +378,7 @@ namespace Olca.Core.Logic.Battle
             RegisterEnemy(summon, actions);
             enemies.Add(summon);
             if (statusFrameParticipants != null)
-            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(); summon.BeginHpFrame(); }
+            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(!IsPaused); summon.BeginHpFrame(); }
             OnSummonAdded?.Invoke(summon);
         }
 
@@ -389,7 +404,7 @@ namespace Olca.Core.Logic.Battle
             statusFrameParticipants = participants;
             BeginResolution();
             player.BeginHpFrame();
-            foreach (var enemy in participants) { enemy.BeginStatusFrame(); enemy.BeginHpFrame(); }
+            foreach (var enemy in participants) { enemy.BeginStatusFrame(!IsPaused); enemy.BeginHpFrame(); }
             try
             {
                 if (player.BeginParalysisFrame(!IsPaused)) { cardUsage.InterruptCurrentCard(); InterruptBasicAction(); playerMovement.InterruptNormalMove(); }
@@ -534,7 +549,8 @@ namespace Olca.Core.Logic.Battle
             try
             {
                 int damage = (int)Math.Min(int.MaxValue, (decimal)player.AttackPower * powerPercent / 100);
-                target.TakeDamage(damage, ActivePlayerAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs);
+                using (var influence = new AttackInfluence())
+                    target.TakeDamage(damage, ActivePlayerAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs, influence: influence);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
                 OnPlayerAttack?.Invoke(target, damage);
@@ -684,6 +700,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnPlayerStaggered()
         {
+            PlayerStaggerCount++;
             cardUsage.InterruptCurrentCard();
             InterruptBasicAction();
             playerMovement.InterruptNormalMove();
@@ -764,6 +781,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            simultaneousKills.Finish();
             hitStopRemainingFrames=pendingHitStopFrames=0;
             darkeningEffects.Clear();
             panelEffects.Clear();
@@ -876,4 +894,48 @@ namespace Olca.Core.Logic.Battle
 namespace Olca.Core.Logic.Battle
 {
     public enum DarkeningSide { Player, Opponent }
+}
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>起点を延長しない撃破組。組同士を結合せず最大数だけを保持する。</summary>
+    internal sealed class SimultaneousKillCounter
+    {
+        private sealed class Group
+        {
+            public long FirstFrame;
+            public int Count;
+            public readonly System.Collections.Generic.HashSet<AttackInfluence> Influences = new System.Collections.Generic.HashSet<AttackInfluence>();
+        }
+        private readonly System.Collections.Generic.List<Group> groups = new System.Collections.Generic.List<Group>();
+        private readonly System.Collections.Generic.HashSet<Enemy> killed = new System.Collections.Generic.HashSet<Enemy>();
+        private bool finished;
+        public int GraceFrames { get; set; } = 6;
+        public int KillCount { get; private set; }
+        public int Maximum { get; private set; }
+        public void Record(Enemy enemy, long frame, AttackImpact impact)
+        {
+            if (finished || !killed.Add(enemy)) return;
+            KillCount++;
+            bool joined = false;
+            foreach (var group in groups) {
+                bool inWindow = frame - group.FirstFrame <= GraceFrames;
+                bool sameLiveHitbox = impact.WasActive && group.Influences.Contains(impact.Influence);
+                if (!inWindow && !sameLiveHitbox) continue;
+                Add(group, impact); joined = true;
+            }
+            if (!joined) {
+                var group = new Group { FirstFrame = frame };
+                groups.Add(group); Add(group, impact);
+            }
+        }
+        private void Add(Group group, AttackImpact impact)
+        {
+            group.Count++;
+            if (impact.WasActive) group.Influences.Add(impact.Influence);
+            Maximum = System.Math.Max(Maximum, group.Count);
+        }
+        public void Finish()
+        { finished = true; groups.Clear(); killed.Clear(); }
+    }
 }

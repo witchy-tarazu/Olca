@@ -46,9 +46,16 @@ namespace Olca.Presentation.CustomScreen
         public Card Card { get; private set; }
         private CustomScreenView parentView;
         private CancellationTokenSource destroyCts;
+        private bool destroyed;
+        private bool initialized;
 
-        private void Awake()
+        private void Awake() => EnsureInitialized();
+
+        // 非アクティブな親の下ではAwakeより先にInitializeが呼ばれる。
+        private void EnsureInitialized()
         {
+            if (destroyed || initialized) return;
+            initialized = true;
             destroyCts = new CancellationTokenSource();
 
             // CardEffectViewが未設定なら自動で追加
@@ -69,6 +76,8 @@ namespace Olca.Presentation.CustomScreen
 
         public void Initialize(Card card, CustomScreenView parent)
         {
+            EnsureInitialized();
+            if (destroyed) return;
             this.Card = card;
             this.parentView = parent;
 
@@ -82,8 +91,11 @@ namespace Olca.Presentation.CustomScreen
             costText.color=Color.white;
 
             // クリックイベント
-            cardButton.onClick.AddListener(() => parentView.OnCardClicked(card));
+            cardButton.onClick.RemoveListener(OnCardClicked);
+            cardButton.onClick.AddListener(OnCardClicked);
         }
+
+        private void OnCardClicked() => parentView.OnCardClicked(Card);
 
         public void RefreshArtwork()
         {
@@ -95,7 +107,8 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         public void UpdateSelection(bool isSelected)
         {
-            if (destroyCts.IsCancellationRequested) return;
+            EnsureInitialized();
+            if (destroyed || destroyCts.IsCancellationRequested) return;
 
             // エフェクトが有効な場合はアニメーション実行
             if (cardEffectView != null)
@@ -121,7 +134,8 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         public void UpdateHighlight(CardHighlightType type)
         {
-            if (destroyCts.IsCancellationRequested) return;
+            EnsureInitialized();
+            if (destroyed || destroyCts.IsCancellationRequested) return;
 
             if (cardEffectView != null)
             {
@@ -211,7 +225,8 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         public async UniTask PlayConfirmEffectAsync()
         {
-            if (cardEffectView != null && !destroyCts.IsCancellationRequested)
+            EnsureInitialized();
+            if (!destroyed && cardEffectView != null && !destroyCts.IsCancellationRequested)
             {
                 await cardEffectView.PlayConfirmFlashAsync(destroyCts.Token);
             }
@@ -222,13 +237,15 @@ namespace Olca.Presentation.CustomScreen
 
         private void OnDestroy()
         {
+            destroyed = true;
             if (cardButton != null)
             {
-                cardButton.onClick.RemoveAllListeners();
+                cardButton.onClick.RemoveListener(OnCardClicked);
             }
 
             destroyCts?.Cancel();
             destroyCts?.Dispose();
+            destroyCts = null;
         }
     }
 }

@@ -22,11 +22,24 @@ namespace Olca.Core.Logic.Integration
         private BattleSystem currentBattle;
         private GamePhase currentPhase;
         public bool IsUserPaused { get; private set; }
+        public bool IsBattleEndPresentationPending => dungeonSystem.PendingBattleEndPresentation.HasValue;
+        public BattleResult? LastBattleResult { get; private set; }
+        public void RequireBattleEndPresentation() => dungeonSystem.RequireBattleEndPresentation();
+        public event Action<BattleResult> OnBattleEndPresentationRequested;
+        public bool CompleteBattleEndPresentation()
+        {
+            var ending=currentBattle;var result=dungeonSystem.PendingBattleEndPresentation;
+            if(ending==null||!result.HasValue)return false;
+            LastBattleResult=result.Value;
+            if(!dungeonSystem.CompleteBattleEndPresentation())return false;
+            if(ReferenceEquals(currentBattle,ending)){currentBattle=null;OnBattleEnded?.Invoke();}
+            return true;
+        }
 
         /// <summary>ユーザー操作の停止だけを変更し、カスタム画面や遷移の停止は解除しない。</summary>
         public void SetUserPaused(bool paused)
         {
-            if (IsUserPaused == paused) return;
+            if (IsUserPaused == paused || (paused&&IsBattleEndPresentationPending)) return;
             IsUserPaused = paused;
             if (paused) currentBattle?.Pause(BattlePauseReason.User);
             else currentBattle?.Resume(BattlePauseReason.User);
@@ -149,7 +162,11 @@ namespace Olca.Core.Logic.Integration
             }
 
             // バトル終了イベント購読
-            currentBattle.OnBattleEnd += OnBattleEnd;
+            var started=currentBattle;
+            Action<BattleResult> ended=null;
+            ended=result=>{started.OnBattleEnd-=ended;if(ReferenceEquals(currentBattle,started))OnBattleEnd(result);};
+            started.OnBattleEnd+=ended;
+            LastBattleResult=null;
 
             // バトルフェーズに移行
             currentPhase = GamePhase.Battle;
@@ -169,11 +186,17 @@ namespace Olca.Core.Logic.Integration
         private void OnBattleEnd(BattleResult result)
         {
             logger?.LogInfo($"[DungeonBattleManager] バトル終了: {result}");
+            LastBattleResult=result;
+            if(IsBattleEndPresentationPending)
+            {
+                currentPhase=GamePhase.BattleOutcome;
+                OnBattleEndPresentationRequested?.Invoke(result);
+                return;
+            }
 
             // バトルシステムの購読解除・参照を破棄
             if (currentBattle != null)
             {
-                currentBattle.OnBattleEnd -= OnBattleEnd;
                 currentBattle = null;
             }
 
@@ -360,7 +383,10 @@ namespace Olca.Core.Logic.Integration
         DungeonCleared,
 
         /// <summary>ゲームオーバー</summary>
-        GameOver
+        GameOver,
+
+        /// <summary>勝敗確定後、表示の完了を待機。論理戦闘時間は進めない。</summary>
+        BattleOutcome
     }
 }
 

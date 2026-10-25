@@ -166,6 +166,7 @@ namespace Olca.Core.Domain
         internal long TotalDamageTaken { get; private set; }
         internal long TotalHitsTaken { get; private set; }
         internal bool HasPendingHpFrame => frameHp.Active;
+        internal AttackImpact DeathImpact { get; private set; }
         internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; pendingInvincibilityMs = 0; framePoiseDamage = 0; frameStaggered = false; }
         internal void CommitHpFrame()
         {
@@ -174,7 +175,8 @@ namespace Olca.Core.Domain
             if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
             pendingInvincibilityMs = 0;
             if (poiseRecovery.CommitFrame()) AccumulatedPoiseDamage = 0;
-            frameStaggered = ApplyPoise(framePoiseDamage);
+            frameStaggered = ApplyPoise(frameParalysisPoise ? Math.Max(framePoiseDamage, Poise ?? 0) : framePoiseDamage);
+            frameParalysisPoise = false;
             if (IsDead) ClearDeathReaction();
             framePoiseDamage = 0;
         }
@@ -198,6 +200,7 @@ namespace Olca.Core.Domain
         private readonly Dictionary<StatusEffectType, StatusEffect> statuses = new Dictionary<StatusEffectType, StatusEffect>();
         private StatusEffectType lastStatusType;
         private bool statusFrameOpen, frameParalyzed, frameConfused, frameBlind;
+        private bool paralysisPoisePending, frameParalysisPoise;
         private sealed class PoisonSlot
         {
             internal StatusEffect Status;
@@ -229,10 +232,12 @@ namespace Olca.Core.Domain
         private string lastPoisonKind = "poison";
         private readonly Dictionary<StatusEffectType, StatusEffect> pendingStatuses = new Dictionary<StatusEffectType, StatusEffect>();
         private readonly System.Collections.Generic.HashSet<StatusEffectType> pendingStatusClears = new System.Collections.Generic.HashSet<StatusEffectType>();
-        internal void BeginStatusFrame()
+        internal void BeginStatusFrame(bool advance = true)
         {
             if (statusFrameOpen) return;
             frameParalyzed = IsParalyzed; frameConfused = IsConfused; frameBlind = IsBlind;
+            frameParalysisPoise = advance && frameParalyzed && paralysisPoisePending;
+            if (advance) paralysisPoisePending = false;
             foreach (var slot in poisons.Values) slot.WasActive = slot.Status.RemainingFrames > 0;
             statusFrameOpen = true;
         }
@@ -366,13 +371,13 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int hitStopFrames = 0)
+        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int hitStopFrames = 0, AttackInfluence influence = null)
         {
             if (hitStopFrames < 0) throw new ArgumentOutOfRangeException(nameof(hitStopFrames));
             if (hitInvincibilityMs < 0) throw new ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
-            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs, hitStopFrames);
+            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs, hitStopFrames, influence);
         }
 
         /// <summary>回復量をHP集計へ加える。確定済みの死亡は復活させない。</summary>
@@ -388,7 +393,7 @@ namespace Olca.Core.Domain
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
-        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0, int hitStopFrames = 0)
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0, int hitStopFrames = 0, AttackInfluence influence = null)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -425,16 +430,17 @@ namespace Olca.Core.Domain
                 if(!poison&&finalDamage>0)RequestHitStop(hitStopFrames);
                 ReportCombatFeedback(CombatFeedbackKind.Damage, finalDamage);
                 bool killedByThisHit = false;
+                var killImpact = new AttackImpact(influence);
                 if (frameHp.Active)
                 {
-                    if (!poison) frameHp.Damage(finalDamage);
+                    if (!poison) frameHp.Damage(finalDamage, () => DeathImpact = killImpact);
                 }
                 else
                 {
                     currentHp = Math.Max(0, currentHp - finalDamage);
                     // 通知内の別攻撃による死亡を、この攻撃から二重通知しない。
                     killedByThisHit = IsDead;
-                    if (killedByThisHit) ClearDeathReaction();
+                    if (killedByThisHit) { DeathImpact = killImpact; ClearDeathReaction(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
                 bool staggered = false;
@@ -518,13 +524,19 @@ namespace Olca.Core.Domain
                     slot.Status = status;
                 }
                 lastPoisonKind = status.PoisonKind;
-            } else statuses[status.Type] = status;
+            } else {
+                statuses[status.Type] = status;
+                if (status.Type == StatusEffectType.Paralyze) paralysisPoisePending = true;
+            }
             lastStatusType = status.Type;
         }
         private void RemoveStatus(StatusEffectType type)
         {
             if (type == StatusEffectType.Poison) { poisons.Clear(); pendingPoisons.Clear(); }
-            else statuses.Remove(type);
+            else {
+                statuses.Remove(type);
+                if (type == StatusEffectType.Paralyze) paralysisPoisePending = false;
+            }
         }
 
         /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。</summary>
@@ -642,5 +654,24 @@ namespace Olca.Core.Domain
         {
             return !(a == b);
         }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>一つの攻撃判定の個体と寿命。カードIDや描画オブジェクトを識別子にしない。</summary>
+    public sealed class AttackInfluence : System.IDisposable
+    {
+        public bool IsActive { get; private set; } = true;
+        public void Dispose() => IsActive = false;
+    }
+
+    // HPの一括確定前に判定が終了しても、実際の命中時に存続していた事実は失わない。
+    internal readonly struct AttackImpact
+    {
+        public AttackInfluence Influence { get; }
+        public bool WasActive { get; }
+        public AttackImpact(AttackInfluence influence)
+        { Influence = influence; WasActive = influence != null && influence.IsActive; }
     }
 }

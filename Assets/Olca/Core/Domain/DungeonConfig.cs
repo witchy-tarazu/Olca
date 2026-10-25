@@ -270,3 +270,35 @@ namespace Olca.Core.Domain
 }
 
 namespace Olca.Core.Domain { public sealed class CheckpointTerrainStateDto { public int Cell; public PanelType Type; } }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>出撃前に既存の全階層定義だけから読む情報。敵・地形・乱数・保存を変更しない。</summary>
+    public sealed class DungeonDeparturePreview
+    {
+        public System.Collections.Generic.IReadOnlyList<ElementType> EnemyElements { get; }
+        public System.Collections.Generic.IReadOnlyList<PanelType> TerrainTypes { get; }
+        public DungeonDeparturePreview(System.Collections.Generic.IEnumerable<DungeonConfig> maps)
+        {
+            if (maps == null) throw new System.ArgumentNullException(nameof(maps));
+            var snapshot = System.Linq.Enumerable.ToArray(maps);
+            if (snapshot.Length == 0 || System.Linq.Enumerable.Any(snapshot, m => m == null))
+                throw new System.ArgumentException("全階層の既存定義が必要です", nameof(maps));
+            EnemyElements = System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(System.Linq.Enumerable.OrderBy(
+                System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(
+                    System.Linq.Enumerable.Where(System.Linq.Enumerable.SelectMany(snapshot, m => m.MapCells), c => c?.Enemy != null && !c.Enemy.IsSummoned), c => c.Enemy.Element)), e => (int)e)));
+            var counts = new System.Collections.Generic.Dictionary<PanelType,long>();
+            foreach (var map in snapshot) {
+                long normal = map.TotalCellCount;
+                foreach (var terrain in map.ExplorationTerrain) {
+                    if (terrain.Type == PanelType.Normal) continue;
+                    normal--;
+                    counts[terrain.Type] = (counts.TryGetValue(terrain.Type, out var old) ? old : 0) + 1;
+                }
+                if (normal > 0) counts[PanelType.Normal] = (counts.TryGetValue(PanelType.Normal, out var old) ? old : 0) + normal;
+            }
+            TerrainTypes = System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(
+                System.Linq.Enumerable.ThenBy(System.Linq.Enumerable.OrderByDescending(counts, p => p.Value), p => (int)p.Key), p => p.Key)));
+        }
+    }
+}

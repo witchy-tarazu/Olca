@@ -516,6 +516,8 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
+            if(outcomePlayerColor.HasValue&&playerSprite!=null)playerSprite.color=outcomePlayerColor.Value;
+            outcomePlayerColor=null;
             RestoreEnemyPerception();
             ClearTerrainVisuals(); ClearObstacleVisuals(); ClearVisitVisuals();
             ApplyCharacterDisplayOffset();
@@ -669,7 +671,7 @@ namespace Olca.Presentation.Field
 
             // 全敵スプライトをバトルグリッド座標に切り替え
             foreach (var view in enemyViews)
-                view?.OnBattleStarted(battleGridView);
+                view?.OnBattleStarted(battleGridView, battle.Enemies.Contains(view.TrackedEnemy));
         }
 
         /// <summary>
@@ -678,6 +680,29 @@ namespace Olca.Presentation.Field
         /// - 生きている敵スプライトをダンジョン座標モードに戻す
         /// - カメラ追従を再開
         /// </summary>
+        private Color? outcomePlayerColor;
+        [SerializeField,Min(0f)] private float defeatFadeDuration=.3f;
+        public async UniTask PlayBattleOutcomeAsync(BattleResult result,CancellationToken ct)
+        {
+            if(result==BattleResult.Victory)
+            {
+                var tasks=new System.Collections.Generic.List<UniTask>();
+                foreach(var view in enemyViews)
+                    if(view!=null&&view.TrackedEnemy!=null&&view.TrackedEnemy.IsDead)tasks.Add(view.WaitForDeathPresentationAsync(true,ct));
+                await UniTask.WhenAll(tasks);
+                return;
+            }
+            StopPlayerDamageFeedback(false);
+            if(playerSprite==null)return;
+            outcomePlayerColor=playerSprite.color;var initial=playerSprite.color;float elapsed=0f;
+            while(elapsed<defeatFadeDuration)
+            {
+                elapsed+=Olca.Unity.GameplayPause.DeltaTime;
+                var color=initial;color.a=initial.a*(1f-Mathf.Clamp01(elapsed/defeatFadeDuration));playerSprite.color=color;
+                await Olca.Unity.GameplayPause.NextFrame(ct);
+            }
+        }
+
         public void OnBattleEnded()
         {
             ClearBombVisuals();
@@ -931,7 +956,7 @@ namespace Olca.Presentation.Field
                 currentBattle.OnSummonAdded -= OnSummonAdded;
                 currentBattle.OnBattleEnd -= OnSummonBattleEnd;
             }
-            ClearSummonViews();
+            // 末尾の召喚も終端演出の待機対象に残し、OnBattleEndedで一度だけ破棄する。
         }
 
         private void ClearSummonViews()

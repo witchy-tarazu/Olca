@@ -152,6 +152,9 @@ namespace Olca.Core.Domain
             paralysisFrameOpen = true; frameParalyzed = paralysisTimer.IsActive;
             bool interrupt = advance && frameParalyzed && paralysisInterruptPending;
             if (advance) paralysisInterruptPending = false;
+            // 麻痺が有効化した次フレームに強靭度を削り切る。
+            // 通常の削りと同じ終端判定へ集約し、付与/解除しただけのフレームでは中断しない。
+            if (interrupt) { framePoiseHit = true; frameForceStagger = true; }
             return interrupt;
         }
         internal void TickParalysis(int ms, bool logical)
@@ -719,9 +722,11 @@ namespace Olca.Core.Domain
         {
             if (Active) throw new InvalidOperationException("HPフレームが既に開始されています");
             initialHp = hp; damage = healing = poison = 0; touched = notify = died = false; Active = true;
-            poisonHits.Clear(); acceptedPoisonHits.Clear();healingHits.Clear();acceptedHealingHits.Clear();
+            poisonHits.Clear(); acceptedPoisonHits.Clear();healingHits.Clear();acceptedHealingHits.Clear();damageHits.Clear();
         }
-        public void Damage(int amount) { damage += amount; touched = true; }
+        private readonly List<(int Amount, Action Lethal)> damageHits = new List<(int, Action)>();
+        public void Damage(int amount, Action onLethal = null)
+        { damage += amount; touched = true; damageHits.Add((amount, onLethal)); }
         private readonly List<(int Amount,Action<int> Notify)> healingHits=new List<(int,Action<int>)>();
         private readonly List<(int Amount,Action<int> Notify)> acceptedHealingHits=new List<(int,Action<int>)>();
         public void Heal(int amount,Action<int> notifyHit=null) { healing += amount; touched = true;healingHits.Add((amount,notifyHit)); }
@@ -759,6 +764,15 @@ namespace Olca.Core.Domain
             // 毒だけではHP1を割らず、通常ダメージはその下限とは独立して死亡させ得る。
             int result = (int)Math.Max(0L, Math.Min(maxHp, healedHp - acceptedPoison - damage));
             died = initialHp > 0 && result == 0;
+            // HP確定式を変えず、回復/受理毒を含む死亡境界を最初に越えた通常ヒットを捕捉する。
+            if (died) {
+                long cumulative = 0, lethalHp = healedHp - acceptedPoison;
+                foreach (var hit in damageHits) {
+                    cumulative += hit.Amount;
+                    if (hit.Amount > 0 && cumulative >= lethalHp) { hit.Lethal?.Invoke(); break; }
+                }
+            }
+            damageHits.Clear();
             return result;
         }
         public bool TakeNotification(out bool death)

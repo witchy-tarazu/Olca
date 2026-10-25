@@ -25,8 +25,8 @@ namespace Olca.Presentation.Field
         private int pendingContactDamage;     // バトル開始前に適用されたダッシュダメージ（フェーズ3で発動）
         private bool battleStarted,feedbackSubscribed,hitReactionRunning;
         private readonly System.Collections.Generic.List<CombatFeedback> pendingContactFeedback=new System.Collections.Generic.List<CombatFeedback>();
-        private void SubscribeFeedback(){if(enemy!=null&&!feedbackSubscribed&&isActiveAndEnabled){enemy.OnCombatFeedback+=OnCombatFeedback;feedbackSubscribed=true;}}
-        private void UnsubscribeFeedback(){if(enemy!=null&&feedbackSubscribed)enemy.OnCombatFeedback-=OnCombatFeedback;feedbackSubscribed=false;}
+        private void SubscribeFeedback(){if(enemy!=null&&!feedbackSubscribed&&isActiveAndEnabled){enemy.OnCombatFeedback+=OnCombatFeedback;enemy.OnDeath+=OnEnemyDeath;feedbackSubscribed=true;}}
+        private void UnsubscribeFeedback(){if(enemy!=null&&feedbackSubscribed){enemy.OnCombatFeedback-=OnCombatFeedback;enemy.OnDeath-=OnEnemyDeath;}feedbackSubscribed=false;}
         private void OnEnable()=>SubscribeFeedback();
         private void OnCombatFeedback(CombatFeedback feedback)
         {
@@ -41,12 +41,63 @@ namespace Olca.Presentation.Field
                 // 名前・現在HPの上から積み、既存の常時表示と重ねない。
                 float top=transform.position.y+.4f;
                 foreach(var renderer in GetComponentsInChildren<Renderer>())
-                    if(renderer.enabled)top=Mathf.Max(top,renderer.bounds.max.y);
+                    if(renderer.enabled&&!(enemyView!=null&&enemyView.IsFixedHudRenderer(renderer)))top=Mathf.Max(top,renderer.bounds.max.y);
                 var position=new Vector3(transform.position.x,top+.2f,transform.position.z-.5f);
                 damageNumberPool?.ShowFeedback(feedback,position,CancellationToken.None,this);
             }
             if(feedback.Kind==CombatFeedbackKind.Damage&&feedback.Amount>0)
                 PlayDamageEffectAsync(feedback.Amount,(destroyCts??=new CancellationTokenSource()).Token).Forget();
+        }
+
+        [SerializeField,Min(0f)] private float deathFadeDuration=.3f;
+        private bool deathStarted,terminalDeathPresentation;
+        private int deathVersion;
+        private Color? preDeathColor;
+        private CancellationTokenSource deathCts;
+        private UniTaskCompletionSource deathCompletion;
+        public bool IsDeathPresentationComplete => deathStarted&&deathCompletion!=null&&deathCompletion.Task.Status!=UniTaskStatus.Pending;
+        private void OnEnemyDeath()
+        {
+            if(deathStarted||enemy==null)return;
+            preDeathColor=enemyView?.BodyRenderer!=null?(Color?)enemyView.BodyRenderer.color:null;
+            deathStarted=true;destroyCts?.Cancel();enemyView?.SetDeathPresentationActive(true);enemyView?.HideHp();
+            deathCts=new CancellationTokenSource();deathCompletion=new UniTaskCompletionSource();
+            FadeDeathAsync(deathVersion,deathCompletion,deathCts.Token).Forget();
+        }
+        /// <summary>終端演出だけは停止済み戦闘の時計から切り離す。</summary>
+        public async UniTask WaitForDeathPresentationAsync(bool terminal,CancellationToken ct)
+        {
+            terminalDeathPresentation|=terminal;
+            if(enemy==null||!enemy.IsDead)return;
+            OnEnemyDeath();
+            await deathCompletion.Task.AttachExternalCancellation(ct);
+        }
+        private async UniTask FadeDeathAsync(int version,UniTaskCompletionSource completion,CancellationToken ct)
+        {
+            var body=enemyView?.BodyRenderer;var color=body!=null?body.color:Color.white;
+            try
+            {
+                float elapsed=0f;
+                while(body!=null&&elapsed<deathFadeDuration)
+                {
+                    elapsed+=terminalDeathPresentation?Olca.Unity.GameplayPause.DeltaTime:Olca.Unity.BattleVisualClock.DeltaTime;
+                    var faded=color;faded.a=color.a*(1f-Mathf.Clamp01(elapsed/deathFadeDuration));body.color=faded;
+                    await Olca.Unity.GameplayPause.NextFrame(ct);
+                }
+            }
+            catch(System.OperationCanceledException){}
+            finally
+            {
+                if(this!=null&&version==deathVersion){enemyView?.SetDeathPresentationActive(false);if(enemy!=null&&enemy.IsDead)gameObject.SetActive(false);}
+                completion.TrySetResult();
+            }
+        }
+        private void ResetDeathPresentation()
+        {
+            deathVersion++;deathCts?.Cancel();deathCts?.Dispose();deathCts=null;
+            if(preDeathColor.HasValue&&enemyView?.BodyRenderer!=null)enemyView.BodyRenderer.color=preDeathColor.Value;
+            preDeathColor=null;
+            deathStarted=terminalDeathPresentation=false;deathCompletion=null;enemyView?.SetDeathPresentationActive(false);
         }
 
         private bool positionAnimating;       // trueの間はRefreshによる位置上書きを禁止
@@ -98,12 +149,15 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン配置時に呼ぶ</summary>
         public void Initialize(Enemy enemy, float dungeonX)
         {
+            ResetDeathPresentation();
+            destroyCts?.Cancel();destroyCts?.Dispose();destroyCts=new CancellationTokenSource();hitReactionRunning=false;
             UnsubscribeFeedback();pendingContactFeedback.Clear();battleStarted=false;
             SetHiddenByBlindness(false);
             this.enemy = enemy;
             this.dungeonWorldX = dungeonX;
             this.gridView = null;
             this.previousHp = enemy.CurrentHp;
+            if(!enemy.IsDead&&!gameObject.activeSelf)gameObject.SetActive(true);
             SubscribeFeedback();
             SetStrongEnemy(false);
 
@@ -148,7 +202,7 @@ namespace Olca.Presentation.Field
         // ==================== バトル遷移 ====================
 
         /// <summary>バトル開始時 - グリッド座標モードに切り替え（グリッド範囲内の敵のみ）</summary>
-        public void OnBattleStarted(WorldBattleGridView grid)
+        public void OnBattleStarted(WorldBattleGridView grid, bool participates = true)
         {
             positionAnimating = false;
             if (enemy == null) return;
@@ -160,9 +214,10 @@ namespace Olca.Presentation.Field
             pendingContactDamage = pendingContactFeedback.Count==0?previousHp-enemy.CurrentHp:0;
             previousHp = enemy.CurrentHp;
             // GridPosition.X がグリッド範囲外の敵はバトルに参加しない → 一時非表示
-            if (enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
+            if (!participates || enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
             {
                 hiddenForBattle = true;
+                enemyView?.HideHp();
                 gameObject.SetActive(false);
                 return;
             }
@@ -230,9 +285,9 @@ namespace Olca.Presentation.Field
             var bodyRenderer=enemyView?.BodyRenderer;
             if(bodyRenderer==null||hitReactionRunning)return;
             hitReactionRunning=true;
-            var scale=transform.localScale;var color=bodyRenderer.color;
+            int version=deathVersion;var scale=transform.localScale;var color=bodyRenderer.color;
             try {await UniTask.WhenAll(FlashEffectAsync(bodyRenderer,ct),ScalePulseEffectAsync(ct));}
-            finally {if(this!=null){transform.localScale=scale;if(bodyRenderer!=null)bodyRenderer.color=color;}hitReactionRunning=false;}
+            finally {if(this!=null&&version==deathVersion){transform.localScale=scale;if(bodyRenderer!=null)bodyRenderer.color=color;hitReactionRunning=false;}}
         }
 
         private async UniTask FlashEffectAsync(SpriteRenderer bodyRenderer, CancellationToken ct)
@@ -288,6 +343,7 @@ namespace Olca.Presentation.Field
 
         private void OnDestroy()
         {
+            ResetDeathPresentation();
             UnsubscribeFeedback();
             SetHiddenByBlindness(false);
             destroyCts?.Cancel();

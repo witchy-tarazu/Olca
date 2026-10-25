@@ -17,6 +17,102 @@ namespace Olca.Tests
     public class CustomScreenCostViewTests
     {
         [Test]
+        public void 出撃前情報は全階層の実定義を読むだけで敵や地形を変えず独立した一覧を返す()
+        {
+            var cells=Enumerable.Range(0,8).Select(i=>new MapCell(i)).ToList();
+            var fire=new Enemy("fire","テスト",100,ElementType.Fire,new Olca.Core.Domain.Vector2Int(3,0));
+            cells[3]=new MapCell(3,fire);cells[4]=new MapCell(4,new Enemy("summon","テスト",10,ElementType.Earth,new Olca.Core.Domain.Vector2Int(4,0),true));
+            var terrain=new[]{new ExplorationTerrainCell(0,PanelType.Grass),new ExplorationTerrainCell(1,PanelType.Grass),new ExplorationTerrainCell(2,PanelType.Grass),new ExplorationTerrainCell(5,PanelType.Ice)};
+            var a=new DungeonConfig("a","テスト",8,cells,explorationTerrain:terrain);
+            var bCells=Enumerable.Range(0,4).Select(i=>new MapCell(i)).ToList();bCells[3]=new MapCell(3,new Enemy("water","テスト",100,ElementType.Water,new Olca.Core.Domain.Vector2Int(3,0)));
+            var b=new DungeonConfig("b","テスト",4,bCells,explorationTerrain:new[]{new ExplorationTerrainCell(0,PanelType.Magma),new ExplorationTerrainCell(1,PanelType.Magma),new ExplorationTerrainCell(2,PanelType.Ice),new ExplorationTerrainCell(3,PanelType.Ice)});
+            var info=new DungeonDeparturePreview(new[]{a,b});
+            CollectionAssert.AreEqual(new[]{ElementType.Fire,ElementType.Water},info.EnemyElements);
+            CollectionAssert.AreEqual(new[]{PanelType.Normal,PanelType.Ice,PanelType.Grass,PanelType.Magma},info.TerrainTypes);
+            Assert.AreEqual(100,fire.CurrentHp);CollectionAssert.AreEqual(terrain,a.ExplorationTerrain);
+            a.MapCells[3]=new MapCell(3);CollectionAssert.AreEqual(new[]{ElementType.Fire,ElementType.Water},info.EnemyElements);
+            Assert.Throws<System.NotSupportedException>(()=>((IList<ElementType>)info.EnemyElements).Add(ElementType.Wind));
+            var text=ClearReturnView.FormatDungeonInformation(info);StringAssert.Contains("ヒ / ミズ",text);StringAssert.Contains("ノーマル / コオリ / クサムラ / マグマ",text);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(text,"[一-鿿]"));
+        }
+        [Test]
+        public void 敵や地形の情報がない場合に属性や推奨レベルを捏造しない()
+        {
+            var info=new DungeonDeparturePreview(new[]{new DungeonConfig("empty","テスト",0,new List<MapCell>())});
+            Assert.IsEmpty(info.EnemyElements);Assert.IsEmpty(info.TerrainTypes);
+            Assert.AreEqual("テキゾクセイ: ジョウホウナシ　チケイ: ジョウホウナシ",ClearReturnView.FormatDungeonInformation(info));
+            Assert.Throws<System.ArgumentNullException>(()=>new DungeonDeparturePreview(null));
+            Assert.Throws<System.ArgumentException>(()=>new DungeonDeparturePreview(new DungeonConfig[0]));
+            Assert.Throws<System.ArgumentException>(()=>new DungeonDeparturePreview(new DungeonConfig[]{null}));
+        }
+        [Test]
+        public void 未解放名と詳細はページを変えても露出せず解放条件とクリア履歴を保持する()
+        {
+            var root=new GameObject("DungeonSelectionPreview",typeof(RectTransform));ClearReturnView view=null;
+            try {
+                view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);
+                var names=Enumerable.Range(0,7).Select(i=>"secret-name-"+i).ToArray();var unlocked=new[]{true,false,false,false,false,false,false};var cleared=new[]{true,false,false,false,false,false,false};
+                var conditions=Enumerable.Repeat("ヒトツマエノダンジョンヲクリア",7).ToArray();var descriptions=Enumerable.Range(0,7).Select(i=>"secret-info-"+i).ToArray();
+                view.RenderDungeonSelection(names,unlocked,0,_=>{},()=>{},()=>{},false,null,()=>{},cleared:cleared,unlockConditions:conditions,descriptions:descriptions);
+                var first=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_0");StringAssert.Contains("クリアズミ",first.GetComponentInChildren<Text>().text);
+                var locked=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_1");Assert.IsFalse(locked.interactable);StringAssert.Contains("？？？",locked.GetComponentInChildren<Text>().text);StringAssert.DoesNotContain(names[1],locked.GetComponentInChildren<Text>().text);
+                root.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDungeonPage").onClick.Invoke();
+                var all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(t=>t.text));StringAssert.DoesNotContain(names[5],all);StringAssert.DoesNotContain(names[6],all);StringAssert.Contains(conditions[6],all);
+                view.RenderDungeonSelection(names,unlocked,6,_=>{},()=>{},()=>{},false,null,()=>{},cleared:cleared,unlockConditions:conditions,descriptions:descriptions);
+                all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(t=>t.text));StringAssert.DoesNotContain(descriptions[6],all);
+            }finally{if(view!=null)typeof(ClearReturnView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Object.DestroyImmediate(root);}
+        }
+
+        [Test]
+        public void 非アクティブな親でも手札初期化と選択がAwakeに依存せず再表示で寿命を作り直さない()
+        {
+            var root=new GameObject("InactiveCustom",typeof(RectTransform));root.SetActive(false);
+            try {
+                var parent=root.AddComponent<CustomScreenView>();
+                var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");
+                var obj=Object.Instantiate(prefab,root.transform);var hand=obj.GetComponent<HandCardView>();
+                var card=Create("sword",CardSeries.Sword);
+                hand.Initialize(card,parent);
+                var field=typeof(HandCardView).GetField("destroyCts",BindingFlags.Instance|BindingFlags.NonPublic);
+                var lifetime=field.GetValue(hand);Assert.IsNotNull(lifetime);
+                Assert.DoesNotThrow(()=>hand.UpdateSelection(false));
+                Assert.DoesNotThrow(()=>hand.UpdateHighlight(CardHighlightType.None));
+                root.SetActive(true);Assert.AreSame(lifetime,field.GetValue(hand));
+                root.SetActive(false);hand.Initialize(card,parent);root.SetActive(true);
+                Assert.AreSame(lifetime,field.GetValue(hand));Assert.AreSame(card,hand.Card);
+            } finally {Object.DestroyImmediate(root);}
+        }
+
+        [TestCase("close")] [TestCase("disable")] [TestCase("destroy")] [TestCase("reinitialize")]
+        public async System.Threading.Tasks.Task 手札射出中に閉じる無効化破棄しても後続カードを生成しない(string ending)
+        {
+            Olca.Unity.GameplayPause.SetPaused(false);
+            var root=new GameObject("CustomLifetime",typeof(RectTransform));
+            try {
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var confirm=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));confirm.transform.SetParent(root.transform,false);
+                var container=new GameObject("Hand",typeof(RectTransform));container.transform.SetParent(root.transform,false);
+                typeof(CustomScreenView).GetField("confirmButton",flags).SetValue(view,confirm.GetComponent<Button>());
+                typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,container.transform);
+                typeof(CustomScreenView).GetField("handCardPrefab",flags).SetValue(view,UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab"));
+                typeof(CustomScreenView).GetField("cardShootInterval",flags).SetValue(view,.15f);
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("a",CardSeries.Sword),Create("b",CardSeries.Sword),Create("c",CardSeries.Sword)}));
+                view.Initialize(model);model.Open(new Card[0],new MockRandomProvider(0));
+                var cards=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);
+                Assert.AreEqual(1,cards.Count,"最初のカードの射出中に終了させる");
+                if(ending=="close")model.Close();
+                else if(ending=="disable"){
+                    // EditModeでは通常のMonoBehaviour通知をUnityが実行しないため明示する。
+                    typeof(CustomScreenView).GetMethod("OnDisable",flags).Invoke(view,null);root.SetActive(false);
+                }
+                else if(ending=="reinitialize")view.Initialize(new CustomScreenSystem(new Deck(new List<Card>())));
+                else {typeof(CustomScreenView).GetMethod("OnDestroy",flags).Invoke(view,null);Object.DestroyImmediate(root);root=null;}
+                await System.Threading.Tasks.Task.Delay(600);
+                Assert.AreEqual(1,cards.Count,"旧タスクが画面終了後もカードを追加してはならない");
+                if(root!=null)Assert.IsFalse((bool)typeof(CustomScreenView).GetField("handAnimating",flags).GetValue(view));
+            } finally {if(root!=null){typeof(CustomScreenView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(root.GetComponent<CustomScreenView>(),null);Object.DestroyImmediate(root);}Olca.Unity.BattleVisualClock.Refresh();}
+        }
+
+        [Test]
         public void 左上の本絵はマウスと共通カーソル移動で切替わり未登録時はミニを流用しない()
         {
             Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
@@ -206,6 +302,11 @@ namespace Olca.Tests
         [TestCase("前方1マス炎属性攻撃","ゼンポウ1マスホノオゾクセイコウゲキ")]
         [TestCase("使用済み / 手札上限","シヨウズミ / テフダジョウゲン")]
         [TestCase("十字左 / 獲得: 3枚 / 通貨: 0","ジュウジヒダリ / カクトク: 3マイ / ツウカ: 0")]
+        [TestCase("続きから","ツヅキカラ")]
+        [TestCase("変身演出：通常 / 短縮","ヘンシンエンシュツ：ツウジョウ / タンシュク")]
+        [TestCase("音量設定","オンリョウセッテイ")]
+        [TestCase("文字表示：標準 / ゆっくり / 速い / 即時","モジヒョウジ：ヒョウジュン / ユックリ / ハヤイ / ソクジ")]
+        [TestCase("演出設定 保存失敗（再試行）","エンシュツセッテイ ホゾンシッパイ（サイシコウ）")]
         public void 指定フォントを交換せず既存カスタム文言をカナで表示する(string source,string expected)
             =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
 
@@ -493,6 +594,35 @@ namespace Olca.Tests
             }
         }
 
+        [TestCase("敗北して帰還しました","ハイボクシテキカンシマシタ")]
+        [TestCase("総経験値 0 / 永続所持カード / 装備 / トークン交換所 / カード図鑑","ソウケイケンチ 0 / エイゾクショジカード / ソウビ / トークンコウカンジョ / カードズカン")]
+        [TestCase("基本 / 無属性 / 再出撃 / 前へ / 次へ","キホン / ムゾクセイ / サイシュツゲキ / マエヘ / ツギヘ")]
+        [TestCase("持ち帰りカードを選択","モチカエリカードヲセンタク")]
+        [TestCase("同じカード1枚まで・★★★不可","オナジカード1マイマデ・★★★フカ")]
+        [TestCase("経験値予定 +100 / 経験値反映","ケイケンチヨテイ +100 / ケイケンチハンエイ")]
+        [TestCase("経験値 +100（反映済み） / 超過変換 +0 トークン","ケイケンチ +100（ハンエイズミ） / チョウカヘンカン +0 トークン")]
+        [TestCase("帰還後：HP 100/100 / 攻略中の状態を解除して全回復します","キカンゴ：HP 100/100 / コウリャクチュウノジョウタイヲカイジョシテゼンカイフクシマス")]
+        [TestCase("持ち帰れる獲得カードはありません","モチカエレルカクトクカードハアリマセン")]
+        [TestCase("カード・経験値は保存済みです","カード・ケイケンチハホゾンズミデス")]
+        public void 帰還画面の既存用語をフォント変更せずカナで表示する(string source,string expected)
+            =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
+
+        [TestCase(0L,"ゲキハタイム: 00:00.00")]
+        [TestCase(1L,"ゲキハタイム: 00:00.01")]
+        [TestCase(59L,"ゲキハタイム: 00:00.98")]
+        [TestCase(60L,"ゲキハタイム: 00:01.00")]
+        [TestCase(3599L,"ゲキハタイム: 00:59.98")]
+        [TestCase(3600L,"ゲキハタイム: 01:00.00")]
+        public void 報酬の撃破時間は整数論理フレームから表示する(long frames,string expected)
+            =>Assert.AreEqual(expected,CardSelectionView.FormatBattleTime(frames));
+        [Test]
+        public void 未計測の撃破時間は捏造せず負の時刻を拒否する()
+        {
+            Assert.AreEqual("",CardSelectionView.FormatBattleTime(null));
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>CardSelectionView.FormatBattleTime(-1));
+            StringAssert.StartsWith("ゲキハタイム: ",CardSelectionView.FormatBattleTime(long.MaxValue));
+        }
+
         [TestCase(false)] [TestCase(true)]
         public async System.Threading.Tasks.Task 報酬の受取と明示スキップは最初の入力だけで確定し再表示でもボタンを増やさない(bool skipFirst)
         {
@@ -509,7 +639,12 @@ namespace Olca.Tests
                 typeof(CardSelectionView).GetField("cardItems", flags).SetValue(view, new CardSelectionItemView[0]);
                 var card = Create("reward", CardSeries.Sword);
                 for (int repeat=0; repeat<2; repeat++) {
-                    var task = view.ShowAsync(new[] { card }, 6).AsTask();
+                    var task = view.ShowAsync(new[] { card }, 6, battleLogicalFrames:repeat==0?(long?)61:null).AsTask();
+                    var time=root.transform.Find("BattleTimeText").GetComponent<Text>();
+                    Assert.AreEqual(repeat==0,time.gameObject.activeSelf);
+                    Assert.AreEqual(repeat==0?"ゲキハタイム: 00:01.01":"",time.text);
+                    Assert.AreSame(countText.font,time.font);Assert.IsFalse(time.raycastTarget);
+                    Assert.AreEqual(1,root.GetComponentsInChildren<Text>(true).Count(t=>t.name=="BattleTimeText"));
                     var button = root.GetComponentInChildren<Button>(true);
                     Assert.AreEqual("SkipCardReward", button.name);
                     Assert.AreEqual("カードヲ1マイカクトク",heading.text);Assert.AreSame(originalFont,heading.font);Assert.AreEqual(Color.white,countText.color);

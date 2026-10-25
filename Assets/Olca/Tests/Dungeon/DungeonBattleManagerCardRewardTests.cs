@@ -14,6 +14,63 @@ namespace Olca.Tests.Dungeon
     [TestFixture]
     public class DungeonBattleManagerCardRewardTests
     {
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 明示した勝敗演出待ちは論理時計と報酬を止め完了通知を一度だけ受理する(bool victory)
+        {
+            var map=DungeonConfig.CreateTestDungeon(20,30,3);
+            var manager=new DungeonBattleManager(map,new PlayerCharacter(100),CreateTestDeck(),new MockRandomProvider(),new MockLogger());
+            manager.Dungeon.ConfigureCurrencyReward(7);manager.RequireBattleEndPresentation();int requested=0,ended=0,failed=0,rewards=0;
+            manager.OnBattleEndPresentationRequested+=_=>requested++;
+            manager.OnBattleEnded+=()=>ended++;manager.OnGameOver+=()=>failed++;manager.OnCardRewardPresented+=_=>rewards++;
+            var battle=AdvanceToBattle(manager);int rewardTotal=battle.Enemies.Count(e=>!e.IsSummoned)*7;
+            if(victory)foreach(var e in battle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);
+            else battle.Player.TakeDamage(100000);
+            Assert.AreEqual(1,requested);Assert.IsTrue(battle.IsGameOver);Assert.AreSame(battle,manager.CurrentBattle);
+            Assert.AreEqual(GamePhase.BattleOutcome,manager.CurrentPhase);Assert.IsTrue(manager.IsBattleEndPresentationPending);
+            long frame=battle.LogicalFrame;int hp=battle.Player.CurrentHp;
+            for(int n=0;n<300;n++)manager.TickFrame(16);
+            manager.Dungeon.OnBattleCompleted(victory);manager.SelectCardReward(null);manager.SelectItemReward(true);manager.SelectCurrencyReward(true);
+            manager.SetUserPaused(true);
+            Assert.IsFalse(manager.IsUserPaused);Assert.AreEqual(frame,battle.LogicalFrame);Assert.AreEqual(hp,battle.Player.CurrentHp);
+            Assert.AreEqual(0,rewards);Assert.AreEqual(0,ended);Assert.AreEqual(0,failed);
+            Assert.IsTrue(manager.CompleteBattleEndPresentation());Assert.IsFalse(manager.CompleteBattleEndPresentation());
+            Assert.AreEqual(1,ended);Assert.AreEqual(victory?0:1,failed);
+            Assert.AreEqual(victory?BattleResult.Victory:BattleResult.Defeat,manager.LastBattleResult);
+            Assert.IsFalse(manager.IsBattleEndPresentationPending);Assert.IsNull(manager.CurrentBattle);
+            if(victory){if(manager.Dungeon.PendingCurrencyReward==0)manager.SelectCardReward(null);Assert.AreEqual(rewardTotal,manager.Dungeon.PendingCurrencyReward);manager.SelectCurrencyReward(true);manager.SelectCurrencyReward(true);Assert.AreEqual(rewardTotal,manager.Dungeon.Currency);}
+            else Assert.AreEqual(0,manager.Dungeon.PendingCurrencyReward);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 演出要求の通知中に完了しても勝敗遷移を二重発火しない(bool victory)
+        {
+            var manager=new DungeonBattleManager(DungeonConfig.CreateTestDungeon(20,30,3),new PlayerCharacter(100),CreateTestDeck(),new MockRandomProvider(),new MockLogger());
+            manager.RequireBattleEndPresentation();int ended=0,requests=0;
+            manager.OnBattleEnded+=()=>ended++;
+            manager.OnBattleEndPresentationRequested+=_=>{requests++;Assert.IsTrue(manager.CompleteBattleEndPresentation());Assert.IsFalse(manager.CompleteBattleEndPresentation());};
+            var battle=AdvanceToBattle(manager);
+            if(victory)foreach(var e in battle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);else battle.Player.TakeDamage(100000);
+            Assert.AreEqual(1,requests);Assert.AreEqual(1,ended);Assert.IsFalse(manager.IsBattleEndPresentationPending);
+        }
+
+        [Test]
+        public void 敗北演出の完了後に保存が失敗しても再試行で敗北を一度だけ通知する()
+        {
+            string directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-outcome-"+System.Guid.NewGuid().ToString("N"));
+            try {
+                var map=DungeonConfig.CreateTestDungeon(20,30,3);var deck=CreateTestDeck();var defaults=DungeonCheckpointSession.CreateDefault(map,deck);var io=new CurrencyFailIo();
+                var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory,io);
+                var manager=new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:new DungeonCheckpointSession(defaults.Definitions,store));
+                manager.RequireBattleEndPresentation();int failed=0;manager.OnGameOver+=()=>failed++;
+                var battle=AdvanceToBattle(manager);io.Fail=true;battle.Player.TakeDamage(100000);
+                Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked);Assert.AreEqual(0,failed);
+                Assert.IsTrue(manager.CompleteBattleEndPresentation());Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);Assert.AreEqual(0,failed);
+                Assert.IsFalse(manager.CompleteBattleEndPresentation());io.Fail=false;Assert.IsTrue(manager.RetryCheckpoint());Assert.IsFalse(manager.RetryCheckpoint());Assert.AreEqual(1,failed);
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+
         private sealed class CurrencyFailIo : Olca.Unity.CheckpointFileIo
         {
             public bool Fail;
