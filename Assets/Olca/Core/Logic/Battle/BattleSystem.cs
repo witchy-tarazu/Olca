@@ -340,6 +340,11 @@ namespace Olca.Core.Logic.Battle
         public bool ConfigureEnemyHpPatterns(Enemy enemy,IReadOnlyList<EnemyHpActionPattern> patterns)
             => !IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.ConfigureHpPatterns(enemy,patterns);
 
+        public bool ConfigureEnemyPatterns(Enemy enemy,IReadOnlyList<EnemyActionPattern> patterns,int initialPatternId)
+            =>!IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.ConfigurePatterns(enemy,patterns,initialPatternId);
+        public bool TrySwitchRegisteredEnemyPattern(Enemy enemy,int patternId)
+            =>!IsGameOver&&enemy!=null&&!enemy.IsDead&&enemies.Contains(enemy)&&enemyAI.TrySwitchRegisteredPattern(enemy,patternId);
+
         private readonly Dictionary<object,HashSet<Vector2Int>> enemyAttackTelegraphs=new Dictionary<object,HashSet<Vector2Int>>();
         /// <summary>表示用の固定対象マス。重複攻撃でもマスごとに一つとし、所有者数を表示へ渡さない。</summary>
         public IReadOnlyList<Vector2Int> EnemyAttackTiles

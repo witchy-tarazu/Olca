@@ -42,12 +42,40 @@ namespace Olca.Core.Logic.Battle
         void Cancel(AIContext context);
     }
 
+    public enum EnemyPatternEndMode { Loop, Stop, Next }
+
+    /// <summary>外部定義の行動列と終端。Nextの参照先は登録時に検証する。</summary>
+    public sealed class EnemyActionPattern
+    {
+        public int Id { get; }
+        public EnemyPatternEndMode EndMode { get; }
+        public int? NextPatternId { get; }
+        private readonly System.Collections.Generic.List<IEnemyAIAction> actions;
+        public EnemyActionPattern(int id,System.Collections.Generic.IEnumerable<IEnemyAIAction> actions,EnemyPatternEndMode endMode,int? nextPatternId=null)
+        {
+            if(!System.Enum.IsDefined(typeof(EnemyPatternEndMode),endMode))throw new System.ArgumentOutOfRangeException(nameof(endMode));
+            if(endMode==EnemyPatternEndMode.Next?!nextPatternId.HasValue:nextPatternId.HasValue)throw new System.ArgumentException("Nextだけに終了先IDを指定してください",nameof(nextPatternId));
+            this.actions=actions==null?throw new System.ArgumentNullException(nameof(actions)):new System.Collections.Generic.List<IEnemyAIAction>(actions);
+            if(this.actions.Count==0||this.actions.Exists(a=>a==null))throw new System.ArgumentException("行動列が必要です",nameof(actions));
+            Id=id;EndMode=endMode;NextPatternId=nextPatternId;
+        }
+        internal System.Collections.Generic.List<IEnemyAIAction> CopyActions()=>new System.Collections.Generic.List<IEnemyAIAction>(actions);
+    }
+
     /// <summary>HP上限と行動列。境界を含むかも定義元が明示し、サンプル値を製品へ登録しない。</summary>
     public sealed class EnemyHpActionPattern
     {
         public int MaximumHpBasisPoints { get; }
         public bool IncludesBoundary { get; }
         private readonly System.Collections.Generic.List<IEnemyAIAction> actions;
+        public int? RegisteredPatternId { get; }
+        private EnemyHpActionPattern(int maximum,bool includesBoundary,int id)
+        {
+            if(maximum<0||maximum>10000)throw new System.ArgumentOutOfRangeException(nameof(maximum));
+            MaximumHpBasisPoints=maximum;IncludesBoundary=includesBoundary;RegisteredPatternId=id;
+        }
+        public static EnemyHpActionPattern ForRegisteredPattern(int maximumHpBasisPoints,bool includesBoundary,int patternId)
+            =>new EnemyHpActionPattern(maximumHpBasisPoints,includesBoundary,patternId);
         public EnemyHpActionPattern(int maximumHpBasisPoints,bool includesBoundary,System.Collections.Generic.IEnumerable<IEnemyAIAction> actions)
         {
             if(maximumHpBasisPoints<0||maximumHpBasisPoints>10000)throw new System.ArgumentOutOfRangeException(nameof(maximumHpBasisPoints));

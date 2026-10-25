@@ -162,18 +162,69 @@ namespace Olca.Core.Logic.Battle
         public float GetCooldown()=>cooldownMs/1000f;
     }
 
+    public enum EnemyMovementKind { Stay, Random, Approach, Retreat, KeepDistance }
+
+    /// <summary>通常の一マス移動。値/理想距離は定義元が指定し、乱数は実行時だけ消費する。</summary>
+    public sealed class EnemyMovementAction : IEnemyAIAction
+    {
+        private readonly EnemyMovementKind kind;
+        private readonly int cooldownMs;
+        private readonly int minimumDistance,maximumDistance;
+        private static readonly Vector2Int[] directions={new Vector2Int(-1,0),new Vector2Int(1,0),new Vector2Int(0,-1),new Vector2Int(0,1)};
+        public EnemyMovementAction(EnemyMovementKind kind,int cooldownMs,int? minimumDistance=null,int? maximumDistance=null)
+        {
+            if(!Enum.IsDefined(typeof(EnemyMovementKind),kind))throw new ArgumentOutOfRangeException(nameof(kind));
+            if(cooldownMs<0)throw new ArgumentOutOfRangeException(nameof(cooldownMs));
+            if(kind==EnemyMovementKind.KeepDistance){
+                if(!minimumDistance.HasValue||minimumDistance.Value<1||(maximumDistance??minimumDistance.Value)<minimumDistance.Value)throw new ArgumentException("正の理想距離/範囲が必要です");
+                this.minimumDistance=minimumDistance.Value;this.maximumDistance=maximumDistance??minimumDistance.Value;
+            }else if(minimumDistance.HasValue||maximumDistance.HasValue)throw new ArgumentException("理想距離は距離維持だけに指定してください");
+            this.kind=kind;this.cooldownMs=cooldownMs;
+        }
+        private bool Ready(AIContext context)=>context.Self!=null&&!context.Self.IsDead&&!context.Self.IsStunned&&!context.Self.IsParalyzed&&!context.Self.IsInTemporaryMove&&(context.Battle==null||!context.Battle.IsGameOver);
+        public bool CanExecute(AIContext context)
+            =>Ready(context)&&(kind==EnemyMovementKind.Stay||Candidates(context).Count>0);
+        private System.Collections.Generic.List<Vector2Int> Candidates(AIContext context)
+        {
+            var result=new System.Collections.Generic.List<Vector2Int>();
+            // 通常の移動では参加者全員の論理位置が必要。未接続のcontextで味方を通過しない。
+            if(context.Battle==null||context.Field==null||context.Player==null||kind==EnemyMovementKind.Random&&context.Random==null)return result;
+            bool needsTarget=kind!=EnemyMovementKind.Random;
+            if(needsTarget&&!context.HasVisiblePlayer)return result;
+            var from=context.Self.GetLogicalPosition();var target=needsTarget?context.Player.GetLogicalPosition():from;
+            int distance=Math.Abs(target.X-from.X)+Math.Abs(target.Y-from.Y);
+            bool approach=kind==EnemyMovementKind.Approach||kind==EnemyMovementKind.KeepDistance&&distance>maximumDistance;
+            bool retreat=kind==EnemyMovementKind.Retreat||kind==EnemyMovementKind.KeepDistance&&distance<minimumDistance;
+            if(kind==EnemyMovementKind.Approach&&distance<=1||kind==EnemyMovementKind.KeepDistance&&!approach&&!retreat)return result;
+            foreach(var direction in directions){
+                var intended=new Vector2Int(from.X+direction.X,from.Y+direction.Y);
+                int nextDistance=Math.Abs(target.X-intended.X)+Math.Abs(target.Y-intended.Y);
+                if(needsTarget&&!(approach?nextDistance<distance:retreat&&nextDistance>distance))continue;
+                var resolved=context.ResolveDirectionalInput(direction);var position=new Vector2Int(from.X+resolved.X,from.Y+resolved.Y);
+                if(!context.Field.CanMoveTo(position,context.Self.TerrainState))continue;
+                if(!context.Player.IsDead&&context.Player.GetLogicalPosition()==position)continue;
+                bool occupied=false;foreach(var enemy in context.Battle.Enemies)if(!ReferenceEquals(enemy,context.Self)&&!enemy.IsDead&&enemy.GetLogicalPosition()==position){occupied=true;break;}
+                if(!occupied)result.Add(position);
+            }
+            return result;
+        }
+        public void Execute(AIContext context)
+        {
+            if(!Ready(context)||kind==EnemyMovementKind.Stay)return;
+            var candidates=Candidates(context);if(candidates.Count==0)return;
+            int index=kind==EnemyMovementKind.Random?context.Random.Range(0,candidates.Count):0;
+            context.Self.MoveTo(candidates[index]);
+        }
+        public int GetCooldownMs()=>cooldownMs;
+        public float GetCooldown()=>cooldownMs/1000f;
+    }
+
     /// <summary>仕様§5.1の設定例。使用カード/待ちを呼出し元から受け取り、製品の既定AIは変更しない。</summary>
     public static class EnemyActionPatternSamples
     {
         public static System.Collections.Generic.List<IEnemyAIAction> Slime(Card closeAttack,int cooldownMs,ICardDatabase database=null)
-            => new System.Collections.Generic.List<IEnemyAIAction>{new EnemyStayAction(),new EnemyCardAction(closeAttack,cooldownMs,database)};
-        private sealed class EnemyStayAction : IEnemyAIAction
-        {
-            public bool CanExecute(AIContext context)=>true;
-            public void Execute(AIContext context){}
-            public int GetCooldownMs()=>0;
-            public float GetCooldown()=>0;
-        }
+            => new System.Collections.Generic.List<IEnemyAIAction>{new EnemyMovementAction(EnemyMovementKind.Stay,0),new EnemyCardAction(closeAttack,cooldownMs,database)};
+
     }
 
 }

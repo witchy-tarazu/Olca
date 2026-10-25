@@ -54,6 +54,15 @@ namespace Olca.Core.Logic.Battle
             return behavior!=null&&behavior.TrySwitchActionPattern(actions);
         }
 
+        public bool ConfigurePatterns(Enemy enemy,IReadOnlyList<EnemyActionPattern> patterns,int initialPatternId)
+        {
+            var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));return behavior!=null&&behavior.ConfigurePatterns(patterns,initialPatternId);
+        }
+        public bool TrySwitchRegisteredPattern(Enemy enemy,int patternId)
+        {
+            var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));return behavior!=null&&behavior.TrySwitchRegisteredPattern(patternId);
+        }
+
         /// <summary>外部定義されたHP区間を登録する。値や製品の切替先は生成しない。</summary>
         public bool ConfigureHpPatterns(Enemy enemy, IReadOnlyList<EnemyHpActionPattern> patterns)
         {
