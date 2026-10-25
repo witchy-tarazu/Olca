@@ -493,6 +493,22 @@ namespace Olca.Tests
             }
         }
 
+        [TestCase(0L,"ゲキハタイム: 00:00.00")]
+        [TestCase(1L,"ゲキハタイム: 00:00.01")]
+        [TestCase(59L,"ゲキハタイム: 00:00.98")]
+        [TestCase(60L,"ゲキハタイム: 00:01.00")]
+        [TestCase(3599L,"ゲキハタイム: 00:59.98")]
+        [TestCase(3600L,"ゲキハタイム: 01:00.00")]
+        public void 報酬の撃破時間は整数論理フレームから表示する(long frames,string expected)
+            =>Assert.AreEqual(expected,CardSelectionView.FormatBattleTime(frames));
+        [Test]
+        public void 未計測の撃破時間は捏造せず負の時刻を拒否する()
+        {
+            Assert.AreEqual("",CardSelectionView.FormatBattleTime(null));
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>CardSelectionView.FormatBattleTime(-1));
+            StringAssert.StartsWith("ゲキハタイム: ",CardSelectionView.FormatBattleTime(long.MaxValue));
+        }
+
         [TestCase(false)] [TestCase(true)]
         public async System.Threading.Tasks.Task 報酬の受取と明示スキップは最初の入力だけで確定し再表示でもボタンを増やさない(bool skipFirst)
         {
@@ -509,7 +525,12 @@ namespace Olca.Tests
                 typeof(CardSelectionView).GetField("cardItems", flags).SetValue(view, new CardSelectionItemView[0]);
                 var card = Create("reward", CardSeries.Sword);
                 for (int repeat=0; repeat<2; repeat++) {
-                    var task = view.ShowAsync(new[] { card }, 6).AsTask();
+                    var task = view.ShowAsync(new[] { card }, 6, battleLogicalFrames:repeat==0?(long?)61:null).AsTask();
+                    var time=root.transform.Find("BattleTimeText").GetComponent<Text>();
+                    Assert.AreEqual(repeat==0,time.gameObject.activeSelf);
+                    Assert.AreEqual(repeat==0?"ゲキハタイム: 00:01.01":"",time.text);
+                    Assert.AreSame(countText.font,time.font);Assert.IsFalse(time.raycastTarget);
+                    Assert.AreEqual(1,root.GetComponentsInChildren<Text>(true).Count(t=>t.name=="BattleTimeText"));
                     var button = root.GetComponentInChildren<Button>(true);
                     Assert.AreEqual("SkipCardReward", button.name);
                     Assert.AreEqual("カードヲ1マイカクトク",heading.text);Assert.AreSame(originalFont,heading.font);Assert.AreEqual(Color.white,countText.color);

@@ -524,7 +524,7 @@ namespace Olca.Application.Dungeon
                 var r = text.rectTransform; r.anchorMin = r.anchorMax = anchor; r.anchoredPosition = position; r.sizeDelta = size; return text;
             }
             currencyRewardText = CurrencyText("CurrencyRewardText", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(0,100), new Vector2(1000,180));
-            receiveCurrencyButton = MakeButton("ReceiveCurrencyButton", "受け取る", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(-240,-80));
+            receiveCurrencyButton = MakeButton("ReceiveCurrencyButton", "ウケトル", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(-240,-80));
             receiveCurrencyButton.onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(true); });
             MakeButton("SkipCurrencyButton", "スキップ", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(240,-80)).onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(false); });
             currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-160,-125), new Vector2(300,45));
@@ -534,7 +534,7 @@ namespace Olca.Application.Dungeon
             itemRewardOverlay=new GameObject("ItemRewardPanel",typeof(RectTransform),typeof(Image));itemRewardOverlay.transform.SetParent(pauseCanvas.transform,false);
             var itemRect=(RectTransform)itemRewardOverlay.transform;itemRect.anchorMin=Vector2.zero;itemRect.anchorMax=Vector2.one;itemRect.offsetMin=itemRect.offsetMax=Vector2.zero;itemRewardOverlay.GetComponent<Image>().color=UiLook.Surface;
             itemRewardText=CurrencyText("ItemRewardText",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(0,100),new Vector2(1200,220));
-            MakeButton("ReceiveItemReward","受け取る",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(-240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(true);});
+            MakeButton("ReceiveItemReward","ウケトル",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(-240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(true);});
             MakeButton("SkipItemReward","スキップ",itemRewardOverlay.transform,new Vector2(.5f,.5f),new Vector2(240,-100)).onClick.AddListener(()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});
             MakeButton("PauseItemReward","ポーズ",itemRewardOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
             itemRewardOverlay.SetActive(false);
@@ -1130,6 +1130,7 @@ namespace Olca.Application.Dungeon
             resourceRewardMenu.Bind(root.transform,preferred,skip);
         }
         private UniTaskCompletionSource<bool> currencyChoice;
+        private long? pendingBattleElapsedFrames;
         private IReadOnlyList<Card> pendingCardChoices; // カード報酬フロー用
 
         // 未設定だった旧既定マップも、同じ配置で検証してから再開する。
@@ -1626,6 +1627,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
+            pendingBattleElapsedFrames = manager?.Dungeon.CurrentBattle?.LogicalFrame;
             gameplayAudio?.PlayBgm(dungeonBgm);
             ResetTouchInput();
             if (manager.CurrentPhase == GamePhase.Dungeon) ScheduleExplorationResume();
@@ -1644,6 +1646,7 @@ namespace Olca.Application.Dungeon
         private void OnCardRewardPresented(IReadOnlyList<Card> choices)
         {
             pendingCardChoices = choices;
+            pendingBattleElapsedFrames = manager?.CurrentBattle?.LogicalFrame;
         }
 
         /// <summary>
@@ -1680,7 +1683,7 @@ namespace Olca.Application.Dungeon
                     if (cardSelectionView != null)
                     {
                         int deckCount = manager.Dungeon.GetCurrentDeck().TotalCount;
-                        Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct);
+                        Card selectedCard = await cardSelectionView.ShowAsync(pendingCardChoices, deckCount, ct, pendingBattleElapsedFrames);
                         await GameplayPause.WaitAsync(ct);
                         pendingCardChoices = null;
                         logicalLoop.Schedule(() => { if (ReferenceEquals(manager, owner)) { owner.SelectCardReward(selectedCard); ScheduleExplorationResume(); } });
@@ -1701,7 +1704,8 @@ namespace Olca.Application.Dungeon
                 {
                     var item=manager.Dungeon.PendingItemReward;
                     itemRewardChoice=new UniTaskCompletionSource<bool>();var choice=itemRewardChoice;
-                    itemRewardText.text=$"アイテム報酬: {item.Name}\nHP回復 {item.Heal} / 現在HP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\n満タンでも受取時に消費します";
+                    itemRewardText.text=$"アイテムホウシュウ: {item.Name}\nHPカイフク {item.Heal} / ゲンザイHP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\nマンタンデモウケトリジニショウヒシマス";
+                    if(pendingBattleElapsedFrames.HasValue)itemRewardText.text+="\n"+CardSelectionView.FormatBattleTime(pendingBattleElapsedFrames);
                     itemRewardOverlay.SetActive(true);itemRewardOverlay.transform.SetAsLastSibling();BindResourceReward(itemRewardOverlay,"SkipItemReward",()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});bool receive;
                     try{using(ct.Register(()=>choice.TrySetCanceled(ct)))receive=await choice.Task;}
                     finally{resourceRewardMenu?.Suspend();if(itemRewardOverlay!=null)itemRewardOverlay.SetActive(false);itemRewardChoice=null;}
@@ -1714,7 +1718,8 @@ namespace Olca.Application.Dungeon
                 {
                     currencyChoice = new UniTaskCompletionSource<bool>();
                     var choice = currencyChoice;
-                    currencyRewardText.text = $"通貨報酬: {manager.Dungeon.PendingCurrencyReward}\n所持: {manager.Dungeon.Currency}（攻略中のみ）";
+                    currencyRewardText.text = $"ツウカホウシュウ: {manager.Dungeon.PendingCurrencyReward}\nショジ: {manager.Dungeon.Currency}（コウリャクチュウノミ）";
+                    if(pendingBattleElapsedFrames.HasValue)currencyRewardText.text+="\n"+CardSelectionView.FormatBattleTime(pendingBattleElapsedFrames);
                     receiveCurrencyButton.interactable = manager.Dungeon.PendingCurrencyReward <= long.MaxValue - manager.Dungeon.Currency;
                     currencyOverlay.SetActive(true); currencyOverlay.transform.SetAsLastSibling();
                     BindResourceReward(currencyOverlay,"SkipCurrencyButton",()=>{if(!GameplayPause.InputBlocked)currencyChoice?.TrySetResult(false);});

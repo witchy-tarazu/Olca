@@ -24,6 +24,7 @@ namespace Olca.Presentation.Dungeon
 
         private UniTaskCompletionSource<Card> selectionTcs;
         private Button skipButton;
+        private Text battleTimeText;
         private Olca.Unity.MenuPadScope rewardMenu;
 
         /// <summary>
@@ -36,7 +37,7 @@ namespace Olca.Presentation.Dungeon
         public async UniTask<Card> ShowAsync(
             IReadOnlyList<Card> choices,
             int currentDeckCount,
-            CancellationToken ct = default)
+            CancellationToken ct = default, long? battleLogicalFrames = null)
         {
             selectionTcs = new UniTaskCompletionSource<Card>();
             if(containerRoot!=null)UiLook.Face(containerRoot.GetComponent<Image>());
@@ -46,6 +47,7 @@ namespace Olca.Presentation.Dungeon
             foreach(var label in (containerRoot!=null?containerRoot:gameObject).GetComponentsInChildren<Text>(true))
                 label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);
             EnsureSkipButton();
+            UpdateBattleTime(battleLogicalFrames);
 
             // デッキ枚数表示
             if (deckCountText != null)
@@ -89,6 +91,33 @@ namespace Olca.Presentation.Dungeon
             ct.Register(() => selectionTcs.TrySetResult(null));
 
             return await selectionTcs.Task;
+        }
+
+        /// <summary>描画時刻を使わず、停止を除外した60Hz論理フレームを百分の一秒へ切り捨て表示する。</summary>
+        public static string FormatBattleTime(long? frames)
+        {
+            if(!frames.HasValue)return string.Empty;
+            if(frames.Value<0)throw new System.ArgumentOutOfRangeException(nameof(frames));
+            long value=frames.Value;
+            return $"ゲキハタイム: {value/3600:D2}:{value/60%60:D2}.{value%60*100/60:D2}";
+        }
+        private void UpdateBattleTime(long? frames)
+        {
+            string text=FormatBattleTime(frames);
+            if(battleTimeText==null&&frames.HasValue&&deckCountText!=null)
+            {
+                var go=new GameObject("BattleTimeText",typeof(RectTransform),typeof(Text));
+                go.transform.SetParent(deckCountText.transform.parent,false);
+                battleTimeText=go.GetComponent<Text>();
+                battleTimeText.font=deckCountText.font;battleTimeText.fontSize=deckCountText.fontSize;
+                battleTimeText.fontStyle=deckCountText.fontStyle;battleTimeText.alignment=TextAnchor.MiddleCenter;
+                battleTimeText.color=Color.white;battleTimeText.raycastTarget=false;
+                var rect=battleTimeText.rectTransform;var source=deckCountText.rectTransform;
+                rect.anchorMin=source.anchorMin;rect.anchorMax=source.anchorMax;rect.pivot=source.pivot;
+                rect.anchoredPosition=source.anchoredPosition+Vector2.down*(source.rect.height+8f);
+                rect.sizeDelta=new Vector2(Mathf.Max(600f,source.rect.width),Mathf.Max(30f,source.rect.height));
+            }
+            if(battleTimeText!=null){battleTimeText.text=text;battleTimeText.gameObject.SetActive(frames.HasValue);}
         }
 
         private void LateUpdate()
