@@ -2541,7 +2541,15 @@ namespace Olca.Tests.Integration
         [SetUp] public void Setup() { definitions = null; directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floor-controller-" + System.Guid.NewGuid().ToString("N")); }
         [TearDown] public void Cleanup()
         {
-            foreach (var host in objects) if (host != null) UnityEngine.Object.DestroyImmediate(host);
+            foreach (var host in objects) if (host != null) {
+                // 非アクティブなfixtureのStartを手動実行したため、Unity任せではOnDestroyが届かない。
+                var controller=host.GetComponent<Olca.Application.Dungeon.DungeonBattleController>();
+                if(controller!=null) {
+                    ((Olca.Unity.UnityInputProvider)Get(controller,"inputProvider"))?.Dispose();
+                    controller.SetUserPaused(false);
+                }
+                UnityEngine.Object.DestroyImmediate(host);
+            }
             objects.Clear();
             if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
         }
@@ -2567,6 +2575,44 @@ namespace Olca.Tests.Integration
         }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
+        [TestCase(false)] [TestCase(true)]
+        public void パッド切断は探索とカスタムを停止し再接続なしの再開操作を許す(bool battle)
+        {
+            var c=Start();if(battle)ToBattle(c);
+            var m=Model(c);float scale=UnityEngine.Time.timeScale;
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            try {
+                UnityEngine.InputSystem.InputSystem.DisableDevice(pad);Assert.IsFalse(c.IsUserPaused,"無効化は物理切断ではない");
+                UnityEngine.InputSystem.InputSystem.EnableDevice(pad);Call(c,"OnApplicationFocus",false);Assert.IsFalse(c.IsUserPaused);
+                float x=m.Dungeon.PlayerPosition;long frame=m.CurrentBattle?.LogicalFrame??0;
+                UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
+                Assert.IsTrue(c.IsUserPaused);Assert.AreEqual(0,UnityEngine.Time.timeScale);
+                for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1});
+                Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.AreEqual(frame,m.CurrentBattle?.LogicalFrame??0);
+                var replacement=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+                try {Assert.IsTrue(c.IsUserPaused,"再接続で自動再開しない");}
+                finally {UnityEngine.InputSystem.InputSystem.RemoveDevice(replacement);}
+                KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
+            } finally {if(pad.added)UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);c.SetUserPaused(false);UnityEngine.Time.timeScale=scale;}
+        }
+        [TestCase(true)] [TestCase(false)]
+        public void 勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する(bool victory)
+        {
+            var c=Start();ToBattle(c);var m=Model(c);
+            var callback=(System.Action<BattleResult>)System.Delegate.CreateDelegate(typeof(System.Action<BattleResult>),c,c.GetType().GetMethod("OnBattleEndPresentationRequested",Hidden));
+            m.OnBattleEndPresentationRequested-=callback;
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            try {
+                if(victory)foreach(var e in m.CurrentBattle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);else m.CurrentBattle.Player.TakeDamage(100000);
+                Assert.IsTrue(m.IsBattleEndPresentationPending);
+                UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
+                Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
+                Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsTrue(c.IsUserPaused);
+                Assert.IsFalse(m.CompleteBattleEndPresentation());KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
+                Assert.IsNull(Get(c,"disconnectPauseOwner"));
+            } finally {if(pad.added)UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);c.SetUserPaused(false);}
+        }
+
         [Test] public void 会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない(){var c=Start();var m=Model(c);var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));int ended=0;var script=new DialogueScript("external",new[]{new DialogueLine("検証")});Assert.IsTrue(c.TryStartDialogue(script,r=>ended++));Assert.IsFalse(c.TryStartDialogue(script));float x=m.Dungeon.PlayerPosition;for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,DashButtonDown=true});Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.SetUserPaused(true);c.CurrentDialogue.AdvanceFrame();Assert.AreEqual(0,c.CurrentDialogue.VisibleElements);c.SetUserPaused(false);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));}
         [Test] public void 会話中のチェックポイント再開は会話とバックログを復元せず既存保存を保持する(){var c=Start();int ended=0;DialogueEndReason reason=DialogueEndReason.Completed;Assert.IsTrue(c.TryStartDialogue(new DialogueScript("external",new[]{new DialogueLine("復元しない文章")}),r=>{ended++;reason=r;}));var old=c.CurrentDialogue;old.Decide();c.SetUserPaused(true);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);Assert.AreEqual(DialogueEndReason.Interrupted,reason);Assert.IsEmpty(old.Backlog);}
         private static void ToBattle(Olca.Application.Dungeon.DungeonBattleController controller)

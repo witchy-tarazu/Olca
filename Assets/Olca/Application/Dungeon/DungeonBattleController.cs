@@ -477,6 +477,17 @@ namespace Olca.Application.Dungeon
         }
         public int DebugGameSpeedPercent => logicalLoop.Clock.DebugSpeedPercent;
 
+        private DungeonBattleManager disconnectPauseOwner;
+        private void OnGamepadDisconnected()
+        {
+#if UNITY_STANDALONE || UNITY_EDITOR
+            if (this == null || manager == null) return;
+            // 勝敗演出中はメニューを開かず、同じ攻略の演出完了後へ要求を引き継ぐ。
+            if (manager.IsBattleEndPresentationPending) { disconnectPauseOwner = manager; return; }
+            SetUserPaused(true);
+#endif
+        }
+
         public void SetUserPaused(bool paused)
         {
             if (manager == null || manager.IsUserPaused == paused || (paused&&manager.IsBattleEndPresentationPending)) return;
@@ -565,7 +576,7 @@ namespace Olca.Application.Dungeon
                 RefreshAnimationSetting();
             });RefreshAnimationSetting();
             MakeButton("OwnedCardsButton", "所持カード", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -300)).onClick.AddListener(OpenOwnedCards);
-            MakeButton("RetreatButton", "撤退して帰還", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -400)).onClick.AddListener(RequestRetreat);
+            MakeButton("RetreatButton", "撤退して\n帰還", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -400)).onClick.AddListener(RequestRetreat);
             retreatConfirmation = new GameObject("RetreatConfirmation", typeof(RectTransform), typeof(Image)); retreatConfirmation.transform.SetParent(pauseCanvas.transform, false);
             var rr = (RectTransform)retreatConfirmation.transform; rr.anchorMin = Vector2.zero; rr.anchorMax = Vector2.one; rr.offsetMin = rr.offsetMax = Vector2.zero;
             retreatConfirmation.GetComponent<Image>().color = UiLook.Surface;
@@ -1242,6 +1253,7 @@ namespace Olca.Application.Dungeon
             if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
             GameplayKeyboardSettingsError = settingsError;
             if (settingsError != null) logger.LogWarning(settingsError);
+            inputProvider.OnGamepadDisconnected += OnGamepadDisconnected;
             inputProvider.StartEventCapture();
             customScreenView?.ConfigureLogicalConfirmation(logicalLoop.QueueTimestampedCommand, () => inputProvider.PointerClickTimestamp);
 
@@ -1635,6 +1647,7 @@ namespace Olca.Application.Dungeon
         private DungeonBattleManager outcomePresentationOwner;
         private void CancelOutcomePresentation()
         {
+            disconnectPauseOwner = null;
             outcomePresentationCts?.Cancel();
             BattleVisualClock.SetPaused(this,false);
         }
@@ -1673,6 +1686,11 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
+            if (ReferenceEquals(disconnectPauseOwner, manager))
+            {
+                disconnectPauseOwner = null;
+                SetUserPaused(true);
+            }
             pendingBattleElapsedFrames = manager?.Dungeon.CurrentBattle?.LogicalFrame;
             gameplayAudio?.PlayBgm(dungeonBgm);
             ResetTouchInput();
@@ -2016,6 +2034,7 @@ namespace Olca.Application.Dungeon
             resourceRewardMenu?.Dispose();
             FinishDialogue(interrupt:true);dialogueLoop.Dispose();
             gameplayAudio?.Dispose();
+            if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
             inputProvider?.Dispose();
             logicalLoop.Dispose();
             if (IsUserPaused) SetUserPaused(false);

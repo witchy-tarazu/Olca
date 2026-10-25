@@ -302,6 +302,11 @@ namespace Olca.Tests
         [TestCase("前方1マス炎属性攻撃","ゼンポウ1マスホノオゾクセイコウゲキ")]
         [TestCase("使用済み / 手札上限","シヨウズミ / テフダジョウゲン")]
         [TestCase("十字左 / 獲得: 3枚 / 通貨: 0","ジュウジヒダリ / カクトク: 3マイ / ツウカ: 0")]
+        [TestCase("続きから","ツヅキカラ")]
+        [TestCase("変身演出：通常 / 短縮","ヘンシンエンシュツ：ツウジョウ / タンシュク")]
+        [TestCase("音量設定","オンリョウセッテイ")]
+        [TestCase("文字表示：標準 / ゆっくり / 速い / 即時","モジヒョウジ：ヒョウジュン / ユックリ / ハヤイ / ソクジ")]
+        [TestCase("演出設定 保存失敗（再試行）","エンシュツセッテイ ホゾンシッパイ（サイシコウ）")]
         public void 指定フォントを交換せず既存カスタム文言をカナで表示する(string source,string expected)
             =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
 
