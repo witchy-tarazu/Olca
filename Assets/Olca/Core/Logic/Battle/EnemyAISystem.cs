@@ -32,7 +32,7 @@ namespace Olca.Core.Logic.Battle
         /// 敵をAI管理に登録
         /// </summary>
         /// <param name="enemy">登録する敵</param>
-        /// <param name="actions">AI行動リスト（優先順位順）</param>
+        /// <param name="actions">AI行動リスト（実行順）</param>
         public void RegisterEnemy(Enemy enemy, List<IEnemyAIAction> actions)
         {
             if (enemy == null)
@@ -45,6 +45,13 @@ namespace Olca.Core.Logic.Battle
             aiBehaviors.Add(behavior);
 
             logger?.LogInfo($"敵 {enemy.Name} をAI管理に登録");
+        }
+
+        /// <summary>登録済みの敵だけを定義済み行動列へ切り替える。</summary>
+        public bool TrySwitchActionPattern(Enemy enemy,List<IEnemyAIAction> actions)
+        {
+            var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));
+            return behavior!=null&&behavior.TrySwitchActionPattern(actions);
         }
 
         /// <summary>

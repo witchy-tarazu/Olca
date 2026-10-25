@@ -25,6 +25,76 @@ namespace Olca.Tests.Battle
             random = new MockRandomProvider();
         }
 
+        private sealed class SequenceAction : IEnemyAIAction
+        {
+            public string Id;public bool Enabled=true;public int Wait;public int Checks;public System.Action Run;
+            public bool CanExecute(AIContext context){Checks++;return Enabled;}
+            public void Execute(AIContext context)=>Run?.Invoke();
+            public int GetCooldownMs()=>Wait;public float GetCooldown()=>Wait/1000f;
+        }
+        [Test]
+        public void 行動を順次実行し不可行動は次へ進めて一更新に一つだけ完了する()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var trace=new List<string>();
+            var a=new SequenceAction{Id="a",Run=()=>trace.Add("a")};var skip=new SequenceAction{Enabled=false};var b=new SequenceAction{Id="b",Run=()=>trace.Add("b")};var source=new List<IEnemyAIAction>{a,skip,b};var ai=new EnemyAIBehavior(e,source);source.Clear();var context=new AIContext(e,player,field,random,logger);
+            for(int i=0;i<4;i++){ai.Update(0,context);Assert.AreEqual(i+1,trace.Count);}CollectionAssert.AreEqual(new[]{"a","b","a","b"},trace);Assert.AreEqual(2,skip.Checks);
+        }
+        [Test]
+        public void 全行動不可でも一巡で返り待ち時間を作らず次更新で再判定する()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var a=new SequenceAction{Enabled=false};var b=new SequenceAction{Enabled=false};var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a,b});var context=new AIContext(e,player,field,random,logger);
+            ai.Update(0,context);Assert.AreEqual(1,a.Checks);Assert.AreEqual(1,b.Checks);Assert.AreEqual(0,ai.CurrentCooldownMs);b.Enabled=true;int executed=0;b.Run=()=>executed++;ai.Update(0,context);Assert.AreEqual(1,executed);Assert.AreEqual(2,a.Checks);Assert.AreEqual(2,b.Checks);
+        }
+        [Test]
+        public void 同期行動が完了してから次へ進め既存の行動後時計を敵ごとに維持する()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var trace=new List<string>();var a=new SequenceAction{Wait=100,Run=()=>{trace.Add("a-start");trace.Add("a-end");}};var b=new SequenceAction{Run=()=>trace.Add("b")};var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a,b});var other=new EnemyAIBehavior(e,new List<IEnemyAIAction>{new SequenceAction()});var context=new AIContext(e,player,field,random,logger);
+            ai.Update(0,context);Assert.AreEqual(100,ai.CurrentCooldownMs);Assert.AreEqual(0,other.CurrentCooldownMs);ai.Update(99,context);CollectionAssert.AreEqual(new[]{"a-start","a-end"},trace);Assert.AreEqual(1,ai.CurrentCooldownMs);ai.Update(1,context);CollectionAssert.AreEqual(new[]{"a-start","a-end","b"},trace);
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void 順次スキップと既存時計のトレースは描画分割によらず一致する(int fps)
+        {
+            string Replay(int renderFps){var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var trace=new List<string>();var a=new SequenceAction{Wait=100,Run=()=>trace.Add("a")};var b=new SequenceAction{Wait=50,Run=()=>trace.Add("b")};var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{a,new SequenceAction{Enabled=false},b});var context=new AIContext(e,player,field,random,logger);var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();long previous=0;for(int i=1;i<=renderFps;i++){long now=i*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/renderFps;clock.Accumulate(now-previous);previous=now;clock.Drain((frame,ms)=>{if(frame==20)Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction{Wait=33,Run=()=>trace.Add("new")}}));ai.Update(ms,context,true);},3);}while(clock.PendingFrames>0)clock.Drain((frame,ms)=>{if(frame==20)Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction{Wait=33,Run=()=>trace.Add("new")}}));ai.Update(ms,context,true);},3);return string.Join(",",trace)+":"+ai.CurrentCooldownMs;}
+            Assert.AreEqual(Replay(60),Replay(fps));
+        }
+        [Test]
+        public void 空または欠落行動を生成時に拒否する()
+        {var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));Assert.Throws<System.ArgumentException>(()=>new EnemyAIBehavior(e,new List<IEnemyAIAction>()));Assert.Throws<System.ArgumentException>(()=>new EnemyAIBehavior(e,new List<IEnemyAIAction>{null}));}
+        [Test]
+        public void 行動中の切替要求は完了後に適用し旧待ちを引継がず新行動の待ちだけ使う()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var context=new AIContext(e,player,field,random,logger);var trace=new List<string>();EnemyAIBehavior ai=null;
+            var next=new SequenceAction{Wait=70,Run=()=>trace.Add("new")};var source=new List<IEnemyAIAction>{next};var old=new SequenceAction{Wait=1000,Run=()=>{trace.Add("old-start");Assert.IsTrue(ai.TrySwitchActionPattern(source));source.Clear();Assert.IsFalse(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction()}));trace.Add("old-end");}};ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{old});
+            ai.Update(0,context);CollectionAssert.AreEqual(new[]{"old-start","old-end"},trace);Assert.AreEqual(0,ai.CurrentCooldownMs);ai.Update(0,context);CollectionAssert.AreEqual(new[]{"old-start","old-end","new"},trace);Assert.AreEqual(70,ai.CurrentCooldownMs);ai.Update(69,context);Assert.AreEqual(3,trace.Count);ai.Update(1,context);Assert.AreEqual(4,trace.Count);
+        }
+        [Test]
+        public void 行動後の待ち中に切替条件が成立したら旧待ちを破棄し新AIに余計な待機を挿入しない()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{new SequenceAction{Wait=2000}});var context=new AIContext(e,player,field,random,logger);ai.Update(0,context);ai.Update(500,context);Assert.AreEqual(1500,ai.CurrentCooldownMs);int called=0;
+            Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction{Wait=300,Run=()=>called++}}));Assert.AreEqual(0,ai.CurrentCooldownMs);ai.Update(0,context);Assert.AreEqual(1,called);Assert.AreEqual(300,ai.CurrentCooldownMs);
+        }
+        [Test]
+        public void 死亡未登録と不正な切替定義を拒否し既存行動と時計を壊さない()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{new SequenceAction{Wait=100}});var context=new AIContext(e,player,field,random,logger);ai.Update(0,context);
+            Assert.Throws<System.ArgumentException>(()=>ai.TrySwitchActionPattern(new List<IEnemyAIAction>()));Assert.Throws<System.ArgumentException>(()=>ai.TrySwitchActionPattern(new List<IEnemyAIAction>{null}));Assert.AreEqual(100,ai.CurrentCooldownMs);Assert.IsFalse(aiSystem.TrySwitchActionPattern(e,new List<IEnemyAIAction>{new SequenceAction()}));e.TakeDamage(100,ElementType.None);Assert.IsFalse(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{new SequenceAction()}));
+        }
+        [Test]
+        public void 麻痺による全体行動禁止を行動不可skipで迂回せず切替後も行動しない()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var action=new SequenceAction();int called=0;action.Run=()=>called++;var ai=new EnemyAIBehavior(e,new List<IEnemyAIAction>{action});var context=new AIContext(e,player,field,random,logger);e.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));Assert.IsTrue(ai.TrySwitchActionPattern(new List<IEnemyAIAction>{action}));ai.Update(100,context);Assert.AreEqual(0,called);Assert.AreEqual(0,action.Checks);e.ClearStatus(StatusEffectType.Paralyze);ai.Update(0,context);Assert.AreEqual(1,called);
+        }
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void 戦闘の停止中に切替要求を解決しても勝手に再開せず新行動の実行を停止する(BattlePauseReason reason)
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);int called=0;b.Pause(reason);Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>called++}}));b.TickFrame(17);Assert.IsTrue(b.IsPaused);Assert.AreEqual(0,called);b.Resume(reason);b.TickFrame(17);Assert.AreEqual(1,called);
+            b.RunLogicalFrame(()=>e.TakeDamage(10000,ElementType.None));Assert.IsFalse(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction()}));
+        }
+        [Test]
+        public void 暗転とヒットストップは切替で解除せず終了後だけ新AIを実行する()
+        {
+            var e=new Enemy("e","テスト",100,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);int called=0;Assert.IsTrue(b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,3,()=>{}));Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>called++}}));while(b.IsDarkening){b.TickFrame(17);Assert.AreEqual(0,called);}b.RunLogicalFrame(()=>e.TakeDamage(1,ElementType.None,hitStopFrames:3));Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Run=()=>called++}}));while(b.IsHitStopped){b.TickFrame(17);Assert.AreEqual(0,called);}b.TickFrame(17);Assert.AreEqual(1,called);
+        }
         [Test]
         public void 敵を登録できる()
         {

@@ -12,8 +12,11 @@ namespace Olca.Core.Logic.Battle
     public class EnemyAIBehavior
     {
         private readonly Enemy enemy;
-        private readonly List<IEnemyAIAction> actions;
+        private List<IEnemyAIAction> actions;
+        private List<IEnemyAIAction> pendingPattern;
+        private bool executingAction;
         private FrameCountdown cooldown;
+        private int nextActionIndex;
 
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
@@ -31,16 +34,34 @@ namespace Olca.Core.Logic.Battle
         /// コンストラクタ
         /// </summary>
         /// <param name="enemy">管理する敵</param>
-        /// <param name="actions">AI行動リスト（優先順位順）</param>
+        /// <param name="actions">AI行動リスト（実行順）</param>
         public EnemyAIBehavior(Enemy enemy, List<IEnemyAIAction> actions)
         {
             this.enemy = enemy ?? throw new ArgumentNullException(nameof(enemy));
-            this.actions = actions ?? throw new ArgumentNullException(nameof(actions));
+            if(actions==null)throw new ArgumentNullException(nameof(actions));
+            this.actions = new List<IEnemyAIAction>(actions);
 
             if (actions.Count == 0)
                 throw new ArgumentException("AI行動リストは空であってはいけません", nameof(actions));
 
+            if(this.actions.Exists(action=>action==null))throw new ArgumentException("AI行動が欠落しています",nameof(actions));
             this.cooldown = new FrameCountdown();
+        }
+
+        /// <summary>定義済み行動列への切替。同期行動中は完了まで保留し、旧行動後の待ちは引き継がない。</summary>
+        public bool TrySwitchActionPattern(List<IEnemyAIAction> nextActions)
+        {
+            if(nextActions==null||nextActions.Count==0||nextActions.Exists(action=>action==null))
+                throw new ArgumentException("切替先の行動定義が必要です",nameof(nextActions));
+            if(enemy.IsDead||pendingPattern!=null)return false;
+            pendingPattern=new List<IEnemyAIAction>(nextActions);
+            if(!executingAction)ApplyPendingPattern();
+            return true;
+        }
+        private void ApplyPendingPattern()
+        {
+            actions=pendingPattern;pendingPattern=null;nextActionIndex=0;
+            cooldown.SetMilliseconds(0);
         }
 
         /// <summary>
@@ -71,18 +92,26 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>
         /// 行動を決定して実行
-        /// 優先順位順に行動を試行し、最初に実行可能な行動を実行
+        /// 順次試行し、実行不可なら次へ進む。全件不可でも一巡だけで終了する。
         /// </summary>
         private void ExecuteAction(AIContext context)
         {
-            foreach (var action in actions)
+            for(int attempted=0;attempted<actions.Count;attempted++)
             {
-                if (action.CanExecute(context))
-                {
-                    action.Execute(context);
-                    cooldown.SetMilliseconds(action.GetCooldownMs());
-                    return;
+                var action=actions[nextActionIndex];
+                if(!action.CanExecute(context)){
+                    nextActionIndex=(nextActionIndex+1)%actions.Count;
+                    continue;
                 }
+                executingAction=true;
+                try{action.Execute(context);}finally{executingAction=false;}
+                // 完了後にだけ切替。旧待ちを移植したり、新AIとは別の待ちを追加したりしない。
+                if(pendingPattern!=null)ApplyPendingPattern();
+                else{
+                    nextActionIndex=(nextActionIndex+1)%actions.Count;
+                    cooldown.SetMilliseconds(action.GetCooldownMs());
+                }
+                return;
             }
         }
     }
