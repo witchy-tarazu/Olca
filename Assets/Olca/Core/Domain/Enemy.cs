@@ -175,7 +175,8 @@ namespace Olca.Core.Domain
             if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
             pendingInvincibilityMs = 0;
             if (poiseRecovery.CommitFrame()) AccumulatedPoiseDamage = 0;
-            frameStaggered = ApplyPoise(framePoiseDamage);
+            frameStaggered = ApplyPoise(frameParalysisPoise ? Math.Max(framePoiseDamage, Poise ?? 0) : framePoiseDamage);
+            frameParalysisPoise = false;
             if (IsDead) ClearDeathReaction();
             framePoiseDamage = 0;
         }
@@ -199,6 +200,7 @@ namespace Olca.Core.Domain
         private readonly Dictionary<StatusEffectType, StatusEffect> statuses = new Dictionary<StatusEffectType, StatusEffect>();
         private StatusEffectType lastStatusType;
         private bool statusFrameOpen, frameParalyzed, frameConfused, frameBlind;
+        private bool paralysisPoisePending, frameParalysisPoise;
         private sealed class PoisonSlot
         {
             internal StatusEffect Status;
@@ -230,10 +232,12 @@ namespace Olca.Core.Domain
         private string lastPoisonKind = "poison";
         private readonly Dictionary<StatusEffectType, StatusEffect> pendingStatuses = new Dictionary<StatusEffectType, StatusEffect>();
         private readonly System.Collections.Generic.HashSet<StatusEffectType> pendingStatusClears = new System.Collections.Generic.HashSet<StatusEffectType>();
-        internal void BeginStatusFrame()
+        internal void BeginStatusFrame(bool advance = true)
         {
             if (statusFrameOpen) return;
             frameParalyzed = IsParalyzed; frameConfused = IsConfused; frameBlind = IsBlind;
+            frameParalysisPoise = advance && frameParalyzed && paralysisPoisePending;
+            if (advance) paralysisPoisePending = false;
             foreach (var slot in poisons.Values) slot.WasActive = slot.Status.RemainingFrames > 0;
             statusFrameOpen = true;
         }
@@ -520,13 +524,19 @@ namespace Olca.Core.Domain
                     slot.Status = status;
                 }
                 lastPoisonKind = status.PoisonKind;
-            } else statuses[status.Type] = status;
+            } else {
+                statuses[status.Type] = status;
+                if (status.Type == StatusEffectType.Paralyze) paralysisPoisePending = true;
+            }
             lastStatusType = status.Type;
         }
         private void RemoveStatus(StatusEffectType type)
         {
             if (type == StatusEffectType.Poison) { poisons.Clear(); pendingPoisons.Clear(); }
-            else statuses.Remove(type);
+            else {
+                statuses.Remove(type);
+                if (type == StatusEffectType.Paralyze) paralysisPoisePending = false;
+            }
         }
 
         /// <summary>戦闘終了で必ず解除する麻痺だけを取り除く。</summary>

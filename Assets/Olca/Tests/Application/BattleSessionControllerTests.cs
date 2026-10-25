@@ -2755,7 +2755,7 @@ namespace Olca.Tests.Application
                 if (frame == 1) { Assert.AreEqual(6, player.ParalysisRemainingFrames); Assert.AreEqual(0, used); Assert.AreEqual(0, staggered); }
                 if (frame == 3) Assert.AreEqual(6, player.ParalysisRemainingFrames);
                 if (frame == 6) Assert.AreEqual(5, player.ParalysisRemainingFrames);
-                trace.Add(frame + ":" + player.CurrentHp + ":" + player.ParalysisRemainingFrames + ":" + used + ":" + target.CurrentHp);
+                trace.Add(frame + ":" + player.CurrentHp + ":" + player.ParalysisRemainingFrames + ":" + used + ":" + target.CurrentHp + ":" + battle.PlayerStaggerCount);
             };
             long total = Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond, previous = 0;
             if (stall) { previous = total / 2; clock.Accumulate(previous); clock.Drain(tick, 3); }
@@ -2764,7 +2764,8 @@ namespace Olca.Tests.Application
                 clock.Accumulate(now - previous); previous = now; clock.Drain(tick, 3);
             }
             while (clock.PendingFrames > 0) clock.Drain(tick, 3);
-            Assert.AreEqual(2, used, "afterHit=" + afterHit + ", errors=" + string.Join(";", setup.logger.ErrorLogs) + ", open=" + battle.CustomScreen.IsOpen + ", paused=" + battle.IsPaused + ", current=" + battle.CardUsage.CurrentCard?.Id + ", inflight=" + battle.CardUsage.InFlightCard?.Id); Assert.AreEqual(0, staggered); Assert.AreEqual(980, player.CurrentHp);
+            Assert.AreEqual(2, used, "afterHit=" + afterHit + ", errors=" + string.Join(";", setup.logger.ErrorLogs) + ", open=" + battle.CustomScreen.IsOpen + ", paused=" + battle.IsPaused + ", current=" + battle.CardUsage.CurrentCard?.Id + ", inflight=" + battle.CardUsage.InFlightCard?.Id); // 仕様追加ebd9887: 麻痺の有効化でも強靭度を削り切り、同フレームは一回だけ数える。
+            Assert.AreEqual(1, staggered); Assert.AreEqual(1, battle.PlayerStaggerCount); Assert.AreEqual(0, player.AccumulatedDamage); Assert.AreEqual(980, player.CurrentHp);
             Assert.AreEqual(initialHp - (afterHit ? 10 : 0) - 3, target.CurrentHp);
             Assert.AreEqual(saved.Sequence, checkpoints.Store.Read().Sequence); Assert.AreEqual(saved.MapHash, checkpoints.Store.Read().MapHash);
             CollectionAssert.AreEqual(saved.DeckOrder, checkpoints.Store.Read().DeckOrder);

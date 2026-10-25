@@ -152,6 +152,9 @@ namespace Olca.Core.Domain
             paralysisFrameOpen = true; frameParalyzed = paralysisTimer.IsActive;
             bool interrupt = advance && frameParalyzed && paralysisInterruptPending;
             if (advance) paralysisInterruptPending = false;
+            // 麻痺が有効化した次フレームに強靭度を削り切る。
+            // 通常の削りと同じ終端判定へ集約し、付与/解除しただけのフレームでは中断しない。
+            if (interrupt) { framePoiseHit = true; frameForceStagger = true; }
             return interrupt;
         }
         internal void TickParalysis(int ms, bool logical)

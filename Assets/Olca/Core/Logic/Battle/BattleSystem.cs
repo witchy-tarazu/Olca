@@ -99,6 +99,8 @@ namespace Olca.Core.Logic.Battle
         public long LogicalFrame => actionFrame;
         private readonly SimultaneousKillCounter simultaneousKills = new SimultaneousKillCounter();
         public int EnemyKillCount => simultaneousKills.KillCount;
+        /// <summary>HP被弾数ではなく、実際に成立した強靭度の中断回数。麻痺の強制成立も含む。</summary>
+        public int PlayerStaggerCount { get; private set; }
         public int MaximumSimultaneousKills => simultaneousKills.Maximum;
         public int SimultaneousKillGraceFrames => simultaneousKills.GraceFrames;
         /// <summary>計測開始前の調整入口。停止時間を除く戦闘の論理フレームだけを使用する。</summary>
@@ -376,7 +378,7 @@ namespace Olca.Core.Logic.Battle
             RegisterEnemy(summon, actions);
             enemies.Add(summon);
             if (statusFrameParticipants != null)
-            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(); summon.BeginHpFrame(); }
+            { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(!IsPaused); summon.BeginHpFrame(); }
             OnSummonAdded?.Invoke(summon);
         }
 
@@ -402,7 +404,7 @@ namespace Olca.Core.Logic.Battle
             statusFrameParticipants = participants;
             BeginResolution();
             player.BeginHpFrame();
-            foreach (var enemy in participants) { enemy.BeginStatusFrame(); enemy.BeginHpFrame(); }
+            foreach (var enemy in participants) { enemy.BeginStatusFrame(!IsPaused); enemy.BeginHpFrame(); }
             try
             {
                 if (player.BeginParalysisFrame(!IsPaused)) { cardUsage.InterruptCurrentCard(); InterruptBasicAction(); playerMovement.InterruptNormalMove(); }
@@ -698,6 +700,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnPlayerStaggered()
         {
+            PlayerStaggerCount++;
             cardUsage.InterruptCurrentCard();
             InterruptBasicAction();
             playerMovement.InterruptNormalMove();

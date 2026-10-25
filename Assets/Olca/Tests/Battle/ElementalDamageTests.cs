@@ -1284,3 +1284,97 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+namespace Olca.Tests.Battle
+{
+    public class PlayerStaggerMetricTests
+    {
+        private static BattleSystem Battle(PlayerCharacter player=null,Enemy enemy=null)
+            =>new BattleSystem(player??new PlayerCharacter(1000,new Vector2Int(0,0),poise:10,staggerDurationFrames:18),
+                new List<Enemy>{enemy??new Enemy("stagger-fixture","テスト",1000,ElementType.None,new Vector2Int(4,0))},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:new MockRandomProvider());
+        private static void Step(BattleSystem battle,int frames)
+        {for(int i=0;i<frames;i++)battle.TickFrame(17);}
+        [Test]
+        public void HP被弾数ではなく蓄積を削り切った成立だけを数え同フレーム多段は一度になる()
+        {
+            var battle=Battle();var player=battle.Player;
+            battle.RunLogicalFrame(()=>{player.TakeDamage(1,poiseDamage:0);player.TakeDamage(1,poiseDamage:4);player.TakeDamage(1,poiseDamage:4);});
+            Assert.AreEqual(0,battle.PlayerStaggerCount);Assert.AreEqual(8,player.AccumulatedDamage);
+            battle.RunLogicalFrame(()=>{player.TakeDamage(1,poiseDamage:5);player.TakeDamage(1,poiseDamage:50);});
+            Assert.AreEqual(1,battle.PlayerStaggerCount);Assert.AreEqual(0,player.AccumulatedDamage);Assert.AreEqual(18,player.StaggerRemainingFrames);
+            Step(battle,1);Assert.AreEqual(17,player.StaggerRemainingFrames);
+            battle.RunLogicalFrame(()=>player.TakeDamage(1,poiseDamage:10));Assert.AreEqual(2,battle.PlayerStaggerCount);Assert.AreEqual(18,player.StaggerRemainingFrames);
+        }
+        [Test]
+        public void 麻痺の付与フレームは中断せず次の有効フレームに強靭度をリセットして一度数える()
+        {
+            var battle=Battle();var player=battle.Player;player.TakeDamage(0,poiseDamage:5);
+            battle.RunLogicalFrame(()=>player.ApplyParalysis(60));
+            Assert.AreEqual(0,battle.PlayerStaggerCount);Assert.AreEqual(5,player.AccumulatedDamage);Assert.IsFalse(player.IsStaggered);
+            Step(battle,1);Assert.AreEqual(1,battle.PlayerStaggerCount);Assert.AreEqual(0,player.AccumulatedDamage);Assert.IsTrue(player.IsParalyzed);Assert.IsTrue(player.IsStaggered);
+            Step(battle,3);Assert.AreEqual(1,battle.PlayerStaggerCount);
+            player.ApplyParalysis(60);Step(battle,1);Assert.AreEqual(2,battle.PlayerStaggerCount);Assert.AreEqual(18,player.StaggerRemainingFrames);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 同じフレームの付与と解除は解除優先で強靭度を削らず計上もしない(bool clearFirst)
+        {
+            var battle=Battle();var p=battle.Player;p.TakeDamage(0,poiseDamage:5);
+            battle.RunLogicalFrame(()=>{if(clearFirst)p.ClearParalysis();p.ApplyParalysis(30);if(!clearFirst)p.ClearParalysis();});
+            Step(battle,2);Assert.AreEqual(0,battle.PlayerStaggerCount);Assert.AreEqual(5,p.AccumulatedDamage);Assert.IsFalse(p.IsParalyzed);Assert.IsFalse(p.IsStaggered);
+        }
+        [Test]
+        public void 有効化する麻痺と通常の強靭度削りは同じ終端判定で一回に集約する()
+        {
+            var battle=Battle();int notifications=0;battle.Player.OnStaggered+=()=>notifications++;
+            battle.Player.ApplyParalysis(30);
+            battle.RunLogicalFrame(()=>{battle.TickFrame(17);battle.Player.TakeDamage(0,poiseDamage:20);battle.Player.TakeDamage(0,poiseDamage:20);});
+            Assert.AreEqual(1,notifications);Assert.AreEqual(1,battle.PlayerStaggerCount);Assert.AreEqual(0,battle.Player.AccumulatedDamage);Assert.IsTrue(battle.Player.IsParalyzed);
+        }
+        [TestCase("user")] [TestCase("custom")] [TestCase("darkening")] [TestCase("hitstop")]
+        public void 麻痺による成立は停止中に消費せず有効更新の再開時だけ数える(string stop)
+        {
+            var battle=Battle();battle.Player.ApplyParalysis(30);
+            if(stop=="user"||stop=="custom")battle.Pause(stop=="user"?BattlePauseReason.User:BattlePauseReason.CustomScreen);
+            else if(stop=="darkening")Assert.IsTrue(battle.TryStartDarkeningEffect(DarkeningSide.Player,0,10,()=>{}));
+            else battle.Enemies[0].TakeDamage(1,ElementType.None,hitStopFrames:10);
+            Step(battle,10);Assert.AreEqual(0,battle.PlayerStaggerCount);Assert.AreEqual(0,battle.LogicalFrame);
+            if(stop=="user"||stop=="custom")battle.Resume(stop=="user"?BattlePauseReason.User:BattlePauseReason.CustomScreen);
+            Step(battle,1);Assert.AreEqual(1,battle.PlayerStaggerCount);Assert.AreEqual(1,battle.LogicalFrame);
+        }
+        [Test]
+        public void 勝敗通知より前に計測を確定し次戦へ購読や累計を残さない()
+        {
+            var player=new PlayerCharacter(1000,poise:10,staggerDurationFrames:18);var battle=Battle(player);int atEnd=-1;
+            battle.OnBattleEnd+=_=>atEnd=battle.PlayerStaggerCount;
+            battle.RunLogicalFrame(()=>{player.TakeDamage(1,poiseDamage:20);battle.Enemies[0].TakeDamage(1000,ElementType.None);});
+            Assert.AreEqual(1,atEnd);Assert.AreEqual(1,battle.PlayerStaggerCount);Assert.IsTrue(battle.IsGameOver);
+            var next=Battle(player);Assert.AreEqual(0,next.PlayerStaggerCount);next.RunLogicalFrame(()=>player.TakeDamage(1,poiseDamage:20));
+            Assert.AreEqual(1,next.PlayerStaggerCount);Assert.AreEqual(1,battle.PlayerStaggerCount);
+        }
+        [Test]
+        public void 同一フレームの死亡はのけぞりとして計上しない()
+        {
+            var battle=Battle();battle.RunLogicalFrame(()=>{battle.Player.ApplyParalysis(30);battle.Player.TakeDamage(1000,poiseDamage:20);});
+            Assert.IsTrue(battle.IsGameOver);Assert.AreEqual(0,battle.PlayerStaggerCount);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 敵も麻痺有効化時にだけ強靭度を削り切り同フレームの通常成立を重ねない(bool normalHit)
+        {
+            var enemy=new Enemy("stagger","テスト",1000,ElementType.None,new Vector2Int(4,0),poiseDefinition:new EnemyPoiseDefinition(10,18));
+            var battle=Battle(enemy:enemy);int count=0;enemy.OnStaggered+=()=>count++;enemy.TakeDamage(0,ElementType.None,poiseDamage:5);
+            battle.RunLogicalFrame(()=>enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000)));
+            Assert.AreEqual(0,count);Assert.AreEqual(5,enemy.AccumulatedPoiseDamage);
+            battle.RunLogicalFrame(()=>{battle.TickFrame(17);if(normalHit)enemy.TakeDamage(0,ElementType.None,poiseDamage:20);});
+            Assert.AreEqual(1,count);Assert.AreEqual(0,enemy.AccumulatedPoiseDamage);Assert.IsTrue(enemy.IsParalyzed);Assert.AreEqual(18,enemy.StaggerRemainingFrames);
+            Step(battle,2);Assert.AreEqual(1,count);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 敵の同フレーム解除と強靭度未定義の相手に仮の強靭度を作らない(bool configured)
+        {
+            var enemy=new Enemy("stagger","テスト",1000,ElementType.None,new Vector2Int(4,0),poiseDefinition:configured?new EnemyPoiseDefinition(10,18):null);
+            var battle=Battle(enemy:enemy);int count=0;enemy.OnStaggered+=()=>count++;
+            battle.RunLogicalFrame(()=>{enemy.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));if(configured)enemy.ClearStatus(StatusEffectType.Paralyze);});
+            Step(battle,2);Assert.AreEqual(0,count);Assert.AreEqual(configured?(int?)10:null,enemy.Poise);Assert.IsFalse(enemy.IsStaggered);
+        }
+    }
+}
