@@ -2609,8 +2609,74 @@ namespace Olca.Tests.Integration
                 Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
                 Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsTrue(c.IsUserPaused);
                 Assert.IsFalse(m.CompleteBattleEndPresentation());KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
-                Assert.IsNull(Get(c,"disconnectPauseOwner"));
+                Assert.IsNull(Get(c,"automaticPauseOwner"));
             } finally {if(pad.added)UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);c.SetUserPaused(false);}
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void アプリ休止は探索とカスタムを停止し復帰やフォーカス通知では再開しない(bool battle)
+        {
+            var c=Start();if(battle)ToBattle(c);var m=Model(c);float scale=UnityEngine.Time.timeScale;
+            Call(c,"OnApplicationPause",false);Call(c,"OnApplicationFocus",false);Call(c,"OnApplicationFocus",true);
+            Assert.IsFalse(c.IsUserPaused,"PCのフォーカスだけでは停止しない");
+            float x=m.Dungeon.PlayerPosition;long frame=m.CurrentBattle?.LogicalFrame??0;
+            Call(c,"OnApplicationPause",true);Call(c,"OnApplicationPause",true);
+            Assert.IsTrue(c.IsUserPaused);Assert.AreEqual(0,UnityEngine.Time.timeScale);
+            for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1});
+            Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.AreEqual(frame,m.CurrentBattle?.LogicalFrame??0);
+            Call(c,"OnApplicationPause",false);Call(c,"OnApplicationFocus",true);
+            Assert.IsTrue(c.IsUserPaused);KeyboardButton(c,"ResumeButton");
+            Assert.IsFalse(c.IsUserPaused);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
+        }
+        [Test] public void 手動停止と切断停止はアプリ復帰に解除されず停止前速度を保持する()
+        {
+            var c=Start();float scale=UnityEngine.Time.timeScale;c.SetUserPaused(true);
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            try {
+                Call(c,"OnApplicationPause",true);UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
+                Call(c,"OnApplicationPause",false);Assert.IsTrue(c.IsUserPaused);
+                KeyboardButton(c,"ResumeButton");Assert.AreEqual(scale,UnityEngine.Time.timeScale);
+            } finally {if(pad.added)UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test] public void 初期化前の休止要求は初期化後も保持し攻略置換でも解除しない()
+        {
+            var c=Start(configure:host=>Call(host,"OnApplicationPause",true));Assert.IsTrue(c.IsUserPaused);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsTrue(c.IsUserPaused);
+            Call(c,"OnApplicationPause",false);Assert.IsTrue(c.IsUserPaused);
+            KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
+        }
+        [TestCase(true)] [TestCase(false)]
+        public void 勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ(bool victory)
+        {
+            var c=Start();ToBattle(c);var m=Model(c);
+            var callback=(System.Action<BattleResult>)System.Delegate.CreateDelegate(typeof(System.Action<BattleResult>),c,c.GetType().GetMethod("OnBattleEndPresentationRequested",Hidden));
+            m.OnBattleEndPresentationRequested-=callback;
+            if(victory)foreach(var e in m.CurrentBattle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);else m.CurrentBattle.Player.TakeDamage(100000);
+            Assert.IsTrue(m.IsBattleEndPresentationPending);
+            Call(c,"OnApplicationPause",true);Call(c,"OnApplicationPause",false);
+            Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
+            Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsTrue(c.IsUserPaused);
+            Assert.IsFalse(m.CompleteBattleEndPresentation());Assert.IsNull(Get(c,"automaticPauseOwner"));
+            KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 休止復帰と明示再開は暗転とヒットストップの残時間を消さない(bool hitstop)
+        {
+            var c=Start();ToBattle(c);var b=Model(c).CurrentBattle;
+            if(b.CustomScreen.IsOpen)b.CustomScreen.Cancel();
+            // 既存の短い停止時間をfixture内にのみ指定する。製品カード値は追加しない。
+            int resolved=0;
+            if(hitstop)b.RunLogicalFrame(()=>b.Enemies.First().TakeDamage(1,ElementType.None,hitStopFrames:6));
+            else Assert.IsTrue(b.TryStartDarkeningEffect(Olca.Core.Logic.Battle.DarkeningSide.Opponent,0,6,()=>resolved++));
+            int remaining=b.HitStopRemainingFrames;long frame=b.LogicalFrame;
+            Call(c,"OnApplicationPause",true);for(int n=0;n<20;n++)Tick(c);
+            Call(c,"OnApplicationPause",false);for(int n=0;n<20;n++)Tick(c);
+            Assert.IsTrue(c.IsUserPaused);Assert.AreEqual(frame,b.LogicalFrame);Assert.AreEqual(remaining,b.HitStopRemainingFrames);Assert.AreEqual(0,resolved);
+            KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
+            Assert.AreEqual(hitstop,b.IsHitStopped);Assert.AreEqual(!hitstop,b.IsDarkening);
+            for(int n=0;n<6;n++)Tick(c);
+            Assert.IsFalse(b.IsHitStopped);Assert.IsFalse(b.IsDarkening);Assert.AreEqual(hitstop?0:1,resolved);
         }
 
         [Test] public void 会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない(){var c=Start();var m=Model(c);var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));int ended=0;var script=new DialogueScript("external",new[]{new DialogueLine("検証")});Assert.IsTrue(c.TryStartDialogue(script,r=>ended++));Assert.IsFalse(c.TryStartDialogue(script));float x=m.Dungeon.PlayerPosition;for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,DashButtonDown=true});Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.SetUserPaused(true);c.CurrentDialogue.AdvanceFrame();Assert.AreEqual(0,c.CurrentDialogue.VisibleElements);c.SetUserPaused(false);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));}

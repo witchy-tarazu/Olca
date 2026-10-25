@@ -137,7 +137,14 @@ namespace Olca.Application.Dungeon
             queuedBasicAttackTap=false;TouchUiCancelGuard.CancelAll();logicalLoop.ReleaseInput();inputProvider?.QueueSnapshot();
         }
         private void OnApplicationFocus(bool focused) { if(!focused)ResetTouchInput(); }
-        private void OnApplicationPause(bool paused) { if(paused)ResetTouchInput(); }
+        private bool applicationInactive;
+        private void OnApplicationPause(bool paused)
+        {
+            applicationInactive = paused;
+            ResetTouchInput();
+            // 復帰通知は入力を取り直すだけ。再開は必ずメニューから明示する。
+            if (paused) RequestAutomaticPause();
+        }
         private bool queuedBasicAttackTap;
         private bool BasicAttackUiAvailable => manager?.CurrentPhase == GamePhase.Battle && !IsUserPaused && !GameplayPause.InputBlocked &&
             !clearReturnVisible && !collectionOpen && manager.CurrentBattle.CanPlayerBasicAttack && (basicAttackInput.CooldownFrames == 0 || manager.CurrentBattle.CanCancelPlayerRecovery);
@@ -477,15 +484,19 @@ namespace Olca.Application.Dungeon
         }
         public int DebugGameSpeedPercent => logicalLoop.Clock.DebugSpeedPercent;
 
-        private DungeonBattleManager disconnectPauseOwner;
+        private DungeonBattleManager automaticPauseOwner;
         private void OnGamepadDisconnected()
         {
 #if UNITY_STANDALONE || UNITY_EDITOR
+            RequestAutomaticPause();
+#endif
+        }
+        private void RequestAutomaticPause()
+        {
             if (this == null || manager == null) return;
             // 勝敗演出中はメニューを開かず、同じ攻略の演出完了後へ要求を引き継ぐ。
-            if (manager.IsBattleEndPresentationPending) { disconnectPauseOwner = manager; return; }
+            if (manager.IsBattleEndPresentationPending) { automaticPauseOwner = manager; return; }
             SetUserPaused(true);
-#endif
         }
 
         public void SetUserPaused(bool paused)
@@ -1363,6 +1374,7 @@ namespace Olca.Application.Dungeon
             CreatePauseControls();
             ResumeClearReturnIfNeeded();
             logicalLoop.Observe(false);
+            if (applicationInactive) RequestAutomaticPause();
             logger.LogInfo("[DungeonBattleController] 初期化完了");
         }
 
@@ -1647,7 +1659,7 @@ namespace Olca.Application.Dungeon
         private DungeonBattleManager outcomePresentationOwner;
         private void CancelOutcomePresentation()
         {
-            disconnectPauseOwner = null;
+            automaticPauseOwner = null;
             outcomePresentationCts?.Cancel();
             BattleVisualClock.SetPaused(this,false);
         }
@@ -1686,9 +1698,9 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
-            if (ReferenceEquals(disconnectPauseOwner, manager))
+            if (ReferenceEquals(automaticPauseOwner, manager))
             {
-                disconnectPauseOwner = null;
+                automaticPauseOwner = null;
                 SetUserPaused(true);
             }
             pendingBattleElapsedFrames = manager?.Dungeon.CurrentBattle?.LogicalFrame;
@@ -2025,6 +2037,7 @@ namespace Olca.Application.Dungeon
             manager.ActivateCheckpoint();
             if (manager.CurrentPhase == GamePhase.Dungeon) gameFieldView?.ShowHUDAsync(0).Forget();
             RefreshDungeonHud();
+            if (applicationInactive) RequestAutomaticPause();
         }
 
         private void OnDestroy()
