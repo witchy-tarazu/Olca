@@ -221,6 +221,7 @@ namespace Olca.Core.Logic.Dungeon
         private readonly TuningSystem tuningSystem;
         private readonly FusionSystem fusionSystem;
         private readonly ICardDatabase cardDatabase;
+        private readonly IEnemyAIProvider enemyAIProvider;
 
         public DungeonSystem(
             DungeonConfig config,
@@ -232,13 +233,14 @@ namespace Olca.Core.Logic.Dungeon
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false, IEnemyAIProvider enemyAIProvider = null)
         {
             if (restoration?.Snapshot.Boundary == CheckpointBoundary.Terminal)
                 throw new ArgumentException("終端チェックポイントからゲームモデルは再開できません");
             if (hasNextFloor && checkpoints == null)
                 throw new ArgumentException("階層移動には次階層開始を保存するセッションが必要です");
             this.cardDatabase = cardDatabase;
+            this.enemyAIProvider = enemyAIProvider;
             this.hasNextFloor = hasNextFloor;
             // 依存関係の初期化
             map = new DungeonMap(config);
@@ -551,7 +553,7 @@ namespace Olca.Core.Logic.Dungeon
                 logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
-                fusionSystem: fusionSystem, cardDatabase: cardDatabase
+                fusionSystem: fusionSystem, cardDatabase: cardDatabase, enemyAIProvider: enemyAIProvider
             );
 
             currentBattle.StartEffects.Configure(contactInfo.IsDashContact,(int?)contactInfo.DashEffect,contactInfo.DashValue);
@@ -1008,7 +1010,7 @@ namespace Olca.Core.Logic.Dungeon
             initialItemTargets=participants.Where(e=>!e.IsSummoned&&checkpointSession.Definitions.ItemQualifyingCells(plan.ParticipantCells,hasNextFloor).Any(i=>ReferenceEquals(map.GetCell(i).Enemy,e))).ToList();
             plannedItemReward=plan.ItemRewardIndex.HasValue?map.ItemRewards[plan.ItemRewardIndex.Value].Item:null;
             currentBattle = CheckpointBattleFactory.Create(playerCharacter,map,cardRewardSystem.GetCurrentDeck(),snapshot,restored.FirstHand,
-                randomProvider,logger:logger,exceed:exceedSystem,tuning:tuningSystem,fusion:fusionSystem,cardDatabase:cardDatabase);
+                randomProvider,logger:logger,exceed:exceedSystem,tuning:tuningSystem,fusion:fusionSystem,cardDatabase:cardDatabase,enemyAIProvider:enemyAIProvider);
             currentBattle.OnBattleEnd += OnBattleEndFromBattleSystem;
             var started = currentBattle;
             OnBattleStart?.Invoke(currentContactInfo);

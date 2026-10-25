@@ -249,7 +249,7 @@ namespace Olca.Core.Logic.Battle
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
-            IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null)
+            IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null, IEnemyAIProvider enemyAIProvider = null)
         {
             StartEffects = new BattleStartEffects(this,logger);
             this.player = player ?? throw new ArgumentNullException(nameof(player));
@@ -298,6 +298,9 @@ namespace Olca.Core.Logic.Battle
             foreach (var enemy in this.enemies)
                 RegisterEnemy(enemy, new List<IEnemyAIAction> { new BasicAttackAction(attackDamage: 10, cooldown: 2.0f,
                     onHit: target => { if (!target.IsDead) target.SetInvincible(DefaultHitInvincibilityMs); }) });
+
+            // 未登録は従来AI。factoryは個体ごとに実行し、初期カスタム/論理更新より前に定義を渡す。
+            foreach(var enemy in this.enemies)enemyAIProvider?.Create(enemy,cardDatabase)?.Apply(this,enemy);
 
             // カスタム画面イベントの購読
             customScreen.OnConfirmed += OnCustomScreenConfirmed;
