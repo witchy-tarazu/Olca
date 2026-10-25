@@ -166,6 +166,7 @@ namespace Olca.Core.Domain
         internal long TotalDamageTaken { get; private set; }
         internal long TotalHitsTaken { get; private set; }
         internal bool HasPendingHpFrame => frameHp.Active;
+        internal AttackImpact DeathImpact { get; private set; }
         internal void BeginHpFrame() { frameHp.Begin(currentHp); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; pendingInvincibilityMs = 0; framePoiseDamage = 0; frameStaggered = false; }
         internal void CommitHpFrame()
         {
@@ -366,13 +367,13 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int hitStopFrames = 0)
+        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int hitStopFrames = 0, AttackInfluence influence = null)
         {
             if (hitStopFrames < 0) throw new ArgumentOutOfRangeException(nameof(hitStopFrames));
             if (hitInvincibilityMs < 0) throw new ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
-            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs, hitStopFrames);
+            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs, hitStopFrames, influence);
         }
 
         /// <summary>回復量をHP集計へ加える。確定済みの死亡は復活させない。</summary>
@@ -388,7 +389,7 @@ namespace Olca.Core.Domain
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
-        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0, int hitStopFrames = 0)
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0, int hitStopFrames = 0, AttackInfluence influence = null)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -425,16 +426,17 @@ namespace Olca.Core.Domain
                 if(!poison&&finalDamage>0)RequestHitStop(hitStopFrames);
                 ReportCombatFeedback(CombatFeedbackKind.Damage, finalDamage);
                 bool killedByThisHit = false;
+                var killImpact = new AttackImpact(influence);
                 if (frameHp.Active)
                 {
-                    if (!poison) frameHp.Damage(finalDamage);
+                    if (!poison) frameHp.Damage(finalDamage, () => DeathImpact = killImpact);
                 }
                 else
                 {
                     currentHp = Math.Max(0, currentHp - finalDamage);
                     // 通知内の別攻撃による死亡を、この攻撃から二重通知しない。
                     killedByThisHit = IsDead;
-                    if (killedByThisHit) ClearDeathReaction();
+                    if (killedByThisHit) { DeathImpact = killImpact; ClearDeathReaction(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
                 bool staggered = false;
@@ -642,5 +644,24 @@ namespace Olca.Core.Domain
         {
             return !(a == b);
         }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>一つの攻撃判定の個体と寿命。カードIDや描画オブジェクトを識別子にしない。</summary>
+    public sealed class AttackInfluence : System.IDisposable
+    {
+        public bool IsActive { get; private set; } = true;
+        public void Dispose() => IsActive = false;
+    }
+
+    // HPの一括確定前に判定が終了しても、実際の命中時に存続していた事実は失わない。
+    internal readonly struct AttackImpact
+    {
+        public AttackInfluence Influence { get; }
+        public bool WasActive { get; }
+        public AttackImpact(AttackInfluence influence)
+        { Influence = influence; WasActive = influence != null && influence.IsActive; }
     }
 }

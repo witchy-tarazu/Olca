@@ -27,6 +27,17 @@ namespace Olca.Core.Logic.CardEffects
         /// <summary>使用したカード</summary>
         public Domain.Card UsedCard { get; }
 
+        internal AttackInfluence Influence { get; private set; }
+        // 可変な共有スコープを使わず、遅延/連鎖の各判定へ個別の個体を渡す。
+        internal BattleContext WithInfluence(AttackInfluence influence)
+        {
+            var child = new BattleContext(Battle, UsedCard) {
+                CardDatabase = CardDatabase, TemporaryPlayerPosition = TemporaryPlayerPosition, Influence = influence
+            };
+            child.InheritDerivatives(this);
+            return child;
+        }
+
         /// <summary>
         /// カードデータベース（チェイン効果でカードを取得する際に使用）
         /// Application層から注入される

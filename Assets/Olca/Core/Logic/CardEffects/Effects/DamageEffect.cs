@@ -35,6 +35,11 @@ namespace Olca.Core.Logic.CardEffects.Effects
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
+            using (var influence = new AttackInfluence()) ExecuteHitbox(context.WithInfluence(influence));
+        }
+
+        private void ExecuteHitbox(BattleContext context)
+        {
             var aliveEnemies = context.Battle.GetAliveEnemies();
             if (aliveEnemies.Count == 0) return;
 
@@ -90,7 +95,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             int finalDamage = baseDamage;
 
             // GetFinalElement()でElementOverrideを考慮した最終属性を使用
-            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement(), context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, hitStopFrames);
+            enemy.TakeDamage(finalDamage, context.UsedCard.GetFinalElement(), context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs, hitStopFrames, context.Influence);
         }
 
         /// <summary>

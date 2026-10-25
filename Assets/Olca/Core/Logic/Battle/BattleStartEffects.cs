@@ -32,7 +32,8 @@ namespace Olca.Core.Logic.Battle
                 int amount=Value.Value;
                 switch(Effect.Value){
                     case ActionSystem.DashContactEffect.InitialDamage:
-                        foreach(var enemy in battle.Enemies){enemy.TakeDamage(amount,ElementType.None);logger?.LogInfo($"  - {enemy.Name}に{amount}ダメージ！（ダッシュ接敵）");}break;
+                        using(var influence=new AttackInfluence())
+                        foreach(var enemy in battle.Enemies){enemy.TakeDamage(amount,ElementType.None,influence:influence);logger?.LogInfo($"  - {enemy.Name}に{amount}ダメージ！（ダッシュ接敵）");}break;
                     case ActionSystem.DashContactEffect.Stun:
                         foreach(var enemy in battle.Enemies)enemy.ApplyStunFrames(amount);logger?.LogInfo($"  - 敵をスタン（{amount}フレーム）！（ダッシュ接敵）");break;
                     case ActionSystem.DashContactEffect.PlayerDamage:
