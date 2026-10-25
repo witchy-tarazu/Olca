@@ -23,6 +23,14 @@ namespace Olca.Core.Logic.Battle
         private AIContext runningContext;
         private FrameCountdown cooldown;
         private int nextActionIndex;
+        private System.Func<Enemy,EnemyAIObservationFrame,int?> switchRule;
+        internal void ConfigureSwitchRule(System.Func<Enemy,EnemyAIObservationFrame,int?> rule){if(rule!=null&&hpPatterns!=null)throw new System.ArgumentException("条件競合の優先をresolverへ統合してください");switchRule=rule;}
+        internal void Observe(EnemyAIObservationFrame frame)
+        {
+            if(disposed||enemy.IsDead||switchRule==null)return;
+            var target=switchRule(enemy,frame);
+            if(target.HasValue&&target!=CurrentPatternId){if(registeredPatterns==null||!registeredPatterns.ContainsKey(target.Value))throw new System.InvalidOperationException("切替先IDが未登録です");TrySwitchRegisteredPattern(target.Value);}
+        }
         private List<EnemyHpActionPattern> hpPatterns;
         private EnemyHpActionPattern selectedHpPattern;
 
@@ -50,6 +58,7 @@ namespace Olca.Core.Logic.Battle
         public bool ConfigureHpPatterns(IReadOnlyList<EnemyHpActionPattern> patterns)
         {
             if(disposed||enemy.IsDead)return false;
+            if(switchRule!=null)throw new System.ArgumentException("条件競合の優先をresolverへ統合してください");
             if(patterns==null||patterns.Count==0)throw new ArgumentException("HP区間が必要です",nameof(patterns));
             var copy=new List<EnemyHpActionPattern>(patterns);
             int last=-1;
@@ -188,7 +197,7 @@ namespace Olca.Core.Logic.Battle
         public void Dispose()
         {
             if(disposed)return;
-            disposed=true;pendingPattern=null;hpPatterns=null;selectedHpPattern=null;registeredPatterns=null;activeDefinition=pendingDefinition=null;IsPatternStopped=true;
+            disposed=true;switchRule=null;pendingPattern=null;hpPatterns=null;selectedHpPattern=null;registeredPatterns=null;activeDefinition=pendingDefinition=null;IsPatternStopped=true;
             enemy.OnStaggered-=InterruptActiveAction;enemy.OnDeath-=Dispose;
             if(executingAction){interruptRequested=true;return;}
             EndActiveAction(true);

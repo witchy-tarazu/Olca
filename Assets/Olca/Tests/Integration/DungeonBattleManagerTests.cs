@@ -5593,3 +5593,31 @@ namespace Olca.Tests.Integration
         }
     }
 }
+
+namespace Olca.Tests.Integration
+{
+ [TestFixture]
+ public class EnemyAIEventDefinitionRestoreTests
+ {
+  [TestCase(false)] [TestCase(true)]
+  public void 通常接敵と開始保存復帰で条件と召喚定義を新規生成し旧召喚状態を保存へ混入しない(bool beforeContact)
+  {
+   var map=DungeonConfig.CreateTestDungeon(20,30,3);var cards=new Olca.Application.Battle.SimpleCardFactory();var deck=cards.CreateStarterDeck();var session=DungeonCheckpointSession.CreateDefault(map,deck);int spawned=0;var rules=new List<object>();
+   var entries=map.MapCells.Where(c=>c.Enemy!=null).Select(c=>c.Enemy.EnemyId).Distinct().ToDictionary(id=>id,id=>(System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>)((enemy,db)=>{
+    var identity=new object();rules.Add(identity);
+    var summon=new EnemySummonDefinition(context=>{spawned++;return new Enemy("child","コドモ",20,ElementType.None,new Vector2Int(4,0),isSummoned:true);},(e,c)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(7,new[]{new EnemyMovementAction(EnemyMovementKind.Stay,0)},EnemyPatternEndMode.Stop)},7));
+    var card=new Card("fixture-summon","ショウカン",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.Sword,0,"");
+    return new EnemyAIRegistration(new[]{new EnemyActionPattern(1,new[]{new EnemyMovementAction(EnemyMovementKind.Stay,0)},EnemyPatternEndMode.Stop),new EnemyActionPattern(2,new IEnemyAIAction[]{new EnemyCardAction(card,0,db,summon)},EnemyPatternEndMode.Stop)},1,switchRule:(e,f)=>f.LogicalFrame>=2?2:(int?)null);
+   }));
+   var registry=new EnemyAIRegistry(entries);var game=new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,cardDatabase:cards,enemyAIProvider:registry);
+   if(beforeContact){Assert.IsTrue(game.SuspendForCheckpoint());Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out game,out var error,cardDatabase:cards,enemyAIProvider:registry),error);game.ActivateCheckpoint();}
+   for(int i=0;i<100&&game.CurrentBattle==null;i++)game.Tick(50);Assert.IsNotNull(game.CurrentBattle);
+   var saved=PortableCheckpointJson.Serialize(session.Store.Read());var old=game.CurrentBattle;old.CustomScreen.Cancel();for(int i=0;i<5;i++)old.TickFrame(17);
+   Assert.AreEqual(1,spawned);var child=old.Enemies.First(e=>e.IsSummoned);Assert.IsTrue(old.TrySwitchRegisteredEnemyPattern(child,7));
+   Assert.AreEqual(saved,PortableCheckpointJson.Serialize(session.Store.Read()));Assert.IsTrue(game.SuspendForCheckpoint());
+   Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var resumed,out var restoreError,cardDatabase:cards,enemyAIProvider:registry),restoreError);resumed.ActivateCheckpoint();
+   Assert.IsFalse(resumed.CurrentBattle.Enemies.Any(e=>e.IsSummoned));Assert.AreEqual(0,resumed.CurrentBattle.LogicalFrame);resumed.CurrentBattle.CustomScreen.Cancel();for(int i=0;i<5;i++)resumed.CurrentBattle.TickFrame(17);
+   Assert.AreEqual(2,spawned);Assert.AreNotSame(child,resumed.CurrentBattle.Enemies.First(e=>e.IsSummoned));Assert.AreEqual(2,rules.Count);Assert.AreNotSame(rules[0],rules[1]);Assert.AreEqual(saved,PortableCheckpointJson.Serialize(session.Store.Read()));
+  }
+ }
+}

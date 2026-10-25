@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 namespace Olca.Core.Domain
 {
+    /// <summary>防御を通過した被害通知。回数条件の単位は定義側が毒/影響元から選択する。</summary>
+    public readonly struct EnemyDamageNotice
+    {
+        public int Damage { get; }
+        public ElementType Element { get; }
+        public bool IsPoison { get; }
+        public AttackInfluence Influence { get; }
+        public EnemyDamageNotice(int damage,ElementType element,bool poison,AttackInfluence influence){Damage=damage;Element=element;IsPoison=poison;Influence=influence;}
+    }
     // 既存保存の0/1/2を維持し、プレイヤー被害だけを末尾に加える。
     public enum DashContactOutcome { InitialDamage=0, Stun=1, FirstStrike=2, PlayerDamage=3 }
     /// <summary>接触先が持つ単一の初撃定義。StunのValueだけ論理フレーム、他はダメージ量。</summary>
@@ -462,7 +471,7 @@ namespace Olca.Core.Domain
                     frameHp.Poison(finalDamage, accepted => {
                         TotalDamageTaken += accepted;
                         TotalHitsTaken++;
-                        ReportCombatFeedback(CombatFeedbackKind.Damage,accepted);OnDamaged?.Invoke(accepted, multiplier);
+                        ReportCombatFeedback(CombatFeedbackKind.Damage,accepted);OnDamaged?.Invoke(accepted, multiplier);if(accepted>0)OnDamageObserved?.Invoke(new EnemyDamageNotice(accepted,attackElement,true,influence));
                     });
                     return;
                 }
@@ -497,6 +506,7 @@ namespace Olca.Core.Domain
                 if (!poison && damage > 0 && !IsDead && hitInvincibilityMs > 0) SetInvincible(hitInvincibilityMs);
                 // 命中通知は各ヒット、HPと死亡通知は論理フレームの確定後。
                 OnDamaged?.Invoke(finalDamage, multiplier);
+                if(finalDamage>0)OnDamageObserved?.Invoke(new EnemyDamageNotice(finalDamage,attackElement,poison,influence));
                 if (!IsDead && staggered) OnStaggered?.Invoke();
 
                 if (killedByThisHit)
@@ -641,6 +651,7 @@ namespace Olca.Core.Domain
         /// <summary>
         /// ダメージを受けた時のイベント
         /// </summary>
+        public event Action<EnemyDamageNotice> OnDamageObserved;
         public event Action<int, float> OnDamaged; // (damage, multiplier)
 
         /// <summary>
