@@ -17,6 +17,92 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
+        private static readonly System.Collections.Generic.List<EnemyView> bossGauges=new System.Collections.Generic.List<EnemyView>();
+        private static readonly System.Collections.Generic.List<EnemyView> normalGauges=new System.Collections.Generic.List<EnemyView>();
+        private bool hpVisible;
+        private LineRenderer hpBack, hpFill, poiseBack, poiseFill;
+        private Material gaugeMaterial;
+        private Vector3 hpLocalPosition, hpLocalScale;
+        public bool IsBossGauge => enemy?.EnemyId == "boss";
+        public bool GaugeVisible => hpVisible && enemy != null && !enemy.IsDead;
+        // 固定HUDを敵本体の頭上位置として数えない。
+        public bool IsFixedHudRenderer(Renderer renderer)=>IsBossGauge&&
+            (renderer==hpBack||renderer==hpFill||renderer==poiseBack||renderer==poiseFill||hpText!=null&&renderer==hpText.GetComponent<Renderer>());
+        public float HpFraction => enemy == null ? 0 : Mathf.Clamp01((float)enemy.CurrentHp / enemy.MaxHp);
+        public float? PoiseFraction => enemy?.Poise == null ? (float?)null :
+            enemy.IsStaggered ? 0 : Mathf.Clamp01((float)(enemy.Poise.Value-enemy.AccumulatedPoiseDamage)/enemy.Poise.Value);
+
+        private void EnsureGauges()
+        {
+            if(hpBack!=null)return;
+            gaugeMaterial=new Material(Shader.Find("Sprites/Default"));
+            LineRenderer Line(string name,Color color) {
+                var obj=new GameObject(name);obj.transform.SetParent(transform,false);
+                var line=obj.AddComponent<LineRenderer>();line.sharedMaterial=gaugeMaterial;
+                line.useWorldSpace=true;line.startColor=line.endColor=color;line.sortingOrder=3;
+                line.numCapVertices=2;return line;
+            }
+            hpBack=Line("EnemyHpTrack",new Color(.035f,.1f,.13f,1));
+            hpFill=Line("EnemyHpFill",new Color(.42f,.85f,.87f,1));
+            poiseBack=Line("EnemyPoiseTrack",new Color(.12f,.13f,.08f,1));
+            poiseFill=Line("EnemyPoiseFill",new Color(.95f,.8f,.27f,1));
+        }
+        private static void Arc(LineRenderer line,Vector3 center,float radius,float degrees,float width)
+        {
+            line.startWidth=line.endWidth=width;
+            int steps=Mathf.Max(1,Mathf.CeilToInt(degrees/5));line.positionCount=steps+1;
+            for(int n=0;n<=steps;n++){float a=(90-degrees*n/steps)*Mathf.Deg2Rad;line.SetPosition(n,center+new Vector3(Mathf.Cos(a),Mathf.Sin(a),0)*radius);}
+        }
+        private static void Bar(LineRenderer line,Vector3 bottom,Vector3 top,float width,float fraction)
+        {line.startWidth=line.endWidth=width;line.positionCount=2;line.SetPosition(0,bottom);line.SetPosition(1,Vector3.Lerp(bottom,top,fraction));}
+        private void RefreshGauges()
+        {
+            bool visible=GaugeVisible;if(hpBack==null&&!visible)return;EnsureGauges();
+            hpBack.enabled=visible;hpFill.enabled=visible&&HpFraction>0;
+            poiseBack.enabled=visible&&PoiseFraction.HasValue;poiseFill.enabled=poiseBack.enabled&&PoiseFraction.Value>0;
+            if(!visible)return;
+            var camera=Camera.main;
+            if(IsBossGauge&&camera!=null){
+                float offset=.06f*Mathf.Max(0,bossGauges.IndexOf(this));
+                float depth=Mathf.Max(camera.nearClipPlane+1,camera.WorldToViewportPoint(transform.position).z);
+                Vector3 Point(float x,float y)=>camera.ViewportToWorldPoint(new Vector3(x-offset,y,depth));
+                float height=Vector3.Distance(Point(.965f,.3f),Point(.965f,.78f));
+                Bar(hpBack,Point(.965f,.3f),Point(.965f,.78f),height*.055f,1);
+                Bar(hpFill,Point(.965f,.3f),Point(.965f,.78f),height*.043f,HpFraction);
+                Bar(poiseBack,Point(.94f,.3f),Point(.94f,.78f),height*.018f,1);
+                Bar(poiseFill,Point(.94f,.3f),Point(.94f,.78f),height*.012f,PoiseFraction??0);
+                if(hpText!=null)hpText.transform.position=Point(.965f,.265f);
+                FitHpText(height*.14f);
+            }else{
+                if(hpText!=null)hpText.transform.localPosition=hpLocalPosition;
+                float radius=camera!=null&&camera.orthographic?camera.orthographicSize*.055f:.55f;
+                int row=0;
+                // 同じ位置にいる敵も、HP/強靭度の値を個体ごとに読めるよう分ける。
+                foreach(var other in normalGauges){
+                    if(other==this)break;
+                    if(other!=null&&other.GaugeVisible&&Vector3.Distance(other.transform.position,transform.position)<radius*2.4f)row++;
+                }
+                var center=(hpText!=null?hpText.transform.position:transform.position+Vector3.up)+Vector3.down*(row*radius*2.65f);
+                if(hpText!=null)hpText.transform.position=center;
+                FitHpText(radius*2);
+                Arc(hpBack,center,radius,360,radius*.16f);Arc(hpFill,center,radius,360*HpFraction,radius*.11f);
+                Arc(poiseBack,center,radius*1.28f,180,radius*.09f);Arc(poiseFill,center,radius*1.28f,180*(PoiseFraction??0),radius*.06f);
+            }
+        }
+        private void FitHpText(float diameter)
+        {
+            if(hpText==null)return;var renderer=hpText.GetComponent<Renderer>();
+            float height=renderer!=null?renderer.bounds.size.y:0;if(height<.0001f)return;
+            // 最大HPの桁数に合わせ、残HPの桁が変わっても数字の大きさを変えない。
+            float targetHeight=Mathf.Min(diameter*.4f,diameter*.8f/(.7f*enemy.MaxHp.ToString().Length));
+            hpText.transform.localScale*=targetHeight/height;
+        }
+        private void RegisterGauge(){var list=IsBossGauge?bossGauges:normalGauges;if(!list.Contains(this))list.Add(this);}
+        private void OnEnable(){if(hpVisible)RegisterGauge();}
+        private void OnDisable(){bossGauges.Remove(this);normalGauges.Remove(this);}
+        private void LateUpdate(){if(hpVisible)RefreshGauges();}
+        private void OnDestroy(){bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
+
         private bool deathPresentationActive;
         public void SetDeathPresentationActive(bool active)=>deathPresentationActive=active;
 
@@ -26,13 +112,16 @@ namespace Olca.Presentation.Battle
         public void Initialize(Enemy enemy)
         {
             this.enemy = enemy;
+            if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
             ApplyAppearance();
+            if(hpText!=null){hpLocalPosition=hpText.transform.localPosition;hpLocalScale=hpText.transform.localScale;}
+
 
             if (enemyNameText != null)
-                enemyNameText.text = enemy.Name;
+                enemyNameText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
 
             // HP/名前テキストをグリッド・敵スプライトより手前に描画
-            SetTextSortingOrder(hpText, 3);
+            SetTextSortingOrder(hpText, 4);
             SetTextSortingOrder(enemyNameText, 3);
 
             HideHp(); // ダンジョン探索中は名前・HP非表示
@@ -70,12 +159,15 @@ namespace Olca.Presentation.Battle
             if (enemy == null) return;
             if (hpText != null)
                 hpText.text = $"{enemy.CurrentHp}";
+            RefreshGauges();
             gameObject.SetActive(!enemy.IsDead||deathPresentationActive);
         }
 
         /// <summary>バトル開始時に呼ぶ（名前・HP表示）</summary>
         public void ShowHp()
         {
+            hpVisible=true;RegisterGauge();
+            RefreshGauges();
             if (hpText != null) hpText.gameObject.SetActive(true);
             if (enemyNameText != null) enemyNameText.gameObject.SetActive(true);
         }
@@ -83,6 +175,8 @@ namespace Olca.Presentation.Battle
         /// <summary>バトル終了時に呼ぶ（名前・HP非表示）</summary>
         public void HideHp()
         {
+            hpVisible=false;bossGauges.Remove(this);normalGauges.Remove(this);
+            RefreshGauges();
             if (hpText != null) hpText.gameObject.SetActive(false);
             if (enemyNameText != null) enemyNameText.gameObject.SetActive(false);
         }

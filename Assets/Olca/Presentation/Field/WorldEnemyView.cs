@@ -41,7 +41,7 @@ namespace Olca.Presentation.Field
                 // 名前・現在HPの上から積み、既存の常時表示と重ねない。
                 float top=transform.position.y+.4f;
                 foreach(var renderer in GetComponentsInChildren<Renderer>())
-                    if(renderer.enabled)top=Mathf.Max(top,renderer.bounds.max.y);
+                    if(renderer.enabled&&!(enemyView!=null&&enemyView.IsFixedHudRenderer(renderer)))top=Mathf.Max(top,renderer.bounds.max.y);
                 var position=new Vector3(transform.position.x,top+.2f,transform.position.z-.5f);
                 damageNumberPool?.ShowFeedback(feedback,position,CancellationToken.None,this);
             }
@@ -202,7 +202,7 @@ namespace Olca.Presentation.Field
         // ==================== バトル遷移 ====================
 
         /// <summary>バトル開始時 - グリッド座標モードに切り替え（グリッド範囲内の敵のみ）</summary>
-        public void OnBattleStarted(WorldBattleGridView grid)
+        public void OnBattleStarted(WorldBattleGridView grid, bool participates = true)
         {
             positionAnimating = false;
             if (enemy == null) return;
@@ -214,9 +214,10 @@ namespace Olca.Presentation.Field
             pendingContactDamage = pendingContactFeedback.Count==0?previousHp-enemy.CurrentHp:0;
             previousHp = enemy.CurrentHp;
             // GridPosition.X がグリッド範囲外の敵はバトルに参加しない → 一時非表示
-            if (enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
+            if (!participates || enemy.GridPosition.X < 0 || enemy.GridPosition.X >= 6)
             {
                 hiddenForBattle = true;
+                enemyView?.HideHp();
                 gameObject.SetActive(false);
                 return;
             }

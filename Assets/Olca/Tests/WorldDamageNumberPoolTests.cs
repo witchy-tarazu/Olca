@@ -266,3 +266,76 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public class EnemyGaugeBindingTests
+    {
+        private readonly List<GameObject> objects=new List<GameObject>();
+        private Olca.Presentation.Battle.EnemyView View(Olca.Core.Domain.Enemy enemy)
+        {
+            var obj=new GameObject("GaugeFixture");objects.Add(obj);
+            var label=new GameObject("Hp",typeof(TextMesh));label.transform.SetParent(obj.transform,false);
+            label.GetComponent<TextMesh>().font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var view=obj.AddComponent<Olca.Presentation.Battle.EnemyView>();
+            typeof(Olca.Presentation.Battle.EnemyView).GetField("hpText",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,label.GetComponent<TextMesh>());
+            view.Initialize(enemy);return view;
+        }
+        private static Olca.Core.Domain.Enemy Enemy(string id="grunt",bool poise=true)=>new Olca.Core.Domain.Enemy(id,"テスト",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0),poiseDefinition:poise?new Olca.Core.Domain.EnemyPoiseDefinition(20,3):null);
+        private static LineRenderer Line(Olca.Presentation.Battle.EnemyView view,string name)=>view.transform.Find(name).GetComponent<LineRenderer>();
+        [TearDown] public void Cleanup(){foreach(var obj in objects)if(obj!=null)UnityEngine.Object.DestroyImmediate(obj);objects.Clear();}
+        [Test] public void 通常敵の被弾回復と強靭度成立リセットを別々の残量へ反映する()
+        {
+            var enemy=Enemy();var view=View(enemy);Assert.IsFalse(view.GaugeVisible);view.ShowHp();
+            enemy.TakeDamage(25,Olca.Core.Domain.ElementType.None,poiseDamage:5);view.Refresh();
+            Assert.AreEqual(.75f,view.HpFraction);Assert.AreEqual(.75f,view.PoiseFraction);Assert.IsTrue(Line(view,"EnemyHpFill").enabled);
+            enemy.Heal(10);view.Refresh();Assert.AreEqual(.85f,view.HpFraction);Assert.AreEqual(.75f,view.PoiseFraction);
+            enemy.TakeDamage(1,Olca.Core.Domain.ElementType.None,poiseDamage:15);view.Refresh();Assert.IsTrue(enemy.IsStaggered);Assert.AreEqual(0,view.PoiseFraction);Assert.IsFalse(Line(view,"EnemyPoiseFill").enabled);
+            for(int n=0;n<3;n++)enemy.TickStunFrame();view.Refresh();Assert.AreEqual(1,view.PoiseFraction);Assert.IsTrue(Line(view,"EnemyPoiseFill").enabled);
+            Assert.AreEqual(84,enemy.CurrentHp);Assert.AreEqual(0,enemy.AccumulatedPoiseDamage);
+        }
+        [Test] public void 強靭度未定義と無敵で無効になった被弾を仮の残量にしない()
+        {
+            var enemy=Enemy(poise:false);var view=View(enemy);view.ShowHp();Assert.IsNull(view.PoiseFraction);Assert.IsFalse(Line(view,"EnemyPoiseTrack").enabled);
+            enemy.SetInvincible(1000);enemy.TakeDamage(50,Olca.Core.Domain.ElementType.None);view.Refresh();Assert.AreEqual(1,view.HpFraction);Assert.AreEqual(100,enemy.CurrentHp);
+            var other=View(Enemy());other.ShowHp();Assert.AreEqual(1,other.PoiseFraction);Assert.IsFalse(Line(view,"EnemyPoiseTrack").enabled);
+        }
+        [Test] public void 終了と死亡でゲージを隠し再表示と別モデル初期化で古い値を残さない()
+        {
+            var enemy=Enemy();var view=View(enemy);view.ShowHp();view.HideHp();Assert.IsFalse(Line(view,"EnemyHpTrack").enabled);view.ShowHp();Assert.IsTrue(Line(view,"EnemyHpTrack").enabled);
+            enemy.TakeDamage(1000,Olca.Core.Domain.ElementType.None);view.Refresh();Assert.IsFalse(view.GaugeVisible);Assert.IsFalse(Line(view,"EnemyHpFill").enabled);
+            view.gameObject.SetActive(true);view.Initialize(Enemy());Assert.IsFalse(view.GaugeVisible);view.ShowHp();Assert.AreEqual(1,view.HpFraction);Assert.AreEqual(4,view.GetComponentsInChildren<LineRenderer>(true).Length);
+        }
+        [TestCase(false)] [TestCase(true)] public void 参加していない敵はグリッド内でもゲージと本体を隠し終了後に探索へ戻す(bool participates)
+        {
+            var enemy=Enemy("boss");var view=View(enemy);var world=view.gameObject.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
+            typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(world,view);
+            world.Initialize(enemy,0);world.OnBattleStarted(null,participates);
+            Assert.AreEqual(participates,view.gameObject.activeSelf);Assert.AreEqual(participates,view.GaugeVisible);
+            world.OnBattleEnded();Assert.IsTrue(view.gameObject.activeSelf);Assert.IsFalse(view.GaugeVisible);
+        }
+        [Test] public void 同じマスの通常敵は本体を動かさずゲージだけ分けて個体別の値を読める()
+        {
+            var a=View(Enemy());var b=View(Enemy());a.ShowHp();b.ShowHp();a.Refresh();b.Refresh();
+            var first=a.transform.Find("Hp").position;var second=b.transform.Find("Hp").position;
+            Assert.Greater(first.y,second.y);Assert.AreEqual(Vector3.zero,a.transform.position);Assert.AreEqual(Vector3.zero,b.transform.position);
+            b.Initialize(Enemy());b.ShowHp();b.Refresh();Assert.Less(Vector3.Distance(second,b.transform.Find("Hp").position),.0001f);
+            a.HideHp();b.Refresh();Assert.Less(Vector3.Distance(first,b.transform.Find("Hp").position),.0001f);
+        }
+        [Test] public void 通常敵の強靭度はHP円の右外側だけに沿う()
+        {
+            var view=View(Enemy());view.ShowHp();var hp=Line(view,"EnemyHpTrack");var poise=Line(view,"EnemyPoiseTrack");
+            var center=view.transform.Find("Hp").position;
+            for(int n=0;n<poise.positionCount;n++)Assert.GreaterOrEqual(poise.GetPosition(n).x,center.x-.0001f);
+            Assert.Greater(Vector3.Distance(poise.GetPosition(0),center),Vector3.Distance(hp.GetPosition(0),center));
+        }
+        [Test] public void 複数ボスの縦ゲージは右端で分離し敵移動に追従せず終了時に枠を解放する()
+        {
+            if(Camera.main==null){var obj=new GameObject("GaugeCamera",typeof(Camera));objects.Add(obj);obj.tag="MainCamera";obj.transform.position=new Vector3(0,0,-10);}
+            var a=View(Enemy("boss"));var b=View(Enemy("boss"));a.ShowHp();b.ShowHp();
+            Assert.IsTrue(a.IsBossGauge);Assert.IsTrue(b.IsBossGauge);Assert.IsTrue(a.IsFixedHudRenderer(Line(a,"EnemyHpTrack")));Assert.IsTrue(a.IsFixedHudRenderer(a.transform.Find("Hp").GetComponent<Renderer>()));var first=Line(a,"EnemyHpTrack").GetPosition(0);var second=Line(b,"EnemyHpTrack").GetPosition(0);
+            Assert.Greater(first.x,second.x);a.transform.position+=Vector3.right*4;a.Refresh();Assert.Less(Vector3.Distance(first,Line(a,"EnemyHpTrack").GetPosition(0)),.0001f);
+            a.HideHp();b.Refresh();Assert.Less(Vector3.Distance(first,Line(b,"EnemyHpTrack").GetPosition(0)),.0001f);
+        }
+    }
+}
