@@ -131,7 +131,7 @@ namespace Olca.Core.Domain
         public int StaggerDurationFrames { get; }
         public int StaggerRemainingFrames => staggerTimer.Frames;
         public bool IsStaggered => !IsDead && (frameHp.Active ? frameWasStaggered : staggerTimer.IsActive);
-        private void StartStagger() { if (StaggerDurationFrames > 0) staggerTimer.SetFrames(StaggerDurationFrames); }
+        private void StartStagger() { Guard.OnStaggered(); if (StaggerDurationFrames > 0) staggerTimer.SetFrames(StaggerDurationFrames); }
         internal void TickStagger(int ms, bool logical) { if (logical) staggerTimer.TickFrame(); else staggerTimer.Tick(ms); }
         internal void ClearStagger() { staggerTimer.SetFrames(0); frameWasStaggered = false; }
         private FrameCountdown paralysisTimer;
@@ -275,7 +275,7 @@ namespace Olca.Core.Domain
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
             foreach(var state in poisons.Values) { state.EndFrame(); if (IsDead) state.Reset(); }
-            if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); }
+            if (IsDead) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); }
             // 集中の付与/解除は終端で確定する。付与フレーム中の攻撃は旧倍率だけを消費する。
             if (IsDead || clearConcentratePending) nextCardMultiplier = 1f;
             else if (pendingConcentrateMultiplier.HasValue) nextCardMultiplier = pendingConcentrateMultiplier.Value;
@@ -305,7 +305,7 @@ namespace Olca.Core.Domain
             if (changed) OnHpChanged?.Invoke(currentHp, maxHp);
             bool staggered = frameStaggered; frameStaggered = false;
             if (!IsDead && staggered) OnStaggered?.Invoke();
-            if (died) { ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
+            if (died) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
         private int currentHp;
         private readonly int maxHp;
@@ -354,6 +354,9 @@ namespace Olca.Core.Domain
 
         /// <summary>一時移動中かどうか</summary>
         public bool IsInTemporaryMove => temporaryPosition.HasValue;
+
+        /// <summary>外部の発生元が期間と中断条件を解決する、戦闘限定のガード状態。</summary>
+        public BattleGuardState Guard { get; } = new BattleGuardState();
 
         /// <summary>バリアHP</summary>
         public int BarrierHp => protection.BarrierHp;
@@ -448,6 +451,8 @@ namespace Olca.Core.Domain
                 // 無敵中はダメージ・のけぞりを無効化
                 if (frameHp.Active ? frameInvincible : invincibilityTimer.IsActive) return false;
 
+                // ガード通過後だけバリア/オーラへ計上する。防いだヒットは付随効果・弱点受理へ進めない。
+                if(Guard.Blocks(damage,attackProperties)){ReportCombatFeedback(CombatFeedbackKind.Guard);return false;}
                 bool grass = attackElement == ElementType.Fire && TerrainState.ReceivesPanelEffects && (IsOnGrass?.Invoke() ?? false);
                 bool protectionPresent=HasBarrier||HasAura, wasBreaking=protection.WillBreak;
                 // 単独オーラは地形補正だけで閾値を判定し、消滅するヒットも全防御する。
@@ -473,7 +478,7 @@ namespace Olca.Core.Domain
                 else
                 {
                     currentHp = Math.Max(0, currentHp - damage);
-                    if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); }
+                    if (IsDead) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); }
                     OnHpChanged?.Invoke(currentHp, maxHp);
                 }
 
@@ -506,7 +511,7 @@ namespace Olca.Core.Domain
 
                 if (!frameHp.Active && IsDead)
                 {
-                    ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke();
+                    Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke();
                 }
                 return true;
             }
@@ -526,7 +531,7 @@ namespace Olca.Core.Domain
             if (frameHp.Active) { frameHp.Damage(damage); return; }
             currentHp = Math.Max(0, currentHp - damage);
             OnHpChanged?.Invoke(currentHp, maxHp);
-            if (IsDead) { ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
+            if (IsDead) { Guard.Clear(); ResetParalysis(); ResetConfusion(); ResetBlindness(); OnDeath?.Invoke(); }
         }
 
         /// <summary>外部の毒更新から受け取る確定量。バリア・強靭度・被弾無敵を経由せずHP1で止める。</summary>

@@ -1726,7 +1726,7 @@ namespace Olca.Presentation.CustomScreen
         {
             if(value==null)return "プレイヤーナシ";
             return Katakana($"ジブン\nHP {value.CurrentHp}/{value.MaxHp} / コウゲキ {value.AttackPower} / ゾクセイ {ElementName(value.ActiveElement)}\nキョウジンド {(value.IsStaggered?0:System.Math.Max(0,value.Poise-value.AccumulatedDamage))}/{value.Poise} / カスタムソクド {value.CustomSpeed}\n"+
-                Resistances(value.ActiveResistances,null)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(false,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+
+                Resistances(value.ActiveResistances,null)+"\n\n"+Statuses(value.InspectStatuses())+"\n"+Protection(value.Guard.IsActive,value.BarrierHp,value.AuraThreshold,value.IsInvincible,value.TerrainState.IsFloating)+
                 (value.IsConcentrating?"\nシュウチュウ: ツギノカード "+value.NextCardMultiplier.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture)+" バイ":"")+(value.IsStaggered?"\nノケゾリ":""));
         }
 

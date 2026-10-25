@@ -1378,3 +1378,119 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+namespace Olca.Tests.Battle
+{
+    public class PlayerGuardTests
+    {
+        private static BattleSystem Battle(PlayerCharacter p=null)
+            =>new BattleSystem(p??new PlayerCharacter(100,new Vector2Int(3,0),poise:30,staggerDurationFrames:18),
+                new List<Enemy>{new Enemy("guard-source","テスト",1000,ElementType.None,new Vector2Int(4,0))},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:new MockRandomProvider());
+        [TestCase(false,AttackProperty.None)] [TestCase(true,AttackProperty.None)]
+        [TestCase(false,AttackProperty.Sword)] [TestCase(true,AttackProperty.Sword)]
+        [TestCase(false,AttackProperty.Wind)] [TestCase(true,AttackProperty.Wind)]
+        public void 前後の敵AI攻撃をガードしHP削り付随効果無敵停止とバリア消費を防ぐ(bool behind,AttackProperty properties)
+        {
+            var b=Battle();var p=b.Player;var e=b.Enemies[0];e.MoveTo(new Vector2Int(behind?2:4,0));p.Guard.Set(true,true);p.SetBarrier(40);int effects=0;
+            var feedback=new List<CombatFeedback>();p.OnCombatFeedback+=feedback.Add;
+            var attack=new BasicAttackAction(50,100,attackProperties:properties,poiseDamage:100,onHit:_=>effects++,hitInvincibilityMs:600,hitStopFrames:6);
+            var context=new AIContext(e,p,b.Field,new MockRandomProvider(),new MockLogger());Assert.IsTrue(attack.CanExecute(context));
+            b.RunLogicalFrame(()=>{attack.Execute(context);attack.Execute(context);});
+            Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(0,p.AccumulatedDamage);Assert.AreEqual(0,effects);Assert.AreEqual(40,p.BarrierHp);
+            Assert.IsFalse(p.IsInvincible);Assert.IsFalse(p.IsStaggered);Assert.IsFalse(b.IsHitStopped);Assert.IsTrue(p.Guard.IsActive);Assert.AreEqual(2,feedback.Count);Assert.IsTrue(feedback.All(v=>v.Kind==CombatFeedbackKind.Guard));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ブレイクはガードだけを通し防御消滅フレームも全段を防いで次フレームから受理する(bool aura)
+        {
+            var b=Battle();var p=b.Player;p.Guard.Set(true,false);if(aura)p.SetAura(10);else p.SetBarrier(10);int effects=0;
+            var e=b.Enemies[0];var context=new AIContext(e,p,b.Field,new MockRandomProvider(),new MockLogger());
+            var attack=new BasicAttackAction(5,100,attackProperties:AttackProperty.Break,poiseDamage:20,onHit:_=>effects++,hitInvincibilityMs:600,hitStopFrames:6);
+            b.RunLogicalFrame(()=>{attack.Execute(context);attack.Execute(context);attack.Execute(context);});
+            Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(0,effects);Assert.IsFalse(p.HasAura||p.HasBarrier);Assert.IsFalse(p.IsInvincible);Assert.AreEqual(0,p.AccumulatedDamage);Assert.IsTrue(p.Guard.IsActive);Assert.AreEqual(6,b.HitStopRemainingFrames);
+            b.RunLogicalFrame(()=>attack.Execute(context));Assert.AreEqual(95,p.CurrentHp);Assert.AreEqual(1,effects);Assert.IsTrue(p.IsInvincible);Assert.IsTrue(p.Guard.IsActive);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 風性質はガード通過後だけ防御を剥がし通常風では消耗しない(bool aura)
+        {
+            var b=Battle();var p=b.Player;p.Guard.Set(true,false);if(aura)p.SetAura(100);else p.SetBarrier(100);
+            b.RunLogicalFrame(()=>p.TakeDamage(1,attackProperties:AttackProperty.Wind));Assert.IsTrue(p.HasAura||p.HasBarrier);
+            b.RunLogicalFrame(()=>p.TakeDamage(1,attackProperties:AttackProperty.Wind|AttackProperty.Break));
+            Assert.IsFalse(p.HasAura||p.HasBarrier);Assert.AreEqual(100,p.CurrentHp);Assert.IsTrue(p.Guard.IsActive);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void ブレイクは解除せず中断指定があるガードだけ強靭度合算の終端で解除する(bool interrupt)
+        {
+            var b=Battle();var p=b.Player;p.Guard.Set(true,interrupt);
+            b.RunLogicalFrame(()=>{
+                p.TakeDamage(1,attackProperties:AttackProperty.Break,poiseDamage:15);
+                p.TakeDamage(100,poiseDamage:100);
+                p.TakeDamage(1,attackProperties:AttackProperty.Break,poiseDamage:15);
+                Assert.IsTrue(p.Guard.IsActive,"中断の終端確定前は全ヒットにガードを適用");
+            });
+            Assert.AreEqual(98,p.CurrentHp);Assert.AreEqual(1,b.PlayerStaggerCount);Assert.IsTrue(p.IsStaggered);Assert.AreEqual(!interrupt,p.Guard.IsActive);
+            b.RunLogicalFrame(()=>p.TakeDamage(1,poiseDamage:0));Assert.AreEqual(interrupt?97:98,p.CurrentHp);
+        }
+        [Test]
+        public void 毒と元威力ゼロの状態専用攻撃は通し麻痺の強制中断時に行動ガードを解除する()
+        {
+            var b=Battle();var p=b.Player;p.Guard.Set(true,true);p.SetBarrier(10);p.TakePoisonDamage(2);Assert.AreEqual(98,p.CurrentHp);Assert.AreEqual(10,p.BarrierHp);
+            int effects=0;var attack=new BasicAttackAction(0,100,onHit:target=>{effects++;target.ApplyParalysis(30);},hitInvincibilityMs:600);
+            b.RunLogicalFrame(()=>attack.Execute(new AIContext(b.Enemies[0],p,b.Field,new MockRandomProvider(),new MockLogger())));
+            Assert.AreEqual(1,effects);Assert.IsTrue(p.Guard.IsActive);Assert.IsFalse(p.IsInvincible);Assert.AreEqual(0,b.PlayerStaggerCount);
+            b.TickFrame(17);Assert.IsFalse(p.Guard.IsActive);Assert.IsTrue(p.IsParalyzed);Assert.AreEqual(1,b.PlayerStaggerCount);
+        }
+        [Test]
+        public void 既存無敵と属性無効をブレイクで貫通せず非受理の弱点ヒットは既存変身を解除しない()
+        {
+            var b=Battle();var p=b.Player;p.Guard.Set(true,false);p.SetInvincible(600);
+            Assert.IsFalse(p.TryTakeDamage(10,attackProperties:AttackProperty.Break,poiseDamage:100));Assert.AreEqual(100,p.CurrentHp);Assert.IsTrue(p.Guard.IsActive);
+            var target=new PlayerCharacter(100);target.Guard.Set(true,false);target.BeginTransformationDefense(new ElementResistances(fire:50),ElementType.Fire);
+            Assert.IsFalse(target.TryTakeDamage(20,attackElement:ElementType.Fire));Assert.IsTrue(target.HasTransformationDefense);Assert.AreEqual(100,target.CurrentHp);
+            Assert.IsTrue(target.TryTakeDamage(20,attackElement:ElementType.Fire,attackProperties:AttackProperty.Break));Assert.AreEqual(90,target.CurrentHp);Assert.IsFalse(target.HasTransformationDefense);Assert.IsTrue(target.Guard.IsActive);
+            target.SetElementResistances(new ElementResistances(fire:100));Assert.IsFalse(target.TryTakeDamage(20,attackElement:ElementType.Fire,attackProperties:AttackProperty.Break));Assert.AreEqual(90,target.CurrentHp);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 勝敗通知と死亡通知より前にガードを解除し次戦やチェックポイント離脱へ残さない(bool victory)
+        {
+            var b=Battle();var p=b.Player;p.Guard.Set(true,false);bool? atEnd=null,atDeath=null;p.OnDeath+=()=>atDeath=p.Guard.IsActive;b.OnBattleEnd+=_=>atEnd=p.Guard.IsActive;
+            b.RunLogicalFrame(()=>{if(victory)b.Enemies[0].TakeDamage(10000,ElementType.None);else p.TakeDamage(10000,attackProperties:AttackProperty.Break);});
+            Assert.AreEqual(false,atEnd);if(!victory)Assert.AreEqual(false,atDeath);Assert.IsFalse(p.Guard.IsActive);
+            var next=Battle();next.Player.Guard.Set(true,true);typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(next,null);Assert.IsFalse(next.Player.Guard.IsActive);
+            var standalone=new PlayerCharacter(10);standalone.Guard.Set(true,false);standalone.TakeDamage(10,attackProperties:AttackProperty.Break);Assert.IsFalse(standalone.Guard.IsActive);
+        }
+        [Test]
+        public void 保存未対応のガードを黙って欠落させず拒否し解除後の既存保存を許可する()
+        {
+            var config=DungeonConfig.CreateTestDungeon(10);var deck=new Deck(new List<Card>());var session=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(config,deck);
+            var m=new Olca.Core.Logic.Integration.DungeonBattleManager(config,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
+            var stored=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(session.Store.Read());var capture=session.GetType().GetMethod("Capture",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);m.Dungeon.Player.Guard.Set(true,false);
+            var ex=Assert.Throws<System.Reflection.TargetInvocationException>(()=>capture.Invoke(session,new object[]{m.Dungeon,CheckpointBoundary.RewardCompleted,null}));Assert.IsInstanceOf<System.ArgumentException>(ex.InnerException);
+            CollectionAssert.AreEqual(stored,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(session.Store.Read()));m.Dungeon.Player.Guard.Clear();Assert.IsNotNull(capture.Invoke(session,new object[]{m.Dungeon,CheckpointBoundary.RewardCompleted,null}));
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void ガードの攻撃受理と停止再開の結果は描画頻度によらず一致する(int fps)
+        {
+            string Replay(int rendering){
+                var b=Battle();var p=b.Player;p.Guard.Set(true,true);var clock=new Olca.Core.Logic.Integration.LogicalFrameClock();var trace=new List<string>();long previous=0;
+                void Step(long frame,int ms){
+                    if(frame==1)b.Pause(BattlePauseReason.User);if(frame==10)b.Resume(BattlePauseReason.User);
+                    if(frame==11)b.Pause(BattlePauseReason.CustomScreen);if(frame==20)b.Resume(BattlePauseReason.CustomScreen);
+                    if(frame==21)Assert.IsTrue(b.TryStartDarkeningEffect(DarkeningSide.Opponent,0,4,()=>{}));
+                    if(frame==27)b.RunLogicalFrame(()=>b.Enemies[0].TakeDamage(1,ElementType.None,hitStopFrames:4));
+                    if(frame==30||frame==31)b.RunLogicalFrame(()=>p.TakeDamage(1,attackProperties:AttackProperty.Break,poiseDamage:15));
+                    if(frame==32)b.RunLogicalFrame(()=>p.TakeDamage(1,poiseDamage:0));
+                    b.TickFrame(ms);trace.Add($"{b.LogicalFrame}:{p.CurrentHp}:{p.Guard.IsActive}:{b.PlayerStaggerCount}:{b.IsDarkening}:{b.HitStopRemainingFrames}");
+                }
+                for(int render=1;render<=rendering;render++){long now=render*Olca.Core.Logic.Integration.LogicalFrameClock.WallTicksPerSecond/rendering;clock.Accumulate(now-previous);previous=now;clock.Drain(Step,3);}while(clock.PendingFrames>0)clock.Drain(Step,3);
+                Assert.AreEqual(97,p.CurrentHp);Assert.IsFalse(p.Guard.IsActive);return string.Join("|",trace);
+            }
+            Assert.AreEqual(Replay(60),Replay(fps));
+        }
+        [Test]
+        public void 自分詳細は実際のガード所有状態だけを表示する()
+        {
+            var p=new PlayerCharacter(100);Assert.IsFalse(Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(p).Contains("ガード"));p.Guard.Set(true,false);
+            StringAssert.Contains("ガード",Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(p));p.Guard.Clear();Assert.IsFalse(Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(p).Contains("ガード"));
+        }
+    }
+}
