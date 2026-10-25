@@ -29,6 +29,37 @@ namespace Olca.Presentation.Field
         private SpriteRenderer[] panelRenderers;
         private Sprite whiteSprite;
 
+        private readonly System.Collections.Generic.HashSet<int> attackTiles=new System.Collections.Generic.HashSet<int>();
+        private GameObject[] attackMarkers;
+        private BattleSystem telegraphBattle;
+        public void BindTelegraphs(BattleSystem battle){telegraphBattle=battle;RefreshTelegraphs();}
+        public void ShowTelegraphs(System.Collections.Generic.IReadOnlyList<Vector2Int> tiles)
+        {
+            attackTiles.Clear();if(tiles!=null)foreach(var tile in tiles)if(tile.Y==0&&tile.X>=0&&tile.X<GRID_WIDTH)attackTiles.Add(tile.X);
+            RefreshTelegraphs();
+        }
+        private void RefreshTelegraphs()
+        {
+            // Update後に中断されても、描画直前にはCoreの確定集合を読む。
+            if(telegraphBattle!=null){attackTiles.Clear();foreach(var tile in telegraphBattle.EnemyAttackTiles)if(tile.Y==0&&tile.X>=0&&tile.X<GRID_WIDTH)attackTiles.Add(tile.X);}
+            if(panelRenderers==null||attackMarkers==null&&attackTiles.Count==0)return;
+            if(attackMarkers==null){
+                attackMarkers=new GameObject[GRID_WIDTH];if(whiteSprite==null)whiteSprite=CreateWhiteSprite();
+                for(int x=0;x<GRID_WIDTH;x++){
+                    var root=new GameObject("EnemyAttackTelegraph_"+x);root.transform.SetParent(transform,false);attackMarkers[x]=root;
+                    for(int part=0;part<5;part++){
+                        var go=new GameObject(part==0?"Fill":"Edge"+part);go.transform.SetParent(root.transform,false);
+                        var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=whiteSprite;renderer.sortingOrder=2;
+                        renderer.color=new Color(1f,.28f,.12f,part==0?.15f:.9f);
+                        float w=panelSize*panelScale,h=panelHeight*panelScale,edge=.035f*panelSize;
+                        go.transform.localPosition=part==1?new Vector3(0,h/2,0):part==2?new Vector3(0,-h/2,0):part==3?new Vector3(-w/2,0,0):part==4?new Vector3(w/2,0,0):Vector3.zero;
+                        go.transform.localScale=part<=2?new Vector3(w,part==0?h:edge,1):new Vector3(edge,h,1);
+                    }
+                }
+            }
+            for(int x=0;x<GRID_WIDTH;x++){var root=attackMarkers[x];root.transform.position=new Vector3(GridIndexToWorldX(x),panelY-panelHeight*panelScale*.5f,panelZ-.01f);root.SetActive(battleField!=null&&attackTiles.Contains(x));}
+        }
+
         private Sprite floorSprite;
         private SpriteRenderer[] surroundingPanels;
         private const int SURROUNDING_COUNT = 12; // 横7マスとカメラ移動の余白
@@ -77,7 +108,7 @@ namespace Olca.Presentation.Field
         /// <summary>戦闘の地形色を解除し、共通の探索床を描画し続ける</summary>
         public void Hide()
         {
-            battleField = null;
+            battleField = null;telegraphBattle=null;attackTiles.Clear();
             Refresh();
         }
 
@@ -90,6 +121,7 @@ namespace Olca.Presentation.Field
         public void Refresh()
         {
             if (panelRenderers == null) return;
+            RefreshTelegraphs();
             for (int x = 0; x < GRID_WIDTH; x++)
             {
                 panelRenderers[x].enabled = battleField != null;

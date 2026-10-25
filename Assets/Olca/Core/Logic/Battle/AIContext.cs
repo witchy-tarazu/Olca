@@ -11,6 +11,7 @@ namespace Olca.Core.Logic.Battle
     {
         /// <summary>AI行動を行う敵自身</summary>
         public Enemy Self { get; }
+        public BattleSystem Battle { get; }
 
         /// <summary>プレイヤーキャラクター</summary>
         public PlayerCharacter Player { get; }
@@ -28,9 +29,9 @@ namespace Olca.Core.Logic.Battle
         /// コンストラクタ
         /// </summary>
         public AIContext(Enemy self, PlayerCharacter player, BattleField field,
-                         IRandomProvider random, IGameLogger logger)
+                         IRandomProvider random, IGameLogger logger, BattleSystem battle = null)
         {
-            Self = self;
+            Self = self; Battle=battle;
             Player = player;
             Field = field;
             Random = random;

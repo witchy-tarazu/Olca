@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Olca.Core.Domain;
 using Olca.Core.Logic.Battle;
@@ -27,12 +28,53 @@ namespace Olca.Core.Logic.CardEffects
         /// <summary>使用したカード</summary>
         public Domain.Card UsedCard { get; }
 
+        /// <summary>敵使用時だけ指定する。Player/Enemiesの意味自体は変更しない。</summary>
+        public Enemy EnemySource { get; }
+        public int ForwardX { get; }
+        internal CancellationToken ActionCancellation { get; set; }
+        internal Action AttackResolved { get; set; }
+        internal void ResolveAttackPreview()=>AttackResolved?.Invoke();
+        // 前隙のある敵単体攻撃は狙ったマスを保持し、相手の移動へ追尾しない。
+        internal Vector2Int? LockedSingleTarget { get; set; }
+        internal CardTarget User => EnemySource == null ? new CardTarget(Player) : new CardTarget(EnemySource);
+        internal List<CardTarget> GetAliveOpponents()
+        {
+            if (EnemySource != null) return Player.IsDead ? new List<CardTarget>() : new List<CardTarget>{new CardTarget(Player)};
+            var result = new List<CardTarget>();
+            foreach(var enemy in Enemies) if(!enemy.IsDead) result.Add(new CardTarget(enemy));
+            return result;
+        }
+        internal List<CardTarget> GetMovementBlockers()
+        {
+            var result=new List<CardTarget>();
+            if(EnemySource!=null&&!Player.IsDead)result.Add(new CardTarget(Player));
+            foreach(var enemy in Enemies)if(!enemy.IsDead&&!ReferenceEquals(enemy,EnemySource))result.Add(new CardTarget(enemy));
+            return result;
+        }
+        internal CardTarget? GetNearestForwardOpponent()
+        {
+            var origin=GetEffectivePlayerPosition(); CardTarget? nearest=null;
+            foreach(var target in GetAliveOpponents()) {
+                if(LockedSingleTarget.HasValue&&target.GridPosition!=LockedSingleTarget.Value)continue;
+                int distance=(target.GridPosition.X-origin.X)*ForwardX;
+                if(target.GridPosition.Y!=origin.Y||distance<=0)continue;
+                if(!nearest.HasValue||distance<(nearest.Value.GridPosition.X-origin.X)*ForwardX)nearest=target;
+            }
+            return nearest;
+        }
+        internal BattleContext ForCard(Domain.Card card)
+        {
+            var child=new BattleContext(Battle,card,EnemySource,ForwardX){CardDatabase=CardDatabase,TemporaryPlayerPosition=TemporaryPlayerPosition,ActionCancellation=ActionCancellation};
+            if(EnemySource!=null)EnemyCardAction.ValidateCard(card);
+            child.InheritDerivatives(this);return child;
+        }
+
         internal AttackInfluence Influence { get; private set; }
         // 可変な共有スコープを使わず、遅延/連鎖の各判定へ個別の個体を渡す。
         internal BattleContext WithInfluence(AttackInfluence influence)
         {
-            var child = new BattleContext(Battle, UsedCard) {
-                CardDatabase = CardDatabase, TemporaryPlayerPosition = TemporaryPlayerPosition, Influence = influence
+            var child = new BattleContext(Battle, UsedCard, EnemySource, ForwardX) {
+                CardDatabase = CardDatabase, TemporaryPlayerPosition = TemporaryPlayerPosition, Influence = influence, ActionCancellation=ActionCancellation, LockedSingleTarget=LockedSingleTarget
             };
             child.InheritDerivatives(this);
             return child;
@@ -51,7 +93,12 @@ namespace Olca.Core.Logic.CardEffects
         internal void RegisterActionDelay(DelayedEffect effect)
         {
             effect.OnFinished = derivativeLifetime.Add();
+            if(ActionCancellation.IsCancellationRequested){effect.Finish();return;}
             Battle.DelayedEffects.RegisterDelayedEffect(effect);
+            if(ActionCancellation.CanBeCanceled){
+                var registration=ActionCancellation.Register(()=>Battle.DelayedEffects.Cancel(effect));
+                var finish=effect.OnFinished;effect.OnFinished=()=>{registration.Dispose();finish?.Invoke();};
+            }
         }
 
         private sealed class DerivativeLifetime
@@ -83,7 +130,7 @@ namespace Olca.Core.Logic.CardEffects
         /// </summary>
         public Vector2Int GetEffectivePlayerPosition()
         {
-            return TemporaryPlayerPosition ?? Player.GridPosition;
+            return TemporaryPlayerPosition ?? User.GridPosition;
         }
 
         /// <summary>発動位置より前方の最寄り1体。同じマスでは参加順を維持する。</summary>
@@ -99,10 +146,12 @@ namespace Olca.Core.Logic.CardEffects
             return nearest;
         }
 
-        public BattleContext(BattleSystem battle, Domain.Card usedCard)
+        public BattleContext(BattleSystem battle, Domain.Card usedCard, Enemy enemySource = null, int forwardX = 1)
         {
-            Battle = battle;
-            UsedCard = usedCard;
+            if(forwardX!=1&&forwardX!=-1)throw new ArgumentOutOfRangeException(nameof(forwardX));
+            Battle = battle ?? throw new ArgumentNullException(nameof(battle));
+            if(enemySource!=null&&!battle.Enemies.Contains(enemySource))throw new ArgumentException("未登録の使用者です",nameof(enemySource));
+            UsedCard = usedCard; EnemySource=enemySource; ForwardX=forwardX;
         }
 
         /// <summary>
@@ -118,6 +167,44 @@ namespace Olca.Core.Logic.CardEffects
             }
 
             return CardDatabase.GetCardById(cardId);
+        }
+    }
+
+    /// <summary>共通効果用の対象。敵とプレイヤーの既存防御・耐性・フレーム集計をそのまま呼ぶ。</summary>
+    internal readonly struct CardTarget
+    {
+        private readonly Enemy enemy;
+        private readonly PlayerCharacter player;
+        internal CardTarget(Enemy value){enemy=value;player=null;}
+        internal CardTarget(PlayerCharacter value){player=value;enemy=null;}
+        internal bool IsDead => enemy!=null?enemy.IsDead:player.IsDead;
+        internal string Name => enemy!=null?enemy.Name:"プレイヤー";
+        internal Vector2Int GridPosition => enemy!=null?enemy.GridPosition:player.GridPosition;
+        internal long TotalHitsTaken => enemy!=null?enemy.TotalHitsTaken:player.TotalHitsTaken;
+        internal long TotalDamageTaken => enemy!=null?enemy.TotalDamageTaken:player.TotalDamageTaken;
+        internal Vector2Int LogicalPosition=>enemy!=null?enemy.GetLogicalPosition():player.GetLogicalPosition();
+        internal BattleTerrainState TerrainState=>enemy!=null?enemy.TerrainState:player.TerrainState;
+        internal bool IsInTemporaryMove=>enemy!=null?enemy.IsInTemporaryMove:player.IsInTemporaryMove;
+        internal void MoveTemporarily(Vector2Int value){if(enemy!=null)enemy.MoveTemporarily(value);else player.MoveTemporarily(value);}
+        internal void ReturnToOriginalPosition(){if(enemy!=null)enemy.ReturnToOriginalPosition();else player.ReturnToOriginalPosition();}
+        internal void SetConcentrateBuff(float value){if(enemy!=null)enemy.SetConcentrateBuff(value);else player.SetConcentrateBuff(value);}
+        internal void Heal(int amount){if(enemy!=null)enemy.Heal(amount);else player.Heal(amount);}
+        internal void SetBarrier(int hp){if(enemy!=null)enemy.SetBarrier(hp);else player.SetBarrier(hp);}
+        internal void TakeDamage(int damage,ElementType element,AttackProperty properties,int? poiseDamage,int invincibilityMs,int hitStopFrames=0,AttackInfluence influence=null)
+        {
+            if(enemy!=null)enemy.TakeDamage(damage,element,properties,poiseDamage,invincibilityMs,hitStopFrames,influence);
+            else if(!player.IsDead&&player.TryTakeDamage(damage,attackElement:element,attackProperties:properties,poiseDamage:poiseDamage,hitStopFrames:hitStopFrames)&&invincibilityMs>0&&!player.IsDead)player.SetInvincible(invincibilityMs);
+        }
+        internal void ApplyStatus(StatusEffect effect)
+        {
+            if(enemy!=null){enemy.ApplyStatus(effect);return;}
+            if(player.IsDead)return;
+            switch(effect.Type){
+                case StatusEffectType.Paralyze:player.ApplyParalysis(effect.RemainingFrames);break;
+                case StatusEffectType.Confusion:player.ApplyConfusion(effect.RemainingFrames);break;
+                case StatusEffectType.Blind:player.ApplyBlindness(effect.RemainingFrames);break;
+                case StatusEffectType.Poison:player.ApplyPoison(effect.PoisonKind,effect,effect.PoisonIntervalFrames??60);break;
+            }
         }
     }
 

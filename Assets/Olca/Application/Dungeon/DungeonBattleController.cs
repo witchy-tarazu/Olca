@@ -334,6 +334,13 @@ namespace Olca.Application.Dungeon
             return true;
         }
 
+        private IEnemyAIProvider enemyAIProvider;
+        /// <summary>起動前に登録し、通常出撃/再戦/階層/保存復帰の全Managerへ同じ定義元を渡す。</summary>
+        public void ConfigureEnemyAIProvider(IEnemyAIProvider provider)
+        {
+            if(manager!=null)throw new System.InvalidOperationException("起動後は敵定義元を変更できません");
+            enemyAIProvider=provider;
+        }
         private int? simulationSeed;
         public void ConfigureSimulationSeed(int seed)
         {
@@ -1077,7 +1084,7 @@ namespace Olca.Application.Dungeon
                         staggerDurationFrames: battleStaggerFrames, poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
                     player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));
                     player.SetDepartureStyle(style);
-                    new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen);
+                    new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen, enemyAIProvider: enemyAIProvider);
                     var start = frozen.Store.Read();
                     if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key)) {
                         ShowClearReturn(); return;
@@ -1119,7 +1126,7 @@ namespace Olca.Application.Dungeon
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store); var f = CreateCardFactory();
                 if (!DungeonBattleManager.TryRestoreCheckpoint(session, randomProvider, logger, out next, out error,
-                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), f), f)) return false;
+                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), f), f, enemyAIProvider: enemyAIProvider)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
@@ -1349,7 +1356,7 @@ namespace Olca.Application.Dungeon
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem, checkpoints: waitingReturn || initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
                     ? (dungeonConfig.Visits.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
-                hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1);
+                hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1, enemyAIProvider: enemyAIProvider);
 
             manager.RequireBattleEndPresentation();
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
@@ -1961,7 +1968,7 @@ namespace Olca.Application.Dungeon
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
                 new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
-                hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount);
+                hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount, enemyAIProvider: enemyAIProvider);
         }
 
         private void ApplyPendingFloor()
@@ -1999,7 +2006,7 @@ namespace Olca.Application.Dungeon
                     : memoryCheckpoints;
                 if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
                     out restored, out error, new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition),
-                    new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory), cardDatabase: factory)) return false;
+                    new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory), cardDatabase: factory, enemyAIProvider: enemyAIProvider)) return false;
             }
             if (clearReturnSession?.Snapshot?.Receipts.Any(r => r.RunId == candidate.RunId && r.Outcome != RunReturnOutcome.Cleared) == true)
             { restored.SuspendForCheckpoint(); error = "敗北・撤退が確定した攻略は再開できません"; return false; }

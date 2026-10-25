@@ -2576,6 +2576,23 @@ namespace Olca.Tests.Integration
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
         [TestCase(false)] [TestCase(true)]
+        public void 敵定義元は通常Controllerの単階層と複数階層で保存復帰へ再供給される(bool floors)
+        {
+            int generated=0;var instances=new List<IEnemyAIAction>();
+            var map=DungeonConfig.CreateTestDungeon(20,30,3);
+            var entries=map.MapCells.Where(x=>x.Enemy!=null).Select(x=>x.Enemy.EnemyId).Distinct().ToDictionary(id=>id,id=>(System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>)((enemy,cards)=>{
+                Assert.IsNotNull(cards);generated++;var action=new EnemyMovementAction(EnemyMovementKind.Stay,0);instances.Add(action);
+                return new EnemyAIRegistration(new[]{new EnemyActionPattern(71,new[]{action},EnemyPatternEndMode.Stop)},71);
+            }));
+            var registry=new EnemyAIRegistry(entries);
+            var c=Start(maps:floors?new[]{map,DungeonConfig.CreateTestDungeon(20,30,3)}:null,configure:host=>{host.ConfigureEnemyAIProvider(registry);if(!floors)host.ConfigureDungeon(map);});
+            ToBattle(c);var before=Model(c).CurrentBattle;Assert.Greater(generated,0);int count=generated;
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreNotSame(before,Model(c).CurrentBattle);
+            Assert.AreEqual(count*2,generated);Assert.AreEqual(generated,instances.Distinct().Count());
+            Assert.IsTrue(Model(c).CurrentBattle.CustomScreen.IsOpen);Assert.AreEqual(0,Model(c).CurrentBattle.LogicalFrame);
+        }
+
+        [TestCase(false)] [TestCase(true)]
         public void パッド切断は探索とカスタムを停止し再接続なしの再開操作を許す(bool battle)
         {
             var c=Start();if(battle)ToBattle(c);
@@ -5479,6 +5496,100 @@ namespace Olca.Tests.Integration
             Assert.AreEqual("ヒョウカ: リョウ / ゲキハタイム: 00:01.00",text);
             Assert.IsFalse(text.Contains("60"));Assert.IsFalse(text.Contains("ノケゾリ"));Assert.IsFalse(text.Contains("ドウジ"));
             Assert.AreEqual("",Olca.Presentation.Dungeon.CardSelectionView.FormatBattleSummary(null));
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class EnemyAIDefinitionSupplyTests
+    {
+        private sealed class Probe : IEnemyAIAction
+        {
+            public int Calls;
+            public bool CanExecute(AIContext context)=>true;
+            public void Execute(AIContext context){Calls++;}
+            public int GetCooldownMs()=>0;
+            public float GetCooldown()=>0;
+        }
+        private static EnemyAIRegistry Registry(System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration> factory, params string[] ids)
+            =>new EnemyAIRegistry(ids.ToDictionary(id=>id,id=>factory));
+        private static EnemyAIRegistration Definition(Probe initial,Probe low)
+            =>new EnemyAIRegistration(new[]{new EnemyActionPattern(7,new[]{initial},EnemyPatternEndMode.Stop),new EnemyActionPattern(8,new[]{low},EnemyPatternEndMode.Stop)},7,
+                new[]{EnemyHpActionPattern.ForRegisteredPattern(5000,true,8),EnemyHpActionPattern.ForRegisteredPattern(10000,true,7)});
+        private static void Contact(DungeonBattleManager manager)
+        { for(int i=0;i<100&&manager.CurrentBattle==null;i++)manager.Tick(50);Assert.IsNotNull(manager.CurrentBattle); }
+        private static void Run(BattleSystem battle)
+        {if(battle.CustomScreen.IsOpen)battle.CustomScreen.Cancel();for(int i=0;i<3;i++)battle.TickFrame(17);}
+
+        [TestCase(false)] [TestCase(true)]
+        public void 通常接敵と戦闘開始保存復帰へ同じ定義元を再供給し状態と保存を共有しない(bool checkpoints)
+        {
+            var map=DungeonConfig.CreateTestDungeon(20,30,3);var cards=new Olca.Application.Battle.SimpleCardFactory();
+            var deck=cards.CreateStarterDeck();var session=checkpoints?DungeonCheckpointSession.CreateDefault(map,deck):null;
+            var probes=new List<Probe>();var low=new List<Probe>();var owners=new List<Enemy>();
+            var registry=Registry((enemy,database)=>{Assert.AreSame(cards,database);owners.Add(enemy);var a=new Probe();var b=new Probe();probes.Add(a);low.Add(b);return Definition(a,b);},map.MapCells.Where(c=>c.Enemy!=null).Select(c=>c.Enemy.EnemyId).Distinct().ToArray());
+            var game=new DungeonBattleManager(map,new PlayerCharacter(100),deck,new MockRandomProvider(),new MockLogger(),checkpoints:session,cardDatabase:cards,enemyAIProvider:registry);
+            Contact(game);Assert.Greater(probes.Count,0);Assert.IsTrue(probes.All(x=>x.Calls==0));
+            var battle=game.CurrentBattle;var count=probes.Count;var snapshot=session?.Store.Read();var before=snapshot==null?null:PortableCheckpointJson.Serialize(snapshot);
+            Run(battle);Assert.IsTrue(probes.All(x=>x.Calls==1));Run(battle);Assert.IsTrue(probes.All(x=>x.Calls==1));
+            battle.Enemies[0].TakeDamage((battle.Enemies[0].MaxHp+1)/2,ElementType.None);Run(battle);Assert.AreEqual(1,low[0].Calls);
+            if(!checkpoints)return;
+            Assert.AreEqual(before,PortableCheckpointJson.Serialize(session.Store.Read()),"AI実行で保存境界を変更しない");
+            Assert.IsTrue(game.SuspendForCheckpoint());
+            Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(session,new MockRandomProvider(),new MockLogger(),out var restored,out var error,cardDatabase:cards,enemyAIProvider:registry),error);
+            restored.ActivateCheckpoint();Assert.AreEqual(count*2,probes.Count);Assert.AreNotSame(owners[0],owners[count]);
+            Assert.IsTrue(probes.Skip(count).All(x=>x.Calls==0));Run(restored.CurrentBattle);Assert.IsTrue(probes.Skip(count).All(x=>x.Calls==1));
+            Assert.AreEqual(1,low[0].Calls);Assert.AreEqual(0,low[count].Calls,"開始保存にない途中HP/AI状態を復元しない");
+            Assert.AreEqual(before,PortableCheckpointJson.Serialize(session.Store.Read()));
+        }
+
+        [Test]
+        public void 同じ敵IDの複数個体にもfactoryを個別実行し定義状態を共有しない()
+        {
+            var calls=new List<Probe>();var registry=Registry((e,c)=>{var a=new Probe();calls.Add(a);return Definition(a,new Probe());},"same");
+            var enemies=new List<Enemy>{new Enemy("same","テスト",30,ElementType.None,new Vector2Int(3,0)),new Enemy("same","テスト",30,ElementType.None,new Vector2Int(4,0))};
+            var battle=new BattleSystem(new PlayerCharacter(100),enemies,new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck(),enemyAIProvider:registry);
+            Run(battle);Assert.AreEqual(2,calls.Count);Assert.IsTrue(calls.All(x=>x.Calls==1));Assert.AreNotSame(calls[0],calls[1]);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 未登録敵と供給元なしは従来攻撃と保存形式を維持する(bool emptyRegistry)
+        {
+            var p=new PlayerCharacter(100);p.MoveTo(new Vector2Int(0,0));var enemy=new Enemy("legacy","テスト",30,ElementType.None,new Vector2Int(1,0));
+            var battle=new BattleSystem(p,new List<Enemy>{enemy},new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck(),enemyAIProvider:emptyRegistry?Registry((e,c)=>throw new System.Exception("未登録を生成した"),"other"):null);
+            Run(battle);Assert.AreEqual(90,p.CurrentHp);Assert.AreEqual(30,battle.Enemies[0].CurrentHp);
+        }
+
+        [Test]
+        public void 通常バトルで登録カードと待ちと停止を使用し未登録敵だけ既定を使う()
+        {
+            var cards=new Olca.Application.Battle.SimpleCardFactory();var enemy=new Enemy("caster","テスト",30,ElementType.None,new Vector2Int(1,0));enemy.TakeDamage(15,ElementType.None);
+            var registry=Registry((e,db)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(1,new IEnemyAIAction[]{new EnemyCardAction(db.GetCardById("heal"),0,db)},EnemyPatternEndMode.Stop)},1),"caster");
+            var battle=new BattleSystem(new PlayerCharacter(100),new List<Enemy>{enemy},cards.CreateStarterDeck(),cardDatabase:cards,enemyAIProvider:registry);
+            Run(battle);Assert.Greater(enemy.CurrentHp,15);Assert.AreEqual(100,battle.Player.CurrentHp);
+        }
+
+        [Test]
+        public void 登録元は辞書の後続変更から保護し登録済みnull定義を黙って既定へ落とさない()
+        {
+            var entries=new Dictionary<string,System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{{"enemy",(e,c)=>Definition(new Probe(),new Probe())}};
+            var registry=new EnemyAIRegistry(entries);entries.Clear();Assert.IsNotNull(registry.Create(new Enemy("enemy","テスト",30,ElementType.None,new Vector2Int(1,0)),null));
+            Assert.Throws<System.ArgumentException>(()=>new EnemyAIRegistry(new Dictionary<string,System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{{"",(e,c)=>null}}));
+            Assert.Throws<System.InvalidOperationException>(()=>Registry((e,c)=>null,"enemy").Create(new Enemy("enemy","テスト",30,ElementType.None,new Vector2Int(1,0)),null));
+        }
+
+        [Test]
+        public void Controllerは起動前だけ定義元を受け取り攻略中の差替えを拒否する()
+        {
+            var host=new UnityEngine.GameObject("ai-definition-supply");host.SetActive(false);
+            try{var c=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var provider=Registry((e,d)=>Definition(new Probe(),new Probe()),"slime");c.ConfigureEnemyAIProvider(provider);
+                var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                Assert.AreSame(provider,c.GetType().GetField("enemyAIProvider",flags).GetValue(c));
+                var cards=new Olca.Application.Battle.SimpleCardFactory();var manager=new DungeonBattleManager(DungeonConfig.CreateTestDungeon(20),new PlayerCharacter(100),cards.CreateStarterDeck(),new MockRandomProvider(),new MockLogger());
+                c.GetType().GetField("manager",flags).SetValue(c,manager);Assert.Throws<System.InvalidOperationException>(()=>c.ConfigureEnemyAIProvider(null));
+            }finally{UnityEngine.Object.DestroyImmediate(host);}
         }
     }
 }

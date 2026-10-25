@@ -1098,3 +1098,39 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    [NUnit.Framework.TestFixture]
+    public class EnemyTelegraphViewTests
+    {
+        [NUnit.Framework.Test]
+        public void 予告描画は同一マスで一つ床より前キャラより後で戦闘切替時に解除する()
+        {
+            var root=new UnityEngine.GameObject("TelegraphViewTest");
+            try{
+                var grid=root.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();
+                typeof(Olca.Presentation.Field.WorldBattleGridView).GetMethod("Awake",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(grid,null);
+                grid.Show(new Olca.Core.Logic.Battle.BattleField(),0);
+                var tile=new Olca.Core.Domain.Vector2Int(1,0);grid.ShowTelegraphs(new[]{tile,tile});
+                var marker=root.transform.Find("EnemyAttackTelegraph_1");NUnit.Framework.Assert.IsTrue(marker.gameObject.activeSelf);NUnit.Framework.Assert.AreEqual(5,marker.childCount);
+                foreach(var renderer in marker.GetComponentsInChildren<UnityEngine.SpriteRenderer>()){NUnit.Framework.Assert.AreEqual(2,renderer.sortingOrder);NUnit.Framework.Assert.Greater(renderer.color.a,0);}
+                NUnit.Framework.Assert.IsFalse(root.transform.Find("EnemyAttackTelegraph_2").gameObject.activeSelf);
+                grid.Hide();NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);grid.Show(new Olca.Core.Logic.Battle.BattleField(),0);NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);
+                grid.ShowTelegraphs(new[]{new Olca.Core.Domain.Vector2Int(2,0)});NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);NUnit.Framework.Assert.IsTrue(root.transform.Find("EnemyAttackTelegraph_2").gameObject.activeSelf);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [NUnit.Framework.Test]
+        public void 描画直前に最新予告を読み中断した同フレームに古い枠を残さない()
+        {
+            var root=new UnityEngine.GameObject("TelegraphLateRead");
+            try{
+                var grid=root.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();typeof(Olca.Presentation.Field.WorldBattleGridView).GetMethod("Awake",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(grid,null);
+                var player=new Olca.Core.Domain.PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(1,0));var enemy=new Olca.Core.Domain.Enemy("e","テスト",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0),poiseDefinition:new Olca.Core.Domain.EnemyPoiseDefinition(30,3));var battle=new Olca.Core.Logic.Battle.BattleSystem(player,new System.Collections.Generic.List<Olca.Core.Domain.Enemy>{enemy},new Olca.Core.Domain.Deck());
+                var card=new Olca.Core.Domain.Card("fixture","テスト",1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.Sword,7,"",startupFrames:6,poiseDamage:0);
+                battle.TrySwitchEnemyActionPattern(enemy,new System.Collections.Generic.List<Olca.Core.Logic.Battle.IEnemyAIAction>{new Olca.Core.Logic.Battle.EnemyCardAction(card,1000)});grid.Show(battle.Field,0);grid.BindTelegraphs(battle);battle.TickFrame(17);grid.Refresh();var marker=root.transform.Find("EnemyAttackTelegraph_1");NUnit.Framework.Assert.IsTrue(marker.gameObject.activeSelf);
+                enemy.TakeDamage(40,Olca.Core.Domain.ElementType.None);grid.Refresh();NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+    }
+}
