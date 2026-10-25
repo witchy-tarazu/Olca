@@ -62,6 +62,9 @@ namespace Olca.Core.Domain
         }
         internal void Clear() => Set(0, false);
         internal void BeginFrame() { frameOpen = true; appliedThisFrame = expires = false; frameDamage = 0; }
+        // 同一フレームの防御合算でも、どのヒットで解除が確定したかを判定する。
+        internal bool WillBreak => expires || (BarrierHp > 0 && frameDamage >= BarrierHp) ||
+            (AuraThreshold > 0 && frameDamage >= AuraThreshold);
         internal void CommitFrame()
         {
             if (BarrierHp > 0) BarrierHp = (int)System.Math.Max(0L, BarrierHp - frameDamage);

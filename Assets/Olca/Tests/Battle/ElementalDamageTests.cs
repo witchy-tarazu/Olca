@@ -103,6 +103,148 @@ namespace Olca.Tests.Battle
             CollectionAssert.AreEqual(new[] { "hit:12", "hp", "death" }, order);
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 本体命中のヒットストップは指定フレームだけ戦闘時計と更新を止める(bool playerSide)
+        {
+            var enemy = new Enemy("stop", "テスト", 100, ElementType.None, new Vector2Int(4, 0));
+            var battle = CreateBattle(enemy);
+            battle.RunLogicalFrame(() => {
+                if(playerSide)player.TakeDamage(3,hitStopFrames:6);
+                else enemy.TakeDamage(3,ElementType.None,hitStopFrames:6);
+            });
+            Assert.AreEqual(6,battle.HitStopRemainingFrames); Assert.IsTrue(battle.IsPaused);
+            for(int n=0;n<6;n++){battle.TickFrame(16);Assert.AreEqual(0,battle.LogicalFrame);}
+            Assert.IsFalse(battle.IsHitStopped);battle.TickFrame(16);Assert.AreEqual(1,battle.LogicalFrame);
+        }
+
+        [Test]
+        public void 同一フレームの全ヒットは受理しヒットストップ長は加算せず最長を使う()
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            int hpUpdates=0;enemy.OnHpChanged+=(_,__)=>hpUpdates++;
+            battle.RunLogicalFrame(()=>{
+                enemy.TakeDamage(3,ElementType.None,hitStopFrames:3);
+                enemy.TakeDamage(4,ElementType.None,hitStopFrames:8);
+                enemy.TakeDamage(5,ElementType.None,hitStopFrames:5);
+                Assert.IsFalse(battle.IsHitStopped,"全ヒットの確定前に停止しない");
+            });
+            Assert.AreEqual(88,enemy.CurrentHp);Assert.AreEqual(1,hpUpdates);Assert.AreEqual(8,battle.HitStopRemainingFrames);
+        }
+
+        [TestCase(false,false)]
+        [TestCase(false,true)]
+        [TestCase(true,false)]
+        [TestCase(true,true)]
+        public void 完全防御だけでは停止せず同フレーム合算で防御を解除した攻撃だけ停止する(bool playerSide,bool aura)
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            if(playerSide){if(aura)player.SetAura(10);else player.SetBarrier(10);}
+            else {if(aura)enemy.SetAura(10);else enemy.SetBarrier(10);}
+            void Hit(int amount,int frames){if(playerSide)player.TakeDamage(amount,hitStopFrames:frames);else enemy.TakeDamage(amount,ElementType.None,hitStopFrames:frames);}
+            battle.RunLogicalFrame(()=>Hit(4,20));Assert.IsFalse(battle.IsHitStopped);
+            battle.RunLogicalFrame(()=>{Hit(3,15);Hit(7,6);});
+            Assert.AreEqual(6,battle.HitStopRemainingFrames);Assert.AreEqual(100,player.CurrentHp);Assert.AreEqual(100,enemy.CurrentHp);
+            Assert.IsFalse(playerSide?player.HasAura||player.HasBarrier:enemy.HasAura||enemy.HasBarrier);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 威力ゼロの剥離でも防御を解除すれば明示ヒットストップを発生させる(bool playerSide)
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            if(playerSide)player.SetAura(10);else enemy.SetBarrier(10);
+            battle.RunLogicalFrame(()=>{
+                if(playerSide)player.TakeDamage(0,attackProperties:AttackProperty.Wind,hitStopFrames:4);
+                else enemy.TakeDamage(0,ElementType.None,AttackProperty.Wind,hitStopFrames:4);
+            });
+            Assert.AreEqual(4,battle.HitStopRemainingFrames);Assert.AreEqual(100,enemy.CurrentHp);Assert.AreEqual(100,player.CurrentHp);
+        }
+
+        [Test]
+        public void ガードと耐性無効と設定ゼロはヒットストップを発生させない()
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            enemy.Guard.Set(true,false);enemy.TakeDamage(5,ElementType.None,hitStopFrames:6);Assert.IsFalse(battle.IsHitStopped);
+            enemy.Guard.Set(false,false);enemy.TakeDamage(5,ElementType.None);Assert.IsFalse(battle.IsHitStopped);
+            var immune=new Enemy("immune","テスト",100,ElementType.None,new Vector2Int(4,0),resistances:new ElementResistances(fire:100));
+            var immuneBattle=new BattleSystem(new PlayerCharacter(100),new List<Enemy>{immune},new Deck(new List<Card>()));
+            immune.TakeDamage(5,ElementType.Fire,hitStopFrames:6);Assert.IsFalse(immuneBattle.IsHitStopped);
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>enemy.TakeDamage(1,ElementType.None,hitStopFrames:-1));
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.TakeDamage(1,hitStopFrames:-1));
+        }
+
+        [Test]
+        public void カスタムとユーザーポーズの重複はヒットストップ残数も保持し最後の解除で再開する()
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            enemy.TakeDamage(1,ElementType.None,hitStopFrames:6);
+            battle.Pause(BattlePauseReason.CustomScreen);battle.Pause(BattlePauseReason.User);
+            for(int n=0;n<10;n++)battle.TickFrame(16);Assert.AreEqual(6,battle.HitStopRemainingFrames);
+            battle.Resume(BattlePauseReason.User);battle.TickFrame(16);Assert.AreEqual(6,battle.HitStopRemainingFrames);
+            battle.Resume(BattlePauseReason.CustomScreen);battle.TickFrame(16);Assert.AreEqual(5,battle.HitStopRemainingFrames);Assert.AreEqual(0,battle.LogicalFrame);
+        }
+
+        [Test]
+        public void 暗転中のヒットストップは暗転時計も止め解除後に暗転を完了する()
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);int resolved=0;
+            Assert.IsTrue(battle.TryStartDarkeningEffect(DarkeningSide.Player,1,3,()=>resolved++));
+            enemy.TakeDamage(1,ElementType.None,hitStopFrames:6);
+            for(int n=0;n<6;n++)battle.TickFrame(16);Assert.AreEqual(0,resolved);Assert.IsTrue(battle.IsDarkening);
+            for(int n=0;n<3;n++)battle.TickFrame(16);Assert.AreEqual(1,resolved);Assert.AreEqual(0,battle.LogicalFrame);
+            battle.TickFrame(16);Assert.AreEqual(1,battle.LogicalFrame);
+        }
+
+        [Test]
+        public void 変身演出と競合したヒットストップは演出時計を止め残数ゼロ後に再開する()
+        {
+            var battle=HandBonusBattle(out _);var forms=battle.Transformations;forms.EnablePresentation();forms.TryPreview("large");battle.CustomScreen.Confirm();battle.CustomScreen.Close();
+            var enemy=battle.Enemies.First();enemy.TakeDamage(1,ElementType.None,hitStopFrames:6);
+            for(int n=0;n<6;n++)battle.TickFrame(16);Assert.AreEqual(60,forms.ActivationFramesRemaining);Assert.AreEqual(0,battle.LogicalFrame);
+            battle.TickFrame(16);Assert.AreEqual(59,forms.ActivationFramesRemaining);
+        }
+
+        [Test]
+        public void 撃破で戦闘が終われば停止要求を破棄し次戦へ購読を残さない()
+        {
+            var enemy=new Enemy("stop","テスト",10,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            enemy.TakeDamage(10,ElementType.None,hitStopFrames:6);Assert.IsTrue(battle.IsGameOver);Assert.IsFalse(battle.IsHitStopped);
+            player.TakeDamage(1,hitStopFrames:9);Assert.IsFalse(battle.IsHitStopped);
+        }
+
+        [Test]
+        public void カード効果の明示設定は全対象へ適用し一度の最長停止になる()
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            var card=new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,3,"テスト");
+            var effect=new DamageEffect(3,DamageTargetType.All,hitStopFrames:5);
+            battle.RunLogicalFrame(()=>effect.Execute(new Olca.Core.Logic.CardEffects.BattleContext(battle,card)));
+            Assert.AreEqual(97,enemy.CurrentHp);Assert.AreEqual(5,battle.HitStopRemainingFrames);
+        }
+
+        [Test]
+        public void 敵の通常攻撃の明示設定はプレイヤーへの命中から停止を要求する()
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(1,0));var battle=CreateBattle(enemy);
+            var action=new BasicAttackAction(3,0,hitStopFrames:7);
+            var context=new AIContext(enemy,player,battle.Field,new MockRandomProvider(),logger);
+            battle.RunLogicalFrame(()=>action.Execute(context));
+            Assert.AreEqual(97,player.CurrentHp);Assert.AreEqual(7,battle.HitStopRemainingFrames);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void 汎用カード攻撃と投擲着弾は明示した停止設定を命中まで保持する(bool projectile)
+        {
+            var enemy=new Enemy("stop","テスト",100,ElementType.None,new Vector2Int(4,0));var battle=CreateBattle(enemy);
+            var card=new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,3,"テスト");
+            var effect=new ModifiableCardEffect(DamageTargetType.All,productBomb:projectile,hitStopFrames:7);
+            battle.RunLogicalFrame(()=>effect.Execute(new Olca.Core.Logic.CardEffects.BattleContext(battle,card)));
+            if(projectile){Assert.IsFalse(battle.IsHitStopped);for(int n=0;n<120&&!battle.IsHitStopped;n++)battle.TickFrame(16);}
+            Assert.AreEqual(97,enemy.CurrentHp);Assert.AreEqual(7,battle.HitStopRemainingFrames);
+        }
+
         private BattleSystem HandBonusBattle(out Deck deck, int bonus = 2)
         {
             deck = new Deck(Enumerable.Range(0,20).Select(i => new Card("fixture-"+i,"検証"+i,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,1,"検証")).ToList());

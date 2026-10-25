@@ -15,14 +15,17 @@ namespace Olca.Core.Logic.Battle
         private readonly int cooldownMs;
         private readonly System.Action<PlayerCharacter> onHit;
         private readonly int hitInvincibilityMs;
+        private readonly int hitStopFrames;
 
         /// <summary>
         /// コンストラクタ - ミリ秒版
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldownMs">攻撃後のクールダウン時間（ミリ秒）</param>
-        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, System.Action<PlayerCharacter> onHit = null, int hitInvincibilityMs = 0)
+        public BasicAttackAction(int attackDamage, int cooldownMs, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, System.Action<PlayerCharacter> onHit = null, int hitInvincibilityMs = 0, int hitStopFrames = 0)
         {
+            if(hitStopFrames<0)throw new System.ArgumentOutOfRangeException(nameof(hitStopFrames));
+            this.hitStopFrames=hitStopFrames;
             if (hitInvincibilityMs < 0) throw new System.ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             this.onHit = onHit; this.hitInvincibilityMs = hitInvincibilityMs;
             if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
@@ -39,8 +42,8 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         /// <param name="attackDamage">攻撃ダメージ</param>
         /// <param name="cooldown">攻撃後のクールダウン時間（秒）</param>
-        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, System.Action<PlayerCharacter> onHit = null, int hitInvincibilityMs = 0)
-            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties, poiseDamage, onHit, hitInvincibilityMs)
+        public BasicAttackAction(int attackDamage = 10, float cooldown = 2.0f, ElementType attackElement = ElementType.None, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, System.Action<PlayerCharacter> onHit = null, int hitInvincibilityMs = 0, int hitStopFrames = 0)
+            : this(attackDamage, (int)(cooldown * 1000f), attackElement, attackProperties, poiseDamage, onHit, hitInvincibilityMs, hitStopFrames)
         {
         }
 
@@ -69,7 +72,7 @@ namespace Olca.Core.Logic.Battle
                 return; // 行動は実行済み。AI側の既存クールダウンは通常どおり開始する。
             }
 
-            if (context.Player.TryTakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage))
+            if (context.Player.TryTakeDamage(attackDamage, attackElement: attackElement, attackProperties: attackProperties, poiseDamage: poiseDamage, hitStopFrames: hitStopFrames))
             {
                 onHit?.Invoke(context.Player);
                 if (attackDamage > 0 && !context.Player.IsDead && hitInvincibilityMs > 0) context.Player.SetInvincible(hitInvincibilityMs);

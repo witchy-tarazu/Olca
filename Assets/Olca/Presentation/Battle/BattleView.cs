@@ -173,7 +173,7 @@ namespace Olca.Presentation.Battle
             var background=gaugeSlider.transform.Find("Background")?.GetComponent<Image>();
             if(background!=null){background.sprite=gaugeSprites.Track;background.color=Color.white;background.type=Image.Type.Simple;background.raycastTarget=false;}
         }
-        private void Update() {Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&battleSystem.IsDarkening);UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
+        private void Update() {Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&(battleSystem.IsDarkening||battleSystem.IsHitStopped));UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
         private void UpdateGaugeVisual()
         {
             if(gaugeFill==null)return;

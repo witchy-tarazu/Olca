@@ -366,12 +366,13 @@ namespace Olca.Core.Domain
         /// </summary>
         /// <param name="damage">基本ダメージ量</param>
         /// <param name="attackElement">攻撃属性</param>
-        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0)
+        public void TakeDamage(int damage, ElementType attackElement, AttackProperty attackProperties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int hitStopFrames = 0)
         {
+            if (hitStopFrames < 0) throw new ArgumentOutOfRangeException(nameof(hitStopFrames));
             if (hitInvincibilityMs < 0) throw new ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             if (poiseDamage < 0) throw new ArgumentOutOfRangeException(nameof(poiseDamage));
             AttackPropertyRules.Validate(attackProperties);
-            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs);
+            ApplyDamage(damage, attackElement, false, poiseDamage, attackProperties, hitInvincibilityMs, hitStopFrames);
         }
 
         /// <summary>回復量をHP集計へ加える。確定済みの死亡は復活させない。</summary>
@@ -387,7 +388,7 @@ namespace Olca.Core.Domain
 
         internal void TakePoisonDamage(int damage) => ApplyDamage(damage, ElementType.None, true);
 
-        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0)
+        private void ApplyDamage(int damage, ElementType attackElement, bool poison, int? poiseDamage = null, AttackProperty properties = AttackProperty.None, int hitInvincibilityMs = 0, int hitStopFrames = 0)
         {
             OnDamageProcessingStarted?.Invoke();
             try
@@ -401,7 +402,11 @@ namespace Olca.Core.Domain
                 // ガードを先に判定。通過したヒットだけ防御のフレーム合計へ入れる。
                 if (!poison && Guard.Blocks(damage, properties)) { ReportCombatFeedback(CombatFeedbackKind.Guard); return; }
                 bool barrier=HasBarrier;
-                if (!poison && protection.Block(damage, grass, properties)) {ReportCombatFeedback(barrier?CombatFeedbackKind.BarrierDamage:CombatFeedbackKind.Immune,barrier?ElementResistances.Neutral.CalculateDamage(damage,ElementType.None,grass):0);return;}
+                bool protectionPresent=HasBarrier||HasAura, wasBreaking=protection.WillBreak;
+                bool blocked=!poison&&protection.Block(damage,grass,properties);
+                if(!poison&&protectionPresent&&!wasBreaking&&(protection.WillBreak||(!HasBarrier&&!HasAura)))RequestHitStop(hitStopFrames);
+                if (blocked) {
+                    ReportCombatFeedback(barrier?CombatFeedbackKind.BarrierDamage:CombatFeedbackKind.Immune,barrier?ElementResistances.Neutral.CalculateDamage(damage,ElementType.None,grass):0);return;}
                 float multiplier = (float)(Resistances.Multiplier(attackElement) * (grass ? 2 : 1));
                 int finalDamage = Resistances.CalculateDamage(damage, attackElement, grass);
                 if (damage > 0 && finalDamage == 0) {ReportCombatFeedback(CombatFeedbackKind.Immune);return;} // 元から威力0の状態異常専用効果とは区別。
@@ -417,6 +422,7 @@ namespace Olca.Core.Domain
                 }
                 if (poison) finalDamage = Math.Min(finalDamage, Math.Max(0, currentHp - 1));
                 if (poison && finalDamage == 0) return;
+                if(!poison&&finalDamage>0)RequestHitStop(hitStopFrames);
                 ReportCombatFeedback(CombatFeedbackKind.Damage, finalDamage);
                 bool killedByThisHit = false;
                 if (frameHp.Active)
@@ -570,6 +576,9 @@ namespace Olca.Core.Domain
         /// <summary>
         /// HP変更時のイベント
         /// </summary>
+        /// <summary>明示設定のある攻撃が本体命中または防御解除を成立させた通知。</summary>
+        public event Action<int> OnHitStopRequested;
+        private void RequestHitStop(int frames) { if(frames>0)OnHitStopRequested?.Invoke(frames); }
         public event Action<CombatFeedback> OnCombatFeedback;
         private void ReportCombatFeedback(CombatFeedbackKind kind,int amount=0)
         {if((kind==CombatFeedbackKind.Damage||kind==CombatFeedbackKind.Healing)&&amount<=0)return;OnCombatFeedback?.Invoke(new CombatFeedback(kind,amount));}

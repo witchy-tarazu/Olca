@@ -21,10 +21,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
     {
         private readonly DamageTargetType baseTargetType;
 
+        private readonly int hitStopFrames;
         private readonly bool productBomb;
         private readonly Vector2Int? explosionCenter;
-        public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single, bool productBomb = false)
+        public ModifiableCardEffect(DamageTargetType targetType = DamageTargetType.Single, bool productBomb = false, int hitStopFrames = 0)
         {
+            if(hitStopFrames<0)throw new ArgumentOutOfRangeException(nameof(hitStopFrames));
+            this.hitStopFrames=hitStopFrames;
             this.baseTargetType = targetType; this.productBomb = productBomb;
         }
 
@@ -87,9 +90,9 @@ namespace Olca.Core.Logic.CardEffects.Effects
             } else Resolve();
         }
 
-        private ModifiableCardEffect(Vector2Int center)
+        private ModifiableCardEffect(Vector2Int center,int hitStopFrames)
         {
-            baseTargetType = DamageTargetType.All; explosionCenter = center;
+            baseTargetType = DamageTargetType.All; explosionCenter = center;this.hitStopFrames=hitStopFrames;
         }
         private void RegisterProductBomb(BattleContext context)
         {
@@ -100,7 +103,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             delayed.ExecuteAction = () => {
                 if (!context.Field.IsInBounds(target)) return;
                 var blastContext = new BattleContext(context.Battle, context.UsedCard) { TemporaryPlayerPosition = target, CardDatabase = context.CardDatabase };
-                new ModifiableCardEffect(target).ExecuteCardEffect(blastContext);
+                new ModifiableCardEffect(target,hitStopFrames).ExecuteCardEffect(blastContext);
                 for (int x = target.X - 1; x <= target.X + 1; x++) {
                     var position = new Vector2Int(x, target.Y);
                     if (!context.Field.IsInBounds(position)) continue;
@@ -195,7 +198,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
                         long hitsBefore = target.TotalHitsTaken;
                         long damageBefore = target.TotalDamageTaken;
-                        target.TakeDamage(finalDamage, finalElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs);
+                        target.TakeDamage(finalDamage, finalElement, context.UsedCard.Properties, context.UsedCard.PoiseDamage, context.UsedCard.HitInvincibilityMs,hitStopFrames);
                         if (target.TotalHitsTaken > hitsBefore) hitTargets.Add(target);
 
                         // 実際にダメージが入った場合
@@ -551,7 +554,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             {
                 if (!target.IsDead)
                 {
-                    target.TakeDamage(damage, element, properties, poiseDamage, hitInvincibilityMs);
+                    target.TakeDamage(damage, element, properties, poiseDamage, hitInvincibilityMs,hitStopFrames);
                 }
             }
         }
@@ -568,7 +571,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
                     if (!target.IsDead)
                     {
                         int duration = hitInvincibilityStages == null || hitInvincibilityStages[i] ? hitInvincibilityMs : 0;
-                        target.TakeDamage(damagePerHit, element, properties, poiseDamage, duration);
+                        target.TakeDamage(damagePerHit, element, properties, poiseDamage, duration,hitStopFrames);
                     }
                 }
             }

@@ -57,6 +57,11 @@ namespace Olca.Core.Logic.Battle
         private readonly IGameLogger logger;
 
         private BattlePauseReason pauseReasons;
+        private int hitStopRemainingFrames, pendingHitStopFrames;
+        /// <summary>戦闘全体を止める残り論理フレーム。通常時計には加算しない。</summary>
+        public int HitStopRemainingFrames => hitStopRemainingFrames;
+        public bool IsHitStopped => hitStopRemainingFrames>0;
+        private void RequestHitStop(int frames) => pendingHitStopFrames=Math.Max(pendingHitStopFrames,frames);
         private readonly List<DarkeningEffect> darkeningEffects=new List<DarkeningEffect>();
         private sealed class DarkeningEffect
         {
@@ -209,7 +214,7 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>一時停止中か</summary>
         public bool IsUserPaused => (pauseReasons & BattlePauseReason.User) != 0;
-        public bool IsPaused => pauseReasons != BattlePauseReason.None || IsDarkening;
+        public bool IsPaused => pauseReasons != BattlePauseReason.None || IsDarkening || IsHitStopped;
 
         /// <summary>バトル終了したか</summary>
         public bool IsGameOver => state == BattleState.Victory || state == BattleState.Defeat;
@@ -264,6 +269,7 @@ namespace Olca.Core.Logic.Battle
             player.OnDamageProcessingStarted += BeginResolution;
             player.OnDamageProcessingCompleted += EndResolution;
             player.OnDeath += OnPlayerDeath;
+            player.OnHitStopRequested += RequestHitStop;
 
             // プレイヤーのけぞり時の処理（カード効果の中断）
             player.OnStaggered += OnPlayerStaggered;
@@ -310,6 +316,7 @@ namespace Olca.Core.Logic.Battle
         {
             enemy.IsOnGrass = () => battleField.GetPanelType(enemy.GridPosition) == PanelType.Grass;
             enemyAI.RegisterEnemy(enemy, actions);
+            enemy.OnHitStopRequested += RequestHitStop;
             enemy.OnDamageProcessingStarted += BeginResolution;
             enemy.OnDamageProcessingCompleted += EndResolution;
             var previous = enemy.GridPosition;
@@ -415,6 +422,12 @@ namespace Olca.Core.Logic.Battle
         }
         public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
         {
+            // ヒットストップ中は暗転/変身演出も進めない。ユーザー/カスタム停止は残数も保持する。
+            if(IsHitStopped)
+            {
+                if((pauseReasons&(BattlePauseReason.User|BattlePauseReason.CustomScreen))==0)hitStopRemainingFrames--;
+                return;
+            }
             // 暗転の時計だけを進める。この終了フレームも通常の戦闘時間へ加算しない。
             if(IsDarkening){AdvanceDarkeningFrame();return;}
             RunLogicalFrame(() => {
@@ -692,6 +705,12 @@ namespace Olca.Core.Logic.Battle
         {
             resolutionDepth--;
             ResolveBattleEnd();
+            // 同一フレームの全ヒットとHP確定を終えてから停止。長さは加算しない。
+            if(resolutionDepth==0)
+            {
+                if(!IsGameOver)hitStopRemainingFrames=Math.Max(hitStopRemainingFrames,pendingHitStopFrames);
+                pendingHitStopFrames=0;
+            }
         }
 
         private void RequestResolution()
@@ -745,6 +764,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            hitStopRemainingFrames=pendingHitStopFrames=0;
             darkeningEffects.Clear();
             panelEffects.Clear();
             foreach (var entry in enemyDeathHandlers)
@@ -755,6 +775,7 @@ namespace Olca.Core.Logic.Battle
                 entry.Key.ClearInvincibility();
                 entry.Key.ClearPoiseRecovery();
                 entry.Key.IsOnGrass = null;
+                entry.Key.OnHitStopRequested -= RequestHitStop;
                 entry.Key.OnDamageProcessingStarted -= BeginResolution;
                 entry.Key.OnDamageProcessingCompleted -= EndResolution;
                 entry.Key.OnDeath -= entry.Value;
@@ -783,6 +804,7 @@ namespace Olca.Core.Logic.Battle
             Transformations.Dispose();
             player.OnDamageProcessingStarted -= BeginResolution;
             player.OnDamageProcessingCompleted -= EndResolution;
+            player.OnHitStopRequested -= RequestHitStop;
             player.OnDeath -= OnPlayerDeath;
             player.OnStaggered -= OnPlayerStaggered;
             playerMovement.InterruptNormalMove();
