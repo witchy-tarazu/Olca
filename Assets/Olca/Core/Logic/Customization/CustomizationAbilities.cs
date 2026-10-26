@@ -36,13 +36,20 @@ namespace Olca.Core.Logic.Customization
     public sealed class ResolvedCustomizationAbilities
     {
         private readonly CustomizationAbilitiesDto snapshot;
-        public bool Floating=>snapshot.Sources.Any(v=>v.Floating);
-        public ResolvedCustomizationAbilities(CustomizationAbilitiesDto value){if(value==null)throw new ArgumentNullException(nameof(value));value.Validate();snapshot=value.Copy();}
+        private readonly ElementResistances[] elementSources;
+        private readonly TimedStatusResistances[] statusSources;
+        public bool Floating { get; }
+        public ResolvedCustomizationAbilities(CustomizationAbilitiesDto value)
+        {
+            if(value==null)throw new ArgumentNullException(nameof(value));value.Validate();snapshot=value.Copy();
+            // 不変の装備元だけを変換して保持する。基礎値との合算やclampをここで先取りしない。
+            elementSources=snapshot.Sources.Select(v=>new ElementResistances(v.Fire,v.Water,v.Wind,v.Earth)).ToArray();
+            statusSources=snapshot.Sources.Select(v=>new TimedStatusResistances(v.Poison,v.Paralyze,v.Confusion,v.Blind)).ToArray();
+            Floating=snapshot.Sources.Any(v=>v.Floating);
+        }
         public CustomizationAbilitiesDto Capture()=>snapshot.Copy();
-        public ElementResistances CombineElements(ElementResistances baseline)
-            =>ElementResistances.Combine(new[]{baseline}.Concat(snapshot.Sources.Select(v=>new ElementResistances(v.Fire,v.Water,v.Wind,v.Earth))).ToArray());
-        public TimedStatusResistances CombineStatuses(TimedStatusResistances baseline)
-            =>TimedStatusResistances.Combine(new[]{baseline}.Concat(snapshot.Sources.Select(v=>new TimedStatusResistances(v.Poison,v.Paralyze,v.Confusion,v.Blind))).ToArray());
+        public ElementResistances CombineElements(ElementResistances baseline)=>ElementResistances.CombineSources(baseline,elementSources);
+        public TimedStatusResistances CombineStatuses(TimedStatusResistances baseline)=>TimedStatusResistances.CombineSources(baseline,statusSources);
     }
     public sealed class CustomizationAbilityCatalog
     {

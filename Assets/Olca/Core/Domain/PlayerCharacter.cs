@@ -25,7 +25,7 @@ namespace Olca.Core.Domain
         }
         public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
         private bool departureStyleFixed;
-        internal void FreezeDepartureStyle(){departureStyleFixed=true;departureAbilitiesFixed=true;}
+        internal void FreezeDepartureState(){departureStyleFixed=true;departureAbilitiesFixed=true;}
         internal Func<ElementType?> BattleElement;
         public ElementType ActiveElement => BattleElement?.Invoke() ?? DepartureStyle.Attack?.Element ?? ElementType.None;
         /// <summary>新規出撃または保存復元時に一度だけ固定する。戦闘中の切替は一時変身が所有する。</summary>

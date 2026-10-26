@@ -46,15 +46,20 @@ namespace Olca.Core.Domain
             => other != null && Poison == other.Poison && Paralyze == other.Paralyze && Confusion == other.Confusion && Blind == other.Blind;
         public static TimedStatusResistances Combine(params TimedStatusResistances[] values)
         {
-            if (values == null) throw new ArgumentNullException(nameof(values));
-            long poison = 0, paralyze = 0, confusion = 0, blind = 0;
-            foreach (var value in values)
-            {
-                if (value == null) throw new ArgumentNullException(nameof(values));
-                poison += value.Poison; paralyze += value.Paralyze; confusion += value.Confusion; blind += value.Blind;
+            if(values==null)throw new ArgumentNullException(nameof(values));
+            return CombineSources(Neutral,values);
+        }
+        internal static TimedStatusResistances CombineSources(TimedStatusResistances baseline,System.Collections.Generic.IReadOnlyList<TimedStatusResistances> values)
+        {
+            if(baseline==null)throw new ArgumentNullException(nameof(values));
+            long poison=baseline.Poison,paralyze=baseline.Paralyze,confusion=baseline.Confusion,blind=baseline.Blind;
+            for(int i=0;i<values.Count;i++){
+                var value=values[i];
+                if(value==null)throw new ArgumentNullException(nameof(values));
+                poison+=value.Poison;paralyze+=value.Paralyze;confusion+=value.Confusion;blind+=value.Blind;
             }
-            return new TimedStatusResistances((int)Math.Min(int.MaxValue, poison), (int)Math.Min(int.MaxValue, paralyze),
-                (int)Math.Min(int.MaxValue, confusion), (int)Math.Min(int.MaxValue, blind));
+            return new TimedStatusResistances((int)Math.Min(int.MaxValue,poison),(int)Math.Min(int.MaxValue,paralyze),
+                (int)Math.Min(int.MaxValue,confusion),(int)Math.Min(int.MaxValue,blind));
         }
     }
 

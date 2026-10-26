@@ -271,7 +271,7 @@ namespace Olca.Core.Logic.Dungeon
             playerCharacter = player;
             if(config.ExplorationTerrain.Any(t=>t.Type==PanelType.Ice))
                 playerMovement.ConfigureIce(map.TotalCellCount,cell=>map.GetTerrainType(cell)==PanelType.Ice,()=>player.TerrainState.ReceivesPanelEffects);
-            player.FreezeDepartureStyle();
+            player.FreezeDepartureState();
             randomProvider = random;
             this.logger = logger;
             this.exceedSystem = exceedSystem;
@@ -1484,14 +1484,7 @@ namespace Olca.Core.Logic.Dungeon
             snapshot = dto.Copy(); Cards = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Card>(cards);
             Enemies = new System.Collections.ObjectModel.ReadOnlyDictionary<int, Enemy>(enemies);
             Map = definitions.RestoreMap(enemies);
-            var p = dto.Player;
-            Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames, p.PoiseRecoveryFrames,new TimedStatusResistances(p.PoisonResistance,p.ParalyzeResistance,p.ConfusionResistance,p.BlindResistance));
-            if(p.CustomizationAbilities!=null)Player.SetDepartureAbilities(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(p.CustomizationAbilities));
-            if(p.AttackGrowth!=null)Player.SetAttackGrowth(p.AttackGrowth.Restore());
-            Player.SetDepartureStyle(p.Style?.Restore() ?? DepartureStyleDefinition.Basic);
-            Player.SetElementResistances(new ElementResistances(p.RawBaseFireResistance??p.FireResistance, p.RawBaseWaterResistance??p.WaterResistance, p.RawBaseWindResistance??p.WindResistance, p.RawBaseEarthResistance??p.EarthResistance));
-            Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
-            Player.RestorePoisons(p.Poisons);
+            Player = CheckpointPlayerMapper.Restore(dto.Player);
             Deck = new Deck(Array.ConvertAll(dto.DeckOrder, id => cards[id]).ToList());
             Obtained = Array.AsReadOnly(Array.ConvertAll(dto.ObtainedOrder, id => cards[id]));
             FirstHand = Array.AsReadOnly(Array.ConvertAll(dto.Battle?.FirstHand ?? new string[0], id => cards[id]));
@@ -1809,9 +1802,7 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
                 Visits=dungeon.CaptureVisits(),
-                Player = new CheckpointPlayerDto { CustomizationAbilities=player.DepartureAbilities?.Capture(),RawBaseFireResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Fire,RawBaseWaterResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Water,RawBaseWindResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Wind,RawBaseEarthResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Earth,PoisonResistance=player.BaseStatusResistances.Poison,ParalyzeResistance=player.BaseStatusResistances.Paralyze,ConfusionResistance=player.BaseStatusResistances.Confusion,BlindResistance=player.BaseStatusResistances.Blind,AttackGrowth=player.AttackGrowth?.Capture(), Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId && player.DepartureStyle.TransformationPhaseBonus == 0 ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
-                    Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.BaseElementResistances.Fire), WaterResistance = Math.Min(100, player.BaseElementResistances.Water),
-                    WindResistance = Math.Min(100, player.BaseElementResistances.Wind), EarthResistance = Math.Min(100, player.BaseElementResistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
+                Player = CheckpointPlayerMapper.Capture(player),
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
             };

@@ -996,7 +996,7 @@ namespace Olca.Core.Domain
         public bool DeleteDeck(string id)
         {
             if(!DeckEditingAvailable())return Fail("攻略中はデッキを削除できません");
-            if(current.EquippedDeckId==id)return Fail("装備中の削除と自動切替は未対応です。先に別のデッキを装備してください");
+            if(current.EquippedDeckId==id)return Fail("ソウビチュウのデッキはサクジョできません。サキにベツのデッキをソウビしてください");
             var next=current.Copy();if(!next.SavedDecks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
             next.SavedDecks=next.SavedDecks.Where(d=>d.Id!=id).ToArray();return Stage(next);
         }

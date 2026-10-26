@@ -150,14 +150,19 @@ namespace Olca.Core.Domain
         /// <summary>同属性の全補正を合算してから一度だけ上下限を適用する。</summary>
         public static ElementResistances Combine(params ElementResistances[] values)
         {
-            if (values == null) throw new System.ArgumentNullException(nameof(values));
-            long fire = 0, water = 0, wind = 0, earth = 0;
-            foreach (var value in values)
-            {
-                if (value == null) throw new System.ArgumentException("耐性補正がnullです", nameof(values));
-                fire += value.Fire; water += value.Water; wind += value.Wind; earth += value.Earth;
+            if(values==null)throw new System.ArgumentNullException(nameof(values));
+            return CombineSources(Neutral,values);
+        }
+        internal static ElementResistances CombineSources(ElementResistances baseline,System.Collections.Generic.IReadOnlyList<ElementResistances> values)
+        {
+            if(baseline==null)throw new System.ArgumentException("耐性補正がnullです",nameof(values));
+            long fire=baseline.Fire,water=baseline.Water,wind=baseline.Wind,earth=baseline.Earth;
+            for(int i=0;i<values.Count;i++){
+                var value=values[i];
+                if(value==null)throw new System.ArgumentException("耐性補正がnullです",nameof(values));
+                fire+=value.Fire;water+=value.Water;wind+=value.Wind;earth+=value.Earth;
             }
-            return new ElementResistances(Clamp(fire), Clamp(water), Clamp(wind), Clamp(earth));
+            return new ElementResistances(Clamp(fire),Clamp(water),Clamp(wind),Clamp(earth));
         }
         public double Multiplier(ElementType element) => (100L - Get(element)) / 100d;
         public bool IsNeutral => Fire == 0 && Water == 0 && Wind == 0 && Earth == 0;
