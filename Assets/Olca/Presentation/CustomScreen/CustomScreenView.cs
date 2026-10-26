@@ -83,7 +83,7 @@ namespace Olca.Presentation.CustomScreen
             var ids=new HashSet<string>();
             foreach(var value in values){
                 if(value==null||string.IsNullOrWhiteSpace(value.Id)||!ids.Add(value.Id)||string.IsNullOrWhiteSpace(value.DisplayNameKana)||
-                    System.Text.RegularExpressions.Regex.IsMatch(value.DisplayNameKana,@"[一-鿿々ぁ-ゖ]"))
+                    System.Text.RegularExpressions.Regex.IsMatch(value.DisplayNameKana,@"[一-鿿々]"))
                     throw new System.ArgumentException("変身のIDとカナ名称を重複なく指定してください");
             }
             transformationVisuals=values.Select(v=>v.Copy()).ToArray();RefreshTransformationButtons();
@@ -201,10 +201,16 @@ namespace Olca.Presentation.CustomScreen
         public void BindTransformations(TransformationSelectionState transformations)
         {
             ResetCustomPad();
-            if (this.transformations != null) this.transformations.OnPreviewChanged -= RefreshSelection;
+            UnbindTransformations();
             this.transformations = transformations;
             if (transformations != null) transformations.OnPreviewChanged += RefreshSelection;
             RefreshTransformationButtons();
+        }
+
+        private void UnbindTransformations()
+        {
+            if(transformations!=null)transformations.OnPreviewChanged-=RefreshSelection;
+            transformations=null;
         }
 
         private void RefreshSelection()
@@ -259,20 +265,8 @@ namespace Olca.Presentation.CustomScreen
             if(costDisplay!=null)costDisplay.color=Color.white;
             if(selectedCardDescription!=null)selectedCardDescription.color=Color.white;
 
-            // 再初期化時は既存の購読を解除
-            if (this.customScreen != null)
-            {
-                this.customScreen.OnScreenOpened -= OnScreenOpened;
-                this.customScreen.OnScreenClosed -= OnBattleScreenClosed;
-                this.customScreen.OnHandChanged -= OnHandChanged;
-                this.customScreen.OnConfirmed -= OnConfirmed;
-                confirmButton.onClick.RemoveListener(OnConfirmClicked);
-                this.customScreen.OnExceeded -= OnCustomizeOperationCompleted;
-                this.customScreen.OnTuned -= OnCustomizeOperationCompleted;
-                this.customScreen.OnFused -= OnCustomizeOperationCompleted;
-                this.customScreen.OnSelectionFailed -= OnCustomizeSelectionFailed;
-                this.customScreen.OnCustomizationUndone -= OnCustomizationUndone;
-            }
+            // 再初期化と破棄で同じ購読対応表を使う。
+            if(this.customScreen!=null)UnbindCustomScreen();
 
             if (cursor != null) cursor.OnCursorMoved -= OnCursorMoved;
             gamepadInput?.Dispose();gamepadInput=new Olca.Unity.CustomGamepadInput(()=>IsCustomPadUiActive()&&!handAnimating,IsCustomPadUiActive);
@@ -1698,6 +1692,22 @@ namespace Olca.Presentation.CustomScreen
             OnCustomScreenConfirmed?.Invoke();
         }
 
+        private void UnbindCustomScreen()
+        {
+            if(customScreen!=null){
+                customScreen.OnScreenOpened-=OnScreenOpened;
+                customScreen.OnScreenClosed-=OnBattleScreenClosed;
+                customScreen.OnHandChanged-=OnHandChanged;
+                customScreen.OnConfirmed-=OnConfirmed;
+                customScreen.OnExceeded-=OnCustomizeOperationCompleted;
+                customScreen.OnTuned-=OnCustomizeOperationCompleted;
+                customScreen.OnFused-=OnCustomizeOperationCompleted;
+                customScreen.OnCustomizationUndone-=OnCustomizationUndone;
+                customScreen.OnSelectionFailed-=OnCustomizeSelectionFailed;
+            }
+            if(confirmButton!=null)confirmButton.onClick.RemoveListener(OnConfirmClicked);
+        }
+
         private void OnDestroy()
         {
             SetScreenVisibility(true);
@@ -1708,28 +1718,13 @@ namespace Olca.Presentation.CustomScreen
             foreach(var icon in generatedMiniIcons.Values)if(icon!=null){var texture=icon.texture;if(Application.isPlaying){Destroy(icon);Destroy(texture);}else{DestroyImmediate(icon);DestroyImmediate(texture);}}
             generatedMiniIcons.Clear();
 
-            BindTransformations(null);
+            // 破棄中は購読だけを解除し、子UIの再生成や表示更新を行わない。
+            UnbindTransformations();
             if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
             // アニメーション用CancellationTokenをキャンセル
             StopHandPresentation();
 
-            if (customScreen != null)
-            {
-                customScreen.OnScreenOpened -= OnScreenOpened;
-                customScreen.OnScreenClosed -= OnBattleScreenClosed;
-                customScreen.OnHandChanged -= OnHandChanged;
-                customScreen.OnConfirmed -= OnConfirmed;
-                customScreen.OnExceeded -= OnCustomizeOperationCompleted;
-                customScreen.OnTuned -= OnCustomizeOperationCompleted;
-                customScreen.OnFused -= OnCustomizeOperationCompleted;
-                customScreen.OnCustomizationUndone -= OnCustomizationUndone;
-                customScreen.OnSelectionFailed -= OnCustomizeSelectionFailed;
-            }
-
-            if (confirmButton != null)
-            {
-                confirmButton.onClick.RemoveListener(OnConfirmClicked);
-            }
+            UnbindCustomScreen();
 
             if (customizeModeView != null)
             {

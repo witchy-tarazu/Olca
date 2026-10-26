@@ -1597,13 +1597,7 @@ namespace Olca.Application.Dungeon
             manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
 
             // イベント購読
-            manager.OnBattleEndPresentationRequested += OnBattleEndPresentationRequested;
-            manager.OnBattleStarted += OnBattleStarted;
-            manager.OnBattleEnded += OnBattleEnded;
-            manager.OnCardRewardPresented += OnCardRewardPresented;
-            manager.OnGameOver += OnGameOver;
-            manager.OnDungeonClearCompleted += OnDungeonCleared;
-            manager.OnFloorCompleted += OnFloorCompleted;
+            BindManagerEvents(manager);
 
             // GameFieldView 初期化（フィールド・敵スプライトを世界空間に配置）
             gameFieldView?.Initialize(manager.Dungeon);
@@ -2269,11 +2263,7 @@ namespace Olca.Application.Dungeon
             CancelOutcomePresentation();
             if (IsUserPaused) SetUserPaused(false);
             transitionCts?.Cancel(); battleSession?.Detach();
-            manager.OnBattleEndPresentationRequested -= OnBattleEndPresentationRequested;
-            manager.OnBattleStarted -= OnBattleStarted; manager.OnBattleEnded -= OnBattleEnded;
-            manager.OnCardRewardPresented -= OnCardRewardPresented; manager.OnGameOver -= OnGameOver;
-            manager.OnDungeonClearCompleted -= OnDungeonCleared;
-            manager.OnFloorCompleted -= OnFloorCompleted;
+            UnbindManagerEvents(manager);
             pendingCardChoices = null; cardSelectionView?.Hide();
             currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
                 itemRewardChoice?.TrySetCanceled();itemRewardOverlay?.SetActive(false);
@@ -2287,17 +2277,37 @@ namespace Olca.Application.Dungeon
             memoryCheckpoints = candidate; awaitingCheckpointChoice = false;
             dashStartPosition = -1f; dashCooldownRemaining = 0;
             ShowCheckpointStatus();
-            manager.OnBattleEndPresentationRequested += OnBattleEndPresentationRequested;
-            manager.OnBattleStarted += OnBattleStarted; manager.OnBattleEnded += OnBattleEnded;
-            manager.OnCardRewardPresented += OnCardRewardPresented; manager.OnGameOver += OnGameOver;
-            manager.OnDungeonClearCompleted += OnDungeonCleared;
-            manager.OnFloorCompleted += OnFloorCompleted;
+            BindManagerEvents(manager);
             gameFieldView?.SetPlayerPositionUpdateEnabled(true);
             gameFieldView?.Initialize(manager.Dungeon);
             manager.ActivateCheckpoint();
             if (manager.CurrentPhase == GamePhase.Dungeon) gameFieldView?.ShowHUDAsync(0).Forget();
             RefreshDungeonHud();
             if (applicationInactive) RequestAutomaticPause();
+        }
+
+        private void BindManagerEvents(DungeonBattleManager target)
+        {
+            if(target==null)return;
+            target.OnBattleEndPresentationRequested+=OnBattleEndPresentationRequested;
+            target.OnBattleStarted+=OnBattleStarted;
+            target.OnBattleEnded+=OnBattleEnded;
+            target.OnCardRewardPresented+=OnCardRewardPresented;
+            target.OnGameOver+=OnGameOver;
+            target.OnDungeonClearCompleted+=OnDungeonCleared;
+            target.OnFloorCompleted+=OnFloorCompleted;
+        }
+
+        private void UnbindManagerEvents(DungeonBattleManager target)
+        {
+            if(target==null)return;
+            target.OnBattleEndPresentationRequested-=OnBattleEndPresentationRequested;
+            target.OnBattleStarted-=OnBattleStarted;
+            target.OnBattleEnded-=OnBattleEnded;
+            target.OnCardRewardPresented-=OnCardRewardPresented;
+            target.OnGameOver-=OnGameOver;
+            target.OnDungeonClearCompleted-=OnDungeonCleared;
+            target.OnFloorCompleted-=OnFloorCompleted;
         }
 
         private void OnDestroy()
@@ -2319,13 +2329,7 @@ namespace Olca.Application.Dungeon
 
             if (manager != null)
             {
-                manager.OnBattleEndPresentationRequested -= OnBattleEndPresentationRequested;
-            manager.OnBattleStarted -= OnBattleStarted;
-                manager.OnBattleEnded -= OnBattleEnded;
-                manager.OnCardRewardPresented -= OnCardRewardPresented;
-                manager.OnGameOver -= OnGameOver;
-                manager.OnDungeonClearCompleted -= OnDungeonCleared;
-            manager.OnFloorCompleted -= OnFloorCompleted;
+                UnbindManagerEvents(manager);
             }
         }
     }

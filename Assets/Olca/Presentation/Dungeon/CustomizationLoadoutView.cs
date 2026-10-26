@@ -42,16 +42,13 @@ namespace Olca.Presentation.Dungeon
         private void OnDestroy(){menu?.Dispose();}
         private Text Label(string name,string text,float x,float y,float w,float h,int size=26)
         {
-            var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(content.transform,false);
-            var t=go.GetComponent<Text>();t.font=font;t.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text);t.fontSize=size;t.alignment=TextAnchor.MiddleCenter;UiLook.Label(t);
-            t.rectTransform.anchorMin=t.rectTransform.anchorMax=new Vector2(.5f,.5f);t.rectTransform.anchoredPosition=new Vector2(x,y);t.rectTransform.sizeDelta=new Vector2(w,h);return t;
+            return CustomizationMenuElements.Label(content.transform,font,name,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text),x,y,w,h,size);
         }
         private Button Button(string name,string label,float x,float y,float w,float h,Action action,bool enabled=true)
         {
-            var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(content.transform,false);
-            var r=(RectTransform)go.transform;r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(w,h);
-            var b=go.GetComponent<Button>();b.navigation=new Navigation{mode=Navigation.Mode.None};b.onClick.AddListener(()=>{if(this!=null&&draft!=null&&gameObject.activeInHierarchy&&b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable())action();});b.interactable=enabled;
-            var text=Label(name+"Label",label,0,0,w-12,h-8);text.transform.SetParent(go.transform,false);text.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(b);return b;
+            var b=CustomizationMenuElements.Button(content.transform,name,x,y,w,h);
+            b.onClick.AddListener(()=>{if(this!=null&&draft!=null&&gameObject.activeInHierarchy&&b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable())action();});b.interactable=enabled;
+            var text=Label(name+"Label",label,0,0,w-12,h-8);text.transform.SetParent(b.transform,false);text.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(b);return b;
         }
         private void Changed(string focus){message="ヘンコウはまだホゾンしていません";Render(focus);}
         private void CellClicked(int x,int y)
@@ -73,8 +70,7 @@ namespace Olca.Presentation.Dungeon
         }
         private void Render(string focus)
         {
-            menu?.Suspend();if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
-            content=new GameObject("CustomizationContent",typeof(RectTransform));content.transform.SetParent(transform,false);var root=(RectTransform)content.transform;root.anchorMin=Vector2.zero;root.anchorMax=Vector2.one;root.offsetMin=root.offsetMax=Vector2.zero;
+            menu?.Suspend();content=CustomizationMenuElements.ReplaceContent(transform,content,"CustomizationContent");
             Label("CustomizationTitle","ソウビ・パーツ",0,465,1400,60,36);
             Label("CustomizationAccessoriesTitle",$"ソウショクヒン {draft.Accessories.Count}/{draft.Catalog.AccessorySlots}",-650,390,550,55);
             var accessories=draft.OwnedAccessories.ToArray();int ap=Math.Max(1,(accessories.Length+PageSize-1)/PageSize);accessoryPage=Math.Min(accessoryPage,ap-1);

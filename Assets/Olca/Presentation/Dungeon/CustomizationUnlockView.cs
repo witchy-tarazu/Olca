@@ -40,23 +40,17 @@ namespace Olca.Presentation.Dungeon
         private void LateUpdate(){menu?.Tick();}
         private Text Label(string name,string text,float x,float y,float w,float h,int size=26)
         {
-            var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(content.transform,false);
-            var t=go.GetComponent<Text>();t.font=font;t.fontSize=size;t.alignment=TextAnchor.MiddleCenter;t.text=text;UiLook.Label(t);
-            t.rectTransform.anchorMin=t.rectTransform.anchorMax=new Vector2(.5f,.5f);t.rectTransform.anchoredPosition=new Vector2(x,y);t.rectTransform.sizeDelta=new Vector2(w,h);return t;
+            return CustomizationMenuElements.Label(content.transform,font,name,text,x,y,w,h,size);
         }
         private Button Button(string name,string text,float x,float y,float w,float h,Action action,bool enabled=true)
         {
-            var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(content.transform,false);
-            var rect=(RectTransform)go.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(x,y);rect.sizeDelta=new Vector2(w,h);
-            var button=go.GetComponent<Button>();button.navigation=new Navigation{mode=Navigation.Mode.None};button.interactable=enabled;
+            var button=CustomizationMenuElements.Button(content.transform,name,x,y,w,h);button.interactable=enabled;
             button.onClick.AddListener(()=>{if(this!=null&&state!=null&&gameObject.activeInHierarchy&&button!=null&&button.gameObject.activeInHierarchy&&button.IsInteractable())action();});
-            var label=Label(name+"Label",text,0,0,w-12,h-8);label.transform.SetParent(go.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(button);return button;
+            var label=Label(name+"Label",text,0,0,w-12,h-8);label.transform.SetParent(button.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(button);return button;
         }
         private void Render(string focus)
         {
-            menu?.Suspend();if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
-            content=new GameObject("UnlockContent",typeof(RectTransform));content.transform.SetParent(transform,false);
-            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            menu?.Suspend();content=CustomizationMenuElements.ReplaceContent(transform,content,"UnlockContent");
             Label("UnlockTitle","マスカイホウ",0,455,1500,70,36);
             var items=state.OwnedUnlockItems;int pages=Math.Max(1,(items.Length+3)/4);page=Math.Min(page,pages-1);
             for(int i=0;i<4&&page*4+i<items.Length;i++){

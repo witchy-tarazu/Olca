@@ -32,22 +32,17 @@ namespace Olca.Presentation.Dungeon
         private void LateUpdate(){menu?.Tick();}
         private Text Label(string name,string text,float x,float y,float width,float height,int size=28)
         {
-            var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(content.transform,false);
-            var t=go.GetComponent<Text>();t.font=font;t.fontSize=size;t.alignment=TextAnchor.MiddleCenter;t.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text);UiLook.Label(t);t.raycastTarget=false;
-            t.rectTransform.anchorMin=t.rectTransform.anchorMax=new Vector2(.5f,.5f);t.rectTransform.anchoredPosition=new Vector2(x,y);t.rectTransform.sizeDelta=new Vector2(width,height);return t;
+            return CustomizationMenuElements.Label(content.transform,font,name,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text),x,y,width,height,size);
         }
         private void Button(string name,string text,float x,float y,float width,Action action,bool enabled)
         {
-            var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(content.transform,false);
-            var r=(RectTransform)go.transform;r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(width,80);
-            var b=go.GetComponent<Button>();b.navigation=new Navigation{mode=Navigation.Mode.None};b.interactable=enabled;UiLook.Button(b);
+            var b=CustomizationMenuElements.Button(content.transform,name,x,y,width,80);b.interactable=enabled;UiLook.Button(b);
             b.onClick.AddListener(()=>{if(this!=null&&gameObject.activeInHierarchy&&b!=null&&b.IsActive()&&b.IsInteractable())action();});
-            var t=Label(name+"Label",text,0,0,width-24,72);t.transform.SetParent(go.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;
+            var t=Label(name+"Label",text,0,0,width-24,72);t.transform.SetParent(b.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;
         }
         private void Render()
         {
-            menu.Suspend();if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
-            content=new GameObject("AcquisitionContent",typeof(RectTransform));content.transform.SetParent(transform,false);var r=(RectTransform)content.transform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;
+            menu.Suspend();content=CustomizationMenuElements.ReplaceContent(transform,content,"AcquisitionContent");
             Label("AcquisitionTitle","ソウビのウケトリ",0,430,1500,80,36);
             var availability=plan==null?null:new CustomizationAcquisitionAvailability(plan,progress);
             int received=availability?.ReceivedCount??0;
