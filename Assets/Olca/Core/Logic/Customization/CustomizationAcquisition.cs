@@ -95,10 +95,12 @@ namespace Olca.Core.Domain
         public bool TryClaimCustomizationAcquisition(CustomizationCatalog catalog,string contextId,string requestId)
         {
             if(!Available())return Fail("未保存の処理を先に再試行してください");
-            var plan=FindCustomizationAcquisition(contextId);var candidate=plan?.Candidates.SingleOrDefault(v=>v.RequestId==requestId);
+            var state=CustomizationSnapshot;
+            var plan=state.Acquisitions.SingleOrDefault(v=>v.ContextId==contextId);var candidate=plan?.Candidates.SingleOrDefault(v=>v.RequestId==requestId);
             if(candidate==null||catalog==null||plan.BoardId!=catalog.BoardId)return Fail("保存された取得候補が必要です");
-            var receipt=CustomizationSnapshot.Receipts.SingleOrDefault(v=>v.RequestId==requestId);
-            if(receipt==null&&plan.Candidates.Count(v=>CustomizationSnapshot.Receipts.Any(r=>r.RequestId==v.RequestId))>=plan.MaximumClaims)return Fail("この入手元の受取は完了しています");
+            var availability=new CustomizationAcquisitionAvailability(plan,state).ForCandidate(requestId);
+            // 受領済みの同一要求は上限到達後も原子的受領処理へ渡し、Revisionを増やさず成功させる。
+            if(!availability.IsReceived&&availability.LimitReached)return Fail("この入手元の受取は完了しています");
             return TryGrantCustomizationCore(catalog,candidate.ToGrant(),true);
         }
     }

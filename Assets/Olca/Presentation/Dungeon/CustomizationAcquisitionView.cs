@@ -49,13 +49,14 @@ namespace Olca.Presentation.Dungeon
             menu.Suspend();if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("AcquisitionContent",typeof(RectTransform));content.transform.SetParent(transform,false);var r=(RectTransform)content.transform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;
             Label("AcquisitionTitle","ソウビのウケトリ",0,430,1500,80,36);
-            int received=plan?.Candidates.Count(v=>progress.Receipts.Any(t=>t.RequestId==v.RequestId))??0;
+            var availability=plan==null?null:new CustomizationAcquisitionAvailability(plan,progress);
+            int received=availability?.ReceivedCount??0;
             Label("AcquisitionCount",plan==null?"ホゾンカンリョウをまっています":$"ウケトリ {received} / {plan.MaximumClaims}",0,335,1500,70);
             int pages=Math.Max(1,((plan?.Candidates.Length??0)+3)/4);page=Math.Min(page,pages-1);
             if(plan!=null)for(int i=0;i<4&&page*4+i<plan.Candidates.Length;i++){
-                var c=plan.Candidates[page*4+i];bool done=progress.Receipts.Any(v=>v.RequestId==c.RequestId);
-                bool owned=c.Accessories.Any(id=>progress.OwnedAccessoryIds.Contains(id));
-                Button("AcquisitionCandidate_"+c.RequestId,c.DisplayName+(done?" / ウケトリズみ":owned?" / ショジズみ":selected==c.RequestId?" / センタク":""),0,220-i*110,1500,()=>{selected=c.RequestId;Render();},!pending&&!done&&!owned&&received<plan.MaximumClaims);
+                var c=plan.Candidates[page*4+i];var status=availability.ForCandidate(c.RequestId);
+                bool done=status.IsReceived,owned=status.HasOwnedAccessory;
+                Button("AcquisitionCandidate_"+c.RequestId,c.DisplayName+(done?" / ウケトリズみ":owned?" / ショジズみ":selected==c.RequestId?" / センタク":""),0,220-i*110,1500,()=>{selected=c.RequestId;Render();},!pending&&status.CanReceive);
             }
             Button("AcquisitionPrevious","マエ",-350,-245,500,()=>{page--;Render();},!pending&&page>0);
             Button("AcquisitionNext","ツギ",350,-245,500,()=>{page++;Render();},!pending&&page+1<pages);

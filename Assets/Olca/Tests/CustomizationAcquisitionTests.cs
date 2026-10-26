@@ -82,5 +82,32 @@ namespace Olca.Tests
             var grant=Part(run:departure.RunId);string context="clear:"+departure.RunId;Assert.IsTrue(s.TryPrepareCustomizationAcquisition(catalog,Define(context,1,grant)),s.Error);
             s=Session();Assert.AreEqual(departure.RunId,s.FindCustomizationAcquisition(context).Candidates[0].ClearRunId);Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,context,grant.RequestId),s.Error);long revision=s.Snapshot.Revision;Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,context,grant.RequestId));Assert.AreEqual(revision,s.Snapshot.Revision);Assert.AreEqual(1,Session().CustomizationSnapshot.OwnedParts.Single().Count);
         }
+        [Test]
+        public void 受領状態は一時点で固定し新規受取と同一要求の再送を区別する()
+        {
+            var s=Session();var accessory=new CustomizationGrant(Id(),new[]{"a"});var part=Part();
+            Assert.IsTrue(s.TryPrepareCustomizationAcquisition(catalog,Define("event",1,accessory,part)));
+            var plan=s.FindCustomizationAcquisition("event");var progress=s.CustomizationSnapshot;
+            var before=new CustomizationAcquisitionAvailability(plan,progress);
+            Assert.IsTrue(before.ForCandidate(accessory.RequestId).CanReceive);Assert.IsTrue(before.ForCandidate(part.RequestId).CanReceive);
+            // 呼出元が後から公開snapshotを変更しても、解決済みの読み取り結果は変わらない。
+            plan.Candidates[0].Accessories[0]="changed";progress.OwnedAccessoryIds=new[]{"a"};
+            Assert.IsTrue(before.ForCandidate(accessory.RequestId).CanReceive);
+            Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,"event",accessory.RequestId),s.Error);
+            var after=new CustomizationAcquisitionAvailability(s.FindCustomizationAcquisition("event"),s.CustomizationSnapshot);
+            Assert.AreEqual(1,after.ReceivedCount);var received=after.ForCandidate(accessory.RequestId);
+            Assert.IsTrue(received.IsReceived);Assert.IsTrue(received.HasOwnedAccessory);Assert.IsTrue(received.LimitReached);Assert.IsFalse(received.CanReceive);
+            Assert.IsFalse(after.ForCandidate(part.RequestId).CanReceive);Assert.IsFalse(s.TryClaimCustomizationAcquisition(catalog,"event",part.RequestId));
+            long revision=s.Snapshot.Revision;Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,"event",accessory.RequestId));Assert.AreEqual(revision,s.Snapshot.Revision);
+        }
+        [Test]
+        public void 受取枠が残っていても別候補で取得した同じ装飾品は受け取れない()
+        {
+            var s=Session();var a=new CustomizationGrant(Id(),new[]{"a"});var b=new CustomizationGrant(Id(),new[]{"a"});
+            Assert.IsTrue(s.TryPrepareCustomizationAcquisition(catalog,Define("event",2,a,b)));Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,"event",a.RequestId));
+            var availability=new CustomizationAcquisitionAvailability(s.FindCustomizationAcquisition("event"),s.CustomizationSnapshot);
+            var other=availability.ForCandidate(b.RequestId);Assert.IsFalse(other.IsReceived);Assert.IsTrue(other.HasOwnedAccessory);Assert.IsFalse(other.LimitReached);Assert.IsFalse(other.CanReceive);
+            Assert.IsFalse(s.TryClaimCustomizationAcquisition(catalog,"event",b.RequestId));Assert.Throws<ArgumentException>(()=>availability.ForCandidate("missing"));
+        }
     }
 }

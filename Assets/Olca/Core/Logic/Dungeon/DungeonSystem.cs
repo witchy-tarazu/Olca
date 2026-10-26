@@ -1560,32 +1560,7 @@ namespace Olca.Core.Logic.Dungeon
                 {
                     var b = d.Battle;
                     ValidateEncounter(b, p, enemies);
-                    ValidateReferences(b.FirstHand, cards); ValidateReferences(b.RewardCandidates, cards);
-                    CheckpointValues.Require(!b.ItemRewardIndex.HasValue||(b.ItemRewardHasNextFloor.HasValue&&b.ItemRewardIndex.Value>=0&&b.ItemRewardIndex.Value<definitions.ItemRewards.Count&&definitions.ItemRewards[b.ItemRewardIndex.Value].Weight>0&&definitions.ItemQualifyingCells(b.ParticipantCells,b.ItemRewardHasNextFloor.Value).Length>0),"アイテム報酬候補/戦闘条件が不正です");
-                    if(b.EvaluationRewards==null)CheckpointValues.Require(b.EvaluationRewardDefinitionId==null,"評価報酬帯が欠落しています");
-                    else{
-                        CheckpointValues.Require(!string.IsNullOrWhiteSpace(b.EvaluationRewardDefinitionId)&&b.EvaluationRewards.Length==4&&b.EvaluationRewards.All(v=>v!=null)&&b.EvaluationRewards.Select(v=>v.Grade).OrderBy(v=>v).SequenceEqual(new[]{0,1,2,3}),"4評価帯の保存が不正です");
-                        foreach(var v in b.EvaluationRewards){
-                            ValidateReferences(v.RewardCandidates,cards);
-                            CheckpointValues.Require(v.CurrencyAmounts!=null&&v.CurrencyAmounts.Length==b.ParticipantCells.Length&&v.CurrencyAmounts.All(n=>n>=0)&&
-                                v.RewardOffered==(v.RewardCandidates.Length>0)&&v.RewardCandidates.Length<=3&&
-                                (enemies[b.ContactCell].EnemyId=="boss"?v.RewardOffered:!v.RewardOffered||v.RewardCandidates.Length==3)&&
-                                v.RewardCandidates.All(id=>!d.DeckOrder.Contains(id)&&!d.ObtainedOrder.Contains(id))&&
-                                (!v.ItemRewardIndex.HasValue||(b.ItemRewardHasNextFloor.HasValue&&v.ItemRewardIndex>=0&&v.ItemRewardIndex<definitions.ItemRewards.Count&&definitions.ItemRewards[v.ItemRewardIndex.Value].Weight>0&&definitions.ItemQualifyingCells(b.ParticipantCells,b.ItemRewardHasNextFloor.Value).Length>0)),"評価報酬の内容が不正です");
-                        }
-                        CheckpointValues.Require(b.EvaluationRewards.SelectMany(v=>v.RewardCandidates).Distinct().Count()==b.EvaluationRewards.Sum(v=>v.RewardCandidates.Length),"評価帯間で候補個体が重複しています");
-                        var first=b.EvaluationRewards.Single(v=>v.Grade==0);
-                        CheckpointValues.Require(b.RewardOffered==first.RewardOffered&&b.RewardCandidates.SequenceEqual(first.RewardCandidates)&&b.CurrencyAmounts!=null&&b.CurrencyAmounts.SequenceEqual(first.CurrencyAmounts)&&b.ItemRewardIndex==first.ItemRewardIndex,"開始時の評価報酬参照が不一致です");
-                    }
-                    string contactId = enemies[b.ContactCell].EnemyId;
-                    bool boss = contactId == "boss";
-                    // 旧版は部分一致IDにもボス候補を保存した。保存済みの1〜3候補を再抽選せず受理する。
-                    // 新版の同じ通常敵では報酬なしも合法。新規抽選にはこの互換条件を使わない。
-                    bool legacyBossCandidates = contactId.Contains("boss") && b.RewardOffered;
-                    CheckpointValues.Require(boss ? b.RewardOffered : (!b.RewardOffered || b.RewardCandidates.Length == 3 || legacyBossCandidates), "報酬件数と接敵種別が一致しません");
-                    CheckpointValues.Require(b.FirstHand.Length == Math.Min(b.HandLimit, d.DeckOrder.Length) && b.FirstHand.All(id => d.DeckOrder.Contains(id)), "初回手札が不整合です");
-                    CheckpointValues.Require(b.RewardOffered == (b.RewardCandidates.Length > 0) && b.RewardCandidates.Length <= 3 &&
-                        b.RewardCandidates.All(id => !d.DeckOrder.Contains(id) && !d.ObtainedOrder.Contains(id)), "報酬候補が不整合です");
+                    CheckpointRewardPlanValidator.Validate(d,definitions,cards,enemies);
                 }
                 else CheckpointValues.Require(d.Battle == null, "探索境界に戦闘計画が混入しています");
                 var referenced = new HashSet<string>(d.DeckOrder.Concat(d.ObtainedOrder).Concat(d.Battle?.RewardCandidates ?? new string[0]).Concat(d.Battle?.EvaluationRewards?.SelectMany(v=>v.RewardCandidates)??Array.Empty<string>()));
@@ -1614,7 +1589,7 @@ namespace Olca.Core.Logic.Dungeon
             if(b.DashEffect.HasValue)ActionSystem.ResolveDashDefinition((ActionSystem.DashContactEffect)b.DashEffect.Value,b.DashValue);
         }
         private static bool ValidGrid(int x, int y) => x >= 0 && x < BattleField.GRID_WIDTH && y >= 0 && y < BattleField.GRID_HEIGHT;
-        private static void ValidateReferences(string[] ids, Dictionary<string, Card> cards)
+        internal static void ValidateReferences(string[] ids, Dictionary<string, Card> cards)
         {
             CheckpointValues.Require(ids != null && ids.All(id => id != null && cards.ContainsKey(id)) && ids.Distinct().Count() == ids.Length,
                 "カード個体の参照が欠落または重複しています");
