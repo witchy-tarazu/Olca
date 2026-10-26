@@ -84,6 +84,32 @@ namespace Olca.Tests.Dungeon
             }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(idle);UnityEngine.Object.DestroyImmediate(frame);UnityEngine.Object.DestroyImmediate(texture);}
         }
 
+        [Test]
+        public void バックジャンプ専用6コマは通常登録から等倍基準で供給され解除後も再利用できる()
+        {
+            var root = new UnityEngine.GameObject("backjump-resources"); root.SetActive(false);
+            var view = root.AddComponent<Olca.Presentation.Field.GameFieldView>();
+            var renderer = root.AddComponent<UnityEngine.SpriteRenderer>(); var animator = root.AddComponent<UnityEngine.Animator>();
+            var texture = new UnityEngine.Texture2D(1, 1); var idle = UnityEngine.Sprite.Create(texture, new UnityEngine.Rect(0, 0, 1, 1), UnityEngine.Vector2.zero);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var type = view.GetType();
+            type.GetField("playerSprite", flags).SetValue(view, renderer); type.GetField("playerAnimator", flags).SetValue(view, animator); type.GetField("idlePlayerSprite", flags).SetValue(view, idle); renderer.sprite = idle;
+            try {
+                type.GetMethod("EnsureSomersaultSprites", flags).Invoke(view, null);
+                var frames = (UnityEngine.Sprite[])type.GetField("somersaultSprites", flags).GetValue(view);
+                Assert.AreEqual(6, frames.Length);
+                for (int i = 0; i < frames.Length; i++) {
+                    Assert.AreEqual("backjump_" + (i + 1).ToString("00"), frames[i].name);
+                    Assert.AreEqual(new UnityEngine.Vector2(256, 256), frames[i].rect.size); Assert.AreEqual(new UnityEngine.Vector2(127, 14), frames[i].pivot); Assert.AreEqual(100, frames[i].pixelsPerUnit); Assert.AreEqual(UnityEngine.FilterMode.Point, frames[i].texture.filterMode);
+                    view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.Somersault, (i + .5f) / 6f); Assert.AreSame(frames[i], renderer.sprite); Assert.IsFalse(animator.enabled);
+                }
+                type.GetMethod("OnDisable", flags).Invoke(view, null); Assert.AreSame(idle, renderer.sprite); Assert.IsTrue(animator.enabled);
+                type.GetMethod("EnsureSomersaultSprites", flags).Invoke(view, null); Assert.AreSame(frames, type.GetField("somersaultSprites", flags).GetValue(view));
+                view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.Somersault, 0); Assert.AreSame(frames[0], renderer.sprite);
+                view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None, 0); Assert.AreSame(idle, renderer.sprite);
+            } finally { UnityEngine.Object.DestroyImmediate(root); UnityEngine.Object.DestroyImmediate(idle); UnityEngine.Object.DestroyImmediate(texture); }
+        }
+
         [TestCase(false)][TestCase(true)]
         public void ジャンプ表示の参照で軌道と速度を変えず停止と着地に追従する(bool dash)
         {

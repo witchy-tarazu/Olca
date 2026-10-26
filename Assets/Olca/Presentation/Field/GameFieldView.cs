@@ -41,6 +41,27 @@ namespace Olca.Presentation.Field
         private static readonly int JumpPhaseParameter = Animator.StringToHash("jumpPhase");
         [SerializeField] private Sprite[] contactKnockbackSprites;
         [SerializeField] private Sprite[] somersaultSprites;
+        private Sprite[] generatedSomersaultSprites;
+
+        // 通常起動でも専用6コマを供給する。Sceneの明示参照があればそちらを優先する。
+        private void EnsureSomersaultSprites()
+        {
+            if (somersaultSprites != null && somersaultSprites.Length > 0) return;
+            var textures = new Texture2D[6];
+            for (int i = 0; i < textures.Length; i++) {
+                textures[i] = Resources.Load<Texture2D>("OlcaCharacterMotion/BackJump/backjump_" + (i + 1).ToString("00"));
+                if (textures[i] == null || textures[i].width != 256 || textures[i].height != 256) return;
+            }
+            var frames = new Sprite[textures.Length];
+            for (int i = 0; i < frames.Length; i++) {
+                textures[i].filterMode = FilterMode.Point;
+                frames[i] = Sprite.Create(textures[i], new Rect(0, 0, 256, 256), new Vector2(127f / 256f, 14f / 256f), 100f);
+                frames[i].name = "backjump_" + (i + 1).ToString("00");
+            }
+            generatedSomersaultSprites = frames;
+            somersaultSprites = frames;
+        }
+
         private Sprite contactPoseSprite;
         private Sprite contactPreviousSprite;
         private bool contactAnimatorWasEnabled;
@@ -499,9 +520,14 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
+                if (frame == null) continue;
+                if (UnityEngine.Application.isPlaying) Destroy(frame); else DestroyImmediate(frame);
+            }
+            generatedSomersaultSprites = null;
             ClearTerrainVisuals(); ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
@@ -518,6 +544,7 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
+            EnsureSomersaultSprites();
             if(outcomePlayerColor.HasValue&&playerSprite!=null)playerSprite.color=outcomePlayerColor.Value;
             outcomePlayerColor=null;
             RestoreEnemyPerception();
