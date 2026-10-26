@@ -289,7 +289,7 @@ namespace Olca.Application.Dungeon
         }
         private bool DungeonUnlocked(int index) => index >= 0 && index < dungeonChoices.Count &&
             (debugUnlockDungeons || index == 0 || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index].Id) || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index - 1].Id));
-        private bool CanSelectDungeon => !CustomizationEditorOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool CanSelectDungeon => !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
             (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
@@ -336,11 +336,14 @@ namespace Olca.Application.Dungeon
 
         private Olca.Presentation.Dungeon.CustomizationLoadoutView customizationEditorView;
         private Olca.Core.Logic.Customization.CustomizationEditDraft customizationDraft;
-        private Button customizationEditorButton;
+        private Button customizationEditorButton, customizationUnlockButton;
+        private Olca.Presentation.Dungeon.CustomizationUnlockView customizationUnlockView;
+        private bool customizationUnlockSavePending, customizationUnlockWasOpen;
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
-            if(!CustomizationEditorOpen)return;
+            if(!CustomizationEditorOpen&&!CustomizationUnlockOpen)return;
+            customizationUnlockWasOpen=false;customizationUnlockView?.Close();
             customizationEditorView.Close(); customizationDraft=null; customizationEditorInterrupted=true;
         }
         private void OnEnable()
@@ -350,6 +353,38 @@ namespace Olca.Application.Dungeon
             if(initialHub)ShowDungeonSelection();else ShowClearReturn();
         }
         private bool CustomizationEditorOpen => customizationEditorView != null && customizationEditorView.gameObject.activeSelf;
+        private bool CustomizationUnlockOpen => customizationUnlockView != null && customizationUnlockView.gameObject.activeSelf;
+        private void OpenCustomizationUnlocks()
+        {
+            if(!IsProgressHub||clearReturnSession.HasPendingSave||customizationCatalog==null)return;
+            if(!TryGetCustomizationLayout(out _,out _)){clearReturnError="ホゾンとテイギがイッチしません";if(initialHub)ShowDungeonSelection();else ShowClearReturn();return;}
+            customizationUnlockWasOpen=true;customizationUnlockSavePending=false;clearReturnView.gameObject.SetActive(false);
+            customizationUnlockView.Open(customizationCatalog,clearReturnSession.CustomizationSnapshot);RefreshProgressActions();
+        }
+        private void CloseCustomizationUnlocks()
+        {
+            if(customizationUnlockSavePending)return;
+            customizationUnlockWasOpen=false;customizationUnlockView.Close();if(initialHub)ShowDungeonSelection();else ShowClearReturn();
+        }
+        private void ApplyCustomizationUnlockFromUi(string id)
+        {
+            if(!CustomizationUnlockOpen||customizationUnlockSavePending)return;
+            if(!TryApplyCustomizationUnlock(id,out _)){customizationUnlockSavePending=clearReturnSession.HasPendingSave;customizationUnlockView.SaveFailed(customizationUnlockSavePending);return;}
+            customizationUnlockView.Applied(clearReturnSession.CustomizationSnapshot);
+        }
+        private void RetryCustomizationUnlockSave()
+        {
+            if(!CustomizationUnlockOpen||!customizationUnlockSavePending)return;
+            if(!clearReturnSession.Retry()){customizationUnlockView.SaveFailed(true);return;}
+            customizationUnlockSavePending=false;customizationUnlockView.Applied(clearReturnSession.CustomizationSnapshot);
+        }
+        public bool TryGetCustomizationSources(out Olca.Core.Logic.Customization.CustomizationLoadoutSources sources,out string error)
+        {
+            sources=null;error=null;
+            if(clearReturnSession?.Ready!=true||customizationCatalog==null){error="ソウビテイギがミトウロクです";return false;}
+            try{sources=new Olca.Core.Logic.Customization.CustomizationLoadoutSources(customizationCatalog,clearReturnSession.CustomizationSnapshot);return true;}
+            catch(System.ArgumentException){error="ホゾンとテイギがイッチしません";return false;}
+        }
         private void OpenCustomizationEditor()
         {
             if (!IsProgressHub || clearReturnSession.HasPendingSave || customizationCatalog == null) return;
@@ -737,14 +772,18 @@ namespace Olca.Application.Dungeon
             customizationEditorButton = MakeButton("OpenCustomizationEditor", "ソウビ・パーツ", pauseCanvas.transform, new Vector2(.5f,.5f), new Vector2(650,380));
             ((RectTransform)customizationEditorButton.transform).sizeDelta = new Vector2(300,60);
             customizationEditorButton.onClick.AddListener(OpenCustomizationEditor); customizationEditorButton.gameObject.SetActive(false);
-            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
+            var unlockPanel=new GameObject("CustomizationUnlocks",typeof(RectTransform));unlockPanel.transform.SetParent(pauseCanvas.transform,false);
+            customizationUnlockView=unlockPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();customizationUnlockView.Initialize(font,ApplyCustomizationUnlockFromUi,CloseCustomizationUnlocks,RetryCustomizationUnlockSave);
+            customizationUnlockButton=MakeButton("OpenCustomizationUnlocks","マスカイホウ",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,305));
+            ((RectTransform)customizationUnlockButton.transform).sizeDelta=new Vector2(300,60);customizationUnlockButton.onClick.AddListener(OpenCustomizationUnlocks);customizationUnlockButton.gameObject.SetActive(false);
+            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
         }
         private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
         private GameObject progressActionOverlay;
         private Text progressActionMessage;
         private bool progressDialogOpen,newGameConfirmation,newGameSavePending,manualSavePending;
         private long confirmedProgressRevision;
-        private bool IsProgressHub => !CustomizationEditorOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool IsProgressHub => !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
@@ -772,7 +811,7 @@ namespace Olca.Application.Dungeon
         private void RefreshProgressActions()
         {
             if(manualSaveButton==null)return;
-            bool allowProgressActions=!CustomizationEditorOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
+            bool allowProgressActions=!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&!clearReturnSession.HasPendingSave;
             newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame;
@@ -782,6 +821,7 @@ namespace Olca.Application.Dungeon
                 customizationEditorButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;
                 customizationEditorButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":"ソウビ・パーツ";
             }
+            if(customizationUnlockButton!=null){customizationUnlockButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);customizationUnlockButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
             if(progressDialogOpen)progressActionOverlay.transform.SetAsLastSibling();
         }
         private void ShowProgressAction(string message,bool confirm,bool canClose=true)
@@ -1620,12 +1660,14 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
+            if(customizationUnlockWasOpen&&!CustomizationUnlockOpen){customizationUnlockWasOpen=false;if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
             if(customizationDraft!=null&&(!CustomizationEditorOpen||customizationEditorView.Draft==null)) {
                 customizationEditorView?.Close();customizationDraft=null;
                 if(initialHub)ShowDungeonSelection();else ShowClearReturn();
             }
             if(CustomizationEditorOpen)customizationEditorView.transform.SetAsLastSibling();
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationEditorOpen && !DialogueOpen && !AudioSettingsOpen && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
+            if(CustomizationUnlockOpen)customizationUnlockView.transform.SetAsLastSibling();
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
