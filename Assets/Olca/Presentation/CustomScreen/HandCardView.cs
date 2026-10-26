@@ -99,7 +99,7 @@ namespace Olca.Presentation.CustomScreen
 
         public void RefreshArtwork()
         {
-            if(cardImage!=null)cardImage.sprite=parentView==null?null:parentView.GetCardIcon(Card?.Id);
+            if(cardImage!=null)cardImage.sprite=parentView==null?null:parentView.GetCardIconForCard(Card);
         }
 
         /// <summary>

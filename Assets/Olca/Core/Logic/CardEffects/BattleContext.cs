@@ -33,7 +33,10 @@ namespace Olca.Core.Logic.CardEffects
         public int ForwardX { get; }
         internal CancellationToken ActionCancellation { get; set; }
         internal Action AttackResolved { get; set; }
-        internal void ResolveAttackPreview()=>AttackResolved?.Invoke();
+        internal object PlayerActionOwner { get; set; }
+        internal CardActionVisualState ActionVisual { get; set; }
+        internal void ResolveAttackPreview() { AttackResolved?.Invoke(); ActionVisual?.MarkEffect(); }
+        public void NotifyActionEffectResolved() => ResolveAttackPreview();
         // 前隙のある敵単体攻撃は狙ったマスを保持し、相手の移動へ追尾しない。
         internal Vector2Int? LockedSingleTarget { get; set; }
         internal CardTarget User => EnemySource == null ? new CardTarget(Player) : new CardTarget(EnemySource);
@@ -66,7 +69,15 @@ namespace Olca.Core.Logic.CardEffects
         {
             var child=new BattleContext(Battle,card,EnemySource,ForwardX){CardDatabase=CardDatabase,TemporaryPlayerPosition=TemporaryPlayerPosition,ActionCancellation=ActionCancellation};
             if(EnemySource!=null)EnemyCardAction.ValidateCard(card);
-            child.InheritDerivatives(this);return child;
+            child.PlayerActionOwner = PlayerActionOwner; child.InheritDerivatives(this);return child;
+        }
+
+        // 各アクションが所有する派生前後隙だけを待つ。飛翔体は従来どおり別寿命。
+        internal BattleContext ForAction()
+        {
+            var child = ForCard(UsedCard);
+            child.derivativeLifetime = new DerivativeLifetime();
+            return child;
         }
 
         internal AttackInfluence Influence { get; private set; }
@@ -99,6 +110,12 @@ namespace Olca.Core.Logic.CardEffects
                 var registration=ActionCancellation.Register(()=>Battle.DelayedEffects.Cancel(effect));
                 var finish=effect.OnFinished;effect.OnFinished=()=>{registration.Dispose();finish?.Invoke();};
             }
+        }
+
+        internal void TrackAction(FrameTask task)
+        {
+            var finish = derivativeLifetime.Add();
+            task.GetAwaiter().OnCompleted(() => { finish(); if (task.Status != FrameTaskStatus.Canceled) task.GetAwaiter().GetResult(); });
         }
 
         private sealed class DerivativeLifetime

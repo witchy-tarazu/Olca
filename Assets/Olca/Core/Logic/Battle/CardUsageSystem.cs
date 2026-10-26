@@ -140,10 +140,16 @@ namespace Olca.Core.Logic.Battle
         private async FrameTask ExecuteCardEffectAsync(Card card, object owner, CancellationToken ct)
         {
             card = ApplyConcentrate(card);
-            var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase };
+            var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase, PlayerActionOwner = owner };
             var effect = CardEffectFactory.CreateEffect(card); var timing = battleSystem.CardTiming(card);
             bool resolved = false;
             try {
+                if (effect is CardActionSequenceEffect actions) {
+                    context.ActionCancellation = ct;
+                    actions.ValidateLegacyTiming(card, timing);
+                    await actions.ExecuteAsync(context, ct);
+                    return;
+                }
                 if (!card.IsInstantEffect) {
                     if (timing != null) await battleSystem.WaitForActionFramesAsync(timing.StartupFrames, ct);
                     else if (card.StartupFrames.HasValue) await battleSystem.WaitForActionFramesAsync(card.StartupFrames.Value, ct);

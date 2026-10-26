@@ -384,11 +384,11 @@ namespace Olca.Tests
                 var indicator=new GameObject("SelectionIndicator",typeof(RectTransform));indicator.transform.SetParent(root.transform,false);
                 var slots=new List<Image>();for(int i=0;i<3;i++){var slot=new GameObject("Slot"+i,typeof(RectTransform),typeof(Image));slot.transform.SetParent(indicator.transform,false);((RectTransform)slot.transform).anchoredPosition=new Vector2(50*i,0);slots.Add(slot.GetComponent<Image>());}
                 typeof(CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags).Invoke(view,null);
-                for(int i=0;i<3;i++)Assert.AreSame(view.GetCardIcon(hand[i].Id),slots[i].sprite);
+                for(int i=0;i<3;i++)Assert.AreSame(view.GetCardIconForCard(hand[i]),slots[i].sprite);
                 var area=indicator.GetComponent<Button>();Assert.IsNotNull(area);Assert.IsTrue(indicator.GetComponent<Image>().raycastTarget);
                 Assert.IsTrue(slots.All(s=>!s.raycastTarget),"各アイコンは行全体の入力を遮らない");
                 area.onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[0],hand[1]},model.SelectedCards);
-                Assert.AreSame(view.GetCardIcon(hand[1].Id),slots[1].sprite);Assert.IsNull(slots[2].sprite);Assert.AreEqual(0,cursor.CurrentIndex);
+                Assert.AreSame(view.GetCardIconForCard(hand[1]),slots[1].sprite);Assert.IsNull(slots[2].sprite);Assert.AreEqual(0,cursor.CurrentIndex);
                 area.onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[0]},model.SelectedCards);
                 area.onClick.Invoke();Assert.IsEmpty(model.SelectedCards);area.onClick.Invoke();Assert.IsEmpty(model.SelectedCards);
                 Assert.AreEqual(0,cursor.CurrentIndex);Assert.IsFalse(model.IsConfirming);
@@ -403,7 +403,26 @@ namespace Olca.Tests
         [TestCase("探索中は画面のボタンで操作", "タンサクチュウはガメンのボタンでソウサ")]
         public void 漢字以外の元文字と送り仮名と助詞を一字も変えない(string source,string expected)
             =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
-        [TestCase("sword")][TestCase("fire_sword")][TestCase("bomb")][TestCase("heal")][TestCase("shield")][TestCase("tuning")]
+        [Test]
+        public void 現行製品とフォールバックの全カードに本絵があり実性能と明示素材を優先する()
+        {
+            var root = new GameObject("AllCardArt");
+            var texture = new Texture2D(2, 2); var assigned = Sprite.Create(texture, new Rect(0, 0, 2, 2), Vector2.zero);
+            try {
+                var view = root.AddComponent<CustomScreenView>(); var factory = new Olca.Application.Battle.SimpleCardFactory();
+                foreach (var card in factory.CollectionCards) { Assert.IsNotNull(view.GetCardIllustrationForCard(card), card.Id + "/" + card.Name); Assert.IsNotNull(view.GetCardIconForCard(card), card.Id + "/mini"); }
+                foreach (var id in new[] { "heal", "shield" }) {
+                    var fallback = Olca.Core.Logic.Dungeon.CardRewardSystem.CreateFallbackCard(id, CardRarity.Normal);
+                    Assert.AreSame(view.GetCardIllustration("sword"), view.GetCardIllustrationForCard(fallback));
+                    Assert.AreSame(view.GetCardIcon("sword"), view.GetCardIconForCard(fallback));
+                    Assert.AreSame(view.GetCardIllustration(id), view.GetCardIllustrationForCard(factory.CreateById(id)));
+                }
+                view.ConfigureCardVisuals(new[] { new CardVisualEntry { CardId = "heal", Illustration = assigned } });
+                Assert.AreSame(assigned, view.GetCardIllustrationForCard(Olca.Core.Logic.Dungeon.CardRewardSystem.CreateFallbackCard("heal", CardRarity.Normal)));
+            } finally { Object.DestroyImmediate(root); Object.DestroyImmediate(assigned); Object.DestroyImmediate(texture); }
+        }
+
+        [TestCase("sword")][TestCase("fire_sword")][TestCase("bomb")][TestCase("heal")][TestCase("shield")][TestCase("tuning")][TestCase("fire")][TestCase("ice")]
         public void 登録仮本絵は正方形の専用画像でミニアイコンとは別素材である(string id)
         {
             var root=new GameObject("CardArt");try{var v=root.AddComponent<CustomScreenView>();var art=v.GetCardIllustration(id);Assert.IsNotNull(art);Assert.AreEqual(art.rect.width,art.rect.height);Assert.Greater(art.rect.width,256);Assert.AreNotSame(art,v.GetCardIcon(id));StringAssert.StartsWith("OlcaCardArt_",art.name);}finally{Object.DestroyImmediate(root);}

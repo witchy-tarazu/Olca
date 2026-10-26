@@ -26,20 +26,35 @@ namespace Olca.Presentation.CustomScreen
         public Sprite GetCardIllustration(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.Illustration;if(assigned!=null)return assigned;
-            if(id!="sword"&&id!="fire_sword"&&id!="bomb"&&id!="heal"&&id!="shield"&&id!="tuning")return null;
+            if(id!="sword"&&id!="fire_sword"&&id!="bomb"&&id!="heal"&&id!="shield"&&id!="tuning"&&id!="fire"&&id!="ice")return null;
             if(!registeredIllustrations.TryGetValue(id,out var result)||result==null){
                 var texture=Resources.Load<Texture2D>("OlcaCards/"+id);if(texture==null)return null;
                 result=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f));result.name="OlcaCardArt_"+id;registeredIllustrations[id]=result;
             }
             return result;
         }
+        /// <summary>同じIDでも既存フォールバックが攻撃定義なら、回復/防御能力を本絵で捏造しない。</summary>
+        public Sprite GetCardIllustrationForCard(Card card)
+        {
+            if (card == null) return null;
+            var assigned = cardVisuals?.FirstOrDefault(v => v != null && v.CardId == card.Id)?.Illustration;
+            if (assigned != null) return assigned;
+            return GetCardIllustration(UsesFallbackSword(card) ? "sword" : card.Id);
+        }
+        private static bool UsesFallbackSword(Card card) => card.Category == CardCategory.Attack && card.Series == CardSeries.Sword && (card.Id == "heal" || card.Id == "shield");
+        public Sprite GetCardIconForCard(Card card)
+        {
+            if (card == null) return null;
+            var assigned = cardVisuals?.FirstOrDefault(v => v != null && v.CardId == card.Id)?.CustomIcon;
+            return assigned != null ? assigned : GetCardIcon(UsesFallbackSword(card) ? "sword" : card.Id);
+        }
         private readonly Dictionary<string, Sprite> generatedMiniIcons = new Dictionary<string, Sprite>();
         public Sprite GetCardIcon(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.CustomIcon;
-            if(assigned!=null||(id!="sword"&&id!="fire_sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"))return assigned;
+            if(assigned!=null||(id!="sword"&&id!="fire_sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"&&id!="fire"&&id!="ice"))return assigned;
             if(!generatedMiniIcons.TryGetValue(id,out var icon)||icon==null){
-                icon=(id=="sword"||id=="fire_sword")?SwordMiniIcon.Create(id=="fire_sword"):SupportMiniIcon.Create(id);
+                icon=(id=="sword"||id=="fire_sword"||id=="fire"||id=="ice")?SwordMiniIcon.Create(id=="fire_sword"):SupportMiniIcon.Create(id);
                 generatedMiniIcons[id]=icon;
             }
             return icon;
@@ -1550,7 +1565,7 @@ namespace Olca.Presentation.CustomScreen
             var images=indicator.Cast<Transform>().Select(v=>v.GetComponent<Image>()).Where(v=>v!=null).OrderBy(v=>v.rectTransform.anchoredPosition.x).ToArray();
             for(int i=0;i<images.Length;i++){
                 var image=images[i];var card=i<owner.SelectedCards.Count?owner.SelectedCards[i]:null;
-                image.gameObject.SetActive(i<owner.MaxSelectionCount);image.sprite=card==null?null:GetCardIcon(card.Id);
+                image.gameObject.SetActive(i<owner.MaxSelectionCount);image.sprite=card==null?null:GetCardIconForCard(card);
                 image.preserveAspect=true;image.color=card==null?new Color(.18f,.27f,.33f,1f):Color.white;image.raycastTarget=false;
                 var oldButton=image.GetComponent<Button>();if(oldButton!=null){oldButton.onClick.RemoveAllListeners();oldButton.enabled=false;}
             }
@@ -1581,7 +1596,7 @@ namespace Olca.Presentation.CustomScreen
                 if (selectedCardImage != null)
                 {
                     selectedCardImage.color = Color.white;
-                    selectedCardImage.sprite=GetCardIllustration(cursorCard.Id);
+                    selectedCardImage.sprite=GetCardIllustrationForCard(cursorCard);
                     selectedCardImage.color=selectedCardImage.sprite!=null?Color.white:new Color(.35f,.7f,.77f,.16f);
                     selectedCardImage.preserveAspect=true;
                 }

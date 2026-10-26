@@ -66,6 +66,14 @@ namespace Olca.Presentation.Field
         private Sprite contactPreviousSprite;
         private bool contactAnimatorWasEnabled;
         private bool contactPoseActive;
+        private ActionPoseRenderer actionPoseRenderer;
+
+        /// <summary>明示登録された共用素材をアクション表示へ接続する。未登録素材は代用しない。</summary>
+        public void ConfigureActionAppearances(IEnumerable<ActionAppearance> appearances)
+        {
+            if (actionPoseRenderer == null) actionPoseRenderer = new ActionPoseRenderer(playerSprite, playerAnimator);
+            actionPoseRenderer.Configure(appearances);
+        }
 
         /// <summary>接敵表示の進捗だけを受け取る。位置・回転・倍率は変更しない。</summary>
         public void SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase phase, float progress)
@@ -84,6 +92,7 @@ namespace Olca.Presentation.Field
             Sprite sprite = frames == null || frames.Length == 0 ? null : frames[SelectContactFrame(phase, progress, frames.Length)];
             if(sprite==null){if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f);return;} // 未登録は別モーションや回転で代替しない。
             if (!contactPoseActive) {
+                actionPoseRenderer?.Clear();
                 contactPreviousSprite = playerSprite != null ? playerSprite.sprite : null;
                 contactAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled;
                 contactPoseActive = true;
@@ -520,9 +529,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            actionPoseRenderer?.Dispose();
             if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
                 if (frame == null) continue;
                 if (UnityEngine.Application.isPlaying) Destroy(frame); else DestroyImmediate(frame);
@@ -670,6 +680,7 @@ namespace Olca.Presentation.Field
         /// </summary>
         public void OnBattleStarted(BattleSystem battle, float contactPositionX)
         {
+            actionPoseRenderer?.Clear();
             ClearBombVisuals();
             if (currentBattle != null)
             {
@@ -736,6 +747,7 @@ namespace Olca.Presentation.Field
 
         public void OnBattleEnded()
         {
+            actionPoseRenderer?.Clear();
             ClearBombVisuals();
             SetBattleMoveVisibility(true);
             StopPlayerDamageFeedback(false);
@@ -879,6 +891,8 @@ namespace Olca.Presentation.Field
         }
         private void UpdatePlayerSprite()
         {
+            // 取消・終了は停止中にも反映し、古い武器を残さない。
+            if (currentBattle?.PlayerActionVisual == null) actionPoseRenderer?.Clear();
             if(Olca.Unity.BattleVisualClock.IsPaused)return;
             if (dungeonSystem != null && dungeonSystem.IsObstacleStopped && !dungeonSystem.IsInBattle) {
                 if (!obstaclePoseActive) { obstaclePoseActive = true; obstacleAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled; }
@@ -891,6 +905,7 @@ namespace Olca.Presentation.Field
             }
             RestoreObstaclePose();
             if (contactPoseActive && contactPoseSprite != null) { SetPlayerSprite(contactPoseSprite); return; }
+            if (actionPoseRenderer?.Apply(currentBattle?.PlayerActionVisual) == true) return;
             int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && (dungeonSystem.IsJumping||dungeonSystem.IsTerrainRecovering)
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
                 dungeonSystem?.IsTerrainRecovering==true?.8f:dungeonSystem?.JumpProgress ?? 0f);

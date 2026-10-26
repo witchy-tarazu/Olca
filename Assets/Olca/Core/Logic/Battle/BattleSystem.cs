@@ -98,6 +98,9 @@ namespace Olca.Core.Logic.Battle
         }
         private BattleState state;
         private long actionTimeUnits;
+        internal long ActionPresentationTimeUnits => actionTimeUnits;
+        public Olca.Core.Logic.CardEffects.CardActionVisualState PlayerActionVisual { get; internal set; }
+        internal bool OwnsPlayerAction(object owner) => owner != null && ReferenceEquals(playerActionOwner, owner);
         private long actionFrame;
         internal long ActionFrame => actionFrame;
         /// <summary>表示が参照する戦闘の論理時刻。停止中は進まない。</summary>
@@ -194,6 +197,7 @@ namespace Olca.Core.Logic.Battle
         internal void EndPlayerAction(object owner)
         {
             if (!ReferenceEquals(owner, playerActionOwner)) return;
+            if (ReferenceEquals(PlayerActionVisual?.ActionOwner, owner)) PlayerActionVisual = null;
             playerActionOwner = null; cancelPlayerAction = null; PlayerActionPhase = PlayerAttackPhase.None; recoveryCancelFrames = null;
         }
         public bool TryPreparePlayerAttack()
