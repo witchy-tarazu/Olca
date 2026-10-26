@@ -2575,6 +2575,27 @@ namespace Olca.Tests.Integration
         }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
+        [Test]
+        public void 停止地点なしでアイテム報酬だけある帰還進行を再起動しても保存依存を満たす()
+        {
+            System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = controller => {
+                Set(controller, "dungeonCellCount", 6); Set(controller, "enemySpacing", 1); Set(controller, "firstEnemyCell", 2);
+                var original = (DungeonConfig)controller.GetType().GetMethod("CreateDefaultDungeonWithoutTerrain", Hidden).Invoke(controller, new object[] { false });
+                var map = new DungeonConfig(original.DungeonId, original.DungeonName, original.TotalCellCount, original.MapCells, original.InitialDeckSize,
+                    null, original.StrongEnemyCells, original.ItemRewards, original.ItemRewardChance);
+                Assert.AreEqual(0, map.Visits.Count); Assert.Greater(map.ItemRewards.Count, 0);
+                controller.ConfigureDungeon(map);
+            };
+            var controller = Start(configure: configure); ToBattle(controller);
+            controller.SetUserPaused(true); KeyboardButton(controller, "RetreatButton"); KeyboardButton(controller, "ConfirmRetreat");
+            Assert.AreEqual(RunReturnOutcome.Retreated, controller.PersistentProgress.Flow.Outcome);
+            var progress = (Olca.Unity.ClearReturnFileStore)Get(controller, "clearReturnStore"); var before = System.IO.File.ReadAllBytes(progress.ActivePath);
+            var restarted = Start(configure: configure);
+            Assert.IsNotNull(Model(restarted)); Assert.IsFalse(Model(restarted).Dungeon.IsCheckpointBlocked);
+            Assert.AreEqual(ClearReturnStage.Returned, restarted.PersistentProgress.Flow.Stage);
+            CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(progress.ActivePath));
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 敵定義元は通常Controllerの単階層と複数階層で保存復帰へ再供給される(bool floors)
         {

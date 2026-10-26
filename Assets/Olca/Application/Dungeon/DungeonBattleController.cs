@@ -334,6 +334,38 @@ namespace Olca.Application.Dungeon
             return true;
         }
 
+        private Olca.Core.Logic.Customization.CustomizationCatalog customizationCatalog;
+        public void ConfigureCustomizationCatalog(Olca.Core.Logic.Customization.CustomizationCatalog catalog)
+        {
+            if (manager != null || clearReturnSession != null) throw new System.InvalidOperationException("起動後は装備定義を変更できません");
+            customizationCatalog = catalog ?? throw new System.ArgumentNullException(nameof(catalog));
+        }
+        public Olca.Core.Logic.Customization.CustomizationProgress CustomizationState => clearReturnSession?.Ready == true ? clearReturnSession.CustomizationSnapshot : null;
+        public bool TryGrantCustomization(Olca.Core.Logic.Customization.CustomizationGrant grant, out string error)
+        {
+            error = null;
+            if (clearReturnSession == null || customizationCatalog == null) { error = "装備定義と進行保存の初期化が必要です"; return false; }
+            bool result = clearReturnSession.TryGrantCustomization(customizationCatalog, grant); if (!result) error = clearReturnSession.Error; return result;
+        }
+        public bool TryApplyCustomizationUnlock(string itemId, out string error)
+        {
+            error = null;
+            if (clearReturnSession == null || customizationCatalog == null) { error = "装備定義と進行保存の初期化が必要です"; return false; }
+            bool result = clearReturnSession.TryApplyCustomizationUnlock(customizationCatalog, itemId); if (!result) error = clearReturnSession.Error; return result;
+        }
+        public bool TryGetCustomizationLayout(out Olca.Core.Logic.Customization.PartsLayout layout, out string error)
+        {
+            layout = null; error = null;
+            if (clearReturnSession == null || customizationCatalog == null) { error = "装備定義と進行保存の初期化が必要です"; return false; }
+            return clearReturnSession.TryGetCustomizationLayout(customizationCatalog, out layout, out error);
+        }
+        public bool TrySetCustomizationLoadout(IEnumerable<string> accessories, IEnumerable<Olca.Core.Logic.Customization.PartPlacement> placements, out string error)
+        {
+            error = null;
+            if (clearReturnSession == null || customizationCatalog == null) { error = "装備定義と進行保存の初期化が必要です"; return false; }
+            bool result = clearReturnSession.TrySetCustomizationLoadout(customizationCatalog, accessories, placements); if (!result) error = clearReturnSession.Error; return result;
+        }
+
         private IEnemyAIProvider enemyAIProvider;
         /// <summary>起動前に登録し、通常出撃/再戦/階層/保存復帰の全Managerへ同じ定義元を渡す。</summary>
         public void ConfigureEnemyAIProvider(IEnemyAIProvider provider)
@@ -1252,7 +1284,7 @@ namespace Olca.Application.Dungeon
                 throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
             ReturnSettings().Validate();
             clearReturnStore = clearReturnStore ?? new ClearReturnFileStore(ProgressDirectory);
-            clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards);
+            clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
             progressStartupBlocked = !clearReturnSession.Ready;
             int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
@@ -1355,7 +1387,7 @@ namespace Olca.Application.Dungeon
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem, checkpoints: waitingReturn || initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
-                    ? (dungeonConfig.Visits.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
+                    ? (dungeonConfig.Visits.Count==0 && dungeonConfig.ItemRewards.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1, enemyAIProvider: enemyAIProvider);
 
             manager.RequireBattleEndPresentation();

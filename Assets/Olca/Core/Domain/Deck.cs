@@ -458,14 +458,16 @@ namespace Olca.Core.Domain
         public DiscoveredCard[] DiscoveredCards; // nullは旧保存
         public string[] RevealedRecipes;
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
+        public Olca.Core.Logic.Customization.CustomizationProgress Customization; // 旧省略/nullは空状態
         public ClearReturnProfile Copy() => new ClearReturnProfile {
             Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
-            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
+            Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, Customization=Customization?.Copy(), DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
             SavedDecks=(SavedDecks??new SavedDepartureDeck[0]).Select(d=>d?.Copy()).ToArray() };
         public static void Validate(ClearReturnProfile p)
         {
+            Olca.Core.Logic.Customization.CustomizationProgress.Validate(p?.Customization);
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
@@ -645,9 +647,10 @@ namespace Olca.Core.Domain
     /// <summary>未作成の進行保存だけを明示する。空の旧保存とは区別する。</summary>
     public interface INewClearReturnStore { bool IsNewProfile { get; } }
     // 保存成功までは現状態を変更しない。失敗後も同じ計画を再試行し、受領済みRunIdを再計上しない。
-    public sealed class ClearReturnSession
+    public sealed partial class ClearReturnSession
     {
         private readonly IClearReturnStore store;
+        private readonly Func<bool> customizationRunActive;
         private ClearReturnProfile current, pending;
         private readonly CollectionRecipe[] collectionRecipes;
         private Card[] collectionDefinitions;
@@ -659,8 +662,9 @@ namespace Olca.Core.Domain
         public ClearReturnProfile Snapshot => current?.Copy();
         public ClearReturnData DisplayFlow => (pending?.Flow != null && pending.Flow.RunId != current?.Flow?.RunId
             ? pending.Flow : current?.Flow ?? pending?.Flow)?.Copy();
-        public ClearReturnSession(IClearReturnStore store, IReadOnlyList<CollectionRecipe> recipes=null, IReadOnlyList<Card> definitions=null,Func<string> commitIdFactory=null)
+        public ClearReturnSession(IClearReturnStore store, IReadOnlyList<CollectionRecipe> recipes=null, IReadOnlyList<Card> definitions=null,Func<string> commitIdFactory=null,Func<bool> isCustomizationRunActive=null)
         {
+            customizationRunActive=isCustomizationRunActive;
             this.commitIdFactory=commitIdFactory??(()=>Guid.NewGuid().ToString("N"));
             ConfigureCollectionDefinitions(definitions);
             collectionRecipes=recipes?.ToArray()??Array.Empty<CollectionRecipe>();
