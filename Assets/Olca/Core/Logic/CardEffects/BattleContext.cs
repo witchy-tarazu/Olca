@@ -35,6 +35,7 @@ namespace Olca.Core.Logic.CardEffects
         internal Action AttackResolved { get; set; }
         internal object PlayerActionOwner { get; set; }
         internal CardActionVisualState ActionVisual { get; set; }
+        internal string ProjectileVisualKey { get; set; }
         internal void ResolveAttackPreview() { AttackResolved?.Invoke(); ActionVisual?.MarkEffect(); }
         public void NotifyActionEffectResolved() => ResolveAttackPreview();
         // 前隙のある敵単体攻撃は狙ったマスを保持し、相手の移動へ追尾しない。
@@ -85,7 +86,7 @@ namespace Olca.Core.Logic.CardEffects
         internal BattleContext WithInfluence(AttackInfluence influence)
         {
             var child = new BattleContext(Battle, UsedCard, EnemySource, ForwardX) {
-                CardDatabase = CardDatabase, TemporaryPlayerPosition = TemporaryPlayerPosition, Influence = influence, ActionCancellation=ActionCancellation, LockedSingleTarget=LockedSingleTarget
+                CardDatabase = CardDatabase, TemporaryPlayerPosition = TemporaryPlayerPosition, Influence = influence, ActionCancellation=ActionCancellation, LockedSingleTarget=LockedSingleTarget, ProjectileVisualKey=ProjectileVisualKey
             };
             child.InheritDerivatives(this);
             return child;

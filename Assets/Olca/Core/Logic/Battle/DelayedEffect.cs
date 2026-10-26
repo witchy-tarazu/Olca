@@ -32,11 +32,15 @@ namespace Olca.Core.Logic.Battle
         public int InitialTimeMs { get; private set; }
         public Vector2Int? SourcePosition { get; internal set; }
         public int BlastRadius { get; internal set; }
+        public string ProjectileVisualKey { get; internal set; }
+        private long elapsedDisplayUnits;
+        // 描画コマは効果自身が実際に受け取った論理時間だけを参照する。
+        public long ElapsedDisplayFrames => elapsedDisplayUnits / 50;
         public bool WasExecuted { get; internal set; }
         public long CompletedFrame { get; internal set; } = -1;
         public float Progress => InitialTimeMs <= 0 ? 1f : Math.Max(0f, Math.Min(1f, 1f - (float)RemainingTimeMs / InitialTimeMs));
-        internal void Tick(int milliseconds) => remaining.Tick(milliseconds);
-        internal void TickFrame() => remaining.TickFrame();
+        internal void Tick(int milliseconds) { remaining.Tick(milliseconds); elapsedDisplayUnits += System.Math.Max(0L, milliseconds * 3L); }
+        internal void TickFrame() { remaining.TickFrame(); elapsedDisplayUnits += 50; }
 
         /// <summary>効果タイプ</summary>
         public DelayedEffectType EffectType { get; set; }

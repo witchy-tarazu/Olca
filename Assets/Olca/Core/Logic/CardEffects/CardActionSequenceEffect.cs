@@ -141,6 +141,7 @@ namespace Olca.Core.Logic.CardEffects
                     var definition = Actions[i]; var child = context.ForAction(); child.ActionCancellation = ct;
                     var state = new CardActionVisualState(definition, () => context.Battle.ActionPresentationTimeUnits, () => resolved = true, context.PlayerActionOwner);
                     child.ActionVisual = state;
+                    child.ProjectileVisualKey = definition.Visual.ProjectileKey;
                     if (context.EnemySource == null && context.Battle.OwnsPlayerAction(context.PlayerActionOwner)) context.Battle.PlayerActionVisual = state;
                     void Phase(PlayerAttackPhase phase) {
                         state.SetPhase(phase);

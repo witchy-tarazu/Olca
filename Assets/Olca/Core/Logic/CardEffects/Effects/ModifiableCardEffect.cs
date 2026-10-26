@@ -99,7 +99,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             var origin = context.GetEffectivePlayerPosition();
             var target = new Vector2Int(origin.X + 3 * context.ForwardX, origin.Y);
             // 投擲物そのものは無害。既存Powerは着弾時の3マス爆風へ一度だけ渡す。
-            var delayed = new Battle.DelayedEffect(1500, target, true) { SourcePosition = origin, BlastRadius = 1 };
+            var delayed = new Battle.DelayedEffect(1500, target, true) { SourcePosition = origin, BlastRadius = 1, ProjectileVisualKey = context.ProjectileVisualKey };
             delayed.ExecuteAction = () => {
                 if (!context.Field.IsInBounds(target)) return;
                 var blastContext = context.ForCard(context.UsedCard); blastContext.TemporaryPlayerPosition = target;
@@ -869,6 +869,8 @@ namespace Olca.Core.Logic.CardEffects.Effects
 
             var delayedEffect = new Battle.DelayedEffect((int)(effect.DelayTime * 1000f), targetPosition, effect.CancelOnHole)
             {
+                SourcePosition = playerPos,
+                ProjectileVisualKey = context.ProjectileVisualKey,
                 ExecuteAction = () =>
                 {
                     // 着弾時の処理

@@ -67,6 +67,12 @@ namespace Olca.Presentation.Field
         private bool contactAnimatorWasEnabled;
         private bool contactPoseActive;
         private ActionPoseRenderer actionPoseRenderer;
+        private ProjectilePoseRenderer projectilePoseRenderer;
+        public void ConfigureProjectileAppearances(IEnumerable<ProjectileAppearance> appearances)
+        {
+            if (projectilePoseRenderer == null) projectilePoseRenderer = new ProjectilePoseRenderer(transform);
+            projectilePoseRenderer.Configure(appearances);
+        }
 
         /// <summary>明示登録された共用素材をアクション表示へ接続する。未登録素材は代用しない。</summary>
         public void ConfigureActionAppearances(IEnumerable<ActionAppearance> appearances)
@@ -403,6 +409,7 @@ namespace Olca.Presentation.Field
         private readonly Dictionary<DelayedEffect, GameObject> bombVisuals = new Dictionary<DelayedEffect, GameObject>();
         private void ClearBombVisuals()
         {
+            projectilePoseRenderer?.Clear();
             foreach (var root in bombVisuals.Values) {
                 if (root == null) continue;
                 root.SetActive(false);
@@ -413,6 +420,8 @@ namespace Olca.Presentation.Field
         private void RefreshBombVisuals()
         {
             if (!isActiveAndEnabled || currentBattle == null || currentBattle.IsGameOver || battleGridView == null) { ClearBombVisuals(); return; }
+            projectilePoseRenderer?.Refresh(currentBattle, p => new Vector3(battleGridView.GridIndexToWorldX(p.X), battleGridView.GroundY, 0),
+                LogicalToWorld, playerSprite != null ? playerSprite.sortingLayerID : 0, 6);
             var active = currentBattle.DelayedEffects.GetActiveEffects();
             foreach (var effect in active) {
                 if (effect.BlastRadius != 1 || !effect.SourcePosition.HasValue || bombVisuals.ContainsKey(effect)) continue;
@@ -432,7 +441,7 @@ namespace Olca.Presentation.Field
                 if (!flying&&!blast) {
                     root.SetActive(false); if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
                 }
-                var body=root.transform.GetChild(0);body.gameObject.SetActive(flying);
+                var body=root.transform.GetChild(0);body.gameObject.SetActive(flying && projectilePoseRenderer?.Owns(effect) != true);
                 float targetX=battleGridView.GridIndexToWorldX(effect.TargetPosition.X);
                 float ground=battleGridView.GroundY;
                 if(flying){
@@ -533,6 +542,7 @@ namespace Olca.Presentation.Field
         private void OnDestroy()
         {
             actionPoseRenderer?.Dispose();
+            projectilePoseRenderer?.Dispose();
             if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
                 if (frame == null) continue;
                 if (UnityEngine.Application.isPlaying) Destroy(frame); else DestroyImmediate(frame);
