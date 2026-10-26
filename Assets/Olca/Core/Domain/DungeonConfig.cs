@@ -128,6 +128,9 @@ namespace Olca.Core.Domain
 
     public sealed class CheckpointPlayerDto
     {
+        public Olca.Core.Logic.Customization.CustomizationAbilitiesDto CustomizationAbilities; // 旧欠損は装備能力なし
+        public int? RawBaseFireResistance,RawBaseWaterResistance,RawBaseWindResistance,RawBaseEarthResistance; // 装備補正との合算前の基礎値
+        public int PoisonResistance,ParalyzeResistance,ConfusionResistance,BlindResistance; // 基礎状態耐性。旧欠損は0
         public AttackMilestoneDto AttackGrowth; // 旧保存nullは速度/タメの成長なしを維持
         public DepartureStyleDto Style; // 旧省略/nullは既存の基本スタイル
         public int Hp, MaxHp, AttackPower, Poise;
@@ -137,9 +140,19 @@ namespace Olca.Core.Domain
         public int FireResistance, WaterResistance, WindResistance, EarthResistance;
         public float CustomSpeed;
         public int GridX, GridY;
+        public void ValidatePermanentAbilities()
+        {
+            CustomizationAbilities?.Validate();
+            if(PoisonResistance<0||ParalyzeResistance<0||ConfusionResistance<0||BlindResistance<0)throw new System.ArgumentException("保存された状態耐性が不正です");
+            var raw=new[]{RawBaseFireResistance,RawBaseWaterResistance,RawBaseWindResistance,RawBaseEarthResistance};
+            var compatible=new[]{FireResistance,WaterResistance,WindResistance,EarthResistance};
+            for(int i=0;i<raw.Length;i++){
+                if(CustomizationAbilities==null?raw[i].HasValue:!raw[i].HasValue||compatible[i]!=System.Math.Min(100,raw[i].Value))throw new System.ArgumentException("装備能力の基礎耐性が不正です");
+            }
+        }
         public CheckpointPlayerDto Copy() {
             var copy=(CheckpointPlayerDto)MemberwiseClone();
-            copy.Style=Style?.Copy();copy.AttackGrowth=AttackGrowth?.Copy();
+            copy.Style=Style?.Copy();copy.AttackGrowth=AttackGrowth?.Copy();copy.CustomizationAbilities=CustomizationAbilities?.Copy();
             copy.Poisons=Poisons==null ? null : System.Array.ConvertAll(Poisons,p=>p?.Copy()); return copy;
         }
     }

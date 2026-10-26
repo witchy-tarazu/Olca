@@ -1,14 +1,18 @@
 namespace Olca.Core.Domain
 {
     /// <summary>
-    /// プレイヤー・敵で共用する戦闘中の地形判定。付与時間や付与手段は扱わない。
+    /// プレイヤー・敵で共用する地形判定。常時供給と一時フラグを分け、Clearは一時分だけ解除する。
     /// </summary>
     public sealed class BattleTerrainState
     {
-        public bool IsFloating { get; set; }
+        private readonly System.Func<bool> permanentFloating;
+        private bool temporaryFloating;
+        public BattleTerrainState(System.Func<bool> permanent=null){permanentFloating=permanent;}
+        public bool IsTemporarilyFloating=>temporaryFloating;
+        public bool IsFloating { get=>temporaryFloating||(permanentFloating?.Invoke()??false);set=>temporaryFloating=value; }
         public bool ReceivesPanelEffects => !IsFloating;
         public bool CanEnter(PanelType panel) => panel != PanelType.Hole || IsFloating;
-        public void Clear() => IsFloating = false;
+        public void Clear() => temporaryFloating = false;
     }
 
     /// <summary>

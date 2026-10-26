@@ -844,6 +844,8 @@ namespace Olca.Core.Logic.Battle
             hitStopRemainingFrames=pendingHitStopFrames=0;
             darkeningEffects.Clear();
             panelEffects.Clear();
+            player.TerrainState.Clear(); // 常時能力の供給は維持し、一時分だけ破棄する。
+            foreach(var enemy in enemies)enemy.TerrainState.Clear();
             foreach (var entry in enemyDeathHandlers)
             {
                 entry.Key.CancelStatusFrame();

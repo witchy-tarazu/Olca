@@ -416,6 +416,18 @@ namespace Olca.Application.Dungeon
             customizationSavePending = false; CloseCustomizationEditor();
         }
 
+        private Olca.Core.Logic.Customization.CustomizationAbilityCatalog customizationAbilityCatalog;
+        public void ConfigureCustomizationAbilities(Olca.Core.Logic.Customization.CustomizationAbilityCatalog definitions)
+        {
+            if(manager!=null||clearReturnSession!=null)throw new System.InvalidOperationException("Controllerキドウマエにノウリョクをトウロクしてください");
+            customizationAbilityCatalog=definitions??throw new System.ArgumentNullException(nameof(definitions));
+        }
+        private void ApplyDepartureCustomization(PlayerCharacter player)
+        {
+            if(customizationAbilityCatalog==null)return;
+            if(!TryGetCustomizationSources(out var sources,out var error))throw new System.ArgumentException(error);
+            player.SetDepartureAbilities(customizationAbilityCatalog.Resolve(sources));
+        }
         private Olca.Core.Logic.Customization.CustomizationCatalog customizationCatalog;
         public void ConfigureCustomizationCatalog(Olca.Core.Logic.Customization.CustomizationCatalog catalog)
         {
@@ -1214,6 +1226,7 @@ namespace Olca.Application.Dungeon
                         staggerDurationFrames: battleStaggerFrames, poiseRecoveryDelayFrames: playerPoiseRecoveryFrames);
                     player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));
                     player.SetDepartureStyle(style);
+                    ApplyDepartureCustomization(player);
                     new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen, enemyAIProvider: enemyAIProvider);
                     var start = frozen.Store.Read();
                     if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key)) {
@@ -1480,6 +1493,10 @@ namespace Olca.Application.Dungeon
             initialHub = dungeonSelectionEnabled && clearReturnSession.Ready && clearReturnSession.Snapshot.Flow == null &&
                 savedPlan == null && !awaitingCheckpointChoice;
             bool waitingReturn=clearReturnSession.Snapshot?.Flow?.Stage==ClearReturnStage.Returned&&clearReturnSession.Snapshot.NextDeparture==null;
+            // 既存攻略は保存済み能力を復元する。現在の製品登録を遡及適用しない。
+            if(!awaitingCheckpointChoice&&savedPlan==null&&!waitingReturn&&!HasIncompleteReturn&&!progressStartupBlocked){
+                try{ApplyDepartureCustomization(playerCharacter);}catch(System.ArgumentException e){progressStartupBlocked=true;clearReturnError=e.Message;}
+            }
             manager = new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,

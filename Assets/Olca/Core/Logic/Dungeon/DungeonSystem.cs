@@ -1468,10 +1468,11 @@ namespace Olca.Core.Logic.Dungeon
             Enemies = new System.Collections.ObjectModel.ReadOnlyDictionary<int, Enemy>(enemies);
             Map = definitions.RestoreMap(enemies);
             var p = dto.Player;
-            Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames, p.PoiseRecoveryFrames);
+            Player = new PlayerCharacter(p.MaxHp, new Vector2Int(p.GridX, p.GridY), p.AttackPower, p.CustomSpeed, p.Poise, p.StaggerFrames, p.PoiseRecoveryFrames,new TimedStatusResistances(p.PoisonResistance,p.ParalyzeResistance,p.ConfusionResistance,p.BlindResistance));
+            if(p.CustomizationAbilities!=null)Player.SetDepartureAbilities(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(p.CustomizationAbilities));
             if(p.AttackGrowth!=null)Player.SetAttackGrowth(p.AttackGrowth.Restore());
             Player.SetDepartureStyle(p.Style?.Restore() ?? DepartureStyleDefinition.Basic);
-            Player.SetElementResistances(new ElementResistances(p.FireResistance, p.WaterResistance, p.WindResistance, p.EarthResistance));
+            Player.SetElementResistances(new ElementResistances(p.RawBaseFireResistance??p.FireResistance, p.RawBaseWaterResistance??p.WaterResistance, p.RawBaseWindResistance??p.WindResistance, p.RawBaseEarthResistance??p.EarthResistance));
             Player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             Player.RestorePoisons(p.Poisons);
             Deck = new Deck(Array.ConvertAll(dto.DeckOrder, id => cards[id]).ToList());
@@ -1515,6 +1516,7 @@ namespace Olca.Core.Logic.Dungeon
                         CheckpointValues.Require(v!=null&&v.Cell==def.Cell&&v.Options!=null&&v.Purchased!=null&&v.Options.Length==def.Slots&&v.Purchased.Length==def.Slots&&v.Options.Distinct().Count()==def.Slots&&v.Options.All(n=>n>=0&&n<def.Options.Count)&& (def.IsShop||v.Purchased.Count(x=>x)<=1),"停止地点の候補/購入履歴が不正です");}
                 }
                 var p = d.Player;
+                p?.ValidatePermanentAbilities();
                 CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 && p.StaggerFrames >= 0 && (!p.PoiseRecoveryFrames.HasValue || p.PoiseRecoveryFrames > 0) &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
                 // 既存保存形式は上限100を検証する。旧負値は原値のまま復元し戦闘時に制限。
@@ -1741,7 +1743,7 @@ namespace Olca.Core.Logic.Dungeon
                 throw new ArgumentException("通常移動途中の状態は保存できません");
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
-            if (!player.ActiveStatusResistances.IsNeutral || player.Guard.IsActive || player.IsStaggered || player.HasParalysisState || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)
+            if (!player.BattleStatusResistances.IsNeutral || player.Guard.IsActive || player.IsStaggered || player.HasParalysisState || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsTemporarilyFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)
                 throw new ArgumentException("未対応の一時状態を保存できません");
             var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
             var obtained = dungeon.GetObtainedCards().ToList();
@@ -1767,9 +1769,9 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
                 Visits=dungeon.CaptureVisits(),
-                Player = new CheckpointPlayerDto { AttackGrowth=player.AttackGrowth?.Capture(), Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId && player.DepartureStyle.TransformationPhaseBonus == 0 ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
-                    Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.Resistances.Fire), WaterResistance = Math.Min(100, player.Resistances.Water),
-                    WindResistance = Math.Min(100, player.Resistances.Wind), EarthResistance = Math.Min(100, player.Resistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
+                Player = new CheckpointPlayerDto { CustomizationAbilities=player.DepartureAbilities?.Capture(),RawBaseFireResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Fire,RawBaseWaterResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Water,RawBaseWindResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Wind,RawBaseEarthResistance=player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Earth,PoisonResistance=player.BaseStatusResistances.Poison,ParalyzeResistance=player.BaseStatusResistances.Paralyze,ConfusionResistance=player.BaseStatusResistances.Confusion,BlindResistance=player.BaseStatusResistances.Blind,AttackGrowth=player.AttackGrowth?.Capture(), Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId && player.DepartureStyle.TransformationPhaseBonus == 0 ? null : player.DepartureStyle.Capture(), Poisons = player.CapturePoisons(), Hp = player.CurrentHp, MaxHp = player.MaxHp, AttackPower = player.AttackPower,
+                    Poise = player.Poise, StaggerFrames = player.StaggerDurationFrames, PoiseRecoveryFrames = player.PoiseRecoveryDefinitionFrames, FireResistance = Math.Min(100, player.BaseElementResistances.Fire), WaterResistance = Math.Min(100, player.BaseElementResistances.Water),
+                    WindResistance = Math.Min(100, player.BaseElementResistances.Wind), EarthResistance = Math.Min(100, player.BaseElementResistances.Earth), CustomSpeed = player.CustomSpeed, GridX = player.GridPosition.X, GridY = player.GridPosition.Y },
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
             };

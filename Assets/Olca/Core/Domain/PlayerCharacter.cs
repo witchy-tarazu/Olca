@@ -9,7 +9,14 @@ namespace Olca.Core.Domain
     public class PlayerCharacter
     {
         /// <summary>戦闘限定の地形特性。戦闘終了時に解除する。</summary>
-        public BattleTerrainState TerrainState { get; } = new BattleTerrainState();
+        public BattleTerrainState TerrainState { get; }
+        public Olca.Core.Logic.Customization.ResolvedCustomizationAbilities DepartureAbilities { get; private set; }
+        private bool departureAbilitiesFixed;
+        public void SetDepartureAbilities(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities value)
+        {
+            if(departureAbilitiesFixed||DepartureAbilities!=null)throw new InvalidOperationException("攻略中の装備能力は変更できません");
+            DepartureAbilities=value??throw new ArgumentNullException(nameof(value));
+        }
         public AttackMilestoneGrowth AttackGrowth { get; private set; }
         public void SetAttackGrowth(AttackMilestoneGrowth growth)
         {
@@ -18,7 +25,7 @@ namespace Olca.Core.Domain
         }
         public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
         private bool departureStyleFixed;
-        internal void FreezeDepartureStyle() => departureStyleFixed = true;
+        internal void FreezeDepartureStyle(){departureStyleFixed=true;departureAbilitiesFixed=true;}
         internal Func<ElementType?> BattleElement;
         public ElementType ActiveElement => BattleElement?.Invoke() ?? DepartureStyle.Attack?.Element ?? ElementType.None;
         /// <summary>新規出撃または保存復元時に一度だけ固定する。戦闘中の切替は一時変身が所有する。</summary>
@@ -29,7 +36,8 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>生成時に指定する基礎耐性。製品値・装備の登録は所有しない。</summary>
-        public TimedStatusResistances StatusResistances { get; }
+        public TimedStatusResistances BaseStatusResistances { get; }
+        public TimedStatusResistances StatusResistances => DepartureAbilities?.CombineStatuses(BaseStatusResistances)??BaseStatusResistances;
         public TimedStatusResistances BattleStatusResistances { get; private set; } = TimedStatusResistances.Neutral;
         public TimedStatusResistances ActiveStatusResistances => TimedStatusResistances.Combine(StatusResistances, BattleStatusResistances);
         /// <summary>外部で期間・重複を解決した戦闘中の合算値。既存状態へ遡及しない。</summary>
@@ -43,7 +51,8 @@ namespace Olca.Core.Domain
             return (int)((long)durationFrames*(100-Math.Min(100L,total))/100);
         }
 
-        public ElementResistances Resistances { get; private set; } = ElementResistances.Neutral;
+        public ElementResistances BaseElementResistances { get; private set; } = ElementResistances.Neutral;
+        public ElementResistances Resistances => DepartureAbilities?.CombineElements(BaseElementResistances)??BaseElementResistances;
         public ElementResistances ActiveResistances => previewTransformationResistances ?? transformationResistances ?? Resistances;
         public bool HasTransformationPreview => previewTransformationResistances != null;
         private ElementResistances previewTransformationResistances;
@@ -63,7 +72,7 @@ namespace Olca.Core.Domain
         internal Func<bool> IsOnGrass;
         public event Action OnTransformationDefenseEnded;
         public void SetElementResistances(ElementResistances value)
-            => Resistances = value ?? throw new ArgumentNullException(nameof(value));
+            => BaseElementResistances = value ?? throw new ArgumentNullException(nameof(value));
         // 確定済み変身の被弾状態を開始する。仮選択・取り消しには使用しない。
         public void BeginTransformationDefense(ElementResistances value, ElementType breakElement)
             => BeginTransformationDefense(value, new TransformationWeakness(breakElement));
@@ -425,7 +434,8 @@ namespace Olca.Core.Domain
         public PlayerCharacter(int maxHp, Vector2Int initialPosition, int attackPower = 10, float customSpeed = 1.0f, int poise = 30, int staggerDurationFrames = 0, int? poiseRecoveryDelayFrames = null, TimedStatusResistances statusResistances = null)
         {
             if (staggerDurationFrames < 0) throw new ArgumentOutOfRangeException(nameof(staggerDurationFrames));
-            StatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
+            BaseStatusResistances = statusResistances ?? TimedStatusResistances.Neutral;
+            TerrainState=new BattleTerrainState(()=>DepartureAbilities?.Floating??false);
             StaggerDurationFrames = staggerDurationFrames;
             poiseRecovery.Configure(poiseRecoveryDelayFrames);
             PoiseRecoveryDefinitionFrames = poiseRecoveryDelayFrames;
