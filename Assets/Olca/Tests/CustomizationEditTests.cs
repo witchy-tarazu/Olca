@@ -1,0 +1,28 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using NUnit.Framework;
+using Olca.Core.Domain;
+using Olca.Core.Logic.Customization;
+using Olca.Presentation.Dungeon;
+using UnityEngine;
+using UnityEngine.UI;
+using Cell=Olca.Core.Domain.Vector2Int;
+namespace Olca.Tests {
+ public class CustomizationEditTests {
+  CustomizationCatalog Catalog(int width=4,int height=2)=>new CustomizationCatalog("board",new PartsBoardDefinition(width,height,new[]{new Cell(0,0),new Cell(0,1),new Cell(1,0),new Cell(1,1)}),new[]{"a","b","c","d","e"},new Dictionary<string,PartShape>{{"bar",new PartShape(new[]{new Cell(0,0),new Cell(0,1)})}},new Dictionary<string,IEnumerable<Cell>>());
+  CustomizationProgress State()=>new CustomizationProgress{OwnedAccessoryIds=new[]{"a","b","c","d","e"},OwnedParts=new[]{new CustomizationItemCount{Id="bar",Count=2}}};
+  [Test] public void 下書きの装備編集は元状態を変えず枠数と所有を守る(){var s=State();var d=new CustomizationEditDraft(Catalog(),s,17);Assert.IsTrue(d.TryToggleAccessory("a"));Assert.IsTrue(d.TryToggleAccessory("b"));Assert.IsTrue(d.TryToggleAccessory("c"));Assert.IsFalse(d.TryToggleAccessory("d"));Assert.IsFalse(d.TryToggleAccessory("unknown"));Assert.IsTrue(d.TryToggleAccessory("b"));Assert.IsTrue(d.TryToggleAccessory("d"));CollectionAssert.AreEqual(new[]{"a","c","d"},d.Accessories);Assert.IsEmpty(s.EquippedAccessoryIds);Assert.AreEqual(17,d.Revision);}
+  [Test] public void 配置拒否は前の下書きを保持し回転移動削除は同一個体を扱う(){var s=State();var d=new CustomizationEditDraft(Catalog(),s,0);Assert.IsTrue(d.TryPlace("p","bar",new Cell(0,0),PartRotation.None,out _));Assert.IsFalse(d.TryPlace("q","bar",new Cell(0,0),PartRotation.None,out var overlap));Assert.AreEqual(PartsLayoutError.Overlap,overlap);Assert.IsFalse(d.TryPlace("p","bar",new Cell(2,0),PartRotation.None,out var locked));Assert.AreEqual(PartsLayoutError.LockedCell,locked);Assert.AreEqual(new Cell(0,0),d.Placements.Single().Anchor);Assert.IsTrue(d.TryPlace("p","bar",new Cell(0,1),PartRotation.Clockwise90,out _));Assert.AreEqual(1,d.Placements.Count);Assert.AreEqual(PartRotation.Clockwise90,d.Placements.Single().Rotation);Assert.IsEmpty(s.Placements);Assert.IsTrue(d.Remove("p"));Assert.IsFalse(d.Remove("p"));}
+  [Test] public void 下書きは入力の後変更から隔離し保存盤面不一致を捨てず拒否する(){var s=State();var d=new CustomizationEditDraft(Catalog(),s,0);s.OwnedParts[0].Count=100;Assert.AreEqual(2,d.OwnedParts.Single().Count);s.BoardId="other";Assert.Throws<ArgumentException>(()=>new CustomizationEditDraft(Catalog(),s,0));}
+  [Test] public void 四方向のみの回転で反転入口を持たない(){CollectionAssert.AreEquivalent(new[]{0,90,180,270},Enum.GetValues(typeof(PartRotation)).Cast<PartRotation>().Select(v=>(int)v));}
+  GameObject root;CustomizationLoadoutView view;int saves,cancels,retries;
+  void Open(int width=4,int height=2){root=new GameObject("FixtureCanvas",typeof(RectTransform),typeof(Canvas));var go=new GameObject("FixtureEditor",typeof(RectTransform));go.transform.SetParent(root.transform,false);view=go.AddComponent<CustomizationLoadoutView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),()=>saves++,()=>{cancels++;view.Close();},()=>retries++);view.Open(new CustomizationEditDraft(Catalog(width,height),State(),0));}
+  Button B(string name)=>view.GetComponentsInChildren<Button>().Single(v=>v.name==name);
+  [TearDown] public void Cleanup(){if(root!=null)UnityEngine.Object.DestroyImmediate(root);saves=cancels=retries=0;}
+  [Test] public void 編集取消と古いボタンは保存を呼ばず閉じた参照も変更しない(){Open();var old=B("Accessory_a");old.onClick.Invoke();Assert.IsTrue(view.Draft.Accessories.Contains("a"));old.onClick.Invoke();Assert.IsTrue(view.Draft.Accessories.Contains("a"));B("CancelCustomization").onClick.Invoke();Assert.IsNull(view.Draft);Assert.AreEqual(1,cancels);Assert.AreEqual(0,saves);Assert.DoesNotThrow(()=>old.onClick.Invoke());}
+  [Test] public void 表示操作で回転配置し未解放拒否を表示しても保存前の状態は独立する(){Open();B("Part_bar").onClick.Invoke();B("RotateCustomizationPart").onClick.Invoke();B("Cell_0_0").onClick.Invoke();Assert.AreEqual(PartRotation.Clockwise90,view.Draft.Placements.Single().Rotation);B("Cell_2_0").onClick.Invoke();Assert.AreEqual(new Cell(0,0),view.Draft.Placements.Single().Anchor);Assert.IsTrue(view.GetComponentsInChildren<Text>().Any(t=>t.text=="ミカイホウのマスです"));B("SaveCustomization").onClick.Invoke();Assert.AreEqual(1,saves);}
+  [Test] public void 保存待ちは編集取消を遮断し再試行だけを受け付ける(){Open();view.SaveFailed(true);Assert.IsFalse(B("CancelCustomization").interactable);Assert.IsFalse(B("Accessory_a").interactable);B("CancelCustomization").onClick.Invoke();B("Accessory_a").onClick.Invoke();Assert.AreEqual(0,cancels);Assert.IsEmpty(view.Draft.Accessories);B("RetryCustomizationSave").onClick.Invoke();Assert.AreEqual(1,retries);}
+  [Test] public void 大きな盤面と所持品はページで到達でき閉じると下書きを捨てる(){Open(17,13);B("AccessoriesNext").onClick.Invoke();Assert.IsNotNull(B("Accessory_e"));B("BoardRight").onClick.Invoke();B("BoardRight").onClick.Invoke();B("BoardDown").onClick.Invoke();B("BoardDown").onClick.Invoke();Assert.IsNotNull(B("Cell_16_12"));Assert.IsFalse(B("BoardRight").interactable);Assert.IsFalse(B("BoardDown").interactable);view.Close();Assert.IsNull(view.Draft);Assert.AreEqual(0,saves);}
+ }
+}
