@@ -136,11 +136,12 @@ namespace Olca.Application.Dungeon
             uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackHud?.CancelAttackPointer();
             queuedBasicAttackTap=false;TouchUiCancelGuard.CancelAll();logicalLoop.ReleaseInput();inputProvider?.QueueSnapshot();
         }
-        private void OnApplicationFocus(bool focused) { if(!focused)ResetTouchInput(); }
+        private void OnApplicationFocus(bool focused) { if(!focused){StopGamepadVibration();ResetTouchInput();} }
         private bool applicationInactive;
         private void OnApplicationPause(bool paused)
         {
             applicationInactive = paused;
+            if(paused)StopGamepadVibration();
             ResetTouchInput();
             // 復帰通知は入力を取り直すだけ。再開は必ずメニューから明示する。
             if (paused) RequestAutomaticPause();
@@ -334,6 +335,20 @@ namespace Olca.Application.Dungeon
             return true;
         }
 
+        private GamepadVibrationAdapter gamepadVibration;
+        private bool gamepadVibrationEnabled;
+        private GamepadVibrationSettingsStore vibrationSettings;
+        private string vibrationSettingsError;
+        public bool GamepadVibrationEnabled=>gamepadVibrationEnabled;
+        public bool TrySetGamepadVibrationEnabled(bool enabled,out string error)
+        {
+            if(!enabled)StopGamepadVibration();
+            if(vibrationSettings==null){error="シンドウセッテイがミショキカです";return false;}
+            if(!vibrationSettings.TrySave(enabled,out error)){vibrationSettingsError=error;return false;}
+            vibrationSettingsError=null;gamepadVibrationEnabled=enabled;if(gamepadVibration!=null)gamepadVibration.Enabled=enabled;return true;
+        }
+        public bool TryPlayGamepadVibration(GamepadVibrationRequest request)=>isActiveAndEnabled&&(gamepadVibration?.TryPlay(request)??false);
+        public void StopGamepadVibration()=>gamepadVibration?.Stop();
         private Olca.Presentation.Dungeon.CustomizationLoadoutView customizationEditorView;
         private Olca.Core.Logic.Customization.CustomizationEditDraft customizationDraft;
         private Button customizationEditorButton, customizationUnlockButton;
@@ -342,6 +357,7 @@ namespace Olca.Application.Dungeon
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
+            StopGamepadVibration();
             if(!CustomizationEditorOpen&&!CustomizationUnlockOpen)return;
             customizationUnlockWasOpen=false;customizationUnlockView?.Close();
             customizationEditorView.Close(); customizationDraft=null; customizationEditorInterrupted=true;
@@ -634,6 +650,7 @@ namespace Olca.Application.Dungeon
 
         public void SetUserPaused(bool paused)
         {
+            if(paused)StopGamepadVibration();
             if (manager == null || manager.IsUserPaused == paused || (paused&&manager.IsBattleEndPresentationPending)) return;
             systemMenu?.Suspend();systemMenuRoot=null;if(paused)pauseFocus="ResumeButton";
             logicalLoop.Observe(!DialogueOpen && !manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
@@ -709,6 +726,10 @@ namespace Olca.Application.Dungeon
             var padSettingsButton=MakeButton("GamepadSettingsButton","パッド設定",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-100));
             ((RectTransform)padSettingsButton.transform).sizeDelta=new Vector2(420,70);
             padSettingsButton.onClick.AddListener(()=>{keyboardSettingsView.DiscardAndClose();gamepadSettingsView.Open(GameplayGamepadProfile);});
+            var vibrationToggle=MakeButton("VibrationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(-420,-200));
+            ((RectTransform)vibrationToggle.transform).sizeDelta=new Vector2(420,70);
+            void RefreshVibrationSetting(){vibrationToggle.GetComponentInChildren<Text>().text=vibrationSettingsError!=null?"シンドウ: ホゾンエラー（サイシコウ）":"シンドウ: "+(GamepadVibrationEnabled?"ON":"OFF");}
+            vibrationToggle.onClick.AddListener(()=>{TrySetGamepadVibrationEnabled(!GamepadVibrationEnabled,out _);RefreshVibrationSetting();});RefreshVibrationSetting();
             var animationSetting=MakeButton("TransformationAnimationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-200));
             ((RectTransform)animationSetting.transform).sizeDelta=new Vector2(420,70);
             void RefreshAnimationSetting(){animationSetting.GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出："+(shortTransformationPresentation?"短縮":"通常");}
@@ -1084,6 +1105,7 @@ namespace Olca.Application.Dungeon
         }
         private void EndRunWithoutRewards(RunReturnOutcome outcome)
         {
+            StopGamepadVibration();
             if (endingRun || clearReturnSession == null || !clearReturnSession.Ready) return;
             endingRun = true; nonClearReturnRequest = outcome;
             try {
@@ -1401,6 +1423,9 @@ namespace Olca.Application.Dungeon
             randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
             logger = new UnityLogger();
             inputProvider = new UnityInputProvider();
+            gamepadVibration=new GamepadVibrationAdapter();
+            vibrationSettings=new GamepadVibrationSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            vibrationSettings.TryRead(out gamepadVibrationEnabled,out vibrationSettingsError);gamepadVibration.Enabled=gamepadVibrationEnabled;
             inputProvider.GamepadGameplayActive=()=>manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
                 (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused);
             inputProvider.GamepadContext=()=>manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
@@ -1576,6 +1601,7 @@ namespace Olca.Application.Dungeon
 
         private void LateUpdate()
         {
+            gamepadVibration?.Tick();
             if (manager == null) return;
             if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
             RefreshTouchContext();
@@ -1831,6 +1857,7 @@ namespace Olca.Application.Dungeon
         }
         private void OnBattleEndPresentationRequested(BattleResult result)
         {
+            StopGamepadVibration();
             if(outcomePresentationOwner!=null)return;
             PlayBattleOutcomeAsync(result).Forget();
         }
@@ -1864,6 +1891,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
+            StopGamepadVibration();
             if (ReferenceEquals(automaticPauseOwner, manager))
             {
                 automaticPauseOwner = null;
@@ -2027,6 +2055,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDungeonCleared(IReadOnlyList<Card> obtainedCards)
         {
+            StopGamepadVibration();
             // 最終報酬の選択後はDungeonフェーズを経由しないため、ここで最新値を反映する。
             RefreshDungeonHud();
             logger.LogInfo($"[Controller] ダンジョンクリア！ 獲得カード: {obtainedCards.Count}枚");
@@ -2210,6 +2239,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            gamepadVibration?.Dispose();
             CancelOutcomePresentation();
             systemMenu?.Dispose();
             resourceRewardMenu?.Dispose();
