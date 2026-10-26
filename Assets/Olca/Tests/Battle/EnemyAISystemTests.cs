@@ -828,7 +828,7 @@ namespace Olca.Tests.Battle
         {Setup();battle.Field.ChangePanelType(new Vector2Int(2,0),PanelType.Hole);Install(new EnemyCardAction(Move(mode:MovePenetrationMode.Blocking),1000));Frames(1);Assert.IsFalse(source.IsInTemporaryMove);Assert.AreEqual(new Vector2Int(3,0),source.GridPosition);Assert.AreEqual(0,battle.EnemyAttackTiles.Count);Frames(6);Assert.AreEqual(500,player.CurrentHp);}
         [Test]
         public void 敵詳細の集中はカナと実効倍率を表示しプレイヤーの状態を参照しない()
-        {Setup();source.SetConcentrateBuff(2);string text=Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(source);StringAssert.Contains("シュウチュウ: ツギノカード 2 バイ",text);Assert.IsFalse(player.IsConcentrating);Assert.IsFalse(other.IsConcentrating);}
+        {Setup();source.SetConcentrateBuff(2);string text=Olca.Presentation.CustomScreen.CustomDisplay.CombatantDetails(source);StringAssert.Contains("シュウチュウ: ツギのカード 2 バイ",text);Assert.IsFalse(player.IsConcentrating);Assert.IsFalse(other.IsConcentrating);}
         [TestCase(30)] [TestCase(60)] [TestCase(120)]
         public void 一時移動集中予告の反復は描画分割と追いつきで同じ論理状態になる(int fps)
         {
@@ -948,5 +948,131 @@ namespace Olca.Tests.Battle
         [Test]
         public void 保留中の切替があるとき定義集の差替を拒否し既存参照を保持する()
         {Setup();var life=new Life();var old=new Step();Install(new EnemyActionPattern(1,new[]{life},EnemyPatternEndMode.Next,2),new EnemyActionPattern(2,new[]{old},EnemyPatternEndMode.Stop));Frames(1);Assert.IsTrue(battle.TrySwitchRegisteredEnemyPattern(source,2));Assert.IsFalse(battle.ConfigureEnemyPatterns(source,new[]{new EnemyActionPattern(3,new[]{new Step()},EnemyPatternEndMode.Stop)},3));Assert.IsFalse(battle.TrySwitchRegisteredEnemyPattern(source,3));Frames(4);Assert.AreEqual(2,Behavior().CurrentPatternId);Assert.AreEqual(1,old.Calls);}
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    [TestFixture]
+    public class EnemyAITriggerSummonTests
+    {
+        private sealed class Probe : IEnemyAIAction
+        {
+            public int Calls; public bool CanExecute(AIContext c)=>true;public void Execute(AIContext c){Calls++;}
+            public int GetCooldownMs()=>0;public float GetCooldown()=>0;
+        }
+        private Enemy source,other;private BattleSystem battle;private Probe initial,next;
+        private static Card Card(string id="fixture",int startup=0,int recovery=0)=>new Card(id,"テスト",1,CardRarity.Normal,CardCategory.Support,ElementType.None,CardSeries.Sword,0,"",startupFrames:startup,recoveryFrames:recovery);
+        private void Setup(System.Func<Enemy,EnemyAIObservationFrame,int?> rule=null,IEnemyAIAction action=null)
+        {
+            initial=new Probe();next=new Probe();source=new Enemy("source","テスト",100,ElementType.None,new Vector2Int(3,0));other=new Enemy("other","テスト",100,ElementType.None,new Vector2Int(5,0));
+            var entries=new Dictionary<string,System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{{"source",(e,c)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(1,new[]{action??initial},EnemyPatternEndMode.Stop),new EnemyActionPattern(2,new[]{next},EnemyPatternEndMode.Stop)},1,switchRule:rule)}};
+            battle=new BattleSystem(new PlayerCharacter(500,new Vector2Int(0,0)),new List<Enemy>{source,other},new Deck(),customGaugeSpeed:0,randomProvider:new MockRandomProvider(),enemyAIProvider:new EnemyAIRegistry(entries));
+            battle.TrySwitchEnemyActionPattern(other,new List<IEnemyAIAction>{new EnemyMovementAction(EnemyMovementKind.Stay,10000)});
+        }
+        private void Frames(int count){for(int i=0;i<count;i++)battle.TickFrame(17);}
+        private static bool Any(EnemyAIObservationFrame frame,EnemyAIEventKind kind,string id=null)
+        {foreach(var v in frame.Events)if(v.Kind==kind&&(id==null||v.CardId==id))return true;return false;}
+
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)]
+        public void 経過論理frame条件は停止中に進まず同じ切替先を毎frame再始動しない(BattlePauseReason pause)
+        {
+            int observed=0;Setup((e,f)=>{observed++;return f.LogicalFrame>=3?2:(int?)null;});Frames(2);Assert.AreEqual(1,initial.Calls);Assert.AreEqual(0,next.Calls);
+            battle.Pause(pause);Frames(10);Assert.AreEqual(2,observed);Assert.AreEqual(2,battle.LogicalFrame);battle.Resume(pause);Frames(10);Assert.AreEqual(1,next.Calls);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 暗転とヒットストップ中の通知は保持し解除後に一度だけまとめて判定する(bool hitstop)
+        {
+            int events=0;Setup((e,f)=>{foreach(var v in f.Events)if(v.Kind==EnemyAIEventKind.DamageReceived)events++;return events>0?2:(int?)null;});Frames(1);
+            if(hitstop)battle.RunLogicalFrame(()=>source.TakeDamage(1,ElementType.None,hitStopFrames:4));else{Assert.IsTrue(battle.TryStartDarkeningEffect(DarkeningSide.Opponent,1,4,()=>{}));source.TakeDamage(1,ElementType.None);}
+            battle.Pause(BattlePauseReason.User);Frames(10);Assert.AreEqual(0,next.Calls);Assert.AreEqual(0,events);battle.Resume(BattlePauseReason.User);Frames(20);Assert.AreEqual(1,next.Calls);Assert.AreEqual(1,events);
+        }
+        [Test]
+        public void 敵カードの使用通知は前隙完了時に一度だけ発生し切替は後隙完了まで保留する()
+        {
+            int used=0;var card=Card(startup:3,recovery:4);Setup((e,f)=>{if(Any(f,EnemyAIEventKind.EnemyCardUsed,card.Id))used++;return used>0?2:(int?)null;},new EnemyCardAction(card,9999));
+            Frames(2);Assert.AreEqual(0,used);Assert.AreEqual(0,next.Calls);Frames(3);Assert.AreEqual(1,used);Assert.AreEqual(0,next.Calls);Frames(8);Assert.AreEqual(1,next.Calls);Assert.AreEqual(1,used);
+        }
+        [Test]
+        public void 前隙中断はカード使用通知も召喚も発生させない()
+        {
+            int generated=0,used=0;var summon=new EnemySummonDefinition(c=>{generated++;return NewSummon();},(e,c)=>SummonAI(new Probe()));
+            Setup((e,f)=>{if(Any(f,EnemyAIEventKind.EnemyCardUsed))used++;return null;},new EnemyCardAction(Card(startup:8),0,summon:summon));Frames(1);source.ApplyStunFrames(3);Frames(15);Assert.AreEqual(0,generated);Assert.AreEqual(0,used);Assert.AreEqual(2,battle.Enemies.Count);
+        }
+        [Test]
+        public void プレイヤーカードの通常使用通知を自動切替へ渡しskipや待機登録だけでは発火しない()
+        {
+            Setup((e,f)=>Any(f,EnemyAIEventKind.PlayerCardUsed,"heal")?2:(int?)null);Frames(1);
+            var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("heal");battle.CardUsage.EnqueueCards(new List<Card>{card});Frames(2);Assert.AreEqual(0,next.Calls);
+            Assert.IsTrue(battle.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());Frames(1);Assert.AreEqual(1,next.Calls);
+        }
+        [Test]
+        public void 同frameの属性と被弾元と多段通知をまとめて製品側が回数と優先を明示できる()
+        {
+            var seen=new List<EnemyAIEvent>();int calls=0;
+            Setup((e,f)=>{calls++;seen.AddRange(f.Events);int hits=0;foreach(var v in f.Events)if(v.Source==e&&v.Damage.HasValue&&!v.Damage.Value.IsPoison&&v.Damage.Value.Element==ElementType.Fire)hits++;return hits==2?2:(int?)null;});Frames(1);
+            using(var influence=new AttackInfluence())battle.RunLogicalFrame(()=>{source.TakeDamage(1,ElementType.Fire,influence:influence);source.TakeDamage(1,ElementType.Fire,influence:influence);});
+            Assert.AreEqual(1,calls);Frames(1);Assert.AreEqual(2,calls);Assert.AreEqual(1,next.Calls);Assert.AreEqual(2,seen.Count);Assert.AreSame(seen[0].Damage.Value.Influence,seen[1].Damage.Value.Influence);
+        }
+        [Test]
+        public void 無効guardbarrierで本体被害がない場合は属性被害条件を通知しない()
+        {
+            int count=0;Setup((e,f)=>{foreach(var v in f.Events)if(v.Kind==EnemyAIEventKind.DamageReceived)count++;return null;});source.Guard.Set(true,false);source.TakeDamage(1,ElementType.Fire);source.Guard.Clear();source.SetBarrier(20);source.TakeDamage(1,ElementType.Fire);Frames(1);Assert.AreEqual(0,count);
+        }
+        [Test]
+        public void 仲間死亡の通知で生存敵だけ切り替わり終了後の通知は残らない()
+        {
+            int callbacks=0;Setup((e,f)=>{callbacks++;return Any(f,EnemyAIEventKind.EnemyDied)?2:(int?)null;});Frames(1);other.TakeDamage(1000,ElementType.None);Frames(1);Assert.AreEqual(1,next.Calls);source.TakeDamage(1000,ElementType.None);int count=callbacks;Frames(10);Assert.AreEqual(count,callbacks);Assert.IsTrue(battle.IsGameOver);
+        }
+        [Test]
+        public void 競合するHP監視や不正な参照定義は戦闘へ接続する前に拒否する()
+        {
+            var p=new EnemyActionPattern(1,new[]{new Probe()},EnemyPatternEndMode.Stop);
+            Assert.Throws<System.ArgumentException>(()=>new EnemyAIRegistration(new[]{p},9));
+            Assert.Throws<System.ArgumentException>(()=>new EnemyAIRegistration(new[]{p,p},1));
+            Assert.Throws<System.ArgumentException>(()=>new EnemyAIRegistration(new[]{p},1,new[]{EnemyHpActionPattern.ForRegisteredPattern(10000,true,9)}));
+            Assert.Throws<System.ArgumentException>(()=>new EnemyAIRegistration(new[]{p},1,new[]{EnemyHpActionPattern.ForRegisteredPattern(10000,true,1)},(e,f)=>null));
+        }
+        private static Enemy NewSummon(int x=4)=>new Enemy("child","コドモ",20,ElementType.None,new Vector2Int(x,0),isSummoned:true);
+        private static EnemyAIRegistration SummonAI(Probe action)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(7,new[]{action},EnemyPatternEndMode.Stop)},7);
+        [Test]
+        public void 登録召喚カードは新個体とAIを通常描画通知前に接続し生成frameには過去時間を渡さない()
+        {
+            var child=new Probe();var summon=new EnemySummonDefinition(c=>NewSummon(),(e,c)=>SummonAI(child));Setup(action:new EnemyCardAction(Card(),0,summon:summon));int notified=0;
+            battle.OnSummonAdded+=e=>{notified++;Assert.IsTrue(battle.TrySwitchRegisteredEnemyPattern(e,7));};Frames(1);Assert.AreEqual(1,notified);Assert.AreEqual(3,battle.Enemies.Count);Assert.AreEqual(0,child.Calls);Frames(1);Assert.AreEqual(1,child.Calls);Frames(5);Assert.AreEqual(1,notified);Assert.AreEqual(1,child.Calls);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 死亡と撤退相当の離脱で生成待ちを取消し同じ効果を後から再開しない(bool death)
+        {
+            int generated=0;var summon=new EnemySummonDefinition(c=>{generated++;return NewSummon();},(e,c)=>SummonAI(new Probe()));Setup(action:new EnemyCardAction(Card(startup:10),0,summon:summon));Frames(1);
+            if(death)source.TakeDamage(1000,ElementType.None);else typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(battle,null);
+            Frames(20);Assert.AreEqual(0,generated);Assert.IsFalse(System.Linq.Enumerable.Any(battle.Enemies,e=>e.IsSummoned));
+        }
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)]
+        public void 召喚前隙は停止中進まず再開後だけ一度生成する(BattlePauseReason reason)
+        {
+            int generated=0;var summon=new EnemySummonDefinition(c=>{generated++;return NewSummon();},(e,c)=>SummonAI(new Probe()));Setup(action:new EnemyCardAction(Card(startup:4),0,summon:summon));Frames(1);battle.Pause(reason);Frames(20);Assert.AreEqual(0,generated);battle.Resume(reason);Frames(8);Assert.AreEqual(1,generated);
+        }
+        [Test]
+        public void 終端の離脱後は条件callbackも被害監視も残さない()
+        {
+            int calls=0;Setup((e,f)=>{calls++;return null;});Frames(1);
+            typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(battle,null);source.TakeDamage(1,ElementType.Fire);Frames(5);Assert.AreEqual(1,calls);
+            Assert.IsNull(typeof(Enemy).GetField("OnDamageObserved",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(source));
+        }
+        [Test]
+        public void 召喚物は勝利条件に含めず本体全滅で消去し通知購読も解除する()
+        {
+            var summon=new EnemySummonDefinition(c=>NewSummon(),(e,c)=>SummonAI(new Probe()));Setup(action:new EnemyCardAction(Card(),0,summon:summon));Frames(2);var child=System.Linq.Enumerable.FirstOrDefault(battle.Enemies,e=>e.IsSummoned);Assert.IsNotNull(child);
+            source.TakeDamage(1000,ElementType.None);Assert.IsFalse(battle.IsGameOver);other.TakeDamage(1000,ElementType.None);Assert.IsTrue(battle.IsGameOver);Assert.IsFalse(System.Linq.Enumerable.Any(battle.Enemies,e=>e.IsSummoned));
+            Assert.IsNull(typeof(Enemy).GetField("OnDamageObserved",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(child));
+        }
+        [TestCase(-1)][TestCase(6)]
+        public void 不正な召喚配置は参加者やAIや描画通知を増やさず拒否する(int x)
+        {
+            int notified=0;var summon=new EnemySummonDefinition(c=>NewSummon(x),(e,c)=>SummonAI(new Probe()));Setup();battle.OnSummonAdded+=e=>notified++;
+            var context=new Olca.Core.Logic.CardEffects.BattleContext(battle,Card(),source);
+            Assert.Throws<System.ArgumentException>(()=>new EnemySummonEffect(summon).Execute(context));Assert.AreEqual(2,battle.Enemies.Count);Assert.AreEqual(0,notified);
+        }
     }
 }

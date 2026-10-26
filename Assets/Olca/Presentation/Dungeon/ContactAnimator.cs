@@ -10,7 +10,7 @@ namespace Olca.Presentation.Dungeon
     /// 接敵アニメーションを担当するコンポーネント
     /// 通常接敵・ダッシュ接敵それぞれのシーケンスを UniTask で実装する
     /// </summary>
-    public enum ContactVisualPhase { None, Impact, Knockback }
+    public enum ContactVisualPhase { None, Impact, Knockback, Somersault }
 
     public class ContactAnimator : MonoBehaviour
     {
@@ -40,12 +40,10 @@ namespace Olca.Presentation.Dungeon
         public async UniTask PlayAsync(ContactInfo contactInfo, Transform playerTransform,
             Transform enemyTransform = null, CancellationToken ct = default, float worldUnitsPerCell = 1f, System.Func<float, float> alignWorldX = null, System.Action<ContactVisualPhase, float> pose = null)
         {
-            if (contactInfo.IsDashContact)
-                await PlayDashContactAsync(playerTransform, enemyTransform, ct, worldUnitsPerCell, alignWorldX);
-            else {
-                try { await PlayNormalContactAsync(playerTransform, ct, worldUnitsPerCell, alignWorldX, pose); }
-                finally { pose?.Invoke(ContactVisualPhase.None, 0f); }
-            }
+            try {
+                if(contactInfo.IsDashContact)await PlayDashContactAsync(playerTransform,enemyTransform,ct,worldUnitsPerCell,alignWorldX,pose);
+                else await PlayNormalContactAsync(playerTransform,ct,worldUnitsPerCell,alignWorldX,pose);
+            } finally {pose?.Invoke(ContactVisualPhase.None,0f);}
         }
 
         // ==================== 通常接敵 ====================
@@ -107,7 +105,7 @@ namespace Olca.Presentation.Dungeon
         /// 2. 一時停止（衝撃）
         /// 3. 敵が吹き飛び＋プレイヤーが宙返りで戻る（同時）
         /// </summary>
-        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX)
+        private async UniTask PlayDashContactAsync(Transform playerTransform, Transform enemyTransform, CancellationToken ct, float units, System.Func<float, float> alignWorldX, System.Action<ContactVisualPhase,float> pose)
         {
             if (playerTransform == null) return;
 
@@ -138,14 +136,13 @@ namespace Olca.Presentation.Dungeon
             Vector3 enemyStart = enemyTransform != null ? enemyTransform.position : Vector3.zero;
             Vector3 enemyEnd = enemyStart + new Vector3(dashEnemyKnockback * units, 0f, 0f);
 
-            var rotation=playerTransform.localRotation;
             try {
             elapsed = 0f;
             while (elapsed < dashRollbackDuration)
             {
                 elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
-                playerTransform.localRotation=rotation*Quaternion.Euler(0f,0f,360f*t);
+                pose?.Invoke(ContactVisualPhase.Somersault,t);
 
                 // プレイヤー: 放物線移動（X: 線形、Y: 放物線）
                 float x = Mathf.Lerp(rollStart.x, rollEnd.x, t);
@@ -161,7 +158,7 @@ namespace Olca.Presentation.Dungeon
             playerTransform.position = rollEnd;
             if (enemyTransform != null)
                 enemyTransform.position = enemyEnd;
-            } finally { if(playerTransform!=null)playerTransform.localRotation=rotation; }
+            } finally {pose?.Invoke(ContactVisualPhase.None,0f);}
         }
 
         // ==================== バトル後復帰 ====================
@@ -172,7 +169,7 @@ namespace Olca.Presentation.Dungeon
         /// </summary>
         public float ReturnDurationSeconds => dashRollbackDuration;
 
-        public async UniTask PlayReturnJumpAsync(Transform playerTransform, Vector3 targetPosition, CancellationToken ct = default, float units = 1f)
+        public async UniTask PlayReturnJumpAsync(Transform playerTransform, Vector3 targetPosition, CancellationToken ct = default, float units = 1f, System.Action<ContactVisualPhase,float> pose = null)
         {
             if (playerTransform == null) return;
 
@@ -180,14 +177,13 @@ namespace Olca.Presentation.Dungeon
             // X方向のみ目標位置へ移動、Y/Zは元の高さを維持
             Vector3 jumpEnd = new Vector3(targetPosition.x, jumpStart.y, jumpStart.z);
 
-            var rotation=playerTransform.localRotation;
             try {
             float elapsed = 0f;
             while (elapsed < dashRollbackDuration)
             {
                 elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / dashRollbackDuration);
-                playerTransform.localRotation=rotation*Quaternion.Euler(0f,0f,360f*t);
+                pose?.Invoke(ContactVisualPhase.Somersault,t);
 
                 // X: 線形補間、Y: 放物線（ダッシュ宙返りと同じ）
                 float x = Mathf.Lerp(jumpStart.x, jumpEnd.x, t);
@@ -197,7 +193,7 @@ namespace Olca.Presentation.Dungeon
                 await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
             playerTransform.position = jumpEnd;
-            } finally { if(playerTransform!=null)playerTransform.localRotation=rotation; }
+            } finally {pose?.Invoke(ContactVisualPhase.None,0f);}
         }
 
         // ==================== イージング ====================

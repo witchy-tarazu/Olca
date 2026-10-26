@@ -69,17 +69,67 @@ namespace Olca.Core.Logic.Battle
         private readonly EnemyActionPattern[] patterns;
         private readonly EnemyHpActionPattern[] hpPatterns;
         public int InitialPatternId { get; }
-        public EnemyAIRegistration(System.Collections.Generic.IEnumerable<EnemyActionPattern> patterns,int initialPatternId,System.Collections.Generic.IEnumerable<EnemyHpActionPattern> hpPatterns=null)
+        private readonly System.Func<Enemy,EnemyAIObservationFrame,int?> switchRule;
+        internal System.Collections.Generic.List<IEnemyAIAction> CopyInitialActions()=>System.Array.Find(patterns,v=>v.Id==InitialPatternId).CopyActions();
+        public EnemyAIRegistration(System.Collections.Generic.IEnumerable<EnemyActionPattern> patterns,int initialPatternId,System.Collections.Generic.IEnumerable<EnemyHpActionPattern> hpPatterns=null,System.Func<Enemy,EnemyAIObservationFrame,int?> switchRule=null)
         {
             this.patterns=patterns==null?throw new System.ArgumentNullException(nameof(patterns)):new System.Collections.Generic.List<EnemyActionPattern>(patterns).ToArray();
             this.hpPatterns=hpPatterns==null?null:new System.Collections.Generic.List<EnemyHpActionPattern>(hpPatterns).ToArray();
-            InitialPatternId=initialPatternId;
+            // 不正な定義を、召喚個体や戦闘への登録より前に拒否する。
+            var ids=new System.Collections.Generic.HashSet<int>();
+            foreach(var value in this.patterns)if(value==null||!ids.Add(value.Id))throw new System.ArgumentException("行動定義IDの欠落/重複です");
+            if(!ids.Contains(initialPatternId))throw new System.ArgumentException("初期IDが未登録です");
+            foreach(var value in this.patterns)if(value.EndMode==EnemyPatternEndMode.Next&&!ids.Contains(value.NextPatternId.Value))throw new System.ArgumentException("終了先IDが未登録です");
+            if(this.hpPatterns!=null){int last=-1;foreach(var value in this.hpPatterns){if(value==null||value.MaximumHpBasisPoints<=last||value.RegisteredPatternId.HasValue&&!ids.Contains(value.RegisteredPatternId.Value))throw new System.ArgumentException("HP条件が不正です");last=value.MaximumHpBasisPoints;}if(last!=10000||!this.hpPatterns[this.hpPatterns.Length-1].IncludesBoundary)throw new System.ArgumentException("最大HPまでの条件が必要です");}
+            if(this.hpPatterns!=null&&switchRule!=null)throw new System.ArgumentException("HPと他条件を併用する場合は一つのresolverで優先を明示してください");
+            InitialPatternId=initialPatternId;this.switchRule=switchRule;
         }
         internal void Apply(BattleSystem battle,Enemy enemy)
         {
             if(!battle.ConfigureEnemyPatterns(enemy,patterns,InitialPatternId))throw new System.InvalidOperationException("敵の行動定義を登録できません");
             if(hpPatterns!=null&&!battle.ConfigureEnemyHpPatterns(enemy,hpPatterns))throw new System.InvalidOperationException("敵のHP条件を登録できません");
+            battle.ConfigureEnemySwitchRule(enemy,switchRule);
         }
+    }
+
+    public enum EnemyAIEventKind { EnemyCardUsed, PlayerCardUsed, DamageReceived, EnemyDied }
+    /// <summary>実際に発生した通知。属性/毒/影響元を残し、攻撃回数の製品上の数え方を決めない。</summary>
+    public sealed class EnemyAIEvent
+    {
+        public EnemyAIEventKind Kind { get; }
+        public Enemy Source { get; }
+        public string CardId { get; }
+        public EnemyDamageNotice? Damage { get; }
+        internal EnemyAIEvent(EnemyAIEventKind kind,Enemy source=null,string cardId=null,EnemyDamageNotice? damage=null){Kind=kind;Source=source;CardId=cardId;Damage=damage;}
+    }
+    /// <summary>停止していない論理更新の通知集合。登録resolverが競合優先/回数/期限を一度だけ判定する。</summary>
+    public sealed class EnemyAIObservationFrame
+    {
+        public long LogicalFrame { get; }
+        public System.Collections.Generic.IReadOnlyList<EnemyAIEvent> Events { get; }
+        internal EnemyAIObservationFrame(long frame,EnemyAIEvent[] events){LogicalFrame=frame;Events=System.Array.AsReadOnly(events);}
+    }
+
+    /// <summary>敵カードから明示された個体とAIを新規生成する。配置/上限/値は製品定義が指定する。</summary>
+    public sealed class EnemySummonDefinition
+    {
+        private readonly System.Func<Olca.Core.Logic.CardEffects.BattleContext,Enemy> create;
+        private readonly System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration> createAI;
+        public EnemySummonDefinition(System.Func<Olca.Core.Logic.CardEffects.BattleContext,Enemy> create,System.Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration> createAI)
+        {this.create=create??throw new System.ArgumentNullException(nameof(create));this.createAI=createAI??throw new System.ArgumentNullException(nameof(createAI));}
+        internal void Execute(Olca.Core.Logic.CardEffects.BattleContext context)
+        {
+            if(context.ActionCancellation.IsCancellationRequested||context.Battle.IsGameOver||context.EnemySource==null||context.EnemySource.IsDead)return;
+            var enemy=create(context)??throw new System.InvalidOperationException("召喚個体がnullです");
+            var registration=createAI(enemy,context.CardDatabase)??throw new System.InvalidOperationException("召喚AIがnullです");
+            context.Battle.AddConfiguredSummon(enemy,registration);
+        }
+    }
+    public sealed class EnemySummonEffect : Olca.Core.Logic.CardEffects.ICardEffect
+    {
+        private readonly EnemySummonDefinition definition;
+        public EnemySummonEffect(EnemySummonDefinition definition){this.definition=definition??throw new System.ArgumentNullException(nameof(definition));}
+        public void Execute(Olca.Core.Logic.CardEffects.BattleContext context)=>definition.Execute(context);
     }
 
     public enum EnemyPatternEndMode { Loop, Stop, Next }

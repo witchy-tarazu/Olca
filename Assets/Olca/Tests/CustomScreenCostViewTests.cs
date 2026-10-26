@@ -158,7 +158,7 @@ namespace Olca.Tests
         {
             var info=new DungeonDeparturePreview(new[]{new DungeonConfig("empty","テスト",0,new List<MapCell>())});
             Assert.IsEmpty(info.EnemyElements);Assert.IsEmpty(info.TerrainTypes);
-            Assert.AreEqual("テキゾクセイ: ジョウホウナシ　チケイ: ジョウホウナシ",ClearReturnView.FormatDungeonInformation(info));
+            Assert.AreEqual("テキゾクセイ: ジョウホウなし　チケイ: ジョウホウなし",CustomDisplay.Katakana(ClearReturnView.FormatDungeonInformation(info)));
             Assert.Throws<System.ArgumentNullException>(()=>new DungeonDeparturePreview(null));
             Assert.Throws<System.ArgumentException>(()=>new DungeonDeparturePreview(new DungeonConfig[0]));
             Assert.Throws<System.ArgumentException>(()=>new DungeonDeparturePreview(new DungeonConfig[]{null}));
@@ -172,7 +172,7 @@ namespace Olca.Tests
                 var names=Enumerable.Range(0,7).Select(i=>"secret-name-"+i).ToArray();var unlocked=new[]{true,false,false,false,false,false,false};var cleared=new[]{true,false,false,false,false,false,false};
                 var conditions=Enumerable.Repeat("ヒトツマエノダンジョンヲクリア",7).ToArray();var descriptions=Enumerable.Range(0,7).Select(i=>"secret-info-"+i).ToArray();
                 view.RenderDungeonSelection(names,unlocked,0,_=>{},()=>{},()=>{},false,null,()=>{},cleared:cleared,unlockConditions:conditions,descriptions:descriptions);
-                var first=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_0");StringAssert.Contains("クリアズミ",first.GetComponentInChildren<Text>().text);
+                var first=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_0");Canvas.ForceUpdateCanvases();StringAssert.Contains("クリアズみ",first.GetComponentInChildren<Text>().text);
                 var locked=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DungeonChoice_1");Assert.IsFalse(locked.interactable);StringAssert.Contains("？？？",locked.GetComponentInChildren<Text>().text);StringAssert.DoesNotContain(names[1],locked.GetComponentInChildren<Text>().text);
                 root.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDungeonPage").onClick.Invoke();
                 var all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(t=>t.text));StringAssert.DoesNotContain(names[5],all);StringAssert.DoesNotContain(names[6],all);StringAssert.Contains(conditions[6],all);
@@ -239,7 +239,7 @@ namespace Olca.Tests
             var a=Sprite.Create(texture,new Rect(0,0,1,1),Vector2.one*.5f);var b=Sprite.Create(texture,new Rect(1,0,1,1),Vector2.one*.5f);
             try {
                 var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
-                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("sword",CardSeries.Sword),Create("heal",CardSeries.Sword)}));model.Open(new Card[0],new MockRandomProvider(0));
+                var model=new CustomScreenSystem(new Deck(new List<Card>{Create("sword",CardSeries.Sword),Create("unregistered-art",CardSeries.Sword)}));model.Open(new Card[0],new MockRandomProvider(0));
                 var hand=model.CurrentHand.ToList();typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,hand);
                 var imageObject=new GameObject("FocusedCardIllustration",typeof(RectTransform),typeof(Image));imageObject.transform.SetParent(root.transform,false);var image=imageObject.GetComponent<Image>();image.rectTransform.sizeDelta=new Vector2(280,280);
                 typeof(CustomScreenView).GetField("selectedCardImage",flags).SetValue(view,image);
@@ -251,6 +251,7 @@ namespace Olca.Tests
                 var handViews=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);
                 for(int i=0;i<2;i++){var obj=new GameObject("Hand"+i);obj.transform.SetParent(root.transform,false);var h=obj.AddComponent<HandCardView>();typeof(HandCardView).GetField("parentView",flags).SetValue(h,view);typeof(HandCardView).GetField("<Card>k__BackingField",flags).SetValue(h,hand[i]);handViews.Add(h);}
                 handViews[0].OnPointerEnter(null);Assert.AreSame(a,image.sprite);Assert.AreEqual(0,cursor.CurrentIndex);
+                handViews[0].OnPointerExit(null);Assert.AreSame(a,image.sprite);Assert.AreEqual(0,cursor.CurrentIndex,"退出や領域クリックで確定へ移さない");
                 cursor.MoveToConfirmButton();Assert.IsNull(image.sprite);cursor.MoveToCard(1);Assert.AreSame(b,image.sprite);
                 view.ConfigureCardVisuals(null);Assert.IsNull(image.sprite);Assert.AreEqual(new Vector2(280,280),image.rectTransform.sizeDelta);
             }finally{Object.DestroyImmediate(root);Object.DestroyImmediate(a);Object.DestroyImmediate(b);Object.DestroyImmediate(texture);}
@@ -364,7 +365,7 @@ namespace Olca.Tests
         }
 
         [Test]
-        public void 選択済みスロットは対応アイコンを表示しクリックした同名カード一枚だけ解除して順序とフォーカスを揃える()
+        public void 選択済み領域は位置に依存せず末尾一枚を解除し空き部分と未選択時にも順序とフォーカスを保つ()
         {
             Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
             Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
@@ -384,13 +385,30 @@ namespace Olca.Tests
                 var slots=new List<Image>();for(int i=0;i<3;i++){var slot=new GameObject("Slot"+i,typeof(RectTransform),typeof(Image));slot.transform.SetParent(indicator.transform,false);((RectTransform)slot.transform).anchoredPosition=new Vector2(50*i,0);slots.Add(slot.GetComponent<Image>());}
                 typeof(CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags).Invoke(view,null);
                 for(int i=0;i<3;i++)Assert.AreSame(view.GetCardIcon(hand[i].Id),slots[i].sprite);
-                slots[1].GetComponent<Button>().onClick.Invoke();
-                CollectionAssert.AreEqual(new[]{hand[0],hand[2]},model.SelectedCards);
-                Assert.AreSame(view.GetCardIcon(hand[2].Id),slots[1].sprite);Assert.IsNull(slots[2].sprite);Assert.IsFalse(slots[2].raycastTarget);
-                Assert.AreEqual(1,cursor.CurrentIndex);StringAssert.Contains(model.GetTotalUsedCost().ToString(),cost.GetComponent<Text>().text);
-                slots[0].GetComponent<Button>().onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[2]},model.SelectedCards);
+                var area=indicator.GetComponent<Button>();Assert.IsNotNull(area);Assert.IsTrue(indicator.GetComponent<Image>().raycastTarget);
+                Assert.IsTrue(slots.All(s=>!s.raycastTarget),"各アイコンは行全体の入力を遮らない");
+                area.onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[0],hand[1]},model.SelectedCards);
+                Assert.AreSame(view.GetCardIcon(hand[1].Id),slots[1].sprite);Assert.IsNull(slots[2].sprite);Assert.AreEqual(0,cursor.CurrentIndex);
+                area.onClick.Invoke();CollectionAssert.AreEqual(new[]{hand[0]},model.SelectedCards);
+                area.onClick.Invoke();Assert.IsEmpty(model.SelectedCards);area.onClick.Invoke();Assert.IsEmpty(model.SelectedCards);
+                Assert.AreEqual(0,cursor.CurrentIndex);Assert.IsFalse(model.IsConfirming);
+
             } finally {Object.DestroyImmediate(root);}
         }
+        [TestCase("ひらがなはそのまま ABC 123 ! カタカナ", "ひらがなはそのまま ABC 123 ! カタカナ")]
+        [TestCase("<b>選択</b>して戻る（A+1）", "<b>センタク</b>してモドる（A+1）")]
+        [TestCase("持ち帰り・同じ・速い・続きから", "モちカエり・オナじ・ハヤい・ツヅきから")]
+        [TestCase("前方一マス / 一つ前", "ゼンポウイチマス / ヒトつマエ")]
+        [TestCase("受け取らずに進む / 支払い", "ウけトらずにススむ / シハラい")]
+        [TestCase("探索中は画面のボタンで操作", "タンサクチュウはガメンのボタンでソウサ")]
+        public void 漢字以外の元文字と送り仮名と助詞を一字も変えない(string source,string expected)
+            =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
+        [TestCase("sword")][TestCase("fire_sword")][TestCase("bomb")][TestCase("heal")][TestCase("shield")][TestCase("tuning")]
+        public void 登録仮本絵は正方形の専用画像でミニアイコンとは別素材である(string id)
+        {
+            var root=new GameObject("CardArt");try{var v=root.AddComponent<CustomScreenView>();var art=v.GetCardIllustration(id);Assert.IsNotNull(art);Assert.AreEqual(art.rect.width,art.rect.height);Assert.Greater(art.rect.width,256);Assert.AreNotSame(art,v.GetCardIcon(id));StringAssert.StartsWith("OlcaCardArt_",art.name);}finally{Object.DestroyImmediate(root);}
+        }
+
         [Test]
         public void フォーカス枠は背景より前で手札アイコンより後ろに描きポインター入力を遮らない()
         {
@@ -417,14 +435,14 @@ namespace Olca.Tests
                 Olca.Unity.BattleVisualClock.SetPaused(b,false);Assert.AreEqual(.55f,world.GetComponent<Animator>().speed);
             } finally {Olca.Unity.BattleVisualClock.SetPaused(a,false);Olca.Unity.BattleVisualClock.SetPaused(b,false);Object.DestroyImmediate(world);Object.DestroyImmediate(ui);}
         }
-        [TestCase("選択したカードを確定します","センタクシタカードヲカクテイシマス")]
+        [TestCase("選択したカードを確定します","センタクしたカードをカクテイします")]
         [TestCase("前方1マス炎属性攻撃","ゼンポウ1マスホノオゾクセイコウゲキ")]
-        [TestCase("使用済み / 手札上限","シヨウズミ / テフダジョウゲン")]
+        [TestCase("使用済み / 手札上限","シヨウズみ / テフダジョウゲン")]
         [TestCase("十字左 / 獲得: 3枚 / 通貨: 0","ジュウジヒダリ / カクトク: 3マイ / ツウカ: 0")]
-        [TestCase("続きから","ツヅキカラ")]
+        [TestCase("続きから","ツヅきから")]
         [TestCase("変身演出：通常 / 短縮","ヘンシンエンシュツ：ツウジョウ / タンシュク")]
         [TestCase("音量設定","オンリョウセッテイ")]
-        [TestCase("文字表示：標準 / ゆっくり / 速い / 即時","モジヒョウジ：ヒョウジュン / ユックリ / ハヤイ / ソクジ")]
+        [TestCase("文字表示：標準 / ゆっくり / 速い / 即時","モジヒョウジ：ヒョウジュン / ゆっくり / ハヤい / ソクジ")]
         [TestCase("演出設定 保存失敗（再試行）","エンシュツセッテイ ホゾンシッパイ（サイシコウ）")]
         public void 指定フォントを交換せず既存カスタム文言をカナで表示する(string source,string expected)
             =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
@@ -741,24 +759,24 @@ namespace Olca.Tests
                 view.Render(profile,flow,false,null);
                 var home=CustomDisplay.Katakana(root.GetComponentsInChildren<Text>().Single(t=>t.name=="HomeStats").text);
                 StringAssert.Contains("HP 105/105",home);StringAssert.Contains("11",home);
-                if(outcome==RunReturnOutcome.Cleared)StringAssert.Contains("ホゾンズミ",home);
-                else {StringAssert.DoesNotContain("+0",home);StringAssert.DoesNotContain("ウシナ",home);StringAssert.DoesNotContain("ホゾンズミ",home);}
+                if(outcome==RunReturnOutcome.Cleared)StringAssert.Contains("ホゾンズみ",home);
+                else {StringAssert.DoesNotContain("+0",home);StringAssert.DoesNotContain("ウシナ",home);StringAssert.DoesNotContain("ホゾンズみ",home);}
                 Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(t=>t.name=="AwardSummary"||t.name=="AwardCards"));
                 root.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDeparture").onClick.Invoke();Assert.AreEqual(1,departures);
                 Assert.AreEqual(100,profile.Experience);Assert.AreEqual(7,profile.Tokens);Assert.AreEqual(4,profile.Revision);Assert.IsEmpty(profile.Owned);
             }finally{if(view!=null)typeof(ClearReturnView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Object.DestroyImmediate(root);}
         }
 
-        [TestCase("敗北して帰還しました","ハイボクシテキカンシマシタ")]
+        [TestCase("敗北して帰還しました","ハイボクしてキカンしました")]
         [TestCase("総経験値 0 / 永続所持カード / 装備 / トークン交換所 / カード図鑑","ソウケイケンチ 0 / エイゾクショジカード / ソウビ / トークンコウカンジョ / カードズカン")]
-        [TestCase("基本 / 無属性 / 再出撃 / 前へ / 次へ","キホン / ムゾクセイ / サイシュツゲキ / マエヘ / ツギヘ")]
-        [TestCase("持ち帰りカードを選択","モチカエリカードヲセンタク")]
-        [TestCase("同じカード1枚まで・★★★不可","オナジカード1マイマデ・★★★フカ")]
+        [TestCase("基本 / 無属性 / 再出撃 / 前へ / 次へ","キホン / ムゾクセイ / サイシュツゲキ / マエへ / ツギへ")]
+        [TestCase("持ち帰りカードを選択","モちカエりカードをセンタク")]
+        [TestCase("同じカード1枚まで・★★★不可","オナじカード1マイまで・★★★フカ")]
         [TestCase("経験値予定 +100 / 経験値反映","ケイケンチヨテイ +100 / ケイケンチハンエイ")]
-        [TestCase("経験値 +100（反映済み） / 超過変換 +0 トークン","ケイケンチ +100（ハンエイズミ） / チョウカヘンカン +0 トークン")]
-        [TestCase("帰還後：HP 100/100 / 攻略中の状態を解除して全回復します","キカンゴ：HP 100/100 / コウリャクチュウノジョウタイヲカイジョシテゼンカイフクシマス")]
-        [TestCase("持ち帰れる獲得カードはありません","モチカエレルカクトクカードハアリマセン")]
-        [TestCase("カード・経験値は保存済みです","カード・ケイケンチハホゾンズミデス")]
+        [TestCase("経験値 +100（反映済み） / 超過変換 +0 トークン","ケイケンチ +100（ハンエイズみ） / チョウカヘンカン +0 トークン")]
+        [TestCase("帰還後：HP 100/100 / 攻略中の状態を解除して全回復します","キカンゴ：HP 100/100 / コウリャクチュウのジョウタイをカイジョしてゼンカイフクします")]
+        [TestCase("持ち帰れる獲得カードはありません","モちカエれるカクトクカードはありません")]
+        [TestCase("カード・経験値は保存済みです","カード・ケイケンチはホゾンズみです")]
         public void 帰還画面の既存用語をフォント変更せずカナで表示する(string source,string expected)
             =>Assert.AreEqual(expected,CustomDisplay.Katakana(source));
 
@@ -802,8 +820,8 @@ namespace Olca.Tests
                     Assert.AreEqual(1,root.GetComponentsInChildren<Text>(true).Count(t=>t.name=="BattleTimeText"));
                     var button = root.GetComponentInChildren<Button>(true);
                     Assert.AreEqual("SkipCardReward", button.name);
-                    Assert.AreEqual("カードヲ1マイカクトク",heading.text);Assert.AreSame(originalFont,heading.font);Assert.AreEqual(Color.white,countText.color);
-                    Assert.AreEqual("ウケトラズニススム",button.GetComponentInChildren<Text>(true).text);
+                    Assert.AreEqual("カードを1マイカクトク",heading.text);Assert.AreSame(originalFont,heading.font);Assert.AreEqual(Color.white,countText.color);
+                    Canvas.ForceUpdateCanvases();Assert.AreEqual("ウけトらずにススむ",button.GetComponentInChildren<Text>(true).text);
                     Assert.AreEqual(1, root.GetComponentsInChildren<Button>(true).Length);
                     // ポーズ中は明示スキップでも報酬を確定しない。
                     Olca.Unity.GameplayPause.SetPaused(true); button.onClick.Invoke(); Assert.IsFalse(task.IsCompleted);

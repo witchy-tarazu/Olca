@@ -209,7 +209,7 @@ namespace Olca.Presentation.Dungeon
             label.font = deckCountText != null ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             label.fontSize = 28; label.alignment = TextAnchor.MiddleCenter;
             label.color = new Color(.9f, .97f, 1f); label.raycastTarget = false;
-            label.text = "ウケトラズニススム"; UiLook.Button(skipButton);
+            label.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana("受け取らずに進む"); UiLook.Button(skipButton);
         }
 
         private async UniTask FadeAsync(
@@ -412,8 +412,8 @@ namespace Olca.Presentation.Dungeon
             if(info==null)throw new ArgumentNullException(nameof(info));
             string Element(ElementType value) => value==ElementType.None?"ムゾクセイ":value==ElementType.Fire?"ヒ":value==ElementType.Water?"ミズ":value==ElementType.Wind?"カゼ":value==ElementType.Earth?"ツチ":"？？？";
             string Terrain(PanelType value) => value==PanelType.Normal?"ノーマル":value==PanelType.Grass?"クサムラ":value==PanelType.Ice?"コオリ":value==PanelType.Magma?"マグマ":value==PanelType.Cracked?"ヒビ":value==PanelType.Hole?"アナ":"？？？";
-            return "テキゾクセイ: "+(info.EnemyElements.Count==0?"ジョウホウナシ":string.Join(" / ",System.Linq.Enumerable.Select(info.EnemyElements,Element)))+
-                "　チケイ: "+(info.TerrainTypes.Count==0?"ジョウホウナシ":string.Join(" / ",System.Linq.Enumerable.Select(info.TerrainTypes,Terrain)));
+            return "テキゾクセイ: "+(info.EnemyElements.Count==0?"情報なし":string.Join(" / ",System.Linq.Enumerable.Select(info.EnemyElements,Element)))+
+                "　チケイ: "+(info.TerrainTypes.Count==0?"情報なし":string.Join(" / ",System.Linq.Enumerable.Select(info.TerrainTypes,Terrain)));
         }
         private int dungeonPage;
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
@@ -430,12 +430,12 @@ namespace Olca.Presentation.Dungeon
             gameObject.SetActive(true);
             Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
             string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
-            Text("DungeonSelectionHelp", error ?? ("クリアニオウジテカイホウ / " + styleName + (string.IsNullOrEmpty(info)?"":"\n"+info)), 0, 350, 1700, 80, 25);
+            Text("DungeonSelectionHelp", error ?? ("クリアに応じて解放 / " + styleName + (string.IsNullOrEmpty(info)?"":"\n"+info)), 0, 350, 1700, 80, 25);
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
                 int index = dungeonPage * rows + row;
                 string label = unlocked[index]
-                    ? (selected==index ? "［センタクチュウ］ " : "［センタク］ ")+names[index]+(cleared==null?"":cleared[index]?" / クリアズミ":" / ミクリア")
+                    ? (selected==index ? "［センタクチュウ］ " : "［センタク］ ")+names[index]+(cleared==null?"":cleared[index]?" / クリア済み":" / ミクリア")
                     : "［ミカイホウ］ ？？？" + (unlockConditions==null||string.IsNullOrEmpty(unlockConditions[index])?"":"\nカイホウ: "+unlockConditions[index]);
                 var button = Button("DungeonChoice_" + index, label, 0, 240 - row * 95, 1450, 78, () => choose(index));
                 button.interactable = !blocked && unlocked[index];
@@ -627,7 +627,7 @@ namespace Olca.Presentation.Dungeon
         private UnityEngine.UI.Text Text(string name, string value, float x, float y, float width, float height, int size)
         {
             var o = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Text)); o.transform.SetParent(content.transform, false);
-            var t = o.GetComponent<UnityEngine.UI.Text>(); t.text = value; t.font = font; t.fontSize = size; t.alignment = TextAnchor.MiddleCenter; t.raycastTarget = false;
+            var t = o.GetComponent<UnityEngine.UI.Text>(); t.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value); t.font = font; t.fontSize = size; t.alignment = TextAnchor.MiddleCenter; t.raycastTarget = false;
             UiLook.Label(t);
             t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(.5f, .5f); t.rectTransform.anchoredPosition = new Vector2(x, y); t.rectTransform.sizeDelta = new Vector2(width, height); return t;
         }

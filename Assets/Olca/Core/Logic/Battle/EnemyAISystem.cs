@@ -63,6 +63,11 @@ namespace Olca.Core.Logic.Battle
             var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));return behavior!=null&&behavior.TrySwitchRegisteredPattern(patternId);
         }
 
+        internal void ConfigureSwitchRule(Enemy enemy,Func<Enemy,EnemyAIObservationFrame,int?> rule)
+        {aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy))?.ConfigureSwitchRule(rule);}
+        internal void Observe(EnemyAIObservationFrame frame,IList<Enemy> participants)
+        {foreach(var behavior in aiBehaviors.ToArray())if(aiBehaviors.Contains(behavior)&&participants.Contains(behavior.Enemy))behavior.Observe(frame);}
+
         /// <summary>外部定義されたHP区間を登録する。値や製品の切替先は生成しない。</summary>
         public bool ConfigureHpPatterns(Enemy enemy, IReadOnlyList<EnemyHpActionPattern> patterns)
         {

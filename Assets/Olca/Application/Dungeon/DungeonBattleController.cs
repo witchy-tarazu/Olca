@@ -311,7 +311,7 @@ namespace Olca.Application.Dungeon
                 !CanSelectDungeon, clearReturnError ?? clearReturnSession.Error, RetryClearReturn,
                 OpenStyleSelection, SelectedStyle?.Name ?? "未登録スタイル", OpenTokenExchange,
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
-                Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "サイショカラカイホウ" : "ヒトツマエノダンジョンヲクリア").ToArray(),
+                Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
                     c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray());
         }
@@ -1795,7 +1795,7 @@ namespace Olca.Application.Dungeon
                 {
                     var item=manager.Dungeon.PendingItemReward;
                     itemRewardChoice=new UniTaskCompletionSource<bool>();var choice=itemRewardChoice;
-                    itemRewardText.text=$"アイテムホウシュウ: {item.Name}\nHPカイフク {item.Heal} / ゲンザイHP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\nマンタンデモウケトリジニショウヒシマス";
+                    itemRewardText.text=$"アイテムホウシュウ: {item.Name}\nHPカイフク {item.Heal} / ゲンザイHP {manager.Dungeon.Player.CurrentHp}/{manager.Dungeon.Player.MaxHp}\n満タンでも受け取り時に消費します";
                     if(pendingBattleElapsedFrames.HasValue)itemRewardText.text+="\n"+CardSelectionView.FormatBattleSummary(pendingBattleElapsedFrames,pendingBattleEvaluation);
                     itemRewardOverlay.SetActive(true);itemRewardOverlay.transform.SetAsLastSibling();BindResourceReward(itemRewardOverlay,"SkipItemReward",()=>{if(!GameplayPause.InputBlocked)itemRewardChoice?.TrySetResult(false);});bool receive;
                     try{using(ct.Register(()=>choice.TrySetCanceled(ct)))receive=await choice.Task;}
@@ -1809,7 +1809,7 @@ namespace Olca.Application.Dungeon
                 {
                     currencyChoice = new UniTaskCompletionSource<bool>();
                     var choice = currencyChoice;
-                    currencyRewardText.text = $"ツウカホウシュウ: {manager.Dungeon.PendingCurrencyReward}\nショジ: {manager.Dungeon.Currency}（コウリャクチュウノミ）";
+                    currencyRewardText.text = $"ツウカホウシュウ: {manager.Dungeon.PendingCurrencyReward}\nショジ: {manager.Dungeon.Currency}（攻略中のみ）";
                     if(pendingBattleElapsedFrames.HasValue)currencyRewardText.text+="\n"+CardSelectionView.FormatBattleSummary(pendingBattleElapsedFrames,pendingBattleEvaluation);
                     receiveCurrencyButton.interactable = manager.Dungeon.PendingCurrencyReward <= long.MaxValue - manager.Dungeon.Currency;
                     currencyOverlay.SetActive(true); currencyOverlay.transform.SetAsLastSibling();
@@ -1833,7 +1833,7 @@ namespace Olca.Application.Dungeon
                     float targetY = useBattleGrid ? gameFieldView.PlayerTransform.position.y : gameFieldView.LogicalToWorld(manager.Dungeon.PlayerHeight);
                     var targetPos = new UnityEngine.Vector3(targetX, targetY, 0f);
                     await contactAnimator.PlayReturnJumpAsync(
-                        gameFieldView.PlayerTransform, targetPos, ct, gameFieldView.CellSize);
+                        gameFieldView.PlayerTransform, targetPos, ct, gameFieldView.CellSize, gameFieldView.SetContactPose);
                     gameFieldView.SetPlayerPositionUpdateEnabled(true);
                 }
 

@@ -98,16 +98,17 @@ namespace Olca.Core.Logic.Battle
     public sealed class EnemyCardAction : IContinuingEnemyAIAction
     {
         private readonly Card card;
+        private readonly EnemySummonDefinition summon;
         private readonly ICardDatabase database;
         private readonly int cooldownMs;
         private CancellationTokenSource cancellation;
         private FrameTask task;
         public bool IsRunning {get{ObserveCompletion();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
-        public EnemyCardAction(Card card,int cooldownMs,ICardDatabase database=null)
+        public EnemyCardAction(Card card,int cooldownMs,ICardDatabase database=null,EnemySummonDefinition summon=null)
         {
             if(cooldownMs<0)throw new ArgumentOutOfRangeException(nameof(cooldownMs));
             this.card=card?.Clone()??throw new ArgumentNullException(nameof(card));
-            this.cooldownMs=cooldownMs;this.database=database;
+            this.cooldownMs=cooldownMs;this.database=database;this.summon=summon;
             ValidateCard(this.card);
         }
         internal static void ValidateCard(Card value)
@@ -134,8 +135,9 @@ namespace Olca.Core.Logic.Battle
             forward=context.ResolveDirectionalInput(new Vector2Int(forward,0)).X;
             var used=card.Category==CardCategory.Attack&&context.Self.IsConcentrating?card.WithPowerMultiplier(context.Self.ConsumeConcentrateBuff()):card;
             var effectContext=new BattleContext(context.Battle,used,context.Self,forward){CardDatabase=database,ActionCancellation=cancellation.Token,TemporaryPlayerPosition=context.Self.GridPosition,LockedSingleTarget=context.Player.GridPosition};
-            var effect=CardEffectFactory.CreateEffect(used);var previewOwner=new object();
-            effectContext.AttackResolved=()=>context.Battle.ClearEnemyAttackTelegraph(previewOwner);
+            ICardEffect effect=summon==null?CardEffectFactory.CreateEffect(used):new EnemySummonEffect(summon);var previewOwner=new object();
+            bool notified=false;
+            effectContext.AttackResolved=()=>{context.Battle.ClearEnemyAttackTelegraph(previewOwner);if(!notified){notified=true;context.Battle.NotifyEnemyCardUsed(context.Self,card.Id);}};
             if(used.Category==CardCategory.Attack||used.Category==CardCategory.Field){
                 if(effect is Olca.Core.Logic.CardEffects.Effects.ModifiableCardEffect modified)context.Battle.SetEnemyAttackTelegraph(previewOwner,modified.PreviewTargets(effectContext));
                 else if(effect is Olca.Core.Logic.CardEffects.Effects.TemporaryMoveAttackEffect movement)context.Battle.SetEnemyAttackTelegraph(previewOwner,new[]{movement.PreviewTarget(effectContext)});

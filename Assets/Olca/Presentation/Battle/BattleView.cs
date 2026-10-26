@@ -87,7 +87,7 @@ namespace Olca.Presentation.Battle
             if(battleSystem==null||battleSystem.IsGameOver){ResetTransformationVisual();return;}
             EnsureTransformationVisual();var state=battleSystem.Transformations;
             transformationStatus.transform.parent.gameObject.SetActive(state.HasActive||state.ReleaseFramesRemaining>0);
-            transformationStatus.text=state.HasActive?TransformationName(state.ActiveId)+" ノコリ "+state.RemainingPhases+" カイ":"ヘンシンナシ（ノコリ0カイ）";
+            transformationStatus.text=state.HasActive?TransformationName(state.ActiveId)+" ノコリ "+state.RemainingPhases+" カイ":"変身なし（残り0回）";
             var sprite=state.HasActive?TransformationVisualSource?.GetTransformationIcon(state.ActiveId):null;
             if(transformationIcon==null&&sprite!=null){
                 var icon=new GameObject("TransformationHudIcon",typeof(RectTransform),typeof(Image));icon.transform.SetParent(transformationStatus.transform.parent,false);

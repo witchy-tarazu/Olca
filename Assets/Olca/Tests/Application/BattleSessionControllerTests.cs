@@ -385,14 +385,14 @@ namespace Olca.Tests.Application
             var root=new UnityEngine.GameObject("separate-card-art");root.SetActive(false);var view=root.AddComponent<Olca.Presentation.CustomScreen.CustomScreenView>();
             var a=new UnityEngine.Texture2D(16,16);var b=new UnityEngine.Texture2D(16,16);var art=UnityEngine.Sprite.Create(a,new UnityEngine.Rect(0,0,16,16),UnityEngine.Vector2.zero);var icon=UnityEngine.Sprite.Create(b,new UnityEngine.Rect(0,0,16,16),UnityEngine.Vector2.zero);
             try{
-                Assert.IsNull(view.GetCardIllustration("sword"));var generated=view.GetCardIcon("sword");Assert.IsNotNull(generated);Assert.AreEqual(256,generated.texture.width);
-                foreach(var id in new[]{"heal","shield"}){Assert.IsNull(view.GetCardIllustration(id));var mini=view.GetCardIcon(id);Assert.AreEqual(256,mini.texture.width);Assert.AreSame(mini,view.GetCardIcon(id));Assert.AreNotSame(generated,mini);}
-                Assert.AreNotSame(view.GetCardIcon("heal"),view.GetCardIcon("shield"));
+                Assert.IsNotNull(view.GetCardIllustration("sword"));var generated=view.GetCardIcon("sword");Assert.IsNotNull(generated);Assert.AreEqual(256,generated.texture.width);
+                foreach(var id in new[]{"heal","shield"}){Assert.IsNotNull(view.GetCardIllustration(id));var mini=view.GetCardIcon(id);Assert.AreEqual(256,mini.texture.width);Assert.AreSame(mini,view.GetCardIcon(id));Assert.AreNotSame(generated,mini);}
+                Assert.AreNotSame(view.GetCardIcon("heal"),view.GetCardIcon("shield"));Assert.IsNull(view.GetCardIllustration("unknown"));
                 var entry=new Olca.Presentation.CustomScreen.CardVisualEntry{CardId="sword",Illustration=art,CustomIcon=icon};view.ConfigureCardVisuals(new[]{entry});entry.CardId="changed";
                 Assert.AreSame(art,view.GetCardIllustration("sword"));Assert.AreSame(icon,view.GetCardIcon("sword"));Assert.IsNull(view.GetCardIcon("unknown"));
                 Assert.Throws<System.ArgumentException>(()=>view.ConfigureCardVisuals(new[]{new Olca.Presentation.CustomScreen.CardVisualEntry{CardId="sword",Illustration=art,CustomIcon=art}}));
                 Assert.AreSame(icon,view.GetCardIcon("sword"));
-                view.ConfigureCardVisuals(null);Assert.IsNull(view.GetCardIllustration("sword"));Assert.AreSame(generated,view.GetCardIcon("sword"));
+                view.ConfigureCardVisuals(null);Assert.IsNotNull(view.GetCardIllustration("sword"));Assert.AreSame(generated,view.GetCardIcon("sword"));
             }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(art);UnityEngine.Object.DestroyImmediate(icon);UnityEngine.Object.DestroyImmediate(a);UnityEngine.Object.DestroyImmediate(b);}
         }
 

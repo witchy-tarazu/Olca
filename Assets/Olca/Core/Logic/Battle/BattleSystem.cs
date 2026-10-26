@@ -37,6 +37,11 @@ namespace Olca.Core.Logic.Battle
         }
         public ElementType ActivePlayerElement => ActivePlayerAttack?.Element ?? ElementType.None;
         private readonly List<Enemy> enemies;
+        private readonly List<EnemyAIEvent> enemyAIEvents=new List<EnemyAIEvent>();
+        private readonly Dictionary<Enemy,Action<EnemyDamageNotice>> enemyDamageObservers=new Dictionary<Enemy,Action<EnemyDamageNotice>>();
+        internal void ConfigureEnemySwitchRule(Enemy enemy,Func<Enemy,EnemyAIObservationFrame,int?> rule)=>enemyAI.ConfigureSwitchRule(enemy,rule);
+        internal void NotifyEnemyCardUsed(Enemy enemy,string cardId){if(!IsGameOver)enemyAIEvents.Add(new EnemyAIEvent(EnemyAIEventKind.EnemyCardUsed,enemy,cardId));}
+        private void OnPlayerCardUsedForAI(Card card){if(!IsGameOver)enemyAIEvents.Add(new EnemyAIEvent(EnemyAIEventKind.PlayerCardUsed,cardId:card.Id));}
         private readonly Dictionary<Enemy, Action> enemyDeathHandlers = new Dictionary<Enemy, Action>();
         private readonly Dictionary<Enemy, Action<Vector2Int>> enemyPositionHandlers = new Dictionary<Enemy, Action<Vector2Int>>();
         private Vector2Int previousPlayerPosition;
@@ -268,6 +273,7 @@ namespace Olca.Core.Logic.Battle
             Transformations.OnActivationPresentation += PauseForTransformation;
             customScreen.OnOpening += OnTransformationPhaseOpening;
             this.cardUsage = new CardUsageSystem(this, logger, cardDatabase);
+            this.cardUsage.OnCardUsed+=OnPlayerCardUsedForAI;
             this.playerMovement = new PlayerMovementSystem(player, battleField, logger, () => !IsPaused && !IsGameOver && !HasPlayerAction && cardUsage.InFlightCard == null && !player.IsActionPrevented);
             this.panelEffects = new PanelEffectSystem(battleField, logger);
             this.enemyAI = new EnemyAISystem(logger);
@@ -366,6 +372,8 @@ namespace Olca.Core.Logic.Battle
         {
             enemy.IsOnGrass = () => battleField.GetPanelType(enemy.GridPosition) == PanelType.Grass;
             enemyAI.RegisterEnemy(enemy, actions);
+            Action<EnemyDamageNotice> observed=notice=>{if(!IsGameOver)enemyAIEvents.Add(new EnemyAIEvent(EnemyAIEventKind.DamageReceived,enemy,damage:notice));};
+            enemy.OnDamageObserved+=observed;enemyDamageObservers.Add(enemy,observed);
             enemy.OnHitStopRequested += RequestHitStop;
             enemy.OnDamageProcessingStarted += BeginResolution;
             enemy.OnDamageProcessingCompleted += EndResolution;
@@ -394,6 +402,8 @@ namespace Olca.Core.Logic.Battle
             {
                 // HP0確定後に敵個体を一度だけ数え、最終撃破も勝敗通知より前に反映する。
                 simultaneousKills.Record(enemy, actionFrame, enemy.DeathImpact);
+                enemyAIEvents.Add(new EnemyAIEvent(EnemyAIEventKind.EnemyDied,enemy));
+                if(enemyDamageObservers.TryGetValue(enemy,out var observer)){enemy.OnDamageObserved-=observer;enemyDamageObservers.Remove(enemy);}
                 // HP0は占有から既に除外されている。再通知で破壊を繰り返さない。
                 enemy.OnPositionChanged -= moved;
                 enemy.OnDeath -= handler;
@@ -406,7 +416,9 @@ namespace Olca.Core.Logic.Battle
         }
 
         /// <summary>呼び出し側が定義した召喚物とAIを、配置順の末尾に登録する。</summary>
-        public void AddSummon(Enemy summon, List<IEnemyAIAction> actions)
+        public void AddSummon(Enemy summon, List<IEnemyAIAction> actions)=>AddSummonCore(summon,actions,null);
+        internal void AddConfiguredSummon(Enemy summon,EnemyAIRegistration definition)=>AddSummonCore(summon,definition.CopyInitialActions(),definition);
+        private void AddSummonCore(Enemy summon,List<IEnemyAIAction> actions,EnemyAIRegistration definition)
         {
             if (summon == null) throw new ArgumentNullException(nameof(summon));
             if (IsGameOver) throw new InvalidOperationException("終了した戦闘には召喚できません");
@@ -415,6 +427,7 @@ namespace Olca.Core.Logic.Battle
             // AI登録の検証に失敗した場合は参加者リストへ追加しない。
             RegisterEnemy(summon, actions);
             enemies.Add(summon);
+            definition?.Apply(this,summon);
             if (statusFrameParticipants != null)
             { statusFrameParticipants.Add(summon); summon.BeginStatusFrame(!IsPaused); summon.BeginHpFrame(); }
             OnSummonAdded?.Invoke(summon);
@@ -538,6 +551,9 @@ namespace Olca.Core.Logic.Battle
                     enemy.TickStatusesAndApply(deltaTimeMs, logicalFrameTick);
                 }
 
+                // この更新までの通知を一集合として判定し、条件優先は登録resolverが明示する。
+                var observed=enemyAIEvents.ToArray();enemyAIEvents.Clear();
+                enemyAI.Observe(new EnemyAIObservationFrame(actionFrame,observed),tickParticipants);
                 // 敵のAI更新
                 enemyAI.Tick(deltaTimeMs, player, battleField, randomProvider, tickParticipants, logicalFrameTick, this);
             }
@@ -840,6 +856,8 @@ namespace Olca.Core.Logic.Battle
                 enemyAI.UnregisterEnemy(entry.Key);
             }
             enemyDeathHandlers.Clear();
+            foreach(var entry in enemyDamageObservers)entry.Key.OnDamageObserved-=entry.Value;
+            enemyDamageObservers.Clear();enemyAIEvents.Clear();cardUsage.OnCardUsed-=OnPlayerCardUsedForAI;
             foreach (var entry in enemyPositionHandlers)
                 entry.Key.OnPositionChanged -= entry.Value;
             enemyPositionHandlers.Clear();
