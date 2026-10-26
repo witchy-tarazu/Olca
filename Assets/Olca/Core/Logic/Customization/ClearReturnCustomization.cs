@@ -20,11 +20,13 @@ namespace Olca.Core.Domain
             profile.Customization = state; return state;
         }
         /// <summary>入手元が確定した報酬を一度だけ保存する。装飾品/パーツの道中取得は禁止。</summary>
-        public bool TryGrantCustomization(CustomizationCatalog catalog, CustomizationGrant grant)
+        public bool TryGrantCustomization(CustomizationCatalog catalog, CustomizationGrant grant)=>TryGrantCustomizationCore(catalog,grant,false);
+        private bool TryGrantCustomizationCore(CustomizationCatalog catalog, CustomizationGrant grant,bool fromSavedCandidate)
         {
             if (!Available()) return Fail("未保存の処理を先に確定してください");
             try {
                 if (grant == null || catalog == null) throw new ArgumentException("装備の取得定義が必要です");
+                if(!fromSavedCandidate&&CustomizationSnapshot.Acquisitions.Any(v=>v.Candidates.Any(c=>c.RequestId==grant.RequestId)))return Fail("保存された候補の受取経路を使ってください");
                 var prior = CustomizationSnapshot.Receipts.SingleOrDefault(v => v.RequestId == grant.RequestId); string hash = grant.Fingerprint(catalog.BoardId);
                 if (prior != null) { if (prior.Fingerprint != hash) return Fail("同じ取得要求の内容が一致しません"); Error = null; return true; }
                 bool clearReward = grant.ClearRunId != null;

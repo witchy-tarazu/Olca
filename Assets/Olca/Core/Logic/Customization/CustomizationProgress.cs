@@ -39,7 +39,9 @@ namespace Olca.Core.Logic.Customization
         public CustomizationCell[] UnlockedCells = Array.Empty<CustomizationCell>();
         public string[] AppliedUnlockItemIds = Array.Empty<string>();
         public CustomizationGrantReceipt[] Receipts = Array.Empty<CustomizationGrantReceipt>();
+        public CustomizationAcquisitionPlan[] Acquisitions = Array.Empty<CustomizationAcquisitionPlan>();
         public CustomizationProgress Copy() => new CustomizationProgress {
+            Acquisitions=(Acquisitions??Array.Empty<CustomizationAcquisitionPlan>()).Select(v=>v?.Copy()).ToArray(),
             BoardId = BoardId, OwnedAccessoryIds = (OwnedAccessoryIds ?? Array.Empty<string>()).ToArray(),
             OwnedParts = (OwnedParts ?? Array.Empty<CustomizationItemCount>()).Select(v => v?.Copy()).ToArray(),
             OwnedUnlockItems = (OwnedUnlockItems ?? Array.Empty<CustomizationItemCount>()).Select(v => v?.Copy()).ToArray(),
@@ -64,6 +66,20 @@ namespace Olca.Core.Logic.Customization
             if (p.BoardId == null && (p.UnlockedCells.Length != 0 || p.Placements.Length != 0 || p.AppliedUnlockItemIds.Length != 0)) throw new ArgumentException("盤面定義IDが必要です");
             if (p.Receipts.Any(v => v == null || !Guid.TryParseExact(v.RequestId, "N", out _) || v.Fingerprint == null || v.Fingerprint.Length != 64 || !v.Fingerprint.All(Uri.IsHexDigit)) ||
                 p.Receipts.Select(v => v.RequestId).Distinct().Count() != p.Receipts.Length) throw new ArgumentException("装備取得の受領履歴が不正です");
+            if(p.Acquisitions.Any(v=>v==null)||p.Acquisitions.Select(v=>v.ContextId).Distinct().Count()!=p.Acquisitions.Length)throw new ArgumentException("取得計画の保存が不正です");
+            var reserved=new HashSet<string>();
+            foreach(var plan in p.Acquisitions){
+                CustomizationAcquisitionPlan.Validate(plan);
+                if(p.BoardId==null||plan.BoardId!=p.BoardId)throw new ArgumentException("取得計画の盤面が一致しません");
+                int claimed=0;
+                foreach(var c in plan.Candidates){
+                    if(!reserved.Add(c.RequestId))throw new ArgumentException("入手元間で取得IDが重複しています");
+                    var receipt=p.Receipts.SingleOrDefault(v=>v.RequestId==c.RequestId);
+                    if(receipt!=null){if(receipt.Fingerprint!=c.ToGrant().Fingerprint(p.BoardId))throw new ArgumentException("取得計画と受領履歴が一致しません");claimed++;}
+                }
+                if(claimed>plan.MaximumClaims)throw new ArgumentException("入手元の受取上限を超えています");
+            }
+
         }
     }
 

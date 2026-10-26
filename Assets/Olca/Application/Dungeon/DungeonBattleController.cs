@@ -290,7 +290,7 @@ namespace Olca.Application.Dungeon
         }
         private bool DungeonUnlocked(int index) => index >= 0 && index < dungeonChoices.Count &&
             (debugUnlockDungeons || index == 0 || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index].Id) || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index - 1].Id));
-        private bool CanSelectDungeon => !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool CanSelectDungeon => !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
             (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
@@ -358,7 +358,8 @@ namespace Olca.Application.Dungeon
         private void OnDisable()
         {
             StopGamepadVibration();
-            if(!CustomizationEditorOpen&&!CustomizationUnlockOpen)return;
+            if(!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen)return;
+            customizationAcquisitionView?.Close();
             customizationUnlockWasOpen=false;customizationUnlockView?.Close();
             customizationEditorView.Close(); customizationDraft=null; customizationEditorInterrupted=true;
         }
@@ -432,6 +433,61 @@ namespace Olca.Application.Dungeon
             customizationSavePending = false; CloseCustomizationEditor();
         }
 
+        private Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider customizationAcquisitionProvider;
+        private Olca.Presentation.Dungeon.CustomizationAcquisitionView customizationAcquisitionView;
+        private Button customizationAcquisitionButton;
+        private string customizationAcquisitionContext;
+        private bool customizationAcquisitionPending;
+        private bool CustomizationAcquisitionOpen=>customizationAcquisitionView!=null&&customizationAcquisitionView.gameObject.activeSelf;
+        public void ConfigureCustomizationAcquisitions(Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider provider)
+        {
+            if(manager!=null)throw new System.InvalidOperationException("取得候補は起動前に登録してください");
+            customizationAcquisitionProvider=provider??throw new System.ArgumentNullException(nameof(provider));
+        }
+        private void OpenCustomizationAcquisitions()
+        {
+            if(!IsProgressHub||clearReturnSession.HasPendingSave||customizationCatalog==null||customizationAcquisitionProvider==null)return;
+            try{
+                var flow=clearReturnSession.Snapshot.Flow;string run=flow?.Outcome==RunReturnOutcome.Cleared?flow.RunId:null;
+                // クリア報酬は攻略IDを入手元IDに固定する。拠点イベントIDは入手元の明示入力。
+                string fixedId=run==null?null:"clear:"+run;
+                var saved=fixedId==null?null:clearReturnSession.FindCustomizationAcquisition(fixedId);
+                var definition=saved==null?customizationAcquisitionProvider.Resolve(new Olca.Core.Logic.Customization.CustomizationAcquisitionContext(run,flow?.DungeonKey)):null;
+                var requested=definition?.Snapshot;
+                if(saved==null&&(requested==null||fixedId!=null&&requested.ContextId!=fixedId||requested.Candidates.Any(v=>v.ClearRunId!=run)))throw new System.ArgumentException("入手元と候補が一致しません");
+                customizationAcquisitionContext=saved?.ContextId??requested.ContextId;
+                bool prepared=saved!=null||clearReturnSession.TryPrepareCustomizationAcquisition(customizationCatalog,definition);
+                customizationAcquisitionPending=clearReturnSession.HasPendingSave;
+                if(!prepared&&!customizationAcquisitionPending)throw new System.ArgumentException(clearReturnSession.Error);
+                clearReturnView.gameObject.SetActive(false);
+                customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending);RefreshProgressActions();
+            }catch(System.ArgumentException){clearReturnError="ソウビのコウホをカクニンできません。ホゾンをホジしています";if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
+        }
+        private void ClaimCustomizationAcquisition(string requestId)
+        {
+            if(!CustomizationAcquisitionOpen||customizationAcquisitionPending)return;
+            if(!clearReturnSession.TryClaimCustomizationAcquisition(customizationCatalog,customizationAcquisitionContext,requestId)){
+                customizationAcquisitionPending=clearReturnSession.HasPendingSave;customizationAcquisitionView.Failed(customizationAcquisitionPending);return;
+            }
+            customizationAcquisitionView.Saved(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot);
+        }
+        private void RetryCustomizationAcquisition()
+        {
+            if(!CustomizationAcquisitionOpen||!customizationAcquisitionPending)return;
+            if(!clearReturnSession.Retry()){customizationAcquisitionView.Failed(true);return;}
+            customizationAcquisitionPending=false;customizationAcquisitionView.Saved(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot);
+        }
+        private void CloseCustomizationAcquisitions()
+        {
+            if(customizationAcquisitionPending)return;
+            customizationAcquisitionView.Close();if(initialHub)ShowDungeonSelection();else ShowClearReturn();
+        }
+        private IEvaluationRewardProvider evaluationRewardProvider;
+        public void ConfigureEvaluationRewards(IEvaluationRewardProvider provider)
+        {
+            if(manager!=null)throw new System.InvalidOperationException("評価報酬定義は起動前に登録してください");
+            evaluationRewardProvider=provider??throw new System.ArgumentNullException(nameof(provider));
+        }
         private Olca.Core.Logic.Customization.CustomizationAbilityCatalog customizationAbilityCatalog;
         public void ConfigureCustomizationAbilities(Olca.Core.Logic.Customization.CustomizationAbilityCatalog definitions)
         {
@@ -807,6 +863,10 @@ namespace Olca.Application.Dungeon
             customizationEditorButton.onClick.AddListener(OpenCustomizationEditor); customizationEditorButton.gameObject.SetActive(false);
             var unlockPanel=new GameObject("CustomizationUnlocks",typeof(RectTransform));unlockPanel.transform.SetParent(pauseCanvas.transform,false);
             customizationUnlockView=unlockPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();customizationUnlockView.Initialize(font,ApplyCustomizationUnlockFromUi,CloseCustomizationUnlocks,RetryCustomizationUnlockSave);
+            var acquisitionPanel=new GameObject("CustomizationAcquisitions",typeof(RectTransform));acquisitionPanel.transform.SetParent(pauseCanvas.transform,false);
+            customizationAcquisitionView=acquisitionPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();customizationAcquisitionView.Initialize(font,ClaimCustomizationAcquisition,CloseCustomizationAcquisitions,RetryCustomizationAcquisition);
+            customizationAcquisitionButton=MakeButton("OpenCustomizationAcquisitions","ソウビのウケトリ",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,230));
+            ((RectTransform)customizationAcquisitionButton.transform).sizeDelta=new Vector2(300,60);customizationAcquisitionButton.onClick.AddListener(OpenCustomizationAcquisitions);customizationAcquisitionButton.gameObject.SetActive(false);
             customizationUnlockButton=MakeButton("OpenCustomizationUnlocks","マスカイホウ",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,305));
             ((RectTransform)customizationUnlockButton.transform).sizeDelta=new Vector2(300,60);customizationUnlockButton.onClick.AddListener(OpenCustomizationUnlocks);customizationUnlockButton.gameObject.SetActive(false);
             clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
@@ -816,7 +876,7 @@ namespace Olca.Application.Dungeon
         private Text progressActionMessage;
         private bool progressDialogOpen,newGameConfirmation,newGameSavePending,manualSavePending;
         private long confirmedProgressRevision;
-        private bool IsProgressHub => !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool IsProgressHub => !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
@@ -844,7 +904,7 @@ namespace Olca.Application.Dungeon
         private void RefreshProgressActions()
         {
             if(manualSaveButton==null)return;
-            bool allowProgressActions=!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
+            bool allowProgressActions=!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&!clearReturnSession.HasPendingSave;
             newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame;
@@ -855,6 +915,7 @@ namespace Olca.Application.Dungeon
                 customizationEditorButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":"ソウビ・パーツ";
             }
             if(customizationUnlockButton!=null){customizationUnlockButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);customizationUnlockButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
+            if(customizationAcquisitionButton!=null){customizationAcquisitionButton.gameObject.SetActive(allowProgressActions&&IsProgressHub&&customizationAcquisitionProvider!=null);customizationAcquisitionButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
             if(progressDialogOpen)progressActionOverlay.transform.SetAsLastSibling();
         }
         private void ShowProgressAction(string message,bool confirm,bool canClose=true)
@@ -1249,7 +1310,7 @@ namespace Olca.Application.Dungeon
                     player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));
                     player.SetDepartureStyle(style);
                     ApplyDepartureCustomization(player);
-                    new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen, enemyAIProvider: enemyAIProvider);
+                    new DungeonBattleManager(map, player, deck, randomProvider, logger, checkpoints: frozen, enemyAIProvider: enemyAIProvider,evaluationRewards:evaluationRewardProvider);
                     var start = frozen.Store.Read();
                     if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key)) {
                         ShowClearReturn(); return;
@@ -1291,7 +1352,7 @@ namespace Olca.Application.Dungeon
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store); var f = CreateCardFactory();
                 if (!DungeonBattleManager.TryRestoreCheckpoint(session, randomProvider, logger, out next, out error,
-                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), f), f, enemyAIProvider: enemyAIProvider)) return false;
+                    new ExceedSystem(f), new TuningSystem(f.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), f), f, enemyAIProvider: enemyAIProvider,evaluationRewards:evaluationRewardProvider)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
@@ -1528,7 +1589,8 @@ namespace Olca.Application.Dungeon
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem, checkpoints: waitingReturn || initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
                     ? (dungeonConfig.Visits.Count==0 && dungeonConfig.ItemRewards.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
-                hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1, enemyAIProvider: enemyAIProvider);
+                hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1, enemyAIProvider: enemyAIProvider,
+                evaluationRewards: waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null?null:evaluationRewardProvider);
 
             manager.RequireBattleEndPresentation();
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
@@ -1710,7 +1772,8 @@ namespace Olca.Application.Dungeon
             }
             if(CustomizationEditorOpen)customizationEditorView.transform.SetAsLastSibling();
             if(CustomizationUnlockOpen)customizationUnlockView.transform.SetAsLastSibling();
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
+            if(CustomizationAcquisitionOpen)customizationAcquisitionView.transform.SetAsLastSibling();
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
@@ -2151,7 +2214,7 @@ namespace Olca.Application.Dungeon
             return new DungeonBattleManager(state.Map, state.Player, state.Deck, randomProvider, logger,
                 new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition), new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory),
                 checkpoints: session, restoration: state, cardDatabase: factory,
-                hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount, enemyAIProvider: enemyAIProvider);
+                hasNextFloor: route.Current.FloorIndex + 1 < definitions.FloorCount, enemyAIProvider: enemyAIProvider,evaluationRewards:evaluationRewardProvider);
         }
 
         private void ApplyPendingFloor()
@@ -2189,7 +2252,7 @@ namespace Olca.Application.Dungeon
                     : memoryCheckpoints;
                 if (!DungeonBattleManager.TryRestoreCheckpoint(candidate, randomProvider, logger,
                     out restored, out error, new ExceedSystem(factory), new TuningSystem(factory.GetTuningDefinition),
-                    new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory), cardDatabase: factory, enemyAIProvider: enemyAIProvider)) return false;
+                    new FusionSystem(new SimpleFusionRecipeProvider(CreateCardFactory()), factory), cardDatabase: factory, enemyAIProvider: enemyAIProvider,evaluationRewards:evaluationRewardProvider)) return false;
             }
             if (clearReturnSession?.Snapshot?.Receipts.Any(r => r.RunId == candidate.RunId && r.Outcome != RunReturnOutcome.Cleared) == true)
             { restored.SuspendForCheckpoint(); error = "敗北・撤退が確定した攻略は再開できません"; return false; }

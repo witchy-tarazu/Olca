@@ -70,7 +70,7 @@ namespace Olca.Core.Logic.Integration
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
             ICardPool rewardPool = null,
-            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false, BattleEvaluationRules normalEvaluation = null, BattleEvaluationRules bossEvaluation = null, IEnemyAIProvider enemyAIProvider = null)
+            DungeonCheckpointSession checkpoints = null, RestoredCheckpoint restoration = null, ICardDatabase cardDatabase = null, bool hasNextFloor = false, BattleEvaluationRules normalEvaluation = null, BattleEvaluationRules bossEvaluation = null, IEnemyAIProvider enemyAIProvider = null, IEvaluationRewardProvider evaluationRewards = null)
         {
             this.player = player;
             this.normalEvaluation = normalEvaluation ?? BattleEvaluationRules.ProvisionalNormal;
@@ -88,7 +88,8 @@ namespace Olca.Core.Logic.Integration
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem,
-                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration, cardDatabase: cardDatabase, hasNextFloor: hasNextFloor, enemyAIProvider: enemyAIProvider);
+                rewardPool: rewardPool, checkpoints: checkpoints, restoration: restoration, cardDatabase: cardDatabase, hasNextFloor: hasNextFloor, enemyAIProvider: enemyAIProvider,evaluationRewards:evaluationRewards,
+                evaluateRewardGrade:b=>(b.IsBossEncounter?this.bossEvaluation:this.normalEvaluation).Evaluate(b).Grade);
 
             // イベント購読
             dungeonSystem.OnBattleStart += OnDungeonBattleStart;
@@ -340,12 +341,12 @@ namespace Olca.Core.Logic.Integration
         public void ActivateCheckpoint() { if (!IsSuspended) dungeonSystem.ActivateCheckpoint(); }
         public bool RetryCheckpoint() => !IsSuspended && dungeonSystem.RetryCheckpoint();
         public static bool TryRestoreCheckpoint(DungeonCheckpointSession session, IRandomProvider random, IGameLogger logger,
-            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null, ICardDatabase cardDatabase = null, bool hasNextFloor=false, IEnemyAIProvider enemyAIProvider=null)
+            out DungeonBattleManager manager, out string error, ExceedSystem exceed = null, TuningSystem tuning = null, FusionSystem fusion = null, ICardDatabase cardDatabase = null, bool hasNextFloor=false, IEnemyAIProvider enemyAIProvider=null, IEvaluationRewardProvider evaluationRewards=null)
         {
             manager = null;
             if (!session.TryRead(out var restored, out error)) return false;
             manager = new DungeonBattleManager(restored.Map, restored.Player, restored.Deck, random, logger,
-                exceed, tuning, fusion, checkpoints: session, restoration: restored, cardDatabase: cardDatabase,hasNextFloor:hasNextFloor,enemyAIProvider:enemyAIProvider);
+                exceed, tuning, fusion, checkpoints: session, restoration: restored, cardDatabase: cardDatabase,hasNextFloor:hasNextFloor,enemyAIProvider:enemyAIProvider,evaluationRewards:evaluationRewards);
             return true;
         }
 

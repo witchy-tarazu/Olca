@@ -180,9 +180,12 @@ namespace Olca.Core.Domain
         public string[] FirstHand = new string[0];
         public int? ItemRewardIndex;
         public bool? ItemRewardHasNextFloor;
+        public string EvaluationRewardDefinitionId;
+        public EvaluationRewardPlanDto[] EvaluationRewards;
         public bool RewardOffered;
         public string[] RewardCandidates = new string[0];
         public CheckpointBattleDto Copy() => new CheckpointBattleDto {
+            EvaluationRewardDefinitionId=EvaluationRewardDefinitionId,EvaluationRewards=EvaluationRewards==null?null:System.Array.ConvertAll(EvaluationRewards,v=>v?.Copy()),
             RandomVersion=RandomVersion,Random=Random?.Copy(),
             CurrencyAmounts = CurrencyAmounts == null ? null : (int[])CurrencyAmounts.Clone(),
             ItemRewardIndex=ItemRewardIndex,ItemRewardHasNextFloor=ItemRewardHasNextFloor,
