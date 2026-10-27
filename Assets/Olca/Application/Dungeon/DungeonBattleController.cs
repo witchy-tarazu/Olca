@@ -809,7 +809,7 @@ namespace Olca.Application.Dungeon
                 var textObj = new GameObject("Label", typeof(RectTransform), typeof(Text)); textObj.transform.SetParent(obj.transform, false);
                 var text = textObj.GetComponent<Text>(); text.font = font; text.text = label; text.fontSize = 30; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
-                UiLook.Button(button);button.onClick.AddListener(()=>gameplayAudio?.PlayEffect(uiEffect)); return button;
+                UiLook.Button(button);button.onClick.AddListener(()=>gameplayAudio?.PlayEffect(UiFeedbackSounds.ForButton(name,uiEffect))); return button;
             }
             var countdownObject = new GameObject("ExplorationResumeCountdown", typeof(RectTransform), typeof(Text));
             countdownObject.transform.SetParent(pauseCanvas.transform, false);
