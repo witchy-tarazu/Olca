@@ -174,6 +174,15 @@ namespace Olca.Presentation.Field
         // 外部アクセス（ContactAnimator・Controller用）
         public Transform PlayerTransform => playerTransform;
         public SpriteRenderer PlayerSprite => playerSprite;
+        private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private void RefreshDefensiveField()
+        {
+            var player = currentBattle?.Player ?? dungeonSystem?.Player;
+            if (!isActiveAndEnabled || player == null || player.IsDead || currentBattle?.IsGameOver == true ||
+                dungeonSystem == null || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.IsInBattle && currentBattle == null) { defensiveField?.Clear(); return; }
+            if (defensiveField == null && (player.HasBarrier || player.HasAura)) defensiveField = new Olca.Presentation.Effects.DefensiveFieldVisual();
+            defensiveField?.Refresh(playerSprite, player.HasBarrier, player.HasAura);
+        }
         public WorldBattleGridView BattleGrid => battleGridView;
 
         /// <summary>探索・戦闘で共通の、論理1マスあたりの表示単位</summary>
@@ -538,9 +547,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            defensiveField?.Dispose();
             actionPoseRenderer?.Dispose();
             projectilePoseRenderer?.Dispose();
             if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
@@ -623,6 +633,7 @@ namespace Olca.Presentation.Field
             UpdateMovementAnimation();
             UpdatePlayerSprite();
             UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
+            RefreshDefensiveField();
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -757,6 +768,7 @@ namespace Olca.Presentation.Field
 
         public void OnBattleEnded()
         {
+            defensiveField?.Clear();
             actionPoseRenderer?.Clear();
             ClearBombVisuals();
             SetBattleMoveVisibility(true);
@@ -807,6 +819,7 @@ namespace Olca.Presentation.Field
             if (cameraFollowEnabled) UpdateCamera();
             UpdateEnemyViews();
             RefreshVisitVisuals();
+            RefreshDefensiveField();
         }
 
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>
@@ -840,6 +853,7 @@ namespace Olca.Presentation.Field
             // ControllerとViewのLateUpdate順に依存せず、更新済みの論理状態で同じ描画を確定する。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
+            RefreshDefensiveField();
         }
 
         // ==================== HUD制御 ====================

@@ -17,6 +17,13 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
+        private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private void RefreshDefensiveField()
+        {
+            if (!isActiveAndEnabled || enemy == null || enemy.IsDead) { defensiveField?.Clear(); return; }
+            if (defensiveField == null && (enemy.HasBarrier || enemy.HasAura)) defensiveField = new Olca.Presentation.Effects.DefensiveFieldVisual();
+            defensiveField?.Refresh(enemyImage, enemy.HasBarrier, enemy.HasAura);
+        }
         private static readonly System.Collections.Generic.List<EnemyView> bossGauges=new System.Collections.Generic.List<EnemyView>();
         private static readonly System.Collections.Generic.List<EnemyView> normalGauges=new System.Collections.Generic.List<EnemyView>();
         private const float BossHudSpacing=.10f;
@@ -126,9 +133,9 @@ namespace Olca.Presentation.Battle
         }
         private void RegisterGauge(){var list=IsBossGauge?bossGauges:normalGauges;if(!list.Contains(this))list.Add(this);}
         private void OnEnable(){if(hpVisible)RegisterGauge();}
-        private void OnDisable(){HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
-        private void LateUpdate(){if(hpVisible)RefreshGauges();}
-        private void OnDestroy(){HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
+        private void OnDisable(){defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
+        private void LateUpdate(){if(hpVisible)RefreshGauges();RefreshDefensiveField();}
+        private void OnDestroy(){defensiveField?.Dispose();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
 
         private bool deathPresentationActive;
         public void SetDeathPresentationActive(bool active)=>deathPresentationActive=active;
@@ -138,6 +145,7 @@ namespace Olca.Presentation.Battle
 
         public void Initialize(Enemy enemy)
         {
+            defensiveField?.Clear();
             this.enemy = enemy;
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
             ApplyAppearance();
@@ -188,6 +196,7 @@ namespace Olca.Presentation.Battle
                 hpText.text = $"{enemy.CurrentHp}";
             RefreshGauges();
             gameObject.SetActive(!enemy.IsDead||deathPresentationActive);
+            RefreshDefensiveField();
         }
 
         /// <summary>バトル開始時に呼ぶ（名前・HP表示）</summary>
