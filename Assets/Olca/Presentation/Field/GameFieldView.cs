@@ -175,6 +175,16 @@ namespace Olca.Presentation.Field
         public Transform PlayerTransform => playerTransform;
         public SpriteRenderer PlayerSprite => playerSprite;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private Olca.Presentation.Effects.ActorConditionVisual guardVisual, paralysisVisual;
+        private void RefreshConditionVisuals()
+        {
+            var player = currentBattle?.Player ?? dungeonSystem?.Player;
+            if (!isActiveAndEnabled || player == null || player.IsDead || currentBattle?.IsGameOver == true ||
+                dungeonSystem == null || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.IsInBattle && currentBattle == null) { guardVisual?.Clear(); paralysisVisual?.Clear(); return; }
+            if (guardVisual == null && player.Guard.IsActive) guardVisual = new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Guard);
+            if (paralysisVisual == null && player.IsParalyzed) paralysisVisual = new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Paralyze);
+            guardVisual?.Refresh(playerSprite, player.Guard.IsActive); paralysisVisual?.Refresh(playerSprite, player.IsParalyzed);
+        }
         private void RefreshDefensiveField()
         {
             var player = currentBattle?.Player ?? dungeonSystem?.Player;
@@ -547,10 +557,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
-            defensiveField?.Dispose();
+            guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose();
             actionPoseRenderer?.Dispose();
             projectilePoseRenderer?.Dispose();
             if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
@@ -634,6 +644,7 @@ namespace Olca.Presentation.Field
             UpdatePlayerSprite();
             UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
             RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -768,7 +779,7 @@ namespace Olca.Presentation.Field
 
         public void OnBattleEnded()
         {
-            defensiveField?.Clear();
+            guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             actionPoseRenderer?.Clear();
             ClearBombVisuals();
             SetBattleMoveVisibility(true);
@@ -820,6 +831,7 @@ namespace Olca.Presentation.Field
             UpdateEnemyViews();
             RefreshVisitVisuals();
             RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>
@@ -854,6 +866,7 @@ namespace Olca.Presentation.Field
             UpdateMovementAnimation();
             UpdatePlayerSprite();
             RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         // ==================== HUD制御 ====================
