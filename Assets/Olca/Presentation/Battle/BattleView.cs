@@ -39,6 +39,20 @@ namespace Olca.Presentation.Battle
             if(customGaugeContainer!=null)customGaugeContainer.gameObject.SetActive(!hidden);
         }
 
+        private CombatStatusIconStrip statusIcons;
+        private void RefreshStatusIcons()
+        {
+            if(!isActiveAndEnabled||battleSystem==null||battleSystem.IsGameOver||playerHpText==null){statusIcons?.Clear();return;}
+            var entries=CombatStatusIcons.ForPlayer(battleSystem.Player);
+            if(statusIcons==null){
+                if(entries.Count==0)return;
+                var obj=new GameObject("PlayerCombatStatusIcons",typeof(RectTransform));obj.transform.SetParent(playerHpText.transform,false);
+                var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=Vector2.zero;rect.pivot=new Vector2(0,1);rect.anchoredPosition=new Vector2(100,-15);
+                statusIcons=obj.AddComponent<CombatStatusIconStrip>();statusIcons.Configure(4);
+            }
+            statusIcons.Show(entries);
+        }
+
         private CancellationTokenSource animationCts;
 
         private Slider gaugeSlider;
@@ -181,7 +195,7 @@ namespace Olca.Presentation.Battle
             var background=gaugeSlider.transform.Find("Background")?.GetComponent<Image>();
             if(background!=null){background.sprite=gaugeSprites.Track;background.color=Color.white;background.type=Image.Type.Simple;background.raycastTarget=false;}
         }
-        private void Update() {Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&(battleSystem.IsDarkening||battleSystem.IsHitStopped));UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
+        private void Update() {RefreshStatusIcons();Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&(battleSystem.IsDarkening||battleSystem.IsHitStopped));UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
         private void UpdateGaugeVisual()
         {
             if(gaugeFill==null)return;
@@ -195,7 +209,7 @@ namespace Olca.Presentation.Battle
             if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
-        private void OnBattleEnded(BattleResult result) {Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnBattleEnded(BattleResult result) {statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         /// <summary>撤退等でセッションを破棄する。古い開閉処理が再表示しないよう所有権を先に外す。</summary>
         public void EndSessionPresentation()
@@ -212,12 +226,12 @@ namespace Olca.Presentation.Battle
                 customScreenContainer.anchoredPosition = position;
             }
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
-            DetachBattleEvents(); battleSystem = null;
+            DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
             ResetGaugeVisual(); ResetTransformationVisual();
         }
 
-        private void OnDisable() {Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnDisable() {statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()
         {
@@ -232,6 +246,7 @@ namespace Olca.Presentation.Battle
         {
             if (battleSystem == null) return;
 
+            RefreshStatusIcons();
             UpdateTransformationVisual();
             // プレイヤーHP表示（数値のみ）
             var player = battleSystem.Player;
@@ -472,6 +487,7 @@ namespace Olca.Presentation.Battle
 
         private void OnDestroy()
         {
+            statusIcons?.Clear();
             // アニメーション用CancellationTokenをキャンセル
             animationCts?.Cancel();
             animationCts?.Dispose();

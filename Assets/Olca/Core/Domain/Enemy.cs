@@ -118,6 +118,8 @@ namespace Olca.Core.Domain
         public BattleGuardState Guard { get; } = new BattleGuardState();
         private readonly BattleProtectionState protection = new BattleProtectionState();
         public int BarrierHp => protection.BarrierHp;
+        public int? ProtectionRemainingFrames => protection.DisplayRemainingFrames;
+        public int? ProtectionDurationFrames => protection.DisplayDurationFrames;
         public bool HasBarrier => BarrierHp > 0;
         public int AuraThreshold => protection.AuraThreshold;
         public bool HasAura => AuraThreshold > 0;
@@ -359,10 +361,10 @@ namespace Olca.Core.Domain
             var result=new List<StatusEffectSnapshot>();
             if(IsDead)return result.AsReadOnly();
             var kinds=new List<string>(poisons.Keys);kinds.Sort(StringComparer.Ordinal);
-            foreach(var kind in kinds){var status=poisons[kind].Status;if(status.RemainingFrames>0)result.Add(new StatusEffectSnapshot(StatusEffectType.Poison,kind,status.RemainingFrames,status.DamagePerTick,status.PoisonIntervalFrames));}
+            foreach(var kind in kinds){var status=poisons[kind].Status;if(status.RemainingFrames>0)result.Add(new StatusEffectSnapshot(StatusEffectType.Poison,kind,status.RemainingFrames,status.DamagePerTick,status.PoisonIntervalFrames,status.DurationFrames));}
             foreach(StatusEffectType type in Enum.GetValues(typeof(StatusEffectType)))
                 if(type!=StatusEffectType.Poison&&statuses.TryGetValue(type,out var status)&&status.RemainingFrames>0)
-                    result.Add(new StatusEffectSnapshot(type,null,status.RemainingFrames));
+                    result.Add(new StatusEffectSnapshot(type,null,status.RemainingFrames,durationFrames:status.DurationFrames));
             return result.AsReadOnly();
         }
         public StatusEffect GetStatus(StatusEffectType type)

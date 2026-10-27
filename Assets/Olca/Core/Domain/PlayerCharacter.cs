@@ -118,9 +118,9 @@ namespace Olca.Core.Domain
             if(IsDead)return result.AsReadOnly();
             var kinds=new List<string>(poisons.Keys);kinds.Sort(StringComparer.Ordinal);
             foreach(var kind in kinds){var value=poisons[kind].Inspect(kind);if(value!=null)result.Add(value);}
-            if(IsParalyzed)result.Add(new StatusEffectSnapshot(StatusEffectType.Paralyze,null,ParalysisRemainingFrames));
-            if(IsConfused)result.Add(new StatusEffectSnapshot(StatusEffectType.Confusion,null,ConfusionRemainingFrames));
-            if(IsBlind)result.Add(new StatusEffectSnapshot(StatusEffectType.Blind,null,BlindRemainingFrames));
+            if(IsParalyzed)result.Add(new StatusEffectSnapshot(StatusEffectType.Paralyze,null,ParalysisRemainingFrames,durationFrames:paralysisDisplayFrames));
+            if(IsConfused)result.Add(new StatusEffectSnapshot(StatusEffectType.Confusion,null,ConfusionRemainingFrames,durationFrames:confusionDisplayFrames));
+            if(IsBlind)result.Add(new StatusEffectSnapshot(StatusEffectType.Blind,null,BlindRemainingFrames,durationFrames:blindnessDisplayFrames));
             return result.AsReadOnly();
         }
         public PlayerPoisonDto[] CapturePoisons()
@@ -161,6 +161,7 @@ namespace Olca.Core.Domain
         internal void TickStagger(int ms, bool logical) { if (logical) staggerTimer.TickFrame(); else staggerTimer.Tick(ms); }
         internal void ClearStagger() { staggerTimer.SetFrames(0); frameWasStaggered = false; }
         private FrameCountdown paralysisTimer;
+        private int paralysisDisplayFrames;
         private int? pendingParalysisFrames;
         private bool paralysisFrameOpen, frameParalyzed, clearParalysisPending, paralysisInterruptPending;
         public int ParalysisRemainingFrames => paralysisTimer.Frames;
@@ -180,7 +181,7 @@ namespace Olca.Core.Domain
         private void CommitParalysisChanges()
         {
             if (clearParalysisPending) { paralysisTimer.SetFrames(0); paralysisInterruptPending = false; }
-            else if (pendingParalysisFrames.HasValue) { paralysisTimer.SetFrames(pendingParalysisFrames.Value); paralysisInterruptPending = true; }
+            else if (pendingParalysisFrames.HasValue) { paralysisTimer.SetFrames(pendingParalysisFrames.Value); paralysisDisplayFrames=pendingParalysisFrames.Value; paralysisInterruptPending = true; }
             pendingParalysisFrames = null; clearParalysisPending = false;
         }
         internal bool BeginParalysisFrame(bool advance)
@@ -208,6 +209,7 @@ namespace Olca.Core.Domain
             paralysisFrameOpen = frameParalyzed = clearParalysisPending = paralysisInterruptPending = false;
         }
         private FrameCountdown confusionTimer;
+        private int confusionDisplayFrames;
         private int? pendingConfusionFrames;
         private bool confusionFrameOpen, frameConfused, clearConfusionPending;
         public int ConfusionRemainingFrames => confusionTimer.Frames;
@@ -225,7 +227,7 @@ namespace Olca.Core.Domain
         private void CommitConfusionChanges()
         {
             if(clearConfusionPending)confusionTimer.SetFrames(0);
-            else if(pendingConfusionFrames.HasValue)confusionTimer.SetFrames(pendingConfusionFrames.Value);
+            else if(pendingConfusionFrames.HasValue){confusionTimer.SetFrames(pendingConfusionFrames.Value); confusionDisplayFrames=pendingConfusionFrames.Value;}
             pendingConfusionFrames=null;clearConfusionPending=false;
         }
         internal void BeginConfusionFrame(bool advance)
@@ -241,6 +243,7 @@ namespace Olca.Core.Domain
         {confusionTimer.SetFrames(0);pendingConfusionFrames=null;confusionFrameOpen=frameConfused=clearConfusionPending=false;}
 
         private FrameCountdown blindnessTimer;
+        private int blindnessDisplayFrames;
         private int? pendingBlindnessFrames;
         private bool blindnessFrameOpen, frameBlind, clearBlindnessPending;
         public int BlindRemainingFrames => blindnessTimer.Frames;
@@ -258,7 +261,7 @@ namespace Olca.Core.Domain
         private void CommitBlindnessChanges()
         {
             if(clearBlindnessPending)blindnessTimer.SetFrames(0);
-            else if(pendingBlindnessFrames.HasValue)blindnessTimer.SetFrames(pendingBlindnessFrames.Value);
+            else if(pendingBlindnessFrames.HasValue){blindnessTimer.SetFrames(pendingBlindnessFrames.Value); blindnessDisplayFrames=pendingBlindnessFrames.Value;}
             pendingBlindnessFrames=null;clearBlindnessPending=false;
         }
         internal void BeginBlindnessFrame(bool advance)
@@ -384,6 +387,8 @@ namespace Olca.Core.Domain
 
         /// <summary>バリアHP</summary>
         public int BarrierHp => protection.BarrierHp;
+        public int? ProtectionRemainingFrames => protection.DisplayRemainingFrames;
+        public int? ProtectionDurationFrames => protection.DisplayDurationFrames;
 
         /// <summary>バリアを持っているか</summary>
         public bool HasBarrier => BarrierHp > 0;
