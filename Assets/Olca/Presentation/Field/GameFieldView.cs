@@ -1377,6 +1377,8 @@ namespace Olca.Presentation.Field
                     for(int n=0;n<choices.Count;n++){int index=n;Action(choices[n],owner.Current.Choices[n].Label,true,s=>s.Choose(index));}
                 }
             }
+            // 描画直前のカナ変換で折返しが増えるため、最終本文を先に測定する。
+            text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text);
             if(body.text!=text){body.text=text;body.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,body.preferredHeight+20));if(resetScroll)scroll.verticalNormalizedPosition=1;}
             string key=owner.Index+":"+owner.SkipConfirmationOpen+":"+owner.BacklogOpen+":"+owner.WaitingForChoice+":"+page;
             if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>owner!=null&&owner.IsOpen&&!owner.IsPaused&&Olca.Unity.MenuPadScope.IsTopmost(transform));
