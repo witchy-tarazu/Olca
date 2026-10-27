@@ -105,28 +105,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <param name="tileRange">攻撃範囲（マス数）</param>
         private void DealDamageToTiles(BattleContext context, int tileRange)
         {
-            // TODO: プレイヤーの位置情報が実装されたら、正確な座標計算に変更
-            // 現在は簡易実装: 敵陣の最前列からN マス分を攻撃範囲とする
-
-            var aliveEnemies = context.GetAliveOpponents();
-            if (aliveEnemies.Count == 0) return;
-
-            // 最前列の敵のX座標を基準にする
-            if(context.EnemySource!=null){
-                var origin=context.GetEffectivePlayerPosition();
-                foreach(var target in aliveEnemies){int distance=(target.GridPosition.X-origin.X)*context.ForwardX;if(target.GridPosition.Y==origin.Y&&distance>0&&distance<=tileRange)DealDamageToEnemy(target,context);}
-                return;
-            }
-            int frontX = aliveEnemies[0].GridPosition.X;
-            int maxX = frontX + tileRange - 1;
-
-            // 攻撃範囲内のマスにいる全ての敵にダメージ
-            foreach (var enemy in aliveEnemies)
+            // 使用者と一時発動位置を共通の起点にし、敵の並び順へ依存しない。
+            var origin = context.GetEffectivePlayerPosition();
+            foreach (var target in context.GetAliveOpponents())
             {
-                if (enemy.GridPosition.X >= frontX && enemy.GridPosition.X <= maxX)
-                {
-                    DealDamageToEnemy(enemy, context);
-                }
+                int distance = (target.GridPosition.X - origin.X) * context.ForwardX;
+                if (target.GridPosition.Y == origin.Y && distance > 0 && distance <= tileRange)
+                    DealDamageToEnemy(target, context);
             }
         }
     }

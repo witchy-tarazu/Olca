@@ -1,0 +1,17 @@
+# 共用の仮攻撃部品（2026-10-27）
+
+OpenAI画像生成ツールで、人物・キャラ参照画像を渡さず物体だけを新規生成した仮素材。剣/投擲ナイフ/架空のショット弾の3種類。拒否されたキャラ振り抜き生成の再試行ではない。生成原本は検証作業側で保持し、このディレクトリは承認済みのゲーム用書出しPNG。
+
+|共有キー|PNG|キャンバス|可視部|pivot (pixels)|PPU|
+|---|---|---|---|---|---|
+|`shared/sword`|shared_sword.png|256×256|120×31|90,128（握り位置）|100|
+|`shared/throwing-knife`|shared_throwing_knife.png|64×64|48×12|32,32|100|
+|`shared/shot-bolt`|shared_shot_bolt.png|32×32|20×6|16,16|100|
+
+最近傍で縦横比を保って書き出し、透明余白で基準位置を調整。共通13色の銀/紺/シアン系パレット、アルファは0/255。ポーズの回転/伸縮やキャラ外観変更はしていない。ネイティブ生成解像度とゲーム上の等倍スケールは別であり、キャラは変更しない。
+
+`Resources/OlcaAttackProps/*.bytes` は各PNGと同一バイト列の実行時包装。`SharedAttackPropCatalog.TryGetSprite` がPNGから非圧縮32bit Textureを生成しPoint/Clampで共用する。原本PNGのUnity既定import圧縮には依存しない。PNG読込後のARGB/RGBAチャンネル順はUnityのデコーダに従い、アルファ付き非圧縮32bitを使う。`.meta` の手動生成/編集/公開はしない。
+
+各カード用コピーを作らず、複数の`ActionAppearance`/`ProjectileAppearance`から同じSpriteを参照できる。素材の所有者は共用カタログで、Rendererの終了/無効化/破棄ではSprite/Textureを破棄しない。未登録キーは別素材へ置換しない。
+
+この登録は共有lookupまで。本体の剣振り/投擲/射撃ポーズ、製品へのアクション割当、フレーム配分、発生/硬直/飛翔寿命の新値は含まない。既存の製品性能やカード定義は変更していない。
