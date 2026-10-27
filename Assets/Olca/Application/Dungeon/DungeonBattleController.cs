@@ -357,6 +357,8 @@ namespace Olca.Application.Dungeon
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
+            CancelExplorationResume();
+            if (pauseOverlay != null) pauseOverlay.SetActive(IsUserPaused);
             StopGamepadVibration();
             if(!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen)return;
             customizationAcquisitionView?.Close();
@@ -704,7 +706,70 @@ namespace Olca.Application.Dungeon
             SetUserPaused(true);
         }
 
+        private readonly ExplorationResumeCountdown explorationResume = new ExplorationResumeCountdown();
+        private readonly UnityLogicalLoop explorationResumeLoop = new UnityLogicalLoop(observeEditor: true);
+        private DungeonBattleManager explorationResumeOwner;
+        private Text explorationResumeLabel;
+        public bool IsExplorationResumeCounting => explorationResume.IsRunning;
+        public int ExplorationResumeRemainingFrames => explorationResume.RemainingFrames;
+        private bool CanCountExplorationResume => manager != null && ReferenceEquals(manager, explorationResumeOwner) &&
+            manager.CurrentPhase == GamePhase.Dungeon && manager.IsUserPaused && !manager.IsSuspended &&
+            !DialogueOpen && manager.Dungeon.ActiveVisit == null && !clearReturnVisible && !awaitingCheckpointChoice &&
+            !manager.Dungeon.IsCheckpointBlocked && !applicationInactive;
+        private void CancelExplorationResume()
+        {
+            explorationResume.Cancel(); explorationResumeOwner = null; explorationResumeLoop.Observe(false);
+            if (explorationResumeLabel != null) explorationResumeLabel.gameObject.SetActive(false);
+        }
+        private void UpdateExplorationResume()
+        {
+            if (!explorationResume.IsRunning) { explorationResumeLoop.Observe(false); return; }
+            if (!CanCountExplorationResume)
+            {
+                CancelExplorationResume();
+                if (pauseOverlay != null) pauseOverlay.SetActive(IsUserPaused);
+                return;
+            }
+            explorationResumeLoop.PumpTimestamped(true, null, (frame, ms, input) => AdvanceExplorationResumeFrame(),
+                () => explorationResume.IsRunning && CanCountExplorationResume);
+            if (explorationResumeLabel != null && explorationResume.IsRunning)
+                explorationResumeLabel.text = explorationResume.DisplayCount.ToString();
+        }
+        private void AdvanceExplorationResumeFrame()
+        {
+            if (!CanCountExplorationResume) { CancelExplorationResume(); return; }
+            if (explorationResume.AdvanceFrame()) { CancelExplorationResume(); ApplyUserPauseImmediate(false); }
+        }
+
         public void SetUserPaused(bool paused)
+        {
+            bool cancelledCountdown = paused && explorationResume.IsRunning;
+            if (paused) CancelExplorationResume();
+            else if (explorationResume.IsRunning) return;
+            if (!paused && manager != null && manager.IsUserPaused && manager.CurrentPhase == GamePhase.Dungeon &&
+                !DialogueOpen && manager.Dungeon.ActiveVisit == null && !clearReturnVisible && !manager.IsSuspended &&
+                !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked)
+            {
+                explorationResumeOwner = manager;
+                if (CanCountExplorationResume)
+                {
+                    explorationResume.Begin(); explorationResumeLoop.StartNewTimeline();
+                    if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();
+                    if (audioSettingsView != null) audioSettingsView.DiscardAndClose();
+                    if (gamepadSettingsView != null) gamepadSettingsView.DiscardAndClose();
+                    logicalLoop.Observe(false); logicalLoop.ReleaseInput(); ResetTouchInput(preserveCharge: true);
+                    systemMenu?.Suspend(); systemMenuRoot = null;
+                    if (pauseOverlay != null) pauseOverlay.SetActive(false);
+                    if (explorationResumeLabel != null) { explorationResumeLabel.text = "3"; explorationResumeLabel.gameObject.SetActive(true); }
+                }
+                else explorationResumeOwner = null;
+                return;
+            }
+            ApplyUserPauseImmediate(paused);
+            if (cancelledCountdown && IsUserPaused && pauseOverlay != null) pauseOverlay.SetActive(true);
+        }
+
+        private void ApplyUserPauseImmediate(bool paused)
         {
             if(paused)StopGamepadVibration();
             if (manager == null || manager.IsUserPaused == paused || (paused&&manager.IsBattleEndPresentationPending)) return;
@@ -746,6 +811,15 @@ namespace Olca.Application.Dungeon
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
                 UiLook.Button(button);button.onClick.AddListener(()=>gameplayAudio?.PlayEffect(uiEffect)); return button;
             }
+            var countdownObject = new GameObject("ExplorationResumeCountdown", typeof(RectTransform), typeof(Text));
+            countdownObject.transform.SetParent(pauseCanvas.transform, false);
+            explorationResumeLabel = countdownObject.GetComponent<Text>();
+            explorationResumeLabel.font = font; explorationResumeLabel.fontSize = 96;
+            explorationResumeLabel.alignment = TextAnchor.MiddleCenter; explorationResumeLabel.color = Color.white;
+            explorationResumeLabel.raycastTarget = false;
+            explorationResumeLabel.rectTransform.anchorMin = explorationResumeLabel.rectTransform.anchorMax = new Vector2(.5f, .5f);
+            explorationResumeLabel.rectTransform.sizeDelta = new Vector2(240, 160);
+            countdownObject.SetActive(false);
             currencyOverlay = new GameObject("CurrencyRewardPanel", typeof(RectTransform), typeof(Image));
             currencyOverlay.transform.SetParent(pauseCanvas.transform, false);
             var currencyRect = (RectTransform)currencyOverlay.transform; currencyRect.anchorMin = Vector2.zero; currencyRect.anchorMax = Vector2.one; currencyRect.offsetMin = currencyRect.offsetMax = Vector2.zero;
@@ -1490,7 +1564,7 @@ namespace Olca.Application.Dungeon
             inputProvider.GamepadGameplayActive=()=>manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
                 (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused);
             inputProvider.GamepadContext=()=>manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
-            inputProvider.GamepadPauseAvailable=()=>manager!=null&&!IsUserPaused&&!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen);
+            inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen);
             gamepadSettings=new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             inputProvider.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _);
             if(gamepadSettings.TryRead(out var padProfile,out var padError))inputProvider.TryRestoreGamepadProfile(padProfile,out padError);GameplayGamepadSettingsError=padError;
@@ -1662,6 +1736,7 @@ namespace Olca.Application.Dungeon
             if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
             RefreshTouchContext();
             UpdateDialogue();
+            UpdateExplorationResume();
             bool active = !DialogueOpen && manager.Dungeon.ActiveVisit==null && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
             logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !DialogueOpen && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
                 () => manager.Dungeon.ActiveVisit==null && (manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused)));
@@ -2259,9 +2334,10 @@ namespace Olca.Application.Dungeon
 
         private void ReplaceManager(DungeonBattleManager restored, DungeonCheckpointSession candidate)
         {
+            CancelExplorationResume();
             FinishDialogue(interrupt:true);
             CancelOutcomePresentation();
-            if (IsUserPaused) SetUserPaused(false);
+            if (IsUserPaused) ApplyUserPauseImmediate(false);
             transitionCts?.Cancel(); battleSession?.Detach();
             UnbindManagerEvents(manager);
             pendingCardChoices = null; cardSelectionView?.Hide();
@@ -2312,6 +2388,7 @@ namespace Olca.Application.Dungeon
 
         private void OnDestroy()
         {
+            CancelExplorationResume(); explorationResumeLoop.Dispose();
             gamepadVibration?.Dispose();
             CancelOutcomePresentation();
             systemMenu?.Dispose();
@@ -2321,7 +2398,7 @@ namespace Olca.Application.Dungeon
             if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
             inputProvider?.Dispose();
             logicalLoop.Dispose();
-            if (IsUserPaused) SetUserPaused(false);
+            if (IsUserPaused) ApplyUserPauseImmediate(false);
             if (pauseCanvas != null) Destroy(pauseCanvas);
             transitionCts?.Cancel();
             transitionCts?.Dispose();
