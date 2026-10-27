@@ -62,7 +62,7 @@ namespace Olca.Presentation.Battle
         private bool gaugeResetting;
 
         private Text transformationStatus, transformationCaption;
-        private Image transformationFrame, transformationSweep, transformationIcon;
+        private Image transformationFrame, transformationSweep, transformationIcon, transformationEffect;
         private Olca.Presentation.CustomScreen.CustomScreenView TransformationVisualSource
             => customScreenContainer==null?null:customScreenContainer.GetComponentInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true);
         private string TransformationName(string id)=>TransformationVisualSource?.GetTransformationName(id)??Olca.Presentation.CustomScreen.CustomDisplay.Katakana(id);
@@ -84,6 +84,10 @@ namespace Olca.Presentation.Battle
             var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(250,60);rect.sizeDelta=new Vector2(600,180);
             transformationFrame=obj.GetComponent<Image>();transformationFrame.raycastTarget=false;
             var edge=obj.AddComponent<Outline>();edge.effectColor=new Color(.4f,.9f,1f,.5f);edge.effectDistance=new Vector2(1,1);
+            // 文字より背面の共通素材。進行は既存の変身時計だけを参照する。
+            var effect=new GameObject("TransformationEffect",typeof(RectTransform),typeof(Image));effect.transform.SetParent(obj.transform,false);
+            transformationEffect=effect.GetComponent<Image>();transformationEffect.raycastTarget=false;transformationEffect.preserveAspect=true;
+            var er=transformationEffect.rectTransform;er.anchorMin=Vector2.zero;er.anchorMax=Vector2.one;er.offsetMin=er.offsetMax=Vector2.zero;
             transformationCaption=PresentationText("TransformationCaption",obj.transform,Vector2.zero,new Vector2(550,100),30);
             transformationCaption.color=new Color(.75f,.97f,1f,1f);
             var captionEdge=transformationCaption.gameObject.AddComponent<Outline>();captionEdge.effectColor=new Color(.02f,.07f,.12f,.9f);captionEdge.effectDistance=new Vector2(1,-1);
@@ -116,6 +120,9 @@ namespace Olca.Presentation.Battle
             transformationFrame.gameObject.SetActive(activation||release);if(!activation&&!release)return;
             float progress=activation?1f-state.ActivationFramesRemaining/(float)state.ActivationDurationFrames:1f-state.ReleaseFramesRemaining/12f;
             transformationFrame.color=new Color(.6f,.92f,1f,activation ? .08f+.12f*Mathf.Sin(Mathf.PI*progress):.16f*(1f-progress));
+            transformationEffect.sprite=Olca.Presentation.Effects.TransformationEffectSprites.Get(activation);
+            transformationEffect.enabled=transformationEffect.sprite!=null;
+            transformationEffect.color=new Color(1,1,1,.75f*(1f-progress));
             transformationCaption.text=activation?"ヘンシン  "+TransformationName(state.ActiveId):"変身解除";
             transformationSweep.rectTransform.anchoredPosition=new Vector2(-270f+540f*progress,0);
             transformationSweep.color=new Color(.25f,.85f,1f,.5f*(1f-progress));
