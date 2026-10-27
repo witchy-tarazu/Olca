@@ -301,6 +301,7 @@ namespace Olca.Application.Dungeon
         }
         private void ShowDungeonSelection()
         {
+            gameplayAudio?.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
             clearReturnVisible = true; dungeonSelectionOpen = true;
             clearReturnView.RenderDungeonSelection(dungeonChoices.Select(c => c.Label).ToArray(),
                 Enumerable.Range(0, dungeonChoices.Count).Select(DungeonUnlocked).ToArray(), selectedDungeon,
@@ -357,6 +358,7 @@ namespace Olca.Application.Dungeon
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
+            gameplayAudio?.SetPaused(true);
             combatFeedbackAudio?.Bind(null);
             CancelExplorationResume();
             if (pauseOverlay != null) pauseOverlay.SetActive(IsUserPaused);
@@ -368,6 +370,7 @@ namespace Olca.Application.Dungeon
         }
         private void OnEnable()
         {
+            gameplayAudio?.SetPaused(IsUserPaused);
             if(manager!=null&&!manager.IsSuspended)BindBattleFeedback(manager.CurrentBattle);
             if(!customizationEditorInterrupted||clearReturnSession?.Ready!=true)return;
             customizationEditorInterrupted=false;
@@ -782,7 +785,7 @@ namespace Olca.Application.Dungeon
             manager.SetUserPaused(paused);
             if(dialogue!=null)dialogue.IsPaused=paused;
             dialogueLoop.Observe(false);
-            gameplayAudio?.SetPaused(paused);
+            gameplayAudio?.SetPaused(paused||!isActiveAndEnabled);
             GameplayPause.SetPaused(paused||DialogueOpen);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
             else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();if(audioSettingsView!=null)audioSettingsView.DiscardAndClose();if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose(); }
@@ -1296,6 +1299,7 @@ namespace Olca.Application.Dungeon
         }
         private void ShowClearReturn()
         {
+            gameplayAudio?.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
             if (exchangeOpen) { ShowTokenExchange(); return; }
             if (styleSelectionOpen) { ShowStyleSelection(); return; }
             if (initialHub) { ShowDungeonSelection(); return; }
@@ -1577,7 +1581,7 @@ namespace Olca.Application.Dungeon
             dialogueSettings=new DialogueTextSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));dialogueSettings.TryRead(out dialogueSpeed,out dialogueSettingsError);
             audioSettingsStore=new AudioVolumeFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             audioSettingsStore.TryRead(out audioVolumes,out var audioError);GameplayAudioSettingsError=audioError;
-            gameplayAudio=new GameplayAudioRouter(transform);combatFeedbackAudio=new CombatFeedbackAudio(transform,gameplayAudio);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(dungeonBgm);
+            gameplayAudio=new GameplayAudioRouter(transform);combatFeedbackAudio=new CombatFeedbackAudio(transform,gameplayAudio);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
             if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
             GameplayKeyboardSettingsError = settingsError;
             if (settingsError != null) logger.LogWarning(settingsError);
@@ -1894,7 +1898,7 @@ namespace Olca.Application.Dungeon
         {
             BindBattleFeedback(battle);
             pendingBattleEvaluation=null;pendingBattleElapsedFrames=null;
-            gameplayAudio?.PlayBgm(battleBgm!=null?battleBgm:dungeonBgm);
+            gameplayAudio?.PlayBgm(PlaceholderBgm.Battle(battleBgm,dungeonBgm));
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
             battle.ConfigureBasicAttackTiming(CheckpointBattleFactory.ProductBasicTiming);
@@ -2039,7 +2043,7 @@ namespace Olca.Application.Dungeon
             }
             pendingBattleEvaluation = manager?.LastBattleEvaluation;
             pendingBattleElapsedFrames = pendingBattleEvaluation?.LogicalFrames ?? pendingBattleElapsedFrames;
-            gameplayAudio?.PlayBgm(dungeonBgm);
+            gameplayAudio?.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
             ResetTouchInput();
             if(manager.LastBattleResult==BattleResult.Defeat)return;
             if (manager.CurrentPhase == GamePhase.Dungeon) ScheduleExplorationResume();
@@ -2365,7 +2369,7 @@ namespace Olca.Application.Dungeon
             gameFieldView?.SetPlayerPositionUpdateEnabled(true);
             gameFieldView?.Initialize(manager.Dungeon);
             manager.ActivateCheckpoint();
-            if (manager.CurrentPhase == GamePhase.Dungeon) gameFieldView?.ShowHUDAsync(0).Forget();
+            if (manager.CurrentPhase == GamePhase.Dungeon) { gameplayAudio?.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm)); gameFieldView?.ShowHUDAsync(0).Forget(); }
             RefreshDungeonHud();
             if (applicationInactive) RequestAutomaticPause();
         }
