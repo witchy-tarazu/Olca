@@ -3,7 +3,7 @@ public static class ExportProductBattle {
  // Mainはこの作業の専用コピーを使う再現入口。別保存ではExportの引数を明示して呼ぶ。
  public static string Main()=>Export("Assets/Scenes/DungeonScene.unity","/workspace/work/Olca-portable-product-proof-20261022/checkpoint-copy.json","/workspace/work/Olca-portable-product-proof-20261022",123);
  public static string Export(string scenePath,string source,string root,uint seed){
-  var guard=new ValidationStorageGuard(root,"/workspace/.olca-cloud/config/unity3d/DefaultCompany/Olca/Olca");var io=new CheckpointFileIo(guard);string input=root+"/checkpoint-copy.json",output=root+"/product-battle.json";io.RequireWritable(input,output);Directory.CreateDirectory(root);
+  var guard=new ValidationStorageGuard(root,Path.Combine(UnityEngine.Application.persistentDataPath,"Olca"));var io=new CheckpointFileIo(guard);string input=root+"/checkpoint-copy.json",output=root+"/product-battle.json";io.RequireWritable(input,output);Directory.CreateDirectory(root);
   var bytes=File.ReadAllBytes(source);if(File.Exists(input)){if(!File.ReadAllBytes(input).SequenceEqual(bytes))throw new Exception("source copy mismatch");}else io.WriteAndFlush(input,bytes);
   var scene=EditorSceneManager.OpenPreviewScene(scenePath);
   try {var controller=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DungeonBattleController>(true)).Single();controller.enabled=false;

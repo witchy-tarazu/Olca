@@ -3,7 +3,7 @@ public static class ExportProductReturn
 {
  public static PortableReturnPackage Capture(string scene,string definitionsPath,string checkpoint,string progress,string root,RunReturnOutcome outcome,string commitSeed)
  {
-  var io=new CheckpointFileIo(new ValidationStorageGuard(root,"/workspace/.olca-cloud/config/unity3d/DefaultCompany/Olca/Olca"));io.RequireWritable(root+"/product-input.json");
+  var io=new CheckpointFileIo(new ValidationStorageGuard(root,Path.Combine(UnityEngine.Application.persistentDataPath,"Olca")));io.RequireWritable(root+"/product-input.json");
   var opened=EditorSceneManager.OpenPreviewScene(scene);try{
    var c=opened.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DungeonBattleController>(true)).Single();c.enabled=false;c.ConfigureCheckpointDirectory(root+"/never-start/checkpoint");c.ConfigureProgressDirectory(root+"/never-start/progress");c.ConfigureGameplaySettingsDirectory(root+"/never-start/settings");
    var settings=(ClearReturnSettings)c.GetType().GetMethod("ReturnSettings",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(c,null);

@@ -556,20 +556,10 @@ namespace Olca.Unity
             if(!TryRead(out _,out error))return false;
             var bytes=Encode(profile);string temporary=null;writing=true;
             try{
-                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(DirectoryPath);
-                temporary=System.IO.Path.Combine(DirectoryPath,"."+Device+"-"+System.Guid.NewGuid().ToString("N")+".tmp");
-                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
-                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
-                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();
-                return true;
-            }catch(System.Exception e)when(Failure(e)){
-                // OSが置換後に失敗を返した場合は、確定済み内容を照合して二重保存を避ける。
-                try{if(System.IO.File.Exists(ActivePath) && System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                if(AtomicSettingsWrite.TryCommit(io,DirectoryPath,ActivePath,BackupPath,"."+Device+"-",bytes,b=>{Decode(b);},Failure,out temporary))return true;
                 error="操作設定を保存できません。現在の割当を維持します。";return false;
-            }finally{
-                writing=false;
-                if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){}
-            }
+            }finally{writing=false;AtomicSettingsWrite.Cleanup(temporary,Failure);}
+
         }
     }
     /// <summary>変身演出だけの独立設定。攻略の保存・初期化と混ぜない。</summary>
@@ -598,14 +588,10 @@ namespace Olca.Unity
         }catch(System.Exception e)when(Failure(e)){error="変身演出の設定を読めません。保存内容は変更していません。";return false;}}
         public bool TrySave(bool shortened,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(writing){error="演出設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
             var bytes=Encode(shortened);string temporary=null;writing=true;try{
-                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".form-"+System.Guid.NewGuid().ToString("N")+".tmp");
-                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
-                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
-                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
-            }catch(System.Exception e)when(Failure(e)){
-                try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                if(AtomicSettingsWrite.TryCommit(io,directory,ActivePath,BackupPath,".form-",bytes,b=>{Decode(b);},Failure,out temporary))return true;
                 error="演出設定を保存できません。現在の設定を維持します。";return false;
-            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+            }finally{writing=false;AtomicSettingsWrite.Cleanup(temporary,Failure);}
+
         }
     }
 
@@ -670,12 +656,11 @@ namespace Olca.Unity
             value=Decode(System.IO.File.ReadAllBytes(ActivePath));return true;
         }catch(System.Exception e)when(Failure(e)){value=new AudioVolumeSettings(0);error="音量設定を読み込めません。安全のため消音し、既存ファイルは変更していません。";return false;}}
         public bool TrySave(AudioVolumeSettings value,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(value==null){error="音量設定が必要です";return false;}if(writing){error="音量設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
-            var bytes=Encode(value);string temporary=null;writing=true;try{io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".audio-"+System.Guid.NewGuid().ToString("N")+".tmp");
-                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
-                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
-            }catch(System.Exception e)when(Failure(e)){try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+            var bytes=Encode(value);string temporary=null;writing=true;try{
+                if(AtomicSettingsWrite.TryCommit(io,directory,ActivePath,BackupPath,".audio-",bytes,b=>{Decode(b);},Failure,out temporary))return true;
                 error="音量設定を保存できません。適用済みの音量を維持します。";return false;
-            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+            }finally{writing=false;AtomicSettingsWrite.Cleanup(temporary,Failure);}
+
         }
     }
     public sealed class DialogueTextSettingsStore
@@ -703,14 +688,10 @@ namespace Olca.Unity
         }catch(System.Exception e)when(Failure(e)){error="文字表示速度の設定を読めません。保存内容は変更していません。";return false;}}
         public bool TrySave(Olca.Core.Domain.DialogueTextSpeed speed,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(!System.Enum.IsDefined(typeof(Olca.Core.Domain.DialogueTextSpeed),speed)){error="文字表示速度が不正です";return false;}if(writing){error="文字表示速度設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
             var bytes=Encode(speed);string temporary=null;writing=true;try{
-                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".dialogue-"+System.Guid.NewGuid().ToString("N")+".tmp");
-                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
-                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
-                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
-            }catch(System.Exception e)when(Failure(e)){
-                try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                if(AtomicSettingsWrite.TryCommit(io,directory,ActivePath,BackupPath,".dialogue-",bytes,b=>{Decode(b);},Failure,out temporary))return true;
                 error="文字表示速度設定を保存できません。現在の設定を維持します。";return false;
-            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+            }finally{writing=false;AtomicSettingsWrite.Cleanup(temporary,Failure);}
+
         }
     }
 

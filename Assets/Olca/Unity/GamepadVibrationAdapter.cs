@@ -70,14 +70,10 @@ namespace Olca.Unity
         }catch(System.Exception e)when(Failure(e)){error="振動の設定を読めません。保存内容は変更していません。";return false;}}
         public bool TrySave(bool enabled,out string error){error=null;if(!io.TryRequireWritable(ActivePath,BackupPath,out error))return false;if(writing){error="振動設定を保存中です";return false;}if(!TryRead(out _,out error))return false;
             var bytes=Encode(enabled);string temporary=null;writing=true;try{
-                io.RequireWritable(ActivePath, BackupPath); io.CreateDirectory(directory);temporary=System.IO.Path.Combine(directory,".vibration-"+System.Guid.NewGuid().ToString("N")+".tmp");
-                io.WriteAndFlush(temporary,bytes);Decode(System.IO.File.ReadAllBytes(temporary));
-                if(System.IO.File.Exists(ActivePath))io.Replace(temporary,ActivePath,BackupPath);else io.MoveNew(temporary,ActivePath);
-                if(!System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))throw new System.IO.IOException();return true;
-            }catch(System.Exception e)when(Failure(e)){
-                try{if(System.IO.File.Exists(ActivePath)&&System.IO.File.ReadAllBytes(ActivePath).SequenceEqual(bytes))return true;}catch(System.Exception read)when(Failure(read)){}
+                if(AtomicSettingsWrite.TryCommit(io,directory,ActivePath,BackupPath,".vibration-",bytes,b=>{Decode(b);},Failure,out temporary))return true;
                 error="振動設定を保存できません。現在の設定を維持します。";return false;
-            }finally{writing=false;if(temporary!=null)try{if(System.IO.File.Exists(temporary))System.IO.File.Delete(temporary);}catch(System.Exception e)when(Failure(e)){} }
+            }finally{writing=false;AtomicSettingsWrite.Cleanup(temporary,Failure);}
+
         }
     }
 }
