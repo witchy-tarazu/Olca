@@ -357,6 +357,7 @@ namespace Olca.Application.Dungeon
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
+            combatFeedbackAudio?.Bind(null);
             CancelExplorationResume();
             if (pauseOverlay != null) pauseOverlay.SetActive(IsUserPaused);
             StopGamepadVibration();
@@ -367,6 +368,7 @@ namespace Olca.Application.Dungeon
         }
         private void OnEnable()
         {
+            if(manager!=null&&!manager.IsSuspended)BindBattleFeedback(manager.CurrentBattle);
             if(!customizationEditorInterrupted||clearReturnSession?.Ready!=true)return;
             customizationEditorInterrupted=false;
             if(initialHub)ShowDungeonSelection();else ShowClearReturn();
@@ -633,6 +635,7 @@ namespace Olca.Application.Dungeon
         private AudioVolumeFileStore audioSettingsStore;
         private AudioVolumeSettings audioVolumes=new AudioVolumeSettings();
         private GameplayAudioRouter gameplayAudio;
+        private CombatFeedbackAudio combatFeedbackAudio;
         private GameplayAudioSettingsView audioSettingsView;
         public AudioVolumeSettings GameplayAudioVolumes=>audioVolumes;
         public GameplayAudioRouter GameplayAudio=>gameplayAudio;
@@ -1025,7 +1028,7 @@ namespace Olca.Application.Dungeon
             bool saved=newGameSavePending?clearReturnSession.Retry():CanStartNewGame&&clearReturnSession.StartNewGame(confirmedProgressRevision,CreateCardFactory().CreateStarterDeck().GetAllCards());
             if(!saved){newGameSavePending=clearReturnSession.HasPendingSave;ShowProgressAction("新規開始の保存が完了していません。元の進行と同じ再試行計画を保持しています。\n"+clearReturnSession.Error,true,!newGameSavePending);progressConfirmButton.GetComponentInChildren<Text>().text="同じ新規開始を再試行";return;}
             newGameSavePending=false;newGameConfirmation=false;progressDialogOpen=false;progressActionOverlay.SetActive(false);
-            manager.SuspendForCheckpoint();battleSession?.Detach();transitionCts?.Cancel();battleView?.gameObject.SetActive(false);gameFieldView?.OnBattleEnded();
+            manager.SuspendForCheckpoint();combatFeedbackAudio?.Bind(null);battleSession?.Detach();transitionCts?.Cancel();battleView?.gameObject.SetActive(false);gameFieldView?.OnBattleEnded();
             awaitingCheckpointChoice=false;checkpointOverlay.SetActive(false);pauseOverlay.SetActive(false);initialHub=true;clearReturnVisible=true;
             dungeonSelectionOpen=false;selectedDungeon=selectionBeforeOpen=0;floorSwapPending=false;clearReturnError=null;nonClearReturnRequest=null;
             logicalLoop.StartNewTimeline();ResetTouchInput();ShowDungeonSelection();
@@ -1247,7 +1250,7 @@ namespace Olca.Application.Dungeon
                 if (!TryReadCurrentSavedRun(out var source, out var key, out var error)) { clearReturnError = error; ShowClearReturn(); return; }
                 if (outcome == RunReturnOutcome.Retreated && !manager.IsSuspended && !manager.SuspendForCheckpoint()) return;
                 if (IsUserPaused) SetUserPaused(false);
-                transitionCts?.Cancel(); battleSession?.Detach(); cardSelectionView?.Hide();
+                transitionCts?.Cancel(); combatFeedbackAudio?.Bind(null);battleSession?.Detach(); cardSelectionView?.Hide();
                 battleView?.EndSessionPresentation();
                 battleView?.gameObject.SetActive(false);
                 gameFieldView?.OnBattleEnded(); battleFieldReady = false;
@@ -1574,7 +1577,7 @@ namespace Olca.Application.Dungeon
             dialogueSettings=new DialogueTextSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));dialogueSettings.TryRead(out dialogueSpeed,out dialogueSettingsError);
             audioSettingsStore=new AudioVolumeFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             audioSettingsStore.TryRead(out audioVolumes,out var audioError);GameplayAudioSettingsError=audioError;
-            gameplayAudio=new GameplayAudioRouter(transform);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(dungeonBgm);
+            gameplayAudio=new GameplayAudioRouter(transform);combatFeedbackAudio=new CombatFeedbackAudio(transform,gameplayAudio);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(dungeonBgm);
             if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
             GameplayKeyboardSettingsError = settingsError;
             if (settingsError != null) logger.LogWarning(settingsError);
@@ -1885,8 +1888,11 @@ namespace Olca.Application.Dungeon
 
         // ==================== バトル開始遷移 ====================
 
+        private void BindBattleFeedback(BattleSystem battle) => combatFeedbackAudio?.Bind(isActiveAndEnabled ? battle : null);
+
         private void OnBattleStarted(BattleSystem battle, ContactInfo contactInfo)
         {
+            BindBattleFeedback(battle);
             pendingBattleEvaluation=null;pendingBattleElapsedFrames=null;
             gameplayAudio?.PlayBgm(battleBgm!=null?battleBgm:dungeonBgm);
             ResetTouchInput();
@@ -1989,6 +1995,7 @@ namespace Olca.Application.Dungeon
         }
         private void OnBattleEndPresentationRequested(BattleResult result)
         {
+            combatFeedbackAudio?.Bind(null);
             StopGamepadVibration();
             if(outcomePresentationOwner!=null)return;
             PlayBattleOutcomeAsync(result).Forget();
@@ -2002,7 +2009,7 @@ namespace Olca.Application.Dungeon
             try
             {
                 if(IsUserPaused)SetUserPaused(false);
-                transitionCts?.Cancel();battleSession?.Detach();
+                transitionCts?.Cancel();combatFeedbackAudio?.Bind(null);battleSession?.Detach();
                 if(gameFieldView!=null)await gameFieldView.HideHUDAsync(0,cts.Token);
                 BattleVisualClock.SetPaused(this,true);
                 var terminal=gameFieldView!=null?gameFieldView.PlayBattleOutcomeAsync(result,cts.Token):UniTask.CompletedTask;
@@ -2023,6 +2030,7 @@ namespace Olca.Application.Dungeon
 
         private void OnBattleEnded()
         {
+            combatFeedbackAudio?.Bind(null);
             StopGamepadVibration();
             if (ReferenceEquals(automaticPauseOwner, manager))
             {
@@ -2066,7 +2074,7 @@ namespace Olca.Application.Dungeon
             var owner = manager;
             bool useBattleGrid = battleFieldReady;
             // バトルセッション終了（購読解除）
-            battleSession?.Detach();
+            combatFeedbackAudio?.Bind(null);battleSession?.Detach();
 
             transitionCts?.Cancel();
             transitionCts?.Dispose();
@@ -2338,7 +2346,7 @@ namespace Olca.Application.Dungeon
             FinishDialogue(interrupt:true);
             CancelOutcomePresentation();
             if (IsUserPaused) ApplyUserPauseImmediate(false);
-            transitionCts?.Cancel(); battleSession?.Detach();
+            transitionCts?.Cancel(); combatFeedbackAudio?.Bind(null);battleSession?.Detach();
             UnbindManagerEvents(manager);
             pendingCardChoices = null; cardSelectionView?.Hide();
             currencyChoice?.TrySetCanceled(); currencyOverlay?.SetActive(false);
@@ -2394,7 +2402,7 @@ namespace Olca.Application.Dungeon
             systemMenu?.Dispose();
             resourceRewardMenu?.Dispose();
             FinishDialogue(interrupt:true);dialogueLoop.Dispose();
-            gameplayAudio?.Dispose();
+            combatFeedbackAudio?.Dispose();gameplayAudio?.Dispose();
             if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
             inputProvider?.Dispose();
             logicalLoop.Dispose();
@@ -2402,7 +2410,7 @@ namespace Olca.Application.Dungeon
             if (pauseCanvas != null) Destroy(pauseCanvas);
             transitionCts?.Cancel();
             transitionCts?.Dispose();
-            battleSession?.Detach();
+            combatFeedbackAudio?.Bind(null);battleSession?.Detach();
 
             if (manager != null)
             {

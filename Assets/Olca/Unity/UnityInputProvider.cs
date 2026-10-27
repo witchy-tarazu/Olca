@@ -625,6 +625,13 @@ namespace Olca.Unity
             var prior=routes.FirstOrDefault(r=>r.Source==source);if(prior!=null){if(prior.Channel!=channel)throw new System.ArgumentException("音声系統は重複登録できません");return;}
             var route=new Route{Source=source,Channel=channel,BaseVolume=source.volume};routes.Add(route);source.volume=route.BaseVolume*settings.Gain(channel);if(IsPaused)source.Pause();
         }
+        public void Unregister(AudioSource source)
+        {
+            var route = routes.FirstOrDefault(r => ReferenceEquals(r.Source, source));
+            if (route == null) return;
+            if (source != null) source.volume = route.BaseVolume;
+            routes.Remove(route);
+        }
         public void Apply(AudioVolumeSettings value){if(disposed)throw new System.ObjectDisposedException(nameof(GameplayAudioRouter));settings=value??throw new System.ArgumentNullException(nameof(value));
             foreach(var route in routes)if(route.Source!=null)route.Source.volume=route.BaseVolume*settings.Gain(route.Channel);}
         public void SetPaused(bool paused){if(disposed||IsPaused==paused)return;IsPaused=paused;foreach(var route in routes)if(route.Source!=null){if(paused)route.Source.Pause();else route.Source.UnPause();}}
