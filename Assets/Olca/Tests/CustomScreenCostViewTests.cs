@@ -16,6 +16,16 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase("？？？　未入手のカードA 1/2", "？？？　ミニュウシュのカードA 1/2")]
+        [TestCase("未公開レシピはありません", "ミコウカイレシピはありません")]
+        public void 図鑑の未登録表示は漢字だけをカナにして元の文字を保持する(string original,string expected)
+        {
+            Assert.AreEqual(expected,CustomDisplay.Katakana(original));
+            var card=Create("unknown",CardSeries.Sword);var profile=new ClearReturnProfile();
+            Assert.AreEqual("？？？　ミニュウシュ",CustomDisplay.Katakana(CollectionDisplay.CardText(profile,card)));
+            Assert.IsFalse(CollectionDisplay.IsKnown(profile,card));
+        }
+
         [TestCase(true)]
         [TestCase(false)]
         public void 再初期化は共通ボタンの濃色文字と既存フォント操作を保持する(bool visible)

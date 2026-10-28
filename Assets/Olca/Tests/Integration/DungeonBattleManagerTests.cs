@@ -3525,6 +3525,32 @@ namespace Olca.Tests.Integration
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new Olca.Application.Battle.CardPoiseSettings(sword: -1));
         }
 
+        [TestCase("keyboard")][TestCase("gamepad")][TestCase("audio")]
+        public void 設定画面中は図鑑入口を隠し破棄して戻ると停止状態のまま再表示する(string kind)
+        {
+            var c=Start(new[]{Empty(3),DungeonConfig.CreateTestDungeon(8)});var model=Model(c);var bytes=System.IO.File.ReadAllBytes(Store(c).ActivePath);
+            var profile=c.GameplayKeyboardProfile;var volumes=c.GameplayAudioVolumes;
+            c.gameObject.SetActive(true);
+            try
+            {
+                c.SetUserPaused(true);
+                var entry=(UnityEngine.UI.Button)Get(c,"cardCollectionButton");
+                for(int i=0;i<2;i++)
+                {
+                    Call(c,"UpdateViews");Assert.IsTrue(entry.gameObject.activeSelf);
+                    KeyboardButton(c,kind=="keyboard"?"KeyboardSettingsButton":kind=="gamepad"?"GamepadSettingsButton":"AudioSettingsButton");
+                    Call(c,"UpdateViews");Assert.IsFalse(entry.gameObject.activeSelf,"設定編集中は別画面への入口を前面へ出さない");
+                    if(kind=="audio")Call(c,"CloseAudioSettings");
+                    else ((Olca.Presentation.Field.GameplayKeyboardSettingsView)Get(c,kind=="keyboard"?"keyboardSettingsView":"gamepadSettingsView")).DiscardAndClose();
+                    Call(c,"UpdateViews");Assert.IsTrue(entry.gameObject.activeSelf);
+                    Assert.IsTrue(c.IsUserPaused);Assert.AreSame(model,Model(c));
+                    Assert.AreSame(profile,c.GameplayKeyboardProfile);Assert.AreEqual(volumes,c.GameplayAudioVolumes);
+                    CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store(c).ActivePath));
+                }
+            }
+            finally {c.gameObject.SetActive(false);}
+        }
+
         private static void KeyboardButton(Olca.Application.Dungeon.DungeonBattleController controller, string name)
         {
             var canvas = (UnityEngine.GameObject)Get(controller, "pauseCanvas");

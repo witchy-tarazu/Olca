@@ -1849,7 +1849,7 @@ namespace Olca.Application.Dungeon
             if(CustomizationEditorOpen)customizationEditorView.transform.SetAsLastSibling();
             if(CustomizationUnlockOpen)customizationUnlockView.transform.SetAsLastSibling();
             if(CustomizationAcquisitionOpen)customizationAcquisitionView.transform.SetAsLastSibling();
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView!=null&&keyboardSettingsView.gameObject.activeInHierarchy) && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             gameFieldView?.RefreshDebugUI(manager.CurrentPhase);
