@@ -3076,6 +3076,18 @@ namespace Olca.Tests.Integration
             }
             return c;
         }
+        [TestCase(false)][TestCase(true)]
+        public void 出撃先からスタイルと交換へ進んで取消しても選択先と保存を保持する(bool returned)
+        {
+            var c=StartStyles(true);
+            if(returned){KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");Assert.IsFalse((bool)Get(c,"initialHub"));}
+            KeyboardButton(c,"OpenTokenExchange");KeyboardButton(c,"CloseTokenExchange");if(returned)KeyboardButton(c,"SelectDungeon");KeyboardButton(c,"DungeonChoice_1");
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var before=System.IO.File.ReadAllBytes(store.ActivePath);string style=c.PersistentProgress.SelectedStyleId;
+            for(int n=0;n<2;n++){
+                KeyboardButton(c,"SelectDepartureStyle");Assert.IsTrue((bool)Get(c,"styleSelectionOpen"));KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"CancelStyleSelection");Assert.IsFalse((bool)Get(c,"styleSelectionOpen"));Assert.AreEqual(1,Get(c,"selectedDungeon"));Assert.IsTrue(SelectionButton(c,"DungeonChoice_1").gameObject.activeInHierarchy);Assert.AreEqual(style,c.PersistentProgress.SelectedStyleId);
+                KeyboardButton(c,"OpenTokenExchange");Assert.IsTrue((bool)Get(c,"exchangeOpen"));KeyboardButton(c,"ExchangeOffer_card-sword");KeyboardButton(c,"CancelTokenExchange");KeyboardButton(c,"CloseTokenExchange");Assert.IsFalse((bool)Get(c,"exchangeOpen"));Assert.AreEqual(1,Get(c,"selectedDungeon"));Assert.IsTrue(SelectionButton(c,"DungeonChoice_1").gameObject.activeInHierarchy);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));
+            }
+        }
         [Test]
         public void 出撃スタイルの初期値未解放表示と取消は出撃や保存を行わない()
         {

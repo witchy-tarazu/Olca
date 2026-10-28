@@ -211,7 +211,7 @@ namespace Olca.Application.Dungeon
         private string exchangeSelectedId, exchangeRequestId, exchangeRound;
         private void OpenTokenExchange()
         {
-            if (!CanSelectDungeon || styleSelectionOpen || (dungeonSelectionOpen && !initialHub)) return;
+            if (!CanSelectDungeon || styleSelectionOpen) return;
             exchangeOpen = true; exchangeSelectedId = exchangeRequestId = exchangeRound = null;
             EnsureTokenExchange(); ShowTokenExchange();
         }
@@ -236,7 +236,7 @@ namespace Olca.Application.Dungeon
                     if(clearReturnSession.PurchaseExchange(exchangeRequestId,exchangeRound,exchangeSelectedId)) exchangeSelectedId=exchangeRequestId=exchangeRound=null;
                     ShowTokenExchange(); },
                 () => { if(!exchangeOpen || !CanSelectDungeon)return;exchangeSelectedId=exchangeRequestId=exchangeRound=null;ShowTokenExchange(); },
-                () => { if(!exchangeOpen || !CanSelectDungeon)return;exchangeOpen=false;if(initialHub)ShowDungeonSelection();else ShowClearReturn(); },
+                () => { if(!exchangeOpen || !CanSelectDungeon)return;exchangeOpen=false;if(initialHub||dungeonSelectionOpen)ShowDungeonSelection();else ShowClearReturn(); },
                 () => { if(!exchangeOpen)return;
                     if(clearReturnSession.Retry()) {exchangeSelectedId=exchangeRequestId=exchangeRound=null;EnsureTokenExchange();}ShowTokenExchange(); });
         }
@@ -255,7 +255,7 @@ namespace Olca.Application.Dungeon
         private DepartureStyleDefinition SelectedStyle => departureStyles.SingleOrDefault(s => s.Id == (clearReturnSession.Snapshot.SelectedStyleId ?? DepartureStyleDefinition.BasicId));
         private void OpenStyleSelection()
         {
-            if (exchangeOpen || !CanSelectDungeon || dungeonSelectionOpen && !initialHub) return;
+            if (exchangeOpen || !CanSelectDungeon) return;
             styleDraft = System.Array.FindIndex(departureStyles, s => s.Id == (clearReturnSession.Snapshot.SelectedStyleId ?? DepartureStyleDefinition.BasicId));
             styleSelectionOpen = true; ShowStyleSelection();
         }
@@ -270,7 +270,8 @@ namespace Olca.Application.Dungeon
                 () => { if (styleSelectionOpen && CanSelectDungeon) CloseStyleSelection(); },
                 !CanSelectDungeon, clearReturnSession.Error, RetryStyleSelection);
         }
-        private void CloseStyleSelection() { styleSelectionOpen = false; if (initialHub) ShowDungeonSelection(); else ShowClearReturn(); }
+        // 出撃先から開いた子画面は、未確定の選択先を保って同じ画面へ戻す。
+        private void CloseStyleSelection() { styleSelectionOpen = false; if (initialHub || dungeonSelectionOpen) ShowDungeonSelection(); else ShowClearReturn(); }
         private void RetryStyleSelection()
         {
             if (!styleSelectionOpen) return;

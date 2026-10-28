@@ -23,6 +23,116 @@ namespace Olca.Tests
         }
         [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
         [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
+        public void 詳細を開いてリサイズしても見出しと戻るが欠けず帰還と編成へ復帰する(float width,float height,bool departure)
+        {
+            var root=new GameObject("DetailsViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("DetailsView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});var card=new Card("details","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");var owned=new OwnedCardCount{Id=card.Id,Name=card.Name,Count=1};var profile=new ClearReturnProfile{Owned=new[]{owned}};view.ConfigureMenuNavigation(()=>new Button[0],_=>card);
+                for(int repeat=0;repeat<2;repeat++){
+                    if(departure)view.RenderOwnedDeparture(profile,new[]{card},new[]{card},null,true,(_,__)=>{},()=>{},_=>{},()=>{},false);else view.Render(profile,new ClearReturnData{Stage=ClearReturnStage.Returned},false,null);
+                    host.GetComponentsInChildren<Button>().Single(b=>b.name==(departure?"DepartureDetails_0":"OwnedCardDetails_0")).onClick.Invoke();Assert.IsTrue(view.HasMenuModal);
+                    viewport.sizeDelta=new Vector2(width,height);typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();
+                    var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="ReadonlyCardTitle");var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");RequireInside(viewport,title.rectTransform);RequireInside(viewport,(RectTransform)close.transform);Assert.AreSame(font,title.font);
+                    var scroll=host.GetComponentsInChildren<ScrollRect>().Single();Assert.IsFalse(scroll.horizontal);Assert.IsTrue(scroll.vertical);Assert.AreEqual(ScrollRect.MovementType.Clamped,scroll.movementType);Assert.Greater(title.transform.position.y-title.rectTransform.rect.height/2,scroll.viewport.position.y+scroll.viewport.rect.height/2);Assert.Greater(scroll.viewport.position.y-scroll.viewport.rect.height/2,close.transform.position.y+((RectTransform)close.transform).rect.height/2);
+                    if(width==1920){Assert.AreEqual(450,viewport.InverseTransformPoint(title.transform.position).y,.1);Assert.AreEqual(-440,viewport.InverseTransformPoint(close.transform.position).y,.1);}
+                    close.onClick.Invoke();Assert.IsFalse(view.HasMenuModal);Assert.AreEqual(1,profile.Owned.Single().Count);Assert.IsTrue(host.transform.Find(departure?"DepartureContents":"ReturnContents").gameObject.activeSelf);
+                }
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 長い詳細は開いたまま幅を狭めても全文の高さとスクロール位置を更新する()
+        {
+            var root=new GameObject("LongDetailsViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("LongDetailsView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+                var card=new Card("long-details","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,string.Concat(Enumerable.Repeat("LONG DETAILS WITH MULTIPLE EFFECTS AND TUNING ",200)));view.Render(new ClearReturnProfile(),new ClearReturnData{Stage=ClearReturnStage.Returned},false,null);typeof(ClearReturnView).GetMethod("OpenCardDetails",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,new object[]{card,null});Canvas.ForceUpdateCanvases();
+                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();float original=scroll.content.rect.height;Assert.Greater(original,scroll.viewport.rect.height);scroll.verticalNormalizedPosition=.25f;var update=typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);float position=scroll.verticalNormalizedPosition;
+                viewport.sizeDelta=new Vector2(1662.77f,1247.08f);update.Invoke(view,null);Canvas.ForceUpdateCanvases();Assert.Greater(body.preferredHeight,original);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);Assert.AreEqual(position,scroll.verticalNormalizedPosition,.01f);
+                scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f,0,false)] [TestCase(1662.77f,1247.08f,0,false)] [TestCase(2199.64f,942.70f,0,false)]
+        [TestCase(1920f,1080f,0,true)] [TestCase(1662.77f,1247.08f,0,true)] [TestCase(2199.64f,942.70f,0,true)]
+        [TestCase(1920f,1080f,1,false)] [TestCase(1662.77f,1247.08f,1,false)] [TestCase(2199.64f,942.70f,1,false)]
+        [TestCase(1920f,1080f,1,true)] [TestCase(1662.77f,1247.08f,1,true)] [TestCase(2199.64f,942.70f,1,true)]
+        [TestCase(1920f,1080f,2,false)] [TestCase(1662.77f,1247.08f,2,false)] [TestCase(2199.64f,942.70f,2,false)]
+        [TestCase(1920f,1080f,2,true)] [TestCase(1662.77f,1247.08f,2,true)] [TestCase(2199.64f,942.70f,2,true)]
+        public void 出撃先スタイル交換は保存待ちも含め端切れせず取消とページ操作を維持する(float width,float height,int mode,bool blocked)
+        {
+            var root=new GameObject("SelectionViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("SelectionView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});int cancels=0,choices=0;var names=Enumerable.Range(0,7).Select(n=>"テスト "+n).ToArray();var unlocked=Enumerable.Range(0,7).Select(n=>n<6).ToArray();var profile=new ClearReturnProfile{Tokens=100,Revision=7,ExchangeStock=new ExchangeStockData{RoundId="round",Offers=Enumerable.Range(0,7).Select(n=>new ExchangeOfferData{Id="offer"+n,CardId="card"+n,Name="テスト "+n,Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}).ToArray()}};
+                void Render(){if(mode==0)view.RenderDungeonSelection(names,unlocked,0,_=>choices++,()=>{},()=>cancels++,blocked,blocked?"ホゾンをカクニンしてください。":null,()=>{},()=>{},"キホン",()=>{},new bool[7],Enumerable.Repeat("カイホウをカクニン",7).ToArray());else if(mode==1)view.RenderStyleSelection(names,unlocked,0,_=>choices++,()=>{},()=>cancels++,blocked,blocked?"ホゾンをカクニンしてください。":null,()=>{});else view.RenderTokenExchange(profile,"offer0",blocked,blocked?"ホゾンをカクニンしてください。":null,_=>choices++,()=>{},()=>cancels++,()=>{},()=>{});}
+                string prefix=mode==0?"Dungeon":mode==1?"Style":"Exchange";
+                for(int repeat=0;repeat<2;repeat++){
+                    Render();foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);RequireSeparateButtons(host);
+                    string titleName=mode==0?"DungeonSelectionTitle":mode==1?"StyleSelectionTitle":"ExchangeTitle";var title=host.GetComponentsInChildren<Text>().Single(t=>t.name==titleName);RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);if(width==1920)Assert.AreEqual(Vector3.one,host.transform.GetChild(0).localScale);
+                    string cancelName=mode==0?"CancelDungeonSelection":mode==1?"CancelStyleSelection":"CancelTokenExchange";var cancel=host.GetComponentsInChildren<Button>().Single(t=>t.name==cancelName);Assert.AreEqual(!blocked,cancel.interactable);
+                    if(!blocked){var choose=host.GetComponentsInChildren<Button>().Single(t=>t.name==(mode==2?"ExchangeOffer_offer1":prefix+"Choice_1"));choose.onClick.Invoke();cancel.onClick.Invoke();host.GetComponentsInChildren<Button>().Single(t=>t.name=="Next"+prefix+"Page").onClick.Invoke();Assert.IsTrue(host.GetComponentsInChildren<Button>().Any(t=>t.name==(mode==2?"ExchangeOffer_offer6":prefix+"Choice_6")));host.GetComponentsInChildren<Button>().Single(t=>t.name=="Previous"+prefix+"Page").onClick.Invoke();}
+                    Assert.AreEqual(100,profile.Tokens);Assert.AreEqual(7,profile.Revision);Assert.IsTrue(profile.ExchangeStock.Offers.All(o=>o.Purchased==0));
+                }
+                Assert.AreEqual(blocked?0:2,cancels);Assert.AreEqual(blocked?0:2,choices);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        private static void RequireSeparateButtons(GameObject host)
+        {
+            var buttons=host.GetComponentsInChildren<Button>();
+            Rect Area(RectTransform r){var points=new Vector3[4];r.GetWorldCorners(points);return Rect.MinMaxRect(points.Min(p=>p.x),points.Min(p=>p.y),points.Max(p=>p.x),points.Max(p=>p.y));}
+            for(int i=0;i<buttons.Length;i++)for(int j=i+1;j<buttons.Length;j++)Assert.IsFalse(Area((RectTransform)buttons[i].transform).Overlaps(Area((RectTransform)buttons[j].transform)),buttons[i].name+" / "+buttons[j].name);
+        }
+        [TestCase(1920f,1080f,0)] [TestCase(1662.77f,1247.08f,0)] [TestCase(2199.64f,942.70f,0)]
+        [TestCase(1920f,1080f,1)] [TestCase(1662.77f,1247.08f,1)] [TestCase(2199.64f,942.70f,1)]
+        [TestCase(1920f,1080f,2)] [TestCase(1662.77f,1247.08f,2)] [TestCase(2199.64f,942.70f,2)]
+        [TestCase(1920f,1080f,3)] [TestCase(1662.77f,1247.08f,3)] [TestCase(2199.64f,942.70f,3)]
+        [TestCase(1920f,1080f,4)] [TestCase(1662.77f,1247.08f,4)] [TestCase(2199.64f,942.70f,4)]
+        public void 帰還の各段階は基準配置を保ち幅と高さの境界へ等比で収まる(float width,float height,int mode)
+        {
+            var root=new GameObject("ReturnViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("ReturnView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},()=>{});
+                var profile=new ClearReturnProfile{Owned=Enumerable.Range(0,8).Select(n=>new OwnedCardCount{Id="card"+n,Name="テスト",Count=4}).ToArray()};var flow=new ClearReturnData{RunId="layout",Stage=mode==1?ClearReturnStage.Choosing:mode==2?ClearReturnStage.Awarded:ClearReturnStage.Returned,Candidates=Enumerable.Range(0,8).Select(n=>new ReturnCardData{Id="card"+n,Name="テスト"}).ToArray(),Selected=new[]{0,1,2}};
+                for(int repeat=0;repeat<2;repeat++){
+                    view.Render(profile,flow,mode==4,mode==4?"ホゾンをカクニンしてください。":null,mode==3);
+                    foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);RequireSeparateButtons(host);
+                    var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="Title");RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);
+                    var contents=host.transform.Find("ReturnContents");Assert.AreEqual(contents.localScale.x,contents.localScale.y);Assert.AreEqual(1,contents.localScale.z);if(width==1920){Assert.AreEqual(Vector3.one,contents.localScale);Assert.AreEqual(455,viewport.InverseTransformPoint(title.transform.position).y,.1);}
+                }
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f,0)] [TestCase(1662.77f,1247.08f,0)] [TestCase(2199.64f,942.70f,0)]
+        [TestCase(1920f,1080f,1)] [TestCase(1662.77f,1247.08f,1)] [TestCase(2199.64f,942.70f,1)]
+        [TestCase(1920f,1080f,2)] [TestCase(1662.77f,1247.08f,2)] [TestCase(2199.64f,942.70f,2)]
+        public void 編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない(float width,float height,int mode)
+        {
+            var root=new GameObject("DepartureViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("DepartureView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});int closed=0;
+                var profile=new ClearReturnProfile{Owned=Enumerable.Range(0,7).Select(n=>new OwnedCardCount{Id="card"+n,Name="テスト",Count=4}).ToArray()};var options=profile.Owned.Select(c=>new Card(c.Id,c.Name,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"")).ToArray();
+                for(int repeat=0;repeat<2;repeat++){
+                    view.RenderOwnedDeparture(profile,options,options,null,true,(_,__)=>{},()=>{},_=>closed++,()=>{},mode==2,save:()=>{},deckName:"ひらがなテスト",rename:_=>{},pending:mode==1,retrySave:()=>{});
+                    foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);RequireSeparateButtons(host);
+                    var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureTitle");RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);
+                    if(mode!=2){var input=host.GetComponentInChildren<InputField>();var rules=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureRules");var valid=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureValidation");float scale=host.transform.Find("DepartureContents").localScale.y;Assert.Greater(title.transform.position.y-title.rectTransform.rect.height*scale/2,input.transform.position.y+((RectTransform)input.transform).rect.height*scale/2);Assert.Greater(input.transform.position.y-((RectTransform)input.transform).rect.height*scale/2,rules.transform.position.y+rules.rectTransform.rect.height*scale/2);Assert.Greater(rules.transform.position.y-rules.rectTransform.rect.height*scale/2,valid.transform.position.y+valid.rectTransform.rect.height*scale/2);Assert.AreEqual("ひらがなテスト",input.text);Assert.AreEqual(mode!=1,input.interactable);}
+                    if(mode==0)host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseOwnedDeparture").onClick.Invoke();
+                    if(width==1920)Assert.AreEqual(Vector3.one,host.transform.Find("DepartureContents").localScale);
+                }
+                Assert.AreEqual(mode==0?2:0,closed);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 帰還編成の等比補正はリサイズと他画面への切替で持ち越さない()
+        {
+            var root=new GameObject("ResizeViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("ResizeView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});var profile=new ClearReturnProfile();var flow=new ClearReturnData{Stage=ClearReturnStage.Returned};view.Render(profile,flow,false,null);
+                var update=typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);
+                viewport.sizeDelta=new Vector2(2199.64f,942.70f);update.Invoke(view,null);foreach(var b in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)b.transform);Assert.Less(host.transform.Find("ReturnContents").localScale.x,1);
+                view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},_=>{},_=>{},_=>{},()=>{},()=>{});update.Invoke(view,null);Assert.AreEqual(Vector3.one,host.transform.Find("SavedDeckContents").localScale);
+                viewport.sizeDelta=new Vector2(1920,1080);view.Render(profile,flow,false,null);update.Invoke(view,null);Assert.AreEqual(Vector3.one,host.transform.Find("ReturnContents").localScale);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
         public void 保存デッキ画面は再表示と保存待ちでも操作部と見出しが画面内に収まる(float width,float height,bool pending)
         {
             var root=new GameObject("SavedDeckViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);

@@ -1,0 +1,82 @@
+[
+  {
+    "file": "return-before-4by3.png",
+    "sourceReceipt": "flow-polish-20261028-return-round3-after-4by3.png",
+    "sha256": "e60284057940cc2e3f7baadbab376cd9feb5b3e27bf76838c7d7966be293224a"
+  },
+  {
+    "file": "return-before-wide.png",
+    "sourceReceipt": "flow-polish-20261028-return-round3-after-wide.png",
+    "sha256": "68a2424eef07c6586717e8a1cbe0f85f885d7203724a093ef1bea18e962401ba"
+  },
+  {
+    "file": "return-before-fhd.png",
+    "sourceReceipt": "flow-polish-20261028-return-round3-after-fhd.png",
+    "sha256": "a65d6a9c5d665f7b89c914e499e54f741740def801c2eed0854d8b4252bea2e1"
+  },
+  {
+    "file": "return-before-4k.png",
+    "sourceReceipt": "flow-polish-20261028-return-round3-after-4k.png",
+    "sha256": "9406395deef090996453abaaaca189860a42f589efcf6b5a26b84b7349a1e776"
+  },
+  {
+    "file": "return-after-4by3.png",
+    "sourceReceipt": "flow-polish-20261028-return-round4-after-4by3.png",
+    "sha256": "ba82ba81caa888572761c68c3f85c575db366a635a6da58e86cac66a1792b322"
+  },
+  {
+    "file": "return-after-wide.png",
+    "sourceReceipt": "flow-polish-20261028-return-round4-after-wide.png",
+    "sha256": "241dc8fc3d8ecaaa3a3f22792c9b0f2fdd9cb8f8c3e807a513416e1b0ea7138a"
+  },
+  {
+    "file": "return-after-fhd.png",
+    "sourceReceipt": "flow-polish-20261028-return-round4-after-fhd.png",
+    "sha256": "9166fc0699c4ca4130d1f68362a1317d4377a6357cb3380d8b3a8b60c5b8e71f"
+  },
+  {
+    "file": "return-after-4k.png",
+    "sourceReceipt": "flow-polish-20261028-return-round4-after-4k.png",
+    "sha256": "10bc6d9b915fa68fb93c32efa1c79d777f3daaf598f308154ee3150a91c10d6a"
+  },
+  {
+    "file": "editor-before-4by3.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round3-before-4by3.png",
+    "sha256": "294ee799de1d979b8cdc7bc131cdb5d73af96414eaca8ecc82384e25380c4095"
+  },
+  {
+    "file": "editor-before-wide.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round3-before-wide.png",
+    "sha256": "c7d88faba7bba602f2bef3b31156056514cd227bbdec933eb165456a369cdf80"
+  },
+  {
+    "file": "editor-before-fhd.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round3-before-fhd.png",
+    "sha256": "de76da9a08a1e0fc6c887eb0a3973f70ceae554726152c9cb53ac50ef6407171"
+  },
+  {
+    "file": "editor-before-4k.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round3-before-4k.png",
+    "sha256": "4fbe819558b7781e26350cde0d56e9d7292158216132155e9c2e4d2e6ee720ed"
+  },
+  {
+    "file": "editor-after-4by3.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round4-after-4by3.png",
+    "sha256": "61d918eb7fc8577bda57c8645c166561a208c760224ce0671fd70a8e5fadbbba"
+  },
+  {
+    "file": "editor-after-wide.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round4-after-wide.png",
+    "sha256": "3ed4fe3fbf54f4fc85127049f8ab0055e1638a400557a820a6bd2209eb5f5b25"
+  },
+  {
+    "file": "editor-after-fhd.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round4-after-fhd.png",
+    "sha256": "6348e248dfd0dfea42023b57784baf40cb0f96e4a18e528d5c663261a8d77f28"
+  },
+  {
+    "file": "editor-after-4k.png",
+    "sourceReceipt": "flow-polish-20261028-editor-round4-after-4k.png",
+    "sha256": "7b5d4ab8d8103f194a9a60af669ff5c11be4c4cf6844b5b02e2535e93f106b86"
+  }
+]
