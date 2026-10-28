@@ -3551,6 +3551,16 @@ namespace Olca.Tests.Integration
             finally {c.gameObject.SetActive(false);}
         }
 
+        [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)][TestCase(2199.64f,942.70f)]
+        public void 拠点の補助操作は画面比率が変わっても図鑑と重ならず基準位置を保つ(float width,float height)
+        {
+            var c=Start();var viewport=new UnityEngine.GameObject("HubButtonViewport",typeof(UnityEngine.RectTransform));var rect=(UnityEngine.RectTransform)viewport.transform;rect.sizeDelta=new UnityEngine.Vector2(width,height);
+            try{
+                var names=new[]{"CardCollectionButton","OpenCustomizationEditor","OpenCustomizationUnlocks","OpenCustomizationAcquisitions","ManualSaveButton","NewGameButton"};var areas=new System.Collections.Generic.List<UnityEngine.Rect>();
+                foreach(var name in names){var button=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b=>b.name==name);var r=(UnityEngine.RectTransform)button.transform;r.SetParent(rect,false);var corners=new UnityEngine.Vector3[4];r.GetWorldCorners(corners);var points=corners.Select(p=>rect.InverseTransformPoint(p)).ToArray();var area=UnityEngine.Rect.MinMaxRect(points.Min(p=>p.x),points.Min(p=>p.y),points.Max(p=>p.x),points.Max(p=>p.y));Assert.GreaterOrEqual(area.xMin,rect.rect.xMin);Assert.LessOrEqual(area.xMax,rect.rect.xMax);Assert.GreaterOrEqual(area.yMin,rect.rect.yMin);Assert.LessOrEqual(area.yMax,rect.rect.yMax);foreach(var other in areas)Assert.IsFalse(area.Overlaps(other),name);areas.Add(area);if(width==1920&&name=="OpenCustomizationEditor"){Assert.AreEqual(650,area.center.x,.1);Assert.AreEqual(380,area.center.y,.1);}}
+            }finally{UnityEngine.Object.DestroyImmediate(viewport);}
+        }
+
         [Test]
         public void 報酬だけは背景のデッキ枚数を隠し報酬終了後に既存表示へ戻す()
         {

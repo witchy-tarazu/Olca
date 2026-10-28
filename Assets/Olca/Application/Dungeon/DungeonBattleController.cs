@@ -938,16 +938,16 @@ namespace Olca.Application.Dungeon
             var customizationPanel = new GameObject("CustomizationEditor", typeof(RectTransform)); customizationPanel.transform.SetParent(pauseCanvas.transform, false);
             customizationEditorView = customizationPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();
             customizationEditorView.Initialize(font, SaveCustomizationEditor, CloseCustomizationEditor, RetryCustomizationEditorSave);
-            customizationEditorButton = MakeButton("OpenCustomizationEditor", "ソウビ・パーツ", pauseCanvas.transform, new Vector2(.5f,.5f), new Vector2(650,380));
+            customizationEditorButton = MakeButton("OpenCustomizationEditor", "ソウビ・パーツ", pauseCanvas.transform, Vector2.one,new Vector2(-310,-160));
             ((RectTransform)customizationEditorButton.transform).sizeDelta = new Vector2(300,60);
             customizationEditorButton.onClick.AddListener(OpenCustomizationEditor); customizationEditorButton.gameObject.SetActive(false);
             var unlockPanel=new GameObject("CustomizationUnlocks",typeof(RectTransform));unlockPanel.transform.SetParent(pauseCanvas.transform,false);
             customizationUnlockView=unlockPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();customizationUnlockView.Initialize(font,ApplyCustomizationUnlockFromUi,CloseCustomizationUnlocks,RetryCustomizationUnlockSave);
             var acquisitionPanel=new GameObject("CustomizationAcquisitions",typeof(RectTransform));acquisitionPanel.transform.SetParent(pauseCanvas.transform,false);
             customizationAcquisitionView=acquisitionPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();customizationAcquisitionView.Initialize(font,ClaimCustomizationAcquisition,CloseCustomizationAcquisitions,RetryCustomizationAcquisition);
-            customizationAcquisitionButton=MakeButton("OpenCustomizationAcquisitions","ソウビのウケトリ",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,230));
+            customizationAcquisitionButton=MakeButton("OpenCustomizationAcquisitions","ソウビのウケトリ",pauseCanvas.transform,Vector2.one,new Vector2(-310,-310));
             ((RectTransform)customizationAcquisitionButton.transform).sizeDelta=new Vector2(300,60);customizationAcquisitionButton.onClick.AddListener(OpenCustomizationAcquisitions);customizationAcquisitionButton.gameObject.SetActive(false);
-            customizationUnlockButton=MakeButton("OpenCustomizationUnlocks","マスカイホウ",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,305));
+            customizationUnlockButton=MakeButton("OpenCustomizationUnlocks","マスカイホウ",pauseCanvas.transform,Vector2.one,new Vector2(-310,-235));
             ((RectTransform)customizationUnlockButton.transform).sizeDelta=new Vector2(300,60);customizationUnlockButton.onClick.AddListener(OpenCustomizationUnlocks);customizationUnlockButton.gameObject.SetActive(false);
             clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
         }
@@ -964,8 +964,8 @@ namespace Olca.Application.Dungeon
             (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
         private void CreateProgressActions(Font font,System.Func<string,string,Transform,Vector2,Vector2,Button> MakeButton)
         {
-            manualSaveButton=MakeButton("ManualSaveButton","保存（スロット1）",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(-700,455));
-            newGameButton=MakeButton("NewGameButton","はじめから",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(-380,455));
+            manualSaveButton=MakeButton("ManualSaveButton","保存（スロット1）",pauseCanvas.transform,new Vector2(0,1),new Vector2(260,-85));
+            newGameButton=MakeButton("NewGameButton","はじめから",pauseCanvas.transform,new Vector2(0,1),new Vector2(580,-85));
             foreach(var button in new[]{manualSaveButton,newGameButton})((RectTransform)button.transform).sizeDelta=new Vector2(280,60);
             manualSaveButton.onClick.AddListener(SaveProgressFromUi);newGameButton.onClick.AddListener(RequestNewGame);
             progressActionOverlay=new GameObject("ProgressActionOverlay",typeof(RectTransform),typeof(Image));progressActionOverlay.transform.SetParent(pauseCanvas.transform,false);
