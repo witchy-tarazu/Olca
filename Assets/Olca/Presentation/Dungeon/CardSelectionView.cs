@@ -607,12 +607,15 @@ namespace Olca.Presentation.Dungeon
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("SavedDeckContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
-            Text("SavedDeckTitle","保存デッキ・装備",0,455,1700,70,36);
-            Text("SavedDeckError",error??"",0,290,1750,80,25);
+            var title=Text("SavedDeckTitle","保存デッキ・装備",0,455,1700,70,36);
+            title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-85);
+            var errorLabel=Text("SavedDeckError",error??"",0,365,1750,100,25);
+            errorLabel.rectTransform.anchorMin=new Vector2(0,1);errorLabel.rectTransform.anchorMax=Vector2.one;errorLabel.rectTransform.sizeDelta=new Vector2(-170,100);errorLabel.rectTransform.anchoredPosition=new Vector2(0,-175);
             var decks=profile.SavedDecks??new SavedDepartureDeck[0];
             if(deleting!=null){var d=decks.SingleOrDefault(x=>x.Id==deleting);Text("DeleteDeckWarning",(d?.Name??"")+" を削除しますか？\n所持カードは減りません。",0,100,1700,180,30);
                 Button("ConfirmDeleteDeck","削除する",-400,-150,700,75,confirmDelete).interactable=!pending;Button("CancelDeleteDeck","取消し",400,-150,700,75,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload));SetMenu(content.transform,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload),"CancelDeleteDeck",true);return;}
-            Text("SavedDeckHelp","非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。",0,365,1750,100,25);
+            var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
+            help.rectTransform.anchorMin=new Vector2(0,1);help.rectTransform.anchorMax=Vector2.one;help.rectTransform.sizeDelta=new Vector2(-170,100);help.rectTransform.anchoredPosition=new Vector2(0,-175);
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
                 Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);
@@ -627,6 +630,11 @@ namespace Olca.Presentation.Dungeon
             Button("CloseSavedDeckMenu","帰還画面へ戻る",450,-420,750,75,close).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retry);
             else if(reload!=null)Button("ReloadSavedDecks","保存から再読込",0,-493,800,58,reload);
+            // 基準画面の配置を保ち、横長でも下部のページ/保存操作を欠けさせない。
+            foreach(var name in new[]{"SavedDeckPage","PreviousSavedDeckPage","NextSavedDeckPage","NewSavedDeck","CloseSavedDeckMenu","RetrySavedDeckSave","ReloadSavedDecks"}){
+                var child=content.transform.Find(name);if(child==null)continue;var control=(RectTransform)child;
+                control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
+            }
                     SetMenu(content.transform,pending?null:close,"EditDeck_"+profile.EquippedDeckId);
         }
 

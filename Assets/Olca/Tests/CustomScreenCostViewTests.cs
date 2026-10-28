@@ -23,6 +23,26 @@ namespace Olca.Tests
         }
         [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
         [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
+        public void 保存デッキ画面は再表示と保存待ちでも操作部と見出しが画面内に収まる(float width,float height,bool pending)
+        {
+            var root=new GameObject("SavedDeckViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("SavedDeckView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
+                var profile=new ClearReturnProfile{SavedDecks=Enumerable.Range(0,6).Select(i=>new SavedDepartureDeck{Id="deck"+i,Name="テスト"+i}).ToArray(),EquippedDeckId="deck0"};int closes=0;
+                for(int repeat=0;repeat<2;repeat++){
+                    view.RenderSavedDeckMenu(profile,repeat==0?null:"ホゾンをカクニンしてください。",pending,()=>{},_=>{},_=>{},_=>{},_=>{},()=>closes++,()=>{},reload:()=>{});Canvas.ForceUpdateCanvases();
+                    foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);
+                    var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckTitle");RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);
+                    var help=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckHelp");RequireInside(viewport,help.rectTransform);Assert.Less(help.rectTransform.position.y+help.rectTransform.rect.height/2,title.rectTransform.position.y-title.rectTransform.rect.height/2);var error=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckError");RequireInside(viewport,error.rectTransform);Assert.AreEqual(repeat==0,string.IsNullOrEmpty(error.text));Assert.AreEqual(repeat!=0,string.IsNullOrEmpty(help.text));
+
+                    var close=host.GetComponentsInChildren<Button>().Single(t=>t.name=="CloseSavedDeckMenu");Assert.AreEqual(!pending,close.interactable);if(!pending)close.onClick.Invoke();
+                    var footer=host.GetComponentsInChildren<Button>().Single(t=>t.name==(pending?"RetrySavedDeckSave":"ReloadSavedDecks"));if(width==1920)Assert.AreEqual(-493,viewport.InverseTransformPoint(footer.transform.position).y,.1);
+                }
+                Assert.AreEqual(pending?0:2,closes);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
         public void 店と削除画面は基準画面の余白を保ち四対三と横長でも操作部が切れない(float width,float height,bool removal)
         {
             var root=new GameObject("Viewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
