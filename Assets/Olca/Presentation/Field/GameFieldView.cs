@@ -174,6 +174,25 @@ namespace Olca.Presentation.Field
         // 外部アクセス（ContactAnimator・Controller用）
         public Transform PlayerTransform => playerTransform;
         public SpriteRenderer PlayerSprite => playerSprite;
+        private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private Olca.Presentation.Effects.ActorConditionVisual guardVisual, paralysisVisual;
+        private void RefreshConditionVisuals()
+        {
+            var player = currentBattle?.Player ?? dungeonSystem?.Player;
+            if (!isActiveAndEnabled || player == null || player.IsDead || currentBattle?.IsGameOver == true ||
+                dungeonSystem == null || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.IsInBattle && currentBattle == null) { guardVisual?.Clear(); paralysisVisual?.Clear(); return; }
+            if (guardVisual == null && player.Guard.IsActive) guardVisual = new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Guard);
+            if (paralysisVisual == null && player.IsParalyzed) paralysisVisual = new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Paralyze);
+            guardVisual?.Refresh(playerSprite, player.Guard.IsActive); paralysisVisual?.Refresh(playerSprite, player.IsParalyzed);
+        }
+        private void RefreshDefensiveField()
+        {
+            var player = currentBattle?.Player ?? dungeonSystem?.Player;
+            if (!isActiveAndEnabled || player == null || player.IsDead || currentBattle?.IsGameOver == true ||
+                dungeonSystem == null || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.IsInBattle && currentBattle == null) { defensiveField?.Clear(); return; }
+            if (defensiveField == null && (player.HasBarrier || player.HasAura)) defensiveField = new Olca.Presentation.Effects.DefensiveFieldVisual();
+            defensiveField?.Refresh(playerSprite, player.HasBarrier, player.HasAura);
+        }
         public WorldBattleGridView BattleGrid => battleGridView;
 
         /// <summary>探索・戦闘で共通の、論理1マスあたりの表示単位</summary>
@@ -538,9 +557,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose();
             actionPoseRenderer?.Dispose();
             projectilePoseRenderer?.Dispose();
             if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
@@ -623,6 +643,8 @@ namespace Olca.Presentation.Field
             UpdateMovementAnimation();
             UpdatePlayerSprite();
             UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
+            RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         /// <summary>マップ上の全敵スプライトを配置（初期化時・ダンジョン復帰時に呼ぶ）</summary>
@@ -757,6 +779,7 @@ namespace Olca.Presentation.Field
 
         public void OnBattleEnded()
         {
+            guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             actionPoseRenderer?.Clear();
             ClearBombVisuals();
             SetBattleMoveVisibility(true);
@@ -807,6 +830,8 @@ namespace Olca.Presentation.Field
             if (cameraFollowEnabled) UpdateCamera();
             UpdateEnemyViews();
             RefreshVisitVisuals();
+            RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         /// <summary>バトルフェーズ更新（毎フレーム）</summary>
@@ -840,6 +865,8 @@ namespace Olca.Presentation.Field
             // ControllerとViewのLateUpdate順に依存せず、更新済みの論理状態で同じ描画を確定する。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
+            RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         // ==================== HUD制御 ====================
@@ -1362,7 +1389,8 @@ namespace Olca.Presentation.Field
             var area=new GameObject("DialogueScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(transform,false);var ar=(RectTransform)area.transform;ar.anchoredPosition=new Vector2(0,100);ar.sizeDelta=new Vector2(1500,440);area.GetComponent<Image>().color=new Color(.2f,.5f,.6f,.035f);
             body=Label("DialogueText",area.transform,Vector2.zero,new Vector2(1480,440),30);body.alignment=TextAnchor.UpperLeft;body.verticalOverflow=VerticalWrapMode.Overflow;body.rectTransform.anchorMin=body.rectTransform.anchorMax=new Vector2(0,1);body.rectTransform.pivot=new Vector2(0,1);body.rectTransform.anchoredPosition=new Vector2(10,-10);
             scroll=area.GetComponent<ScrollRect>();scroll.viewport=ar;scroll.content=body.rectTransform;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;scroll.scrollSensitivity=35;
-            next=Make("DialogueNext","決定",new Vector2(-600,-360),new Vector2(350,75));fast=Make("DialogueFast","早送り",new Vector2(-200,-360),new Vector2(350,75));history=Make("DialogueHistory","バックログ",new Vector2(200,-360),new Vector2(350,75));skip=Make("DialogueSkip","スキップ",new Vector2(600,-360),new Vector2(350,75));pause=Make("DialoguePause","ポーズ",new Vector2(790,455),new Vector2(260,60));pause.onClick.AddListener(()=>this.pauseAction());gameObject.SetActive(false);
+            next=Make("DialogueNext","決定",new Vector2(-600,-360),new Vector2(350,75));fast=Make("DialogueFast","早送り",new Vector2(-200,-360),new Vector2(350,75));history=Make("DialogueHistory","バックログ",new Vector2(200,-360),new Vector2(350,75));skip=Make("DialogueSkip","スキップ",new Vector2(600,-360),new Vector2(350,75));pause=Make("DialoguePause","ポーズ",new Vector2(790,455),new Vector2(260,60));var pauseRect=(RectTransform)pause.transform;pauseRect.anchorMin=pauseRect.anchorMax=Vector2.one;pauseRect.anchoredPosition=new Vector2(-170,-85);
+            pause.onClick.AddListener(()=>this.pauseAction());gameObject.SetActive(false);
         }
         private void OnEnable(){rendered=-1;navigationKey=null;}
         public void Bind(DialogueSession value){menu?.Suspend();navigationKey=null;owner=value;rendered=-1;choiceNode=-1;page=0;gameObject.SetActive(value!=null);if(value==null){body.text="";title.text="";foreach(var b in choices)b.gameObject.SetActive(false);}Refresh();}

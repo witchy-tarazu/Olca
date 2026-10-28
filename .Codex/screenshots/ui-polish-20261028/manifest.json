@@ -1,0 +1,62 @@
+{
+  "custom-buttons-before-fhd.png": {
+    "bytes": 837280,
+    "sha256": "7d087652509d5774d588f07dbe4335eb28a4fdf46b675be91342b0bef550c991",
+    "width": 1920,
+    "height": 1080
+  },
+  "custom-buttons-after-fhd.png": {
+    "bytes": 837391,
+    "sha256": "b094c8fed2141785e724929a19e90f052579598b58d04a0efe1ecbe03b0214dd",
+    "width": 1920,
+    "height": 1080
+  },
+  "custom-buttons-after-4k.png": {
+    "bytes": 1784827,
+    "sha256": "088ed61a696c8d32d8d9626aba68a275b4854aeaaef7f872be708e56442fc665",
+    "width": 3840,
+    "height": 2160
+  },
+  "keyboard-before-fhd.png": {
+    "bytes": 253105,
+    "sha256": "09f205c0e8aae4bead378d8ee10758ed58c03490fdf2f696457d38dfa01967d3",
+    "width": 1920,
+    "height": 1080
+  },
+  "collection-before-fhd.png": {
+    "bytes": 142419,
+    "sha256": "59763203df30a90a4933426f2d1bc048c163194e1e0803aaaacd14fd8a84406b",
+    "width": 1920,
+    "height": 1080
+  },
+  "keyboard-after-fhd.png": {
+    "bytes": 238534,
+    "sha256": "f5c7d11ed0e384f9c440cfa3d297604b5db815c1a784c59e4c1e3ffaae8765e3",
+    "width": 1920,
+    "height": 1080
+  },
+  "keyboard-after-4k.png": {
+    "bytes": 549576,
+    "sha256": "5eb4708ca808d98140a8675d88cde0b379bd623f81a29e5feef0bc4f2f25fbec",
+    "width": 3840,
+    "height": 2160
+  },
+  "collection-after-fhd.png": {
+    "bytes": 124056,
+    "sha256": "a2e6f4626bfd654359128cb5c973b87c346a7eca1256710d6b1f14b35f352595",
+    "width": 1920,
+    "height": 1080
+  },
+  "collection-after-4k.png": {
+    "bytes": 307478,
+    "sha256": "e0ede66971cc26cc781a4cb4babb41c95b417ebbf703cddfd06aa26bc9e37f70",
+    "width": 3840,
+    "height": 2160
+  },
+  "recipes-after-fhd.png": {
+    "bytes": 89571,
+    "sha256": "af0e84335b3fc84663ad0973ff4d60663d2fb9cc8fbb708dd66f72c887449d97",
+    "width": 1920,
+    "height": 1080
+  }
+}

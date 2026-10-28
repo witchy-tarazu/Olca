@@ -2546,7 +2546,9 @@ namespace Olca.Tests.Integration
                 var controller=host.GetComponent<Olca.Application.Dungeon.DungeonBattleController>();
                 if(controller!=null) {
                     ((Olca.Unity.UnityInputProvider)Get(controller,"inputProvider"))?.Dispose();
-                    controller.SetUserPaused(false);
+                    Call(controller,"CancelExplorationResume");
+                    Call(controller,"ApplyUserPauseImmediate",false);
+                    ((Olca.Unity.UnityLogicalLoop)Get(controller,"explorationResumeLoop")).Dispose();
                 }
                 UnityEngine.Object.DestroyImmediate(host);
             }
@@ -2613,6 +2615,50 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(Model(c).CurrentBattle.CustomScreen.IsOpen);Assert.AreEqual(0,Model(c).CurrentBattle.LogicalFrame);
         }
 
+        private static void FinishExplorationCountdown(Olca.Application.Dungeon.DungeonBattleController controller)
+        {
+            if (!controller.IsExplorationResumeCounting) return;
+            Assert.IsTrue(controller.IsUserPaused);
+            for (int n = 0; n < 89; n++) Call(controller, "AdvanceExplorationResumeFrame");
+            Assert.IsTrue(controller.IsUserPaused); Assert.AreEqual(1, controller.ExplorationResumeRemainingFrames);
+            Call(controller, "AdvanceExplorationResumeFrame");
+            Assert.IsFalse(controller.IsExplorationResumeCounting);
+        }
+        [Test] public void 探索再開は九十フレームまで探索と入力を停止し連続再開で延長しない()
+        {
+            var c=Start();var m=Model(c);float x=m.Dungeon.PlayerPosition;float scale=UnityEngine.Time.timeScale;
+            c.SetUserPaused(true);c.SetUserPaused(false);
+            Assert.IsTrue(c.IsExplorationResumeCounting);Assert.AreEqual(90,c.ExplorationResumeRemainingFrames);
+            c.SetUserPaused(false);Assert.AreEqual(90,c.ExplorationResumeRemainingFrames);
+            for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,JumpButtonDown=true});
+            Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);Assert.AreEqual(0,UnityEngine.Time.timeScale);
+            FinishExplorationCountdown(c);Assert.IsFalse(c.IsUserPaused);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
+        }
+        [TestCase(1)] [TestCase(30)] [TestCase(89)]
+        public void 探索カウント中の再停止は残りを捨て次の明示再開で全長を使う(int frames)
+        {
+            var c=Start();c.SetUserPaused(true);c.SetUserPaused(false);
+            for(int n=0;n<frames;n++)Call(c,"AdvanceExplorationResumeFrame");
+            c.SetUserPaused(true);Assert.IsFalse(c.IsExplorationResumeCounting);Assert.IsTrue(c.IsUserPaused);
+            Call(c,"UpdateExplorationResume");Assert.IsTrue(c.IsUserPaused);
+            c.SetUserPaused(false);Assert.AreEqual(90,c.ExplorationResumeRemainingFrames);FinishExplorationCountdown(c);Assert.IsFalse(c.IsUserPaused);
+        }
+        [Test] public void 探索カウント中の非アクティブ復帰は停止を保ち保存復帰で旧期限を持ち越さない()
+        {
+            var c=Start();c.SetUserPaused(true);c.SetUserPaused(false);Call(c,"AdvanceExplorationResumeFrame");
+            Call(c,"OnApplicationPause",true);Assert.IsFalse(c.IsExplorationResumeCounting);
+            Call(c,"OnApplicationPause",false);Call(c,"UpdateExplorationResume");Assert.IsTrue(c.IsUserPaused);
+            c.SetUserPaused(false);Assert.AreEqual(90,c.ExplorationResumeRemainingFrames);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsFalse(c.IsExplorationResumeCounting);
+            var paused=c.IsUserPaused;for(int n=0;n<100;n++)Call(c,"AdvanceExplorationResumeFrame");Assert.AreEqual(paused,c.IsUserPaused);
+        }
+        [Test] public void 探索カウントの無効化は解除せず次の再開で全長を使う()
+        {
+            var c=Start();c.SetUserPaused(true);c.SetUserPaused(false);Call(c,"AdvanceExplorationResumeFrame");
+            c.enabled=false;Call(c,"OnDisable");Assert.IsFalse(c.IsExplorationResumeCounting);Assert.IsTrue(c.IsUserPaused);
+            c.enabled=true;c.SetUserPaused(false);Assert.AreEqual(90,c.ExplorationResumeRemainingFrames);FinishExplorationCountdown(c);
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void パッド切断は探索とカスタムを停止し再接続なしの再開操作を許す(bool battle)
         {
@@ -2630,7 +2676,7 @@ namespace Olca.Tests.Integration
                 var replacement=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
                 try {Assert.IsTrue(c.IsUserPaused,"再接続で自動再開しない");}
                 finally {UnityEngine.InputSystem.InputSystem.RemoveDevice(replacement);}
-                KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
+                KeyboardButton(c,"ResumeButton");if(!battle)FinishExplorationCountdown(c);Assert.IsFalse(c.IsUserPaused);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
             } finally {if(pad.added)UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);c.SetUserPaused(false);UnityEngine.Time.timeScale=scale;}
         }
         [TestCase(true)] [TestCase(false)]
@@ -2643,6 +2689,8 @@ namespace Olca.Tests.Integration
             try {
                 if(victory)foreach(var e in m.CurrentBattle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);else m.CurrentBattle.Player.TakeDamage(100000);
                 Assert.IsTrue(m.IsBattleEndPresentationPending);
+                c.SetUserPaused(true);
+                Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
                 UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
                 Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
                 Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsTrue(c.IsUserPaused);
@@ -2663,7 +2711,7 @@ namespace Olca.Tests.Integration
             for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1});
             Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.AreEqual(frame,m.CurrentBattle?.LogicalFrame??0);
             Call(c,"OnApplicationPause",false);Call(c,"OnApplicationFocus",true);
-            Assert.IsTrue(c.IsUserPaused);KeyboardButton(c,"ResumeButton");
+            Assert.IsTrue(c.IsUserPaused);KeyboardButton(c,"ResumeButton");if(!battle)FinishExplorationCountdown(c);
             Assert.IsFalse(c.IsUserPaused);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
         }
         [Test] public void 手動停止と切断停止はアプリ復帰に解除されず停止前速度を保持する()
@@ -2673,7 +2721,7 @@ namespace Olca.Tests.Integration
             try {
                 Call(c,"OnApplicationPause",true);UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
                 Call(c,"OnApplicationPause",false);Assert.IsTrue(c.IsUserPaused);
-                KeyboardButton(c,"ResumeButton");Assert.AreEqual(scale,UnityEngine.Time.timeScale);
+                KeyboardButton(c,"ResumeButton");FinishExplorationCountdown(c);Assert.AreEqual(scale,UnityEngine.Time.timeScale);
             } finally {if(pad.added)UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
         [Test] public void 初期化前の休止要求は初期化後も保持し攻略置換でも解除しない()
@@ -2681,7 +2729,7 @@ namespace Olca.Tests.Integration
             var c=Start(configure:host=>Call(host,"OnApplicationPause",true));Assert.IsTrue(c.IsUserPaused);
             Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsTrue(c.IsUserPaused);
             Call(c,"OnApplicationPause",false);Assert.IsTrue(c.IsUserPaused);
-            KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
+            KeyboardButton(c,"ResumeButton");FinishExplorationCountdown(c);Assert.IsFalse(c.IsUserPaused);
         }
         [TestCase(true)] [TestCase(false)]
         public void 勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ(bool victory)
@@ -3477,6 +3525,40 @@ namespace Olca.Tests.Integration
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new Olca.Application.Battle.CardPoiseSettings(sword: -1));
         }
 
+        [TestCase("keyboard")][TestCase("gamepad")][TestCase("audio")]
+        public void 設定画面中は図鑑入口を隠し破棄して戻ると停止状態のまま再表示する(string kind)
+        {
+            var c=Start(new[]{Empty(3),DungeonConfig.CreateTestDungeon(8)});var model=Model(c);var bytes=System.IO.File.ReadAllBytes(Store(c).ActivePath);
+            var profile=c.GameplayKeyboardProfile;var volumes=c.GameplayAudioVolumes;
+            c.gameObject.SetActive(true);
+            try
+            {
+                c.SetUserPaused(true);
+                var entry=(UnityEngine.UI.Button)Get(c,"cardCollectionButton");
+                for(int i=0;i<2;i++)
+                {
+                    Call(c,"UpdateViews");Assert.IsTrue(entry.gameObject.activeSelf);
+                    KeyboardButton(c,kind=="keyboard"?"KeyboardSettingsButton":kind=="gamepad"?"GamepadSettingsButton":"AudioSettingsButton");
+                    Call(c,"UpdateViews");Assert.IsFalse(entry.gameObject.activeSelf,"設定編集中は別画面への入口を前面へ出さない");
+                    if(kind=="audio")Call(c,"CloseAudioSettings");
+                    else ((Olca.Presentation.Field.GameplayKeyboardSettingsView)Get(c,kind=="keyboard"?"keyboardSettingsView":"gamepadSettingsView")).DiscardAndClose();
+                    Call(c,"UpdateViews");Assert.IsTrue(entry.gameObject.activeSelf);
+                    Assert.IsTrue(c.IsUserPaused);Assert.AreSame(model,Model(c));
+                    Assert.AreSame(profile,c.GameplayKeyboardProfile);Assert.AreEqual(volumes,c.GameplayAudioVolumes);
+                    CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store(c).ActivePath));
+                }
+            }
+            finally {c.gameObject.SetActive(false);}
+        }
+
+        [Test]
+        public void 報酬だけは背景のデッキ枚数を隠し報酬終了後に既存表示へ戻す()
+        {
+            var c=Start();var hud=(Olca.Presentation.Dungeon.DungeonHudView)Get(c,"dungeonHudView");var host=new UnityEngine.GameObject("BackgroundDeckCount",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));host.transform.SetParent(c.transform,false);var text=host.GetComponent<UnityEngine.UI.Text>();text.font=UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");var font=text.font;Set(hud,"deckCountText",text);
+            Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);ToBattle(c);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);
+            var choices=Win(c);Call(c,"UpdateViews");Assert.IsFalse(host.activeSelf);Model(c).SelectCardReward(choices[0]);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);Assert.AreSame(font,text.font);
+        }
+
         private static void KeyboardButton(Olca.Application.Dungeon.DungeonBattleController controller, string name)
         {
             var canvas = (UnityEngine.GameObject)Get(controller, "pauseCanvas");
@@ -3586,7 +3668,7 @@ namespace Olca.Tests.Integration
                 UnityEngine.Time.timeScale=.75f;c.SetUserPaused(true);KeyboardButton(c,"KeyboardSettingsButton");
                 if(destroyed=="keyboard"||destroyed=="both")UnityEngine.Object.DestroyImmediate(keyboard.gameObject);
                 if(destroyed=="overlay"||destroyed=="both")UnityEngine.Object.DestroyImmediate((UnityEngine.GameObject)Get(c,"pauseOverlay"));
-                Assert.DoesNotThrow(()=>c.SetUserPaused(false));Assert.IsFalse(model.IsUserPaused);Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused);
+                Assert.DoesNotThrow(()=>c.SetUserPaused(false));Assert.IsTrue(c.IsExplorationResumeCounting);FinishExplorationCountdown(c);Assert.IsFalse(model.IsUserPaused);Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused);
                 Assert.AreEqual(.75f,UnityEngine.Time.timeScale);Assert.AreSame(model,Model(c));
                 if(keyboard!=null)Assert.IsFalse(keyboard.gameObject.activeSelf,"通常の解除は従来どおり設定画面を閉じる");
                 CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(file.ActivePath));

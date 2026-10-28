@@ -52,11 +52,15 @@ namespace Olca.Core.Domain
         private long frameDamage;
         private FrameCountdown timer;
         private bool timed;
+        private int displayDurationFrames;
+        internal int? DisplayRemainingFrames => timed ? timer.Frames : (int?)null;
+        internal int? DisplayDurationFrames => timed ? displayDurationFrames : (int?)null;
         internal void Set(int value, bool aura, int? durationFrames = null)
         {
             if (value < 0 || durationFrames <= 0) throw new System.ArgumentOutOfRangeException();
             BarrierHp = aura ? 0 : value; AuraThreshold = aura ? value : 0;
             timed = value > 0 && durationFrames.HasValue;
+            displayDurationFrames = timed ? durationFrames.Value : 0;
             timer.SetFrames(timed ? durationFrames.Value : 0);
             frameDamage = 0; expires = false; appliedThisFrame = frameOpen;
         }

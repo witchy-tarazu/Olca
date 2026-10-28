@@ -17,8 +17,49 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
+        private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private Olca.Presentation.Effects.ActorConditionVisual guardVisual, paralysisVisual;
+        private void RefreshConditionVisuals()
+        {
+            if (!isActiveAndEnabled || enemy == null || enemy.IsDead) { guardVisual?.Clear(); paralysisVisual?.Clear(); return; }
+            if (guardVisual == null && enemy.Guard.IsActive) guardVisual = new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Guard);
+            if (paralysisVisual == null && enemy.IsParalyzed) paralysisVisual = new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Paralyze);
+            guardVisual?.Refresh(enemyImage, enemy.Guard.IsActive); paralysisVisual?.Refresh(enemyImage, enemy.IsParalyzed);
+        }
+        private void RefreshDefensiveField()
+        {
+            if (!isActiveAndEnabled || enemy == null || enemy.IsDead) { defensiveField?.Clear(); return; }
+            if (defensiveField == null && (enemy.HasBarrier || enemy.HasAura)) defensiveField = new Olca.Presentation.Effects.DefensiveFieldVisual();
+            defensiveField?.Refresh(enemyImage, enemy.HasBarrier, enemy.HasAura);
+        }
         private static readonly System.Collections.Generic.List<EnemyView> bossGauges=new System.Collections.Generic.List<EnemyView>();
         private static readonly System.Collections.Generic.List<EnemyView> normalGauges=new System.Collections.Generic.List<EnemyView>();
+        private const float BossHudSpacing=.10f;
+        private Canvas statusCanvas;
+        private CombatStatusIconStrip statusIcons;
+        private void HideStatusIcons(){statusIcons?.Clear();if(statusCanvas!=null)statusCanvas.gameObject.SetActive(false);}
+        private void RefreshStatusIcons()
+        {
+            var camera=Camera.main;
+            if(!isActiveAndEnabled||!GaugeVisible||!IsBossGauge||camera==null){HideStatusIcons();return;}
+            var entries=CombatStatusIcons.ForEnemy(enemy);
+            if(entries.Count==0){HideStatusIcons();return;}
+            if(statusCanvas==null){
+                var obj=new GameObject("BossCombatStatusIcons",typeof(RectTransform),typeof(Canvas));obj.transform.SetParent(transform,false);
+                statusCanvas=obj.GetComponent<Canvas>();statusCanvas.renderMode=RenderMode.WorldSpace;statusCanvas.overrideSorting=true;statusCanvas.sortingOrder=7;
+                var rect=(RectTransform)obj.transform;rect.pivot=new Vector2(.5f,1);rect.sizeDelta=new Vector2(52,520);
+                var row=new GameObject("Icons",typeof(RectTransform));row.transform.SetParent(obj.transform,false);var rr=(RectTransform)row.transform;rr.anchorMin=rr.anchorMax=new Vector2(0,1);rr.pivot=new Vector2(0,1);rr.anchoredPosition=Vector2.zero;
+                statusIcons=row.AddComponent<CombatStatusIconStrip>();statusIcons.Configure(1);
+            }
+            statusCanvas.gameObject.SetActive(true);statusIcons.Show(entries);
+            float offset=BossHudSpacing*Mathf.Max(0,bossGauges.IndexOf(this));
+            float depth=Mathf.Max(camera.nearClipPlane+1,camera.WorldToViewportPoint(transform.position).z);
+            var point=camera.ViewportToWorldPoint(new Vector3(.90f-offset,.8f,depth));
+            float worldHeight=Vector3.Distance(camera.ViewportToWorldPoint(new Vector3(.9f,.8f,depth)),camera.ViewportToWorldPoint(new Vector3(.9f,.845f,depth)));
+            float scale=worldHeight/48;var parentScale=transform.lossyScale;
+            statusCanvas.transform.localScale=new Vector3(scale/(parentScale.x==0?1:parentScale.x),scale/(parentScale.y==0?1:parentScale.y),scale/(parentScale.z==0?1:parentScale.z));
+            statusCanvas.transform.position=point;statusCanvas.transform.rotation=camera.transform.rotation;
+        }
         private bool hpVisible;
         private LineRenderer hpBack, hpFill, poiseBack, poiseFill;
         private Material gaugeMaterial;
@@ -57,13 +98,14 @@ namespace Olca.Presentation.Battle
         {line.startWidth=line.endWidth=width;line.positionCount=2;line.SetPosition(0,bottom);line.SetPosition(1,Vector3.Lerp(bottom,top,fraction));}
         private void RefreshGauges()
         {
+            RefreshStatusIcons();
             bool visible=GaugeVisible;if(hpBack==null&&!visible)return;EnsureGauges();
             hpBack.enabled=visible;hpFill.enabled=visible&&HpFraction>0;
             poiseBack.enabled=visible&&PoiseFraction.HasValue;poiseFill.enabled=poiseBack.enabled&&PoiseFraction.Value>0;
             if(!visible)return;
             var camera=Camera.main;
             if(IsBossGauge&&camera!=null){
-                float offset=.06f*Mathf.Max(0,bossGauges.IndexOf(this));
+                float offset=BossHudSpacing*Mathf.Max(0,bossGauges.IndexOf(this));
                 float depth=Mathf.Max(camera.nearClipPlane+1,camera.WorldToViewportPoint(transform.position).z);
                 Vector3 Point(float x,float y)=>camera.ViewportToWorldPoint(new Vector3(x-offset,y,depth));
                 float height=Vector3.Distance(Point(.965f,.3f),Point(.965f,.78f));
@@ -99,9 +141,9 @@ namespace Olca.Presentation.Battle
         }
         private void RegisterGauge(){var list=IsBossGauge?bossGauges:normalGauges;if(!list.Contains(this))list.Add(this);}
         private void OnEnable(){if(hpVisible)RegisterGauge();}
-        private void OnDisable(){bossGauges.Remove(this);normalGauges.Remove(this);}
-        private void LateUpdate(){if(hpVisible)RefreshGauges();}
-        private void OnDestroy(){bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
+        private void OnDisable(){guardVisual?.Clear();paralysisVisual?.Clear();defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
+        private void LateUpdate(){if(hpVisible)RefreshGauges();RefreshDefensiveField();RefreshConditionVisuals();}
+        private void OnDestroy(){guardVisual?.Dispose();paralysisVisual?.Dispose();defensiveField?.Dispose();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
 
         private bool deathPresentationActive;
         public void SetDeathPresentationActive(bool active)=>deathPresentationActive=active;
@@ -111,6 +153,7 @@ namespace Olca.Presentation.Battle
 
         public void Initialize(Enemy enemy)
         {
+            guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             this.enemy = enemy;
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
             ApplyAppearance();
@@ -161,6 +204,8 @@ namespace Olca.Presentation.Battle
                 hpText.text = $"{enemy.CurrentHp}";
             RefreshGauges();
             gameObject.SetActive(!enemy.IsDead||deathPresentationActive);
+            RefreshDefensiveField();
+            RefreshConditionVisuals();
         }
 
         /// <summary>バトル開始時に呼ぶ（名前・HP表示）</summary>

@@ -1,0 +1,26 @@
+{
+  "entries": [
+    {
+      "name": "grunt_256",
+      "width": 256,
+      "height": 256,
+      "x": 27,
+      "y": 20,
+      "w": 202,
+      "h": 110,
+      "source": "Assets/Art/Sprites/Enemies/grunt_256.png",
+      "sourceSha256": "46b8dbe079aefae7ec4aa579d7087855c6ecda21b3275638ea0d8f899cd592fb"
+    },
+    {
+      "name": "boss_512",
+      "width": 512,
+      "height": 512,
+      "x": 4,
+      "y": 56,
+      "w": 503,
+      "h": 395,
+      "source": "Assets/Art/Sprites/Enemies/boss_512.png",
+      "sourceSha256": "b4bc4c29d3f4808d876db257597cf43d270d9fc7521c6c6dcd199f78a09548ef"
+    }
+  ]
+}

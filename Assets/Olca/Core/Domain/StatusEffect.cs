@@ -20,10 +20,11 @@ namespace Olca.Core.Domain
         public StatusEffectType Type { get; }
         public string Kind { get; }
         public int RemainingFrames { get; }
+        public int DurationFrames { get; }
         public int Damage { get; }
         public int? IntervalFrames { get; }
-        internal StatusEffectSnapshot(StatusEffectType type, string kind, int frames, int damage = 0, int? interval = null)
-        { Type=type; Kind=kind; RemainingFrames=frames; Damage=damage; IntervalFrames=interval; }
+        internal StatusEffectSnapshot(StatusEffectType type, string kind, int frames, int damage = 0, int? interval = null, int? durationFrames = null)
+        { Type=type; Kind=kind; RemainingFrames=frames; DurationFrames=durationFrames??frames; Damage=damage; IntervalFrames=interval; }
     }
 
     /// <summary>時間制の状態異常に対する軽減率。属性耐性とは独立する。</summary>
@@ -79,7 +80,7 @@ namespace Olca.Core.Domain
         public bool HasPendingApplication => pending != null;
         public int RemainingFrames => (int)((remainingUnits + 49) / 50);
         internal StatusEffectSnapshot Inspect(string kind) => IsActive
-            ? new StatusEffectSnapshot(StatusEffectType.Poison,kind,RemainingFrames,active.Damage,active.Interval) : null;
+            ? new StatusEffectSnapshot(StatusEffectType.Poison,kind,RemainingFrames,active.Damage,active.Interval,active.Frames) : null;
         public int FramesUntilDamage => active == null ? 0 : (int)((nextDamageUnits + 49) / 50);
 
         /// <summary>期間と量は既存効果から取得し、独立した間隔と終了時解除を明示させる。</summary>
@@ -153,7 +154,8 @@ namespace Olca.Core.Domain
         }
         internal void Restore(PlayerPoisonDto value)
         {
-            active = new Application { Damage=value.Damage, Interval=value.IntervalFrames };
+            // 旧保存には付与時の全長がないため、復帰時残量を表示用の基準とする。更新時計は維持。
+            active = new Application { Frames=(int)((value.RemainingUnits+49)/50), Damage=value.Damage, Interval=value.IntervalFrames };
             remainingUnits=value.RemainingUnits; nextDamageUnits=value.NextDamageUnits;
         }
         /// <summary>死亡・終了時解除指定の戦闘終了で使用。付与予約も破棄する。</summary>
@@ -191,6 +193,7 @@ namespace Olca.Core.Domain
         public int RemainingMs { get; private set; }
 
         public int RemainingFrames { get; private set; }
+        public int DurationFrames => initialReducedFrames;
 
         /// <summary>毒の場合の1ティックあたりのダメージ</summary>
         public int DamagePerTick { get; }

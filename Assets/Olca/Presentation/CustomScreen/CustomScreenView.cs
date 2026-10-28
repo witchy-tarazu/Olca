@@ -253,7 +253,10 @@ namespace Olca.Presentation.CustomScreen
         {
             StopHandPresentation();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
-            foreach(var text in GetComponentsInChildren<Text>(true))text.color=Color.white;
+            // 再利用する共通ボタンの濃色文字は、背景用の白文字へ戻さない。
+            foreach(var text in GetComponentsInChildren<Text>(true))
+                if(text.GetComponent<Olca.Presentation.Dungeon.UiKanaLabel>()==null || text.GetComponentInParent<Button>(true)==null)
+                    text.color=Color.white;
             Olca.Presentation.Dungeon.UiLook.Button(confirmButton);
             if(confirmButton!=null){var label=confirmButton.GetComponentInChildren<Text>();if(label!=null)label.text="確定";}
             if(cursorIndicator!=null){var image=cursorIndicator.GetComponent<Image>();if(image!=null){image.sprite=Resources.Load<Sprite>("OlcaUI/button-selected");image.type=Image.Type.Sliced;image.fillCenter=false;image.color=Color.white;}}
@@ -613,6 +616,10 @@ namespace Olca.Presentation.CustomScreen
             if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{GetTransformationName(d.Id)}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
             else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=CustomDisplay.CardDetails(card);}
             ShowDetailsValue(value);
+            if(padTransformationIndex<0&&cursor!=null&&cursor.CurrentIndex>=0&&cursor.CurrentIndex<inputHand.Count) {
+                CardAttackPropertyIcons.Bind(padDetailsText,inputHand[cursor.CurrentIndex],value);
+                Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);
+            }
         }
         private static void RestoreInspectionButtonGraphics(GameObject button)
         {
@@ -650,7 +657,7 @@ namespace Olca.Presentation.CustomScreen
             }
             foreach(string name in new[]{"PreviousInspection","NextInspection"}){var control=detailsPanel.transform.Find(name);if(control!=null)control.gameObject.SetActive(!isScreenVisible&&inspectionIndex>0);}
             if(hiddenCustomControls!=null)hiddenCustomControls.SetActive(false);
-            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);padDetailsScroll.verticalNormalizedPosition=1;
+            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);padDetailsScroll.verticalNormalizedPosition=1;
         }
 
         private void HandleInput()
@@ -1570,6 +1577,7 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private void UpdateCursorCardDisplay(int cursorIndex)
         {
+            CardAttackPropertyIcons.Clear(selectedCardDescription);
             if (customizeModeView != null && customizeModeView.IsActive)
             {
                 if(selectedCardImage!=null)selectedCardImage.sprite=null;
@@ -1583,7 +1591,7 @@ namespace Olca.Presentation.CustomScreen
 
                 if (selectedCardDescription != null)
                 {
-                    selectedCardDescription.text = CustomDisplay.CardDetails(cursorCard);
+                    CardAttackPropertyIcons.Bind(selectedCardDescription,cursorCard,CustomDisplay.CardDetails(cursorCard));
                 }
 
                 // 本絵の登録だけを参照する。未登録時に専用miniやUI部品を本絵へ流用しない。
@@ -1822,7 +1830,7 @@ namespace Olca.Presentation.CustomScreen
             foreach(var entry in "続=ツヅ|演出=エンシュツ|音量=オンリョウ|文字表示=モジヒョウジ|標準=ヒョウジュン|短縮=タンシュク|即時=ソクジ|速=ハヤ|失敗=シッパイ|再試行=サイシコウ|消去=ショウキョ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
             foreach(var entry in "保存済=ホゾンズ|反映=ハンエイ|反映済=ハンエイズ|不可=フカ|予定=ヨテイ|超過変換=チョウカヘンカン|帰還後=キカンゴ|状態=ジョウタイ|全回復=ゼンカイフク".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
             foreach(var entry in "持=モ|帰=カエ|同=オナ|同時=ドウジ|画面=ガメン|隠=カク|自分=ジブン|敵=テキ|状態異常=ジョウタイイジョウ|補助=ホジョ|範囲=ハンイ|外=ガイ|動作後=ドウサゴ|穴=アナ|無効=ムコウ|情報=ジョウホウ|受=ウ|取=ト|進=スス|応=オウ|解放=カイホウ|済=ズ|一=イチ|満=マン|消費=ショウヒ|報酬=ホウシュウ|習得=シュウトク|時=ジ|異常=イジョウ|消=ケ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
-            foreach(var entry in "一致=イッチ|一覧=イチラン|上書=ウワガ|不完全=フカンゼン|不足=フソク|任意=ニンイ|会話=カイワ|使=ツカ|保全=ホゼン|保存先=ホゾンサキ|保存先設定=ホゾンサキセッテイ|保存可=ホゾンカ|元=モト|先=サキ|入力=ニュウリョク|入手=ニュウシュ|入手済=ニュウシュズ|全=ゼン|全体=ゼンタイ|全文表示=ゼンブンヒョウジ|公開履歴=コウカイリレキ|公開情報=コウカイジョウホウ|共通=キョウツウ|共通制限=キョウツウセイゲン|内容=ナイヨウ|再使用待=サイシヨウマ|再抽選=サイチュウセン|再生経路=サイセイケイロ|再試行計画=サイシコウケイカク|再読込=サイヨミコミ|再起動=サイキドウ|分岐=ブンキ|切=キ|切替=キリカエ|初期化=ショキカ|初期化完了=ショキカカンリョウ|初期配置=ショキハイチ|別定義=ベツテイギ|削除=サクジョ|割=ワ|割当=ワリアテ|効果=コウカ|効果音=コウカオン|原因=ゲンイン|取引=トリヒキ|取得=シュトク|同名=ドウメイ|名称=メイショウ|含=フク|商品=ショウヒン|固定=コテイ|固有=コユウ|場面=バメン|売切=ウリキ|変=カ|変換=ヘンカン|変更=ヘンコウ|定義=テイギ|定義未解決=テイギミカイケツ|対応外=タイオウガイ|履歴=リレキ|帰還処理=キカンショリ|当=ア|形式=ケイシキ|復帰完了=フッキカンリョウ|復旧用=フッキュウヨウ|必須=ヒッス|所持枚数=ショジマイスウ|押=オ|押込=オシコミ|拠点=キョテン|持込=モチコミ|持帰=モチカエ|探索=タンサク|操作=ソウサ|操作設定=ソウサセッテイ|支払=シハライ|攻略中取得=コウリャクチュウシュトク|攻略進行=コウリャクシンコウ|攻略開始後=コウリャクカイシゴ|敵一体=テキイッタイ|敵定義元=テキテイギモト|文章=ブンショウ|新=アタラ|旧攻略=キュウコウリャク|早送=ハヤオク|時間=ジカン|更新=コウシン|替=カ|未完了=ミカンリョウ|未対応=ミタイオウ|未特定=ミトクテイ|未登録=ミトウロク|未確定=ミカクテイ|未解放=ミカイホウ|未解決=ミカイケツ|本体=ホンタイ|枚条件必須=マイジョウケンヒッス|枚選択=マイセンタク|検証=ケンショウ|検証専用=ケンショウセンヨウ|永続入手=エイゾクニュウシュ|決定=ケッテイ|消音=ショウオン|減=ヘ|減少=ゲンショウ|無制限=ムセイゲン|独立保存=ドクリツホゾン|登録=トウロク|短=ミジカ|破棄=ハキ|確認=カクニン|終了=シュウリョウ|終了済=シュウリョウズ|編集=ヘンシュウ|置換=チカン|行動=コウドウ|表示=ヒョウジ|表示情報=ヒョウジジョウホウ|表示済=ヒョウジズ|被弾無敵=ヒダンムテキ|複製=フクセイ|解放履歴=カイホウリレキ|解消=カイショウ|計=ケイ|設定保存先=セッテイホゾンサキ|試聴音=シチョウオン|読=ヨ|読込=ヨミコミ|調整=チョウセイ|起動後=キドウゴ|込=コ|退出=タイシュツ|退出保存=タイシュツホゾン|退出時=タイシュツジ|途中状態=トチュウジョウタイ|通算=ツウサン|進行=シンコウ|進行保存先=シンコウホゾンサキ|進行文書=シンコウブンショ|達=タッ|適用=テキヨウ|遷移完了=センイカンリョウ|選択待=センタクマ|長=ナガ|開発=カイハツ|階層列=カイソウレツ|非装備=ヒソウビ|鳴=ナ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
+            foreach(var entry in "一致=イッチ|一覧=イチラン|上書=ウワガ|不完全=フカンゼン|不足=フソク|任意=ニンイ|会話=カイワ|使=ツカ|保全=ホゼン|保存先=ホゾンサキ|保存先設定=ホゾンサキセッテイ|保存可=ホゾンカ|元=モト|先=サキ|入力=ニュウリョク|入手=ニュウシュ|入手済=ニュウシュズ|全=ゼン|全体=ゼンタイ|全文表示=ゼンブンヒョウジ|公開履歴=コウカイリレキ|公開情報=コウカイジョウホウ|共通=キョウツウ|共通制限=キョウツウセイゲン|内容=ナイヨウ|再使用待=サイシヨウマ|再抽選=サイチュウセン|再生経路=サイセイケイロ|再試行計画=サイシコウケイカク|再読込=サイヨミコミ|再起動=サイキドウ|分岐=ブンキ|分類=ブンルイ|切=キ|切替=キリカエ|初期化=ショキカ|初期化完了=ショキカカンリョウ|初期配置=ショキハイチ|別定義=ベツテイギ|削除=サクジョ|割=ワ|割当=ワリアテ|効果=コウカ|効果音=コウカオン|原因=ゲンイン|取引=トリヒキ|取得=シュトク|同名=ドウメイ|名称=メイショウ|含=フク|商品=ショウヒン|固定=コテイ|固有=コユウ|場面=バメン|売切=ウリキ|変=カ|変換=ヘンカン|変更=ヘンコウ|定義=テイギ|定義未解決=テイギミカイケツ|対応外=タイオウガイ|履歴=リレキ|帰還処理=キカンショリ|当=ア|形式=ケイシキ|復帰完了=フッキカンリョウ|復旧用=フッキュウヨウ|必須=ヒッス|所持枚数=ショジマイスウ|現在枚数=ゲンザイマイスウ|押=オ|押込=オシコミ|拠点=キョテン|持込=モチコミ|持帰=モチカエ|探索=タンサク|操作=ソウサ|操作設定=ソウサセッテイ|支払=シハライ|攻略中取得=コウリャクチュウシュトク|攻略進行=コウリャクシンコウ|攻略開始後=コウリャクカイシゴ|敵一体=テキイッタイ|敵定義元=テキテイギモト|文章=ブンショウ|新=アタラ|旧攻略=キュウコウリャク|早送=ハヤオク|時間=ジカン|更新=コウシン|替=カ|未入手=ミニュウシュ|未公開=ミコウカイ|未完了=ミカンリョウ|未対応=ミタイオウ|未特定=ミトクテイ|未登録=ミトウロク|未確定=ミカクテイ|未解放=ミカイホウ|未解決=ミカイケツ|本体=ホンタイ|枚条件必須=マイジョウケンヒッス|枚選択=マイセンタク|検証=ケンショウ|検証専用=ケンショウセンヨウ|永続入手=エイゾクニュウシュ|決定=ケッテイ|消音=ショウオン|減=ヘ|減少=ゲンショウ|無制限=ムセイゲン|独立保存=ドクリツホゾン|登録=トウロク|短=ミジカ|破棄=ハキ|確認=カクニン|終了=シュウリョウ|終了済=シュウリョウズ|編集=ヘンシュウ|置換=チカン|行動=コウドウ|表示=ヒョウジ|表示情報=ヒョウジジョウホウ|表示済=ヒョウジズ|被弾無敵=ヒダンムテキ|複製=フクセイ|解放履歴=カイホウリレキ|解消=カイショウ|計=ケイ|設定保存先=セッテイホゾンサキ|試聴音=シチョウオン|読=ヨ|読込=ヨミコミ|調整=チョウセイ|起動後=キドウゴ|込=コ|退出=タイシュツ|退出保存=タイシュツホゾン|退出時=タイシュツジ|途中状態=トチュウジョウタイ|通算=ツウサン|進行=シンコウ|進行保存先=シンコウホゾンサキ|進行文書=シンコウブンショ|達=タッ|適用=テキヨウ|遷移完了=センイカンリョウ|選択待=センタクマ|長=ナガ|開発=カイハツ|階層列=カイソウレツ|非装備=ヒソウビ|鳴=ナ".Split('|')){var pair=entry.Split('=');result.Add(pair[0],pair[1]);}
             return result;
         }
         public static string Katakana(string text)

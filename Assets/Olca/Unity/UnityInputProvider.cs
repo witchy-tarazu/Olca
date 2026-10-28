@@ -611,6 +611,7 @@ namespace Olca.Unity
         private readonly List<Route> routes=new List<Route>();
         private readonly List<GameObject> owned=new List<GameObject>();
         private AudioVolumeSettings settings=new AudioVolumeSettings();private bool disposed;
+        private bool bgmPending;
         public bool IsPaused { get; private set; }
         public AudioSource Bgm { get; } public AudioSource Effects { get; } public AudioSource Voice { get; }
         public GameplayAudioRouter(Transform parent)
@@ -625,10 +626,19 @@ namespace Olca.Unity
             var prior=routes.FirstOrDefault(r=>r.Source==source);if(prior!=null){if(prior.Channel!=channel)throw new System.ArgumentException("音声系統は重複登録できません");return;}
             var route=new Route{Source=source,Channel=channel,BaseVolume=source.volume};routes.Add(route);source.volume=route.BaseVolume*settings.Gain(channel);if(IsPaused)source.Pause();
         }
+        public void Unregister(AudioSource source)
+        {
+            var route = routes.FirstOrDefault(r => ReferenceEquals(r.Source, source));
+            if (route == null) return;
+            if (source != null) source.volume = route.BaseVolume;
+            routes.Remove(route);
+        }
         public void Apply(AudioVolumeSettings value){if(disposed)throw new System.ObjectDisposedException(nameof(GameplayAudioRouter));settings=value??throw new System.ArgumentNullException(nameof(value));
             foreach(var route in routes)if(route.Source!=null)route.Source.volume=route.BaseVolume*settings.Gain(route.Channel);}
-        public void SetPaused(bool paused){if(disposed||IsPaused==paused)return;IsPaused=paused;foreach(var route in routes)if(route.Source!=null){if(paused)route.Source.Pause();else route.Source.UnPause();}}
-        public void PlayBgm(AudioClip clip){if(disposed)return;if(Bgm.clip==clip)return;Bgm.Stop();Bgm.clip=clip;if(clip!=null){Bgm.Play();if(IsPaused)Bgm.Pause();}}
+        public void SetPaused(bool paused){if(disposed)return;if(IsPaused!=paused){IsPaused=paused;foreach(var route in routes)if(route.Source!=null){if(paused)route.Source.Pause();else route.Source.UnPause();}if(!paused&&Bgm!=null&&Bgm.clip!=null&&!Bgm.isPlaying)bgmPending=true;}if(!paused)StartPendingBgm();}
+        public void PlayBgm(AudioClip clip){if(disposed)return;if(Bgm.clip!=clip){Bgm.Stop();Bgm.clip=clip;bgmPending=clip!=null;}StartPendingBgm();}
+        // 非アクティブな所有者の曲指定は保持し、有効化・ポーズ解除で一度だけ開始する。
+        private void StartPendingBgm(){if(!bgmPending||IsPaused||Bgm==null||!Bgm.isActiveAndEnabled||Bgm.clip==null)return;Bgm.Play();bgmPending=false;}
         public void PlayEffect(AudioClip clip){if(!disposed&&!IsPaused&&clip!=null)Effects.PlayOneShot(clip);}
         public void PlayVoice(AudioClip clip){if(disposed||clip==null||IsPaused)return;Voice.Stop();Voice.clip=clip;Voice.Play();}
         public void Dispose(){if(disposed)return;disposed=true;foreach(var route in routes)if(route.Source!=null){if(owned.Contains(route.Source.gameObject))route.Source.Stop();route.Source.volume=route.BaseVolume;}
