@@ -931,7 +931,7 @@ namespace Olca.Application.Dungeon
             basicAttackHud.gameObject.SetActive(false);
             var collectionPanel=new GameObject("CardCollectionPanel",typeof(RectTransform));collectionPanel.transform.SetParent(pauseCanvas.transform,false);
             cardCollectionView=collectionPanel.AddComponent<ClearReturnView>();cardCollectionView.Initialize(font,null,null,null,null);
-            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,new Vector2(.5f,.5f),new Vector2(650,455));
+            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,Vector2.one,new Vector2(-310,-85));
             ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
             cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
             cardCollectionButton.gameObject.SetActive(false);
