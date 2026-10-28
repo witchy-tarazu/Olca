@@ -51,6 +51,29 @@ namespace Olca.Tests
                 scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,0,false)] [TestCase(1662.77f,1247.08f,0,false)] [TestCase(2199.64f,942.70f,0,false)]
+        [TestCase(1920f,1080f,0,true)] [TestCase(1662.77f,1247.08f,0,true)] [TestCase(2199.64f,942.70f,0,true)]
+        [TestCase(1920f,1080f,1,false)] [TestCase(1662.77f,1247.08f,1,false)] [TestCase(2199.64f,942.70f,1,false)]
+        [TestCase(1920f,1080f,1,true)] [TestCase(1662.77f,1247.08f,1,true)] [TestCase(2199.64f,942.70f,1,true)]
+        [TestCase(1920f,1080f,2,false)] [TestCase(1662.77f,1247.08f,2,false)] [TestCase(2199.64f,942.70f,2,false)]
+        [TestCase(1920f,1080f,2,true)] [TestCase(1662.77f,1247.08f,2,true)] [TestCase(2199.64f,942.70f,2,true)]
+        public void 出撃先スタイル交換は保存待ちも含め端切れせず取消とページ操作を維持する(float width,float height,int mode,bool blocked)
+        {
+            var root=new GameObject("SelectionViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("SelectionView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});int cancels=0,choices=0;var names=Enumerable.Range(0,7).Select(n=>"テスト "+n).ToArray();var unlocked=Enumerable.Range(0,7).Select(n=>n<6).ToArray();var profile=new ClearReturnProfile{Tokens=100,Revision=7,ExchangeStock=new ExchangeStockData{RoundId="round",Offers=Enumerable.Range(0,7).Select(n=>new ExchangeOfferData{Id="offer"+n,CardId="card"+n,Name="テスト "+n,Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}).ToArray()}};
+                void Render(){if(mode==0)view.RenderDungeonSelection(names,unlocked,0,_=>choices++,()=>{},()=>cancels++,blocked,blocked?"ホゾンをカクニンしてください。":null,()=>{},()=>{},"キホン",()=>{},new bool[7],Enumerable.Repeat("カイホウをカクニン",7).ToArray());else if(mode==1)view.RenderStyleSelection(names,unlocked,0,_=>choices++,()=>{},()=>cancels++,blocked,blocked?"ホゾンをカクニンしてください。":null,()=>{});else view.RenderTokenExchange(profile,"offer0",blocked,blocked?"ホゾンをカクニンしてください。":null,_=>choices++,()=>{},()=>cancels++,()=>{},()=>{});}
+                string prefix=mode==0?"Dungeon":mode==1?"Style":"Exchange";
+                for(int repeat=0;repeat<2;repeat++){
+                    Render();foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);RequireSeparateButtons(host);
+                    string titleName=mode==0?"DungeonSelectionTitle":mode==1?"StyleSelectionTitle":"ExchangeTitle";var title=host.GetComponentsInChildren<Text>().Single(t=>t.name==titleName);RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);if(width==1920)Assert.AreEqual(Vector3.one,host.transform.GetChild(0).localScale);
+                    string cancelName=mode==0?"CancelDungeonSelection":mode==1?"CancelStyleSelection":"CancelTokenExchange";var cancel=host.GetComponentsInChildren<Button>().Single(t=>t.name==cancelName);Assert.AreEqual(!blocked,cancel.interactable);
+                    if(!blocked){var choose=host.GetComponentsInChildren<Button>().Single(t=>t.name==(mode==2?"ExchangeOffer_offer1":prefix+"Choice_1"));choose.onClick.Invoke();cancel.onClick.Invoke();host.GetComponentsInChildren<Button>().Single(t=>t.name=="Next"+prefix+"Page").onClick.Invoke();Assert.IsTrue(host.GetComponentsInChildren<Button>().Any(t=>t.name==(mode==2?"ExchangeOffer_offer6":prefix+"Choice_6")));host.GetComponentsInChildren<Button>().Single(t=>t.name=="Previous"+prefix+"Page").onClick.Invoke();}
+                    Assert.AreEqual(100,profile.Tokens);Assert.AreEqual(7,profile.Revision);Assert.IsTrue(profile.ExchangeStock.Offers.All(o=>o.Purchased==0));
+                }
+                Assert.AreEqual(blocked?0:2,cancels);Assert.AreEqual(blocked?0:2,choices);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

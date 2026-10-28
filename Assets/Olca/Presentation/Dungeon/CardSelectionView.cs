@@ -286,7 +286,7 @@ namespace Olca.Presentation.Dungeon
             if(menu==null)menu=new Olca.Unity.MenuPadScope(IsMenuTop,()=>menuRoot==content?.transform&&!HasMenuModal?(menuExtras?.Invoke()??System.Array.Empty<Button>()):System.Array.Empty<Button>());
             Canvas.ForceUpdateCanvases();menu.Bind(root,preferred,back,scroll,cached);
         }
-        // 帰還と編成は基準配置の行間を保ち、幅または高さが足りないときだけ等比で収める。
+        // 固定配置の画面は基準の行間を保ち、幅または高さが足りないときだけ等比で収める。
         private void UseReferenceLayout()
         {
             referenceContent=(RectTransform)content.transform;
@@ -459,7 +459,7 @@ namespace Olca.Presentation.Dungeon
             StopMenu();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
-            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            UseReferenceLayout();
             gameObject.SetActive(true);
             Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
             string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
@@ -541,7 +541,7 @@ namespace Olca.Presentation.Dungeon
             StopMenu();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("TokenExchangeContents",typeof(RectTransform));content.transform.SetParent(transform,false);
-            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            UseReferenceLayout();
             gameObject.SetActive(true);
             Text("ExchangeTitle","トークン交換所",0,455,1700,80,36);
             Text("ExchangeBalance",$"所持 {profile.Tokens} トークン / 永続所持へ交換\n"+(error??"ランダム商品は帰還時に更新。任意の再抽選はできません。"),0,345,1750,100,25);
@@ -562,7 +562,7 @@ namespace Olca.Presentation.Dungeon
             Button("ConfirmTokenExchange","交換を確定",-560,-440,520,72,buy).interactable=!blocked&&ClearReturnSession.CanExchange(profile,choice);
             Button("CancelTokenExchange","選択取消",0,-440,520,72,cancel).interactable=!blocked&&selected!=null;
             Button("CloseTokenExchange","拠点へ戻る",560,-440,520,72,close).interactable=!blocked;
-            if(error!=null||blocked)Button("RetryTokenExchange","保存を再試行",0,-525,800,55,retrySave);
+            if(error!=null||blocked)Button("RetryTokenExchange","保存を再試行",0,-510,800,50,retrySave);
             SetMenu(content.transform,blocked?null:selected!=null?cancel:close,selected==null?"CloseTokenExchange":"ExchangeOffer_"+selected);
         }
 
@@ -573,7 +573,7 @@ namespace Olca.Presentation.Dungeon
             StopMenu();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("StyleSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
-            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            UseReferenceLayout();
             gameObject.SetActive(true);
             Text("StyleSelectionTitle", "出撃スタイル", 0, 455, 1700, 80, 36);
             Text("StyleSelectionHelp", error ?? "攻略中は固定。属性と固有・タメ攻撃が変わります。", 0, 350, 1700, 80, 25);

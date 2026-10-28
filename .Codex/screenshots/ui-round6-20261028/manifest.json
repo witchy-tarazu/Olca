@@ -1,0 +1,114 @@
+[
+  {
+    "file": "dungeon-before-4by3.png",
+    "sha256": "1a6025b36d80fac89908ff9b54408299532ae27e4eb267253b6e1d2ff27ae34d"
+  },
+  {
+    "file": "dungeon-before-wide.png",
+    "sha256": "b5aaf44192c65b1da2db6eec47c3d50ecc4ac63ba953ce1b40b19648c8127b54"
+  },
+  {
+    "file": "dungeon-before-fhd.png",
+    "sha256": "2b87696427b8352967cecb20ad5a831765499d5ed1c6eb29f53e1c1fd1b52707"
+  },
+  {
+    "file": "dungeon-before-4k.png",
+    "sha256": "f0dee4ce4ebc6c8292bde79df1374516d43e1d6c358f3ec8c43c7bde7a84cf4b"
+  },
+  {
+    "file": "dungeon-after-4by3.png",
+    "sha256": "ae6d17ac176a42e3afe2689eb53757060ec65fa310c42971ec5bf90f3e375b59"
+  },
+  {
+    "file": "dungeon-after-wide.png",
+    "sha256": "beb2bd2506cf06bf4194480a0cacb3174b228c011994074dfaf913e07fbca55e"
+  },
+  {
+    "file": "dungeon-after-fhd.png",
+    "sha256": "27cd425cd3cf50cf45af9514821d5a390896335295494b85e428a6da10f39994"
+  },
+  {
+    "file": "dungeon-after-4k.png",
+    "sha256": "33e6d39e16835fce8dc6aff90bc0bd7492be4bed1e206e4d73b8a2a2a73f4a75"
+  },
+  {
+    "file": "style-before-4by3.png",
+    "sha256": "7011edb9a06ad642d31e14bf8fb1f0154957590e18e0a59da1514038a15be35a"
+  },
+  {
+    "file": "style-before-wide.png",
+    "sha256": "2226cc0a745b4b1675cd8a034ab1c4f6e0a33a2c9bec18e14ca26aeb03432205"
+  },
+  {
+    "file": "style-before-fhd.png",
+    "sha256": "1dd2e4f052a00b0fe48ae176c74a6bff47c942c05f94ea3fd29098561d29cdfa"
+  },
+  {
+    "file": "style-before-4k.png",
+    "sha256": "f020503a24b35ba0c462a421427153817b40087ddb8c289f1aa91361a364776d"
+  },
+  {
+    "file": "style-after-4by3.png",
+    "sha256": "525f28fad266f250666197fc92b2d83c7f6f1b3c17162852f1672ef3dda5e384"
+  },
+  {
+    "file": "style-after-wide.png",
+    "sha256": "923c27a6dca71444de9d74879f2b9e05bce633501f3c13ff30f07c986eb766bd"
+  },
+  {
+    "file": "style-after-fhd.png",
+    "sha256": "1ca7acbe195ec2e12e1b57051414be2ef65dd390cba9bce3d23c0c0cea9c55b5"
+  },
+  {
+    "file": "style-after-4k.png",
+    "sha256": "ab42a3ed2e8961675cb4a84d8502da1d354ef0b2efa270929a82f0b978de6eca"
+  },
+  {
+    "file": "exchange-before-4by3.png",
+    "sha256": "717842a0351f3093d5f0f787a222be4eb89a8a2f30e3b295e0bf1633237cb66e"
+  },
+  {
+    "file": "exchange-before-wide.png",
+    "sha256": "cdcceda97bf1cccabc695f16f619fa44cc54e2aac2dd47a93252f7aeb9b2e8e9"
+  },
+  {
+    "file": "exchange-before-fhd.png",
+    "sha256": "7aa26db8cb1c607fafda7bddf790df5063cb7b0bcf3336f9dc66ca2adb5a94fa"
+  },
+  {
+    "file": "exchange-before-4k.png",
+    "sha256": "d3ccad093550f6e033dacfbfbcaf9b569100c6878de91c69ad4c9a1c082f4ab8"
+  },
+  {
+    "file": "exchange-after-4by3.png",
+    "sha256": "fdeb3e826aabfff61cba37dcaf69cc37a0cbed9d2a944762e2aa3932f9be726a"
+  },
+  {
+    "file": "exchange-after-wide.png",
+    "sha256": "cd5ee7dd2aea9fe28bd953e1ea79b13571a649cb030afb22a2459aa1dc1c319f"
+  },
+  {
+    "file": "exchange-after-fhd.png",
+    "sha256": "464aa19bdc081656e4a5a57c4927672a1c390ad9d4d2e25feda77f896bbf04c6"
+  },
+  {
+    "file": "exchange-after-4k.png",
+    "sha256": "ad088e8842ddd8bb752d64a565324eefbe6d2059d6a07ae1068992a2db56bcf0"
+  },
+  {
+    "file": "exchange-blocked-after-4by3.png",
+    "sha256": "1027eaf55df8eb709d38d68ce26634695c95a08f913a6304c5fe75ebb21b14d6"
+  },
+  {
+    "file": "exchange-blocked-after-wide.png",
+    "sha256": "f37b3fa61ea7d8d4bb82360448dd5da758e11742f256d211e72c95a564ae96c1"
+  },
+  {
+    "file": "exchange-blocked-after-fhd.png",
+    "sha256": "cdc4a5de1f7c73929f02d41fabaeb8e1777f2b51745af250e52f0f8a220fa64d"
+  },
+  {
+    "file": "exchange-blocked-after-4k.png",
+    "sha256": "f250181bc09169dd7f0895698e180be4a2a6fbcaa27b86421a4312d87e5bcae7"
+  }
+]
