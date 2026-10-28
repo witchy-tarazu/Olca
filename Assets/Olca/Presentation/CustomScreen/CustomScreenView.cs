@@ -253,7 +253,10 @@ namespace Olca.Presentation.CustomScreen
         {
             StopHandPresentation();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
-            foreach(var text in GetComponentsInChildren<Text>(true))text.color=Color.white;
+            // 再利用する共通ボタンの濃色文字は、背景用の白文字へ戻さない。
+            foreach(var text in GetComponentsInChildren<Text>(true))
+                if(text.GetComponent<Olca.Presentation.Dungeon.UiKanaLabel>()==null || text.GetComponentInParent<Button>(true)==null)
+                    text.color=Color.white;
             Olca.Presentation.Dungeon.UiLook.Button(confirmButton);
             if(confirmButton!=null){var label=confirmButton.GetComponentInChildren<Text>();if(label!=null)label.text="確定";}
             if(cursorIndicator!=null){var image=cursorIndicator.GetComponent<Image>();if(image!=null){image.sprite=Resources.Load<Sprite>("OlcaUI/button-selected");image.type=Image.Type.Sliced;image.fillCenter=false;image.color=Color.white;}}

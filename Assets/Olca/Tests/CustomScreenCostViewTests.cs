@@ -16,6 +16,37 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(true)]
+        [TestCase(false)]
+        public void 再初期化は共通ボタンの濃色文字と既存フォント操作を保持する(bool visible)
+        {
+            var root=new GameObject("ReusedCustomScreen",typeof(RectTransform));
+            try
+            {
+                var view=root.AddComponent<CustomScreenView>();
+                var confirmObject=new GameObject("Confirm",typeof(RectTransform),typeof(Image),typeof(Button));confirmObject.transform.SetParent(root.transform,false);
+                typeof(CustomScreenView).GetField("confirmButton",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,confirmObject.GetComponent<Button>());
+                var buttonObject=new GameObject("Inspection",typeof(RectTransform),typeof(Image),typeof(Button));
+                buttonObject.transform.SetParent(root.transform,false);
+                var labelObject=new GameObject("Label",typeof(RectTransform),typeof(Text));labelObject.transform.SetParent(buttonObject.transform,false);
+                var label=labelObject.GetComponent<Text>();label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");label.text="ジブン";
+                var button=buttonObject.GetComponent<Button>();int clicks=0;button.onClick.AddListener(()=>clicks++);UiLook.Button(button);
+                var originalFont=label.font;buttonObject.SetActive(visible);
+                var detailObject=new GameObject("Description",typeof(RectTransform),typeof(Text));detailObject.transform.SetParent(root.transform,false);
+                var detail=detailObject.GetComponent<Text>();UiLook.Label(detail);
+                for(int i=0;i<2;i++)
+                {
+                    view.Initialize(new CustomScreenSystem(new Deck(new List<Card>())));
+                    Assert.AreEqual(UiLook.Ink,label.color,"淡い共通ボタン上の文字を白へ戻さない");
+                    Assert.AreSame(originalFont,label.font);Assert.AreEqual("ジブン",label.text);
+                    Assert.AreEqual(Color.white,detail.color,"暗い背景上の本文は従来の白文字を維持する");
+                    Assert.AreEqual(visible,buttonObject.activeSelf);button.onClick.Invoke();
+                }
+                Assert.AreEqual(2,clicks);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
         [Test]
         public void カード詳細は全補正と複数効果をカナ表示し無敵削り値や敵補正を公開しない()
         {
