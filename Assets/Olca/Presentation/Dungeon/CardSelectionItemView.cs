@@ -33,7 +33,17 @@ namespace Olca.Presentation.Dungeon
             this.card = card;
             UiLook.Face(GetComponent<Image>()); UiLook.Button(selectButton);
             UiLook.Label(cardNameText);UiLook.Label(cardCostText);UiLook.Label(cardDescText);UiLook.Label(cardRarityText);
-            if (cardNameText != null) cardNameText.text = card.Name;
+            if (cardNameText != null)
+            {
+                cardNameText.text = card.Name;
+                var nameRect=cardNameText.rectTransform;
+                nameRect.anchorMin=new Vector2(0,nameRect.anchorMin.y);nameRect.anchorMax=new Vector2(1,nameRect.anchorMax.y);
+                nameRect.sizeDelta=new Vector2(-28,nameRect.sizeDelta.y);nameRect.anchoredPosition=new Vector2(0,nameRect.anchoredPosition.y);
+                // 枠内の余白と元の文字サイズを上限にし、長い名前も既存の名前欄へ収める。
+                cardNameText.resizeTextForBestFit=true;
+                cardNameText.resizeTextMinSize=Mathf.Min(10,cardNameText.fontSize);
+                cardNameText.resizeTextMaxSize=cardNameText.fontSize;
+            }
             if (cardCostText != null) cardCostText.text = $"コスト: {card.Cost}";
             if (cardDescText != null) cardDescText.text = card.Description;
             if (cardRarityText != null) cardRarityText.text = Olca.Presentation.CustomScreen.CustomDisplay.Regulation(card.Rarity);

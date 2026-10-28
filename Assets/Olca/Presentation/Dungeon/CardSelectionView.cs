@@ -460,13 +460,24 @@ namespace Olca.Presentation.Dungeon
             content=new GameObject("DungeonVisitContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
             Text("VisitTitle",title,0,435,1450,90,32);
-            Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit);
-            for(int i=0;i<names.Length;i++){int slot=i;var button=Button("VisitOption_"+i,(selected==i?"［選択中］ ":"")+names[i],0,260-i*90,1700,76,()=>choose(slot));button.interactable=!blocked&&enabled[i];}
-            Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,-280,1750,100,24);
-            Button("ConfirmVisit","選択を確定",-560,-440,520,72,confirmVisit).interactable=!blocked&&canConfirm;
-            Button("CancelVisit","選択取消",0,-440,520,72,cancelVisit).interactable=!blocked&&selected>=0;
-            Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit).interactable=!blocked&&canExit;
+            AnchorVisitButton(Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit),Vector2.one,new Vector2(-180,-60));
+            for(int i=0;i<names.Length;i++){int slot=i;var button=Button("VisitOption_"+i,(selected==i?"［選択中］ ":"")+names[i],0,260-i*90,1700,76,()=>choose(slot));button.interactable=!blocked&&enabled[i];InsetVisitRow((RectTransform)button.transform,110);}
+            var help=Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,-280,1750,100,24);InsetVisitRow(help.rectTransform,85);help.rectTransform.anchorMin=Vector2.zero;help.rectTransform.anchorMax=Vector2.right;help.rectTransform.anchoredPosition=new Vector2(0,260);
+            AnchorVisitButton(Button("ConfirmVisit","選択を確定",-560,-440,520,72,confirmVisit),new Vector2(.5f,0),new Vector2(-560,100)).interactable=!blocked&&canConfirm;
+            AnchorVisitButton(Button("CancelVisit","選択取消",0,-440,520,72,cancelVisit),new Vector2(.5f,0),new Vector2(0,100)).interactable=!blocked&&selected>=0;
+            AnchorVisitButton(Button("ExitVisit","退出して保存",560,-440,520,72,exitVisit),new Vector2(.5f,0),new Vector2(560,100)).interactable=!blocked&&canExit;
             SetMenu(content.transform,blocked?null:selected>=0?cancelVisit:canExit?exitVisit:null,selected>=0?"VisitOption_"+selected:"VisitOption_0");
+        }
+
+        // 16:9での余白を保ち、狭い横幅や横長画面でも操作部を画面端から離す。
+        private static Button AnchorVisitButton(Button button,Vector2 anchor,Vector2 position)
+        {
+            var rect=(RectTransform)button.transform;rect.anchorMin=rect.anchorMax=anchor;rect.anchoredPosition=position;return button;
+        }
+        private static void InsetVisitRow(RectTransform rect,float margin)
+        {
+            rect.anchorMin=new Vector2(0,rect.anchorMin.y);rect.anchorMax=new Vector2(1,rect.anchorMax.y);
+            rect.sizeDelta=new Vector2(-2*margin,rect.sizeDelta.y);rect.anchoredPosition=new Vector2(0,rect.anchoredPosition.y);
         }
 
         private int removalPage;
@@ -477,17 +488,17 @@ namespace Olca.Presentation.Dungeon
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("VisitRemovalContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
-            Text("RemovalTitle",title,0,435,1450,90,32);Button("PauseVisit","ポーズ",780,480,260,60,pause);
+            Text("RemovalTitle",title,0,435,1450,90,32);AnchorVisitButton(Button("PauseVisit","ポーズ",780,480,260,60,pause),Vector2.one,new Vector2(-180,-60));
             const int rows=6;int pages=System.Math.Max(1,(names.Length+rows-1)/rows);removalPage=System.Math.Min(removalPage,pages-1);
             for(int row=0;row<rows&&removalPage*rows+row<names.Length;row++){
                 int index=removalPage*rows+row;
-                Button("RemovalCard_"+index,(selected[index]?"［選択中］ ":"")+names[index],0,285-row*78,1750,68,()=>choose(index)).interactable=!blocked;
+                var rowButton=Button("RemovalCard_"+index,(selected[index]?"［選択中］ ":"")+names[index],0,285-row*78,1750,68,()=>choose(index));rowButton.interactable=!blocked;InsetVisitRow((RectTransform)rowButton.transform,85);
             }
-            Button("RemovalPrevious","前",-430,-240,450,55,()=>{removalPage--;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}).interactable=!blocked&&removalPage>0;
-            Button("RemovalNext","次",430,-240,450,55,()=>{removalPage++;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}).interactable=!blocked&&removalPage<pages-1;
-            Text("RemovalHelp",$"{removalPage+1}/{pages}ページ / {System.Array.FindAll(selected,x=>x).Length}/{needed}枚選択\n確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-340,1750,110,25);
-            Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-460,800,72,confirm).interactable=!blocked&&canConfirm;
-            Button("CancelVisitRemoval","確定せず戻る",430,-460,800,72,cancel).interactable=!blocked;
+            AnchorVisitButton(Button("RemovalPrevious","前",-430,-240,450,55,()=>{removalPage--;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}),new Vector2(.5f,0),new Vector2(-430,300)).interactable=!blocked&&removalPage>0;
+            AnchorVisitButton(Button("RemovalNext","次",430,-240,450,55,()=>{removalPage++;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}),new Vector2(.5f,0),new Vector2(430,300)).interactable=!blocked&&removalPage<pages-1;
+            var help=Text("RemovalHelp",$"{removalPage+1}/{pages}ページ / {System.Array.FindAll(selected,x=>x).Length}/{needed}枚選択\n確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-340,1750,110,25);InsetVisitRow(help.rectTransform,85);help.rectTransform.anchorMin=Vector2.zero;help.rectTransform.anchorMax=Vector2.right;help.rectTransform.anchoredPosition=new Vector2(0,200);
+            AnchorVisitButton(Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-460,800,72,confirm),new Vector2(.5f,0),new Vector2(-430,80)).interactable=!blocked&&canConfirm;
+            AnchorVisitButton(Button("CancelVisitRemoval","確定せず戻る",430,-460,800,72,cancel),new Vector2(.5f,0),new Vector2(430,80)).interactable=!blocked;
             SetMenu(content.transform,blocked?null:cancel,"CancelVisitRemoval");
         }
 

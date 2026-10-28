@@ -3551,6 +3551,14 @@ namespace Olca.Tests.Integration
             finally {c.gameObject.SetActive(false);}
         }
 
+        [Test]
+        public void 報酬だけは背景のデッキ枚数を隠し報酬終了後に既存表示へ戻す()
+        {
+            var c=Start();var hud=(Olca.Presentation.Dungeon.DungeonHudView)Get(c,"dungeonHudView");var host=new UnityEngine.GameObject("BackgroundDeckCount",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));host.transform.SetParent(c.transform,false);var text=host.GetComponent<UnityEngine.UI.Text>();text.font=UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");var font=text.font;Set(hud,"deckCountText",text);
+            Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);ToBattle(c);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);
+            var choices=Win(c);Call(c,"UpdateViews");Assert.IsFalse(host.activeSelf);Model(c).SelectCardReward(choices[0]);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);Assert.AreSame(font,text.font);
+        }
+
         private static void KeyboardButton(Olca.Application.Dungeon.DungeonBattleController controller, string name)
         {
             var canvas = (UnityEngine.GameObject)Get(controller, "pauseCanvas");

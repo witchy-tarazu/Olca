@@ -16,6 +16,67 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        private static void RequireInside(RectTransform viewport,RectTransform control)
+        {
+            var corners=new Vector3[4];control.GetWorldCorners(corners);
+            foreach(var point in corners){var local=viewport.InverseTransformPoint(point);Assert.That(local.x,Is.InRange(viewport.rect.xMin-.1f,viewport.rect.xMax+.1f),control.name);Assert.That(local.y,Is.InRange(viewport.rect.yMin-.1f,viewport.rect.yMax+.1f),control.name);}
+        }
+        [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
+        public void 店と削除画面は基準画面の余白を保ち四対三と横長でも操作部が切れない(float width,float height,bool removal)
+        {
+            var root=new GameObject("Viewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try
+            {
+                var host=new GameObject("Visit",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();
+                view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+                for(int repeat=0;repeat<2;repeat++)
+                {
+                    if(removal)view.RenderVisitRemoval("テスト",Enumerable.Repeat("カードをエラんでください",6).ToArray(),new bool[6],2,20,false,false,_=>{},()=>{},()=>{},()=>{});
+                    else view.RenderDungeonVisit("テスト",Enumerable.Repeat("テストカード / 10 ツウカ",3).ToArray(),new[]{true,true,true},-1,false,false,_=>{},()=>{},()=>{},()=>{},()=>{});
+                    Canvas.ForceUpdateCanvases();
+                    var buttons=host.GetComponentsInChildren<Button>();
+                    foreach(var button in buttons)RequireInside(viewport,(RectTransform)button.transform);
+                    Rect Area(RectTransform rect){var corners=new Vector3[4];rect.GetWorldCorners(corners);return Rect.MinMaxRect(corners.Min(c=>c.x),corners.Min(c=>c.y),corners.Max(c=>c.x),corners.Max(c=>c.y));}
+                    var help=host.GetComponentsInChildren<Text>().Single(t=>t.name==(removal?"RemovalHelp":"VisitHelp"));
+                    foreach(var button in buttons)Assert.IsFalse(Area(help.rectTransform).Overlaps(Area((RectTransform)button.transform)),"説明と操作部: "+button.name);
+                    for(int i=0;i<buttons.Length;i++)for(int j=i+1;j<buttons.Length;j++)Assert.IsFalse(Area((RectTransform)buttons[i].transform).Overlaps(Area((RectTransform)buttons[j].transform)),buttons[i].name+" / "+buttons[j].name);
+                    if(width==1920){var pause=host.GetComponentsInChildren<Button>().Single(b=>b.name=="PauseVisit");var point=viewport.InverseTransformPoint(pause.transform.position);Assert.AreEqual(780,point.x,.1);Assert.AreEqual(480,point.y,.1);}
+                }
+            }
+            finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)][TestCase(2199.64f,942.70f)]
+        public void 会話のポーズと既存操作は画面内に収まり基準画面の位置とフォントを保持する(float width,float height)
+        {
+            var root=new GameObject("DialogueViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try
+            {
+                var host=new GameObject("Dialogue",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<DialogueView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");int pauses=0;view.Initialize(font,()=>pauses++);
+                view.Bind(new DialogueSession(new DialogueScript("layout",new[]{new DialogueLine("テスト")}),DialogueTextSpeed.Instant));Canvas.ForceUpdateCanvases();
+                foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);
+                var pause=host.GetComponentsInChildren<Button>().Single(b=>b.name=="DialoguePause");pause.onClick.Invoke();Assert.AreEqual(1,pauses);Assert.AreSame(font,pause.GetComponentInChildren<Text>().font);
+                if(width==1920){var point=viewport.InverseTransformPoint(pause.transform.position);Assert.AreEqual(790,point.x,.1);Assert.AreEqual(455,point.y,.1);}
+            }
+            finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 報酬の長い名前は元フォントと通常文字サイズを保ちながら名前欄へ収まる(bool longName)
+        {
+            var root=new GameObject("RewardName",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(280,360);
+            try
+            {
+                var view=root.AddComponent<CardSelectionItemView>();var obj=new GameObject("Name",typeof(RectTransform),typeof(Text));obj.transform.SetParent(root.transform,false);var text=obj.GetComponent<Text>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.fontSize=22;text.rectTransform.sizeDelta=new Vector2(280,40);var font=text.font;
+                typeof(CardSelectionItemView).GetField("cardNameText",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,text);
+                string name=longName?string.Concat(Enumerable.Repeat("テストカード",8)):"ソード";
+                for(int repeat=0;repeat<2;repeat++){view.Setup(new Card("layout",name,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト"));text.cachedTextGenerator.Populate(text.text,text.GetGenerationSettings(text.rectTransform.rect.size));Assert.GreaterOrEqual(text.cachedTextGenerator.characterCountVisible,name.Length);Assert.AreEqual(252,text.rectTransform.rect.width,.1);RequireInside((RectTransform)root.transform,text.rectTransform);Assert.AreSame(font,text.font);Assert.AreEqual(name,text.text);Assert.AreEqual(22,text.resizeTextMaxSize);if(!longName)Assert.AreEqual(22,text.cachedTextGenerator.fontSizeUsedForBestFit);}
+            }
+            finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 店の削除案内は現在枚数の漢字だけをカナにして助詞を保持する()
+            =>Assert.AreEqual("カードサクジョ 2マイ（ゲンザイマイスウまで）",CustomDisplay.Katakana("カード削除 2枚（現在枚数まで）"));
+
         [TestCase("？？？　未入手のカードA 1/2", "？？？　ミニュウシュのカードA 1/2")]
         [TestCase("未公開レシピはありません", "ミコウカイレシピはありません")]
         public void 図鑑の未登録表示は漢字だけをカナにして元の文字を保持する(string original,string expected)

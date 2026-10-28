@@ -27,6 +27,13 @@ namespace Olca.Presentation.Dungeon
         /// <summary>外部からCanvasGroupを参照する（GameFieldView.HideHUDAsync/ShowHUDAsync用）</summary>
         public CanvasGroup CanvasGroup => canvasGroup;
 
+        /// <summary>報酬画面には専用の枚数欄があるため、背景側の重複表示だけを隠す。</summary>
+        public void SetDeckCountVisible(bool visible)
+        {
+            if(deckCountText!=null)deckCountText.gameObject.SetActive(visible);
+        }
+
+
         /// <summary>
         /// HUDを最新のダンジョン状態で更新する
         /// DungeonフェーズのUpdateViews()から毎フレーム呼ばれる
