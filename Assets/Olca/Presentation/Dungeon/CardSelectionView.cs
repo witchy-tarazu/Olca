@@ -268,6 +268,7 @@ namespace Olca.Presentation.Dungeon
         private readonly System.Collections.Generic.Dictionary<string,string> menuFocus=new System.Collections.Generic.Dictionary<string,string>();
         private Func<System.Collections.Generic.IEnumerable<Button>> menuExtras;private Func<OwnedCardCount,Card> resolveOwned;
         private GameObject readonlyDetails;private ScrollRect readonlyScroll;
+        private Vector2 readonlyViewportSize;private float readonlyScrollPosition=1;
         public bool HasMenuModal=>readonlyDetails!=null||(content!=null&&(content.transform.Find("KeepEditingDeparture")!=null||content.transform.Find("ConfirmDeleteDeck")!=null));
         public void ConfigureMenuNavigation(Func<System.Collections.Generic.IEnumerable<Button>> extras,Func<OwnedCardCount,Card> resolveOwned=null){menuExtras=extras;this.resolveOwned=resolveOwned;}
         private bool IsMenuTop()
@@ -302,20 +303,33 @@ namespace Olca.Presentation.Dungeon
             var desired=new Vector3(scale,scale,1);
             if(referenceContent.localScale!=desired)referenceContent.localScale=desired;
         }
-        private void LateUpdate(){FitReferenceLayout();menu?.Tick();}
+        private void RefreshReadonlyLayout()
+        {
+            if(readonlyScroll==null||readonlyScroll.viewport==null||readonlyScroll.content==null)return;
+            var size=readonlyScroll.viewport.rect.size;
+            if(size==readonlyViewportSize){readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;return;}
+            var body=readonlyScroll.content.GetComponent<Text>();if(body==null)return;
+            float position=readonlyViewportSize==Vector2.zero?1:readonlyScrollPosition;
+            readonlyViewportSize=size;
+            body.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(size.y,body.preferredHeight+20));
+            readonlyScroll.verticalNormalizedPosition=Mathf.Clamp01(position);readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;
+        }
+        private void LateUpdate(){FitReferenceLayout();RefreshReadonlyLayout();menu?.Tick();}
         private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
         {
             if(card==null||content==null)return;var parent=content;var back=menuBack;
             readonlyDetails=new GameObject("ReadonlyCardDetails",typeof(RectTransform),typeof(Image));readonlyDetails.transform.SetParent(transform,false);var rect=(RectTransform)readonlyDetails.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;readonlyDetails.GetComponent<Image>().color=UiLook.Surface;var modal=readonlyDetails;
-            content=modal;Text("ReadonlyCardTitle","カードの詳細",0,450,1700,70,36);
+            content=modal;var title=Text("ReadonlyCardTitle","カードの詳細",0,450,1700,70,36);
+            title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-90);
             var area=new GameObject("ReadonlyCardScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(modal.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.08f,.2f);ar.anchorMax=new Vector2(.92f,.86f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
             var body=Text("ReadonlyCardPerformance",CollectionDisplay.PerformanceText(card),0,0,1500,600,30);body.supportRichText=false;body.alignment=TextAnchor.UpperLeft;body.transform.SetParent(area.transform,false);body.rectTransform.anchorMin=new Vector2(0,1);body.rectTransform.anchorMax=Vector2.one;body.rectTransform.pivot=new Vector2(.5f,1);body.rectTransform.anchoredPosition=Vector2.zero;body.rectTransform.sizeDelta=Vector2.zero;
             Olca.Presentation.CustomScreen.CardAttackPropertyIcons.Bind(body,card,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(CollectionDisplay.PerformanceText(card)));
             readonlyScroll=area.GetComponent<ScrollRect>();readonlyScroll.viewport=ar;readonlyScroll.content=body.rectTransform;readonlyScroll.horizontal=false;readonlyScroll.movementType=ScrollRect.MovementType.Clamped;
             Action close=()=>{if(readonlyDetails!=modal)return;modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);readonlyDetails=null;readonlyScroll=null;SetMenu(parent.transform,back,returnFocus,true);};
-            Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75,close);content=parent;Canvas.ForceUpdateCanvases();body.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(ar.rect.height,body.preferredHeight+20));SetMenu(modal.transform,close,"CloseReadonlyCardDetails",true,readonlyScroll);
+            var closeButton=Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75,close);
+            var closeRect=(RectTransform)closeButton.transform;closeRect.anchorMin=closeRect.anchorMax=new Vector2(.5f,0);closeRect.anchoredPosition=new Vector2(0,100);content=parent;Canvas.ForceUpdateCanvases();readonlyViewportSize=Vector2.zero;readonlyScrollPosition=1;RefreshReadonlyLayout();SetMenu(modal.transform,close,"CloseReadonlyCardDetails",true,readonlyScroll);
         }
         private void CollectionContent(string name)
         {

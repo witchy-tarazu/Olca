@@ -21,6 +21,36 @@ namespace Olca.Tests
             var corners=new Vector3[4];control.GetWorldCorners(corners);
             foreach(var point in corners){var local=viewport.InverseTransformPoint(point);Assert.That(local.x,Is.InRange(viewport.rect.xMin-.1f,viewport.rect.xMax+.1f),control.name);Assert.That(local.y,Is.InRange(viewport.rect.yMin-.1f,viewport.rect.yMax+.1f),control.name);}
         }
+        [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
+        public void 詳細を開いてリサイズしても見出しと戻るが欠けず帰還と編成へ復帰する(float width,float height,bool departure)
+        {
+            var root=new GameObject("DetailsViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("DetailsView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});var card=new Card("details","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");var owned=new OwnedCardCount{Id=card.Id,Name=card.Name,Count=1};var profile=new ClearReturnProfile{Owned=new[]{owned}};view.ConfigureMenuNavigation(()=>new Button[0],_=>card);
+                for(int repeat=0;repeat<2;repeat++){
+                    if(departure)view.RenderOwnedDeparture(profile,new[]{card},new[]{card},null,true,(_,__)=>{},()=>{},_=>{},()=>{},false);else view.Render(profile,new ClearReturnData{Stage=ClearReturnStage.Returned},false,null);
+                    host.GetComponentsInChildren<Button>().Single(b=>b.name==(departure?"DepartureDetails_0":"OwnedCardDetails_0")).onClick.Invoke();Assert.IsTrue(view.HasMenuModal);
+                    viewport.sizeDelta=new Vector2(width,height);typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();
+                    var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="ReadonlyCardTitle");var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");RequireInside(viewport,title.rectTransform);RequireInside(viewport,(RectTransform)close.transform);Assert.AreSame(font,title.font);
+                    var scroll=host.GetComponentsInChildren<ScrollRect>().Single();Assert.IsFalse(scroll.horizontal);Assert.IsTrue(scroll.vertical);Assert.AreEqual(ScrollRect.MovementType.Clamped,scroll.movementType);Assert.Greater(title.transform.position.y-title.rectTransform.rect.height/2,scroll.viewport.position.y+scroll.viewport.rect.height/2);Assert.Greater(scroll.viewport.position.y-scroll.viewport.rect.height/2,close.transform.position.y+((RectTransform)close.transform).rect.height/2);
+                    if(width==1920){Assert.AreEqual(450,viewport.InverseTransformPoint(title.transform.position).y,.1);Assert.AreEqual(-440,viewport.InverseTransformPoint(close.transform.position).y,.1);}
+                    close.onClick.Invoke();Assert.IsFalse(view.HasMenuModal);Assert.AreEqual(1,profile.Owned.Single().Count);Assert.IsTrue(host.transform.Find(departure?"DepartureContents":"ReturnContents").gameObject.activeSelf);
+                }
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 長い詳細は開いたまま幅を狭めても全文の高さとスクロール位置を更新する()
+        {
+            var root=new GameObject("LongDetailsViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("LongDetailsView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+                var card=new Card("long-details","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,string.Concat(Enumerable.Repeat("LONG DETAILS WITH MULTIPLE EFFECTS AND TUNING ",200)));view.Render(new ClearReturnProfile(),new ClearReturnData{Stage=ClearReturnStage.Returned},false,null);typeof(ClearReturnView).GetMethod("OpenCardDetails",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,new object[]{card,null});Canvas.ForceUpdateCanvases();
+                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();float original=scroll.content.rect.height;Assert.Greater(original,scroll.viewport.rect.height);scroll.verticalNormalizedPosition=.25f;var update=typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);float position=scroll.verticalNormalizedPosition;
+                viewport.sizeDelta=new Vector2(1662.77f,1247.08f);update.Invoke(view,null);Canvas.ForceUpdateCanvases();Assert.Greater(body.preferredHeight,original);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);Assert.AreEqual(position,scroll.verticalNormalizedPosition,.01f);
+                scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
