@@ -249,6 +249,7 @@ namespace Olca.Presentation.Dungeon
         private int savedDeckPage;
         private int departurePage;
         private GameObject content;
+        private RectTransform referenceContent;
         private int page;
         private string lastRun;
         private ClearReturnStage? lastStage;
@@ -284,7 +285,24 @@ namespace Olca.Presentation.Dungeon
             if(menu==null)menu=new Olca.Unity.MenuPadScope(IsMenuTop,()=>menuRoot==content?.transform&&!HasMenuModal?(menuExtras?.Invoke()??System.Array.Empty<Button>()):System.Array.Empty<Button>());
             Canvas.ForceUpdateCanvases();menu.Bind(root,preferred,back,scroll,cached);
         }
-        private void LateUpdate(){menu?.Tick();}
+        // 帰還と編成は基準配置の行間を保ち、幅または高さが足りないときだけ等比で収める。
+        private void UseReferenceLayout()
+        {
+            referenceContent=(RectTransform)content.transform;
+            referenceContent.anchorMin=referenceContent.anchorMax=new Vector2(.5f,.5f);
+            referenceContent.anchoredPosition=Vector2.zero;referenceContent.sizeDelta=new Vector2(1920,1080);
+            FitReferenceLayout();
+        }
+        private void FitReferenceLayout()
+        {
+            if(referenceContent==null||content==null||referenceContent.gameObject!=content)return;
+            var viewport=((RectTransform)transform).rect.size;
+            if(viewport.x<=0||viewport.y<=0)return;
+            float scale=Mathf.Min(1,viewport.x/1920f,viewport.y/1080f);
+            var desired=new Vector3(scale,scale,1);
+            if(referenceContent.localScale!=desired)referenceContent.localScale=desired;
+        }
+        private void LateUpdate(){FitReferenceLayout();menu?.Tick();}
         private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
@@ -356,7 +374,7 @@ namespace Olca.Presentation.Dungeon
             lastRun = flow?.RunId; lastStage = flow?.Stage;
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("ReturnContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
-            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            UseReferenceLayout();
             gameObject.SetActive(true); profile = profile ?? new ClearReturnProfile();
             Text("Title", blocked && flow != null && flow.Outcome != RunReturnOutcome.Cleared ? "敗北・撤退の帰還を保存できません" : collectionOnly ? "所持カード・成長" : flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
                 flow.Stage == ClearReturnStage.Awarded ? "持ち帰り・経験値を反映しました" :
@@ -567,20 +585,20 @@ namespace Olca.Presentation.Dungeon
             StopMenu();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
-            var rect = (RectTransform)content.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            UseReferenceLayout();
             gameObject.SetActive(true);
-            Text("DepartureTitle", "所持から出撃デッキを編成", 0, 455, 1750, 70, 36);
+            Text("DepartureTitle", "所持から出撃デッキを編成", 0, 455, 1750, 60, 36);
             if (confirmDiscard) {
                 Text("DiscardDepartureHelp", "未確定の編成を破棄して帰還画面へ戻りますか？", 0, 100, 1700, 130, 30);
                 Button("KeepEditingDeparture", "編集に戻る", -420, -150, 750, 80, resume);
                 Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, () => close(true)); SetMenu(content.transform,resume,"KeepEditingDeparture",true);return;
             }
             if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(InputField));inputObj.transform.SetParent(content.transform,false);
-                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(0,405);ir.sizeDelta=new Vector2(1100,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
+                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(0,400);ir.sizeDelta=new Vector2(1100,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
                 var label=Text("SavedDeckNameText",deckName??"",0,0,1080,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;
                 var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;input.onValueChanged.AddListener(value=>rename(value));}
-            Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 350, 1750, 120, 26);
-            Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 250, 1750, 70, 25);
+            Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 325, 1750, 100, 26);
+            Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 235, 1750, 60, 25);
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
