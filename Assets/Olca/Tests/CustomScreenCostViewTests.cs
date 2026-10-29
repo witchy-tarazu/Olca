@@ -167,6 +167,56 @@ namespace Olca.Tests
                 Render();var pending=host.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck").onClick;view.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>{},no,no,false,null,no);pending.Invoke();Assert.AreEqual(0,deletes);Assert.IsNull(host.GetComponentInChildren<ScrollRect>());
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false,false)] [TestCase(1662.77f,1247.08f,false,false)] [TestCase(2199.64f,942.70f,false,false)]
+        [TestCase(1920f,1080f,true,false)] [TestCase(1662.77f,1247.08f,true,false)] [TestCase(2199.64f,942.70f,true,false)]
+        [TestCase(1920f,1080f,false,true)] [TestCase(1662.77f,1247.08f,false,true)] [TestCase(2199.64f,942.70f,false,true)]
+        [TestCase(1920f,1080f,true,true)] [TestCase(1662.77f,1247.08f,true,true)] [TestCase(2199.64f,942.70f,true,true)]
+        public void 保存デッキの長文エラーは比率変更後も全文を読め保存操作を起こさない(float width,float height,bool pending,bool empty)
+        {
+            var root=new GameObject("SavedErrorCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("SavedErrorView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
+                var auxiliary=new System.Collections.Generic.List<Button>();
+                foreach(bool leftSide in new[]{true,false}){var o=new GameObject(leftSide?"ExistingNewGame":"ExistingCollection",typeof(RectTransform),typeof(Button));o.transform.SetParent(root.transform,false);var ar=(RectTransform)o.transform;ar.anchorMin=ar.anchorMax=new Vector2(leftSide?0:1,1);ar.anchoredPosition=new Vector2(leftSide?580:-310,-85);ar.sizeDelta=new Vector2(leftSide?280:300,60);auxiliary.Add(o.GetComponent<Button>());}view.ConfigureMenuNavigation(()=>auxiliary);
+                var p=new ClearReturnProfile{SavedDecks=empty?new SavedDepartureDeck[0]:new[]{new SavedDepartureDeck{Id="fixture",Name="テスト"}}};int calls=0;System.Action no=()=>calls++;
+                string error=string.Join("\n",Enumerable.Repeat("ホゾンエラーのながいセツメイ",40))+"\nサイゴのエラー";
+                void Render(string message)=>view.RenderSavedDeckMenu(p,message,pending,no,_=>no(),_=>no(),_=>no(),_=>no(),no,no,reload:no);
+                Render(error);var trigger=host.GetComponentsInChildren<Button>().Single(b=>b.name=="SavedDeckErrorDetails");var staleOpen=trigger.onClick;trigger.onClick.Invoke();Assert.IsTrue(view.HasMenuModal);
+                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();StringAssert.EndsWith("サイゴのエラー",body.text);Assert.AreSame(font,body.font);Assert.IsFalse(body.supportRichText);Assert.IsNull(body.GetComponent<CardAttackPropertyIcons>());
+                viewport.sizeDelta=new Vector2(width,height);typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);
+                var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");RequireInside(viewport,(RectTransform)close.transform);var staleClose=close.onClick;close.onClick.Invoke();RequireInside(viewport,(RectTransform)trigger.transform);
+                var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckTitle");RequireInside(viewport,title.rectTransform);Assert.AreEqual(title.text.Length,title.cachedTextGenerator.characterCountVisible);Assert.AreEqual(36,title.fontSize);Assert.IsFalse(title.resizeTextForBestFit);
+                var titlePoints=title.cachedTextGenerator.verts.Select(v=>viewport.InverseTransformPoint(title.rectTransform.TransformPoint(v.position/title.pixelsPerUnit))).ToArray();
+                foreach(var button in auxiliary){var corners=new Vector3[4];((RectTransform)button.transform).GetWorldCorners(corners);var points=corners.Select(viewport.InverseTransformPoint).ToArray();Assert.IsTrue(titlePoints.Max(v=>v.x)<points.Min(v=>v.x)||titlePoints.Min(v=>v.x)>points.Max(v=>v.x),"タイトルと既存補助操作の描画非重複");}
+                var hint=host.GetComponentsInChildren<Text>().SingleOrDefault(t=>t.name=="SavedDeckEmpty");Assert.AreEqual(empty,hint!=null);if(hint!=null){StringAssert.Contains("まだありません",hint.text);Assert.AreEqual(hint.text.Length,hint.cachedTextGenerator.characterCountVisible);RequireInside(viewport,hint.rectTransform);}
+                Render(null);Canvas.ForceUpdateCanvases();var help=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckHelp");Assert.AreEqual(help.text.Length,help.cachedTextGenerator.characterCountVisible);RequireInside(viewport,help.rectTransform);var drawnRight=help.cachedTextGenerator.verts.Max(v=>viewport.InverseTransformPoint(help.rectTransform.TransformPoint(v.position/help.pixelsPerUnit)).x);Assert.LessOrEqual(drawnRight,viewport.rect.xMax-400,"空白のRectでなく描画文字が右上操作を避ける");staleOpen.Invoke();staleClose.Invoke();Assert.IsFalse(view.HasMenuModal);Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="SavedDeckErrorDetails"));Assert.AreEqual(0,calls);Assert.AreEqual(empty?0:1,p.SavedDecks.Length);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(.3333333f)] [TestCase(2f)]
+        public void 保存デッキの説明は起動時倍率によらず比率変更後も補助操作へ重ならない(float scale)
+        {
+            var root=new GameObject("SavedHelpScaleCanvas",typeof(RectTransform),typeof(Canvas));var canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.WorldSpace;canvas.scaleFactor=scale;var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("SavedHelpScaleView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});
+                view.RenderSavedDeckMenu(new ClearReturnProfile(),null,false,()=>{},_=>{},_=>{},_=>{},_=>{},()=>{},()=>{});
+                viewport.sizeDelta=new Vector2(1662.77f,1247.08f);canvas.scaleFactor=.8660254f;typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();
+                var help=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckHelp");Assert.AreEqual(help.text.Length,help.cachedTextGenerator.characterCountVisible);var drawnRight=help.cachedTextGenerator.verts.Max(v=>viewport.InverseTransformPoint(help.rectTransform.TransformPoint(v.position/help.pixelsPerUnit)).x);Assert.Less(drawnRight,viewport.rect.xMax-460,"右上装備操作の左端より手前へ描画する");Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="SavedDeckHelpDetails"));
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 空の保存デッキは消えた行から新規へ戻り有効な操作と再試行の優先を保つ()
+        {
+            var root=new GameObject("SavedFocusCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);GameObject events=null;if(UnityEngine.EventSystems.EventSystem.current==null){events=new GameObject("SavedEvents",typeof(UnityEngine.EventSystems.EventSystem));var es=events.GetComponent<UnityEngine.EventSystems.EventSystem>();typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnEnable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(es,null);UnityEngine.EventSystems.EventSystem.current=es;}
+            try{
+                var host=new GameObject("SavedFocusView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;
+                var outside=new GameObject("ExternalSavedAction",typeof(RectTransform),typeof(Button));outside.transform.SetParent(root.transform,false);view.ConfigureMenuNavigation(()=>new[]{outside.GetComponent<Button>()});
+                void Render(bool empty,bool pending=false,string error=null)=>view.RenderSavedDeckMenu(new ClearReturnProfile{SavedDecks=empty?new SavedDepartureDeck[0]:new[]{new SavedDepartureDeck{Id="fixture",Name="テスト"}}},error,pending,no,_=>no(),_=>no(),_=>no(),_=>no(),no,no,reload:no);
+                string Focus()=>((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view)).FocusName;
+                Render(false);host.GetComponentsInChildren<Button>().Single(b=>b.name=="EditDeck_fixture").Select();Render(true);Assert.AreEqual("NewSavedDeck",Focus());
+                host.GetComponentsInChildren<Button>().Single(b=>b.name=="ReloadSavedDecks").Select();Assert.AreEqual("ReloadSavedDecks",UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject?.name,"再表示前の選択状態");Render(true);Assert.AreEqual("ReloadSavedDecks",Focus());outside.GetComponent<Button>().Select();Render(true);Assert.AreEqual("ExternalSavedAction",Focus());
+                Render(true,true,string.Join("\n",Enumerable.Repeat("ホゾンエラー",40)));Assert.AreEqual("RetrySavedDeckSave",Focus());host.GetComponentsInChildren<Button>().Single(b=>b.name=="SavedDeckErrorDetails").onClick.Invoke();host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails").onClick.Invoke();Render(true);Assert.AreEqual("NewSavedDeck",Focus());Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);if(events!=null){typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(events.GetComponent<UnityEngine.EventSystems.EventSystem>(),null);Object.DestroyImmediate(events);}}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

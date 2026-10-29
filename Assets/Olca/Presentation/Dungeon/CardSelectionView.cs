@@ -280,12 +280,12 @@ namespace Olca.Presentation.Dungeon
         }
         private void SaveMenuFocus(){if(menuRoot==null)return;var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;var name=selected!=null&&selected.GetComponent<Button>()!=null?selected.name:menu?.FocusName;if(name!=null)menuFocus[menuRoot.name]=name;}
         private void StopMenu(){SaveMenuFocus();menu?.Suspend();menuRoot=null;menuBack=null;if(readonlyDetails!=null){readonlyDetails.SetActive(false);if(Application.isPlaying)Destroy(readonlyDetails);else DestroyImmediate(readonlyDetails);readonlyDetails=null;}readonlyScroll=null;}
-        private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true)
+        private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true,bool resetMissing=false)
         {
             SaveMenuFocus();menuRoot=root;menuBack=back;bool cached=menuFocus.TryGetValue(root.name,out var old);
             if(!force&&cached){
                 // 消えた全文入口からは画面の既定へ戻し、無関係な外部操作へ飛ばさない。
-                if(old.EndsWith("Details",StringComparison.Ordinal)&&!root.GetComponentsInChildren<Button>().Any(b=>b.name==old&&b.IsInteractable()))cached=false;
+                if((resetMissing||old.EndsWith("Details",StringComparison.Ordinal))&&!root.GetComponentsInChildren<Button>().Concat(menuExtras?.Invoke()??System.Array.Empty<Button>()).Any(b=>b!=null&&b.gameObject.activeInHierarchy&&b.name==old&&b.IsInteractable()))cached=false;
                 else preferred=old;
             }
             if(menu==null)menu=new Olca.Unity.MenuPadScope(IsMenuTop,()=>menuRoot==content?.transform&&!HasMenuModal?(menuExtras?.Invoke()??System.Array.Empty<Button>()):System.Array.Empty<Button>());
@@ -319,7 +319,27 @@ namespace Olca.Presentation.Dungeon
             body.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(size.y,body.preferredHeight+20));
             readonlyScroll.verticalNormalizedPosition=Mathf.Clamp01(position);readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;
         }
-        private void LateUpdate(){FitReferenceLayout();RefreshReadonlyLayout();menu?.Tick();}
+        // 上端の既存補助ボタンの間へ文字領域だけを収め、FHDの中央位置は保つ。
+        private void FitSavedDeckTitle()
+        {
+            if(content==null||content.name!="SavedDeckContents"||content.transform.Find("ConfirmDeleteDeck")!=null)return;
+            var title=content.transform.Find("SavedDeckTitle")?.GetComponent<UnityEngine.UI.Text>();if(title==null)return;
+            var root=(RectTransform)content.transform;var rect=title.rectTransform;
+            float left=root.rect.xMin+110,right=root.rect.xMax-110,top=root.rect.yMax-50,bottom=root.rect.yMax-120;
+            foreach(var button in menuExtras?.Invoke()??System.Array.Empty<Button>()){
+                if(button==null||!button.gameObject.activeInHierarchy)continue;
+                var corners=new Vector3[4];((RectTransform)button.transform).GetWorldCorners(corners);
+                var points=corners.Select(root.InverseTransformPoint).ToArray();
+                float minX=points.Min(v=>v.x),maxX=points.Max(v=>v.x);
+                if(points.Min(v=>v.y)>=top||points.Max(v=>v.y)<=bottom)continue;
+                if((minX+maxX)/2<0)left=Mathf.Max(left,maxX+16);else right=Mathf.Min(right,minX-16);
+            }
+            if(right<=left)return;
+            float width=Mathf.Min(title.preferredWidth+32,right-left);
+            var size=new Vector2(width-root.rect.width,70);var position=new Vector2(Mathf.Clamp(0,left+width/2,right-width/2),-85);
+            if(rect.sizeDelta!=size)rect.sizeDelta=size;if(rect.anchoredPosition!=position)rect.anchoredPosition=position;
+        }
+        private void LateUpdate(){FitReferenceLayout();FitSavedDeckTitle();RefreshReadonlyLayout();menu?.Tick();}
         private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
@@ -483,14 +503,19 @@ namespace Olca.Presentation.Dungeon
             });
         }
         // 短文は従来表示のまま、収まらない説明だけ既存の読取専用詳細へつなぐ。
-        private void AddOverflowTextDetails(UnityEngine.UI.Text label,string title)
+        private void AddOverflowTextDetails(UnityEngine.UI.Text label,string title,bool reserveAuxiliary=false)
         {
-            var rect=label.rectTransform;var position=rect.anchoredPosition;float left=position.x-rect.rect.width/2;
-            if(!NeedsTextDetails(label)&&label.preferredWidth<=rect.rect.width-800)return;
+            if(string.IsNullOrEmpty(label.text))return;
+            var rect=label.rectTransform;var position=(Vector2)content.transform.InverseTransformPoint(rect.TransformPoint(rect.rect.center));float left=position.x-rect.rect.width/2;
+            if(!reserveAuxiliary&&!NeedsTextDetails(label)&&label.preferredWidth<=rect.rect.width-800)return;
             // 長文は右上の補助操作を避け、全文入口も左側の空き領域へ置く。
             rect.sizeDelta-=new Vector2(400,0);rect.anchoredPosition-=new Vector2(200,0);
             if(!NeedsTextDetails(label))return;
-            TextDetailsButton(label.name+"Details",label.text,title,left+70,position.y,140,60);
+            var details=TextDetailsButton(label.name+"Details",label.text,title,left+70,position.y,140,60);
+            // 上端伸張の見出しでも画面比率に追従し、左側の全文入口を維持する。
+            var rootRect=(RectTransform)content.transform;var detailsRect=(RectTransform)details.transform;
+            detailsRect.anchorMin=detailsRect.anchorMax=new Vector2(0,1);
+            detailsRect.anchoredPosition=new Vector2(left-rootRect.rect.xMin+70,position.y-rootRect.rect.yMax);
             rect.sizeDelta-=new Vector2(180,0);rect.anchoredPosition+=new Vector2(90,0);
         }
         private void AddOverflowConditionDetails(Button row)
@@ -721,8 +746,11 @@ namespace Olca.Presentation.Dungeon
                 // 矢印は既存の確認操作へ、PageUp/Downだけを長い名前の読取へ割り当てる。
                 SetMenu(content.transform,cancelDelete,"CancelDeleteDeck",true,nameScroll,false);return;
             }
+            AddOverflowTextDetails(errorLabel,"ホゾンエラー");
+            if(decks.Length==0)Text("SavedDeckEmpty",pending?"保存デッキはまだありません。\n保存を再試行してください。":"保存デッキはまだありません。\n新しいデッキからつくれます。",0,80,1450,150,30);
             var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
             help.rectTransform.anchorMin=new Vector2(0,1);help.rectTransform.anchorMax=Vector2.one;help.rectTransform.sizeDelta=new Vector2(-170,100);help.rectTransform.anchoredPosition=new Vector2(0,-175);
+            AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
                 Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);
@@ -742,7 +770,7 @@ namespace Olca.Presentation.Dungeon
                 var child=content.transform.Find(name);if(child==null)continue;var control=(RectTransform)child;
                 control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
             }
-                    SetMenu(content.transform,pending?null:close,"EditDeck_"+profile.EquippedDeckId);
+            SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+profile.EquippedDeckId,force:pending,resetMissing:decks.Length==0);FitSavedDeckTitle();
         }
 
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)
