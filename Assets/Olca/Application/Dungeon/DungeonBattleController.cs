@@ -1141,6 +1141,10 @@ namespace Olca.Application.Dungeon
         private void SaveEditingDeck()
         {
             if(!CanEditOwnedDeparture||editingSavedDeckId==null)return;
+            var original=SavedDecks.SingleOrDefault(d=>d.Id==editingSavedDeckId)?.Name;
+            if(!string.Equals(original,editingSavedDeckName,System.StringComparison.Ordinal)&&!clearReturnView.CanUseDeckName(editingSavedDeckName)){
+                ownedDepartureError="デッキ名は16文字までで画面に収まる名前にしてください";ShowOwnedDeparture();return;
+            }
             if(clearReturnSession.SaveDeck(editingSavedDeckId,editingSavedDeckName,ownedDepartureDraft.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=DraftDefinitionKey(c)}).ToArray())){
                 var saved=SavedDecks.Single(d=>d.Id==editingSavedDeckId);
                 for(int n=0;n<ownedDepartureDraft.Count;n++)ownedDepartureKeys[ownedDepartureDraft[n]]=saved.Cards[n].DefinitionKey;
@@ -1166,7 +1170,15 @@ namespace Olca.Application.Dungeon
         private void CloneSavedDeck(string id)
         {
             if(!CanEditOwnedDeparture)return;var saved=SavedDecks.SingleOrDefault(d=>d.Id==id);if(saved==null)return;
-            clearReturnSession.SaveDeck(System.Guid.NewGuid().ToString("N"),saved.Name+" の複製",saved.Cards);ShowSavedDeckMenu();
+            string suffix=" の複製",name=saved.Name+suffix;
+            if(!clearReturnView.CanUseDeckName(name)){
+                var starts=System.Globalization.StringInfo.ParseCombiningCharacters(saved.Name);
+                for(int n=System.Math.Min(starts.Length,SavedDeckNameRules.MaximumTextElements);n>=0;n--){
+                    name=saved.Name.Substring(0,n==starts.Length?saved.Name.Length:starts[n]).TrimEnd()+suffix;
+                    if(clearReturnView.CanUseDeckName(name))break;
+                }
+            }
+            clearReturnSession.SaveDeck(System.Guid.NewGuid().ToString("N"),name,saved.Cards);ShowSavedDeckMenu();
         }
         private readonly List<Card> ownedDepartureDraft = new List<Card>();
         private readonly Dictionary<Card,string> ownedDepartureKeys = new Dictionary<Card,string>();
@@ -1203,7 +1215,7 @@ namespace Olca.Application.Dungeon
             clearReturnView.RenderOwnedDeparture(clearReturnSession.Snapshot, ownedDepartureOptions, ownedDepartureDraft,
                 ownedDepartureError ?? validation, validation == null, ChangeOwnedDeparture, ConfirmOwnedDeparture,
                 CloseOwnedDeparture, () => ShowOwnedDeparture(), confirmDiscard, editingSavedDeckId==null?null:SaveEditingDeck,
-                editingSavedDeckName, name=>{editingSavedDeckName=name;savedDeckDirty=true;}, clearReturnSession.HasPendingSave, RetryClearReturn,ownedDepartureDraft.Select(DraftDefinitionKey).ToArray());
+                editingSavedDeckName, name=>{editingSavedDeckName=name;savedDeckDirty=true;}, clearReturnSession.HasPendingSave, RetryClearReturn,ownedDepartureDraft.Select(DraftDefinitionKey).ToArray(),SavedDecks.SingleOrDefault(d=>d.Id==editingSavedDeckId)?.Name);
         }
         private void ChangeOwnedDeparture(int index, int delta)
         {

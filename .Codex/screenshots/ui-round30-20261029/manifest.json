@@ -1,0 +1,113 @@
+{
+  "unit": "round30-deck-name-limit",
+  "images": [
+    {
+      "file": "copy-list-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "c7189bedcbea6d30a1c61dd8331c5d254a583e397084c87e837712a90f8ef0af",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "copy-list-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "cef2ca8bd1414066c798454db510e36e67e42af1d34b3b8b6592ab268fa7c1cc",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "copy-list-wide.png",
+      "size": [
+        2520,
+        1080
+      ],
+      "sha256": "1f8a4b215668ed098f8c54c6e84c97cb48370276db7ba412421d3733889bd01b",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "legacy-compatible-detail-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "74ae0a53cec144049024286e17380429ce04e305a4432255b2147f186176b221",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "legacy-input-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "2e094763437459840298a1fc39f1ad84d7592ad7fd2f0c7fdd104816a1e37410",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "legacy-input-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "d684503802c3568130350fed4a26fca5463b87d32ba03cfe4c8639377da13547",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "legacy-partial-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "868178d74cc796acf7e0d24b290792867d51f7843328406a71402ea81e94b34e",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "new-limit-input-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "e69b76fd9b4b5c542beb33bd488600c38a12e4a28445c1665714990e4c1af327",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "new-limit-input-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "3a14b5983dd7327968a6b35a1ce405bdffcdff9f315b95b7dfb8b801a2f86542",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "new-limit-list-4by3.png",
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "ee7be8c5de2b0586d3f242ac5cbf84ebf58ac3068f993bee15c554d6bb11872d",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "new-limit-list-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "8e5138082a9f6b28c6567c03f92378351ad91c5ce7bfa1f0404bbbd32da0a574",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "new-limit-list-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "3eb7017b2eea2f1965dc7f69b4a54033ae6a79b7df918c077d04b35d8ea2a93c",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    }
+  ]
+}

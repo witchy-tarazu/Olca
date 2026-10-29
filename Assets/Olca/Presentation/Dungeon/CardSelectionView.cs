@@ -704,7 +704,7 @@ namespace Olca.Presentation.Dungeon
         }
 
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
-            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null)
+            string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null, string persistedDeckName=null)
         {
             StopMenu();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
@@ -719,10 +719,28 @@ namespace Olca.Presentation.Dungeon
                 Button("KeepEditingDeparture", "編集に戻る", -420, -150, 750, 80, Live(resume,true));
                 Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, Live(() => close(true),true)); SetMenu(content.transform,Live(resume,true),"KeepEditingDeparture",true);return;
             }
-            if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(InputField));inputObj.transform.SetParent(content.transform,false);
+            Button nameSaveButton=null;Func<bool> nameCanSave=()=>true;Action refreshNameState=null;
+            if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(SavedDeckNameInputField));inputObj.transform.SetParent(content.transform,false);
                 var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(-150,400);ir.sizeDelta=new Vector2(1000,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
                 var label=Text("SavedDeckNameText",deckName??"",0,0,980,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;label.supportRichText=false;
-                var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;var nameOwner=content;input.onValueChanged.AddListener(value=>{if(this!=null&&nameOwner!=null&&content==nameOwner&&nameOwner.activeInHierarchy&&!pending&&!HasMenuModal)rename?.Invoke(value);});}
+                var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.lineType=InputField.LineType.SingleLine;input.text=deckName??"";input.interactable=!pending;
+                var hint=Text("SavedDeckNameLimit","16モジまで",635,400,430,48,22);var nameOwner=content;string accepted=input.text,initialName=deckName??"",draftName=initialName,focusName=initialName;
+                ((SavedDeckNameInputField)input).FocusStarted=()=>focusName=draftName;
+                nameCanSave=()=>CanUseDeckName(draftName)||(persistedDeckName!=null&&string.Equals(draftName,persistedDeckName,StringComparison.Ordinal));
+                refreshNameState=()=>{if(nameSaveButton!=null)nameSaveButton.interactable=!pending&&nameCanSave();hint.text=persistedDeckName!=null&&string.Equals(draftName,persistedDeckName,StringComparison.Ordinal)&&!CanUseDeckName(draftName)?"キュウメイはそのままホジ":nameCanSave()?"16モジまで":"16モジまでにヘンコウ";};
+                bool applyingName=false;
+                void ApplyName(string value,bool ending){
+                    if(applyingName||this==null||nameOwner==null||content!=nameOwner||!nameOwner.activeInHierarchy||pending||HasMenuModal)return;
+                    applyingName=true;try{
+                    if(ending&&input.wasCanceled){accepted=value;draftName=focusName;input.SetTextWithoutNotify(value);rename?.Invoke(focusName);refreshNameState();return;}
+                    bool restoringLegacy=persistedDeckName!=null&&string.Equals(value,persistedDeckName,StringComparison.Ordinal);
+                    bool reducingLegacy=persistedDeckName!=null&&!CanUseDeckName(accepted)&&SavedDeckNameRules.IsSingleLine(value)&&SavedDeckNameRules.Count(value)<SavedDeckNameRules.Count(accepted);
+                    if(value!=accepted&&!string.IsNullOrEmpty(value)&&!CanUseDeckName(value)&&!reducingLegacy&&!restoringLegacy){input.SetTextWithoutNotify(accepted);hint.text="16モジまで";return;}
+                    if(value!=accepted){input.SetTextWithoutNotify(value);accepted=input.text;draftName=restoringLegacy?persistedDeckName:value;rename?.Invoke(draftName);}if(ending)focusName=draftName;refreshNameState();
+                    }finally{applyingName=false;}
+                }
+                input.onValueChanged.AddListener(value=>ApplyName(value,false));input.onEndEdit.AddListener(value=>ApplyName(value,true));
+            }
             Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 325, 1750, 100, 26);
             AddOverflowTextDetails(Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
@@ -752,7 +770,7 @@ namespace Olca.Presentation.Dungeon
             Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, Live(()=>ChangeDeparturePage(-1),true)).interactable = departurePage > 0;
             Button("NextDeparturePage", "次へ", 380, -340, 240, 55, Live(()=>ChangeDeparturePage(1),true)).interactable = departurePage+1 < pages;
             if(save==null)Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, Live(confirm,true)).interactable = valid;
-            else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,Live(save)).interactable=!pending;
+            else {nameSaveButton=Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,Live(()=>{if(nameCanSave())save?.Invoke();}));refreshNameState?.Invoke();}
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,Live(retrySave,true));
             else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -493, 800, 58, Live(() => close(false)));
             // 無効になった詳細や再試行の焦点は、変更操作でなく有効な読取／既定操作へ戻す。
@@ -760,6 +778,17 @@ namespace Olca.Presentation.Dungeon
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureDetails_",StringComparison.Ordinal)&&b.IsInteractable())?.name??
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureRow_",StringComparison.Ordinal)&&b.name.EndsWith("Details",StringComparison.Ordinal)&&b.IsInteractable())?.name??"CloseOwnedDeparture";
             SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();
+        }
+
+        // 一覧の最も狭い700幅へ、装備注記と枚数を含めて収める。raw入力は書き換えない。
+        public bool CanUseDeckName(string value)
+        {
+            if(!SavedDeckNameRules.IsValid(value)||font==null)return false;
+            var settings=new TextGenerationSettings{font=font,fontSize=25,fontStyle=FontStyle.Normal,scaleFactor=1,lineSpacing=1,
+                richText=false,horizontalOverflow=HorizontalWrapMode.Overflow,verticalOverflow=VerticalWrapMode.Overflow};
+            var generator=new TextGenerator();
+            float Width(string text)=>generator.GetPreferredWidth(Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text),settings);
+            return Width("［装備中］ "+value+"　20枚")<=680&&Width(value+"　"+int.MaxValue+"枚")<=680;
         }
 
         private ScrollRect DeleteDeckName(string value)
@@ -799,8 +828,8 @@ namespace Olca.Presentation.Dungeon
             AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
-                var row=Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);
-                if(NeedsTextDetails(row)){
+                var row=Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
+                if(!CanUseDeckName(d.Name)&&NeedsTextDetails(row)){
                     row.rectTransform.sizeDelta-=new Vector2(180,0);row.rectTransform.anchoredPosition-=new Vector2(90,0);
                     TextDetailsButton("SavedDeckName_"+d.Id+"Details",row.text,"デッキのナマエ",-210,y,140,50);
                 }
@@ -1050,5 +1079,48 @@ namespace Olca.Presentation.Dungeon
         private void OnEnable(){label=GetComponent<UnityEngine.UI.Text>();UnityEngine.Canvas.preWillRenderCanvases+=Apply;Apply();}
         private void OnDisable(){UnityEngine.Canvas.preWillRenderCanvases-=Apply;}
         private void Apply(){if(label==null||label.text==applied)return;applied=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);label.text=applied;}
+    }
+}
+
+namespace Olca.Presentation.Dungeon
+{
+    /// <summary>貼付けを文字ごとに通知せず、選択範囲の結合文字を含めて一候補として検証する。</summary>
+    public sealed class SavedDeckNameInputField : UnityEngine.UI.InputField
+    {
+        private char pendingHighSurrogate;
+        public System.Action FocusStarted;
+        protected override void LateUpdate(){bool focused=isFocused;base.LateUpdate();if(!focused&&isFocused){pendingHighSurrogate='\0';FocusStarted?.Invoke();}}
+        private static int Boundary(string value,int position,bool ceiling)
+        {
+            int prior=0;
+            foreach(int start in System.Globalization.StringInfo.ParseCombiningCharacters(value)){
+                if(start==position)return start;
+                if(start>position)return ceiling?start:prior;
+                prior=start;
+            }
+            return ceiling?value.Length:prior;
+        }
+        protected override void Append(string input)
+        {
+            pendingHighSurrogate='\0';
+            if(readOnly||!isActiveAndEnabled||!interactable||string.IsNullOrEmpty(input))return;
+            int a=UnityEngine.Mathf.Min(selectionAnchorPosition,selectionFocusPosition),b=UnityEngine.Mathf.Max(selectionAnchorPosition,selectionFocusPosition);
+            if(a==b)a=b=Boundary(text,a,true);else {a=Boundary(text,a,false);b=Boundary(text,b,true);}
+            string proposal=text.Remove(a,b-a).Insert(a,input);
+            // EditModeのInputFieldはSetText内で旧キャレットをclampしない。短い全置換でも先に安全化する。
+            caretPosition=0;text=proposal;
+            if(text==proposal)caretPosition=UnityEngine.Mathf.Min(a+input.Length,text.Length);
+            else {selectionAnchorPosition=a;selectionFocusPosition=b;}
+        }
+        protected override void Append(char input)
+        {
+            if(char.IsHighSurrogate(input)){pendingHighSurrogate=input;return;}
+            if(char.IsLowSurrogate(input)){
+                if(pendingHighSurrogate!=0){var pair=new string(new[]{pendingHighSurrogate,input});pendingHighSurrogate='\0';Append(pair);}return;
+            }
+            pendingHighSurrogate='\0';Append(input.ToString());
+        }
+        public override void OnDeselect(UnityEngine.EventSystems.BaseEventData eventData){pendingHighSurrogate='\0';base.OnDeselect(eventData);}
+        protected override void OnDisable(){pendingHighSurrogate='\0';base.OnDisable();}
     }
 }

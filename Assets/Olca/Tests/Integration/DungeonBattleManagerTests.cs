@@ -3790,6 +3790,14 @@ namespace Olca.Tests.Integration
         private static void SavedName(Olca.Application.Dungeon.DungeonBattleController c,string name)
         {((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentInChildren<UnityEngine.UI.InputField>(true).text=name;}
         [Test]
+        public void 上限名の保存と複製は元名と所持を変えず新しいコピー名を上限内へ収める()
+        {
+            var c=SavedDeckFixture();Set(Get(c,"clearReturnView"),"font",UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Font>("Assets/Font/JikiTourai.ttf"));KeyboardButton(c,"SavedDeckMenu");KeyboardButton(c,"NewSavedDeck");string name=new string('ヴ',16);SavedName(c,name);KeyboardButton(c,"SaveNamedDeck");
+            var first=c.PersistentProgress.SavedDecks.Single();Assert.AreEqual(name,first.Name);KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"CloneDeck_"+first.Id);
+            var copy=c.PersistentProgress.SavedDecks.Single(d=>d.Id!=first.Id);Assert.IsTrue(SavedDeckNameRules.IsValid(copy.Name));Assert.IsTrue(((Olca.Presentation.Dungeon.ClearReturnView)Get(c,"clearReturnView")).CanUseDeckName(copy.Name));Assert.AreEqual(name,c.PersistentProgress.SavedDecks.Single(d=>d.Id==first.Id).Name);StringAssert.EndsWith(" の複製",copy.Name);
+        }
+
+        [Test]
         public void 保存デッキの空保存と編成と複製と装備と確認付き削除を実UIから接続し選択二十枚で再開する()
         {
             var c=SavedDeckFixture();var owned=c.PersistentProgress.Owned.Select(o=>o.Count).ToArray();var receipts=c.PersistentProgress.Receipts.Length;
@@ -4496,6 +4504,21 @@ namespace Olca.Tests.Integration
             session=new ClearReturnSession(Store());Assert.IsFalse(session.InitializeStarter(cards));
             Assert.AreEqual(20,session.Snapshot.Owned.Sum(o=>o.Count));Assert.AreEqual(id,session.Snapshot.EquippedDeckId);
             Assert.AreEqual(1,session.Snapshot.SavedDecks.Length);
+        }
+
+        [Test]
+        public void デッキ名上限は新規と改名だけに適用し旧名の完全一致と結合文字の原文を保持する()
+        {
+            var session=new ClearReturnSession(Store());var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();Assert.IsTrue(session.InitializeStarter(cards));
+            Assert.IsTrue(session.Begin(Terminal(),"fixture",new ClearReturnSettings()));Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            var p=session.Snapshot.Copy();string legacy=" "+new string('ヴ',32)+" ";p.SavedDecks[0].Name=legacy;var memory=new MemoryClearReturnStore(p);session=new ClearReturnSession(memory);string id=p.SavedDecks[0].Id;
+            Assert.IsTrue(session.SaveDeck(id,legacy,p.SavedDecks[0].Cards));Assert.AreEqual(legacy,session.Snapshot.SavedDecks[0].Name);string before=PortableCheckpointJson.Hash(PortableCheckpointJson.Encode(session.Snapshot));
+            foreach(var invalid in new[]{legacy,new string('ヴ',17),"あ\nい","\uD800"}){
+                Assert.IsFalse(session.SaveDeck(System.Guid.NewGuid().ToString("N"),invalid,new SavedDeckCard[0]));Assert.AreEqual(before,PortableCheckpointJson.Hash(PortableCheckpointJson.Encode(session.Snapshot)));
+            }
+            Assert.IsFalse(session.SaveDeck(id,new string('ヴ',31),p.SavedDecks[0].Cards));Assert.AreEqual(before,PortableCheckpointJson.Hash(PortableCheckpointJson.Encode(session.Snapshot)));
+            string combined=string.Concat(Enumerable.Repeat("e\u0301",16));Assert.AreEqual(16,SavedDeckNameRules.Count(combined));Assert.AreEqual(1,SavedDeckNameRules.Count("\uD83D\uDE00"));
+            Assert.IsTrue(session.SaveDeck(id,combined,p.SavedDecks[0].Cards));Assert.AreEqual(combined,session.Snapshot.SavedDecks[0].Name);Assert.AreEqual(combined,PortableCheckpointJson.DecodeProgress(PortableCheckpointJson.Encode(session.Snapshot)).SavedDecks[0].Name);
         }
 
         [Test]
