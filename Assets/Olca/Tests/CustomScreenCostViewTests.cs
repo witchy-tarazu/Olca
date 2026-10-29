@@ -266,6 +266,24 @@ namespace Olca.Tests
             var root=new GameObject("NullableRename",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
             try{var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;void Render(bool discard)=>v.RenderOwnedDeparture(new ClearReturnProfile(),new Card[0],new Card[0],null,true,(_,__)=>{},no,_=>no(),no,discard,save:no,deckName:"テスト");Render(false);Assert.DoesNotThrow(()=>root.GetComponentInChildren<InputField>().text="なまえ");Render(true);var stale=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick;Render(false);stale.Invoke();Assert.AreEqual(0,calls);}finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 長い編成エラーと未解決カード行を業務操作せず読みボタン領域を分離する(float width,float height,bool pending)
+        {
+            var root=new GameObject("DraftBoundaryCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("DraftBoundaryView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});
+                string name=string.Concat(Enumerable.Repeat("ながいカードのなまえ",40))+"サイゴのナマエ",error=string.Join("\n",Enumerable.Repeat("ながいヘンセイエラー",40))+"\nサイゴのエラー";var card=new Card("known",name,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");var profile=new ClearReturnProfile{Owned=new[]{new OwnedCardCount{Id="known",Name=name,Count=2},new OwnedCardCount{Id="unknown",Name=name,Count=2},new OwnedCardCount{Id="short",Name="テスト",Count=1}}};int calls=0;System.Action no=()=>calls++;
+                void Render()=>v.RenderOwnedDeparture(profile,new[]{card,null,card},new[]{card},error,false,(_,__)=>no(),no,_=>no(),no,false,save:no,deckName:"テスト",rename:_=>no(),pending:pending,retrySave:no);
+                Render();Canvas.ForceUpdateCanvases();RequireSeparateButtons(host);Assert.IsFalse(host.GetComponentsInChildren<Button>().Single(b=>b.name=="DepartureDetails_1").interactable);Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="DepartureRow_2Details"));
+                var row=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureCard_2");var details=host.GetComponentsInChildren<Button>().Single(b=>b.name=="DepartureDetails_2");var corners=new Vector3[4];row.rectTransform.GetWorldCorners(corners);var right=corners.Max(p=>p.x);((RectTransform)details.transform).GetWorldCorners(corners);Assert.Less(right,corners.Min(p=>p.x));
+                foreach(string triggerName in new[]{"DepartureValidationDetails","DepartureRow_0Details","DepartureRow_1Details"}){
+                    var trigger=host.GetComponentsInChildren<Button>().Single(b=>b.name==triggerName);RequireInside(viewport,(RectTransform)trigger.transform);var oldOpen=trigger.onClick;trigger.onClick.Invoke();var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();StringAssert.Contains(triggerName=="DepartureValidationDetails"?"サイゴのエラー":"サイゴのナマエ",body.text);if(triggerName=="DepartureRow_1Details")StringAssert.Contains("テイギミカイケツ",body.text);Assert.IsNull(body.GetComponent<CardAttackPropertyIcons>());Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);scroll.verticalNormalizedPosition=0;
+                    var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");var oldClose=close.onClick;close.onClick.Invoke();Render();oldOpen.Invoke();oldClose.Invoke();Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);
+                }
+                if(pending){var menu=(Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v);Assert.AreEqual("RetrySavedDeckSave",menu.FocusName);}Assert.AreEqual(2,profile.Owned[0].Count);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

@@ -699,12 +699,16 @@ namespace Olca.Presentation.Dungeon
                 var label=Text("SavedDeckNameText",deckName??"",0,0,980,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;label.supportRichText=false;
                 var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;var nameOwner=content;input.onValueChanged.AddListener(value=>{if(this!=null&&nameOwner!=null&&content==nameOwner&&nameOwner.activeInHierarchy&&!pending&&!HasMenuModal)rename?.Invoke(value);});}
             Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 325, 1750, 100, 26);
-            Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 235, 1750, 60, 25);
+            AddOverflowTextDetails(Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
                 int count = draftKeys!=null?draftKeys.Count(k=>k==OwnedDefinition.Key(owned)):draft.Count(c=>OwnedDefinition.CardMatches(owned,c)); float y = 160 - row * 75;
-                Text("DepartureCard_" + index, OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -360, y, 1050, 65, 25);
+                var rowText=Text("DepartureCard_" + index, OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -380, y, 1010, 65, 25);
+                if(NeedsTextDetails(rowText)){
+                    rowText.rectTransform.sizeDelta-=new Vector2(180,0);rowText.rectTransform.anchoredPosition-=new Vector2(90,0);
+                    TextDetailsButton("DepartureRow_"+index+"Details",rowText.text,"ヘンセイのジョウホウ",35,y,140,50);
+                }
                 Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;
                 Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1))).interactable = !pending && count > 0;
                 Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1))).interactable = !pending && option != null && (save!=null||(count < owned.Count && draft.Count < 20));
@@ -717,7 +721,7 @@ namespace Olca.Presentation.Dungeon
             else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,Live(save)).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,Live(retrySave,true));
             else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -493, 800, 58, Live(() => close(false)));
-                    SetMenu(content.transform,pending?null:Live(()=>close(false)),save==null?"DepartureDetails_0":"SaveNamedDeck");FitToolbarTitle();
+                    SetMenu(content.transform,pending?null:Live(()=>close(false)),pending?"RetrySavedDeckSave":save==null?"DepartureDetails_0":"SaveNamedDeck",force:pending);FitToolbarTitle();
         }
 
         private ScrollRect DeleteDeckName(string value)
