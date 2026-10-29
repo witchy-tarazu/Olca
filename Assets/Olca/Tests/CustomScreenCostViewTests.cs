@@ -75,6 +75,27 @@ namespace Olca.Tests
                 Assert.AreEqual(blocked?0:2,cancels);Assert.AreEqual(blocked?0:2,choices);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,0)] [TestCase(1662.77f,1247.08f,0)] [TestCase(2199.64f,942.70f,0)]
+        [TestCase(1920f,1080f,1)] [TestCase(1662.77f,1247.08f,1)] [TestCase(2199.64f,942.70f,1)]
+        [TestCase(1920f,1080f,2)] [TestCase(1662.77f,1247.08f,2)] [TestCase(2199.64f,942.70f,2)]
+        public void 長い一覧名はJikiTouraiで全文を保ち枠内余白と元の入力領域を維持する(float width,float height,int mode)
+        {
+            var root=new GameObject("LongChoiceCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;
+            var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("LongChoiceView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();
+                var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");Assert.IsNotNull(font);view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
+                string name=string.Concat(Enumerable.Repeat("ながいテストめいしょう",mode==2?15:8));int chosen=-1;
+                if(mode==0)view.RenderDungeonSelection(new[]{name,name},new[]{true,true},0,i=>chosen=i,()=>{},()=>{},false,null,()=>{},cleared:new[]{false,false});
+                else if(mode==1)view.RenderStyleSelection(new[]{name+" / None",name+" / None"},new[]{true,true},0,i=>chosen=i,()=>{},()=>{},false,null,()=>{});
+                else view.RenderTokenExchange(new ClearReturnProfile{Tokens=100,ExchangeStock=new ExchangeStockData{Offers=new[]{new ExchangeOfferData{Id="long",CardId="fixture",Name=name,Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}}}},null,false,null,_=>chosen=0,()=>{},()=>{},()=>{},()=>{});
+                Canvas.ForceUpdateCanvases();var button=host.GetComponentsInChildren<Button>().First(b=>b.name.StartsWith(mode==0?"DungeonChoice_":mode==1?"StyleChoice_":"ExchangeOffer_"));var label=button.GetComponentInChildren<Text>();var rect=(RectTransform)button.transform;
+                Assert.AreEqual(mode==2?1730:1450,rect.rect.width);Assert.AreEqual(mode==2?76:78,rect.rect.height);RequireInside(viewport,rect);RequireInside(rect,label.rectTransform);
+                Assert.Less(label.rectTransform.rect.width,rect.rect.width);Assert.Less(label.rectTransform.rect.height,rect.rect.height);Assert.AreSame(font,label.font);Assert.IsFalse(label.raycastTarget);
+                StringAssert.Contains(name,label.text);Assert.AreEqual(label.text.Length,label.cachedTextGenerator.characterCountVisible,"内側余白で文字を欠落させない");
+                button.onClick.Invoke();Assert.GreaterOrEqual(chosen,0);RequireSeparateButtons(host);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

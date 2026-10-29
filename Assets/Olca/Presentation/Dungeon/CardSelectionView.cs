@@ -449,6 +449,13 @@ namespace Olca.Presentation.Dungeon
                 "　チケイ: "+(info.TerrainTypes.Count==0?"情報なし":string.Join(" / ",System.Linq.Enumerable.Select(info.TerrainTypes,Terrain)));
         }
         private int dungeonPage;
+        // 一覧行の文字だけを枠の内側へ収め、ボタン外形と入力領域を変えない。
+        private static void InsetChoiceLabel(Button button)
+        {
+            var label=button.GetComponentInChildren<UnityEngine.UI.Text>();
+            label.rectTransform.sizeDelta=((RectTransform)button.transform).sizeDelta-new Vector2(64,12);
+        }
+
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
             bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null)
@@ -471,6 +478,7 @@ namespace Olca.Presentation.Dungeon
                     ? (selected==index ? "［センタクチュウ］ " : "［センタク］ ")+names[index]+(cleared==null?"":cleared[index]?" / クリア済み":" / ミクリア")
                     : "［ミカイホウ］ ？？？" + (unlockConditions==null||string.IsNullOrEmpty(unlockConditions[index])?"":"\nカイホウ: "+unlockConditions[index]);
                 var button = Button("DungeonChoice_" + index, label, 0, 240 - row * 95, 1450, 78, () => choose(index));
+                InsetChoiceLabel(button);
                 button.interactable = !blocked && unlocked[index];
                 if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
@@ -552,6 +560,7 @@ namespace Olca.Presentation.Dungeon
                 bool sold=item.Limit!=ExchangeLimit.Unlimited&&(item.Limit==ExchangeLimit.PerRefresh?item.Purchased:total)>=item.Maximum;
                 string limit=item.Limit==ExchangeLimit.Unlimited?"無制限":item.Limit==ExchangeLimit.PerRefresh?$"更新まで {item.Purchased}/{item.Maximum}":$"通算 {total}/{item.Maximum}";
                 var b=Button("ExchangeOffer_"+item.Id,(selected==item.Id?"［選択中］ ":sold?"［売切れ］ ":"［選択］ ")+(item.Random?"ランダム ":"固定 ")+item.Name+new string('★',(int)item.Level)+$" / {item.Price} トークン / 所持{owned}/4 / "+limit,0,205-row*90,1730,76,()=>choose(item.Id));
+                InsetChoiceLabel(b);
                 b.interactable=!blocked&&!sold;if(selected==item.Id)b.GetComponent<Image>().color=UiLook.Chosen;
             }
             Button("PreviousExchangePage","前へ",-380,-270,260,60,()=>{exchangePage--;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage>0;
@@ -582,6 +591,7 @@ namespace Olca.Presentation.Dungeon
             for (int row = 0; row < rows && stylePage * rows + row < names.Length; row++) {
                 int index = stylePage * rows + row;
                 var button = Button("StyleChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
+                InsetChoiceLabel(button);
                 button.interactable = !blocked && unlocked[index];
                 if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
