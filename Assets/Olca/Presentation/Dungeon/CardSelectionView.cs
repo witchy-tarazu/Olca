@@ -320,10 +320,11 @@ namespace Olca.Presentation.Dungeon
             readonlyScroll.verticalNormalizedPosition=Mathf.Clamp01(position);readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;
         }
         // 上端の既存補助ボタンの間へ文字領域だけを収め、FHDの中央位置は保つ。
-        private void FitSavedDeckTitle()
+        private void FitToolbarTitle()
         {
-            if(content==null||content.name!="SavedDeckContents"||content.transform.Find("ConfirmDeleteDeck")!=null)return;
-            var title=content.transform.Find("SavedDeckTitle")?.GetComponent<UnityEngine.UI.Text>();if(title==null)return;
+            if(content==null)return;bool departure=content.name=="DepartureContents";
+            if((!departure&&content.name!="SavedDeckContents")||content.transform.Find("ConfirmDeleteDeck")!=null)return;
+            var title=content.transform.Find(departure?"DepartureTitle":"SavedDeckTitle")?.GetComponent<UnityEngine.UI.Text>();if(title==null)return;
             var root=(RectTransform)content.transform;var rect=title.rectTransform;
             float left=root.rect.xMin+110,right=root.rect.xMax-110,top=root.rect.yMax-50,bottom=root.rect.yMax-120;
             foreach(var button in menuExtras?.Invoke()??System.Array.Empty<Button>()){
@@ -335,11 +336,12 @@ namespace Olca.Presentation.Dungeon
                 if((minX+maxX)/2<0)left=Mathf.Max(left,maxX+16);else right=Mathf.Min(right,minX-16);
             }
             if(right<=left)return;
-            float width=Mathf.Min(title.preferredWidth+32,right-left);
-            var size=new Vector2(width-root.rect.width,70);var position=new Vector2(Mathf.Clamp(0,left+width/2,right-width/2),-85);
+            float width=departure?right-left:Mathf.Min(title.preferredWidth+32,right-left);
+            if(departure){title.resizeTextForBestFit=true;title.resizeTextMinSize=20;title.resizeTextMaxSize=36;}
+            var size=new Vector2(departure?width:width-root.rect.width,departure?60:70);var position=new Vector2(Mathf.Clamp(0,left+width/2,right-width/2),departure?455:-85);
             if(rect.sizeDelta!=size)rect.sizeDelta=size;if(rect.anchoredPosition!=position)rect.anchoredPosition=position;
         }
-        private void LateUpdate(){FitReferenceLayout();FitSavedDeckTitle();RefreshReadonlyLayout();menu?.Tick();}
+        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();RefreshReadonlyLayout();menu?.Tick();}
         private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
@@ -684,16 +686,18 @@ namespace Olca.Presentation.Dungeon
             content = new GameObject("DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
             gameObject.SetActive(true);
+            var owner=content;
+            Action Live(Action action,bool allowPending=false)=>()=>{if(this!=null&&owner!=null&&content==owner&&owner.activeInHierarchy&&(allowPending||!pending)&&readonlyDetails==null)action?.Invoke();};
             Text("DepartureTitle", "所持から出撃デッキを編成", 0, 455, 1750, 60, 36);
             if (confirmDiscard) {
                 Text("DiscardDepartureHelp", "未確定の編成を破棄して帰還画面へ戻りますか？", 0, 100, 1700, 130, 30);
-                Button("KeepEditingDeparture", "編集に戻る", -420, -150, 750, 80, resume);
-                Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, () => close(true)); SetMenu(content.transform,resume,"KeepEditingDeparture",true);return;
+                Button("KeepEditingDeparture", "編集に戻る", -420, -150, 750, 80, Live(resume,true));
+                Button("DiscardDepartureDraft", "変更を破棄", 420, -150, 750, 80, Live(() => close(true),true)); SetMenu(content.transform,Live(resume,true),"KeepEditingDeparture",true);return;
             }
-            if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(InputField));inputObj.transform.SetParent(content.transform,false);
-                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(0,400);ir.sizeDelta=new Vector2(1100,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
-                var label=Text("SavedDeckNameText",deckName??"",0,0,1080,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;
-                var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;input.onValueChanged.AddListener(value=>rename(value));}
+            if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(InputField));inputObj.transform.SetParent(content.transform,false);
+                var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(-150,400);ir.sizeDelta=new Vector2(1000,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
+                var label=Text("SavedDeckNameText",deckName??"",0,0,980,46,25);label.transform.SetParent(inputObj.transform,false);label.rectTransform.anchoredPosition=Vector2.zero;label.supportRichText=false;
+                var input=inputObj.GetComponent<InputField>();input.textComponent=label;input.text=deckName??"";input.interactable=!pending;var nameOwner=content;input.onValueChanged.AddListener(value=>{if(this!=null&&nameOwner!=null&&content==nameOwner&&nameOwner.activeInHierarchy&&!pending&&!HasMenuModal)rename?.Invoke(value);});}
             Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 325, 1750, 100, 26);
             Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 235, 1750, 60, 25);
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
@@ -701,19 +705,19 @@ namespace Olca.Presentation.Dungeon
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
                 int count = draftKeys!=null?draftKeys.Count(k=>k==OwnedDefinition.Key(owned)):draft.Count(c=>OwnedDefinition.CardMatches(owned,c)); float y = 160 - row * 75;
                 Text("DepartureCard_" + index, OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -360, y, 1050, 65, 25);
-                Button("DepartureDetails_"+index,"詳細",230,y,170,60,()=>OpenCardDetails(option,"DepartureDetails_"+index)).interactable=option!=null&&!pending;
-                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, () => change(index, -1)).interactable = !pending && count > 0;
-                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, () => change(index, 1)).interactable = !pending && option != null && (save!=null||(count < owned.Count && draft.Count < 20));
+                Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;
+                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1))).interactable = !pending && count > 0;
+                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1))).interactable = !pending && option != null && (save!=null||(count < owned.Count && draft.Count < 20));
             }
             if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);
             Text("DeparturePage", $"{departurePage+1}/{pages}", 0, -340, 250, 50, 24);
-            Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, () => { departurePage--; resume(); }).interactable = departurePage > 0;
-            Button("NextDeparturePage", "次へ", 380, -340, 240, 55, () => { departurePage++; resume(); }).interactable = departurePage+1 < pages;
-            if(save==null)Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, confirm).interactable = valid;
-            else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,save).interactable=!pending;
-            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retrySave);
-            else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -493, 800, 58, () => close(false));
-                    SetMenu(content.transform,pending?null:(Action)(()=>close(false)),save==null?"DepartureDetails_0":"SaveNamedDeck");
+            Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, Live(() => { departurePage--; resume(); },true)).interactable = departurePage > 0;
+            Button("NextDeparturePage", "次へ", 380, -340, 240, 55, Live(() => { departurePage++; resume(); },true)).interactable = departurePage+1 < pages;
+            if(save==null)Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, Live(confirm,true)).interactable = valid;
+            else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,Live(save)).interactable=!pending;
+            if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,Live(retrySave,true));
+            else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -493, 800, 58, Live(() => close(false)));
+                    SetMenu(content.transform,pending?null:Live(()=>close(false)),save==null?"DepartureDetails_0":"SaveNamedDeck");FitToolbarTitle();
         }
 
         private ScrollRect DeleteDeckName(string value)
@@ -783,7 +787,7 @@ namespace Olca.Presentation.Dungeon
                 var child=content.transform.Find(name);if(child==null)continue;var control=(RectTransform)child;
                 control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
             }
-            SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+profile.EquippedDeckId,force:pending,resetMissing:decks.Length==0);FitSavedDeckTitle();
+            SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+profile.EquippedDeckId,force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
         }
 
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)

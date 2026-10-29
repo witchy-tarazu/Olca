@@ -244,6 +244,28 @@ namespace Olca.Tests
                 Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 長いデッキ名の入力は記号を保持し取消再表示後の古い操作を拒否する(float width,float height,bool pending)
+        {
+            var root=new GameObject("NameEditCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("NameEditView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");v.Initialize(font,_=>{},()=>{},()=>{},()=>{});string original="<b>"+string.Concat(Enumerable.Repeat("ながいデッキのなまえ",25))+"サイゴ</b>",draft=original;int renamed=0,actions=0;System.Action no=()=>actions++;
+                var extras=new System.Collections.Generic.List<Button>();foreach(bool left in new[]{true,false}){var o=new GameObject("Toolbar",typeof(RectTransform),typeof(Button));o.transform.SetParent(root.transform,false);var ar=(RectTransform)o.transform;ar.anchorMin=ar.anchorMax=new Vector2(left?0:1,1);ar.anchoredPosition=new Vector2(left?580:-310,-85);ar.sizeDelta=new Vector2(left?280:300,60);extras.Add(o.GetComponent<Button>());}v.ConfigureMenuNavigation(()=>extras);
+                void Render(bool discard)=>v.RenderOwnedDeparture(new ClearReturnProfile(),new Card[0],new Card[0],null,true,(_,__)=>no(),no,_=>no(),no,discard,save:no,deckName:draft,rename:value=>{draft=value;renamed++;},pending:pending,retrySave:no);
+                Render(false);Canvas.ForceUpdateCanvases();var input=host.GetComponentInChildren<InputField>();Assert.AreEqual(original,input.text);Assert.IsFalse(input.textComponent.supportRichText);Assert.AreSame(font,input.textComponent.font);Assert.IsNotNull(input.GetComponent<RectMask2D>());RequireInside(viewport,(RectTransform)input.transform);RequireInside((RectTransform)input.transform,input.textComponent.rectTransform);
+                var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureTitle");Assert.AreEqual(title.text.Length,title.cachedTextGenerator.characterCountVisible);RequireInside(viewport,title.rectTransform);
+                var oldName=input.onValueChanged;var oldSave=host.GetComponentsInChildren<Button>().Single(b=>b.name=="SaveNamedDeck").onClick;oldName.Invoke("<b>ひらがなABC</b>");Assert.AreEqual(pending?original:"<b>ひらがなABC</b>",draft);Assert.AreEqual(pending?0:1,renamed);
+                Render(true);var oldResume=host.GetComponentsInChildren<Button>().Single(b=>b.name=="KeepEditingDeparture").onClick;oldName.Invoke("フルイナマエ");oldSave.Invoke();Assert.AreEqual(pending?0:1,renamed);Assert.AreEqual(0,actions);
+                draft=original;Render(false);oldName.Invoke("フルイナマエ");oldSave.Invoke();oldResume.Invoke();Assert.AreEqual(original,draft);Assert.AreEqual(original,host.GetComponentInChildren<InputField>().text);Assert.AreEqual(0,actions);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 名前変更callback未指定でも入力と破棄確認の寿命を保つ()
+        {
+            var root=new GameObject("NullableRename",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            try{var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;void Render(bool discard)=>v.RenderOwnedDeparture(new ClearReturnProfile(),new Card[0],new Card[0],null,true,(_,__)=>{},no,_=>no(),no,discard,save:no,deckName:"テスト");Render(false);Assert.DoesNotThrow(()=>root.GetComponentInChildren<InputField>().text="なまえ");Render(true);var stale=root.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick;Render(false);stale.Invoke();Assert.AreEqual(0,calls);}finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
