@@ -1,0 +1,95 @@
+{
+  "unit": "round32-mixed-feedback-other-enemy-labels",
+  "images": [
+    {
+      "file": "before-right-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "92d15a8eaee99fdbd194af103e446e43371bb039a736f8774efc824d1a44b90d",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "before-right-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "b61a7e68b118f1febf9f6f9f96abe74cb41b7ddafaa461909bb84b18e0b4023d",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "after-right-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "5490e240a5bb6086728e043a66c2f76316f4e391882d9679bae86295a4ee51f4",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "after-right-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "e7da2a0b9da8392ad70fa73be56ec37659e85794a1bb0f5a520088d1b9b2ecb9",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "player-left-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "6747df8a4651e769a4357140acb0607f2b0758777e8662e5daddd8b589b0b37d",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "player-left-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "fe45f01aa58fc20ecebfe38eafa6abb4ce67ed4f115fe836022626d1fe827493",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "simultaneous-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "ce1d95e85f1a081ef5d1b953f5a1984d0f138473747cbea4476b11293785f02d",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "simultaneous-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "613a48ae8bf2e908b731ef47542c690e050fa789c7a3e804eab87cce152863c5",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "center-audit-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "dd340cbb2e0433eb3b2e31f3493d9b756babaea342b294ade6217dee39f12a23",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "center-audit-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "f89b23fdec6a08141c21c0d15c64ac3bfe6acd99f6be65534218a1ec66cdb323",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    }
+  ]
+}

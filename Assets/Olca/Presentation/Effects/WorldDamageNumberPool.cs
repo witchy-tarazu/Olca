@@ -85,7 +85,9 @@ namespace Olca.Presentation.Effects
                 worldPosition.y+=count*Mathf.Max(.1f,renderer!=null?renderer.bounds.size.y:0f);
             }
             owners[instance]=owner;
-            instance.AlignViewport=perEffect&&owner!=null?()=>WorldDamageNumberView.KeepGroupBelowViewportTop(owners.Where(pair=>ReferenceEquals(pair.Value,owner)).Select(pair=>pair.Key),owner is Component component?component.GetComponentsInChildren<TextMesh>().Select(label=>label.GetComponent<Renderer>()):null):null;
+            // 貸出時に表示中の敵ラベル参照を集める。boundsと可視性は各描画frameで再評価する。
+            var labels=perEffect&&owner!=null?FeedbackLabels(owner):null;
+            instance.AlignViewport=perEffect&&owner!=null?()=>WorldDamageNumberView.KeepGroupBelowViewportTop(owners.Where(pair=>ReferenceEquals(pair.Value,owner)).Select(pair=>pair.Key),labels):null;
 
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, clearCts.Token);
             try
@@ -96,6 +98,14 @@ namespace Olca.Presentation.Effects
             {
                 Return(instance);
             }
+        }
+
+        private static Renderer[] FeedbackLabels(object owner)
+        {
+            var own=owner is Component component?component.GetComponentsInChildren<TextMesh>():new TextMesh[0];
+            return own.Concat(UnityEngine.Object.FindObjectsByType<Olca.Presentation.Field.WorldEnemyView>(FindObjectsSortMode.None)
+                .SelectMany(view=>view.GetComponentsInChildren<TextMesh>())).Select(label=>label.GetComponent<Renderer>())
+                .Where(renderer=>renderer!=null).Distinct().ToArray();
         }
 
         private WorldDamageNumberView Get()=>TakeInstance(true);

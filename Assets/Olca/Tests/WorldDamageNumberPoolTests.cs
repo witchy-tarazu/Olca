@@ -89,6 +89,25 @@ namespace Olca.Tests
         }
 
         [Test]
+        public async Task 上端外でなくても幅広い防御表示は別の敵名を隠さず再利用後も原点へ戻る()
+        {
+            var go=new GameObject("OtherEnemyNameCamera");var camera=go.AddComponent<Camera>();camera.tag="MainCamera";camera.orthographic=true;camera.orthographicSize=5;camera.transform.position=new Vector3(0,0,-10);camera.pixelRect=new Rect(0,0,1920,1080);
+            var others=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Where(c=>c!=camera&&c.CompareTag("MainCamera")).ToArray();foreach(var c in others)c.tag="Untagged";
+            var enemyObject=new GameObject("OtherEnemyName",typeof(Olca.Presentation.Field.WorldEnemyView));var label=enemyObject.AddComponent<TextMesh>();label.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");label.fontSize=40;label.characterSize=.1f;label.text="ボス";enemyObject.transform.position=Vector3.zero;
+            var pauseOwner=new object();Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);
+            try{
+                foreach(var view in Waiting){var text=view.GetComponent<TextMesh>();text.font=label.font;text.fontSize=40;text.characterSize=.1f;text.text="00";}
+                var owner=new object();using(var cts=new CancellationTokenSource()){
+                    var task=((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Guard),Vector3.zero,cts.Token,owner)).AsTask();var view=Active.Single();Assert.AreEqual("ガード",view.GetComponent<TextMesh>().text);Assert.IsFalse(view.GetComponent<Renderer>().bounds.Intersects(label.GetComponent<Renderer>().bounds));Assert.AreEqual(0,view.transform.position.y,.0001f,"上端内なら高さは変えない");cts.Cancel();await Completed(task);
+                }
+                label.GetComponent<Renderer>().forceRenderingOff=true;using(var cts=new CancellationTokenSource()){
+                    var task=((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Immune),Vector3.zero,cts.Token,owner)).AsTask();var view=Active.Single();Assert.AreEqual(Vector3.zero,view.transform.position,"強制非表示のラベルは回避しない");
+                    var align=typeof(WorldDamageNumberView).GetMethod("KeepBelowViewportTop",Private);label.GetComponent<Renderer>().forceRenderingOff=false;align.Invoke(view,null);Assert.IsFalse(view.GetComponent<Renderer>().bounds.Intersects(label.GetComponent<Renderer>().bounds),"解除すると再びラベルを回避する");label.GetComponent<Renderer>().forceRenderingOff=true;align.Invoke(view,null);Assert.AreEqual(Vector3.zero,view.transform.position,"再遮蔽で補正を残さない");cts.Cancel();await Completed(task);
+                }
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);foreach(var c in others)if(c!=null)c.tag="MainCamera";UnityEngine.Object.DestroyImmediate(enemyObject);UnityEngine.Object.DestroyImmediate(go);}
+        }
+
+        [Test]
         public void Get_初期容量を超えて上限まで全て別実体を貸し出す()
         {
             var views = Enumerable.Range(0, 20).Select(_ => Get()).ToArray();

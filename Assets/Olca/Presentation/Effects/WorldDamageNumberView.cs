@@ -119,10 +119,10 @@ namespace Olca.Presentation.Effects
                 }
             }
             var adjustment=camera!=null?camera.transform.up*offset:Vector3.zero;
-            // 上端から下げた群が対象名を隠す場合だけ、画面内に収まる横側へ逃がす。
-            if(offset<0&&labels!=null&&views.Count>0){
+            // 数値群が表示中の敵名を隠す場合だけ、画面内に収まる横側へ逃がす。
+            if(camera!=null&&camera.isActiveAndEnabled&&labels!=null&&views.Count>0){
                 var blockers=new System.Collections.Generic.List<Rect>();
-                foreach(var label in labels)if(label!=null&&label.enabled&&label.gameObject.activeInHierarchy)blockers.Add(ProjectBounds(camera,label.bounds));
+                foreach(var label in labels)if(label!=null&&label.enabled&&!label.forceRenderingOff&&label.gameObject.activeInHierarchy)blockers.Add(ProjectBounds(camera,label.bounds));
                 Bounds total=default;bool hasBounds=false;
                 foreach(var view in views){var renderer=view.textMesh!=null?view.textMesh.GetComponent<Renderer>():null;if(renderer==null)continue;var bounds=renderer.bounds;bounds.center+=adjustment-view.viewportOffset;if(!hasBounds){total=bounds;hasBounds=true;}else total.Encapsulate(bounds);}
                 if(hasBounds){var rect=ProjectBounds(camera,total);float left=0,right=0,padding=8f/Mathf.Max(1,camera.pixelWidth);bool overlaps=false;
