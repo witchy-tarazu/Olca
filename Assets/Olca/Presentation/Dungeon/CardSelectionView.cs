@@ -264,7 +264,7 @@ namespace Olca.Presentation.Dungeon
         private int collectionPage;
         private bool recipesTab;
         private Action collectionBackAction;
-        private Olca.Unity.MenuPadScope menu;private Transform menuRoot;private Action menuBack;
+        private Olca.Unity.MenuPadScope menu;private Transform menuRoot;private Action menuBack,menuBackSource;
         private readonly System.Collections.Generic.Dictionary<string,string> menuFocus=new System.Collections.Generic.Dictionary<string,string>();
         private Func<System.Collections.Generic.IEnumerable<Button>> menuExtras;private Func<OwnedCardCount,Card> resolveOwned;
         private GameObject readonlyDetails;private ScrollRect readonlyScroll;
@@ -279,17 +279,20 @@ namespace Olca.Presentation.Dungeon
             return hits.Count==0||hits[0].gameObject.transform==transform||hits[0].gameObject.transform.IsChildOf(transform);
         }
         private void SaveMenuFocus(){if(menuRoot==null)return;var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;var name=selected!=null&&selected.GetComponent<Button>()!=null?selected.name:menu?.FocusName;if(name!=null)menuFocus[menuRoot.name]=name;}
-        private void StopMenu(){SaveMenuFocus();menu?.Suspend();menuRoot=null;menuBack=null;if(readonlyDetails!=null){readonlyDetails.SetActive(false);if(Application.isPlaying)Destroy(readonlyDetails);else DestroyImmediate(readonlyDetails);readonlyDetails=null;}readonlyScroll=null;}
+        private void StopMenu(){SaveMenuFocus();menu?.Suspend();menuRoot=null;menuBack=null;menuBackSource=null;if(readonlyDetails!=null){readonlyDetails.SetActive(false);if(Application.isPlaying)Destroy(readonlyDetails);else DestroyImmediate(readonlyDetails);readonlyDetails=null;}readonlyScroll=null;}
+        // 現在の画面か、その画面を覆う読取専用モーダルだけが入力を所有する。
+        private bool OwnsContent(GameObject owner)=>this!=null&&owner!=null&&owner.activeInHierarchy&&(readonlyDetails!=null?readonlyDetails==owner:content==owner);
         private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true,bool resetMissing=false)
         {
-            SaveMenuFocus();menuRoot=root;menuBack=back;bool cached=menuFocus.TryGetValue(root.name,out var old);
+            var owner=root.gameObject;Action guardedBack=back==null?null:(Action)(()=>{if(OwnsContent(owner))back();});
+            SaveMenuFocus();menuRoot=root;menuBackSource=back;menuBack=guardedBack;bool cached=menuFocus.TryGetValue(root.name,out var old);
             if(!force&&cached){
                 // 消えた全文入口からは画面の既定へ戻し、無関係な外部操作へ飛ばさない。
                 if((resetMissing||old.EndsWith("Details",StringComparison.Ordinal))&&!root.GetComponentsInChildren<Button>().Concat(menuExtras?.Invoke()??System.Array.Empty<Button>()).Any(b=>b!=null&&b.gameObject.activeInHierarchy&&b.name==old&&b.IsInteractable()))cached=false;
                 else preferred=old;
             }
             if(menu==null)menu=new Olca.Unity.MenuPadScope(IsMenuTop,()=>menuRoot==content?.transform&&!HasMenuModal?(menuExtras?.Invoke()??System.Array.Empty<Button>()):System.Array.Empty<Button>());
-            Canvas.ForceUpdateCanvases();menu.Bind(root,preferred,back,scroll,cached,directionScroll);
+            Canvas.ForceUpdateCanvases();menu.Bind(root,preferred,guardedBack,scroll,cached,directionScroll);
         }
         // 固定配置の画面は基準の行間を保ち、幅または高さが足りないときだけ等比で収める。
         private void UseReferenceLayout()
@@ -351,7 +354,7 @@ namespace Olca.Presentation.Dungeon
         }
         private void OpenReadonlyText(string titleText,string value,string returnFocus,Action<UnityEngine.UI.Text> decorate=null)
         {
-            if(content==null||readonlyDetails!=null)return;var parent=content;var back=menuBack;
+            if(content==null||readonlyDetails!=null)return;var parent=content;var back=menuBackSource;
             readonlyDetails=new GameObject("ReadonlyCardDetails",typeof(RectTransform),typeof(Image));readonlyDetails.transform.SetParent(transform,false);var rect=(RectTransform)readonlyDetails.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;readonlyDetails.GetComponent<Image>().color=UiLook.Surface;var modal=readonlyDetails;
             content=modal;var title=Text("ReadonlyCardTitle",titleText,0,450,1700,70,36);
             title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-90);
@@ -722,7 +725,7 @@ namespace Olca.Presentation.Dungeon
                 string preferred=direction>0?"NextDeparturePage":"PreviousDeparturePage";
                 var button=content.transform.Find(preferred)?.GetComponent<Button>();
                 if(button==null||!button.IsInteractable()){preferred=direction>0?"PreviousDeparturePage":"NextDeparturePage";button=content.transform.Find(preferred)?.GetComponent<Button>();}
-                if(button!=null&&button.IsInteractable())SetMenu(content.transform,menuBack,preferred,true);
+                if(button!=null&&button.IsInteractable())SetMenu(content.transform,menuBackSource,preferred,true);
             }
             Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, Live(()=>ChangeDeparturePage(-1),true)).interactable = departurePage > 0;
             Button("NextDeparturePage", "次へ", 380, -340, 240, 55, Live(()=>ChangeDeparturePage(1),true)).interactable = departurePage+1 < pages;
@@ -825,7 +828,7 @@ namespace Olca.Presentation.Dungeon
             var o = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); o.transform.SetParent(content.transform, false);
             var r = (RectTransform)o.transform; r.anchorMin = r.anchorMax = new Vector2(.5f, .5f); r.anchoredPosition = new Vector2(x, y); r.sizeDelta = new Vector2(width, height);
             o.GetComponent<Image>().color = UiLook.ButtonFace;
-            var edge = o.AddComponent<Outline>(); edge.effectColor = new Color(.5f,.9f,.93f,.6f); edge.effectDistance = new Vector2(1,-1); var b = o.GetComponent<Button>(); b.navigation = new Navigation { mode = Navigation.Mode.None }; b.onClick.AddListener(() => action());
+            var edge = o.AddComponent<Outline>(); edge.effectColor = new Color(.5f,.9f,.93f,.6f); edge.effectDistance = new Vector2(1,-1); var b = o.GetComponent<Button>(); b.navigation = new Navigation { mode = Navigation.Mode.None }; var owner=content;b.onClick.AddListener(()=>{if(b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable()&&OwnsContent(owner))action?.Invoke();});
             var text = Text(name + "Label", label, x, y, width, height, 25); text.transform.SetParent(o.transform, false); text.rectTransform.anchoredPosition = Vector2.zero; UiLook.Button(b); return b;
         }
     }
