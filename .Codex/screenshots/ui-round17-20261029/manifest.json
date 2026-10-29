@@ -1,0 +1,86 @@
+[
+  {
+    "file": "unknown-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "30ed5e1e7d2cd857b50a9e1c3194e8f8ac40646eac1ed1315473616166f01726"
+  },
+  {
+    "file": "unknown-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "86b88b2d37636021cc1321dbb6c632af67c2d2da830ab95998ff6a4ff1f35b0b"
+  },
+  {
+    "file": "unknown-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "fec7f27fe7967f62d8489b84a2443ea2035f3d1eb19ab92f7fa7a34a4b35d68e"
+  },
+  {
+    "file": "unknown-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "e0f999eb7066be8625457bf8874ed0713944786b26b7c984d14260b52d1b4fd4"
+  },
+  {
+    "file": "unknown-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "031f28aafba2a3f4c310b0c7609eeb45174427d66ab350ee78faa1ff6c1d98ad"
+  },
+  {
+    "file": "unknown-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "dd12acb0592c8d5cbecce13ba44fc4fea087c050cfe7ffc1870825e56bc68541"
+  },
+  {
+    "file": "ready-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3deda79a0478b6714358aca8779b112df4f395760a6415a39249bb9d438051dc"
+  },
+  {
+    "file": "ready-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "8963a98003a89d90521bfb7fc05c715ee63437ffddf2fe7dca20f383b6500ebc"
+  },
+  {
+    "file": "ready-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "ec1e7347caea41084bac9a1398acd1d4c3b8ca81b656b281efe8c58d545fc293"
+  },
+  {
+    "file": "ready-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "b5be299a8ae0750ffc88dcfc752d92dc16267fc55837a35879d17f1aa8733e2c"
+  },
+  {
+    "file": "ready-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "240c71f145f19d2bf30918ff7233d382403560d3360dde372e7ba558bfef2074"
+  },
+  {
+    "file": "ready-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "7edf7a294eab954eee381809b8160127772df768d3d5af26f966b1d83a692bcb"
+  },
+  {
+    "file": "empty-after.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "5de7122b5935280ede8e389078321875b0a3633b129ffb1741776566904391f6"
+  },
+  {
+    "file": "restored-after.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8782fe5b1e6095b2e6af4c84d6df25d0f3f1105d4608e717ee4573b3f4c3b66e"
+  }
+]

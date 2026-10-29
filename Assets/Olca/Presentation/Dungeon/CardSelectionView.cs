@@ -730,7 +730,11 @@ namespace Olca.Presentation.Dungeon
             else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,Live(save)).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,Live(retrySave,true));
             else Button("CloseOwnedDeparture", save==null?"帰還画面へ戻る":"保存デッキ一覧へ戻る", 0, -493, 800, 58, Live(() => close(false)));
-                    SetMenu(content.transform,pending?null:Live(()=>close(false)),pending?"RetrySavedDeckSave":save==null?"DepartureDetails_0":"SaveNamedDeck",force:pending);FitToolbarTitle();
+            // 無効になった詳細や再試行の焦点は、変更操作でなく有効な読取／既定操作へ戻す。
+            string preferred=pending?"RetrySavedDeckSave":save!=null?"SaveNamedDeck":
+                content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureDetails_",StringComparison.Ordinal)&&b.IsInteractable())?.name??
+                content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureRow_",StringComparison.Ordinal)&&b.name.EndsWith("Details",StringComparison.Ordinal)&&b.IsInteractable())?.name??"CloseOwnedDeparture";
+            SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();
         }
 
         private ScrollRect DeleteDeckName(string value)

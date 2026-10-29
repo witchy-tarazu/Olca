@@ -310,6 +310,26 @@ namespace Olca.Tests
                 Find("PreviousDeparturePage").onClick.Invoke();Assert.AreEqual("1/2",Page());Find("NextDeparturePage").onClick.Invoke();Assert.AreEqual("2/2",Page());Find("NextDeparturePage").onClick.Invoke();Assert.AreEqual("2/2",Page());var menu=(Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v);Assert.AreEqual("RetrySavedDeckSave",menu.FocusName);Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 編成の定義欠損と保存待ち復帰は失効した操作から安全な既定へ戻る(float width,float height,bool named)
+        {
+            var root=new GameObject("DraftRecoveryCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;((RectTransform)root.transform).sizeDelta=new Vector2(width,height);GameObject events=null;if(UnityEngine.EventSystems.EventSystem.current==null){events=new GameObject("RecoveryEvents",typeof(UnityEngine.EventSystems.EventSystem));var es=events.GetComponent<UnityEngine.EventSystems.EventSystem>();typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnEnable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(es,null);UnityEngine.EventSystems.EventSystem.current=es;}
+            try{
+                var host=new GameObject("DraftRecoveryView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;string name=string.Concat(Enumerable.Repeat("ながいなまえ",60));var owned=new OwnedCardCount{Id="c",Name=name,Count=2};var card=new Card(owned.Id,owned.Name,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");
+                void Render(int mode)=>v.RenderOwnedDeparture(new ClearReturnProfile{Owned=mode==3?new OwnedCardCount[0]:new[]{owned}},mode==3?new Card[0]:new[]{mode==2?null:card},mode==3?new Card[0]:new[]{card},"ヘンセイをカクニン",false,(_,__)=>no(),no,_=>no(),no,false,save:named?no:null,pending:mode==1,retrySave:no,draftKeys:mode==3?new string[0]:new[]{OwnedDefinition.Key(owned)});
+                Button Find(string n)=>host.GetComponentsInChildren<Button>().Single(b=>b.name==n);string Focus()=>((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName;
+                Render(0);var oldDetail=Find("DepartureDetails_0").onClick;Find("DepartureDetails_0").Select();Render(2);Assert.IsFalse(Find("DepartureDetails_0").interactable);Assert.IsTrue(Find("RemoveDepartureCard_0").interactable);Assert.AreEqual(named?"SaveNamedDeck":"DepartureRow_0Details",Focus());oldDetail.Invoke();Assert.IsFalse(v.HasMenuModal);
+                Render(1);Assert.AreEqual("RetrySavedDeckSave",Focus());var oldRetry=Find("RetrySavedDeckSave").onClick;Render(0);Assert.AreEqual(named?"SaveNamedDeck":"DepartureDetails_0",Focus());oldRetry.Invoke();Assert.AreEqual(0,calls);
+                Render(3);Assert.IsNotNull(host.GetComponentsInChildren<Text>().Single(t=>t.name=="NoDepartureOwned"));Assert.AreEqual(named?"SaveNamedDeck":"CloseOwnedDeparture",Focus());Find("CloseOwnedDeparture").Select();Render(0);Assert.AreEqual("CloseOwnedDeparture",Focus());Assert.AreEqual(2,owned.Count);Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);if(events!=null){typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(events.GetComponent<UnityEngine.EventSystems.EventSystem>(),null);Object.DestroyImmediate(events);}}
+        }
+        [Test]
+        public void 短い未解決行だけなら戻るを選び解決済み行があれば最初の詳細を選ぶ()
+        {
+            var root=new GameObject("ShortDefinitionRecovery",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            try{foreach(bool known in new[]{false,true}){var host=new GameObject("FreshRecoveryView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});var owned=new[]{new OwnedCardCount{Id="a",Name="テスト",Count=2},new OwnedCardCount{Id="b",Name="テスト",Count=2}};var card=new Card("b","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");v.RenderOwnedDeparture(new ClearReturnProfile{Owned=owned},new[]{null,known?card:null},new Card[0],"ミカイケツ",false,(_,__)=>{},()=>{},_=>{},()=>{},false);var menu=(Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v);Assert.AreEqual(known?"DepartureDetails_1":"CloseOwnedDeparture",menu.FocusName);Object.DestroyImmediate(host);}}finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
