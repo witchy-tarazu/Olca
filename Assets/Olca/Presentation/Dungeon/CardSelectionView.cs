@@ -386,14 +386,14 @@ namespace Olca.Presentation.Dungeon
             StopMenu();
             CollectionContent("CardCollectionContents");collectionBackAction=pending?null:close;
             Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
-            Text("CollectionStatus",error??"永続入手で登録。融合の公開履歴はカード入手と別に保存します。",0,360,1700,80,24);
+            var status=Text("CollectionStatus",error??"永続入手で登録。融合の公開履歴はカード入手と別に保存します。",0,360,1700,80,24);
+            AddTrailingTextDetails(status,"CollectionStatusDetails","ズカンのメッセージ");
             Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"CardCollectionTab",cardDetails);});
             Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeCollectionTab",cardDetails);});
             int count=recipesTab?recipes.Length:cards.Length;const int perPage=4;int pages=Math.Max(1,(count+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
             void RowText(string value,int row,int index,float y){
-                var label=Text("CollectionRow_"+row,value,-100,y,1300,100,25);if(!NeedsTextDetails(label))return;
-                label.rectTransform.sizeDelta-=new Vector2(180,0);label.rectTransform.anchoredPosition-=new Vector2(90,0);
-                TextDetailsButton("CollectionRow_"+index+"Details",label.text,"ズカンのジョウホウ",480,y,140,50);
+                var label=Text("CollectionRow_"+row,value,-100,y,1300,100,25);
+                AddTrailingTextDetails(label,"CollectionRow_"+index+"Details","ズカンのジョウホウ");
             }
             for(int n=0;n<perPage&&collectionPage*perPage+n<count;n++){
                 int index=collectionPage*perPage+n;float y=155-n*110;
@@ -406,7 +406,8 @@ namespace Olca.Presentation.Dungeon
                         CollectionContent("RecipeResultDetails");
                         Text("RecipeDetailsTitle","融合結果の性能",0,430,1500,80,36);
                         CollectionIcon("RecipeDetailIcon",result,0,245,170,icon);
-                        Text("RecipePerformance",row.Performance,0,-15,1600,320,30);
+                        var performance=Text("RecipePerformance",row.Performance,0,-15,1600,320,30);
+                        AddTrailingTextDetails(performance,"RecipePerformanceDetails","レシピのセイノウ");
                         Text("RecipeKnowledgeNotice","レシピの公開情報です。カード本体の入手済み登録とは別です。",0,-250,1650,80,24);
                         Action back=()=>RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeDetails_"+index,cardDetails);
                         collectionBackAction=back;Button("CloseRecipeDetails","レシピへ戻る（Esc）",0,-430,850,75,back);CollectionFocus("CloseRecipeDetails");
@@ -516,6 +517,15 @@ namespace Olca.Presentation.Dungeon
                 if(this==null||owner==null||content!=owner||!owner.activeInHierarchy||readonlyDetails!=null)return;
                 OpenReadonlyText(title,value,name);
             });
+        }
+        // 固定配置の長文だけ、左端を保って右側に既存の全文入口を置く。
+        private void AddTrailingTextDetails(UnityEngine.UI.Text label,string name,string title)
+        {
+            if(!NeedsTextDetails(label))return;
+            var rect=label.rectTransform;var center=(Vector2)content.transform.InverseTransformPoint(rect.TransformPoint(rect.rect.center));
+            float right=center.x+rect.rect.width/2;
+            rect.sizeDelta-=new Vector2(180,0);rect.anchoredPosition-=new Vector2(90,0);
+            TextDetailsButton(name,label.text,title,right-70,center.y,140,50);
         }
         // 短文は従来表示のまま、収まらない説明だけ既存の読取専用詳細へつなぐ。
         private void AddOverflowTextDetails(UnityEngine.UI.Text label,string title,bool reserveAuxiliary=false)

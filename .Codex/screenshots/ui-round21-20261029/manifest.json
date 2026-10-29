@@ -1,0 +1,98 @@
+[
+  {
+    "file": "status-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "7243cc19ec1553304c042f840dd3c44a3e68b649cca1fe7a6d29f470d89b6757"
+  },
+  {
+    "file": "status-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "7b0620822e096f5a88f507482123f4ec8c0f03a0809a094aaeb4029cb41147b9"
+  },
+  {
+    "file": "status-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "1d2b908b211c0fa463270029539bf3468028b19d0adb456244e21fff8449003f"
+  },
+  {
+    "file": "status-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "db90a71fbebd5994affb3070663144c9e2387643e4c847d54849cc9965f5111f"
+  },
+  {
+    "file": "status-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "79775554244c0856295ad37adfb4a152dd6a6a9fbd78867701e6ee75377174a3"
+  },
+  {
+    "file": "status-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "5810b58636fa2cc505a76c9abbb1bd858ed6a730157a79c7609dc0e628b31874"
+  },
+  {
+    "file": "performance-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "87ac41360759607363a9a76969934737a87bf8827c2ddb7b0d6ce4087b380178"
+  },
+  {
+    "file": "performance-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "8d19c8ff617c5a3d2f16b10ab1ca19ca31199799684e50b10a6a47a9ca6ce67f"
+  },
+  {
+    "file": "performance-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "fa4a35ceaf6f41a39f61264300b934a411d36a77e37ae301dfc3e25173bf0ec8"
+  },
+  {
+    "file": "performance-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "e6a0969a5b284fc356cd24ab6654ce2420a18880daef52f2dde232185b3b236b"
+  },
+  {
+    "file": "performance-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "0e494119de0ff150127116c74d691f67d5329e404bf8969e0a4cbad8ebd05f98"
+  },
+  {
+    "file": "performance-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "167a5718d4dbd43ac1f176978738f5b043c22316b1e3aab79e62e697dbce02e8"
+  },
+  {
+    "file": "status-full-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "81493bf54af26e14c30c0a94a3a4d99b841a201df862598004878db0c30fb83e"
+  },
+  {
+    "file": "status-full-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "bbee7b0bb19dea1a72cd14e4a304fd8cb58088fc07235b925d91752f52fcd2ea"
+  },
+  {
+    "file": "performance-full-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "edd67e2e6e48b1191c7e3618530352549fe1d375bfcb62bed785393ab2511859"
+  },
+  {
+    "file": "performance-full-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8b2830a2722cab9d9072f846eb575c91bd44b2e973a4793f1e37f04cef8f98fe"
+  }
+]
