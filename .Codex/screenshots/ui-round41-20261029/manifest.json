@@ -1,0 +1,50 @@
+{
+  "before-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 371032,
+    "sha256": "ec130b19c7eec56c719927f0d544d883f08f361fbcb857718e22048a3d61b727"
+  },
+  "before-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 657582,
+    "sha256": "7469e9a32bedbe33118723003d89e78ffda30fc2280cfecacdb3c43ba1f9199f"
+  },
+  "initial-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 373010,
+    "sha256": "35fa9fe241e09b9b785815b468b1ecb695f2f19333902b3db4ce1792fa9a0eeb"
+  },
+  "initial-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 649591,
+    "sha256": "10bfbaac8c93b4d02ee6da2185c167ba1b45cccf8a556a4e8c2e079f744c8795"
+  },
+  "awarded-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 78123,
+    "sha256": "3434fa17cca8b9f99f139448278ba55219b0f8fd5a5fabe7a10495108e826a0e"
+  },
+  "awarded-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 206819,
+    "sha256": "2f97c0aa4df6adb28b6d54d4fa8ace81207fdc81926f5f571883ff2de53a8db1"
+  },
+  "returned-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 124857,
+    "sha256": "e349bd97fab840f84d247594c231899313a2302b1f531af453a3bb2607f64a03"
+  },
+  "returned-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 301026,
+    "sha256": "562caf45fbd33c2ebe2ef5e4973d4b313d1e5232a4a8ea0250720bb25e40fdbb"
+  }
+}
