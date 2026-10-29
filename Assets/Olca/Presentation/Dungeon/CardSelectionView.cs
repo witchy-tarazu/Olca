@@ -391,6 +391,7 @@ namespace Olca.Presentation.Dungeon
             Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"CardCollectionTab",cardDetails);});
             Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeCollectionTab",cardDetails);});
             int count=recipesTab?recipes.Length:cards.Length;const int perPage=4;int pages=Math.Max(1,(count+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
+            if(count==0)Text("CollectionEmpty",recipesTab?"レシピはありません。":"カードはありません。",0,45,1500,160,30);
             void RowText(string value,int row,int index,float y){
                 var label=Text("CollectionRow_"+row,value,-100,y,1300,100,25);
                 AddTrailingTextDetails(label,"CollectionRow_"+index+"Details","ズカンのジョウホウ");
@@ -424,7 +425,7 @@ namespace Olca.Presentation.Dungeon
             Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
             Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
             if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-510,850,50,retrySave);
-            CollectionFocus(focus??"CardCollectionTab");
+            CollectionFocus(focus??(recipesTab?"RecipeCollectionTab":"CardCollectionTab"));
         }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {

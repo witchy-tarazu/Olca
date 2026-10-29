@@ -393,6 +393,20 @@ namespace Olca.Tests
                 Render("みじかい");Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="CollectionStatusDetails"));Assert.AreEqual(1700,host.GetComponentsInChildren<Text>().Single(x=>x.name=="CollectionStatus").rectTransform.sizeDelta.x);Find("RecipeCollectionTab").onClick.Invoke();Find("RecipeDetails_0").onClick.Invoke();Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="RecipePerformanceDetails"));Assert.AreEqual(1600,host.GetComponentsInChildren<Text>().Single(x=>x.name=="RecipePerformance").rectTransform.sizeDelta.x);Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 空と未公開のレシピは情報を漏らさず詳細から同じページタブへ戻る(float width,float height,bool pending)
+        {
+            var root=new GameObject("CollectionEmptyViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("CollectionEmptyView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;var card=new Card("fixture","ヒミツのケッカ",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"ヒミツのセイノウ");var defs=Enumerable.Range(0,9).Select(i=>new CollectionRecipe("fixture"+i,new[]{"a","b"},card.Id,resultCard:card)).ToArray();var hidden=CollectionDisplay.RecipeRows(new ClearReturnProfile(),defs,new[]{card});var revealed=CollectionDisplay.RecipeRows(new ClearReturnProfile{RevealedRecipes=defs.Select(d=>d.Id).ToArray()},defs,new[]{card});Assert.IsTrue(hidden.All(r=>r.Result==null&&r.Performance==null));
+                Button Find(string n)=>host.GetComponentsInChildren<Button>().Single(b=>b.name==n);string Focus()=>((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName;string Page()=>host.GetComponentsInChildren<Text>().Single(t=>t.name=="CollectionPage").text;void Render(CollectionRecipeRow[] rows)=>v.RenderCollection(new[]{"テスト"},rows,pending,null,()=>calls++,()=>calls++);void Hidden(){Assert.IsFalse(host.GetComponentsInChildren<Text>().Any(t=>t.text.Contains("ヒミツ")));Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name.StartsWith("RecipeDetails_")||b.name.StartsWith("RecipePerformance")));}
+                for(int repeat=0;repeat<2;repeat++){
+                    Render(new CollectionRecipeRow[0]);Find("RecipeCollectionTab").onClick.Invoke();Render(new CollectionRecipeRow[0]);Assert.AreEqual("RecipeCollectionTab",Focus());var empty=host.GetComponentsInChildren<Text>().Single(t=>t.name=="CollectionEmpty");Assert.AreEqual("レシピはありません。",empty.text);RequireInside(viewport,empty.rectTransform);Assert.AreEqual("1/1",Page());Assert.IsFalse(Find("NextCollectionPage").IsInteractable());Hidden();Render(hidden);Assert.AreEqual("RecipeCollectionTab",Focus());Assert.IsFalse(host.GetComponentsInChildren<Text>().Any(t=>t.name=="CollectionEmpty"));Hidden();Find("NextCollectionPage").onClick.Invoke();Find("NextCollectionPage").onClick.Invoke();Assert.AreEqual("3/3",Page());Hidden();Find("CardCollectionTab").onClick.Invoke();Assert.AreEqual("CardCollectionTab",Focus());Find("RecipeCollectionTab").onClick.Invoke();Assert.AreEqual("1/3",Page());Render(revealed);Assert.IsTrue(host.GetComponentsInChildren<Text>().Where(t=>t.name.StartsWith("CollectionRow_")).All(t=>t.text.StartsWith("コウカイズみ：")));Find("NextCollectionPage").onClick.Invoke();var oldNext=Find("NextCollectionPage").onClick;Find("NextCollectionPage").onClick.Invoke();var oldDetail=Find("RecipeDetails_8").onClick;oldDetail.Invoke();var oldBack=Find("CloseRecipeDetails").onClick;oldNext.Invoke();Assert.IsNotNull(host.transform.Find("RecipeResultDetails"));oldBack.Invoke();Assert.AreEqual("3/3",Page());Assert.AreEqual("RecipeDetails_8",Focus());Find("RecipeDetails_8").onClick.Invoke();Render(hidden);oldDetail.Invoke();oldBack.Invoke();Assert.IsNull(host.transform.Find("RecipeResultDetails"));Assert.AreEqual("RecipeCollectionTab",Focus());Assert.AreEqual("3/3",Page());Hidden();Assert.AreEqual(0,calls);
+                }
+                Render(new CollectionRecipeRow[0]);Assert.AreEqual("1/1",Page());Assert.AreEqual("RecipeCollectionTab",Focus());Hidden();Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
@@ -528,7 +542,9 @@ namespace Olca.Tests
 
         [TestCase("？？？　未入手のカードA 1/2", "？？？　ミニュウシュのカードA 1/2")]
         [TestCase("未公開レシピはありません", "ミコウカイレシピはありません")]
-        public void 図鑑の未登録表示は漢字だけをカナにして元の文字を保持する(string original,string expected)
+        [TestCase("公開済み：？？？ ＋ ？？？ → テスト", "コウカイズみ：？？？ ＋ ？？？ → テスト")]
+        [TestCase("素材定義未特定のため説明は非表示", "ソザイテイギミトクテイのためセツメイはヒヒョウジ")]
+        public void 図鑑の表示は漢字だけをカナにして元の文字を保持する(string original,string expected)
         {
             Assert.AreEqual(expected,CustomDisplay.Katakana(original));
             var card=Create("unknown",CardSeries.Sword);var profile=new ClearReturnProfile();
