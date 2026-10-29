@@ -886,8 +886,12 @@ namespace Olca.Application.Dungeon
             var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; UiLook.Label(wt); wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
             wt.text = "撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
             wt.rectTransform.sizeDelta = new Vector2(1600,200); wt.rectTransform.anchoredPosition = new Vector2(0,150);
-            MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100)).onClick.AddListener(ConfirmRetreat);
-            MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100)).onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
+            var confirmRetreatButton = MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100));
+            ((RectTransform)confirmRetreatButton.transform).sizeDelta = new Vector2(420,70);
+            confirmRetreatButton.onClick.AddListener(ConfirmRetreat);
+            var cancelRetreatButton = MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100));
+            ((RectTransform)cancelRetreatButton.transform).sizeDelta = new Vector2(420,70);
+            cancelRetreatButton.onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
             retreatConfirmation.SetActive(false);
             var settingsPanel = new GameObject("KeyboardSettingsPanel", typeof(RectTransform));
             settingsPanel.transform.SetParent(pauseCanvas.transform, false);
@@ -934,7 +938,7 @@ namespace Olca.Application.Dungeon
             cardCollectionView=collectionPanel.AddComponent<ClearReturnView>();cardCollectionView.Initialize(font,null,null,null,null);
             cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,Vector2.one,new Vector2(-310,-85));
             ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
-            cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
+            cardCollectionButton.onClick.AddListener(()=>{if(CardCollectionUiAvailable)OpenCardCollection();});
             cardCollectionButton.gameObject.SetActive(false);
             var customizationPanel = new GameObject("CustomizationEditor", typeof(RectTransform)); customizationPanel.transform.SetParent(pauseCanvas.transform, false);
             customizationEditorView = customizationPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();
@@ -1043,9 +1047,16 @@ namespace Olca.Application.Dungeon
         private ClearReturnView cardCollectionView;
         private UnityEngine.UI.Button cardCollectionButton;
         private bool cardCollectionOpen, collectionWasPaused;
+        // UIの表示と受付をそろえる。融合履歴の保存失敗から開く内部経路は別に保つ。
+        private bool CardCollectionUiAvailable => manager != null && clearReturnSession?.Ready == true &&
+            !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen &&
+            !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView != null && keyboardSettingsView.gameObject.activeInHierarchy) &&
+            !(gamepadSettingsView != null && gamepadSettingsView.gameObject.activeInHierarchy) &&
+            !(retreatConfirmation != null && retreatConfirmation.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen &&
+            !(clearReturnView?.HasMenuModal ?? false) && (IsUserPaused || clearReturnVisible);
         private void OpenCardCollection()
         {
-            if(progressDialogOpen||cardCollectionOpen||manager==null||!clearReturnSession.Ready)return;
+            if(progressDialogOpen||cardCollectionOpen||manager==null||clearReturnSession?.Ready!=true)return;
             cardCollectionOpen=true;collectionWasPaused=IsUserPaused;SetUserPaused(true);pauseOverlay.SetActive(false);
             clearReturnSession.ConfigureCollectionDefinitions(CurrentCollectionDefinitions());
             clearReturnSession.EnsureCollection();ShowCardCollection();
@@ -1853,7 +1864,7 @@ namespace Olca.Application.Dungeon
             if(CustomizationEditorOpen)customizationEditorView.transform.SetAsLastSibling();
             if(CustomizationUnlockOpen)customizationUnlockView.transform.SetAsLastSibling();
             if(CustomizationAcquisitionOpen)customizationAcquisitionView.transform.SetAsLastSibling();
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView!=null&&keyboardSettingsView.gameObject.activeInHierarchy) && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(CardCollectionUiAvailable);
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             dungeonHudView?.SetDeckCountVisible(manager.CurrentPhase!=GamePhase.CardReward);

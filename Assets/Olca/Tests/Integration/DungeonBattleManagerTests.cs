@@ -1007,6 +1007,31 @@ namespace Olca.Tests.Integration
             } finally {UnityEngine.Application.logMessageReceived-=delay;UnityEngine.Object.DestroyImmediate(go);UnityEngine.Time.timeScale=oldScale;
                 Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
         }
+        [TestCase(false)] [TestCase(true)]
+        public void 撤退確認中の古い図鑑操作を拒否し取消後に同じ停止状態で図鑑へ戻れる(bool battle)
+        {
+            Create();if(battle)Contact();manager.SetUserPaused(true);
+            var host=new UnityEngine.GameObject("retreat-modal-test");host.SetActive(false);
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var type=controller.GetType();
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            object Get(string name)=>type.GetField(name,flags).GetValue(controller);
+            void Call(string name)=>type.GetMethod(name,flags).Invoke(controller,null);
+            var progress=new ClearReturnSession(new MemoryClearReturnStore(new ClearReturnProfile()));
+            Set("manager",manager);Set("clearReturnSession",progress);
+            try {
+                Call("CreatePauseControls");var pause=(UnityEngine.GameObject)Get("pauseOverlay");pause.SetActive(true);
+                var button=(UnityEngine.UI.Button)Get("cardCollectionButton");var oldOpen=button.onClick;
+                long revision=progress.Snapshot.Revision;long frame=manager.CurrentBattle?.LogicalFrame??0;bool custom=manager.CurrentBattle?.CustomScreen.IsOpen??false;
+                for(int repeat=0;repeat<2;repeat++){
+                    Call("RequestRetreat");Assert.IsTrue(((UnityEngine.GameObject)Get("retreatConfirmation")).activeInHierarchy);
+                    oldOpen.Invoke();Assert.IsFalse((bool)Get("cardCollectionOpen"));Assert.IsFalse(pause.activeSelf);Assert.AreEqual(revision,progress.Snapshot.Revision);
+                    var cancel=((UnityEngine.GameObject)Get("retreatConfirmation")).GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="CancelRetreat");cancel.onClick.Invoke();
+                    Assert.IsTrue(pause.activeSelf);oldOpen.Invoke();Assert.IsTrue((bool)Get("cardCollectionOpen"));Assert.IsFalse(pause.activeSelf);Call("CloseCardCollection");
+                    revision=progress.Snapshot.Revision;Assert.IsTrue(pause.activeSelf);Assert.IsTrue(manager.IsUserPaused);Assert.AreEqual(frame,manager.CurrentBattle?.LogicalFrame??0);Assert.AreEqual(custom,manager.CurrentBattle?.CustomScreen.IsOpen??false);
+                }
+            } finally {var canvas=Get("pauseCanvas") as UnityEngine.GameObject;if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(host);}
+        }
         private DungeonBattleManager manager;
         private DungeonCheckpointSession session;
         private FailingStore store;
