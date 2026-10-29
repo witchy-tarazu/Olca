@@ -390,11 +390,16 @@ namespace Olca.Presentation.Dungeon
             Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"CardCollectionTab",cardDetails);});
             Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeCollectionTab",cardDetails);});
             int count=recipesTab?recipes.Length:cards.Length;const int perPage=4;int pages=Math.Max(1,(count+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
+            void RowText(string value,int row,int index,float y){
+                var label=Text("CollectionRow_"+row,value,-100,y,1300,100,25);if(!NeedsTextDetails(label))return;
+                label.rectTransform.sizeDelta-=new Vector2(180,0);label.rectTransform.anchoredPosition-=new Vector2(90,0);
+                TextDetailsButton("CollectionRow_"+index+"Details",label.text,"ズカンのジョウホウ",480,y,140,50);
+            }
             for(int n=0;n<perPage&&collectionPage*perPage+n<count;n++){
                 int index=collectionPage*perPage+n;float y=155-n*110;
-                if(!recipesTab){Text("CollectionRow_"+n,cards[index],-100,y,1300,100,25);if(cardDetails!=null&&index<cardDetails.Count&&cardDetails[index]!=null){var known=cardDetails[index];Button("CollectionCardDetails_"+index,"詳細",740,y,260,70,()=>OpenCardDetails(known,"CollectionCardDetails_"+index));}continue;}
+                if(!recipesTab){RowText(cards[index],n,index,y);if(cardDetails!=null&&index<cardDetails.Count&&cardDetails[index]!=null){var known=cardDetails[index];Button("CollectionCardDetails_"+index,"詳細",740,y,260,70,()=>OpenCardDetails(known,"CollectionCardDetails_"+index));}continue;}
                 var row=recipes[index];var result=row.Result;
-                Text("CollectionRow_"+n,row.Text,-100,y,1300,100,25);
+                RowText(row.Text,n,index,y);
                 if(result!=null){
                     CollectionIcon("RecipeResultIcon_"+index,result,-805,y,70,icon);
                     Button("RecipeDetails_"+index,"結果の性能",740,y,260,70,()=>{
@@ -408,8 +413,13 @@ namespace Olca.Presentation.Dungeon
                     });
                 }
             }
-            Button("PreviousCollectionPage","前へ",-430,-330,500,60,()=>{collectionPage--;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"PreviousCollectionPage",cardDetails);}).interactable=collectionPage>0;
-            Button("NextCollectionPage","次へ",430,-330,500,60,()=>{collectionPage++;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"NextCollectionPage",cardDetails);}).interactable=collectionPage+1<pages;
+            void ChangeCollectionPage(int direction){
+                int next=Math.Max(0,Math.Min(pages-1,collectionPage+direction));if(next==collectionPage)return;
+                collectionPage=next;string preferred=direction>0?(next+1<pages?"NextCollectionPage":"PreviousCollectionPage"):(next>0?"PreviousCollectionPage":"NextCollectionPage");
+                RenderCollection(cards,recipes,pending,error,close,retrySave,icon,preferred,cardDetails);
+            }
+            Button("PreviousCollectionPage","前へ",-430,-330,500,60,()=>ChangeCollectionPage(-1)).interactable=collectionPage>0;
+            Button("NextCollectionPage","次へ",430,-330,500,60,()=>ChangeCollectionPage(1)).interactable=collectionPage+1<pages;
             Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
             Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
             if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-510,850,50,retrySave);

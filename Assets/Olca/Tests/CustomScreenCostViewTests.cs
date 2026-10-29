@@ -361,6 +361,22 @@ namespace Olca.Tests
                 }
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false,false)] [TestCase(1662.77f,1247.08f,false,false)] [TestCase(2199.64f,942.70f,false,false)]
+        [TestCase(1920f,1080f,true,false)] [TestCase(1662.77f,1247.08f,true,false)] [TestCase(2199.64f,942.70f,true,false)]
+        [TestCase(1920f,1080f,false,true)] [TestCase(1662.77f,1247.08f,false,true)] [TestCase(2199.64f,942.70f,false,true)]
+        [TestCase(1920f,1080f,true,true)] [TestCase(1662.77f,1247.08f,true,true)] [TestCase(2199.64f,942.70f,true,true)]
+        public void 図鑑の長い行は全文へ戻れページ端は反対側の有効操作へ復帰する(float width,float height,bool recipes,bool pending)
+        {
+            var root=new GameObject("CollectionLongViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("CollectionLongView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;string value="ながいナマエ "+string.Concat(Enumerable.Repeat("テストのナマエ・",60))+"オワリ";var card=new Card("fixture",value,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");var row=(CollectionRecipeRow)System.Activator.CreateInstance(typeof(CollectionRecipeRow),BindingFlags.Instance|BindingFlags.NonPublic,null,new object[]{value,card,"テストのセイノウ"},null);
+                Button Find(string n)=>host.GetComponentsInChildren<Button>().Single(b=>b.name==n);string Focus()=>((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName;
+                for(int repeat=0;repeat<2;repeat++){
+                    v.RenderCollection(Enumerable.Repeat(value,9).ToArray(),Enumerable.Repeat(row,9).ToArray(),pending,null,()=>calls++,()=>calls++,cardDetails:Enumerable.Repeat(card,9).ToArray());Find(recipes?"RecipeCollectionTab":"CardCollectionTab").onClick.Invoke();Canvas.ForceUpdateCanvases();var info=Find("CollectionRow_0Details");RequireInside(viewport,(RectTransform)info.transform);var label=host.GetComponentsInChildren<Text>().Single(x=>x.name=="CollectionRow_0");Assert.Less(label.rectTransform.rect.width,1300);var next=Find("NextCollectionPage").onClick;info.onClick.Invoke();next.Invoke();Assert.IsTrue(v.HasMenuModal);Assert.AreEqual("1/3",host.GetComponentsInChildren<Text>().Single(x=>x.name=="CollectionPage").text);var text=host.GetComponentsInChildren<Text>().Single(x=>x.name=="ReadonlyCardPerformance");Assert.AreEqual(value,text.text);var scroll=host.GetComponentInChildren<ScrollRect>();Assert.GreaterOrEqual(scroll.content.rect.height,text.preferredHeight);scroll.verticalNormalizedPosition=0;Find("CloseReadonlyCardDetails").onClick.Invoke();Assert.AreEqual("CollectionRow_0Details",Focus());Find("NextCollectionPage").onClick.Invoke();Assert.AreEqual("NextCollectionPage",Focus());next.Invoke();Assert.AreEqual("2/3",host.GetComponentsInChildren<Text>().Single(x=>x.name=="CollectionPage").text);Find("NextCollectionPage").onClick.Invoke();Assert.AreEqual("PreviousCollectionPage",Focus());info.onClick.Invoke();Assert.IsFalse(v.HasMenuModal);Find("PreviousCollectionPage").onClick.Invoke();Assert.AreEqual("PreviousCollectionPage",Focus());Find("PreviousCollectionPage").onClick.Invoke();Assert.AreEqual("NextCollectionPage",Focus());var oldTab=Find("RecipeCollectionTab").onClick;v.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>calls++,()=>calls++,()=>calls++,false,null,()=>calls++);next.Invoke();oldTab.Invoke();info.onClick.Invoke();Assert.IsNotNull(host.transform.Find("StyleSelectionContents"));Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);
+                }
+                v.RenderCollection(new[]{"みじかい"},new CollectionRecipeRow[0],false,null,()=>calls++,()=>calls++);Find("CardCollectionTab").onClick.Invoke();Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name.StartsWith("CollectionRow_")&&b.name.EndsWith("Details")));Assert.AreEqual(1300,host.GetComponentsInChildren<Text>().Single(x=>x.name=="CollectionRow_0").rectTransform.sizeDelta.x);Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
