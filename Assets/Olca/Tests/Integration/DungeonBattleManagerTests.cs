@@ -4281,6 +4281,44 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(2, restarted.CurrentFloorIndex);
         }
         [Test]
+        public void 実シーンの探索HP欄は一度接続し被害回復と再開値を同じ表示へ反映する()
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);
+            try
+            {
+                var hud = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.Dungeon.DungeonHudView>(true)).Single();
+                Assert.IsNull(Get(hud, "hpText"));
+                var custom = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true)).Single();
+                var uiFont = custom.GetComponentInChildren<UnityEngine.UI.Text>(true).font;
+                hud.ConfigureMissingHpFont(uiFont);
+                foreach (int hp in new[] { 100, 83, 100, 73 })
+                {
+                    hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(hp, 100, 1, 25, false, false, 6, 0));
+                    var label = (UnityEngine.UI.Text)Get(hud, "hpText");
+                    Assert.IsNotNull(label); Assert.AreEqual($"HP: {hp} / 100", label.text);
+                    Assert.AreSame(hud.transform, label.transform.parent); Assert.IsFalse(label.raycastTarget);
+                    Assert.AreSame(uiFont, label.font);
+                    Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "ExplorationHpText"));
+                }
+                // 既に割り当てられたTextとフォントを、次のRefreshで置換しない。
+                var assigned = (UnityEngine.UI.Text)Get(hud, "hpText"); var font = assigned.font;
+                hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(91, 100, 2, 25, false, false, 6, 0));
+                Assert.AreSame(assigned, Get(hud, "hpText")); Assert.AreSame(font, assigned.font);
+                Assert.AreEqual("HP: 91 / 100", assigned.text);
+                var suppliedHost = new UnityEngine.GameObject("SuppliedHp", typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text));
+                suppliedHost.transform.SetParent(hud.transform, false);
+                var supplied = suppliedHost.GetComponent<UnityEngine.UI.Text>();
+                supplied.font = UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");
+                var suppliedFont = supplied.font;
+                var other = suppliedHost.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>();
+                Set(other, "hpText", supplied); other.ConfigureMissingHpFont(uiFont);
+                other.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(88, 100, 2, 25, false, false, 6, 0));
+                Assert.AreSame(supplied, Get(other, "hpText")); Assert.AreSame(suppliedFont, supplied.font);
+                Assert.AreEqual("HP: 88 / 100", supplied.text);
+            }
+            finally { UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true); }
+        }
+        [Test]
         public void 実シーンの未割当進行度欄も階層列でだけ一度生成し同じHUDで更新する()
         {
             var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);

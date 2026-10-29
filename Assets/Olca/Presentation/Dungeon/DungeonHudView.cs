@@ -12,6 +12,17 @@ namespace Olca.Presentation.Dungeon
         [Header("HP")]
         [SerializeField] private Text hpText;
 
+        private Font missingHpFont;
+        private bool generatedHpText;
+
+        /// <summary>新しく補うHP欄だけに既存UIのフォントを渡し、Sceneの明示割当は変更しない。</summary>
+        public void ConfigureMissingHpFont(Font font)
+        {
+            if (font == null) return;
+            missingHpFont = font;
+            if (generatedHpText && hpText != null) hpText.font = font;
+        }
+
         [Header("進行度")]
         [SerializeField] private Text progressText;
 
@@ -40,6 +51,29 @@ namespace Olca.Presentation.Dungeon
         /// </summary>
         public void Refresh(DungeonHudData data)
         {
+            // 探索ステータスバーのHP欄が未割当の旧Sceneでも、同じHUD内へ一度だけ接続する。
+            // 既存の割当は維持し、戦闘切替時のCanvasGroup制御を共用する。
+            if (hpText == null)
+            {
+                var label = new GameObject("ExplorationHpText", typeof(RectTransform), typeof(Text));
+                label.transform.SetParent(transform, false);
+                hpText = label.GetComponent<Text>();
+                generatedHpText = true;
+                hpText.font = missingHpFont != null ? missingHpFont : deckCountText != null && deckCountText.font != null
+                    ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                hpText.fontSize = 28;
+                hpText.alignment = TextAnchor.MiddleLeft;
+                hpText.color = Color.white;
+                hpText.raycastTarget = false;
+                var outline = label.AddComponent<Outline>();
+                outline.effectColor = new Color(0f, 0f, 0f, .85f);
+                outline.effectDistance = new Vector2(1f, -1f);
+                var rect = hpText.rectTransform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+                rect.pivot = new Vector2(0f, 1f);
+                rect.anchoredPosition = new Vector2(36f, -24f);
+                rect.sizeDelta = new Vector2(360f, 48f);
+            }
             // 既存シーンで進行度欄が未割当でも、明示した階層列の現在階層を表示する。
             if (data.FloorNumber > 0 && progressText == null)
             {
