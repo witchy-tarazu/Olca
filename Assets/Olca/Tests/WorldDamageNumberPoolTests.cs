@@ -107,6 +107,19 @@ namespace Olca.Tests
             }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);foreach(var c in others)if(c!=null)c.tag="MainCamera";UnityEngine.Object.DestroyImmediate(enemyObject);UnityEngine.Object.DestroyImmediate(go);}
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public async Task フィールド終了と無効化は両者の浮遊表示を消し重複終了や旧返却で次の表示を消さない(bool disable)
+        {
+            var go=new GameObject("EndingField");go.SetActive(false);var field=go.AddComponent<Olca.Presentation.Field.GameFieldView>();typeof(Olca.Presentation.Field.GameFieldView).GetField("worldDamageNumberPool",Private).SetValue(field,pool);
+            try{
+                Task Feedback(int n,object owner,CancellationToken ct)=>((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage,n),Vector3.zero,ct,owner)).AsTask();
+                var enemy=Feedback(7,new object(),CancellationToken.None);var player=Feedback(5,new object(),CancellationToken.None);Assert.AreEqual(2,Active.Count);
+                for(int repeat=0;repeat<2;repeat++){if(disable)typeof(Olca.Presentation.Field.GameFieldView).GetMethod("OnDisable",Private).Invoke(field,null);else field.OnBattleEnded();}
+                Assert.IsTrue(Active.All(v=>!v.gameObject.activeSelf),"非同期返却の前にも描画を止める");
+                using var cts=new CancellationTokenSource();var next=Feedback(9,new object(),cts.Token);var nextView=Active.Single(v=>v.GetComponent<TextMesh>().text=="9");await Completed(Task.WhenAll(enemy,player));Assert.AreEqual(1,Active.Count);Assert.IsTrue(nextView.gameObject.activeSelf);Assert.AreEqual("9",nextView.GetComponent<TextMesh>().text);cts.Cancel();await Completed(next);Assert.AreEqual(0,Active.Count);Assert.AreEqual(Waiting.Count,Waiting.Distinct().Count());
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+
         [Test]
         public void Get_初期容量を超えて上限まで全て別実体を貸し出す()
         {

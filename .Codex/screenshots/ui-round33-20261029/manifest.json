@@ -1,0 +1,95 @@
+{
+  "unit": "round33-outcome-feedback-cleanup",
+  "images": [
+    {
+      "file": "before-victory-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "d65f242a4badb1b2f4e1db2a97db8485807eb357b193124a22dfdb9c5b4a0dba",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save; Editor paused at boundary for transient capture"
+    },
+    {
+      "file": "before-victory-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "e147c507e15d5b9d12351ac03df06f98eba81cee3cac3c0ee4a8d34dd4b3f144",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save; Editor paused at boundary for transient capture"
+    },
+    {
+      "file": "after-victory-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "23a0fdfd9f29250dfd80dfe50637624f4594ab6cb09142a91434d74575036c4e",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save; Editor paused at boundary for transient capture"
+    },
+    {
+      "file": "after-victory-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "f94c5bd68541b5864803a3306852a6c0d244c3617255be8cbfcbec3cad96008e",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save; Editor paused at boundary for transient capture"
+    },
+    {
+      "file": "reward-ready-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "81c871bd6039357a4b1b6533df6532c5764540d66dbae78508320e487f0b076c",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save; Editor paused at boundary for transient capture"
+    },
+    {
+      "file": "reward-ready-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "a2fa30e478858d2b6068258c0b28135c395d05f55115fe3b379743edea26f68e",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save; Editor paused at boundary for transient capture"
+    },
+    {
+      "file": "after-defeat-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "7cac3b1379dfcf9203404e17eb6950a38f467b8e1390ef80ffbd31c848e71683",
+      "capture": "Unity MCP screen capture; saved return restored in ordinary Play, Editor unpaused; two renders per resolution"
+    },
+    {
+      "file": "after-defeat-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "6dd8dfe706be9a9c5add1cb7af452dead408bcd2eaeca6206c5f3fec2b74ad45",
+      "capture": "Unity MCP screen capture; saved return restored in ordinary Play, Editor unpaused; two renders per resolution"
+    },
+    {
+      "file": "after-retreat-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "4b5601516021f119c5c0a4f20b049467ce50672e3f515941c963007467650145",
+      "capture": "Unity MCP screen capture; saved return restored in ordinary Play, Editor unpaused; two renders per resolution"
+    },
+    {
+      "file": "after-retreat-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "2cd4bf547b80f633df9784bdb0a457e63c703c612a84b7d78ed6157d2c786ac4",
+      "capture": "Unity MCP screen capture; saved return restored in ordinary Play, Editor unpaused; two renders per resolution"
+    }
+  ]
+}
