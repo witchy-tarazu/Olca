@@ -1,0 +1,50 @@
+{
+  "event-resumed-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 79122,
+    "sha256": "622693cd75f3f30a7ca5aec0046634b5c20a36dc98b30aa97a9bd22ca475c095"
+  },
+  "shop-used-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 233015,
+    "sha256": "27a5ad98beab85b65cb00f2dbd2656a26bcdae5f0a8df0b6a267e14c1b012227"
+  },
+  "shop-used-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 88226,
+    "sha256": "0cd01caf6c7e56e272b4ef40ad70d5b2087c5cfa22e119f12acf11641931bb63"
+  },
+  "shop-open-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 91544,
+    "sha256": "9039b04f10700ecfb72ad563c0753a817162d052ed000c9bc951bf26b317a6b4"
+  },
+  "shop-open-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 241496,
+    "sha256": "50be011e9860ca76411f55f6c1b7fb4a10f9c5d6ecdaacfde7bbd809a92aa83f"
+  },
+  "post-visit-custom-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 1632998,
+    "sha256": "518bc927996bc8afc9019c8c249f5aa11a77abadb4adbbeadf6d9524fa3529da"
+  },
+  "post-visit-custom-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 720224,
+    "sha256": "3c1b0f88817fb486c4fd143968948dac1db2de133f5f18e55ee89175c61a7a96"
+  },
+  "event-resumed-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 216079,
+    "sha256": "18959d3a4e6df1a68eeab57c9d2d0da6b0abd3cb786292afb3e308522c72bc27"
+  }
+}
