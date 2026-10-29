@@ -373,7 +373,7 @@ namespace Olca.Presentation.Dungeon
             content=new GameObject(name,typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);UseReferenceLayout();
         }
-        private void CollectionFocus(string name)=>SetMenu(content.transform,collectionBackAction,name,true);
+        private void CollectionFocus(string name,bool force=true)=>SetMenu(content.transform,collectionBackAction,name,force,resetMissing:true);
         private void CollectionIcon(string name,Card card,float x,float y,float size,Func<Card,Sprite> icon)
         {
             var sprite=icon?.Invoke(card);if(sprite==null)return;
@@ -383,6 +383,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void RenderCollection(string[] cards,CollectionRecipeRow[] recipes,bool pending,string error,Action close,Action retrySave,Func<Card,Sprite> icon=null,string focus=null,IReadOnlyList<Card> cardDetails=null)
         {
+            bool updating=isActiveAndEnabled&&content!=null&&content.activeInHierarchy&&content.name=="CardCollectionContents";
             StopMenu();
             CollectionContent("CardCollectionContents");collectionBackAction=pending?null:close;
             Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
@@ -425,7 +426,7 @@ namespace Olca.Presentation.Dungeon
             Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
             Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
             if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-510,850,50,retrySave);
-            CollectionFocus(focus??(recipesTab?"RecipeCollectionTab":"CardCollectionTab"));
+            CollectionFocus(focus??(recipesTab?"RecipeCollectionTab":"CardCollectionTab"),force:focus!=null||!updating);
         }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
