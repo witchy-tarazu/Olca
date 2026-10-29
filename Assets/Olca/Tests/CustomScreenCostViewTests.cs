@@ -217,6 +217,33 @@ namespace Olca.Tests
                 Render(true,true,string.Join("\n",Enumerable.Repeat("ホゾンエラー",40)));Assert.AreEqual("RetrySavedDeckSave",Focus());host.GetComponentsInChildren<Button>().Single(b=>b.name=="SavedDeckErrorDetails").onClick.Invoke();host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails").onClick.Invoke();Render(true);Assert.AreEqual("NewSavedDeck",Focus());Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);if(events!=null){typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(events.GetComponent<UnityEngine.EventSystems.EventSystem>(),null);Object.DestroyImmediate(events);}}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 長い保存デッキ名は業務操作せず全文を読み閉じた後の操作を拒否する(float width,float height,bool pending)
+        {
+            var root=new GameObject("SavedNameCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("SavedNameView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");v.Initialize(font,_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;var name=string.Concat(Enumerable.Repeat("ながいデッキのなまえ",50))+"サイゴのナマエ";var p=new ClearReturnProfile{SavedDecks=new[]{new SavedDepartureDeck{Id="long",Name=name},new SavedDepartureDeck{Id="short",Name="テスト"}}};
+                void Render()=>v.RenderSavedDeckMenu(p,null,pending,no,_=>no(),_=>no(),_=>no(),_=>no(),no,no);
+                Render();var trigger=host.GetComponentsInChildren<Button>().Single(b=>b.name=="SavedDeckName_longDetails");Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="SavedDeckName_shortDetails"));RequireSeparateButtons(host);RequireInside(viewport,(RectTransform)trigger.transform);var staleOpen=trigger.onClick;trigger.onClick.Invoke();
+                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();StringAssert.Contains(name,body.text);Assert.AreSame(font,body.font);Assert.IsFalse(body.supportRichText);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);
+                var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");var staleClose=close.onClick;close.onClick.Invoke();Render();staleOpen.Invoke();staleClose.Invoke();Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);Assert.AreEqual(name,p.SavedDecks[0].Name);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 保存デッキのページ端は反対のページ操作へ戻り古い操作を再実行しない()
+        {
+            var root=new GameObject("SavedPageCanvas",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            try{
+                var v=root.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;v.RenderSavedDeckMenu(new ClearReturnProfile{SavedDecks=Enumerable.Range(0,11).Select(i=>new SavedDepartureDeck{Id="d"+i,Name=i==0?string.Concat(Enumerable.Repeat("ながいなまえ",60)):"テスト "+i}).ToArray()},null,false,no,_=>no(),_=>no(),_=>no(),_=>no(),no,no);
+                Button Find(string name)=>root.GetComponentsInChildren<Button>().Single(b=>b.name==name);string Focus()=>((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName;string Page()=>root.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckPage").text;
+                var modalPage=Find("NextSavedDeckPage").onClick;Find("SavedDeckName_d0Details").onClick.Invoke();modalPage.Invoke();Assert.IsTrue(v.HasMenuModal);Assert.AreEqual("1/3",Page());Find("CloseReadonlyCardDetails").onClick.Invoke();
+                for(int repeat=0;repeat<2;repeat++){
+                    var stale=Find("NextSavedDeckPage").onClick;stale.Invoke();Assert.AreEqual("2/3",Page());Assert.AreEqual("NextSavedDeckPage",Focus());stale.Invoke();Assert.AreEqual("2/3",Page());Find("NextSavedDeckPage").onClick.Invoke();Assert.AreEqual("3/3",Page());Assert.AreEqual("PreviousSavedDeckPage",Focus());Find("PreviousSavedDeckPage").onClick.Invoke();Assert.AreEqual("2/3",Page());Find("PreviousSavedDeckPage").onClick.Invoke();Assert.AreEqual("1/3",Page());Assert.AreEqual("NextSavedDeckPage",Focus());
+                }
+                Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

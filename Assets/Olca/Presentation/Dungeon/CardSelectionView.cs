@@ -753,14 +753,27 @@ namespace Olca.Presentation.Dungeon
             AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
-                Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);
+                var row=Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);
+                if(NeedsTextDetails(row)){
+                    row.rectTransform.sizeDelta-=new Vector2(180,0);row.rectTransform.anchoredPosition-=new Vector2(90,0);
+                    TextDetailsButton("SavedDeckName_"+d.Id+"Details",row.text,"デッキのナマエ",-210,y,140,50);
+                }
                 Button("EquipDeck_"+d.Id,"装備",30,y,160,60,()=>equip(d.Id)).interactable=!pending&&!active;
                 Button("EditDeck_"+d.Id,"編集",240,y,160,60,()=>edit(d.Id)).interactable=!pending;
                 Button("CloneDeck_"+d.Id,"複製",450,y,160,60,()=>clone(d.Id)).interactable=!pending;
                 Button("DeleteDeck_"+d.Id,"削除",660,y,160,60,()=>delete(d.Id)).interactable=!pending&&!active;}
             Text("SavedDeckPage",$"{savedDeckPage+1}/{pages}",0,-300,300,55,24);
-            Button("PreviousSavedDeckPage","前へ",-380,-300,240,55,()=>{savedDeckPage--;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);}).interactable=!pending&&savedDeckPage>0;
-            Button("NextSavedDeckPage","次へ",380,-300,240,55,()=>{savedDeckPage++;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);}).interactable=!pending&&savedDeckPage+1<pages;
+            var pageOwner=content;
+            void ChangeSavedDeckPage(int direction){
+                if(this==null||pageOwner==null||content!=pageOwner||!pageOwner.activeInHierarchy||pending||HasMenuModal)return;
+                int next=Math.Max(0,Math.Min(pages-1,savedDeckPage+direction));if(next==savedDeckPage)return;
+                savedDeckPage=next;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);
+                // 端で無効になったページ操作からは反対側へ戻し、別の業務操作へ飛ばさない。
+                string focus=direction>0&&next+1<pages||direction<0&&next==0?"NextSavedDeckPage":"PreviousSavedDeckPage";
+                SetMenu(content.transform,close,focus,true);
+            }
+            Button("PreviousSavedDeckPage","前へ",-380,-300,240,55,()=>ChangeSavedDeckPage(-1)).interactable=!pending&&savedDeckPage>0;
+            Button("NextSavedDeckPage","次へ",380,-300,240,55,()=>ChangeSavedDeckPage(1)).interactable=!pending&&savedDeckPage+1<pages;
             Button("NewSavedDeck","新しいデッキ",-450,-420,750,75,create).interactable=!pending;
             Button("CloseSavedDeckMenu","帰還画面へ戻る",450,-420,750,75,close).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retry);
