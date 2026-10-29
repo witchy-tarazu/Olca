@@ -623,8 +623,12 @@ namespace Olca.Core.Domain
                 .Select(g=>g.Key.Name+"　登録済み（詳細定義未特定）")).ToArray();
         }
         public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe,IReadOnlyList<Card> catalog=null)
-            => !recipe.IsRevealed(profile,catalog)?"？？？　未公開レシピ":
-                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i,catalog)))+" → "+recipe.ResultName(profile,catalog);
+        {
+            if(!recipe.IsRevealed(profile,catalog))return "？？？　未公開レシピ";
+            var text="公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i,catalog)))+" → "+recipe.ResultName(profile,catalog);
+            // 公開履歴や名前だけから性能を補わず、既存の定義取得結果に従って案内する。
+            return recipe.TryGetResult(profile,out _,catalog)?text:text+"\n結果の詳細定義は未特定です。";
+        }
         public static CollectionRecipeRow[] RecipeRows(ClearReturnProfile profile,IEnumerable<CollectionRecipe> recipes,IReadOnlyList<Card> catalog=null)
             => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
         public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+

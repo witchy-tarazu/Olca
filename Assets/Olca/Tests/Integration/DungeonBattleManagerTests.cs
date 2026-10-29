@@ -4527,7 +4527,9 @@ namespace Olca.Tests.Integration
         {
             var old=new CollectionRecipe("legacy",new[]{"a","b"},"fire_sword");var p=new ClearReturnProfile{RevealedRecipes=new[]{"legacy"}};
             Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{old})[0].Result);
-            Assert.AreEqual("公開済み：？？？ ＋ ？？？ → ？？？",CollectionDisplay.RecipeText(p,old));
+            Assert.AreEqual("公開済み：？？？ ＋ ？？？ → ？？？\n結果の詳細定義は未特定です。",CollectionDisplay.RecipeText(p,old));
+            Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{old})[0].Performance);
+            Assert.AreEqual("？？？　未公開レシピ",CollectionDisplay.RecipeText(new ClearReturnProfile(),old));
         }
         [Test]
         public void 図鑑はスターターを登録し未入手のカード性能とレシピ素材を公開しない()
