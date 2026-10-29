@@ -1,0 +1,38 @@
+{
+  "before-second-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 718408,
+    "sha256": "f32f1268726e081de2361ba4c521568664308d2fcfd1b1c67a7c938f2a4104bc"
+  },
+  "before-second-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 1631639,
+    "sha256": "d02c93bcfa3a36c1f04dc38315c6007171a2cdfdb494a5fa1b09935c3f717553"
+  },
+  "after-second-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 722891,
+    "sha256": "5ad83a2af6f8348eb7957013a9df73c9ed9730ee4af1e33ae3db1c3f8a18b279"
+  },
+  "after-second-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 1633921,
+    "sha256": "1eb53c6eea8d580cfbb36630219a05255efcd7fd67011cc217104d884630bde7"
+  },
+  "after-first-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 1605407,
+    "sha256": "464d65d85fb40d0513eb8c7dc0067b09c2d25701575c3d3b4306ac178da591ba"
+  },
+  "after-first-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 711636,
+    "sha256": "3dfc5342cdd6bd4b3050188256fa1b633870a31d6da3e031ec042fe70a80c22f"
+  }
+}

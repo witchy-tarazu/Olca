@@ -257,6 +257,8 @@ namespace Olca.Presentation.CustomScreen
             foreach(var text in GetComponentsInChildren<Text>(true))
                 if(text.GetComponent<Olca.Presentation.Dungeon.UiKanaLabel>()==null || text.GetComponentInParent<Button>(true)==null)
                     text.color=Color.white;
+            // 明るい案内パネルはButton配下ではないため、再戦時も濃色を再適用する。
+            Olca.Presentation.Dungeon.UiLook.Label(padGuide);
             Olca.Presentation.Dungeon.UiLook.Button(confirmButton);
             if(confirmButton!=null){var label=confirmButton.GetComponentInChildren<Text>();if(label!=null)label.text="確定";}
             if(cursorIndicator!=null){var image=cursorIndicator.GetComponent<Image>();if(image!=null){image.sprite=Resources.Load<Sprite>("OlcaUI/button-selected");image.type=Image.Type.Sliced;image.fillCenter=false;image.color=Color.white;}}

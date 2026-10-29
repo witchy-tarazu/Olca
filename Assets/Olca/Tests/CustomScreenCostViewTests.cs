@@ -653,12 +653,19 @@ namespace Olca.Tests
                 var originalFont=label.font;buttonObject.SetActive(visible);
                 var detailObject=new GameObject("Description",typeof(RectTransform),typeof(Text));detailObject.transform.SetParent(root.transform,false);
                 var detail=detailObject.GetComponent<Text>();UiLook.Label(detail);
+                // パッド案内はButton配下ではなく、明るい専用パネル上で再利用される。
+                var guidePanel=new GameObject("CustomPadGuidePanel",typeof(RectTransform),typeof(Image));guidePanel.transform.SetParent(root.transform,false);UiLook.Face(guidePanel.GetComponent<Image>());
+                var guideObject=new GameObject("CustomPadGuide",typeof(RectTransform),typeof(Text));guideObject.transform.SetParent(guidePanel.transform,false);
+                var guide=guideObject.GetComponent<Text>();guide.font=originalFont;guide.text="Pad South: センタク / East: トリケシ";UiLook.Label(guide);guidePanel.SetActive(visible);
+                typeof(CustomScreenView).GetField("padGuide",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,guide);
                 for(int i=0;i<2;i++)
                 {
                     view.Initialize(new CustomScreenSystem(new Deck(new List<Card>())));
                     Assert.AreEqual(UiLook.Ink,label.color,"淡い共通ボタン上の文字を白へ戻さない");
                     Assert.AreSame(originalFont,label.font);Assert.AreEqual("ジブン",label.text);
                     Assert.AreEqual(Color.white,detail.color,"暗い背景上の本文は従来の白文字を維持する");
+                    Assert.AreEqual(UiLook.Ink,guide.color,"再戦でも明るいパッド案内の文字を白へ戻さない");
+                    Assert.AreSame(originalFont,guide.font);Assert.AreEqual(visible,guidePanel.activeSelf);
                     Assert.AreEqual(visible,buttonObject.activeSelf);button.onClick.Invoke();
                 }
                 Assert.AreEqual(2,clicks);
