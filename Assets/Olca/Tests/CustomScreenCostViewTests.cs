@@ -284,6 +284,32 @@ namespace Olca.Tests
                 if(pending){var menu=(Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v);Assert.AreEqual("RetrySavedDeckSave",menu.FocusName);}Assert.AreEqual(2,profile.Owned[0].Count);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(float width,float height,bool named)
+        {
+            var root=new GameObject("DraftSwitchCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;((RectTransform)root.transform).sizeDelta=new Vector2(width,height);GameObject events=null;
+            if(UnityEngine.EventSystems.EventSystem.current==null){events=new GameObject("DraftSwitchEvents",typeof(UnityEngine.EventSystems.EventSystem));var es=events.GetComponent<UnityEngine.EventSystems.EventSystem>();typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnEnable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(es,null);UnityEngine.EventSystems.EventSystem.current=es;}
+            try{
+                var host=new GameObject("DraftSwitchView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;string name=string.Concat(Enumerable.Repeat("ながいなまえ",60));var owned=Enumerable.Range(0,13).Select(i=>new OwnedCardCount{Id="c"+i,Name=name,Count=2}).ToArray();var cards=owned.Select(o=>new Card(o.Id,o.Name,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト")).ToArray();
+                void Render(bool discard)=>v.RenderOwnedDeparture(new ClearReturnProfile{Owned=owned},cards,new[]{cards[0]},string.Join("\n",Enumerable.Repeat("エラー",40)),true,(_,__)=>no(),no,d=>{if(d)no();else Render(true);},()=>Render(false),discard,save:named?no:null,deckName:"テスト",rename:_=>no());
+                Button Find(string n)=>host.GetComponentsInChildren<Button>().Single(b=>b.name==n);void Press(string n){var b=Find(n);b.Select();b.onClick.Invoke();}string Page()=>host.GetComponentsInChildren<Text>().Single(t=>t.name=="DeparturePage").text;string Focus()=>((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName;
+                Render(false);
+                for(int repeat=0;repeat<2;repeat++){
+                    var oldPage=Find("NextDeparturePage").onClick;var oldInfo=Find("DepartureRow_0Details").onClick;Press("DepartureRow_0Details");oldPage.Invoke();oldInfo.Invoke();Assert.IsTrue(v.HasMenuModal);Assert.AreEqual("1/3",Page());var oldClose=Find("CloseReadonlyCardDetails").onClick;Press("CloseReadonlyCardDetails");Assert.AreEqual("DepartureRow_0Details",Focus());
+                    Press("CloseOwnedDeparture");Assert.IsNotNull(host.transform.Find("DepartureDiscardContents"));oldPage.Invoke();oldInfo.Invoke();oldClose.Invoke();Assert.IsTrue(v.HasMenuModal);Assert.AreEqual("KeepEditingDeparture",Focus());Press("KeepEditingDeparture");Assert.AreEqual("CloseOwnedDeparture",Focus());Assert.AreEqual("1/3",Page());
+                    Press("NextDeparturePage");Assert.AreEqual("NextDeparturePage",Focus());Press("NextDeparturePage");Assert.AreEqual("3/3",Page());Assert.AreEqual("PreviousDeparturePage",Focus());oldPage.Invoke();Assert.AreEqual("3/3",Page());Press("PreviousDeparturePage");Press("PreviousDeparturePage");Assert.AreEqual("1/3",Page());Assert.AreEqual("NextDeparturePage",Focus());Assert.AreEqual(0,calls);
+                }
+            }finally{Object.DestroyImmediate(root);if(events!=null){typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(events.GetComponent<UnityEngine.EventSystems.EventSystem>(),null);Object.DestroyImmediate(events);}}
+        }
+        [Test]
+        public void 保存待ちの編成ページ閲覧は再試行の焦点を保ちページ範囲を越えない()
+        {
+            var root=new GameObject("PendingDraftPages",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            try{var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;var owned=Enumerable.Range(0,7).Select(i=>new OwnedCardCount{Id="c"+i,Name="テスト",Count=1}).ToArray();void Render()=>v.RenderOwnedDeparture(new ClearReturnProfile{Owned=owned},new Card[7],new Card[0],null,false,(_,__)=>no(),no,_=>no(),Render,false,save:no,pending:true,retrySave:no);Render();Button Find(string n)=>root.GetComponentsInChildren<Button>().Single(b=>b.name==n);string Page()=>root.GetComponentsInChildren<Text>().Single(t=>t.name=="DeparturePage").text;
+                Find("PreviousDeparturePage").onClick.Invoke();Assert.AreEqual("1/2",Page());Find("NextDeparturePage").onClick.Invoke();Assert.AreEqual("2/2",Page());Find("NextDeparturePage").onClick.Invoke();Assert.AreEqual("2/2",Page());var menu=(Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v);Assert.AreEqual("RetrySavedDeckSave",menu.FocusName);Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
@@ -324,7 +350,7 @@ namespace Olca.Tests
                     var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureTitle");RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);
                     if(mode!=2){var input=host.GetComponentInChildren<InputField>();var rules=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureRules");var valid=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureValidation");float scale=host.transform.Find("DepartureContents").localScale.y;Assert.Greater(title.transform.position.y-title.rectTransform.rect.height*scale/2,input.transform.position.y+((RectTransform)input.transform).rect.height*scale/2);Assert.Greater(input.transform.position.y-((RectTransform)input.transform).rect.height*scale/2,rules.transform.position.y+rules.rectTransform.rect.height*scale/2);Assert.Greater(rules.transform.position.y-rules.rectTransform.rect.height*scale/2,valid.transform.position.y+valid.rectTransform.rect.height*scale/2);Assert.AreEqual("ひらがなテスト",input.text);Assert.AreEqual(mode!=1,input.interactable);}
                     if(mode==0)host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseOwnedDeparture").onClick.Invoke();
-                    if(width==1920)Assert.AreEqual(Vector3.one,host.transform.Find("DepartureContents").localScale);
+                    if(width==1920)Assert.AreEqual(Vector3.one,host.transform.Find(mode==2?"DepartureDiscardContents":"DepartureContents").localScale);
                 }
                 Assert.AreEqual(mode==0?2:0,closed);
             }finally{Object.DestroyImmediate(root);}

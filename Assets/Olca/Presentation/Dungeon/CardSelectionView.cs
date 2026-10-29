@@ -322,7 +322,7 @@ namespace Olca.Presentation.Dungeon
         // 上端の既存補助ボタンの間へ文字領域だけを収め、FHDの中央位置は保つ。
         private void FitToolbarTitle()
         {
-            if(content==null)return;bool departure=content.name=="DepartureContents";
+            if(content==null)return;bool departure=content.name=="DepartureContents"||content.name=="DepartureDiscardContents";
             if((!departure&&content.name!="SavedDeckContents")||content.transform.Find("ConfirmDeleteDeck")!=null)return;
             var title=content.transform.Find(departure?"DepartureTitle":"SavedDeckTitle")?.GetComponent<UnityEngine.UI.Text>();if(title==null)return;
             var root=(RectTransform)content.transform;var rect=title.rectTransform;
@@ -683,7 +683,7 @@ namespace Olca.Presentation.Dungeon
         {
             StopMenu();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
-            content = new GameObject("DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
+            content = new GameObject(confirmDiscard?"DepartureDiscardContents":"DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
             gameObject.SetActive(true);
             var owner=content;
@@ -715,8 +715,17 @@ namespace Olca.Presentation.Dungeon
             }
             if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);
             Text("DeparturePage", $"{departurePage+1}/{pages}", 0, -340, 250, 50, 24);
-            Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, Live(() => { departurePage--; resume(); },true)).interactable = departurePage > 0;
-            Button("NextDeparturePage", "次へ", 380, -340, 240, 55, Live(() => { departurePage++; resume(); },true)).interactable = departurePage+1 < pages;
+            void ChangeDeparturePage(int direction){
+                int next=Math.Max(0,Math.Min(pages-1,departurePage+direction));if(next==departurePage)return;
+                departurePage=next;resume();
+                if(this==null||pending||content==null||content==owner||content.name!="DepartureContents"||HasMenuModal)return;
+                string preferred=direction>0?"NextDeparturePage":"PreviousDeparturePage";
+                var button=content.transform.Find(preferred)?.GetComponent<Button>();
+                if(button==null||!button.IsInteractable()){preferred=direction>0?"PreviousDeparturePage":"NextDeparturePage";button=content.transform.Find(preferred)?.GetComponent<Button>();}
+                if(button!=null&&button.IsInteractable())SetMenu(content.transform,menuBack,preferred,true);
+            }
+            Button("PreviousDeparturePage", "前へ", -380, -340, 240, 55, Live(()=>ChangeDeparturePage(-1),true)).interactable = departurePage > 0;
+            Button("NextDeparturePage", "次へ", 380, -340, 240, 55, Live(()=>ChangeDeparturePage(1),true)).interactable = departurePage+1 < pages;
             if(save==null)Button("ConfirmOwnedDeparture", "この20枚で出撃", 0, -420, 900, 75, Live(confirm,true)).interactable = valid;
             else Button("SaveNamedDeck", "デッキを保存（装備中は20枚条件必須）",0,-420,1500,75,Live(save)).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,Live(retrySave,true));
