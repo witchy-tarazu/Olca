@@ -348,6 +348,19 @@ namespace Olca.Tests
                 Find(name).onClick.Invoke();var body=host.GetComponentsInChildren<Text>().Single(t=>t.name=="ReadonlyCardPerformance");StringAssert.Contains("アタラシイカード",body.text);StringAssert.DoesNotContain("フルイカード",body.text);RequireInside(viewport,(RectTransform)Find("CloseReadonlyCardDetails").transform);var hiddenClose=Find("CloseReadonlyCardDetails").onClick;host.SetActive(false);hiddenClose.Invoke();Assert.IsTrue(v.HasMenuModal);Other();hiddenClose.Invoke();oldDetail.Invoke();Assert.IsFalse(v.HasMenuModal);Assert.IsNotNull(host.transform.Find("StyleSelectionContents"));Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void 図鑑のタブ詳細と再試行はリサイズと反復復帰でも画面内に収まる(float width,float height,bool pending)
+        {
+            var root=new GameObject("CollectionViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("CollectionView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");v.Initialize(font,_=>{},()=>{},()=>{},()=>{});int calls=0;var card=new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");var recipe=(CollectionRecipeRow)System.Activator.CreateInstance(typeof(CollectionRecipeRow),BindingFlags.Instance|BindingFlags.NonPublic,null,new object[]{"テストレシピ",card,"レシピのテストジョウホウ"},null);
+                Button Find(string n)=>host.GetComponentsInChildren<Button>().Single(b=>b.name==n);void Fit(){typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(v,null);Canvas.ForceUpdateCanvases();foreach(var b in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)b.transform);}
+                for(int repeat=0;repeat<2;repeat++){
+                    v.RenderCollection(Enumerable.Repeat("テスト",5).ToArray(),new[]{recipe},pending,pending?"ホゾンをカクニン":null,()=>calls++,()=>calls++,cardDetails:Enumerable.Repeat(card,5).ToArray());viewport.sizeDelta=new Vector2(width,height);Fit();Find("CardCollectionTab").onClick.Invoke();Fit();var oldTab=Find("CardCollectionTab").onClick;Find("CollectionCardDetails_0").onClick.Invoke();oldTab.Invoke();Assert.IsTrue(v.HasMenuModal);Fit();Find("CloseReadonlyCardDetails").onClick.Invoke();Fit();Find("RecipeCollectionTab").onClick.Invoke();Fit();Find("RecipeDetails_0").onClick.Invoke();Fit();foreach(var text in host.GetComponentsInChildren<Text>()){Assert.AreSame(font,text.font);RequireInside(viewport,text.rectTransform);}Find("CloseRecipeDetails").onClick.Invoke();Fit();oldTab.Invoke();Assert.IsNotNull(host.transform.Find("CardCollectionContents"));Assert.AreEqual(0,calls);
+                }
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

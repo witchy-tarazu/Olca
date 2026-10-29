@@ -371,7 +371,7 @@ namespace Olca.Presentation.Dungeon
             StopMenu();
             if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject(name,typeof(RectTransform));content.transform.SetParent(transform,false);
-            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);UseReferenceLayout();
         }
         private void CollectionFocus(string name)=>SetMenu(content.transform,collectionBackAction,name,true);
         private void CollectionIcon(string name,Card card,float x,float y,float size,Func<Card,Sprite> icon)
@@ -412,7 +412,7 @@ namespace Olca.Presentation.Dungeon
             Button("NextCollectionPage","次へ",430,-330,500,60,()=>{collectionPage++;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"NextCollectionPage",cardDetails);}).interactable=collectionPage+1<pages;
             Text("CollectionPage",$"{collectionPage+1}/{pages}",0,-330,220,60,24);
             Button("CloseCardCollection","戻る",0,-440,850,75,close).interactable=!pending;
-            if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-515,850,55,retrySave);
+            if(pending||error!=null)Button("RetryCardCollection","図鑑の保存を再試行",0,-510,850,50,retrySave);
             CollectionFocus(focus??"CardCollectionTab");
         }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
