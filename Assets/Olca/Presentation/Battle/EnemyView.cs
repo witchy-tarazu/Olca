@@ -63,7 +63,8 @@ namespace Olca.Presentation.Battle
         private bool hpVisible;
         private LineRenderer hpBack, hpFill, poiseBack, poiseFill;
         private Material gaugeMaterial;
-        private Vector3 hpLocalPosition, hpLocalScale;
+        private Vector3 hpLocalPosition, hpLocalScale, nameLocalPosition;
+        private bool namePositionCached;
         public bool IsBossGauge => enemy?.EnemyId == "boss";
         public bool GaugeVisible => hpVisible && enemy != null && !enemy.IsDead;
         // 固定HUDを敵本体の頭上位置として数えない。
@@ -117,6 +118,7 @@ namespace Olca.Presentation.Battle
                 FitHpText(height*.14f);
             }else{
                 if(hpText!=null)hpText.transform.localPosition=hpLocalPosition;
+                if(enemyNameText!=null)enemyNameText.transform.localPosition=nameLocalPosition;
                 float radius=camera!=null&&camera.orthographic?camera.orthographicSize*.055f:.55f;
                 int row=0;
                 // 同じ位置にいる敵も、HP/強靭度の値を個体ごとに読めるよう分ける。
@@ -129,6 +131,14 @@ namespace Olca.Presentation.Battle
                 FitHpText(radius*2);
                 Arc(hpBack,center,radius,360,radius*.16f);Arc(hpFill,center,radius,360*HpFraction,radius*.11f);
                 Arc(poiseBack,center,radius*1.28f,180,radius*.09f);Arc(poiseFill,center,radius*1.28f,180*(PoiseFraction??0),radius*.06f);
+                // 同位置の名前は各HP円の左へそろえる。円の行間や本体・文字の大きさは変えない。
+                if(enemyNameText!=null&&normalGauges.Exists(other=>other!=this&&other!=null&&other.GaugeVisible&&
+                    Vector3.Distance(other.transform.position,transform.position)<radius*2.4f)){
+                    var labelRenderer=enemyNameText.GetComponent<Renderer>();
+                    if(labelRenderer!=null){var bounds=labelRenderer.bounds;var position=enemyNameText.transform.position;
+                        position.x+=center.x-radius*1.6f-bounds.max.x;position.y+=center.y-bounds.center.y;
+                        enemyNameText.transform.position=position;}
+                }
             }
         }
         private void FitHpText(float diameter)
@@ -156,7 +166,9 @@ namespace Olca.Presentation.Battle
             guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             this.enemy = enemy;
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
+            if(enemyNameText!=null&&namePositionCached)enemyNameText.transform.localPosition=nameLocalPosition;
             ApplyAppearance();
+            if(enemyNameText!=null){nameLocalPosition=enemyNameText.transform.localPosition;namePositionCached=true;}
             if(hpText!=null){hpLocalPosition=hpText.transform.localPosition;hpLocalScale=hpText.transform.localScale;}
 
 

@@ -322,6 +322,26 @@ namespace Olca.Tests
             b.Initialize(Enemy());b.ShowHp();b.Refresh();Assert.Less(Vector3.Distance(second,b.transform.Find("Hp").position),.0001f);
             a.HideHp();b.Refresh();Assert.Less(Vector3.Distance(first,b.transform.Find("Hp").position),.0001f);
         }
+        [TestCase(2)] [TestCase(6)]
+        public void 同位置の通常敵名を各HP円と対応させ反復と単独復帰でずらしを残さない(int count)
+        {
+            var views=new List<Olca.Presentation.Battle.EnemyView>();var labels=new List<TextMesh>();
+            for(int i=0;i<count;i++){
+                var view=View(Enemy());var label=new GameObject("Name",typeof(TextMesh));label.transform.SetParent(view.transform,false);label.transform.localPosition=Vector3.up;
+                var text=label.GetComponent<TextMesh>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.characterSize=.2f;text.text="enemy"+new string('x',i);
+                label.GetComponent<MeshRenderer>().sharedMaterial=text.font.material;
+                typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyNameText",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,text);
+                view.Initialize(new Olca.Core.Domain.Enemy("grunt","enemy"+new string('x',i),100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)));view.ShowHp();views.Add(view);labels.Add(text);
+            }
+            for(int repeat=0;repeat<3;repeat++){
+                foreach(var view in views)view.Refresh();
+                for(int i=0;i<count;i++){var bounds=labels[i].GetComponent<Renderer>().bounds;var hp=views[i].transform.Find("Hp").position;
+                    Assert.Less(bounds.max.x,hp.x);Assert.That(bounds.center.y,Is.EqualTo(hp.y).Within(.0001f));Assert.AreEqual(Vector3.zero,views[i].transform.position);Assert.AreEqual(Vector3.one,labels[i].transform.localScale);
+                    for(int j=0;j<i;j++)Assert.IsFalse(bounds.Intersects(labels[j].GetComponent<Renderer>().bounds));}
+            }
+            views[count-1].Initialize(new Olca.Core.Domain.Enemy("grunt","rebound",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)));views[count-1].ShowHp();
+            for(int i=0;i<count-1;i++)views[i].HideHp();views[count-1].Refresh();Assert.That(Vector3.Distance(Vector3.up,labels[count-1].transform.localPosition),Is.LessThan(.0001f));
+        }
         [Test] public void 通常敵の強靭度はHP円の右外側だけに沿う()
         {
             var view=View(Enemy());view.ShowHp();var hp=Line(view,"EnemyHpTrack");var poise=Line(view,"EnemyPoiseTrack");
