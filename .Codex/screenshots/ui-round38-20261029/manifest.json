@@ -1,0 +1,50 @@
+{
+  "first-fall-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 821099,
+    "sha256": "e1eab9652534048f6ecb203c84688331670810acaede2966e5e301035224ad50"
+  },
+  "first-fall-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 477623,
+    "sha256": "f2843aaaf9f5c9039171f6a69f5d770e83d51be5e457daaf8129dc097b21a96c"
+  },
+  "first-rise-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 810432,
+    "sha256": "9a7e0ad49d40e31680835790d812b22992652aa68ad2610cacda1569a6a8bde4"
+  },
+  "first-rise-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 480370,
+    "sha256": "28d027833b7ae6452936c836aad5020d902abcbc2914a54ed6f3be053a4887cd"
+  },
+  "post-recovery-custom-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 1774674,
+    "sha256": "1b2f588f4596714832b8a74322e6766c57bd6a8111efcd20d3ec804572633b5b"
+  },
+  "post-recovery-custom-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 841295,
+    "sha256": "b57ba9dee76e7ddf82e87468a49d94390763158909350b9b1bfb87e7506f57f5"
+  },
+  "reloaded-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 625299,
+    "sha256": "abe698883cd55b9e6d91dc371dc616c97479db48905f6770ddd253aa029905d3"
+  },
+  "reloaded-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 358837,
+    "sha256": "31a05194b924a03cfc863274ca36d41f580771a704dd96142ddfea05b742df50"
+  }
+}
