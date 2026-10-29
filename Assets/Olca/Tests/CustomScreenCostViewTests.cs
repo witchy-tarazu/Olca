@@ -96,6 +96,48 @@ namespace Olca.Tests
                 button.onClick.Invoke();Assert.GreaterOrEqual(chosen,0);RequireSeparateButtons(host);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1920f,1080f,0)] [TestCase(1662.77f,1247.08f,0)] [TestCase(2199.64f,942.70f,0)]
+        [TestCase(1920f,1080f,1)] [TestCase(1662.77f,1247.08f,1)] [TestCase(2199.64f,942.70f,1)]
+        [TestCase(1920f,1080f,2)] [TestCase(1662.77f,1247.08f,2)] [TestCase(2199.64f,942.70f,2)]
+        [TestCase(1920f,1080f,3)] [TestCase(1662.77f,1247.08f,3)] [TestCase(2199.64f,942.70f,3)]
+        [TestCase(1920f,1080f,4)] [TestCase(1662.77f,1247.08f,4)] [TestCase(2199.64f,942.70f,4)]
+        [TestCase(1920f,1080f,5)] [TestCase(1662.77f,1247.08f,5)] [TestCase(2199.64f,942.70f,5)]
+        public void 長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(float width,float height,int mode)
+        {
+            var root=new GameObject("OverflowTextCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;
+            var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("OverflowTextView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();
+                var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
+                string condition=string.Concat(Enumerable.Repeat("ながいダンジョンをクリア / ",35))+"サイゴのジョウケン";
+                string error=string.Join("\n",Enumerable.Range(0,40).Select(n=>"ホゾンにシッパイしました。ケンショウヨウのセツメイ "+n))+"\nサイゴのエラー";int calls=0;System.Action no=()=>calls++;
+                void Render(){if(mode==2||mode==5)view.RenderStyleSelection(new[]{"キホン",condition},new[]{true,false},0,_=>no(),no,no,mode==2,mode==2?error:null,no);else if(mode==3)view.RenderTokenExchange(new ClearReturnProfile(),null,true,error,_=>no(),no,no,no,no);else view.RenderDungeonSelection(new[]{"テスト","テスト"},new[]{true,false},0,_=>no(),no,no,mode==1,mode==1?error:null,no,styleName:mode==0?condition:"キホン",unlockConditions:new[]{"",condition});}
+                Render();string name=mode==0||mode==1?"DungeonSelectionHelpDetails":mode==2?"StyleSelectionHelpDetails":mode==3?"ExchangeBalanceDetails":mode==4?"DungeonChoice_1Details":"StyleChoice_1Details";
+                var trigger=host.GetComponentsInChildren<Button>().Single(b=>b.name==name);RequireInside(viewport,(RectTransform)trigger.transform);Assert.IsTrue(trigger.interactable);
+                if(mode>=4)Assert.IsFalse(trigger.transform.parent.GetComponent<Button>().interactable);
+                var staleOpen=trigger.onClick;trigger.onClick.Invoke();Assert.IsTrue(view.HasMenuModal);Assert.AreEqual(0,calls);
+                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();Assert.AreSame(font,body.font);Assert.IsFalse(body.supportRichText);Assert.IsNull(body.GetComponent<CardAttackPropertyIcons>());
+                StringAssert.Contains(mode>=1&&mode<=3?"サイゴのエラー":"サイゴのジョウケン",body.text);
+                viewport.sizeDelta=new Vector2(width,height);typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
+                if(mode>=1&&mode<=3)Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);
+                scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);
+                var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");RequireInside(viewport,(RectTransform)close.transform);var staleClose=close.onClick;close.onClick.Invoke();Assert.IsFalse(view.HasMenuModal);Assert.AreEqual(0,calls);
+                trigger.onClick.Invoke();Assert.IsTrue(view.HasMenuModal);Render();Assert.IsFalse(view.HasMenuModal);Assert.DoesNotThrow(()=>staleClose.Invoke());Assert.DoesNotThrow(()=>staleOpen.Invoke());Assert.IsFalse(view.HasMenuModal);Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f)] [TestCase(1662.77f,1247.08f)] [TestCase(2199.64f,942.70f)]
+        public void 一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ(float width,float height)
+        {
+            var root=new GameObject("HelpOverlapCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;((RectTransform)root.transform).sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("HelpOverlapView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});
+                view.RenderDungeonSelection(new[]{"テスト"},new[]{true},0,_=>{},()=>{},()=>{},false,null,()=>{},styleName:string.Concat(Enumerable.Repeat("ながい",20)));
+                var auxiliary=new GameObject("ExistingAuxiliary",typeof(RectTransform));auxiliary.transform.SetParent(root.transform,false);var ar=(RectTransform)auxiliary.transform;ar.anchorMin=ar.anchorMax=Vector2.one;ar.anchoredPosition=new Vector2(-310,-160);ar.sizeDelta=new Vector2(300,60);Canvas.ForceUpdateCanvases();
+                Rect Bounds(RectTransform rect){var c=new Vector3[4];rect.GetWorldCorners(c);return Rect.MinMaxRect(c.Min(x=>x.x),c.Min(x=>x.y),c.Max(x=>x.x),c.Max(x=>x.y));}
+                var label=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DungeonSelectionHelp");Assert.IsFalse(Bounds(label.rectTransform).Overlaps(Bounds(ar)));Assert.AreEqual(label.text.Length,label.cachedTextGenerator.characterCountVisible);
+                foreach(var button in host.GetComponentsInChildren<Button>().Where(b=>b.name.EndsWith("Details")))Assert.IsFalse(Bounds((RectTransform)button.transform).Overlaps(Bounds(ar)));
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

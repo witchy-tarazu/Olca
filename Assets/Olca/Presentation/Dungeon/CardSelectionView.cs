@@ -319,15 +319,20 @@ namespace Olca.Presentation.Dungeon
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
         {
-            if(card==null||content==null)return;var parent=content;var back=menuBack;
+            if(card==null)return;var value=CollectionDisplay.PerformanceText(card);
+            OpenReadonlyText("カードの詳細",value,returnFocus,body=>Olca.Presentation.CustomScreen.CardAttackPropertyIcons.Bind(body,card,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value)));
+        }
+        private void OpenReadonlyText(string titleText,string value,string returnFocus,Action<UnityEngine.UI.Text> decorate=null)
+        {
+            if(content==null||readonlyDetails!=null)return;var parent=content;var back=menuBack;
             readonlyDetails=new GameObject("ReadonlyCardDetails",typeof(RectTransform),typeof(Image));readonlyDetails.transform.SetParent(transform,false);var rect=(RectTransform)readonlyDetails.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;readonlyDetails.GetComponent<Image>().color=UiLook.Surface;var modal=readonlyDetails;
-            content=modal;var title=Text("ReadonlyCardTitle","カードの詳細",0,450,1700,70,36);
+            content=modal;var title=Text("ReadonlyCardTitle",titleText,0,450,1700,70,36);
             title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-90);
             var area=new GameObject("ReadonlyCardScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(modal.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.08f,.2f);ar.anchorMax=new Vector2(.92f,.86f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
-            var body=Text("ReadonlyCardPerformance",CollectionDisplay.PerformanceText(card),0,0,1500,600,30);body.supportRichText=false;body.alignment=TextAnchor.UpperLeft;body.transform.SetParent(area.transform,false);body.rectTransform.anchorMin=new Vector2(0,1);body.rectTransform.anchorMax=Vector2.one;body.rectTransform.pivot=new Vector2(.5f,1);body.rectTransform.anchoredPosition=Vector2.zero;body.rectTransform.sizeDelta=Vector2.zero;
-            Olca.Presentation.CustomScreen.CardAttackPropertyIcons.Bind(body,card,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(CollectionDisplay.PerformanceText(card)));
+            var body=Text("ReadonlyCardPerformance",value,0,0,1500,600,30);body.supportRichText=false;body.alignment=TextAnchor.UpperLeft;body.transform.SetParent(area.transform,false);body.rectTransform.anchorMin=new Vector2(0,1);body.rectTransform.anchorMax=Vector2.one;body.rectTransform.pivot=new Vector2(.5f,1);body.rectTransform.anchoredPosition=Vector2.zero;body.rectTransform.sizeDelta=Vector2.zero;
+            decorate?.Invoke(body);
             readonlyScroll=area.GetComponent<ScrollRect>();readonlyScroll.viewport=ar;readonlyScroll.content=body.rectTransform;readonlyScroll.horizontal=false;readonlyScroll.movementType=ScrollRect.MovementType.Clamped;
-            Action close=()=>{if(readonlyDetails!=modal)return;modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);readonlyDetails=null;readonlyScroll=null;SetMenu(parent.transform,back,returnFocus,true);};
+            Action close=()=>{if(this==null||modal==null||parent==null||readonlyDetails!=modal)return;modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);readonlyDetails=null;readonlyScroll=null;SetMenu(parent.transform,back,returnFocus,true);};
             var closeButton=Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75,close);
             var closeRect=(RectTransform)closeButton.transform;closeRect.anchorMin=closeRect.anchorMax=new Vector2(.5f,0);closeRect.anchoredPosition=new Vector2(0,100);content=parent;Canvas.ForceUpdateCanvases();readonlyViewportSize=Vector2.zero;readonlyScrollPosition=1;RefreshReadonlyLayout();SetMenu(modal.transform,close,"CloseReadonlyCardDetails",true,readonlyScroll);
         }
@@ -456,6 +461,41 @@ namespace Olca.Presentation.Dungeon
             label.rectTransform.sizeDelta=((RectTransform)button.transform).sizeDelta-new Vector2(64,12);
         }
 
+        private static bool NeedsTextDetails(UnityEngine.UI.Text label)
+        {
+            if(label.font==null||string.IsNullOrEmpty(label.text))return false;
+            using(var generator=new TextGenerator()){
+                generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));
+                return generator.characterCountVisible<label.text.TrimEnd('\r','\n').Length;
+            }
+        }
+        private Button TextDetailsButton(string name,string value,string title,float x,float y,float width,float height)
+        {
+            var owner=content;
+            return Button(name,"ゼンブン",x,y,width,height,()=>{
+                if(this==null||owner==null||content!=owner||!owner.activeInHierarchy||readonlyDetails!=null)return;
+                OpenReadonlyText(title,value,name);
+            });
+        }
+        // 短文は従来表示のまま、収まらない説明だけ既存の読取専用詳細へつなぐ。
+        private void AddOverflowTextDetails(UnityEngine.UI.Text label,string title)
+        {
+            var rect=label.rectTransform;var position=rect.anchoredPosition;float left=position.x-rect.rect.width/2;
+            if(!NeedsTextDetails(label)&&label.preferredWidth<=rect.rect.width-800)return;
+            // 長文は右上の補助操作を避け、全文入口も左側の空き領域へ置く。
+            rect.sizeDelta-=new Vector2(400,0);rect.anchoredPosition-=new Vector2(200,0);
+            if(!NeedsTextDetails(label))return;
+            TextDetailsButton(label.name+"Details",label.text,title,left+70,position.y,140,60);
+            rect.sizeDelta-=new Vector2(180,0);rect.anchoredPosition+=new Vector2(90,0);
+        }
+        private void AddOverflowConditionDetails(Button row)
+        {
+            var label=row.GetComponentInChildren<UnityEngine.UI.Text>();if(!NeedsTextDetails(label))return;
+            var details=TextDetailsButton(row.name+"Details",label.text,"カイホウジョウケン",0,0,140,50);
+            details.transform.SetParent(row.transform,false);((RectTransform)details.transform).anchoredPosition=new Vector2(((RectTransform)row.transform).rect.width/2-102,0);
+            label.rectTransform.sizeDelta-=new Vector2(180,0);label.rectTransform.anchoredPosition-=new Vector2(90,0);
+        }
+
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
             bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null)
@@ -470,7 +510,7 @@ namespace Olca.Presentation.Dungeon
             gameObject.SetActive(true);
             Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
             string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
-            Text("DungeonSelectionHelp", error ?? ("クリアに応じて解放 / " + styleName + (string.IsNullOrEmpty(info)?"":"\n"+info)), 0, 350, 1700, 80, 25);
+            AddOverflowTextDetails(Text("DungeonSelectionHelp", error ?? ("クリアに応じて解放 / " + styleName + (string.IsNullOrEmpty(info)?"":"\n"+info)), 0, 350, 1700, 80, 25),error==null?"シュツゲキのセツメイ":"ホゾンエラー");
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
                 int index = dungeonPage * rows + row;
@@ -479,6 +519,7 @@ namespace Olca.Presentation.Dungeon
                     : "［ミカイホウ］ ？？？" + (unlockConditions==null||string.IsNullOrEmpty(unlockConditions[index])?"":"\nカイホウ: "+unlockConditions[index]);
                 var button = Button("DungeonChoice_" + index, label, 0, 240 - row * 95, 1450, 78, () => choose(index));
                 InsetChoiceLabel(button);
+                if(!unlocked[index])AddOverflowConditionDetails(button);
                 button.interactable = !blocked && unlocked[index];
                 if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
@@ -490,7 +531,7 @@ namespace Olca.Presentation.Dungeon
             if (chooseStyle != null && !blocked && error == null) Button("SelectDepartureStyle", "出撃スタイル", -430, -493, 800, 58, chooseStyle);
             if (openTokenExchange != null && !blocked && error == null) Button("OpenTokenExchange", "トークン交換所", 430, -493, 800, 58, openTokenExchange);
             if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);
-                    SetMenu(content.transform,blocked?null:cancelSelection,"DungeonChoice_"+selected);
+                    SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryDungeonDeparture":"DungeonChoice_"+selected,blocked);
         }
                         public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
             Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true)
@@ -552,7 +593,7 @@ namespace Olca.Presentation.Dungeon
             UseReferenceLayout();
             gameObject.SetActive(true);
             Text("ExchangeTitle","トークン交換所",0,455,1700,80,36);
-            Text("ExchangeBalance",$"所持 {profile.Tokens} トークン / 永続所持へ交換\n"+(error??"ランダム商品は帰還時に更新。任意の再抽選はできません。"),0,345,1750,100,25);
+            AddOverflowTextDetails(Text("ExchangeBalance",$"所持 {profile.Tokens} トークン / 永続所持へ交換\n"+(error??"ランダム商品は帰還時に更新。任意の再抽選はできません。"),0,345,1750,100,25),error==null?"コウカンのセツメイ":"ホゾンエラー");
             var offers=profile.ExchangeStock?.Offers??Array.Empty<ExchangeOfferData>();const int rows=5;int pages=Math.Max(1,(offers.Length+rows-1)/rows);exchangePage=Math.Min(exchangePage,pages-1);
             for(int row=0;row<rows&&exchangePage*rows+row<offers.Length;row++){
                 var item=offers[exchangePage*rows+row];var ownedMatches=profile.Owned.Where(c=>c.Id==item.CardId&&c.Level==item.Level&&c.Name==item.Name&&c.Rarity==item.Rarity&&(item.CardDefinitionHash==null||c.DefinitionHash==item.CardDefinitionHash)).ToArray();int owned=ownedMatches.Length==1?ownedMatches[0].Count:0;
@@ -573,7 +614,7 @@ namespace Olca.Presentation.Dungeon
             Button("CancelTokenExchange","選択取消",0,-440,520,72,cancel).interactable=!blocked&&selected!=null;
             Button("CloseTokenExchange","拠点へ戻る",560,-440,520,72,close).interactable=!blocked;
             if(error!=null||blocked)Button("RetryTokenExchange","保存を再試行",0,-510,800,50,retrySave);
-            SetMenu(content.transform,blocked?null:selected!=null?cancel:close,selected==null?"CloseTokenExchange":"ExchangeOffer_"+selected);
+            SetMenu(content.transform,blocked?null:selected!=null?cancel:close,blocked?"RetryTokenExchange":selected==null?"CloseTokenExchange":"ExchangeOffer_"+selected,blocked);
         }
 
         private int stylePage;
@@ -586,12 +627,13 @@ namespace Olca.Presentation.Dungeon
             UseReferenceLayout();
             gameObject.SetActive(true);
             Text("StyleSelectionTitle", "出撃スタイル", 0, 455, 1700, 80, 36);
-            Text("StyleSelectionHelp", error ?? "攻略中は固定。属性と固有・タメ攻撃が変わります。", 0, 350, 1700, 80, 25);
+            AddOverflowTextDetails(Text("StyleSelectionHelp", error ?? "攻略中は固定。属性と固有・タメ攻撃が変わります。", 0, 350, 1700, 80, 25),error==null?"スタイルのセツメイ":"ホゾンエラー");
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); stylePage = Math.Min(stylePage, pages - 1);
             for (int row = 0; row < rows && stylePage * rows + row < names.Length; row++) {
                 int index = stylePage * rows + row;
                 var button = Button("StyleChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
                 InsetChoiceLabel(button);
+                if(!unlocked[index])AddOverflowConditionDetails(button);
                 button.interactable = !blocked && unlocked[index];
                 if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
             }
@@ -601,7 +643,7 @@ namespace Olca.Presentation.Dungeon
             Button("ConfirmStyleSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
             Button("CancelStyleSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
             if (error != null || blocked) Button("RetryStyleDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);
-            SetMenu(content.transform,blocked?null:cancelSelection,"StyleChoice_"+selected);
+            SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryStyleDeparture":"StyleChoice_"+selected,blocked);
         }
 
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
