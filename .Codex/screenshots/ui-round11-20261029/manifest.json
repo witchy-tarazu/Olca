@@ -1,0 +1,86 @@
+[
+  {
+    "file": "focus-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "98b0f35d9203382ac2e8c2fb2567f1c1716c857311ad9f86899f9db11bb59f3e",
+    "source": "ui-round11-focus-before-4by3.png"
+  },
+  {
+    "file": "focus-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "77233a7467dc5e4682a212872e83fa3f71f09eeea44d057e8e91cee5aa82a405",
+    "source": "ui-round11-focus-after-4by3.png"
+  },
+  {
+    "file": "focus-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "5d778cc32c9ec01657013baa9bce9cce1dbfe5223894b4683840a58877065814",
+    "source": "ui-round11-focus-before-fhd.png"
+  },
+  {
+    "file": "focus-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "1edc496c36b7f9e2aff58f9e67ebc00a0f7cc5aa2f4389be8f72ebf7bd44a08f",
+    "source": "ui-round11-focus-after-fhd.png"
+  },
+  {
+    "file": "focus-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "e643dad9a2426beaadde606bc3f3cafa332a21d18cf4db7d2b4b4f390b6c9751",
+    "source": "ui-round11-focus-before-4k.png"
+  },
+  {
+    "file": "focus-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "f60b8ab8c8a5042aceec852a20603c9856f0e4eed1aadec34ec671050d5417af",
+    "source": "ui-round11-focus-after-4k.png"
+  },
+  {
+    "file": "delete-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "1eca1980c23e4cce6a0aae044f3b48a654dd81cf4dcd131e4a6e152d1832a8cd",
+    "source": "ui-round11-delete-before-4by3.png"
+  },
+  {
+    "file": "delete-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "593f710e09a6ff4e762f387ef3f788c13e5b8c7f28f3e25db52ee0e2727f259a",
+    "source": "ui-round11-delete-after-4by3.png"
+  },
+  {
+    "file": "delete-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f42d200620da0fbafa37b38fbf5c86e64e1a77ecbe6fce683a9b3d8ce38f0a0c",
+    "source": "ui-round11-delete-before-fhd.png"
+  },
+  {
+    "file": "delete-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "48c2bf6f58b4c885bdf26aa3cff57e97962a856d8cc4cf25c74d6f4b624bf46b",
+    "source": "ui-round11-delete-after-fhd.png"
+  },
+  {
+    "file": "delete-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "b3020e2472137bfaa9f9c090e9dadd0ddcc6ce75a2e59e3ffe5ae2aef4cd70da",
+    "source": "ui-round11-delete-before-4k.png"
+  },
+  {
+    "file": "delete-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "a025ad7f3693898beb7900685fcc818d601928bd57aa79e3bf626cc7476113ce",
+    "source": "ui-round11-delete-after-4k.png"
+  }
+]

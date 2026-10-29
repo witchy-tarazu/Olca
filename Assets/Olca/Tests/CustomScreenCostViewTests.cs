@@ -138,6 +138,35 @@ namespace Olca.Tests
                 foreach(var button in host.GetComponentsInChildren<Button>().Where(b=>b.name.EndsWith("Details")))Assert.IsFalse(Bounds((RectTransform)button.transform).Overlaps(Bounds(ar)));
             }finally{Object.DestroyImmediate(root);}
         }
+        [Test]
+        public void 全文入口が消えた後は外部保存でなく画面の既定選択へ戻る()
+        {
+            var root=new GameObject("RemovedDetailsFocus",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);GameObject events=null;
+            if(UnityEngine.EventSystems.EventSystem.current==null)events=new GameObject("FocusEvents",typeof(UnityEngine.EventSystems.EventSystem));
+            try{
+                var host=new GameObject("RemovedDetailsView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+                var outside=new GameObject("ExternalSave",typeof(RectTransform),typeof(Button));outside.transform.SetParent(root.transform,false);((RectTransform)outside.transform).anchoredPosition=new Vector2(-700,450);view.ConfigureMenuNavigation(()=>new[]{outside.GetComponent<Button>()});int calls=0;
+                view.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>calls++,()=>calls++,()=>calls++,true,string.Join("\n",Enumerable.Repeat("ホゾンエラー",40)),()=>calls++);
+                host.GetComponentsInChildren<Button>().Single(b=>b.name=="StyleSelectionHelpDetails").onClick.Invoke();host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails").onClick.Invoke();
+                view.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>calls++,()=>calls++,()=>calls++,false,null,()=>calls++);
+                var menu=(Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view);Assert.AreEqual("StyleChoice_0",menu.FocusName);Assert.AreEqual(0,calls);
+            }finally{Object.DestroyImmediate(root);if(events!=null)Object.DestroyImmediate(events);}
+        }
+        [TestCase(1920f,1080f,false)] [TestCase(1662.77f,1247.08f,false)] [TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)] [TestCase(1662.77f,1247.08f,true)] [TestCase(2199.64f,942.70f,true)]
+        public void デッキ削除確認は長い対象名と警告を分離し取消後の古い操作を拒否する(float width,float height,bool longName)
+        {
+            var root=new GameObject("DeleteNameCanvas",typeof(RectTransform),typeof(Canvas));root.GetComponent<Canvas>().renderMode=RenderMode.WorldSpace;var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("DeleteNameView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});
+                string name=longName?string.Concat(Enumerable.Repeat("ながいなまえ",120))+"サイゴのナマエ":"テスト";var p=new ClearReturnProfile{SavedDecks=new[]{new SavedDepartureDeck{Id="target",Name=name}}};int deletes=0;System.Action no=()=>{};
+                void Render()=>view.RenderSavedDeckMenu(p,null,false,no,_=>{},_=>{},_=>{},_=>{},no,no,deleting:"target",confirmDelete:()=>deletes++);
+                Render();Canvas.ForceUpdateCanvases();var warning=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DeleteDeckWarning");Assert.AreEqual(warning.text.Length,warning.cachedTextGenerator.characterCountVisible);StringAssert.Contains("このデッキを",warning.text);RequireInside(viewport,warning.rectTransform);
+                var body=host.GetComponentsInChildren<Text>().Single(t=>t.name=="DeleteDeckName");Assert.AreEqual(name,body.text);Assert.IsFalse(body.supportRichText);var scroll=host.GetComponentInChildren<ScrollRect>();Assert.AreEqual(longName,scroll!=null);if(scroll!=null){Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);RequireInside(viewport,scroll.viewport);}
+                var confirm=host.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck");var cancel=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CancelDeleteDeck");RequireInside(viewport,(RectTransform)confirm.transform);RequireInside(viewport,(RectTransform)cancel.transform);var oldConfirm=confirm.onClick;var oldCancel=cancel.onClick;cancel.onClick.Invoke();Assert.AreEqual(0,deletes);Assert.AreEqual(name,p.SavedDecks.Single().Name);Assert.IsFalse(view.HasMenuModal);var current=host.transform.GetChild(0);oldConfirm.Invoke();oldCancel.Invoke();Assert.AreSame(current,host.transform.GetChild(0));Assert.AreEqual(0,deletes);
+                Render();var pending=host.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck").onClick;view.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>{},no,no,false,null,no);pending.Invoke();Assert.AreEqual(0,deletes);Assert.IsNull(host.GetComponentInChildren<ScrollRect>());
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();

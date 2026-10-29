@@ -280,11 +280,16 @@ namespace Olca.Presentation.Dungeon
         }
         private void SaveMenuFocus(){if(menuRoot==null)return;var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;var name=selected!=null&&selected.GetComponent<Button>()!=null?selected.name:menu?.FocusName;if(name!=null)menuFocus[menuRoot.name]=name;}
         private void StopMenu(){SaveMenuFocus();menu?.Suspend();menuRoot=null;menuBack=null;if(readonlyDetails!=null){readonlyDetails.SetActive(false);if(Application.isPlaying)Destroy(readonlyDetails);else DestroyImmediate(readonlyDetails);readonlyDetails=null;}readonlyScroll=null;}
-        private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null)
+        private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true)
         {
-            SaveMenuFocus();menuRoot=root;menuBack=back;bool cached=menuFocus.TryGetValue(root.name,out var old);if(!force&&cached)preferred=old;
+            SaveMenuFocus();menuRoot=root;menuBack=back;bool cached=menuFocus.TryGetValue(root.name,out var old);
+            if(!force&&cached){
+                // 消えた全文入口からは画面の既定へ戻し、無関係な外部操作へ飛ばさない。
+                if(old.EndsWith("Details",StringComparison.Ordinal)&&!root.GetComponentsInChildren<Button>().Any(b=>b.name==old&&b.IsInteractable()))cached=false;
+                else preferred=old;
+            }
             if(menu==null)menu=new Olca.Unity.MenuPadScope(IsMenuTop,()=>menuRoot==content?.transform&&!HasMenuModal?(menuExtras?.Invoke()??System.Array.Empty<Button>()):System.Array.Empty<Button>());
-            Canvas.ForceUpdateCanvases();menu.Bind(root,preferred,back,scroll,cached);
+            Canvas.ForceUpdateCanvases();menu.Bind(root,preferred,back,scroll,cached,directionScroll);
         }
         // 固定配置の画面は基準の行間を保ち、幅または高さが足りないときだけ等比で収める。
         private void UseReferenceLayout()
@@ -686,6 +691,16 @@ namespace Olca.Presentation.Dungeon
                     SetMenu(content.transform,pending?null:(Action)(()=>close(false)),save==null?"DepartureDetails_0":"SaveNamedDeck");
         }
 
+        private ScrollRect DeleteDeckName(string value)
+        {
+            var label=Text("DeleteDeckName",value??"",0,150,1700,180,30);label.supportRichText=false;
+            if(!NeedsTextDetails(label))return null;
+            var area=new GameObject("DeleteDeckNameScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(content.transform,false);
+            var rect=(RectTransform)area.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(0,150);rect.sizeDelta=new Vector2(1700,180);area.GetComponent<Image>().color=new Color(0,0,0,.02f);
+            label.transform.SetParent(area.transform,false);label.alignment=TextAnchor.UpperCenter;label.rectTransform.anchorMin=new Vector2(0,1);label.rectTransform.anchorMax=Vector2.one;label.rectTransform.pivot=new Vector2(.5f,1);label.rectTransform.anchoredPosition=Vector2.zero;label.rectTransform.sizeDelta=Vector2.zero;label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,label.preferredHeight+20);
+            var scroll=area.GetComponent<ScrollRect>();scroll.viewport=rect;scroll.content=label.rectTransform;scroll.horizontal=false;scroll.movementType=ScrollRect.MovementType.Clamped;return scroll;
+        }
+
         public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
         {
             StopMenu();
@@ -697,8 +712,15 @@ namespace Olca.Presentation.Dungeon
             var errorLabel=Text("SavedDeckError",error??"",0,365,1750,100,25);
             errorLabel.rectTransform.anchorMin=new Vector2(0,1);errorLabel.rectTransform.anchorMax=Vector2.one;errorLabel.rectTransform.sizeDelta=new Vector2(-170,100);errorLabel.rectTransform.anchoredPosition=new Vector2(0,-175);
             var decks=profile.SavedDecks??new SavedDepartureDeck[0];
-            if(deleting!=null){var d=decks.SingleOrDefault(x=>x.Id==deleting);Text("DeleteDeckWarning",(d?.Name??"")+" を削除しますか？\n所持カードは減りません。",0,100,1700,180,30);
-                Button("ConfirmDeleteDeck","削除する",-400,-150,700,75,confirmDelete).interactable=!pending;Button("CancelDeleteDeck","取消し",400,-150,700,75,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload));SetMenu(content.transform,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload),"CancelDeleteDeck",true);return;}
+            if(deleting!=null){
+                UseReferenceLayout();var dialog=content;var d=decks.SingleOrDefault(x=>x.Id==deleting);var nameScroll=DeleteDeckName(d?.Name);
+                Text("DeleteDeckWarning","このデッキを削除しますか？\n所持カードは減りません。",0,-25,1700,90,30);
+                Action cancelDelete=()=>{if(this==null||dialog==null||content!=dialog||!dialog.activeInHierarchy)return;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);};
+                Button("ConfirmDeleteDeck","削除する",-400,-150,700,75,()=>{if(this!=null&&dialog!=null&&content==dialog&&dialog.activeInHierarchy&&!pending)confirmDelete?.Invoke();}).interactable=!pending;
+                Button("CancelDeleteDeck","取消し",400,-150,700,75,cancelDelete);
+                // 矢印は既存の確認操作へ、PageUp/Downだけを長い名前の読取へ割り当てる。
+                SetMenu(content.transform,cancelDelete,"CancelDeleteDeck",true,nameScroll,false);return;
+            }
             var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
             help.rectTransform.anchorMin=new Vector2(0,1);help.rectTransform.anchorMax=Vector2.one;help.rectTransform.sizeDelta=new Vector2(-170,100);help.rectTransform.anchoredPosition=new Vector2(0,-175);
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
