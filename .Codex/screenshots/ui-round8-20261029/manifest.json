@@ -1,0 +1,72 @@
+[
+  {
+    "file": "dungeon-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b6b51825c9d42f92c7d09e46d973e22634aec555631c8685798571a0a87c1b64",
+    "source": "ui-round7-dungeon-fhd.png"
+  },
+  {
+    "file": "dungeon-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "12c47b1ed6b82e9cf43c14d3c3d7682a16d730342a7755f2ff993bb967f26e2c",
+    "source": "flow-polish-20261028-dungeon-round8-after-fhd.png"
+  },
+  {
+    "file": "dungeon-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "6051be8012c5cea49dc247448b08923642ca93c8800aa21b72a42a05e38f10d5",
+    "source": "ui-round7-dungeon-4by3.png"
+  },
+  {
+    "file": "dungeon-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "650e152ad87ca0483a8ab581879a23eea84e0f4e2353cb0d755f05ef7b7a84f6",
+    "source": "flow-polish-20261028-dungeon-round8-after-4by3.png"
+  },
+  {
+    "file": "dungeon-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "f463c7821dba68b7e7dd6bf8d1abda40e2f742c2b212dc0e897534aaa5b9fc3f",
+    "source": "ui-round7-dungeon-4k.png"
+  },
+  {
+    "file": "dungeon-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "602b89541ada5f66d70b19744cad34ef79d84a5c4d295bb3a3cc69e68719cf74",
+    "source": "flow-polish-20261028-dungeon-round8-after-4k.png"
+  },
+  {
+    "file": "exchange-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "e7813cfd014a396ee259a43e0307a08e5f26d584ac34b2f87b5b0f85d21ced77",
+    "source": "ui-round7-exchange-last.png"
+  },
+  {
+    "file": "exchange-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3bded6cc95c66bf9323a6896604d5687555334054f9f1d4923f5a547b81468e5",
+    "source": "flow-polish-20261028-exchange-round8-after-4by3.png"
+  },
+  {
+    "file": "exchange-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "773379dadc4f07f806e42e7ac659e50891c799d55cf8b5781826bc2623dcb3fa",
+    "source": "ui-round7-exchange-4k.png"
+  },
+  {
+    "file": "exchange-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "a579ef3739a8af9527fd9d8ed8ac65a436e57d39523ef63b619601acf6f6f835",
+    "source": "flow-polish-20261028-exchange-round8-after-4k.png"
+  }
+]

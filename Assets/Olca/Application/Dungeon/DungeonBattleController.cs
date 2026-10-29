@@ -993,7 +993,10 @@ namespace Olca.Application.Dungeon
             if(customizationEditorButton!=null){
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
                 customizationEditorButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;
-                customizationEditorButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":"ソウビ・パーツ";
+                var label=customizationEditorButton.GetComponentInChildren<Text>();
+                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":"ソウビ・パーツ";
+                // 未登録注記の2行だけ、既存の外形と上下の装飾内に余白を確保する。
+                label.resizeTextMaxSize=customizationCatalog==null?24:30;
             }
             if(customizationUnlockButton!=null){customizationUnlockButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);customizationUnlockButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
             if(customizationAcquisitionButton!=null){customizationAcquisitionButton.gameObject.SetActive(allowProgressActions&&IsProgressHub&&customizationAcquisitionProvider!=null);customizationAcquisitionButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
