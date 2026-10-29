@@ -4290,12 +4290,17 @@ namespace Olca.Tests.Integration
                 Assert.IsNull(Get(hud, "hpText"));
                 var custom = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true)).Single();
                 var uiFont = custom.GetComponentInChildren<UnityEngine.UI.Text>(true).font;
-                hud.ConfigureMissingHpFont(uiFont);
-                foreach (int hp in new[] { 100, 83, 100, 73 })
+                hud.ConfigureMissingStatusFont(uiFont);
+                foreach (var value in new (int hp, int max)[] { (100, 100), (83, 100), (100, 100), (73, 100), (0, 590), (1, 1), (1, 590), (590, 590), (int.MaxValue, int.MaxValue) })
                 {
-                    hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(hp, 100, 1, 25, false, false, 6, 0));
+                    hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(value.hp, value.max, 1, 25, false, false, 6, 0));
                     var label = (UnityEngine.UI.Text)Get(hud, "hpText");
-                    Assert.IsNotNull(label); Assert.AreEqual($"HP: {hp} / 100", label.text);
+                    Assert.IsNotNull(label); Assert.AreEqual($"HP: {value.hp} / {value.max}", label.text);
+                    using (var generation = new UnityEngine.TextGenerator())
+                    {
+                        Assert.IsTrue(generation.Populate(label.text, label.GetGenerationSettings(label.rectTransform.rect.size)));
+                        Assert.AreEqual(label.text.Length, generation.characterCountVisible, "HP値を省略せず表示する");
+                    }
                     Assert.AreSame(hud.transform, label.transform.parent); Assert.IsFalse(label.raycastTarget);
                     Assert.AreSame(uiFont, label.font);
                     Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "ExplorationHpText"));
@@ -4311,12 +4316,24 @@ namespace Olca.Tests.Integration
                 supplied.font = UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");
                 var suppliedFont = supplied.font;
                 var other = suppliedHost.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>();
-                Set(other, "hpText", supplied); other.ConfigureMissingHpFont(uiFont);
+                Set(other, "hpText", supplied); other.ConfigureMissingStatusFont(uiFont);
                 other.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(88, 100, 2, 25, false, false, 6, 0));
                 Assert.AreSame(supplied, Get(other, "hpText")); Assert.AreSame(suppliedFont, supplied.font);
                 Assert.AreEqual("HP: 88 / 100", supplied.text);
             }
             finally { UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true); }
+        }
+        [Test]
+        public void 通常単階層Controllerも現在階層と進行度をHUDへ渡す()
+        {
+            var controller = Start(); var dungeon = Model(controller).Dungeon;
+            var hud = (Olca.Presentation.Dungeon.DungeonHudView)Get(controller, "dungeonHudView");
+            Call(controller, "RefreshDungeonHud");
+            var label = (UnityEngine.UI.Text)Get(hud, "progressText");
+            Assert.IsNotNull(label); Assert.AreEqual($"1カイ  0 / {dungeon.Map.TotalCellCount:F0}", label.text);
+            Call(controller, "RefreshDungeonHud");
+            Assert.AreSame(label, Get(hud, "progressText"));
+            Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "FloorProgressText"));
         }
         [Test]
         public void 実シーンの未割当進行度欄も階層列でだけ一度生成し同じHUDで更新する()

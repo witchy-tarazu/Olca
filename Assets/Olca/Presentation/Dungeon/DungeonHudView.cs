@@ -12,15 +12,16 @@ namespace Olca.Presentation.Dungeon
         [Header("HP")]
         [SerializeField] private Text hpText;
 
-        private Font missingHpFont;
-        private bool generatedHpText;
+        private Font missingStatusFont;
+        private bool generatedHpText, generatedProgressText;
 
-        /// <summary>新しく補うHP欄だけに既存UIのフォントを渡し、Sceneの明示割当は変更しない。</summary>
-        public void ConfigureMissingHpFont(Font font)
+        /// <summary>新しく補うステータス欄だけに既存UIのフォントを渡し、Sceneの明示割当は変更しない。</summary>
+        public void ConfigureMissingStatusFont(Font font)
         {
             if (font == null) return;
-            missingHpFont = font;
+            missingStatusFont = font;
             if (generatedHpText && hpText != null) hpText.font = font;
+            if (generatedProgressText && progressText != null) progressText.font = font;
         }
 
         [Header("進行度")]
@@ -59,9 +60,12 @@ namespace Olca.Presentation.Dungeon
                 label.transform.SetParent(transform, false);
                 hpText = label.GetComponent<Text>();
                 generatedHpText = true;
-                hpText.font = missingHpFont != null ? missingHpFont : deckCountText != null && deckCountText.font != null
+                hpText.font = missingStatusFont != null ? missingStatusFont : deckCountText != null && deckCountText.font != null
                     ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 hpText.fontSize = 28;
+                hpText.resizeTextForBestFit = true;
+                hpText.resizeTextMinSize = 18;
+                hpText.resizeTextMaxSize = 28;
                 hpText.alignment = TextAnchor.MiddleLeft;
                 hpText.color = Color.white;
                 hpText.raycastTarget = false;
@@ -80,7 +84,8 @@ namespace Olca.Presentation.Dungeon
                 var label = new GameObject("FloorProgressText", typeof(RectTransform), typeof(Text));
                 label.transform.SetParent(transform, false);
                 progressText = label.GetComponent<Text>();
-                progressText.font = deckCountText != null && deckCountText.font != null
+                generatedProgressText = true;
+                progressText.font = missingStatusFont != null ? missingStatusFont : deckCountText != null && deckCountText.font != null
                     ? deckCountText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 progressText.fontSize = 28;
                 progressText.alignment = TextAnchor.MiddleCenter;
