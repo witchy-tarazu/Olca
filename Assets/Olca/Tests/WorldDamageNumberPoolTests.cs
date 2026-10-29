@@ -55,6 +55,39 @@ namespace Olca.Tests
             UnityEngine.Object.DestroyImmediate(source);
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 浮遊文字は上昇位置を画面上端へ収め通常位置と文字設定を変えない(bool perspective)
+        {
+            var go=new GameObject("DamageBoundaryCamera");var camera=go.AddComponent<Camera>();camera.tag="MainCamera";camera.orthographic=!perspective;camera.orthographicSize=5;camera.transform.position=new Vector3(0,0,-10);camera.pixelRect=new Rect(0,0,1920,1080);camera.depth=100;if(perspective)camera.transform.rotation=Quaternion.Euler(20,0,15);
+            var number=new GameObject("DamageBoundaryText");var text=number.AddComponent<TextMesh>();text.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");text.fontSize=40;text.characterSize=.1f;text.text="2147483647";var view=number.AddComponent<WorldDamageNumberView>();typeof(WorldDamageNumberView).GetField("textMesh",Private).SetValue(view,text);var clamp=typeof(WorldDamageNumberView).GetMethod("KeepBelowViewportTop",Private);number.SetActive(true);
+            try{
+                // 他のテスト用カメラがあっても、この検証カメラを明示的なmainにする。
+                var others=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Where(c=>c!=camera&&c.CompareTag("MainCamera")).ToArray();foreach(var c in others)c.tag="Untagged";
+                try{
+                    number.transform.position=camera.ViewportToWorldPoint(new Vector3(.5f,1.05f,10));var scale=number.transform.localScale;var color=text.color;
+                    for(int n=0;n<3;n++){number.transform.position+=Vector3.up*.8f;clamp.Invoke(view,null);var b=text.GetComponent<Renderer>().bounds;for(int i=0;i<8;i++){var corner=b.center+Vector3.Scale(b.extents,new Vector3((i&1)==0?-1:1,(i&2)==0?-1:1,(i&4)==0?-1:1));Assert.LessOrEqual(camera.WorldToViewportPoint(corner).y,1f-8f/1080f+.0001f);}}
+                    Assert.AreEqual("2147483647",text.text);Assert.AreEqual(40,text.fontSize);Assert.AreEqual(scale,number.transform.localScale);Assert.AreEqual(color,text.color);
+                    typeof(WorldDamageNumberView).GetField("viewportOffset",Private).SetValue(view,Vector3.zero);number.transform.position=Vector3.zero;var original=number.transform.position;clamp.Invoke(view,null);Assert.AreEqual(original,number.transform.position);
+                }finally{foreach(var c in others)if(c!=null)c.tag="MainCamera";}
+            }finally{UnityEngine.Object.DestroyImmediate(number);UnityEngine.Object.DestroyImmediate(go);}
+        }
+
+        [Test]
+        public async Task 同一対象の上端ヒット群は相対間隔を維持して取消と再利用で補正を持ち越さない()
+        {
+            var go=new GameObject("DamageGroupCamera");var camera=go.AddComponent<Camera>();camera.tag="MainCamera";camera.orthographic=true;camera.orthographicSize=5;camera.transform.position=new Vector3(0,0,-10);camera.pixelRect=new Rect(0,0,1920,1080);
+            var others=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Where(c=>c!=camera&&c.CompareTag("MainCamera")).ToArray();foreach(var c in others)c.tag="Untagged";
+            try{
+                foreach(var view in Waiting.Concat(new[]{source.GetComponent<WorldDamageNumberView>()})){var text=view.GetComponent<TextMesh>();text.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");text.fontSize=40;text.characterSize=.1f;text.text="00";}
+                var labelObject=new GameObject("OwnerName");labelObject.transform.SetParent(go.transform,false);var label=labelObject.AddComponent<TextMesh>();label.font=source.GetComponent<TextMesh>().font;label.fontSize=40;label.characterSize=.1f;label.text="ボス";labelObject.transform.position=camera.ViewportToWorldPoint(new Vector3(.5f,.94f,10));var owner=label;for(int cycle=0;cycle<2;cycle++){
+                    using var cts=new CancellationTokenSource();var tasks=new[]{1,22,333}.Select(n=>((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage,n),camera.ViewportToWorldPoint(new Vector3(.5f,1.05f,10)),cts.Token,owner)).AsTask()).ToArray();
+                    var bounds=Active.Select(v=>v.GetComponent<Renderer>().bounds).OrderBy(b=>b.min.y).ToArray();Assert.AreEqual(3,bounds.Length);Assert.IsTrue(bounds.All(b=>!b.Intersects(label.GetComponent<Renderer>().bounds)),"上端から下げても対象名を隠さない");
+                    for(int n=0;n<3;n++){Assert.LessOrEqual(camera.WorldToViewportPoint(bounds[n].max).y,1f-8f/1080f+.0001f);if(n>0)Assert.LessOrEqual(bounds[n-1].max.y,bounds[n].min.y+.0001f);}
+                    CollectionAssert.AreEquivalent(new[]{"1","22","333"},Active.Select(v=>v.GetComponent<TextMesh>().text));cts.Cancel();await Completed(Task.WhenAll(tasks));Assert.AreEqual(0,Active.Count);
+                }
+            }finally{foreach(var c in others)if(c!=null)c.tag="MainCamera";UnityEngine.Object.DestroyImmediate(go);}
+        }
+
         [Test]
         public void Get_初期容量を超えて上限まで全て別実体を貸し出す()
         {
@@ -196,7 +229,8 @@ namespace Olca.Tests
             var view = go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
             var header = GameObject.CreatePrimitive(PrimitiveType.Quad);
             header.transform.SetParent(go.transform, false);
-            header.transform.localPosition = new Vector3(0, 5, 0);
+            // 画面内の見出しより上への表示を検証する。画面外の高位置は上端境界テストで扱う。
+            header.transform.localPosition = new Vector3(0, 1, 0);
             var enemy = new Olca.Core.Domain.Enemy("feedback", "テスト", 100, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(3, 0));
             try {
                 view.SetDamageNumberPool(pool); view.Initialize(enemy, 0);

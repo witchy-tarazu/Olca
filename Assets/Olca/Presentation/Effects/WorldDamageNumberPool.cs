@@ -85,6 +85,7 @@ namespace Olca.Presentation.Effects
                 worldPosition.y+=count*Mathf.Max(.1f,renderer!=null?renderer.bounds.size.y:0f);
             }
             owners[instance]=owner;
+            instance.AlignViewport=perEffect&&owner!=null?()=>WorldDamageNumberView.KeepGroupBelowViewportTop(owners.Where(pair=>ReferenceEquals(pair.Value,owner)).Select(pair=>pair.Key),owner is Component component?component.GetComponentsInChildren<TextMesh>().Select(label=>label.GetComponent<Renderer>()):null):null;
 
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, clearCts.Token);
             try
@@ -127,6 +128,7 @@ namespace Olca.Presentation.Effects
             if (ReferenceEquals(instance, null) || !activeInstances.Remove(instance)) return;
             owners.Remove(instance);
             if (instance == null || isDestroyed) return;
+            instance.AlignViewport=null;
             instance.gameObject.SetActive(false);
             // 同時ヒットの一時超過は表示するが、待機プールの保持数は増やさない。
             if(pool.Count>=maxPoolSize){DestroyInstance(instance);return;}
