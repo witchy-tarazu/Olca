@@ -24,6 +24,12 @@ CodexではUnityMCPの `run_tests` を使い、EditModeテストを実行する�
 - 呼出側の期限超過はUnity側の終了を意味しない。実行状態と終了通知を確認するまで、重複起動や不用意な再起動をしない。
 - 状態ファイルは今回の実行・条件に対応するか確認する。前回の成功記録や、結果収集を取り消した実行を今回の成功として報告しない。
 
+## タッチ入口の実Play検証
+
+- Editorの一時停止解除後に中立状態を確認してから押下を開始する。Editor停止中にPointerDownを作ってから解除すると、`UnityInputProvider.EditorPauseChanged`の入力スナップショットが既存押下を取消す。ゲームのカスタム停止とEditor停止を混同しない。
+- 長押し入口の成立は、仮想TouchscreenへTouchStateを送り、InputSystemUIInputModuleから届いた対象・PointerEventの種類・保持時間・詳細表示・解放時の選択不変で確認する。詳細を直接開く呼出しや`eligibleForClick=false`だけを成立の証拠にしない。押下から解放までEditorを再停止しない。
+- InputModuleは解放後にPointerEventDataを再利用するため、必要なdevice/touchId等は解放前に値として記録する。一時デバイスはfinallyで取消/解放して除去し、物理タッチの確認とは区別する。
+
 ## 命名規則
 
 ```csharp

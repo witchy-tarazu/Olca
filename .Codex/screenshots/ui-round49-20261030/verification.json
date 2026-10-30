@@ -1,0 +1,70 @@
+{
+  "baseline": "09bfec7dba5fbed9ed62323cec3a22fd13a10bb6",
+  "unity": "6000.3.26f1",
+  "productSourcesChanged": false,
+  "newProductTestsAdded": false,
+  "gestureThresholdSeconds": 0.5,
+  "gestureThresholdChanged": false,
+  "fullTests": {
+    "summary": {
+      "total": 3472,
+      "passed": 3472,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 238.51,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T05:42:55.259313Z",
+      "ageMs": 148,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 62,
+      "consoleLogs": 2680,
+      "seeded": true
+    },
+    "wrapperTimedOut": true
+  },
+  "relatedTests": {
+    "summary": {
+      "total": 368,
+      "passed": 368,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 20.81,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T05:38:19.719767Z",
+      "ageMs": 28,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 4,
+      "seeded": true
+    }
+  },
+  "runTestsInvocationCount": 1,
+  "logStartNoticeCount": 2,
+  "logEndNoticeCount": 1,
+  "logNoticeMultiplicityCause": "not established; contiguous duplicate start notices do not by themselves prove duplicate execution",
+  "finalRender": {
+    "width": 640,
+    "height": 360,
+    "screenWidth": 640,
+    "screenHeight": 360
+  },
+  "tempDirectoryGuard": true,
+  "storageGuard": true,
+  "controllerInactive": true,
+  "playAndRunnerStopped": true,
+  "temporaryInputDevicesRemoved": true,
+  "physicalTouchTested": false,
+  "unresolvedPriorSyntheticEntry": "resolved: input supplied after Editor resume/neutral state; actual TouchState -> UI module succeeded",
+  "independentCodeReviewUnresolved": 0,
+  "independentVisualReviewUnresolved": 0,
+  "productDataRegistered": false,
+  "imageGenerationUsed": false
+}

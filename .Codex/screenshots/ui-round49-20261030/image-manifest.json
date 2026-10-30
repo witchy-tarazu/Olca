@@ -1,0 +1,74 @@
+[
+  {
+    "file": "card-fhd.png",
+    "pixels": [
+      1920,
+      1080
+    ],
+    "sha256": "5485c2097fe6cb1bd07cd3bed12e807fbe6c4b74aaa1177aaf7268b4b1345406"
+  },
+  {
+    "file": "card-4k.png",
+    "pixels": [
+      3840,
+      2160
+    ],
+    "sha256": "1da5640f5779efb2e146d5e1da2bbf7dd6b7b7d73fc8665085d2b6c386a7511b"
+  },
+  {
+    "file": "card-4by3.png",
+    "pixels": [
+      1440,
+      1080
+    ],
+    "sha256": "0d4ebcd9262678e0bd3e0170d5d4d3e92943e699bbc794fb43ad9f9e56bb09c6"
+  },
+  {
+    "file": "transform-fhd.png",
+    "pixels": [
+      1920,
+      1080
+    ],
+    "sha256": "29553f820ffe1a4e7f2ad731902bed80fbf5019418427034050b8283218a3ede"
+  },
+  {
+    "file": "transform-4k.png",
+    "pixels": [
+      3840,
+      2160
+    ],
+    "sha256": "4f1f0bbacdf1f5769e53b791b773426e84184e43b3895bd4e3d0cc1e82accd78"
+  },
+  {
+    "file": "transform-4by3.png",
+    "pixels": [
+      1440,
+      1080
+    ],
+    "sha256": "4d75b4b0e4e43296b07993d0d97eb4a4819a64d8bf9435c8163c7e75e3b1057a"
+  },
+  {
+    "file": "long-fhd.png",
+    "pixels": [
+      1920,
+      1080
+    ],
+    "sha256": "f21c13e3d721e318ab4f9a0b147bf7704cee5ee0296f1295e8f56c997fe2a288"
+  },
+  {
+    "file": "long-4k.png",
+    "pixels": [
+      3840,
+      2160
+    ],
+    "sha256": "b824be974de0180f22107910e255ca90c5c3107bde1c168409ef3593e9abbc86"
+  },
+  {
+    "file": "long-4by3.png",
+    "pixels": [
+      1440,
+      1080
+    ],
+    "sha256": "cbd79fc06b7bbf6c6e1a89b1a9d4332ceccd8f95acec37432c38288e9e453b8b"
+  }
+]
