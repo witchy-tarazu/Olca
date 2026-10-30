@@ -1,0 +1,4530 @@
+{
+  "before-common-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 30,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 3,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              185,
+              867
+            ],
+            "max": [
+              233,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              237,
+              867
+            ],
+            "max": [
+              285,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              289,
+              867
+            ],
+            "max": [
+              337,
+              915
+            ],
+            "fill": 0.75
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 3,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1701.675,
+              815.4
+            ],
+            "max": [
+              1750.2749,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1701.675,
+              762.749939
+            ],
+            "max": [
+              1750.2749,
+              811.350037
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1701.675,
+              710.0999
+            ],
+            "max": [
+              1750.2749,
+              758.6999
+            ],
+            "fill": 0.75
+          }
+        ]
+      }
+    ]
+  },
+  "after-common-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 30,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 3,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1777.794,
+              815.4
+            ],
+            "max": [
+              1826.394,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1777.794,
+              760.7249
+            ],
+            "max": [
+              1826.394,
+              809.325
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1777.794,
+              706.0499
+            ],
+            "max": [
+              1826.394,
+              754.649963
+            ],
+            "fill": 0.75
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 3,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              197,
+              870.0001
+            ],
+            "max": [
+              245,
+              918.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              251,
+              870.0001
+            ],
+            "max": [
+              299,
+              918.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              305,
+              870.0001
+            ],
+            "max": [
+              353,
+              918.0001
+            ],
+            "fill": 0.75
+          }
+        ]
+      }
+    ]
+  },
+  "before-dense-normal-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              185,
+              867
+            ],
+            "max": [
+              233,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              237,
+              867
+            ],
+            "max": [
+              285,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              289,
+              867
+            ],
+            "max": [
+              337,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              341,
+              867
+            ],
+            "max": [
+              389,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              185,
+              815
+            ],
+            "max": [
+              233,
+              863
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              237,
+              815
+            ],
+            "max": [
+              285,
+              863
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              289,
+              815
+            ],
+            "max": [
+              337,
+              863
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              341,
+              815
+            ],
+            "max": [
+              389,
+              863
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1701.675,
+              815.4
+            ],
+            "max": [
+              1750.2749,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1701.675,
+              762.749939
+            ],
+            "max": [
+              1750.2749,
+              811.350037
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1701.675,
+              710.0999
+            ],
+            "max": [
+              1750.2749,
+              758.6999
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1701.675,
+              657.4498
+            ],
+            "max": [
+              1750.2749,
+              706.049866
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1701.675,
+              604.7998
+            ],
+            "max": [
+              1750.2749,
+              653.3999
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1701.675,
+              552.1498
+            ],
+            "max": [
+              1750.2749,
+              600.7498
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1701.675,
+              499.499725
+            ],
+            "max": [
+              1750.2749,
+              548.0998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1701.675,
+              446.849731
+            ],
+            "max": [
+              1750.2749,
+              495.449768
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "after-dense-normal-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1777.794,
+              815.4
+            ],
+            "max": [
+              1826.394,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1777.794,
+              760.7249
+            ],
+            "max": [
+              1826.394,
+              809.325
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1777.794,
+              706.0499
+            ],
+            "max": [
+              1826.394,
+              754.649963
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1777.794,
+              651.3748
+            ],
+            "max": [
+              1826.394,
+              699.9749
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1777.794,
+              596.6998
+            ],
+            "max": [
+              1826.394,
+              645.2998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1777.794,
+              542.0248
+            ],
+            "max": [
+              1826.394,
+              590.6248
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1777.794,
+              487.349762
+            ],
+            "max": [
+              1826.394,
+              535.949768
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1777.794,
+              432.6747
+            ],
+            "max": [
+              1826.394,
+              481.27475
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              197,
+              870.0001
+            ],
+            "max": [
+              245,
+              918.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              251,
+              870.0001
+            ],
+            "max": [
+              299,
+              918.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              305,
+              870.0001
+            ],
+            "max": [
+              353,
+              918.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              359,
+              870.0001
+            ],
+            "max": [
+              407,
+              918.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              197,
+              816.0001
+            ],
+            "max": [
+              245,
+              864.0001
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              251,
+              816.0001
+            ],
+            "max": [
+              299,
+              864.0001
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              305,
+              816.0001
+            ],
+            "max": [
+              353,
+              864.0001
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              359,
+              816.0001
+            ],
+            "max": [
+              407,
+              864.0001
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "before-dense-normal-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              370,
+              1734
+            ],
+            "max": [
+              466,
+              1830
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              474,
+              1734
+            ],
+            "max": [
+              570,
+              1830
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              578,
+              1734
+            ],
+            "max": [
+              674,
+              1830
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              682,
+              1734
+            ],
+            "max": [
+              778,
+              1830
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              370,
+              1630
+            ],
+            "max": [
+              466,
+              1726
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              474,
+              1630
+            ],
+            "max": [
+              570,
+              1726
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              578,
+              1630
+            ],
+            "max": [
+              674,
+              1726
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              682,
+              1630
+            ],
+            "max": [
+              778,
+              1726
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              3403.35,
+              1630.8
+            ],
+            "max": [
+              3500.5498,
+              1728
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              3403.35,
+              1525.49988
+            ],
+            "max": [
+              3500.5498,
+              1622.70007
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              3403.35,
+              1420.19983
+            ],
+            "max": [
+              3500.5498,
+              1517.39978
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              3403.35,
+              1314.89966
+            ],
+            "max": [
+              3500.5498,
+              1412.09973
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              3403.35,
+              1209.59961
+            ],
+            "max": [
+              3500.5498,
+              1306.7998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              3403.35,
+              1104.29956
+            ],
+            "max": [
+              3500.5498,
+              1201.49963
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              3403.35,
+              998.999451
+            ],
+            "max": [
+              3500.5498,
+              1096.19958
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              3403.35,
+              893.699463
+            ],
+            "max": [
+              3500.5498,
+              990.899536
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "after-dense-normal-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              3555.588,
+              1630.8
+            ],
+            "max": [
+              3652.788,
+              1728
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              3555.588,
+              1521.44983
+            ],
+            "max": [
+              3652.788,
+              1618.65
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              3555.588,
+              1412.09985
+            ],
+            "max": [
+              3652.788,
+              1509.29993
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              3555.588,
+              1302.74963
+            ],
+            "max": [
+              3652.788,
+              1399.94983
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              3555.588,
+              1193.39966
+            ],
+            "max": [
+              3652.788,
+              1290.59961
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              3555.588,
+              1084.04956
+            ],
+            "max": [
+              3652.788,
+              1181.24963
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              3555.588,
+              974.6995
+            ],
+            "max": [
+              3652.788,
+              1071.89954
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              3555.588,
+              865.3494
+            ],
+            "max": [
+              3652.788,
+              962.5495
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              394,
+              1740.00024
+            ],
+            "max": [
+              490,
+              1836.00024
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              502,
+              1740.00024
+            ],
+            "max": [
+              598,
+              1836.00024
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              610,
+              1740.00024
+            ],
+            "max": [
+              706,
+              1836.00024
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              718,
+              1740.00024
+            ],
+            "max": [
+              814,
+              1836.00024
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              394,
+              1632.00024
+            ],
+            "max": [
+              490,
+              1728.00024
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              502,
+              1632.00024
+            ],
+            "max": [
+              598,
+              1728.00024
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              610,
+              1632.00024
+            ],
+            "max": [
+              706,
+              1728.00024
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              718,
+              1632.00024
+            ],
+            "max": [
+              814,
+              1728.00024
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "before-dense-normal-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              185,
+              867
+            ],
+            "max": [
+              233,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              237,
+              867
+            ],
+            "max": [
+              285,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              289,
+              867
+            ],
+            "max": [
+              337,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              341,
+              867
+            ],
+            "max": [
+              389,
+              915
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              185,
+              815
+            ],
+            "max": [
+              233,
+              863
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              237,
+              815
+            ],
+            "max": [
+              285,
+              863
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              289,
+              815
+            ],
+            "max": [
+              337,
+              863
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              341,
+              815
+            ],
+            "max": [
+              389,
+              863
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1269.67493,
+              815.3999
+            ],
+            "max": [
+              1318.275,
+              863.999939
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1269.67493,
+              762.749939
+            ],
+            "max": [
+              1318.275,
+              811.350037
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1269.67493,
+              710.0999
+            ],
+            "max": [
+              1318.275,
+              758.7
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1269.67493,
+              657.4499
+            ],
+            "max": [
+              1318.275,
+              706.0499
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1269.67493,
+              604.7998
+            ],
+            "max": [
+              1318.275,
+              653.399841
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1269.67493,
+              552.1498
+            ],
+            "max": [
+              1318.275,
+              600.7498
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1269.67493,
+              499.499725
+            ],
+            "max": [
+              1318.275,
+              548.0998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1269.67493,
+              446.84967
+            ],
+            "max": [
+              1318.275,
+              495.4497
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "after-dense-normal-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": false,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1314.594,
+              815.3999
+            ],
+            "max": [
+              1363.19409,
+              863.999939
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1314.594,
+              760.725
+            ],
+            "max": [
+              1363.19409,
+              809.325
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1314.594,
+              706.049866
+            ],
+            "max": [
+              1363.19409,
+              754.6499
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1314.594,
+              651.3748
+            ],
+            "max": [
+              1363.19409,
+              699.9749
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1314.594,
+              596.6998
+            ],
+            "max": [
+              1363.19409,
+              645.2998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1314.594,
+              542.0248
+            ],
+            "max": [
+              1363.19409,
+              590.6248
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1314.594,
+              487.349731
+            ],
+            "max": [
+              1363.19409,
+              535.949768
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1314.594,
+              432.674683
+            ],
+            "max": [
+              1363.19409,
+              481.2747
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              197,
+              870
+            ],
+            "max": [
+              245,
+              918
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              251,
+              870
+            ],
+            "max": [
+              299,
+              918
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              305,
+              870
+            ],
+            "max": [
+              353,
+              918
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              359,
+              870
+            ],
+            "max": [
+              407,
+              918
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              197,
+              816
+            ],
+            "max": [
+              245,
+              864
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              251,
+              816
+            ],
+            "max": [
+              299,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              305,
+              816
+            ],
+            "max": [
+              353,
+              864
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              359,
+              816
+            ],
+            "max": [
+              407,
+              864
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "before-dense-custom-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              853.7705,
+              797.311462
+            ],
+            "max": [
+              891.541,
+              835.082
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              894.688538,
+              797.311462
+            ],
+            "max": [
+              932.459045,
+              835.082
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              935.606567,
+              797.311462
+            ],
+            "max": [
+              973.3771,
+              835.082
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              976.5246,
+              797.311462
+            ],
+            "max": [
+              1014.2951,
+              835.082
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              853.7705,
+              756.393433
+            ],
+            "max": [
+              891.541,
+              794.16394
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              894.688538,
+              756.393433
+            ],
+            "max": [
+              932.459045,
+              794.16394
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              935.606567,
+              756.393433
+            ],
+            "max": [
+              973.3771,
+              794.16394
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              976.5246,
+              756.393433
+            ],
+            "max": [
+              1014.2951,
+              794.16394
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1701.675,
+              815.4
+            ],
+            "max": [
+              1750.2749,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1701.675,
+              762.749939
+            ],
+            "max": [
+              1750.2749,
+              811.350037
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1701.675,
+              710.0999
+            ],
+            "max": [
+              1750.2749,
+              758.6999
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1701.675,
+              657.4498
+            ],
+            "max": [
+              1750.2749,
+              706.049866
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1701.675,
+              604.7998
+            ],
+            "max": [
+              1750.2749,
+              653.3999
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1701.675,
+              552.1498
+            ],
+            "max": [
+              1750.2749,
+              600.7498
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1701.675,
+              499.499725
+            ],
+            "max": [
+              1750.2749,
+              548.0998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1701.675,
+              446.849731
+            ],
+            "max": [
+              1750.2749,
+              495.449768
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "after-dense-custom-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1777.794,
+              815.4
+            ],
+            "max": [
+              1826.394,
+              864
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1777.794,
+              760.7249
+            ],
+            "max": [
+              1826.394,
+              809.325
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1777.794,
+              706.0499
+            ],
+            "max": [
+              1826.394,
+              754.649963
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1777.794,
+              651.3748
+            ],
+            "max": [
+              1826.394,
+              699.9749
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1777.794,
+              596.6998
+            ],
+            "max": [
+              1826.394,
+              645.2998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1777.794,
+              542.0248
+            ],
+            "max": [
+              1826.394,
+              590.6248
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1777.794,
+              487.349762
+            ],
+            "max": [
+              1826.394,
+              535.949768
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1777.794,
+              432.6747
+            ],
+            "max": [
+              1826.394,
+              481.27475
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              972.0001,
+              865.5738
+            ],
+            "max": [
+              1020.00012,
+              913.5738
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1026.00012,
+              865.5738
+            ],
+            "max": [
+              1074.00012,
+              913.5738
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1080.00012,
+              865.5738
+            ],
+            "max": [
+              1128.00012,
+              913.5738
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1134.00012,
+              865.5738
+            ],
+            "max": [
+              1182.00012,
+              913.5738
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              972.0001,
+              811.5738
+            ],
+            "max": [
+              1020.00012,
+              859.5738
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1026.00012,
+              811.5738
+            ],
+            "max": [
+              1074.00012,
+              859.5738
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1080.00012,
+              811.5738
+            ],
+            "max": [
+              1128.00012,
+              859.5738
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1134.00012,
+              811.5738
+            ],
+            "max": [
+              1182.00012,
+              859.5738
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "before-dense-custom-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1707.54077,
+              1594.6228
+            ],
+            "max": [
+              1783.08179,
+              1670.16382
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1789.37683,
+              1594.6228
+            ],
+            "max": [
+              1864.91785,
+              1670.16382
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1871.21289,
+              1594.6228
+            ],
+            "max": [
+              1946.75391,
+              1670.16382
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1953.049,
+              1594.6228
+            ],
+            "max": [
+              2028.59,
+              1670.16382
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1707.54077,
+              1512.78674
+            ],
+            "max": [
+              1783.08179,
+              1588.32776
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1789.37683,
+              1512.78674
+            ],
+            "max": [
+              1864.91785,
+              1588.32776
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1871.21289,
+              1512.78674
+            ],
+            "max": [
+              1946.75391,
+              1588.32776
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1953.049,
+              1512.78674
+            ],
+            "max": [
+              2028.59,
+              1588.32776
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              3403.35,
+              1630.8
+            ],
+            "max": [
+              3500.5498,
+              1728
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              3403.35,
+              1525.49988
+            ],
+            "max": [
+              3500.5498,
+              1622.70007
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              3403.35,
+              1420.19983
+            ],
+            "max": [
+              3500.5498,
+              1517.39978
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              3403.35,
+              1314.89966
+            ],
+            "max": [
+              3500.5498,
+              1412.09973
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              3403.35,
+              1209.59961
+            ],
+            "max": [
+              3500.5498,
+              1306.7998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              3403.35,
+              1104.29956
+            ],
+            "max": [
+              3500.5498,
+              1201.49963
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              3403.35,
+              998.999451
+            ],
+            "max": [
+              3500.5498,
+              1096.19958
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              3403.35,
+              893.699463
+            ],
+            "max": [
+              3500.5498,
+              990.899536
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "after-dense-custom-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              3555.588,
+              1630.8
+            ],
+            "max": [
+              3652.788,
+              1728
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              3555.588,
+              1521.44983
+            ],
+            "max": [
+              3652.788,
+              1618.65
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              3555.588,
+              1412.09985
+            ],
+            "max": [
+              3652.788,
+              1509.29993
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              3555.588,
+              1302.74963
+            ],
+            "max": [
+              3652.788,
+              1399.94983
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              3555.588,
+              1193.39966
+            ],
+            "max": [
+              3652.788,
+              1290.59961
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              3555.588,
+              1084.04956
+            ],
+            "max": [
+              3652.788,
+              1181.24963
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              3555.588,
+              974.6995
+            ],
+            "max": [
+              3652.788,
+              1071.89954
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              3555.588,
+              865.3494
+            ],
+            "max": [
+              3652.788,
+              962.5495
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1944,
+              1731.14746
+            ],
+            "max": [
+              2040,
+              1827.14746
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              2052,
+              1731.14746
+            ],
+            "max": [
+              2148,
+              1827.14746
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              2160,
+              1731.14746
+            ],
+            "max": [
+              2256,
+              1827.14746
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              2268,
+              1731.14746
+            ],
+            "max": [
+              2364,
+              1827.14746
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1944,
+              1623.14746
+            ],
+            "max": [
+              2040,
+              1719.14746
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              2052,
+              1623.14746
+            ],
+            "max": [
+              2148,
+              1719.14746
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              2160,
+              1623.14746
+            ],
+            "max": [
+              2256,
+              1719.14746
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              2268,
+              1623.14746
+            ],
+            "max": [
+              2364,
+              1719.14746
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "before-dense-custom-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              640.327942,
+              921.83606
+            ],
+            "max": [
+              668.6558,
+              950.16394
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              671.0165,
+              921.83606
+            ],
+            "max": [
+              699.34436,
+              950.16394
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              701.705,
+              921.83606
+            ],
+            "max": [
+              730.0329,
+              950.16394
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              732.393555,
+              921.83606
+            ],
+            "max": [
+              760.721436,
+              950.16394
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              640.327942,
+              891.1476
+            ],
+            "max": [
+              668.6558,
+              919.475464
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              671.0165,
+              891.1476
+            ],
+            "max": [
+              699.34436,
+              919.475464
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              701.705,
+              891.1476
+            ],
+            "max": [
+              730.0329,
+              919.475464
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              732.393555,
+              891.1476
+            ],
+            "max": [
+              760.721436,
+              919.475464
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1269.67493,
+              815.3999
+            ],
+            "max": [
+              1318.275,
+              863.999939
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1269.67493,
+              762.749939
+            ],
+            "max": [
+              1318.275,
+              811.350037
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1269.67493,
+              710.0999
+            ],
+            "max": [
+              1318.275,
+              758.7
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1269.67493,
+              657.4499
+            ],
+            "max": [
+              1318.275,
+              706.0499
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1269.67493,
+              604.7998
+            ],
+            "max": [
+              1318.275,
+              653.399841
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1269.67493,
+              552.1498
+            ],
+            "max": [
+              1318.275,
+              600.7498
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1269.67493,
+              499.499725
+            ],
+            "max": [
+              1318.275,
+              548.0998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1269.67493,
+              446.84967
+            ],
+            "max": [
+              1318.275,
+              495.4497
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "after-dense-custom-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "frame": 60,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "status/Blind/",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.75
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.75
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1314.594,
+              815.3999
+            ],
+            "max": [
+              1363.19409,
+              863.999939
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1314.594,
+              760.725
+            ],
+            "max": [
+              1363.19409,
+              809.325
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1314.594,
+              706.049866
+            ],
+            "max": [
+              1363.19409,
+              754.6499
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1314.594,
+              651.3748
+            ],
+            "max": [
+              1363.19409,
+              699.9749
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1314.594,
+              596.6998
+            ],
+            "max": [
+              1363.19409,
+              645.2998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1314.594,
+              542.0248
+            ],
+            "max": [
+              1363.19409,
+              590.6248
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1314.594,
+              487.349731
+            ],
+            "max": [
+              1363.19409,
+              535.949768
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1314.594,
+              432.674683
+            ],
+            "max": [
+              1363.19409,
+              481.2747
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              731.999939,
+              958.0327
+            ],
+            "max": [
+              779.999939,
+              1006.03271
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              785.999939,
+              958.0327
+            ],
+            "max": [
+              833.999939,
+              1006.03271
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              839.999939,
+              958.0327
+            ],
+            "max": [
+              887.999939,
+              1006.03271
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              893.999939,
+              958.0327
+            ],
+            "max": [
+              941.999939,
+              1006.03271
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              731.999939,
+              904.0327
+            ],
+            "max": [
+              779.999939,
+              952.0327
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              785.999939,
+              904.0327
+            ],
+            "max": [
+              833.999939,
+              952.0327
+            ],
+            "fill": 0.75
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              839.999939,
+              904.0327
+            ],
+            "max": [
+              887.999939,
+              952.0327
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              893.999939,
+              904.0327
+            ],
+            "max": [
+              941.999939,
+              952.0327
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "visible-boss-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "frame": 62,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1777.794,
+              815.4
+            ],
+            "max": [
+              1826.394,
+              864
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1777.794,
+              760.7249
+            ],
+            "max": [
+              1826.394,
+              809.325
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1777.794,
+              706.0499
+            ],
+            "max": [
+              1826.394,
+              754.649963
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1777.794,
+              651.3748
+            ],
+            "max": [
+              1826.394,
+              699.9749
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1777.794,
+              596.6998
+            ],
+            "max": [
+              1826.394,
+              645.2998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1777.794,
+              542.0248
+            ],
+            "max": [
+              1826.394,
+              590.6248
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1777.794,
+              487.349762
+            ],
+            "max": [
+              1826.394,
+              535.949768
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1777.794,
+              432.6747
+            ],
+            "max": [
+              1826.394,
+              481.27475
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 7,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              972,
+              865.5737
+            ],
+            "max": [
+              1020,
+              913.5737
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1026,
+              865.5737
+            ],
+            "max": [
+              1074,
+              913.5737
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1080,
+              865.5737
+            ],
+            "max": [
+              1128,
+              913.5737
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1134,
+              865.5737
+            ],
+            "max": [
+              1182,
+              913.5737
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              972,
+              811.5737
+            ],
+            "max": [
+              1020,
+              859.5737
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1026,
+              811.5737
+            ],
+            "max": [
+              1074,
+              859.5737
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1080,
+              811.5737
+            ],
+            "max": [
+              1128,
+              859.5737
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "visible-boss-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "frame": 62,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              3555.588,
+              1630.8
+            ],
+            "max": [
+              3652.788,
+              1728
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              3555.588,
+              1521.44983
+            ],
+            "max": [
+              3652.788,
+              1618.65
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              3555.588,
+              1412.09985
+            ],
+            "max": [
+              3652.788,
+              1509.29993
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              3555.588,
+              1302.74963
+            ],
+            "max": [
+              3652.788,
+              1399.94983
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              3555.588,
+              1193.39966
+            ],
+            "max": [
+              3652.788,
+              1290.59961
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              3555.588,
+              1084.04956
+            ],
+            "max": [
+              3652.788,
+              1181.24963
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              3555.588,
+              974.6995
+            ],
+            "max": [
+              3652.788,
+              1071.89954
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              3555.588,
+              865.3494
+            ],
+            "max": [
+              3652.788,
+              962.5495
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 7,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1943.99976,
+              1731.14746
+            ],
+            "max": [
+              2039.99976,
+              1827.14746
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              2051.99976,
+              1731.14746
+            ],
+            "max": [
+              2147.99976,
+              1827.14746
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              2159.99976,
+              1731.14746
+            ],
+            "max": [
+              2255.99976,
+              1827.14746
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              2267.99976,
+              1731.14746
+            ],
+            "max": [
+              2363.99976,
+              1827.14746
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1943.99976,
+              1623.14746
+            ],
+            "max": [
+              2039.99976,
+              1719.14746
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              2051.99976,
+              1623.14746
+            ],
+            "max": [
+              2147.99976,
+              1719.14746
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              2159.99976,
+              1623.14746
+            ],
+            "max": [
+              2255.99976,
+              1719.14746
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  },
+  "visible-boss-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "frame": 62,
+    "playerHp": 100,
+    "customOpen": true,
+    "player": [
+      {
+        "Id": "status/Poison/poison",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "status/Poison/venom",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "status/Confusion/",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "buff/guard",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/barrier",
+        "RemainingFraction": 0.733333349
+      },
+      {
+        "Id": "buff/float",
+        "RemainingFraction": null
+      },
+      {
+        "Id": "buff/concentrate",
+        "RemainingFraction": null
+      }
+    ],
+    "enemies": [
+      {
+        "EnemyId": "boss",
+        "icons": [
+          {
+            "Id": "status/Poison/poison",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Poison/venom",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Confusion/",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "status/Blind/",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "buff/guard",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/barrier",
+            "RemainingFraction": 0.733333349
+          },
+          {
+            "Id": "buff/float",
+            "RemainingFraction": null
+          },
+          {
+            "Id": "buff/concentrate",
+            "RemainingFraction": null
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "name": "Icons",
+        "VisibleCount": 8,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              1314.594,
+              815.3999
+            ],
+            "max": [
+              1363.19409,
+              863.999939
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              1314.594,
+              760.725
+            ],
+            "max": [
+              1363.19409,
+              809.325
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              1314.594,
+              706.049866
+            ],
+            "max": [
+              1363.19409,
+              754.6499
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Blind/",
+            "min": [
+              1314.594,
+              651.3748
+            ],
+            "max": [
+              1363.19409,
+              699.9749
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              1314.594,
+              596.6998
+            ],
+            "max": [
+              1363.19409,
+              645.2998
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              1314.594,
+              542.0248
+            ],
+            "max": [
+              1363.19409,
+              590.6248
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              1314.594,
+              487.349731
+            ],
+            "max": [
+              1363.19409,
+              535.949768
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              1314.594,
+              432.674683
+            ],
+            "max": [
+              1363.19409,
+              481.2747
+            ],
+            "fill": 1
+          }
+        ]
+      },
+      {
+        "name": "PlayerCombatStatusIcons",
+        "VisibleCount": 7,
+        "slots": [
+          {
+            "name": "CombatStatus_status/Poison/poison",
+            "min": [
+              732.0001,
+              958.032837
+            ],
+            "max": [
+              780.0001,
+              1006.03284
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Poison/venom",
+            "min": [
+              786.0001,
+              958.032837
+            ],
+            "max": [
+              834.0001,
+              1006.03284
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_status/Confusion/",
+            "min": [
+              840.0001,
+              958.032837
+            ],
+            "max": [
+              888.0001,
+              1006.03284
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/guard",
+            "min": [
+              894.0001,
+              958.032837
+            ],
+            "max": [
+              942.0001,
+              1006.03284
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/barrier",
+            "min": [
+              732.0001,
+              904.032837
+            ],
+            "max": [
+              780.0001,
+              952.032837
+            ],
+            "fill": 0.733333349
+          },
+          {
+            "name": "CombatStatus_buff/float",
+            "min": [
+              786.0001,
+              904.032837
+            ],
+            "max": [
+              834.0001,
+              952.032837
+            ],
+            "fill": 1
+          },
+          {
+            "name": "CombatStatus_buff/concentrate",
+            "min": [
+              840.0001,
+              904.032837
+            ],
+            "max": [
+              888.0001,
+              952.032837
+            ],
+            "fill": 1
+          }
+        ]
+      }
+    ]
+  }
+}

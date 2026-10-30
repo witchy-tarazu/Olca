@@ -42,15 +42,38 @@ namespace Olca.Presentation.Battle
         private CombatStatusIconStrip statusIcons;
         private void RefreshStatusIcons()
         {
-            if(!isActiveAndEnabled||battleSystem==null||battleSystem.IsGameOver||playerHpText==null){statusIcons?.Clear();return;}
+            if(!isActiveAndEnabled||customInspectionHidden||battleSystem==null||battleSystem.IsGameOver||playerHpText==null||!playerHpText.isActiveAndEnabled){statusIcons?.Clear();return;}
             var entries=CombatStatusIcons.ForPlayer(battleSystem.Player);
             if(statusIcons==null){
                 if(entries.Count==0)return;
-                var obj=new GameObject("PlayerCombatStatusIcons",typeof(RectTransform));obj.transform.SetParent(playerHpText.transform,false);
-                var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=Vector2.zero;rect.pivot=new Vector2(0,1);rect.anchoredPosition=new Vector2(100,-15);
+                var obj=new GameObject("PlayerCombatStatusIcons",typeof(RectTransform));obj.transform.SetParent(transform,false);
+                var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.pivot=new Vector2(0,1);
                 statusIcons=obj.AddComponent<CombatStatusIconStrip>();statusIcons.Configure(4);
             }
             statusIcons.Show(entries);
+            PositionStatusIcons();
+        }
+
+        // 文字/カスタムの縮尺を継承せず、HPの実外周に追従する読取専用ドック。
+        private void PositionStatusIcons()
+        {
+            var viewport=transform as RectTransform;
+            if(statusIcons==null||statusIcons.VisibleCount==0||playerHpText==null||viewport==null)return;
+            var rect=(RectTransform)statusIcons.transform;
+            playerHpText.rectTransform.GetWorldCorners(customLayoutCorners);
+            float hpRight=float.NegativeInfinity,hpBottom=float.PositiveInfinity,hpTop=float.NegativeInfinity;
+            foreach(var point in customLayoutCorners){var local=transform.InverseTransformPoint(point);hpRight=Mathf.Max(hpRight,local.x);hpBottom=Mathf.Min(hpBottom,local.y);hpTop=Mathf.Max(hpTop,local.y);}
+            float right=hpRight;
+            var bg=customScreenContainer!=null?customScreenContainer.Find("BgCustom") as RectTransform:null;
+            if(bg!=null){bg.GetWorldCorners(customLayoutCorners);foreach(var point in customLayoutCorners)right=Mathf.Max(right,transform.InverseTransformPoint(point).x);}
+            float progress=Mathf.InverseLerp(CUSTOM_SCREEN_HIDDEN_X,CUSTOM_SCREEN_VISIBLE_X,customSlideX);
+            float closedX=hpRight-rect.rect.width;
+            if(customGaugeContainer!=null){customGaugeContainer.GetWorldCorners(customLayoutCorners);foreach(var point in customLayoutCorners)closedX=Mathf.Max(closedX,transform.InverseTransformPoint(point).x+12);}
+            float x=Mathf.Lerp(closedX,right+12,progress);
+            float y=Mathf.Lerp(hpBottom-12,hpTop-12,progress);
+            x=Mathf.Clamp(x,viewport.rect.xMin+8,viewport.rect.xMax-rect.rect.width-8);
+            y=Mathf.Clamp(y,viewport.rect.yMin+rect.rect.height+8,viewport.rect.yMax-8);
+            rect.anchoredPosition=new Vector2(x-viewport.rect.center.x,y-viewport.rect.center.y);
         }
 
         private CancellationTokenSource animationCts;
@@ -142,7 +165,7 @@ namespace Olca.Presentation.Battle
             RefreshCustomLayout();
         }
 
-        private void LateUpdate() => RefreshCustomLayout();
+        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();}
 
         private void RefreshCustomLayout()
         {
@@ -173,6 +196,7 @@ namespace Olca.Presentation.Battle
             TransformationVisualSource?.ApplyNarrowLayout(narrow*progress);
             if(gaugeFill!=null&&gaugeSlider!=null&&gaugeSlider.fillRect!=null)
                 gaugeFill.rectTransform.sizeDelta=((RectTransform)gaugeSlider.fillRect.parent).rect.size;
+            PositionStatusIcons();
         }
 
         // ========== 初期化 ==========
@@ -243,7 +267,7 @@ namespace Olca.Presentation.Battle
             var background=gaugeSlider.transform.Find("Background")?.GetComponent<Image>();
             if(background!=null){background.sprite=gaugeSprites.Track;background.color=Color.white;background.type=Image.Type.Simple;background.raycastTarget=false;}
         }
-        private void Update() {RefreshStatusIcons();Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&(battleSystem.IsDarkening||battleSystem.IsHitStopped));UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
+        private void Update() {Olca.Unity.BattleVisualClock.SetPaused(this,battleSystem!=null&&(battleSystem.IsDarkening||battleSystem.IsHitStopped));UpdateGaugeVisual();UpdateTransformationVisual();foreach(var label in GetComponentsInChildren<UnityEngine.UI.Text>(true))label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(label.text);}
         private void UpdateGaugeVisual()
         {
             if(gaugeFill==null)return;

@@ -47,7 +47,7 @@ namespace Olca.Presentation.Battle
             if(statusCanvas==null){
                 var obj=new GameObject("BossCombatStatusIcons",typeof(RectTransform),typeof(Canvas));obj.transform.SetParent(transform,false);
                 statusCanvas=obj.GetComponent<Canvas>();statusCanvas.renderMode=RenderMode.WorldSpace;statusCanvas.overrideSorting=true;statusCanvas.sortingOrder=7;
-                var rect=(RectTransform)obj.transform;rect.pivot=new Vector2(.5f,1);rect.sizeDelta=new Vector2(52,520);
+                var rect=(RectTransform)obj.transform;rect.pivot=new Vector2(.5f,1);rect.sizeDelta=new Vector2(48,520);
                 var row=new GameObject("Icons",typeof(RectTransform));row.transform.SetParent(obj.transform,false);var rr=(RectTransform)row.transform;rr.anchorMin=rr.anchorMax=new Vector2(0,1);rr.pivot=new Vector2(0,1);rr.anchoredPosition=Vector2.zero;
                 statusIcons=row.AddComponent<CombatStatusIconStrip>();statusIcons.Configure(1);
             }
@@ -56,6 +56,10 @@ namespace Olca.Presentation.Battle
             float depth=Mathf.Max(camera.nearClipPlane+1,camera.WorldToViewportPoint(transform.position).z);
             var point=camera.ViewportToWorldPoint(new Vector3(.90f-offset,.8f,depth));
             float worldHeight=Vector3.Distance(camera.ViewportToWorldPoint(new Vector3(.9f,.8f,depth)),camera.ViewportToWorldPoint(new Vector3(.9f,.845f,depth)));
+            // HP/強靭度の実外周からタイル幅の1/4を空け、演出側へ張り出さない。
+            float left=float.PositiveInfinity;
+            foreach(var bar in new[]{hpBack,poiseBack})if(bar!=null&&bar.enabled)left=Mathf.Min(left,Vector3.Dot(bar.GetPosition(0)-point,camera.transform.right)-bar.startWidth*.5f);
+            if(!float.IsPositiveInfinity(left))point+=camera.transform.right*(left-worldHeight*.75f);
             float scale=worldHeight/48;var parentScale=transform.lossyScale;
             statusCanvas.transform.localScale=new Vector3(scale/(parentScale.x==0?1:parentScale.x),scale/(parentScale.y==0?1:parentScale.y),scale/(parentScale.z==0?1:parentScale.z));
             statusCanvas.transform.position=point;statusCanvas.transform.rotation=camera.transform.rotation;
@@ -99,11 +103,10 @@ namespace Olca.Presentation.Battle
         {line.startWidth=line.endWidth=width;line.positionCount=2;line.SetPosition(0,bottom);line.SetPosition(1,Vector3.Lerp(bottom,top,fraction));}
         private void RefreshGauges()
         {
-            RefreshStatusIcons();
-            bool visible=GaugeVisible;if(hpBack==null&&!visible)return;EnsureGauges();
+            bool visible=GaugeVisible;if(hpBack==null&&!visible){HideStatusIcons();return;}EnsureGauges();
             hpBack.enabled=visible;hpFill.enabled=visible&&HpFraction>0;
             poiseBack.enabled=visible&&PoiseFraction.HasValue;poiseFill.enabled=poiseBack.enabled&&PoiseFraction.Value>0;
-            if(!visible)return;
+            if(!visible){HideStatusIcons();return;}
             var camera=Camera.main;
             if(IsBossGauge&&camera!=null){
                 float offset=BossHudSpacing*Mathf.Max(0,bossGauges.IndexOf(this));
@@ -140,6 +143,7 @@ namespace Olca.Presentation.Battle
                         enemyNameText.transform.position=position;}
                 }
             }
+            RefreshStatusIcons();
         }
         private void FitHpText(float diameter)
         {
