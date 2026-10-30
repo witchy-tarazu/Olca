@@ -1,0 +1,101 @@
+{
+  "baseline": "7108b671744ec7a97ebbfbeb570518c1942dcc22",
+  "unity": "6000.3.26f1",
+  "fullTests": {
+    "summary": {
+      "total": 3472,
+      "passed": 3472,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 226.38,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T05:20:33.640922Z",
+      "ageMs": 5,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 62,
+      "consoleLogs": 2679,
+      "seeded": true
+    },
+    "wrapperTimedOut": true
+  },
+  "related": {
+    "summary": {
+      "total": 368,
+      "passed": 368,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 20.38,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T05:08:56.210479Z",
+      "ageMs": 81,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 4,
+      "seeded": true
+    }
+  },
+  "finalSourceHashes": {
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "800dd6219bb1d249da942544f085012e60f64f3fa5378f02b13f407149cd222a",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "8a8c2dfe896cfd25d62f9a6d8555a87b4632faba923700bae8f31e0f5eb778d4"
+  },
+  "cycles": {
+    "saveBytesUnchanged": true,
+    "pointerCycles": 3,
+    "cardStatusEnemyReturn": true,
+    "readOnly": true,
+    "frame": 60,
+    "selected": [],
+    "scrollReset": 1
+  },
+  "finalRender": {
+    "width": 640,
+    "height": 360,
+    "screenWidth": 640,
+    "screenHeight": 360
+  },
+  "dedicatedTmpGuard": true,
+  "storageGuard": true,
+  "playAndRunnerStopped": true,
+  "nativeComparisons": [
+    [
+      1920,
+      1080
+    ],
+    [
+      3840,
+      2160
+    ],
+    [
+      1440,
+      1080
+    ]
+  ],
+  "bodyContentMatchedBeforeAfter": true,
+  "newImagesGenerated": false,
+  "artAndMiniIconReferencesChanged": false,
+  "independentCodeReviewUnresolved": 0,
+  "independentVisualReviewUnresolved": 0,
+  "warnings": {
+    "priorRun": 66,
+    "finalRun": 62,
+    "removedMissingMarkerFixtureWarnings": 4,
+    "newUIWarningCount": 0,
+    "diagnosticSuppression": false,
+    "testExpectationsWeakened": false
+  },
+  "notConfirmed": [
+    "physical touch",
+    "physical gamepad",
+    "OS IME",
+    "synthetic touch long-hold entry did not open in actual Play; temporary device removed; cause not established",
+    "transformation-specific native screenshots"
+  ]
+}

@@ -838,6 +838,9 @@ namespace Olca.Tests
                 if(!paused){view.ToggleCustomPresentation();view.OpenCombatantDetails(1);var firstNext=root.GetComponentsInChildren<Button>().Single(x=>x.name=="NextInspection");Assert.IsTrue(firstNext.targetGraphic.enabled);Assert.IsTrue(firstNext.targetGraphic.raycastTarget);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseCustomPadDetails").targetGraphic.enabled);view.ToggleCustomPresentation();}
 
                 view.OpenCombatantDetails(0);var details=root.GetComponentsInChildren<Text>().Single(t=>t.name=="CustomPadDetailsText");StringAssert.Contains("ジブン",details.text);
+                var detailsRoot=(RectTransform)root.transform.Find("CustomPadDetails");var detailHeading=detailsRoot.Find("CustomDetailsHeading").GetComponent<Text>();Assert.AreEqual("ジョウタイ ショウサイ",detailHeading.text);Assert.IsFalse(detailHeading.raycastTarget);var contentBefore=details.text;float authoredHeight=detailsRoot.rect.height;
+                view.ApplyNarrowLayout(1);typeof(CustomScreenView).GetMethod("RefreshDetailLayout",flags).Invoke(view,null);Assert.AreEqual(40,details.fontSize);Assert.AreEqual(authoredHeight+560,detailsRoot.rect.height,1);Assert.AreEqual(96,((RectTransform)detailsRoot.Find("CloseCustomPadDetails")).rect.height,.1f);Assert.AreEqual(contentBefore,details.text);
+                view.ApplyNarrowLayout(0);typeof(CustomScreenView).GetMethod("RefreshDetailLayout",flags).Invoke(view,null);Assert.AreEqual(30,details.fontSize);Assert.AreEqual(authoredHeight,detailsRoot.rect.height,1);Assert.AreEqual(contentBefore,details.text);
                 typeof(CustomScreenView).GetMethod("ApplyCustomPad",flags).Invoke(view,new object[]{Olca.Unity.CustomPadCommand.Right});StringAssert.Contains("ジブン",details.text,"自分を敵巡回へ混ぜない");
                 view.OpenCombatantDetails(1);StringAssert.Contains("ジブン",details.text,"敵詳細は非表示モードだけ");
                 typeof(CustomScreenView).GetMethod("ClosePadDetails",flags).Invoke(view,null);view.ToggleCustomPresentation();Assert.IsTrue(view.IsCustomPresentationHidden);Assert.IsFalse(obj.GetComponent<Image>().enabled);Assert.IsFalse(obj.GetComponent<Image>().raycastTarget);
@@ -930,6 +933,8 @@ namespace Olca.Tests
                 typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,container.transform);
                 typeof(CustomScreenView).GetField("handCardPrefab",flags).SetValue(view,UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab"));
                 typeof(CustomScreenView).GetField("cardShootInterval",flags).SetValue(view,.15f);
+                var markers=new Transform[3];for(int i=0;i<markers.Length;i++){var marker=new GameObject("Marker"+i,typeof(RectTransform));marker.transform.SetParent(container.transform,false);((RectTransform)marker.transform).anchoredPosition=new Vector2(-275+i*160,75);markers[i]=marker.transform;}
+                typeof(CustomScreenView).GetField("cardPositionMarkers",flags).SetValue(view,markers);
                 var model=new CustomScreenSystem(new Deck(new List<Card>{Create("a",CardSeries.Sword),Create("b",CardSeries.Sword),Create("c",CardSeries.Sword)}));
                 view.Initialize(model);model.Open(new Card[0],new MockRandomProvider(0));
                 var cards=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);

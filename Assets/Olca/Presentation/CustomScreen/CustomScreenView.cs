@@ -488,7 +488,7 @@ namespace Olca.Presentation.CustomScreen
         private Olca.Unity.CustomGamepadInput gamepadInput;
         private int padTransformationIndex=-1,lastPadFrame=-1,padViewVersion,lastModeInputFrame=-1;
         private int lastDetailsCloseFrame=-1;
-        private GameObject detailsPanel,padGuidePanel;private Text padDetailsText,padGuide;private ScrollRect padDetailsScroll;
+        private GameObject detailsPanel,padGuidePanel;private Text padDetailsText,padGuide,detailsHeading;private ScrollRect padDetailsScroll;
         private void ResetCustomPad(bool resetFocus=true){foreach(var hold in touchDetailHolds)hold.CancelPress();padViewVersion++;gamepadInput?.Reset();if(resetFocus)padTransformationIndex=-1;ClosePadDetails();SetScreenVisibility(true);}
         private void OnEnable()
         {
@@ -639,7 +639,7 @@ namespace Olca.Presentation.CustomScreen
                 FitDetailContent(selectedCardDescription,cardDescriptionScroll);
                 if(changed){cardDescriptionScroll.StopMovement();cardDescriptionScroll.verticalNormalizedPosition=1;}
             }
-            if(detailsPanel!=null&&detailsPanel.activeSelf&&padDetailsText!=null&&padDetailsScroll!=null)FitDetailContent(padDetailsText,padDetailsScroll);
+            if(detailsPanel!=null&&detailsPanel.activeSelf&&padDetailsText!=null&&padDetailsScroll!=null){RefreshDetailLayout();FitDetailContent(padDetailsText,padDetailsScroll);}
         }
         private void OnDisable(){StopHandPresentation();Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
         private bool HandleCustomGamepad()
@@ -741,6 +741,8 @@ namespace Olca.Presentation.CustomScreen
             if(confirmButton==null)return;
             if(detailsPanel==null){
                 detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=detailsPanel.GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
+                var heading=new GameObject("CustomDetailsHeading",typeof(RectTransform),typeof(Text));heading.transform.SetParent(detailsPanel.transform,false);detailsHeading=heading.GetComponent<Text>();detailsHeading.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");detailsHeading.color=new Color(.74f,.91f,.97f);detailsHeading.alignment=TextAnchor.MiddleLeft;detailsHeading.supportRichText=false;detailsHeading.raycastTarget=false;var hr=detailsHeading.rectTransform;hr.anchorMin=new Vector2(.06f,1);hr.anchorMax=new Vector2(.94f,1);hr.pivot=new Vector2(.5f,1);hr.anchoredPosition=new Vector2(0,-32);hr.sizeDelta=new Vector2(0,72);
+                var rule=new GameObject("CustomDetailsRule",typeof(RectTransform),typeof(Image));rule.transform.SetParent(detailsPanel.transform,false);var rr=(RectTransform)rule.transform;rr.anchorMin=new Vector2(.06f,1);rr.anchorMax=new Vector2(.94f,1);rr.pivot=new Vector2(.5f,1);rr.anchoredPosition=new Vector2(0,-120);rr.sizeDelta=new Vector2(0,2);var ri=rule.GetComponent<Image>();ri.color=new Color(.55f,.85f,.94f,.3f);ri.raycastTarget=false;
                 var area=new GameObject("CustomPadDetailsScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(detailsPanel.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.04f,.18f);ar.anchorMax=new Vector2(.96f,.96f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
                 var text=new GameObject("CustomPadDetailsText",typeof(RectTransform),typeof(Text));text.transform.SetParent(area.transform,false);padDetailsText=text.GetComponent<Text>();padDetailsText.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padDetailsText.fontSize=28;padDetailsText.supportRichText=false;padDetailsText.color=Color.white;padDetailsText.alignment=TextAnchor.UpperLeft;padDetailsText.rectTransform.anchorMin=new Vector2(0,1);padDetailsText.rectTransform.anchorMax=Vector2.one;padDetailsText.rectTransform.pivot=new Vector2(.5f,1);padDetailsText.rectTransform.anchoredPosition=Vector2.zero;padDetailsText.rectTransform.sizeDelta=Vector2.zero;
                 padDetailsScroll=area.GetComponent<ScrollRect>();padDetailsScroll.viewport=ar;padDetailsScroll.content=padDetailsText.rectTransform;padDetailsScroll.horizontal=false;padDetailsScroll.movementType=ScrollRect.MovementType.Clamped;
@@ -760,14 +762,32 @@ namespace Olca.Presentation.CustomScreen
                 if(backing==null){
                     var obj=new GameObject("CombatantDetailsBacking",typeof(RectTransform),typeof(Image));obj.transform.SetParent(detailsPanel.transform,false);obj.transform.SetAsFirstSibling();backing=obj.transform;
                     var rect=(RectTransform)obj.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(8,8);rect.offsetMax=new Vector2(-8,-8);
-                    var ink=Olca.Presentation.Dungeon.UiLook.Ink;obj.GetComponent<Image>().color=new Color(ink.r,ink.g,ink.b,.97f);
+                    var ink=Olca.Presentation.Dungeon.UiLook.Ink;obj.GetComponent<Image>().color=new Color(ink.r,ink.g,ink.b,.995f);
                 }
                 backing.gameObject.SetActive(true);
                 padDetailsScroll.viewport.anchorMin=new Vector2(.04f,inspectionIndex>=0?.28f:.18f);
             }
             foreach(string name in new[]{"PreviousInspection","NextInspection"}){var control=detailsPanel.transform.Find(name);if(control!=null)control.gameObject.SetActive(!isScreenVisible&&inspectionIndex>0);}
             if(hiddenCustomControls!=null)hiddenCustomControls.SetActive(false);
-            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);padDetailsScroll.verticalNormalizedPosition=1;
+            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();RefreshDetailLayout();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);padDetailsScroll.verticalNormalizedPosition=1;
+        }
+
+        // 詳細本文の内容やスクロール操作を変えず、狭い比率では余る高さを読書へ使う。
+        private void RefreshDetailLayout()
+        {
+            if(detailsPanel==null||padDetailsText==null||padDetailsScroll==null)return;
+            float narrow=narrowLayoutAmount;
+            var rect=(RectTransform)detailsPanel.transform;
+            rect.offsetMin=new Vector2(0,-280*narrow);rect.offsetMax=new Vector2(0,280*narrow);
+            if(detailsHeading!=null){detailsHeading.text=inspectionIndex>=0?"ジョウタイ ショウサイ":padTransformationIndex>=0?"ヘンシン ショウサイ":"カード ショウサイ";detailsHeading.fontSize=Mathf.RoundToInt(Mathf.Lerp(36,44,narrow));}
+            bool cycle=!isScreenVisible&&inspectionIndex>0;
+            var viewport=padDetailsScroll.viewport;viewport.anchorMin=new Vector2(.06f,cycle?.26f:.14f);viewport.anchorMax=new Vector2(.94f,1);viewport.offsetMin=Vector2.zero;viewport.offsetMax=new Vector2(0,-150);
+            padDetailsText.fontSize=Mathf.RoundToInt(Mathf.Lerp(30,40,narrow));padDetailsText.lineSpacing=1.18f;
+            foreach(string name in new[]{"CloseCustomPadDetails","PreviousInspection","NextInspection"}){
+                var control=detailsPanel.transform.Find(name) as RectTransform;if(control==null)continue;
+                control.sizeDelta=new Vector2(control.sizeDelta.x,Mathf.Lerp(72,96,narrow));
+                var label=control.GetComponentInChildren<Text>(true);if(label!=null){label.fontSize=Mathf.RoundToInt(Mathf.Lerp(30,36,narrow));label.resizeTextForBestFit=false;var labelRect=label.rectTransform;labelRect.anchorMin=Vector2.zero;labelRect.anchorMax=Vector2.one;labelRect.offsetMin=new Vector2(12,4);labelRect.offsetMax=new Vector2(-12,-4);}
+            }
         }
 
         private void HandleInput()
