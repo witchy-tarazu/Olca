@@ -888,17 +888,31 @@ namespace Olca.Presentation.Dungeon
                 }
                 input.onValueChanged.AddListener(value=>ApplyName(value,false));input.onEndEdit.AddListener(value=>ApplyName(value,true));
             }
-            Text("DepartureRules", $"編成 {draft.Count}/20枚　所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 0, 325, 1750, 100, 26);
+            // 編集中の枚数と候補一覧を分け、数量は操作の隣で読めるようにする。
+            CommerceFace("DepartureSummary",0,325,1760,96);
+            Text("DepartureDraftCount",$"編成 {draft.Count} / 20枚",-650,325,410,74,34);
+            Text("DepartureRules", "所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 220, 325, 1270, 84, 23);
+            CommerceFace("DepartureCandidates",0,-35,1760,500);
+            Text("DepartureCandidateHeading","所持カード",-650,190,410,26,22);
+            Text("DepartureCountHeading","編成",515,190,140,26,22);
+            Text("DepartureOwnedHeading","所持",775,190,140,26,22);
             AddOverflowTextDetails(Text("DepartureValidation", error ?? "この20枚で出撃できます。", 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
-                int count = draftKeys!=null?draftKeys.Count(k=>k==OwnedDefinition.Key(owned)):draft.Count(c=>OwnedDefinition.CardMatches(owned,c)); float y = 160 - row * 75;
-                var rowText=Text("DepartureCard_" + index, OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : ""), -380, y, 1010, 65, 25);
+                int count = draftKeys!=null?draftKeys.Count(k=>k==OwnedDefinition.Key(owned)):draft.Count(c=>OwnedDefinition.CardMatches(owned,c)); float y = 145 - row * 75;
+                var fullRow=OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : "");
+                var sprite=option==null?null:resolveReturnIcon?.Invoke(option);
+                if(sprite!=null)CollectionIcon("DepartureCardIcon_"+index,option,-815,y,54,_=>sprite);
+                var rowText=Text("DepartureCard_" + index,OwnedDefinition.DisplayName(owned),-320,y+13,880,34,27);
+                rowText.alignment=TextAnchor.MiddleLeft;
                 if(NeedsTextDetails(rowText)){
                     rowText.rectTransform.sizeDelta-=new Vector2(180,0);rowText.rectTransform.anchoredPosition-=new Vector2(90,0);
-                    TextDetailsButton("DepartureRow_"+index+"Details",rowText.text,"ヘンセイのジョウホウ",35,y,140,50);
+                    TextDetailsButton("DepartureRow_"+index+"Details",Olca.Presentation.CustomScreen.CustomDisplay.Katakana(fullRow),"ヘンセイのジョウホウ",35,y,140,50);
                 }
+                var metrics=Text("DeparturePerformance_"+index,option==null?"定義未解決":$"威力 {option.GetFinalPower()}",-410,y-22,700,26,22);metrics.alignment=TextAnchor.MiddleLeft;
+                var quantity=Text("DepartureDraftQuantity_"+index,count.ToString(),515,y,64,50,28);quantity.resizeTextForBestFit=true;quantity.resizeTextMinSize=18;quantity.resizeTextMaxSize=28;
+                Text("DepartureOwnedQuantity_"+index,owned.Count.ToString(),775,y,140,50,27);
                 Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;
                 Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1))).interactable = !pending && count > 0;
                 Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1))).interactable = !pending && option != null && (save!=null||(count < owned.Count && draft.Count < 20));
