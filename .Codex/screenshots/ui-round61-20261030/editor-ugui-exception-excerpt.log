@@ -1,28 +1,28 @@
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 
 (Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
 
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 
 (Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
 
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 
 (Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
 
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
-  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431
 
 (Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
 
@@ -36,7 +36,7 @@ Unloading 86 unused Assets / (8.9 MB). Loaded Objects now: 17554.
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -51,7 +51,7 @@ Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -66,7 +66,7 @@ Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -81,8 +81,8 @@ Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
-  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -96,7 +96,7 @@ Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, Str
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
 UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
 UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
@@ -108,7 +108,7 @@ UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/bu
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
 UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
 UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
@@ -120,7 +120,7 @@ UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/bu
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
 UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
 UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
@@ -132,8 +132,8 @@ UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/bu
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
-  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431
 UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
 UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
 UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
@@ -147,7 +147,7 @@ Loaded scene 'Assets/Scenes/DungeonScene.unity'
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -162,7 +162,7 @@ Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -177,7 +177,7 @@ Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
@@ -192,8 +192,8 @@ Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/
 
 IndexOutOfRangeException: Index was outside the bounds of the array.
   at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
-  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
-  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
 UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
