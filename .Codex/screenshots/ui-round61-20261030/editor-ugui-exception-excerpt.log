@@ -1,0 +1,206 @@
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+
+(Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
+
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+
+(Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
+
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+
+(Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
+
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+
+(Filename: ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs Line: 519)
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            10.054 ms
+	Integration:            520.016 ms
+	Integration of assets:  0.042 ms
+	Thread Wait Time:       0.016 ms
+	Total Operation Time:   530.128 ms
+Unloading 86 unused Assets / (8.9 MB). Loaded Objects now: 17554.
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:77)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:77)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:77)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:108)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)
+
+(Filename: /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs Line: 392)
+
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:108)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)
+
+(Filename: /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs Line: 392)
+
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:108)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)
+
+(Filename: /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs Line: 392)
+
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+UnityEditor.SceneManagement.EditorSceneManager:RestoreSceneManagerSetup(SceneSetup[])
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.<Execute>d__3:MoveNext() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:23)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback() (at ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:108)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions() (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)
+
+(Filename: /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs Line: 392)
+
+Loaded scene 'Assets/Scenes/DungeonScene.unity'
+	Deserialize:            15.860 ms
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:77)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:77)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)
+Unity.Pipeline.Editor.Commands.Scripts.<RunScript>d__1:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:77)
+
+IndexOutOfRangeException: Index was outside the bounds of the array.
+  at (wrapper stelemref) System.Object.virt_stelemref_class(intptr,object)
+  at UnityEngine.UI.Selectable.OnEnable () [0x00079] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Selectable.cs:519 
+  at UnityEngine.UI.Slider.OnEnable () [0x00000] in ./Library/PackageCache/com.unity.ugui@8aa876c215ef/Runtime/UGUI/UI/Core/Slider.cs:431 
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene_Injected(ManagedSpanWrapper&, OpenSceneMode, Scene&)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String, OpenSceneMode)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene(String) (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorSceneManager.cs:62)
+UiProof:Prepare() (at AgentScripts/UiRound6SceneProof.cs:159)
+System.Reflection.RuntimeMethodInfo:InternalInvoke(RuntimeMethodInfo, Object, Object[], Exception&)
+System.Reflection.RuntimeMethodInfo:Invoke(Object, BindingFlags, Binder, Object[], CultureInfo)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+Unity.Pipeline.Editor.Commands.Scripts.<RunEphemeral>d__2:MoveNext() (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:219)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1:Start(<RunEphemeral>d__2&)
+Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand:RunEphemeral(String, String, JArray, String[], String[], Boolean, Boolean, Int32, Stopwatch)

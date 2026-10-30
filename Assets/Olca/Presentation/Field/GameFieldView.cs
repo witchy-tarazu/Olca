@@ -451,6 +451,17 @@ namespace Olca.Presentation.Field
                 var renderer=root.GetComponent<SpriteRenderer>();
                 renderer.color=type==PanelType.Hole?new Color(.02f,.04f,.08f,.95f):type==PanelType.Cracked?new Color(1f,.7f,.2f,.8f):type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);
                 root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(type==PanelType.Hole?.16f:.06f),1);
+                // 接地帯の上端を床上端へ合わせ、元の亀裂位置は保持する。
+                float magmaDrop=.02f+LogicalToWorld(.03f);
+                root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f-(type==PanelType.Magma?magmaDrop:0),0);
+                var magma=root.transform.Find("MagmaPattern");
+                if(type==PanelType.Magma){
+                    // 帯の上へ張り出さず、元の床面の内側へ亀裂を表示する。
+                    renderer.color=new Color(.55f,.23f,.09f,.5f);
+                    if(magma==null)magma=WorldBattleGridView.CreateMagmaPattern(root.transform,obstacleWhiteSprite,renderer.sortingLayerID).transform;
+                    magma.localScale=new Vector3(1,4,1);magma.localPosition=new Vector3(0,-1.1f+magmaDrop/LogicalToWorld(.06f),-.001f);
+                }
+                if(magma!=null)magma.gameObject.SetActive(type==PanelType.Magma);
                 root.SetActive(visible);
             }
         }

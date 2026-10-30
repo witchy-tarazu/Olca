@@ -49,19 +49,64 @@ namespace Olca.Presentation.Field
                 attackMarkers=new GameObject[GRID_WIDTH];if(whiteSprite==null)whiteSprite=CreateWhiteSprite();
                 for(int x=0;x<GRID_WIDTH;x++){
                     var root=new GameObject("EnemyAttackTelegraph_"+x);root.transform.SetParent(transform,false);attackMarkers[x]=root;
-                    for(int part=0;part<5;part++){
-                        var go=new GameObject(part==0?"Fill":"Edge"+part);go.transform.SetParent(root.transform,false);
-                        var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=whiteSprite;renderer.sortingOrder=2;
-                        renderer.color=new Color(1f,.28f,.12f,part==0?.15f:.9f);
-                        float w=panelSize*panelScale,h=panelHeight*panelScale,edge=.035f*panelSize;
-                        go.transform.localPosition=part==1?new Vector3(0,h/2,0):part==2?new Vector3(0,-h/2,0):part==3?new Vector3(-w/2,0,0):part==4?new Vector3(w/2,0,0):Vector3.zero;
-                        go.transform.localScale=part<=2?new Vector3(w,part==0?h:edge,1):new Vector3(edge,h,1);
+                    float w=panelSize*panelScale,h=panelHeight*panelScale;
+                    var fill=HazardPart(root.transform,"Fill",whiteSprite,Vector2.zero,new Vector2(w,h),new Color(1f,.8f,.3f,.035f),2);
+                    // 色面ではなく角括弧と注意記号で予告を識別し、地形や足元を透かす。
+                    HazardPart(fill.transform,"WarningStem",whiteSprite,new Vector2(0,.09f),new Vector2(.018f,.18f),new Color(1f,.96f,.7f,1),2);
+                    HazardPart(fill.transform,"WarningDot",whiteSprite,new Vector2(0,-.065f),new Vector2(.025f,.035f),new Color(1f,.96f,.7f,1),2);
+                    for(int corner=0;corner<4;corner++){
+                        float sx=corner%2==0?-1:1,sy=corner<2?1:-1;
+                        var edge=new GameObject("Edge"+(corner+1));edge.transform.SetParent(root.transform,false);edge.transform.localPosition=new Vector3(sx*w*.475f,sy*h*.46f,0);
+                        foreach(bool horizontal in new[]{true,false}){
+                            var at=horizontal?new Vector2(-sx*w*.1f,0):new Vector2(0,-sy*h*.15f);
+                            var size=horizontal?new Vector2(w*.2f,panelSize*.025f):new Vector2(panelSize*.025f,h*.3f);
+                            var outline=HazardPart(edge.transform,horizontal?"HorizontalOutline":"VerticalOutline",whiteSprite,at,size+new Vector2(.025f,.025f),new Color(.035f,.055f,.065f,.95f),2);outline.transform.localPosition+=new Vector3(0,0,.001f);
+                            HazardPart(edge.transform,horizontal?"Horizontal":"Vertical",whiteSprite,at,size,new Color(1f,.93f,.57f,1f),2);
+                        }
                     }
                 }
             }
             for(int x=0;x<GRID_WIDTH;x++){var root=attackMarkers[x];root.transform.position=new Vector3(GridIndexToWorldX(x),panelY-panelHeight*panelScale*.5f,panelZ-.01f);root.SetActive(battleField!=null&&attackTiles.Contains(x));}
         }
 
+        private GameObject[] magmaMarkers;
+        internal static Color MagmaSurfaceColor => new Color(.85f,.52f,.38f,.95f);
+        private static GameObject HazardPart(Transform parent,string name,Sprite sprite,Vector2 position,Vector2 size,Color color,int order)
+        {
+            var part=new GameObject(name);part.transform.SetParent(parent,false);part.transform.localPosition=new Vector3(position.x,position.y,-.001f);part.transform.localScale=new Vector3(size.x,size.y,1);
+            var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=sprite;renderer.color=color;renderer.sortingOrder=order;return part;
+        }
+        // 戦闘床と探索の床面で同じ亀裂図形を使う。画像・判定・地形の寿命は持たない。
+        internal static GameObject CreateMagmaPattern(Transform parent,Sprite sprite,int sortingLayer)
+        {
+            var root=new GameObject("MagmaPattern");root.transform.SetParent(parent,false);
+            var points=new[]{new Vector2(-.44f,.18f),new Vector2(-.31f,.1f),new Vector2(-.23f,.16f),new Vector2(-.11f,-.06f),new Vector2(.03f,-.03f),new Vector2(.12f,-.16f),new Vector2(.28f,-.09f),new Vector2(.43f,-.2f)};
+            void Segment(Vector2 a,Vector2 b,int index)
+            {
+                var delta=b-a;float angle=Mathf.Atan2(delta.y,delta.x)*Mathf.Rad2Deg;
+                // 均一な発光線にせず、幅の違う暗い岩の割れ目と短い溶岩の明部を組み合わせる。
+                float width=index%3==0?.095f:index%3==1?.065f:.08f;
+                for(int layer=0;layer<3;layer++){
+                    bool core=layer==2;var center=core?Vector2.Lerp(a,b,index%2==0?.65f:.38f):(a+b)*.5f;
+                    var size=new Vector2(delta.magnitude*(core?.34f:1f),width*(layer==0?1f:core?.25f:.57f));
+                    var color=layer==0?new Color(.57f,.12f,.045f,1):core?new Color(.98f,.53f,.13f,1):new Color(.84f,.24f,.055f,1);
+                    var part=HazardPart(root.transform,"Fissure"+index+(core?"Core":layer==0?"Rim":"Lava"),sprite,center,size,color,1);
+                    part.transform.localRotation=Quaternion.Euler(0,0,angle);part.GetComponent<SpriteRenderer>().sortingLayerID=sortingLayer;part.transform.localPosition+=new Vector3(0,0,-.001f*layer);
+                }
+            }
+            for(int i=1;i<points.Length;i++)Segment(points[i-1],points[i],i);
+            Segment(points[2],new Vector2(-.32f,-.22f),8);Segment(points[5],new Vector2(.19f,.02f),9);return root;
+        }
+        private void RefreshMagma()
+        {
+            if(magmaMarkers!=null&&magmaMarkers.Length==0)magmaMarkers=null;
+            for(int x=0;x<GRID_WIDTH;x++){
+                bool active=battleField!=null&&battleField.GetPanelType(new Vector2Int(x,0))==PanelType.Magma;
+                if(active){if(magmaMarkers==null)magmaMarkers=new GameObject[GRID_WIDTH];if(magmaMarkers[x]==null){if(whiteSprite==null)whiteSprite=CreateWhiteSprite();magmaMarkers[x]=CreateMagmaPattern(transform,whiteSprite,panelRenderers[x].sortingLayerID);magmaMarkers[x].name="PanelMagma_"+x;}}
+                if(magmaMarkers==null||magmaMarkers[x]==null)continue;
+                var root=magmaMarkers[x];root.SetActive(active);root.transform.position=new Vector3(GridIndexToWorldX(x),panelY-panelHeight*panelScale*.5f,panelZ-.005f);root.transform.localScale=new Vector3(panelSize*panelScale,panelHeight*panelScale,1);
+            }
+        }
         private Sprite floorSprite;
         private SpriteRenderer[] surroundingPanels;
         private const int SURROUNDING_COUNT = 12; // 横7マスとカメラ移動の余白
@@ -117,6 +162,12 @@ namespace Olca.Presentation.Field
         public float SnapWorldXToCellCenter(float worldX) => Mathf.Round(worldX / panelSize) * panelSize;
         public float CellHeight => panelHeight;
 
+        private void OnEnable() => Refresh();
+        private void OnDisable()
+        {
+            if(attackMarkers!=null)foreach(var marker in attackMarkers)if(marker!=null)marker.SetActive(false);
+            if(magmaMarkers!=null)foreach(var marker in magmaMarkers)if(marker!=null)marker.SetActive(false);
+        }
         private void LateUpdate() => Refresh();
 
         /// <summary>画面内の床を描画し、戦闘6マスとの重複は除外する</summary>
@@ -124,6 +175,7 @@ namespace Olca.Presentation.Field
         {
             if (panelRenderers == null) return;
             RefreshTelegraphs();
+            RefreshMagma();
             for (int x = 0; x < GRID_WIDTH; x++)
             {
                 panelRenderers[x].enabled = battleField != null;
@@ -208,7 +260,7 @@ namespace Olca.Presentation.Field
                 case PanelType.Normal:  return new Color(0.75f, 0.75f, 0.75f, 0.85f);
                 case PanelType.Ice:     return new Color(0.6f, 0.9f, 1.0f, 0.85f);
                 case PanelType.Grass:   return new Color(0.5f, 0.85f, 0.5f, 0.85f);
-                case PanelType.Magma:   return new Color(1.0f, 0.4f, 0.2f, 0.85f);
+                case PanelType.Magma:   return MagmaSurfaceColor;
                 case PanelType.Cracked: return new Color(0.9f, 0.85f, 0.5f, 0.85f);
                 case PanelType.Hole:    return new Color(0.1f, 0.1f, 0.1f, 0.85f);
                 default:                return new Color(0.5f, 0.5f, 0.5f, 0.85f);

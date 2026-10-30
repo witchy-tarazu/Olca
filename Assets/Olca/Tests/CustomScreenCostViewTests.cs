@@ -2034,6 +2034,24 @@ namespace Olca.Tests
     public class EnemyTelegraphViewTests
     {
         [NUnit.Framework.Test]
+        public void マグマ模様と予告は別形状で同居し地形変更と表示寿命へ追従する()
+        {
+            var root=new UnityEngine.GameObject("HazardViewLifetime");
+            try{
+                var grid=root.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                grid.GetType().GetMethod("Awake",flags).Invoke(grid,null);var field=new Olca.Core.Logic.Battle.BattleField();var position=new Olca.Core.Domain.Vector2Int(1,0);
+                var floor=root.transform.Find("GridPanel_1").GetComponent<UnityEngine.SpriteRenderer>().sprite;
+                field.ChangePanelType(position,Olca.Core.Domain.PanelType.Magma);grid.Show(field,0);grid.ShowTelegraphs(new[]{position,position});
+                var magma=root.transform.Find("PanelMagma_1");var warning=root.transform.Find("EnemyAttackTelegraph_1");NUnit.Framework.Assert.IsTrue(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsTrue(warning.gameObject.activeSelf);
+                NUnit.Framework.Assert.IsNotNull(magma.Find("Fissure1Core"));NUnit.Framework.Assert.IsNotNull(warning.Find("Fill/WarningStem"));
+                NUnit.Framework.Assert.AreSame(floor,root.transform.Find("GridPanel_1").GetComponent<UnityEngine.SpriteRenderer>().sprite,"共有床の絵は差し替えない");
+                int count=root.transform.childCount;for(int n=0;n<3;n++)grid.Refresh();NUnit.Framework.Assert.AreSame(magma,root.transform.Find("PanelMagma_1"));NUnit.Framework.Assert.AreEqual(count,root.transform.childCount);
+                field.ChangePanelType(position,Olca.Core.Domain.PanelType.Normal);grid.Refresh();NUnit.Framework.Assert.IsFalse(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsTrue(warning.gameObject.activeSelf,"地形解除は予告を消さない");
+                field.ChangePanelType(position,Olca.Core.Domain.PanelType.Magma);grid.Refresh();grid.GetType().GetMethod("OnDisable",flags).Invoke(grid,null);NUnit.Framework.Assert.IsFalse(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsFalse(warning.gameObject.activeSelf);grid.GetType().GetMethod("OnEnable",flags).Invoke(grid,null);NUnit.Framework.Assert.IsTrue(magma.gameObject.activeSelf);
+                grid.Hide();NUnit.Framework.Assert.IsFalse(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsFalse(warning.gameObject.activeSelf);NUnit.Framework.Assert.AreEqual(Olca.Core.Domain.PanelType.Magma,field.GetPanelType(position),"表示解除で地形を変更しない");
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [NUnit.Framework.Test]
         public void 予告描画は同一マスで一つ床より前キャラより後で戦闘切替時に解除する()
         {
             var root=new UnityEngine.GameObject("TelegraphViewTest");

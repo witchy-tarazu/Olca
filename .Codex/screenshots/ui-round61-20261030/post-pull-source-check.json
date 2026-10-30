@@ -1,0 +1,9 @@
+{
+  "specOnlyPull": "09caf396352d63e7c3d949604dda8ab4fc337e6f",
+  "validatedSourceUnchanged": true,
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "b582d7360288d640809471f52c038349f841b06fb545638721d60c6262d8ae17",
+    "Assets/Olca/Presentation/Field/WorldBattleGridView.cs": "cea91c9565e83544e7c812b55ff846fb672ef8f596cf48231c203188ffacd359",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "f182836bac10336435deac9cf7d8d9d141daaed4e4fbef071722642e21d325fd"
+  }
+}

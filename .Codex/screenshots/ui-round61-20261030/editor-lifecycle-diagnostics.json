@@ -1,0 +1,27 @@
+{
+  "intermediateEditorReloadAndSceneOpen": {
+    "observedStack": "UnityEngine.UI.Selectable.OnEnable Selectable.cs:519; Slider.OnEnable; UiProof.Prepare/OpenScene",
+    "distinctUguiExceptionStartsIn6000000BytePreFirstSuiteLogWindow": 16,
+    "notTotalTaskExceptionCount": true,
+    "causeNotEstablished": true,
+    "noPackageOrProductWorkaround": true
+  },
+  "finalFreshPlay": {
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T19:01:23.922185Z",
+      "ageMs": 179,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 1,
+      "consoleLogs": 6,
+      "seeded": true
+    },
+    "streamCounts": {
+      "error": 0,
+      "warn": 2,
+      "log": 11
+    }
+  },
+  "noGlobalErrorFreeClaim": true
+}
