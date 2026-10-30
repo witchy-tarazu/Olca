@@ -137,6 +137,9 @@ namespace Olca.Presentation.Field
         [SerializeField] private float cameraFollowSpeedTransition = 3f;  // 速度切替のなめらかさ（小さいほどゆっくり）
 
         private float currentFollowSpeed;  // 実際に使用する追従速度（Lerpで遷移）
+        private DungeonSystem cameraObservedDungeon;
+        private long cameraObservedFrame;
+        private Vector3 cameraObservedTarget;
         // スナップ距離 = CameraOffsetXの2倍（ダッシュ程度のラグでは発動しない大きさ）
         private float cameraMaxLagDistance => CameraOffsetX * 2f;
         [SerializeField] private float cameraPlayerOffsetX = 2.5f;  // フォールバック用（非orthographicカメラ等）
@@ -587,6 +590,7 @@ namespace Olca.Presentation.Field
 
         private void OnEnable()
         {
+            cameraObservedDungeon = null;
             if (dungeonSystem != null) BindPlayerDamage(dungeonSystem.Player);
             battleGridView?.BindTelegraphs(currentBattle);
             RefreshObstacleVisuals(); RefreshVisitVisuals();
@@ -627,6 +631,7 @@ namespace Olca.Presentation.Field
             ClearTerrainVisuals(); ClearObstacleVisuals(); ClearVisitVisuals();
             ApplyCharacterDisplayOffset();
             dungeonSystem = dungeon;
+            cameraObservedDungeon = null;
             BindPlayerDamage(dungeon?.Player);
             ResetMovementAnimation();
             cameraFollowEnabled = true;
@@ -931,6 +936,7 @@ namespace Olca.Presentation.Field
         public void SetCameraFollowEnabled(bool enabled)
         {
             cameraFollowEnabled = enabled;
+            cameraObservedDungeon = null;
             ResetMovementAnimation();
         }
 
@@ -1037,6 +1043,13 @@ namespace Olca.Presentation.Field
                 playerTransform.position.x + CameraOffsetX,
                 fieldCamera.transform.position.y,
                 fieldCamera.transform.position.z);
+            long frame = dungeonSystem != null ? dungeonSystem.ObstacleVisualFrame : 0;
+            bool sameDungeon = ReferenceEquals(cameraObservedDungeon, dungeonSystem);
+            long elapsedFrames = sameDungeon ? System.Math.Max(0, frame - cameraObservedFrame) : 0;
+            Vector3 previousTarget = sameDungeon ? cameraObservedTarget : targetPos;
+            cameraObservedDungeon = dungeonSystem;
+            cameraObservedFrame = frame;
+            cameraObservedTarget = targetPos;
 
             // 離れすぎた場合はターゲット位置に直接スナップ（ダッシュ通常ラグでは発動しない）
             float distX = Mathf.Abs(fieldCamera.transform.position.x - targetPos.x);
@@ -1055,13 +1068,25 @@ namespace Olca.Presentation.Field
                 fieldCamera.transform.position = targetPos;
                 currentFollowSpeed = cameraFollowSpeed;  // ダッシュ開始時のLerp初期値としてリセット
             }
+            else if (currentBattle != null || !playerPositionUpdateEnabled)
+            {
+                // 接敵演出の外部位置補間は、探索の論理移動とは別の既存時計を維持する。
+                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeedTransition);
+                fieldCamera.transform.position = Vector3.Lerp(fieldCamera.transform.position, targetPos,
+                    Olca.Unity.BattleVisualClock.DeltaTime * currentFollowSpeed);
+            }
             else
             {
-                // ダッシュ中: Lerpで追従（ダッシュ開始・終了の切り替えをなめらかに）
-                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeedTransition);
-                fieldCamera.transform.position = Vector3.Lerp(
-                    fieldCamera.transform.position, targetPos,
-                    Olca.Unity.BattleVisualClock.DeltaTime * currentFollowSpeed);
+                // 位置と同じ論理フレームだけ追従を進める。描画だけのフレームで
+                // カメラが追いつくと、静止した本体が画面上で逆方向へ揺れてしまう。
+                // 複数フレームを一度に描く場合も、既存の追従係数を60Hzで適用する。
+                const float step = 1f / 60f;
+                for (long i = 1; i <= elapsedFrames; i++)
+                {
+                    currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, step * cameraFollowSpeedTransition);
+                    var stepTarget = Vector3.Lerp(previousTarget, targetPos, (float)((double)i / elapsedFrames));
+                    fieldCamera.transform.position = Vector3.Lerp(fieldCamera.transform.position, stepTarget, step * currentFollowSpeed);
+                }
             }
 
             // 定期ログ（60フレームに1回）

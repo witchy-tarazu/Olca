@@ -577,6 +577,11 @@ namespace Olca.Tests
             var root=new GameObject("DepartureHierarchy",typeof(RectTransform));try{var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;void Render(bool launch,int selected){v.RenderDungeonSelection(new[]{"テスト","secret"},new[]{true,false},selected,_=>{},()=>calls++,()=>{},false,null,()=>{},styleName:"キホン",descriptions:new[]{"テキのジョウホウ","secret-info"},startImmediately:launch);}Render(true,0);StringAssert.Contains("シュツゲキ",root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").GetComponentInChildren<Text>().text);StringAssert.Contains("テキのジョウホウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="DungeonPreviewInformation").text);Render(false,1);StringAssert.Contains("イきサキをカクテイ",root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").GetComponentInChildren<Text>().text);var all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(x=>x.text));StringAssert.DoesNotContain("secret",all);Assert.IsFalse(all.Any(c=>c>='\u4e00'&&c<='\u9fff'));Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").interactable);Assert.AreEqual(0,calls);v.RenderDungeonSelection(new string[0],new bool[0],-1,_=>{},()=>calls++,()=>{},false,null,()=>{});Assert.IsTrue(root.GetComponentsInChildren<Text>().Any(x=>x.name=="NoDepartureDungeons"));Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(t=>t.text.Any(c=>c>='\u4e00'&&c<='\u9fff')));Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").interactable);Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
         }
+        [Test] public void 行き先が一画面なら重複見出しや無効ページ操作を増やさず必要情報を保つ()
+        {
+            var root=new GameObject("DepartureSimple",typeof(RectTransform));try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});view.RenderDungeonSelection(new[]{"イきサキA"},new[]{true},0,_=>{},()=>{},()=>{},false,null,()=>{},()=>{},"キホン",()=>{},new[]{false},new[]{""},new[]{"テキゾクセイ: ヒ / チケイ: マグマ"});var texts=root.GetComponentsInChildren<Text>();Assert.AreEqual(1,texts.Count(t=>t.text.Contains("イきサキA")));StringAssert.Contains("キホン",texts.Single(t=>t.name=="DungeonSelectionHelp").text);StringAssert.Contains("マグマ",texts.Single(t=>t.name=="DungeonPreviewInformation").text);Assert.IsFalse(root.GetComponentsInChildren<Button>().Any(b=>b.name=="NextDungeonPage"||b.name=="PreviousDungeonPage"));Assert.IsNull(root.transform.Find("DungeonSelectionContents/DungeonPreview"));Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDungeonSelection").interactable);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireSeparateButtons(GameObject host)
         {
             var buttons=host.GetComponentsInChildren<Button>();
@@ -1918,15 +1923,41 @@ namespace Olca.Tests
         {
             var go = new GameObject("ForegroundTest");
             var cameraObject = new GameObject("ForegroundCamera");
-            var texture = new Texture2D(64, 16);
-            var sprite = Sprite.Create(texture, new Rect(0, 0, 64, 16), new Vector2(0.5f, 0.5f), 64f);
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            Sprite sprite = null;
             try
             {
+                Assert.IsTrue(texture.LoadImage(System.IO.File.ReadAllBytes(UnityEngine.Application.dataPath + "/Art/Sprites/Tiles/cave_foreground.png")));
+                Assert.AreEqual(512, texture.width); Assert.AreEqual(128, texture.height);
+                var alpha = texture.GetPixels32();
+                int opaqueBandRows = 0;
+                while (opaqueBandRows < texture.height && Enumerable.Range(0, texture.width).All(x => alpha[opaqueBandRows * texture.width + x].a == 255)) opaqueBandRows++;
+                var heightProfile = Enumerable.Range(0, texture.width).Select(x => Enumerable.Range(0, texture.height).Where(y => alpha[y * texture.width + x].a != 0).Max() + 1).ToArray();
+                int peakRows = heightProfile.Max();
+                Assert.AreEqual(22, opaqueBandRows, "谷を含む全幅不透明帯の実素材alphaを使う");
+                Assert.AreEqual(45, peakRows);
+                Assert.IsTrue(Enumerable.Range(0, 22).All(x => heightProfile[x] == 27 && heightProfile[texture.width - 22 + x] == 27));
+                bool CoversFlatEnds(int overlap) => Enumerable.Range(0, 22).All(x => heightProfile[texture.width - overlap + x] > heightProfile[x] && heightProfile[overlap - 22 + x] > heightProfile[texture.width - 22 + x]);
+                int firstOverlap = Enumerable.Range(22, texture.width / 2 - 21).First(CoversFlatEnds), lastOverlap = firstOverlap;
+                while (lastOverlap < texture.width / 2 && CoversFlatEnds(lastOverlap + 1)) lastOverlap++;
+                Assert.AreEqual(85, firstOverlap); Assert.AreEqual(103, lastOverlap);
+                // 112pxでは左端9列が残る。85〜103pxの有効域内で、等倍8px単位の96pxを使う。
+                Assert.AreEqual(9, Enumerable.Range(0, 22).Count(x => Mathf.Max(heightProfile[x], heightProfile[texture.width - 112 + x]) <= 27));
+                const int overlapPixels = 96;
+                Assert.IsTrue(CoversFlatEnds(overlapPixels));
+                Assert.GreaterOrEqual(Enumerable.Range(0, 22).Min(x => heightProfile[texture.width - overlapPixels + x]) - 27, 4);
+                Assert.GreaterOrEqual(Enumerable.Range(0, 22).Min(x => heightProfile[overlapPixels - 22 + x]) - 27, 9);
+                float opaqueBandRatio = (float)opaqueBandRows / texture.height;
+                float tileOverlapRatio = (float)overlapPixels / texture.width;
+                sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f, .5f), 64f);
                 var flags = BindingFlags.Instance | BindingFlags.NonPublic;
                 var camera = cameraObject.AddComponent<Camera>();
                 camera.orthographic = true; camera.aspect = 16f / 9f; camera.orthographicSize = 3.15f;
                 camera.transform.position = new Vector3(0f, 1.275f, -10f);
                 var grid = go.AddComponent<WorldBattleGridView>();
+                typeof(WorldBattleGridView).GetMethod("Awake", flags).Invoke(grid, null);
+                var floor = go.transform.Find("FloorPanel_0").GetComponent<SpriteRenderer>();
+                Assert.AreEqual(floor.bounds.min.y, grid.RenderedFloorBottomY, 0.0001f, "論理高さではなく実際の床Sprite下端を使う");
                 var layer = go.AddComponent<ScrollingBackgroundView>();
                 typeof(ScrollingBackgroundView).GetField("targetCamera", flags).SetValue(layer, camera);
                 typeof(ScrollingBackgroundView).GetField("foregroundGrid", flags).SetValue(layer, grid);
@@ -1934,18 +1965,23 @@ namespace Olca.Tests
                 refresh.Invoke(layer, null);
                 Assert.IsNull(typeof(ScrollingBackgroundView).GetField("foregroundRoot", flags).GetValue(layer), "素材なしで仮前景を出さない");
                 typeof(ScrollingBackgroundView).GetField("foregroundSprite", flags).SetValue(layer, sprite);
+                typeof(ScrollingBackgroundView).GetField("foregroundOpaqueTop", flags).SetValue(layer, opaqueBandRatio);
+                typeof(ScrollingBackgroundView).GetField("foregroundTileOverlapRatio", flags).SetValue(layer, tileOverlapRatio);
                 refresh.Invoke(layer, null);
                 var root = (Transform)typeof(ScrollingBackgroundView).GetField("foregroundRoot", flags).GetValue(layer);
                 var fill = root.Find("ForegroundOpaqueBase").GetComponent<SpriteRenderer>();
-                Assert.AreEqual(-1.1f, fill.bounds.max.y, 0.0001f);
+                float pixelHeight = camera.orthographicSize * 2f / Mathf.Max(1, camera.pixelHeight);
+                Assert.AreEqual(2f, (fill.bounds.max.y - floor.bounds.min.y) / pixelHeight, 0.001f, "透明な谷でも実下端を画面2px分覆う");
                 Assert.AreEqual(-1.875f, fill.bounds.min.y, 0.0001f);
                 Assert.GreaterOrEqual(fill.bounds.size.x, 11.2f);
                 var rock = root.Find("ForegroundRock_0").GetComponent<SpriteRenderer>();
                 Assert.AreEqual(rock.transform.localScale.x, rock.transform.localScale.y);
-                Assert.AreEqual(-1.1f, rock.bounds.max.y, 0.0001f);
-                typeof(ScrollingBackgroundView).GetField("foregroundOpaqueTop", flags).SetValue(layer, 0.25f);
-                refresh.Invoke(layer, null);
-                Assert.AreEqual(-1.1f, rock.bounds.min.y + rock.bounds.size.y * 0.25f, 0.0001f, "透過余白ではなく不透明部分の最高点を床下端に合わせる");
+                Assert.AreEqual(Vector3.one, rock.transform.localScale);
+                float tileStep = sprite.bounds.size.x * (1f - tileOverlapRatio);
+                Assert.AreEqual(6.5f, tileStep, .0001f);
+                Assert.AreEqual(tileStep, root.Find("ForegroundRock_1").position.x - rock.transform.position.x, .0001f);
+                Assert.AreEqual(fill.bounds.max.y, rock.bounds.min.y + rock.bounds.size.y * opaqueBandRatio, .0001f, "最高峰ではなく全幅不透明帯を床下端へ重ねる");
+                Assert.AreEqual(23f / 64f, rock.bounds.size.y * (peakRows - opaqueBandRows) / texture.height, .0001f, "原絵の凹凸と等倍scaleを保つ");
                 float before = rock.transform.position.x;
                 camera.transform.position += new Vector3(0.1f, 0f, 0f);
                 refresh.Invoke(layer, null);
@@ -1953,6 +1989,31 @@ namespace Olca.Tests
                 camera.transform.position -= new Vector3(0.1f, 0f, 0f);
                 refresh.Invoke(layer, null);
                 Assert.AreEqual(before, rock.transform.position.x, 0.0001f);
+                foreach (var size in new[] { (1920, 1080), (3840, 2160), (1440, 1080), (2520, 1080), (1920, 1080) })
+                {
+                    camera.pixelRect = new Rect(0, 0, size.Item1, size.Item2);
+                    camera.aspect = (float)size.Item1 / size.Item2;
+                    camera.orthographicSize = 3.15f * Mathf.Max(1f, (16f / 9f) / camera.aspect);
+                    foreach (var offset in new[] { new Vector2(-4.5f, -.3f), new Vector2(3.3f, .3f), Vector2.zero })
+                    {
+                        camera.transform.position = new Vector3(offset.x, 1.275f + offset.y, -10f);
+                        refresh.Invoke(layer, null);
+                        float worldHeight = camera.orthographicSize * 2f;
+                        float worldWidth = worldHeight * camera.aspect;
+                        float worldPixel = worldHeight / camera.pixelHeight;
+                        Assert.AreEqual(2f, (fill.bounds.max.y - floor.bounds.min.y) / worldPixel, .002f);
+                        Assert.AreEqual(camera.transform.position.y - worldHeight / 2f, fill.bounds.min.y, .0001f);
+                        Assert.Less(fill.bounds.min.x, camera.transform.position.x - worldWidth / 2f);
+                        Assert.Greater(fill.bounds.max.x, camera.transform.position.x + worldWidth / 2f);
+                        Assert.AreEqual(rock.transform.localScale.x, rock.transform.localScale.y);
+                        Assert.AreEqual(fill.bounds.max.y, rock.bounds.min.y + rock.bounds.size.y * opaqueBandRatio, .0001f);
+                        var tiles = root.GetComponentsInChildren<SpriteRenderer>().Where(r => r.enabled && r.name.StartsWith("ForegroundRock_")).ToArray();
+                        Assert.AreEqual(Mathf.CeilToInt(worldWidth / tileStep) + 2, tiles.Length);
+                        Assert.AreEqual(tileStep, root.Find("ForegroundRock_1").position.x - rock.transform.position.x, .0001f);
+                        Assert.LessOrEqual(tiles.Min(r => r.bounds.min.x), camera.transform.position.x - worldWidth / 2f);
+                        Assert.GreaterOrEqual(tiles.Max(r => r.bounds.max.x), camera.transform.position.x + worldWidth / 2f);
+                    }
+                }
                 // EditModeでは通常MonoBehaviourのライフサイクルが自動実行されない。
                 typeof(ScrollingBackgroundView).GetMethod("OnDisable", flags).Invoke(layer, null);
                 Assert.IsFalse(root.gameObject.activeSelf);

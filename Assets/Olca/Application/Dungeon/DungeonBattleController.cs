@@ -818,7 +818,13 @@ namespace Olca.Application.Dungeon
                 var textObj = new GameObject("Label", typeof(RectTransform), typeof(Text)); textObj.transform.SetParent(obj.transform, false);
                 var text = textObj.GetComponent<Text>(); text.font = font; text.text = label; text.fontSize = 30; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
-                UiLook.Button(button);button.onClick.AddListener(()=>gameplayAudio?.PlayEffect(UiFeedbackSounds.ForButton(name,uiEffect))); return button;
+                UiLook.Button(button);
+                // 常設の補助操作は出撃などの主操作と同じ強さにしない。位置と入力範囲は維持する。
+                if(name=="ManualSaveButton"||name=="NewGameButton"||name=="CardCollectionButton"){
+                    obj.GetComponent<Image>().color=new Color(.35f,.55f,.65f,.75f);
+                    text.color=new Color(.82f,.93f,.98f,1f);
+                }
+                button.onClick.AddListener(()=>gameplayAudio?.PlayEffect(UiFeedbackSounds.ForButton(name,uiEffect))); return button;
             }
             var countdownObject = new GameObject("ExplorationResumeCountdown", typeof(RectTransform), typeof(Text));
             countdownObject.transform.SetParent(pauseCanvas.transform, false);

@@ -230,7 +230,7 @@ namespace Olca.Tests.Application
                 Assert.AreEqual(0, screen.SelectedCards.Count); Assert.AreEqual("コスト: 0 / 10", cost.text);
                 Assert.IsTrue(images.All(image => image.color == UnityEngine.Color.white));
                 CollectionAssert.AreEqual(hand.Reverse(), screen.CurrentHand);
-                Assert.AreEqual(0, screen.CustomizationUndoCount); Assert.AreEqual(10, screen.MaxHandSize);
+                Assert.AreEqual(0, screen.CustomizationUndoCount); Assert.AreEqual(5, screen.MaxHandSize);
                 CollectionAssert.AreEqual(saved.ObtainedOrder, checkpoints.Store.Read().ObtainedOrder);
                 actual.HandleLogicalConfirmation(new Olca.Core.Logic.Integration.LogicalInput { MenuCancelButtonDown = true });
                 Assert.IsNull(battle.Transformations.PendingId); Assert.IsFalse(battle.Transformations.IsUsed("other"));

@@ -88,5 +88,61 @@ namespace Olca.Tests
             var pose = Sprite("ready"); var other = Sprite("other"); var input = new[] { pose, pose }; var binding = new ActionAppearance("sword", null, input, new[] { Vector2.zero, Vector2.zero }); input[0] = other;
             Assert.AreSame(pose, binding.Body[0]); Assert.Throws<ArgumentException>(() => binding.Validate(Action("sword", null, 3).Visual)); renderer.Configure(new[] { binding }); renderer.Dispose(); Assert.IsTrue(pose != null); Assert.IsTrue(other != null);
         }
+
+        [TestCase(2)][TestCase(4)]
+        public void ダッシュ中の追加描画は論理位置とカメラの相対位置を逆方向へ動かさない(int drawsPerFrame)
+        {
+            var fieldRoot = new GameObject("dash-camera-fixture");
+            var cameraRoot = new GameObject("dash-camera");
+            var actor = new GameObject("dash-actor");
+            try
+            {
+                var view = fieldRoot.AddComponent<GameFieldView>();
+                var camera = cameraRoot.AddComponent<Camera>();
+                camera.orthographic = false;
+                var cells = new List<MapCell>(); for (int i = 0; i < 100; i++) cells.Add(new MapCell(i));
+                var dungeon = new Olca.Core.Logic.Dungeon.DungeonSystem(
+                    new DungeonConfig("dash-camera", "ダッシュ", 100, cells), new PlayerCharacter(100), new Deck(),
+                    new Olca.Tests.Mocks.MockRandomProvider(), new Olca.Tests.Mocks.MockLogger());
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                typeof(GameFieldView).GetField("fieldCamera", flags).SetValue(view, camera);
+                typeof(GameFieldView).GetField("playerTransform", flags).SetValue(view, actor.transform);
+                typeof(GameFieldView).GetField("dungeonSystem", flags).SetValue(view, dungeon);
+                var position = typeof(GameFieldView).GetMethod("UpdatePlayerPosition", flags);
+                var follow = typeof(GameFieldView).GetMethod("UpdateCamera", flags);
+                position.Invoke(view, null); follow.Invoke(view, null);
+                actor.transform.localScale = new Vector3(-.8f, .8f, 1);
+                var scale = actor.transform.localScale; var rotation = actor.transform.rotation;
+                dungeon.StartDash();
+                for (int frame = 0; frame < 36; frame++)
+                {
+                    dungeon.TickFrame(); position.Invoke(view, null); follow.Invoke(view, null);
+                    var actorPosition = actor.transform.position;
+                    var cameraPosition = camera.transform.position;
+                    float relativeX = actorPosition.x - cameraPosition.x;
+                    for (int draw = 1; draw < drawsPerFrame; draw++)
+                    {
+                        position.Invoke(view, null); follow.Invoke(view, null);
+                        Assert.AreEqual(actorPosition, actor.transform.position);
+                        Assert.AreEqual(cameraPosition, camera.transform.position, "論理更新なしにカメラだけ進めない");
+                        Assert.AreEqual(relativeX, actor.transform.position.x - camera.transform.position.x);
+                    }
+                }
+                Assert.Greater(dungeon.PlayerPosition, 0f, "論理移動を止めて表示を安定させない");
+                Assert.Greater(camera.transform.position.x, 2.5f, "カメラを固定するだけの対策にしない");
+                Assert.Less(camera.transform.position.x, actor.transform.position.x + 2.5f,
+                    "ダッシュ中に前へ出る既存のカメラ余白を保持する");
+                Assert.AreEqual(scale, actor.transform.localScale); Assert.AreEqual(rotation, actor.transform.rotation);
+                dungeon.StopDash(); follow.Invoke(view, null);
+                Assert.AreEqual(actor.transform.position.x + 2.5f, camera.transform.position.x, .00001f,
+                    "通常移動の既存直接追従へ戻る");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(fieldRoot);
+                UnityEngine.Object.DestroyImmediate(cameraRoot);
+                UnityEngine.Object.DestroyImmediate(actor);
+            }
+        }
     }
 }

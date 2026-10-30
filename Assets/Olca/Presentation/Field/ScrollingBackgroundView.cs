@@ -17,9 +17,11 @@ namespace Olca.Presentation.Field
         [SerializeField] private Sprite foregroundSprite;
         [SerializeField] private WorldBattleGridView foregroundGrid;
         [SerializeField] private float foregroundScrollFactor = 1.12f;
-        // 画像下端から不透明部分の最高点までの比率。透過余白は配置高さに含めない。
+        // 元絵の平坦な端を隣の凹凸で覆う。Spriteの等倍scaleは変えず、配置間隔だけを詰める。
+        [SerializeField, Range(0f, 0.5f)] private float foregroundTileOverlapRatio;
+        // 画像下端から全幅が連続して不透明な帯の上端までの比率。最高峰だけで整列しない。
         [SerializeField, Range(0f, 1f)] private float foregroundOpaqueTop = 1f;
-        // 最高の突起だけをマス下端へ重ねる高さ。塗りつぶし帯は持ち上げない。
+        // 不透明帯の追加の重なり量。通常Sceneは0で、元絵の凹凸と画面ピクセル余白だけを重ねる。
         [SerializeField, Range(0f, 0.25f)] private float foregroundOverlapRatio;
         private Transform foregroundRoot;
         private SpriteRenderer foregroundFill;
@@ -89,22 +91,24 @@ namespace Olca.Presentation.Field
             float cameraWidth = cameraHeight * targetCamera.aspect;
             float cameraX = targetCamera.transform.position.x;
             float bottom = targetCamera.transform.position.y - cameraHeight * 0.5f;
-            // 塗りつぶし帯は床の下端まで。透過素材の突起だけを別に持ち上げる。
-            float top = foregroundGrid.GroundY - foregroundGrid.CellHeight;
-            float rockTop = top + foregroundGrid.CellHeight * Mathf.Clamp(foregroundOverlapRatio, 0f, 0.25f);
+            // 全幅不透明な帯を実床下端へ重ね、そこから上の凹凸で水平の切断線を隠す。
+            float seamMargin = cameraHeight * 2f / Mathf.Max(1, targetCamera.pixelHeight);
+            float top = foregroundGrid.RenderedFloorBottomY + seamMargin;
+            float opaqueBandTop = top + foregroundGrid.CellHeight * Mathf.Clamp(foregroundOverlapRatio, 0f, 0.25f);
             float fillHeight = Mathf.Max(0f, top - bottom);
             foregroundFill.enabled = fillHeight > 0f;
             foregroundFill.transform.position = new Vector3(cameraX, bottom + fillHeight * 0.5f, 0f);
-            foregroundFill.transform.localScale = new Vector3(cameraWidth + 0.02f, fillHeight, 1f);
+            foregroundFill.transform.localScale = new Vector3(cameraWidth + seamMargin * 2f, fillHeight, 1f);
             var bounds = foregroundSprite.bounds;
             float scale = 1f;
             float opaqueTop = bounds.min.y + bounds.size.y * foregroundOpaqueTop;
             float tileWidth = bounds.size.x * scale;
-            int count = Mathf.CeilToInt(cameraWidth / tileWidth) + 2;
+            float tileStep = tileWidth * (1f - Mathf.Clamp(foregroundTileOverlapRatio, 0f, 0.5f));
+            int count = Mathf.CeilToInt(cameraWidth / tileStep) + 2;
             while (foregroundTiles.Count < count)
                 foregroundTiles.Add(CreateForegroundRenderer("ForegroundRock_" + foregroundTiles.Count, 10));
             // 絶対カメラ位置から計算し、逆走・停止・解像度変更でも誤差を蓄積しない。
-            int first = Mathf.FloorToInt(cameraX * foregroundScrollFactor / tileWidth) - 1;
+            int first = Mathf.FloorToInt((cameraX * foregroundScrollFactor - cameraWidth * 0.5f) / tileStep);
             for (int i = 0; i < foregroundTiles.Count; i++)
             {
                 var tile = foregroundTiles[i];
@@ -113,8 +117,8 @@ namespace Olca.Presentation.Field
                 tile.sprite = foregroundSprite;
                 tile.transform.localScale = new Vector3(scale, scale, 1f);
                 tile.transform.position = new Vector3(
-                    (first + i) * tileWidth - cameraX * (foregroundScrollFactor - 1f) - bounds.min.x * scale,
-                    rockTop - opaqueTop * scale, 0f);
+                    (first + i) * tileStep - cameraX * (foregroundScrollFactor - 1f) - bounds.min.x * scale,
+                    opaqueBandTop - opaqueTop * scale, 0f);
             }
         }
 

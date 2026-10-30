@@ -2580,13 +2580,13 @@ namespace Olca.Tests.Integration
             objects.Clear();
             if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
         }
-        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null, System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = null, bool production = false)
+        private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null, System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = null, bool production = false, int simulationSeed = 7)
         {
             var host = new UnityEngine.GameObject("floor-controller-fixture"); host.SetActive(false); objects.Add(host);
             var controller = host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
             if (recoveryFrames.HasValue) Set(controller, "playerPoiseRecoveryFrames", recoveryFrames.Value);
             configure?.Invoke(controller);
-            controller.ConfigureCheckpointDirectory(directory); controller.ConfigureGameplaySettingsDirectory(System.IO.Path.Combine(directory,"settings")); controller.ConfigureSimulationSeed(7);
+            controller.ConfigureCheckpointDirectory(directory); controller.ConfigureGameplaySettingsDirectory(System.IO.Path.Combine(directory,"settings")); controller.ConfigureSimulationSeed(simulationSeed);
             if (maps != null) {
                 var deck = (Deck)controller.GetType().GetMethod("CreateInitialDeck", Hidden).Invoke(controller, null);
                 definitions = new FloorSequenceDefinitions("controller-fixture", "v1", maps, deck);
@@ -3603,9 +3603,10 @@ namespace Olca.Tests.Integration
         [Test]
         public void 報酬だけは背景のデッキ枚数を隠し報酬終了後に既存表示へ戻す()
         {
-            var c=Start();var hud=(Olca.Presentation.Dungeon.DungeonHudView)Get(c,"dungeonHudView");var host=new UnityEngine.GameObject("BackgroundDeckCount",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));host.transform.SetParent(c.transform,false);var text=host.GetComponent<UnityEngine.UI.Text>();text.font=UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");var font=text.font;Set(hud,"deckCountText",text);
+            // 初手5枚でもカード報酬を提示するseedを明示し、50%抽選の偶然に依存しない。
+            var c=Start(simulationSeed:0);var hud=(Olca.Presentation.Dungeon.DungeonHudView)Get(c,"dungeonHudView");var host=new UnityEngine.GameObject("BackgroundDeckCount",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));host.transform.SetParent(c.transform,false);var text=host.GetComponent<UnityEngine.UI.Text>();text.font=UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");var font=text.font;Set(hud,"deckCountText",text);
             Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);ToBattle(c);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);
-            var choices=Win(c);Call(c,"UpdateViews");Assert.IsFalse(host.activeSelf);Model(c).SelectCardReward(choices[0]);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);Assert.AreSame(font,text.font);
+            Assert.IsTrue(((CheckpointDto)Get(Model(c).Dungeon,"activeCheckpoint")).Battle.RewardOffered);var choices=Win(c);Call(c,"UpdateViews");Assert.IsFalse(host.activeSelf);Model(c).SelectCardReward(choices[0]);Call(c,"UpdateViews");Assert.IsTrue(host.activeSelf);Assert.AreSame(font,text.font);
         }
 
         private static void KeyboardButton(Olca.Application.Dungeon.DungeonBattleController controller, string name)
@@ -3881,8 +3882,9 @@ namespace Olca.Tests.Integration
         {
             SeedPriorProgressForFailure();var map=DungeonConfig.CreateTestDungeon(14,5,2);
             System.Action<Olca.Application.Dungeon.DungeonBattleController> setup=x=>x.ConfigureDungeon(DungeonConfig.CreateTestDungeon(14,5,2));
-            var c=route?Start(new[]{map,DungeonConfig.CreateTestDungeon(5,30,4)}):Start(configure:setup);
-            ReachNonClearBattle(c);var choices=Win(c);Assert.IsNotNull(choices);Model(c).SelectCardReward(choices[0]);
+            // この経路はカード取得後の喪失/保存を検証するため、初手5枚で報酬を提示するseedを明示する。
+            var c=route?Start(new[]{map,DungeonConfig.CreateTestDungeon(5,30,4)},simulationSeed:0):Start(configure:setup,simulationSeed:0);
+            ReachNonClearBattle(c);Assert.IsTrue(((CheckpointDto)Get(Model(c).Dungeon,"activeCheckpoint")).Battle.RewardOffered);var choices=Win(c);Assert.IsNotNull(choices);Model(c).SelectCardReward(choices[0]);
             Assert.AreEqual(1,Model(c).Dungeon.GetObtainedCards().Count);Assert.AreEqual(7,Model(c).Dungeon.GetCurrentDeck().TotalCount);
             Assert.Greater(Model(c).Dungeon.Currency, 0);
             var progress=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var before=System.IO.File.ReadAllBytes(progress.ActivePath);

@@ -248,7 +248,7 @@ namespace Olca.Tests.Battle
         private BattleSystem HandBonusBattle(out Deck deck, int bonus = 2)
         {
             deck = new Deck(Enumerable.Range(0,20).Select(i => new Card("fixture-"+i,"検証"+i,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,1,"検証")).ToList());
-            var battle = new BattleSystem(player,new List<Enemy>{new Enemy("e","検証",1000,ElementType.None,new Vector2Int(5,0))},deck);
+            var battle = new BattleSystem(player,new List<Enemy>{new Enemy("e","検証",1000,ElementType.None,new Vector2Int(5,0))},deck,maxHandSize:10);
             battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("large",ElementResistances.Neutral,ElementType.Fire,bonus),new TransformationDefenseDefinition("small",ElementResistances.Neutral,ElementType.Water,1)});
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());return battle;
         }
@@ -422,7 +422,7 @@ namespace Olca.Tests.Battle
         [Test]
         public void 変換は一段だけで元個体と共有テンプレートを変えず取消再選択で二重適用しない()
         {
-            var originals=Enumerable.Range(0,12).Select(i=>ConversionCard("c"+i)).ToList();var deck=new Deck(originals);var screen=new CustomScreenSystem(deck);
+            var originals=Enumerable.Range(0,12).Select(i=>ConversionCard("c"+i)).ToList();var deck=new Deck(originals);var screen=new CustomScreenSystem(deck,maxHandSize:10);
             var template=ConversionCard("c1");template.Modifier.BonusDamage=5;
             var rules=new[]{new TransformationCardConversion("c0",template),new TransformationCardConversion("c1",ConversionCard("c2"))};
             var definition=new TransformationDefenseDefinition("fixture",ElementResistances.Neutral,ElementType.Fire,cardConversions:rules);
@@ -464,7 +464,7 @@ namespace Olca.Tests.Battle
         public void 確定変換は終了後も保持し継続中の新規ドローだけ変換する()
         {
             var cards=Enumerable.Range(0,20).Select(i=>ConversionCard("c"+i)).ToList();var deck=new Deck(cards);
-            var b=new BattleSystem(player,new List<Enemy>{new Enemy("e","検証",9999,ElementType.None,new Vector2Int(5,0))},deck);
+            var b=new BattleSystem(player,new List<Enemy>{new Enemy("e","検証",9999,ElementType.None,new Vector2Int(5,0))},deck,maxHandSize:10);
             var rules=cards.Select(c=>new TransformationCardConversion(c.Id,ConversionCard("converted"))).Concat(new[]{new TransformationCardConversion("converted",ConversionCard("twice"))}).ToArray();
             b.Transformations.Configure(new[]{new TransformationDefenseDefinition("one",ElementResistances.Neutral,ElementType.Fire,2,rules),new TransformationDefenseDefinition("two",ElementResistances.Neutral,ElementType.Water,1,new[]{new TransformationCardConversion("converted",ConversionCard("second"))})});
             b.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);b.OpenCustomScreen(new MockRandomProvider());var s=b.CustomScreen;var t=b.Transformations;

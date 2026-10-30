@@ -173,6 +173,9 @@ namespace Olca.Presentation.Field
         /// <summary>地面の高さ（World Y）</summary>
         public float GroundY => panelY;
 
+        /// <summary>描画倍率を含む床Spriteの下端。接地面や論理マス位置は変えない。</summary>
+        public float RenderedFloorBottomY => panelY - panelHeight * panelScale;
+
         /// <summary>グリッド全体の幅（Unity単位）</summary>
         public float GridWidth => GRID_WIDTH * panelSize;
 

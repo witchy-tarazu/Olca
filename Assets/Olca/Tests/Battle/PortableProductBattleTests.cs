@@ -11,16 +11,29 @@ namespace Olca.Tests.Battle
 {
     public class PortableProductBattleTests
     {
-        private static PortableBattlePackage Package(bool legacy=false)
+        private static PortableBattlePackage Package(bool legacy=false,int handLimit=10)
         {
             var factory=new SimpleCardFactory();var deck=legacy?new Deck(new System.Collections.Generic.List<Card>{new Card("heal","ヒール",2,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,20,"HP回復")}):factory.CreateStarterDeck();
             var map=DungeonConfig.CreateTestDungeon(100,30,50);var session=DungeonCheckpointSession.CreateDefault(map,deck);
             _=new Olca.Core.Logic.Integration.DungeonBattleManager(map,new PlayerCharacter(100),deck,new SeededBattleRandom(1),new MockLogger(),checkpoints:session);
             var departure=session.Store.Read();departure.Enemies.First(e=>e.CellIndex==50).GridX=4;departure.Player.GridX=2;
-            var encounter=new CheckpointBattleDto{ContactCell=50,ParticipantCells=new[]{50},GridOriginX=47,HandLimit=10};
+            var encounter=new CheckpointBattleDto{ContactCell=50,ParticipantCells=new[]{50},GridOriginX=47,HandLimit=handLimit};
             Assert.IsTrue(CheckpointBattlePlan.TryCreate(departure,encounter,session.Definitions,7,null,c=>"fallback/v1/"+c.Rarity+"/"+c.Id,out var plan,out var error),error);
             var timing=CheckpointBattleFactory.ProductBasicTiming;
             return PortableBattlePackage.Capture(session.Definitions,PortableCheckpointJson.Encode(plan.Snapshot),new PortableBattleRules{ChargeFrames=60,IntervalFrames=12,HitInvincibilityMs=600,StartupFrames=timing.StartupFrames,RecoveryFrames=timing.RecoveryFrames,CancelAfterFrames=timing.CancelAfterFrames,GaugeSpeed=CheckpointBattleFactory.DefaultGaugeSpeed},123);
+        }
+        [TestCase(5)] [TestCase(10)]
+        public void 保存済み手札上限は新規既定値へ置換せず初回と次のカスタムへ復帰する(int handLimit)
+        {
+            var package=Package(handLimit:handLimit);var bytes=(byte[])package.CheckpointEnvelope.Clone();
+            var restored=package.Restore(out _);var expected=restored.FirstHand.Select(CollectionDisplay.DefinitionHash).ToArray();
+            var simulation=package.CreateSimulation();var screen=simulation.Battle.CustomScreen;
+            Assert.AreEqual(handLimit,screen.MaxHandSize);Assert.AreEqual(handLimit,screen.CurrentHand.Count);
+            CollectionAssert.AreEqual(expected,screen.CurrentHand.Select(CollectionDisplay.DefinitionHash));
+            screen.Close();screen.Open(new Card[0],new MockRandomProvider(0));
+            Assert.AreEqual(handLimit,screen.MaxHandSize);Assert.AreEqual(handLimit,screen.CurrentHand.Count);
+            CollectionAssert.AreEqual(expected,screen.CurrentHand.Select(CollectionDisplay.DefinitionHash));
+            CollectionAssert.AreEqual(bytes,package.CheckpointEnvelope);
         }
         private static PortableBattlePackage Copy(PortableBattlePackage p)=>PortableCheckpointJson.Deserialize<PortableBattlePackage>(PortableCheckpointJson.Serialize(p));
         [TestCase(0)] [TestCase(2)]

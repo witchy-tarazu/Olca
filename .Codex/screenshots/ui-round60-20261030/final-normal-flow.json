@@ -1,0 +1,12 @@
+{
+  "screen": [
+    640,
+    360
+  ],
+  "phase": "Battle",
+  "hand": 5,
+  "handLimit": 5,
+  "custom": true,
+  "deck": 20,
+  "owned": 20
+}

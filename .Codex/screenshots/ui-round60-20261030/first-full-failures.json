@@ -1,0 +1,94 @@
+{
+  "summary": {
+    "total": 3503,
+    "passed": 3483,
+    "failed": 20,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 256.94,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.Battle.PureCustomCommandTests.取消加工連鎖逆順Undoと確定復帰は素材を二重消費せず戦闘時間を進めない",
+      "Message": "System.InvalidOperationException : Sequence contains no matching element"
+    },
+    {
+      "FullName": "Olca.Tests.Battle.PureCustomCommandTests.同じ明示コマンド列は描画負荷とバッチと文化に依存しない(1)",
+      "Message": "System.InvalidOperationException : Sequence contains no matching element"
+    },
+    {
+      "FullName": "Olca.Tests.Battle.PureCustomCommandTests.同じ明示コマンド列は描画負荷とバッチと文化に依存しない(7)",
+      "Message": "System.InvalidOperationException : Sequence contains no matching element"
+    },
+    {
+      "FullName": "Olca.Tests.Battle.PureCustomCommandTests.同じ明示コマンド列は描画負荷とバッチと文化に依存しない(31)",
+      "Message": "System.InvalidOperationException : Sequence contains no matching element"
+    },
+    {
+      "FullName": "Olca.Tests.Battle.PureCustomCommandTests.同じ明示コマンド列は描画負荷とバッチと文化に依存しない(240)",
+      "Message": "System.InvalidOperationException : Sequence contains no matching element"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.報酬だけは背景のデッキ枚数を隠し報酬終了後に既存表示へ戻す",
+      "Message": "  Expected: False\n  But was:  True\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Defeated,\"none\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Defeated,\"before\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Defeated,\"after\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Retreated,\"none\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Retreated,\"before\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Retreated,\"after\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Defeated,\"none\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Defeated,\"before\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Defeated,\"after\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Retreated,\"none\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Retreated,\"before\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Retreated,\"after\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(False,Retreated,\"child\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.敗北と撤退は獲得を失い既存所持成長を保ち保存再試行と再起動から一度だけ次回出撃する(True,Defeated,\"child\")",
+      "Message": "  Expected: not null\n  But was:  null\n"
+    }
+  ],
+  "cause": "5 fixed replay initial6-card requirement;15 reward-specific fixtures assumed seed7 offers a card after initial draw",
+  "expectationsWeakened": false
+}

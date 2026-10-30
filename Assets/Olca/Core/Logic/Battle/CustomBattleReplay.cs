@@ -25,9 +25,10 @@ namespace Olca.Core.Logic.Battle
                 deck.Shuffle(random);
                 var enemy = new Enemy("sample/enemy", "外部fixture敵", settings.EnemyHp, ElementType.Earth, new Vector2Int(2, 0));
                 var factory = new FixtureFactory();
+                // 固定再生列は初回から全6素材を使う。通常プレイの既定5枚とは別に従来の上限を明示する。
                 return new BattleSystem(new PlayerCharacter(settings.PlayerHp, new Vector2Int(0, 0)), new List<Enemy> { enemy }, deck,
                     randomProvider: random, exceedSystem: new ExceedSystem(factory), tuningSystem: new TuningSystem(),
-                    fusionSystem: new FusionSystem(new FixtureRecipes(), factory));
+                    fusionSystem: new FusionSystem(new FixtureRecipes(), factory), maxHandSize:10);
             }, true);
         }
         // 能力計算は行わず、この比較にだけ用いる明示定義を返す。製品のレシピ表には追加しない。

@@ -22,7 +22,7 @@ namespace Olca.Core.Logic.Battle
                 deck.Shuffle(random);
                 var player = new PlayerCharacter(100, new Vector2Int(0, 0));
                 var battle = new BattleSystem(player, new List<Enemy> { new Enemy("sample/enemy", "外部fixture敵", 120, ElementType.Earth, new Vector2Int(2, 0)) },
-                    deck, randomProvider: random, tuningSystem: new TuningSystem());
+                    deck, randomProvider: random, tuningSystem: new TuningSystem(), maxHandSize:10);
                 battle.Transformations.Configure(new[] {
                     new TransformationDefenseDefinition("fixture-a", new ElementResistances(fire:50), ElementType.Fire, 2,
                         new[] { new TransformationCardConversion("sword", Sword("converted")) }, new TransformationAttackDefinition(ElementType.Water,150,300,3,3,new PlayerAttackTiming(1,1))),

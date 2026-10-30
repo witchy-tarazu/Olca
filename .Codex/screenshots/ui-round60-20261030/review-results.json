@@ -1,0 +1,62 @@
+{
+  "initialRelatedUniqueTests": 1096,
+  "refinedRelatedTests": {
+    "foreground": 1,
+    "BattleSessionControllerTests": 420,
+    "CustomScreenCostViewTests": 379
+  },
+  "allPassed": true,
+  "finalFullPending": false,
+  "independentCodeReview": {
+    "handCrossReview": 0,
+    "dashStageFirstForegroundCrossReview": 0,
+    "finalForegroundCrossReview": 0,
+    "threeAuxiliaryColorsCrossReview": 0,
+    "tileOverlap96": 0
+  },
+  "visualReviewIteration": [
+    "Initial stage: remove4 frames, duplicated name, disabled1/1 navigation",
+    "Native stage critique: strong auxiliary controls compete -> subdued3controls",
+    "Native foreground critique: 2px fill alone leaves straight cut -> align continuous opaque22/128band, overlap0",
+    "Source tile ends show black rectangle -> alpha-verified96px equal-scale overlap; native final finding resolved"
+  ],
+  "physicalHardwareUntested": [
+    "pad",
+    "touch",
+    "IME",
+    "device build"
+  ],
+  "finalNativeVisualReview": {
+    "stage": [
+      "FHD",
+      "4K",
+      "4:3"
+    ],
+    "foreground": [
+      "FHD",
+      "4K",
+      "4:3"
+    ],
+    "unresolvedFindings": 0,
+    "resolvedFindings": [
+      "strong auxiliary controls",
+      "straight foreground band boundary",
+      "flat black source tile ends"
+    ],
+    "limit": "Still images; scrolling continuity also checked by actual normal dash and alpha/geometry/parallax regression"
+  },
+  "fixtureCorrectionsCodeReviewUnresolved": 0,
+  "firstFullFailureResolution": {
+    "fixedReplay6InitialMaterials": "explicit former limit10; original commands/expectations unchanged",
+    "rewardRequiredScenarios": "target2 fixtures use seed0 and assert saved RewardOffered before exercising unchanged expectations",
+    "productDropRateAndRandomOrderChanged": false,
+    "visuallyTestedSourceUnchanged": true
+  },
+  "visuallyTested17SourceHashesUnchangedByFixtureCorrections": true,
+  "fixtureRelatedRecheck": {
+    "PureCustomCommandTests": 9,
+    "FloorSequenceControllerTests": 180,
+    "failed": 0
+  },
+  "finalFullPassed": 3503
+}

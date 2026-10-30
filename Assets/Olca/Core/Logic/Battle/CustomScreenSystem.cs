@@ -142,7 +142,7 @@ namespace Olca.Core.Logic.Battle
         /// <param name="exceedSystem">超越システム（省略可能）</param>
         /// <param name="tuningSystem">調律システム（省略可能）</param>
         /// <param name="fusionSystem">融合システム（省略可能）</param>
-        public CustomScreenSystem(Deck deck, int maxHandSize = 10, int maxSelectionCount = 5, int maxCost = 10,
+        public CustomScreenSystem(Deck deck, int maxHandSize = 5, int maxSelectionCount = 5, int maxCost = 10,
             ExceedSystem exceedSystem = null, TuningSystem tuningSystem = null, FusionSystem fusionSystem = null)
         {
             this.deck = deck ?? throw new ArgumentNullException(nameof(deck));
