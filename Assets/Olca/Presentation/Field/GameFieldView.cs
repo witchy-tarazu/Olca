@@ -433,6 +433,25 @@ namespace Olca.Presentation.Field
         {
             foreach(var go in terrainVisuals.Values){if(go==null)continue;go.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(go);else DestroyImmediate(go);}terrainVisuals.Clear();
         }
+        // 元の床の模様を透かす氷面。Spriteは呼出元から借用し、rootだけを既存地形表示が所有する。
+        private static GameObject CreateIcePattern(Transform parent,Sprite sprite,int sortingLayer)
+        {
+            var root=new GameObject("IcePattern");root.transform.SetParent(parent,false);
+            void Part(string name,Vector2 at,Vector2 size,Color color,float angle=0)
+            {
+                var part=new GameObject(name);part.transform.SetParent(root.transform,false);part.transform.localPosition=new Vector3(at.x,at.y,-.001f);part.transform.localScale=new Vector3(size.x,size.y,1);part.transform.localRotation=Quaternion.Euler(0,0,angle);
+                var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=sprite;renderer.color=color;renderer.sortingLayerID=sortingLayer;renderer.sortingOrder=1;
+            }
+            Part("FrostLeft",new Vector2(-.28f,.13f),new Vector2(.16f,.12f),new Color(.46f,.8f,.94f,.08f),8);
+            Part("FrostRight",new Vector2(.2f,-.06f),new Vector2(.18f,.1f),new Color(.65f,.87f,.96f,.07f),-12);
+            Part("FrostMiddle",new Vector2(-.02f,-.13f),new Vector2(.13f,.075f),new Color(.58f,.84f,.94f,.075f),20);
+            Part("SurfaceEdge",new Vector2(0,.48f),new Vector2(.98f,.025f),new Color(.73f,.92f,1,.65f));
+            var points=new[]{new Vector2(-.43f,.12f),new Vector2(-.17f,-.04f),new Vector2(-.03f,.11f),new Vector2(.14f,.03f),new Vector2(.39f,-.17f)};
+            void Crack(Vector2 a,Vector2 b,int index){var delta=b-a;Part("IceCrack"+index,(a+b)*.5f,new Vector2(delta.magnitude,.016f),new Color(.68f,.88f,.96f,.7f),Mathf.Atan2(delta.y,delta.x)*Mathf.Rad2Deg);}
+            for(int i=1;i<points.Length;i++)Crack(points[i-1],points[i],i);
+            Crack(points[2],new Vector2(.05f,.29f),5);return root;
+        }
+
         private void RefreshTerrainVisuals()
         {
             if(!isActiveAndEnabled||dungeonSystem==null){ClearTerrainVisuals();return;}
@@ -452,16 +471,23 @@ namespace Olca.Presentation.Field
                 renderer.color=type==PanelType.Hole?new Color(.02f,.04f,.08f,.95f):type==PanelType.Cracked?new Color(1f,.7f,.2f,.8f):type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);
                 root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(type==PanelType.Hole?.16f:.06f),1);
                 // 接地帯の上端を床上端へ合わせ、元の亀裂位置は保持する。
-                float magmaDrop=.02f+LogicalToWorld(.03f);
-                root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f-(type==PanelType.Magma?magmaDrop:0),0);
+                float surfaceDrop=.02f+LogicalToWorld(.03f);
+                root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f-(type==PanelType.Magma||type==PanelType.Ice?surfaceDrop:0),0);
                 var magma=root.transform.Find("MagmaPattern");
                 if(type==PanelType.Magma){
                     // 帯の上へ張り出さず、元の床面の内側へ亀裂を表示する。
                     renderer.color=new Color(.55f,.23f,.09f,.5f);
                     if(magma==null)magma=WorldBattleGridView.CreateMagmaPattern(root.transform,obstacleWhiteSprite,renderer.sortingLayerID).transform;
-                    magma.localScale=new Vector3(1,4,1);magma.localPosition=new Vector3(0,-1.1f+magmaDrop/LogicalToWorld(.06f),-.001f);
+                    magma.localScale=new Vector3(1,4,1);magma.localPosition=new Vector3(0,-1.1f+surfaceDrop/LogicalToWorld(.06f),-.001f);
                 }
                 if(magma!=null)magma.gameObject.SetActive(type==PanelType.Magma);
+                var ice=root.transform.Find("IcePattern");
+                if(type==PanelType.Ice){
+                    renderer.color=new Color(.28f,.66f,.85f,.27f);
+                    if(ice==null)ice=CreateIcePattern(root.transform,obstacleWhiteSprite,renderer.sortingLayerID).transform;
+                    ice.localScale=new Vector3(1,4,1);ice.localPosition=new Vector3(0,-1.5f,-.001f);
+                }
+                if(ice!=null)ice.gameObject.SetActive(type==PanelType.Ice);
                 root.SetActive(visible);
             }
         }

@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 39,\n  \"executeMs\": 3,\n  \"assemblyName\": \"PipelineRunScript_Input53Devices_9c3c5fe478004cffaf65fe26b6a6cf2f\",\n  \"success\": true,\n  \"result\": [\n    {\n      \"deviceId\": 1,\n      \"name\": \"Mouse\",\n      \"layout\": \"Mouse\",\n      \"native\": true,\n      \"description\": \"Mouse (Gtk)\"\n    },\n    {\n      \"deviceId\": 2,\n      \"name\": \"Keyboard\",\n      \"layout\": \"Keyboard\",\n      \"native\": true,\n      \"description\": \"Keyboard (Gtk)\"\n    }\n  ]\n}"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "before-approach": {
+    "position": 54.933,
+    "clock": 413,
+    "hp": 100,
+    "phase": "Dungeon",
+    "terrains": [
+      {
+        "cell": 56,
+        "type": "Ice"
+      },
+      {
+        "cell": 57,
+        "type": "Ice"
+      }
+    ],
+    "pose": {
+      "rootX": 87.8928,
+      "cameraX": 90.2928,
+      "cameraY": 1.2750001
+    }
+  },
+  "after-approach": {
+    "position": 54.933,
+    "clock": 413,
+    "hp": 100,
+    "phase": "Dungeon",
+    "terrains": [
+      {
+        "cell": 56,
+        "type": "Ice"
+      },
+      {
+        "cell": 57,
+        "type": "Ice"
+      }
+    ],
+    "pose": {
+      "rootX": 87.8928,
+      "cameraX": 90.2928,
+      "cameraY": 1.2750001
+    }
+  },
+  "after-match-pose": {
+    "position": 54.933,
+    "clock": 413,
+    "hp": 100,
+    "phase": "Dungeon",
+    "terrains": [
+      {
+        "cell": 56,
+        "type": "Ice"
+      },
+      {
+        "cell": 57,
+        "type": "Ice"
+      }
+    ],
+    "pose": {
+      "rootX": 87.8928,
+      "cameraX": 90.2928,
+      "cameraY": 1.2750001
+    }
+  }
+}

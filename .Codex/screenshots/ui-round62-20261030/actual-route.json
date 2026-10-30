@@ -1,0 +1,100 @@
+{
+  "before-cross": {
+    "pauseHeld": true,
+    "before": {
+      "position": 54.933,
+      "clock": 413,
+      "hp": 100,
+      "terrains": [
+        {
+          "cell": 56,
+          "type": "Ice"
+        },
+        {
+          "cell": 57,
+          "type": "Ice"
+        }
+      ]
+    },
+    "after": {
+      "position": 58.266,
+      "clock": 433,
+      "hp": 100,
+      "terrains": [
+        {
+          "cell": 56,
+          "type": "Ice"
+        },
+        {
+          "cell": 57,
+          "type": "Ice"
+        }
+      ]
+    }
+  },
+  "after-cross": {
+    "pauseHeld": true,
+    "before": {
+      "position": 54.933,
+      "clock": 413,
+      "hp": 100,
+      "terrains": [
+        {
+          "cell": 56,
+          "type": "Ice"
+        },
+        {
+          "cell": 57,
+          "type": "Ice"
+        }
+      ]
+    },
+    "after": {
+      "position": 58.266,
+      "clock": 433,
+      "hp": 100,
+      "terrains": [
+        {
+          "cell": 56,
+          "type": "Ice"
+        },
+        {
+          "cell": 57,
+          "type": "Ice"
+        }
+      ]
+    }
+  },
+  "actualPauseLoad": {
+    "position": 54.4,
+    "clock": 3,
+    "hp": 100,
+    "terrains": [
+      {
+        "cell": 56,
+        "type": "Ice"
+      },
+      {
+        "cell": 57,
+        "type": "Ice"
+      }
+    ],
+    "registry": {
+      "count": 3,
+      "capacity": 160,
+      "live": 186
+    }
+  },
+  "nextContact": {
+    "actualNextEncounter": true,
+    "activeIcePatterns": 0,
+    "registry": {
+      "count": 15,
+      "capacity": 160,
+      "live": 186
+    },
+    "phase": "Battle",
+    "custom": true,
+    "hand": 5
+  }
+}
