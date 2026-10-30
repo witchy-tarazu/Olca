@@ -35,6 +35,46 @@ namespace Olca.Tests
                 set.Invoke(view,new object[]{-900f});Assert.AreEqual(Vector3.one,rect.localScale);Assert.AreEqual(-900,rect.anchoredPosition.x);
             }finally{Object.DestroyImmediate(root);}
         }
+        [Test]
+        public void 狭いカスタムは本文と操作を縦配置し標準比率では元の文字と素材へ戻す()
+        {
+            var root=new GameObject("NarrowCustom",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(960,1080);
+            var texture=new Texture2D(1281,927);var sprite=Sprite.Create(texture,new Rect(0,0,1281,927),new Vector2(.5f,.5f),100);Sprite sliced=null;
+            try{
+                RectTransform Rect(string name,Transform parent,Vector2 pos,Vector2 size){var go=new GameObject(name,typeof(RectTransform));go.transform.SetParent(parent,false);var r=(RectTransform)go.transform;r.anchoredPosition=pos;r.sizeDelta=size;return r;}
+                var bg=Rect("BgCustom",root.transform,new Vector2(100,0),new Vector2(1280,1000));var image=bg.gameObject.AddComponent<Image>();image.sprite=sprite;
+                var area=Rect("SelectedCardDisplayArea",root.transform,new Vector2(0,250),new Vector2(700,300));var art=Rect("SelectedCardImage",area,new Vector2(-210,0),new Vector2(280,280)).gameObject.AddComponent<Image>();
+                var description=Rect("SelectedCardDescription",area,new Vector2(150,-5),new Vector2(380,270)).gameObject.AddComponent<Text>();description.fontSize=28;
+                var button=Rect("ConfirmButton",root.transform,new Vector2(0,-400),new Vector2(300,100)).gameObject.AddComponent<Button>();var label=Rect("Text",button.transform,Vector2.zero,new Vector2(280,90)).gameObject.AddComponent<Text>();label.fontSize=30;label.resizeTextForBestFit=true;label.resizeTextMinSize=20;label.resizeTextMaxSize=30;
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=view.GetType();type.GetField("selectedCardImage",flags).SetValue(view,art);type.GetField("selectedCardDescription",flags).SetValue(view,description);type.GetField("confirmButton",flags).SetValue(view,button);var status=Rect("TransformationStatus",root.transform,new Vector2(350,-80),new Vector2(650,80)).gameObject.AddComponent<Text>();status.rectTransform.anchorMin=status.rectTransform.anchorMax=new Vector2(0,1);status.fontSize=26;type.GetField("transformationStatus",flags).SetValue(view,status);type.GetMethod("EnsureCardDescriptionScroll",flags).Invoke(view,null);
+                view.ApplyNarrowLayout(1);var scroll=root.GetComponentInChildren<ScrollRect>();sliced=image.sprite;
+                Assert.AreEqual(40,description.fontSize);Assert.IsFalse(description.resizeTextForBestFit);Assert.AreEqual(40,label.fontSize);Assert.IsFalse(label.resizeTextForBestFit);
+                Assert.AreEqual(new Vector2(460,650),scroll.viewport.rect.size);Assert.AreEqual(new Vector2(280,280),art.rectTransform.rect.size);Assert.AreEqual(1640,bg.rect.height);var statusCorners=new Vector3[4];status.rectTransform.GetWorldCorners(statusCorners);Assert.GreaterOrEqual(statusCorners.Min(c=>root.transform.InverseTransformPoint(c).x),((RectTransform)root.transform).rect.xMin);Assert.LessOrEqual(statusCorners.Max(c=>root.transform.InverseTransformPoint(c).x),((RectTransform)root.transform).rect.xMax);
+                Assert.AreSame(texture,sliced.texture);Assert.AreNotSame(sprite,sliced);Assert.AreEqual(new Vector4(0,120,0,160),sliced.border);
+                view.ApplyNarrowLayout(0);Assert.AreSame(sprite,image.sprite);Assert.AreEqual(Image.Type.Simple,image.type);Assert.AreEqual(1000,bg.rect.height);Assert.AreEqual(28,description.fontSize);Assert.AreEqual(30,label.fontSize);Assert.IsTrue(label.resizeTextForBestFit);Assert.AreEqual(30,label.resizeTextMaxSize);Assert.AreEqual(new Vector2(380,270),scroll.viewport.rect.size);Assert.AreEqual(new Vector2(0,-400),((RectTransform)button.transform).anchoredPosition);
+                // EditModeでは実行時ライフサイクルを明示し、所有Spriteの解放を同じ期待値で確認する。
+                type.GetMethod("OnDestroy",flags).Invoke(view,null);Object.DestroyImmediate(view);Assert.IsTrue(sliced==null);Assert.IsNotNull(sprite);
+            }finally{Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
+        }
+        [Test]
+        public void 狭い手札十枚は五列二段と正方形を保ち再生成した文字キャッシュを保持しない()
+        {
+            var root=new GameObject("NarrowHand",typeof(RectTransform));
+            try{
+                var view=root.AddComponent<CustomScreenView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=view.GetType();
+                var cards=new GameObject("Hand",typeof(RectTransform));cards.transform.SetParent(root.transform,false);((RectTransform)cards.transform).anchoredPosition=new Vector2(0,-50);
+                type.GetField("handCardContainer",flags).SetValue(view,cards.transform);var markers=new Transform[10];var hands=(List<HandCardView>)type.GetField("handCardViews",flags).GetValue(view);
+                for(int i=0;i<10;i++){var marker=new GameObject("Marker"+i,typeof(RectTransform));marker.transform.SetParent(cards.transform,false);((RectTransform)marker.transform).anchoredPosition=new Vector2(-275+(i%5)*160,75-(i/5)*150);markers[i]=marker.transform;var hand=new GameObject("Hand"+i,typeof(RectTransform));hand.transform.SetParent(cards.transform,false);((RectTransform)hand.transform).sizeDelta=new Vector2(100,100);hands.Add(hand.AddComponent<HandCardView>());}
+                type.GetField("cardPositionMarkers",flags).SetValue(view,markers);
+                for(int repeat=0;repeat<5;repeat++){
+                    foreach(var hand in hands){var old=hand.transform.Find("CostText");if(old!=null)Object.DestroyImmediate(old.gameObject);var go=new GameObject("CostText",typeof(RectTransform),typeof(Text));go.transform.SetParent(hand.transform,false);var rect=(RectTransform)go.transform;rect.pivot=new Vector2(.5f,0);rect.anchoredPosition=new Vector2(0,-50);rect.sizeDelta=new Vector2(100,30);go.GetComponent<Text>().fontSize=30;}
+                    view.ApplyNarrowLayout(1);var layout=type.GetField("narrowLayout",flags).GetValue(view);var cache=(System.Collections.IDictionary)layout.GetType().GetField("fonts",flags).GetValue(layout);Assert.AreEqual(10,cache.Count);
+                    Assert.AreEqual(5,hands.Select(h=>((RectTransform)h.transform).anchoredPosition.x).Distinct().Count());Assert.AreEqual(2,hands.Select(h=>((RectTransform)h.transform).anchoredPosition.y).Distinct().Count());Assert.AreEqual(-115,((RectTransform)hands[5].transform).anchoredPosition.y);
+                    foreach(var hand in hands){Assert.AreEqual(new Vector2(100,100),((RectTransform)hand.transform).rect.size);Assert.AreEqual(40,hand.GetComponentInChildren<Text>().fontSize);Assert.GreaterOrEqual(hand.GetComponentInChildren<Text>().rectTransform.rect.height,hand.GetComponentInChildren<Text>().fontSize);}
+                }
+                view.ApplyNarrowLayout(0);Assert.AreEqual(new Vector2(0,-50),((RectTransform)cards.transform).anchoredPosition);Assert.AreEqual(-75,((RectTransform)hands[5].transform).anchoredPosition.y);Assert.AreEqual(30,hands[0].GetComponentInChildren<Text>().fontSize);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireInside(RectTransform viewport,RectTransform control)
         {
             var corners=new Vector3[4];control.GetWorldCorners(corners);

@@ -168,6 +168,11 @@ namespace Olca.Presentation.Battle
             var position = customScreenContainer.anchoredPosition;
             position.x = customSlideX * scale;
             customScreenContainer.anchoredPosition = position;
+            float aspect = viewport != null && viewport.rect.height > 0f ? viewport.rect.width / viewport.rect.height : 16f/9f;
+            float narrow = Mathf.Clamp01((16f/9f-aspect)/(16f/9f-4f/3f));
+            TransformationVisualSource?.ApplyNarrowLayout(narrow*progress);
+            if(gaugeFill!=null&&gaugeSlider!=null&&gaugeSlider.fillRect!=null)
+                gaugeFill.rectTransform.sizeDelta=((RectTransform)gaugeSlider.fillRect.parent).rect.size;
         }
 
         // ========== 初期化 ==========
