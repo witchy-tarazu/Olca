@@ -1,0 +1,13 @@
+{
+  "previewCancelNoSave": true,
+  "captures": [
+    "empty",
+    "invalid",
+    "preview",
+    "ready"
+  ],
+  "fileCount": 6,
+  "legacyOriginalUnchanged": true,
+  "legacyAfterUndoExactCardHashes": true,
+  "finalOldSourceHand": 10
+}

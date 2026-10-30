@@ -1,0 +1,17 @@
+{
+  "passed": 508,
+  "failed": 0,
+  "suites": {
+    "CustomScreenCostViewTests": 380,
+    "CustomScreenSystemTests": 98,
+    "PureCustomCommandTests": 9,
+    "CustomizeMaterialBoundaryTests": 21
+  },
+  "finalSource": {
+    "Assets/Olca/Tests/CustomizeMaterialBoundaryTests.cs": "6bda05d3e1ba69978f977c58612a3d6c4ec8352dcee43db27a60cab1977e6f0a",
+    "Assets/Olca/Presentation/CustomScreen/CustomizeMode/CustomizeModeView.cs": "cadd5d7f3f5d55ab2094c7908a866e22cd4f11ff06e2cd80aea6a23acd6e35ea",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "9865d61a11e4c179ca48eb533639492cb2ffca7e3e7929b21158c1c1c96b438e",
+    "Assets/Olca/Presentation/CustomScreen/HandCardView.cs": "765b29aa23b39afb490b8ba3a62b75243e47e1d91d62ba7166e1e1d47122403c",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "4aad5ee723d5970c97c8fbbd43b307bf756b8db30f599defb64ca0e6f99c019c"
+  }
+}

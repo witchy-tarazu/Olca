@@ -1,0 +1,10 @@
+{
+  "initialHand": 5,
+  "status": "Undefined: upgraded bomb product performance not registered",
+  "disabledAttemptAndStaleRepeatNoConsumption": true,
+  "afterCancelExactCardHashes": true,
+  "normalSelectAndLIFO": true,
+  "hideDetailReturn": true,
+  "runtimeHarnessAssumptionCorrected": true,
+  "productValuesChanged": false
+}

@@ -34,7 +34,7 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
             void Label(Text text,Color color){if(text==null)return;if(presentationFont!=null)text.font=presentationFont;text.color=color;text.raycastTarget=false;text.fontSize=Mathf.RoundToInt(Mathf.Lerp(26,34,layoutAmount));text.alignment=TextAnchor.MiddleLeft;text.horizontalOverflow=HorizontalWrapMode.Wrap;var r=text.rectTransform;r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(0,Mathf.Lerp(46,48,layoutAmount));r.sizeDelta=new Vector2(880,44);}
             Label(guideText,Color.white);Label(errorText,new Color(1,.8f,.67f));
             void Control(Button button,float x,string value){if(button==null)return;var r=(RectTransform)button.transform;r.anchorMin=r.anchorMax=new Vector2(x,.5f);r.anchoredPosition=new Vector2(0,-20);r.sizeDelta=new Vector2(400,Mathf.Lerp(72,84,layoutAmount));var text=button.GetComponentInChildren<Text>(true);if(text==null)return;if(presentationFont!=null)text.font=presentationFont;text.text=CustomDisplay.Katakana(value);text.fontSize=Mathf.RoundToInt(Mathf.Lerp(28,40,layoutAmount));text.resizeTextForBestFit=true;text.resizeTextMinSize=Mathf.RoundToInt(Mathf.Lerp(24,34,layoutAmount));text.resizeTextMaxSize=text.fontSize;text.alignment=TextAnchor.MiddleCenter;text.rectTransform.anchorMin=Vector2.zero;text.rectTransform.anchorMax=Vector2.one;text.rectTransform.offsetMin=new Vector2(12,6);text.rectTransform.offsetMax=new Vector2(-12,-6);}
-            Control(executeButton,.25f,"加工を実行");Control(cancelButton,.75f,"素材選択を取消");
+            Control(executeButton,.25f,"加工を実行");Control(cancelButton,.75f,"取消して戻る");
         }
 
         /// <summary>カスタマイズモードがアクティブか</summary>

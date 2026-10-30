@@ -45,6 +45,13 @@ namespace Olca.Tests
                 Assert.AreEqual(new Vector2(800,50),indicator.sizeDelta);Assert.IsTrue(indicator.GetComponent<Image>().raycastTarget);
                 foreach(var graphic in root.GetComponentsInChildren<Graphic>(true).Where(g=>new[]{"FocusHeading","HandHeading","SelectionHeading","SelectionHint","CustomReadingSurface","HandSurface","SelectionOrder","QueueOrder"}.Contains(g.name))){Assert.IsFalse(graphic.raycastTarget,graphic.name);if(graphic is Text text)Assert.AreSame(font,text.font);}
                 Assert.AreEqual(5,model.SelectedCards.Count);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                var modeObject=Rect("CustomizeMode",root.transform,Vector2.zero,Vector2.one).gameObject;
+                var mode=modeObject.AddComponent<Olca.Presentation.CustomScreen.CustomizeMode.CustomizeModeView>();typeof(CustomScreenView).GetField("customizeModeView",flags).SetValue(view,mode);
+                mode.Enter();view.ApplyNarrowLayout(0);
+                Assert.AreEqual("ケッカ",root.transform.Find("FocusHeading").GetComponent<Text>().text);Assert.AreEqual("ソザイ　0 / 2",root.transform.Find("SelectionHeading").GetComponent<Text>().text);
+                Assert.IsFalse(cost.gameObject.activeSelf);Assert.IsFalse(indicator.gameObject.activeSelf);Assert.IsFalse(root.transform.Find("SelectionHint").gameObject.activeSelf);
+                Assert.AreEqual(5,model.SelectedCards.Count);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                mode.Exit();view.ApplyNarrowLayout(0);Assert.IsTrue(cost.gameObject.activeSelf);Assert.IsTrue(indicator.gameObject.activeSelf);Assert.AreEqual("フォーカス",root.transform.Find("FocusHeading").GetComponent<Text>().text);Assert.AreEqual("シヨウジュン　5 / 5",root.transform.Find("SelectionHeading").GetComponent<Text>().text);
                 model.Close();view.ApplyNarrowLayout(0);Assert.IsFalse(root.transform.Find("CustomReadingSurface").gameObject.activeSelf);Assert.IsFalse(root.transform.Find("FocusHeading").gameObject.activeSelf);
             }finally{Object.DestroyImmediate(root);}
         }
