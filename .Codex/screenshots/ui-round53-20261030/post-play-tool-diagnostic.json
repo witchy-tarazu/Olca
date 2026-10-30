@@ -1,0 +1,9 @@
+{
+  "consoleErrorCountAfterFinalVisualPlay": 1,
+  "category": "existing development tool relay unavailable",
+  "message": "Figma credential relay failed to connect to local service (code 1); no Figma operation requested for this work",
+  "source": "Unity Editor log tail matching final visual session",
+  "productExceptionObserved": false,
+  "credentialsModified": false,
+  "action": "preserved diagnostic then cleared console for restoration verification"
+}
