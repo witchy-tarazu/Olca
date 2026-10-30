@@ -1,0 +1,38 @@
+{
+  "code": {
+    "reviewer": "equipment_save_review",
+    "scope": "CustomizationLoadoutView and CustomizationEditTests; input lifetime/pending/save/binding",
+    "fixed": [
+      "scrollbar handle offsets",
+      "literal registered ID rendering"
+    ],
+    "unresolved": 0
+  },
+  "nativeVisual": {
+    "reviewer": "independent_refactor_review",
+    "sizes": [
+      "1920x1080",
+      "3840x2160",
+      "1440x1080"
+    ],
+    "states": [
+      "normal",
+      "selected",
+      "long name full readout",
+      "empty"
+    ],
+    "fixed": [
+      "4:3 left edge clipping",
+      "underlying HUD/guide bleed",
+      "pagination/footer proximity",
+      "dense cell coordinates"
+    ],
+    "unresolved": 0,
+    "finalSourceRecheck": [
+      "selected 4:3",
+      "long name 4K",
+      "270-character wheel mid-scroll FHD"
+    ]
+  },
+  "limit": "Scoped review is not all-game or aesthetic-completion guarantee"
+}

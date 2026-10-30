@@ -1,0 +1,86 @@
+[
+  {
+    "file": "unique-list-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "4b343a6c1e66bdf0b5b181779d291ce0bc28ea74c25ad5823e0a6c266edc002e"
+  },
+  {
+    "file": "unique-list-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "c34f5f114743932b2b9a4fe0887c182857ab124085ab8cacaed6739770b7c25a"
+  },
+  {
+    "file": "unique-list-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "c29fa6b1976d4cbfc3da2dc3cb56375f0857a34b78ed12e8faeb3b7f2fc043ef"
+  },
+  {
+    "file": "ambiguous-list-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3b5bffb952b6c4e1c68922b3d030755239dec23cd977c99c406884424975117b"
+  },
+  {
+    "file": "ambiguous-list-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3ca5a321e7951c0e4cbe1151726c2701bc40ee232db2fbe5e98b4cc5a1ec32f1"
+  },
+  {
+    "file": "ambiguous-list-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8a5eb2efe0c6f6508b39df3fc4bc171b9863d7d2c56d3eec68aa158ae9874b3d"
+  },
+  {
+    "file": "removed-list-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3216fb1ef60c535ead64915f91d570351cd56dd08a96eb562df4f2d2b02365b4"
+  },
+  {
+    "file": "removed-list-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "a2664c97b6b43fb8c81635876a385accad05893ab2892640f94be6d49c55f8c4"
+  },
+  {
+    "file": "removed-list-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "535e6a6dc6e18d58780fadfe8a1a5fca7aa1efa7f03c6bc3b02ce3957c948f42"
+  },
+  {
+    "file": "unique-detail-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3bf8b676dfea8e53ce212c2e7e38e7fac412514ca50c0a9ae0a3b815e051f527"
+  },
+  {
+    "file": "unique-detail-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "ad33aa21a70e20ddc45312e2a1041f223daa10a082295b9bb12968ddd9ee9a01"
+  },
+  {
+    "file": "orphan-info-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "bbbec081ec4e25a68373ac80481a814d8bd8d1a8f834dbc1393646073bf6ed7c"
+  },
+  {
+    "file": "orphan-info-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "e5850953b953b3bd3fd9bc1713375b88f689404c46eb925df3555b68f7b56fbe"
+  },
+  {
+    "file": "mixed-list-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "be36e389e3ce8c818b79d57bf3f7ed93174680648b15f4f48335fc497e60c58c"
+  }
+]

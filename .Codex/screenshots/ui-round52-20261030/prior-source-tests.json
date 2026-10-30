@@ -1,0 +1,26 @@
+[
+  {
+    "summary": {
+      "total": 3480,
+      "passed": 3480,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 249.33,
+    "uiSourceHash": "2451bd3cb2de27e6844fc3f38a67708a824a52c70b95e59a35981e2c7b21d931",
+    "consoleErrors": 0
+  },
+  {
+    "summary": {
+      "total": 3480,
+      "passed": 3480,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 266.96,
+    "uiSourceHash": "7363c1ff4ec7fe65df3bfb116d5bd9c434e53544cb6ca72a5a09bcac06c7999f",
+    "consoleErrors": 0
+  }
+]

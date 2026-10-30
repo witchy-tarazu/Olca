@@ -1,0 +1,61 @@
+{
+  "scope": "Round56 exchange-only visual unit; CardSelectionView.RenderTokenExchange and CustomScreenCostViewTests",
+  "code": {
+    "reviewer": "equipment_save_review",
+    "unresolved": 0,
+    "checked": [
+      "existing row1730x76 and control coordinates/callbacks retained",
+      "Core/economy/save untouched",
+      "saved identity/hash to existing resolver; unresolved art omitted",
+      "borrowed sprite ownership and raycast preserved",
+      "name-only truncation retains stars",
+      "existing error detail entry name retained",
+      "empty-only guide change retains transaction guards"
+    ],
+    "priceBoundaryUnresolved": 0,
+    "resolvedFinding": "Broad test replacement briefly changed existing VisitPrice_0 numeric assert. Independent review caught it; restored original shop assertion before tests. Only exchange-specific case retains unit-newline assert."
+  },
+  "visual": {
+    "reviewer": "independent_refactor_review",
+    "native": true,
+    "findings": [
+      "price/owned/limit three lines too close to frame",
+      "three-product bright empty background too dominant",
+      "empty list still prompted item selection"
+    ],
+    "corrections": [
+      "independent price column plus two state lines with12px vertical margins",
+      "background ends32px below final current-page row; control positions retained",
+      "empty-only return guide"
+    ],
+    "normalAndDenseRecheckUnresolved": 0,
+    "emptyFinalRecheck": 0,
+    "priceBoundaryRecheck": {
+      "unresolved": 0,
+      "nativeRatios": [
+        "FHD",
+        "4K",
+        "4:3"
+      ],
+      "result": "19 digits unbroken, units second line; no overlap; 4:3 smaller but readable with full value also in confirmation"
+    }
+  },
+  "limits": [
+    "no physical touch/pad/IME check",
+    "no new product prices or raster art",
+    "destination/style visual overhaul not part of this first unit",
+    "scope review is not defect-free/aesthetic completion guarantee"
+  ],
+  "evidenceReview": {
+    "reviewer": "equipment_save_review",
+    "unresolved": 0,
+    "checked": [
+      "3491/291.76 final result",
+      "all source hashes match",
+      "prior3 entry-name failures separated",
+      "README image links resolve",
+      "transaction/zero-funds/type-boundary/empty proofs match",
+      "cleanup and scope limits retained"
+    ]
+  }
+}

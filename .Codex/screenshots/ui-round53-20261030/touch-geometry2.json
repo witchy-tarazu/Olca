@@ -1,0 +1,12 @@
+{
+  "screen": [
+    640,
+    360
+  ],
+  "target": "(480.00, 180.00, 0.00)",
+  "rect": "(x:-50.00, y:-50.00, width:100.00, height:100.00)",
+  "canvas": "(x:-320.00, y:-180.00, width:640.00, height:360.00)",
+  "pixel": "(x:0.00, y:0.00, width:640.00, height:360.00)",
+  "contains": true,
+  "events": "null/destroyed"
+}

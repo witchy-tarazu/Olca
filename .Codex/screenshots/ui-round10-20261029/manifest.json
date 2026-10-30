@@ -1,0 +1,219 @@
+[
+  {
+    "file": "info-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "547d95409562f3e387b7c9f6f41a978c63b44828008fd2df2a7af8ab4c1cccfd",
+    "source": "ui-round10-info-before-4by3.png"
+  },
+  {
+    "file": "info-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3897bd1e4b27bb4eea7ac26b17ce9f6585b8b9d7abce074c737771ea9e124bbf",
+    "source": "ui-round10-info-after-4by3.png"
+  },
+  {
+    "file": "info-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ca2fdb41cb562baaaaa29db911fd8a9d98c784806e91670f146ae3e254613251",
+    "source": "ui-round10-info-before-fhd.png"
+  },
+  {
+    "file": "info-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "15841d1a0b177fde0d536f54d7571623c1925a9647829bf9a5e227024d590960",
+    "source": "ui-round10-info-after-fhd.png"
+  },
+  {
+    "file": "info-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "676986f232db7e1f1ab9c803ecb90767196edb61b2d2536781fd9b7e1249fb06",
+    "source": "ui-round10-info-before-4k.png"
+  },
+  {
+    "file": "info-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "76a4d86ed19a51d8ba64cd671f82ef959c20a0c85349815d3749ad7fb45bf447",
+    "source": "ui-round10-info-after-4k.png"
+  },
+  {
+    "file": "dungeon-error-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "dcd49ce9167440f144d7d795f80c73d73faa3592df6e708b280629f45b24f213",
+    "source": "ui-round10-dungeon-error-before-4by3.png"
+  },
+  {
+    "file": "dungeon-error-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "fa146444caa97675a4f88b0ee2c71509520eece57bd05dc7fe7c46f64b9c86a8",
+    "source": "ui-round10-dungeon-error-after-4by3.png"
+  },
+  {
+    "file": "dungeon-error-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "26ca80adadf9227d04ea7fe33b91add9f17f3a2d662aa3b9717a36049707f11f",
+    "source": "ui-round10-dungeon-error-before-fhd.png"
+  },
+  {
+    "file": "dungeon-error-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "eaaf07cd4dc9d43528c34a1998a986edf2e29693257435c46ea746976b74c251",
+    "source": "ui-round10-dungeon-error-after-fhd.png"
+  },
+  {
+    "file": "dungeon-error-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "3563b8580581dfad6ab93ac5072abcdf6cbed3169e15f1a19c48bd44b0694d45",
+    "source": "ui-round10-dungeon-error-before-4k.png"
+  },
+  {
+    "file": "dungeon-error-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "6f2a83c66ce09a236d308c0a56920320195188b6c54acdec71fbb128d967cce5",
+    "source": "ui-round10-dungeon-error-after-4k.png"
+  },
+  {
+    "file": "style-error-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "a7929ba5585c4c0fa2e8c8cd8902d4a97e6cfc9032dc77aa5f672d40de3c4ff5",
+    "source": "ui-round10-style-error-before-4by3.png"
+  },
+  {
+    "file": "style-error-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "f6a1d8567a0f726ad4d7ab089737aba3da9dcd6f692ddfeb0a55d6ed87dafb90",
+    "source": "ui-round10-style-error-after-4by3.png"
+  },
+  {
+    "file": "style-error-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "2ffdd972f9da8dadc0d7a733a2c932b75d751cb95b2dd25d2d6bcfd4003c8307",
+    "source": "ui-round10-style-error-before-fhd.png"
+  },
+  {
+    "file": "style-error-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "7f653a250de1394b96475b19b8499d995ed744e7b5511145533e6a919a1f2e8b",
+    "source": "ui-round10-style-error-after-fhd.png"
+  },
+  {
+    "file": "style-error-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "00c5f9fe2bb858e77908fd461ac5c8dafdaf3b25dd62e24972d389fe290eb719",
+    "source": "ui-round10-style-error-before-4k.png"
+  },
+  {
+    "file": "style-error-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "c7637d1b05ed557b48d1e08b4e49b9dabd96e95193fc08f44ce67fd13342366a",
+    "source": "ui-round10-style-error-after-4k.png"
+  },
+  {
+    "file": "exchange-error-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "38028a1e616844b8dda02c815c9ce81055cb0aa398750f6c31292932222fcbcb",
+    "source": "ui-round10-exchange-error-before-4by3.png"
+  },
+  {
+    "file": "exchange-error-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "224d7b6e10d4ce70989b75f1d9876fb4efb35393216a0fb69f335e9cc6b12bbc",
+    "source": "ui-round10-exchange-error-after-4by3.png"
+  },
+  {
+    "file": "exchange-error-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "fc405bbd56c6da89c7e5bb7d7e6c8caf082177e6d629590b62b5f836f2f73cb6",
+    "source": "ui-round10-exchange-error-before-fhd.png"
+  },
+  {
+    "file": "exchange-error-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3d17a57d925abd321e0cbf37849b8a4661df7b8bef2af831f7bd6833ea3045e5",
+    "source": "ui-round10-exchange-error-after-fhd.png"
+  },
+  {
+    "file": "exchange-error-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "a417b8b7793ef2112c76230dd08b3dec6f42256569a42ac28ea123620b7ab0a3",
+    "source": "ui-round10-exchange-error-before-4k.png"
+  },
+  {
+    "file": "exchange-error-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "824ecc8f0c51bb7b8f2705ffb6f8b68f73080d4281df43cb415c2960f93e7034",
+    "source": "ui-round10-exchange-error-after-4k.png"
+  },
+  {
+    "file": "info-details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "7dc0ce1c4b440262fd539629aa24712efbb31760df36990cc249144eacbe836a",
+    "source": "ui-round10-info-details-after-4k.png"
+  },
+  {
+    "file": "locked-details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8c8cb1931bd361c58c937ef44112b3835107bf7d4b4bbac53fafb4aa07551c4c",
+    "source": "ui-round10-locked-details-after-4k.png"
+  },
+  {
+    "file": "dungeon-error-details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "3385c5258ec44d985b90beac874d1f2bc757f491d7ad1eecf27fe8eb880fb951",
+    "source": "ui-round10-dungeon-error-details-after-4k.png"
+  },
+  {
+    "file": "dungeon-error-details-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "1a0eeb6f5d931d5a9663e7a1b43edbd89b8559a7f5134874b0d63e82fa20b2f4",
+    "source": "ui-round10-dungeon-error-details-after-fhd.png"
+  },
+  {
+    "file": "style-error-details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "792e8c9db104b397fbc58672f755873ceb025182be77827d7b1864255e15bebf",
+    "source": "ui-round10-style-error-details-after-4k.png"
+  },
+  {
+    "file": "style-locked-details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "d82c2af387baf2faa064f0786253330df05d14bde18267cf3147d5929143f6f2",
+    "source": "ui-round10-style-locked-details-after-4k.png"
+  },
+  {
+    "file": "exchange-error-details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8c56d593f0da46f5310bcd724ffd80e7d3c15bdc84704ee0ee5f4abf1c9a83a0",
+    "source": "ui-round10-exchange-error-details-after-4k.png"
+  }
+]

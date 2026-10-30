@@ -1,0 +1,157 @@
+{
+  "unity": "6000.3.26f1",
+  "baseCommit": "75e6542a40731f1f8c64a62bd199b5da75e7face",
+  "testResolution": [
+    640,
+    360
+  ],
+  "dedicatedTempGuard": true,
+  "isolatedSaveGuard": true,
+  "full": {
+    "total": 3475,
+    "passed": 3475,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 249.72,
+  "consoleErrors": 0,
+  "warnings": 62,
+  "related": [
+    {
+      "filter": "CustomScreenCostViewTests",
+      "summary": {
+        "total": 370,
+        "passed": 370,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 21.42
+    },
+    {
+      "filter": "VisitMarkerLifecycleTests",
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.14
+    }
+  ],
+  "sourceHashes": {
+    "Assets/Art/UI/Visits/shop_bag.png": "67e285c5cefed51d0b998ad66cbc53b33300e62ce661b74032fda4de753038ed",
+    "Assets/Resources/OlcaVisits/shop_bag.bytes": "67e285c5cefed51d0b998ad66cbc53b33300e62ce661b74032fda4de753038ed",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionItemView.cs": "9354bb8c2ae77da381048ad483f6798d06a8d090f356a78bff904484cceaf313",
+    "Assets/Olca/Tests/Dungeon/ObstacleSystemTests.cs": "6fb4246bf69c7804026c0d58be332a5f8cd49b1044040497fccac1418f580b4a",
+    "Assets/Olca/Presentation/Battle/CombatStatusIconStrip.cs": "2323b2488a6a018e874e4f081ca7c6f48bc3a52da5de0f4bb0eb18cbb67d00be",
+    "Assets/Olca/Tests/CombatStatusIconsTests.cs": "63a5b14c2687fd8f44205066043bbd64bfaf29f2505b4bd3fce787d4127e2969",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "af24674d904004cec6b9c98c70c27f0d33fc24391a5599a05dc713d7297a3a31",
+    "Assets/Olca/Presentation/Effects/WorldDamageNumberPool.cs": "650cb17f35a6e329cacdd5c2c527be0ee4a6d14959e590b70f97f3d6591021a3",
+    "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs": "6fbc2160e21f0094d2f943db7b0a58ab1db909361d8e00c0da63800d9deaa9e4",
+    "Assets/Olca/Core/Domain/Deck.cs": "31cce9182329c18b6b840419612a6d5e888fcb65a858f27b2fbd7a65a63887e6",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "08537569e6e6e96865c4e4b0590a72710878fd050d57d81ff379ee86f90c404d",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "ceed5209ee0b0986846ff1314f6d8d75cdd25172c4467a4f04a798c3ba801fb8",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "2eab6836544a255434ef7cd0101e3e5d0ec563075f1f99d94c52d0867becf689",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "082b3a0d148e8cc0fe849d0de4ba72a77a8811383080e6ff0b3ce908e1e67d11",
+    "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "09503bc3286d6b025954df2708443a7e926b249926d1f69d10ecc061de16e66e"
+  },
+  "productionSourceHashes": {
+    "Assets/Olca/Presentation/Battle/BattleView.cs": "df30b6678541fa4aa9bb1b69382068b5b081913f78741ee3fdc23c34be8a6f37",
+    "Assets/Prefabs/EnemyViewPrerfab.prefab": "5278b9d2d626ad1b6e4197af7fbddb9a79492d687435ded7a67040fae888f4af",
+    "Assets/Art/Sprites/AttackProps/shared_blast.png": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+    "Assets/Resources/OlcaAttackProps/shared_blast.bytes": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+    "Assets/Olca/Presentation/Field/SharedAttackPropCatalog.cs": "c33c4bfd0e331a2f5102266f6ca27006fd8b1a370563c457268b28d4c35176d6",
+    "Assets/Olca/Tests/SharedAttackPropCatalogTests.cs": "fcda428e13d29f763be0451c348fa28c432adba7a599cf71142e07e2be65e600",
+    "Assets/Art/Sprites/AttackProps/shared_bomb.png": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+    "Assets/Resources/OlcaAttackProps/shared_bomb.bytes": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+    "Assets/Scenes/DungeonScene.unity": "90db2545aa83dd87287cf5f097146ea3e43e5fe84e47e065ff05f60334ed738c",
+    "Assets/Olca/Presentation/Dungeon/DungeonHudView.cs": "8a99becf53a81131562ffa98c0b4c596e4c79ea973fe4738f7110431b0d780dd",
+    "Assets/Olca/Presentation/Battle/EnemyView.cs": "d1481e385750b7c021c805cf24489a1e6a2512ed1b7b18a1c489539c7af2a6a7",
+    "Assets/Olca/Core/Domain/Deck.cs": "31cce9182329c18b6b840419612a6d5e888fcb65a858f27b2fbd7a65a63887e6",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "08537569e6e6e96865c4e4b0590a72710878fd050d57d81ff379ee86f90c404d",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "ceed5209ee0b0986846ff1314f6d8d75cdd25172c4467a4f04a798c3ba801fb8",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "800dd6219bb1d249da942544f085012e60f64f3fa5378f02b13f407149cd222a",
+    "Assets/Olca/Unity/UnityLogger.cs": "5737670bf4eaee36d10452b2e1bac73e363e0919094cc9ef0c5cec4fb14c0ebe"
+  },
+  "wrapperTimedOut": true,
+  "sameRunTrackedToCompletion": true,
+  "testRequests": 1,
+  "rawStartNotifications": 1,
+  "rawEndNotifications": 1,
+  "normalScreenResolutions": [
+    [
+      1920,
+      1080
+    ],
+    [
+      3840,
+      2160
+    ],
+    [
+      1440,
+      1080
+    ]
+  ],
+  "assetCameraOnly": true,
+  "reviews": {
+    "codeUnresolved": 0,
+    "nativeVisualUnresolved": 0,
+    "fixed": [
+      "low-height header/card overlap",
+      "overflow description scroll affordance",
+      "display-only Kanji conversion with raw model preservation"
+    ]
+  },
+  "actualReward": {
+    "deckBefore": 6,
+    "deckAfter": 7,
+    "obtained": 1,
+    "currency": 10,
+    "commitAfterCurrency": true,
+    "staleSelectionIgnored": true
+  },
+  "skip": {
+    "deck": 6,
+    "obtained": 0,
+    "currency": 0
+  },
+  "shop": {
+    "cancelPauseReturnExit": true,
+    "currency": 0,
+    "deck": 6,
+    "obtained": 0,
+    "closedSaved": true
+  },
+  "hardwareNotChecked": [
+    "physical touch",
+    "physical gamepad",
+    "OS IME",
+    "audible output"
+  ],
+  "limitations": [
+    "shop camera excludes screen-space overlay",
+    "compatibility fallback reward definitions unchanged",
+    "return/shop whole-panel redesign not included",
+    "refused character body generation not retried"
+  ],
+  "postValidationCleanup": {
+    "originalClean": true,
+    "actualTestRenderRestored": [
+      640,
+      360
+    ],
+    "controllerInactive": true,
+    "tempGuard": true,
+    "storageGuard": true,
+    "trackedAssetComparison": 874,
+    "exceptPrivateURP": [
+      "Assets/Settings/UniversalRP.asset",
+      "Assets/UniversalRenderPipelineGlobalSettings.asset"
+    ],
+    "differences": [],
+    "consoleErrors": 0
+  }
+}

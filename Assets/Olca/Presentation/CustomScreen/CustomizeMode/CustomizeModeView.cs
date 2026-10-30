@@ -19,6 +19,24 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         [SerializeField] private Text guideText;        // 操作ガイド・判定結果表示
         [SerializeField] private Text errorText;        // エラー表示
 
+        private Font presentationFont;
+        private float layoutAmount;
+        public void ConfigurePresentation(Font font)
+        {
+            if(font!=null)presentationFont=font;
+            var face=GetComponent<Image>();if(face!=null){face.sprite=Resources.Load<Sprite>("OlcaUI/description");face.type=Image.Type.Sliced;face.color=Color.white;}
+            Olca.Presentation.Dungeon.UiLook.Button(executeButton);Olca.Presentation.Dungeon.UiLook.Button(cancelButton);
+            ApplyLayout(layoutAmount);
+        }
+        public void ApplyLayout(float amount)
+        {
+            layoutAmount=Mathf.Clamp01(amount);var rect=(RectTransform)transform;rect.anchorMin=new Vector2(0,.5f);rect.anchorMax=new Vector2(1,.5f);rect.pivot=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(0,Mathf.Lerp(-415,-740,layoutAmount));rect.sizeDelta=new Vector2(0,160);
+            void Label(Text text,Color color){if(text==null)return;if(presentationFont!=null)text.font=presentationFont;text.color=color;text.raycastTarget=false;text.fontSize=Mathf.RoundToInt(Mathf.Lerp(26,34,layoutAmount));text.alignment=TextAnchor.MiddleLeft;text.horizontalOverflow=HorizontalWrapMode.Wrap;var r=text.rectTransform;r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(0,Mathf.Lerp(46,48,layoutAmount));r.sizeDelta=new Vector2(880,44);}
+            Label(guideText,Color.white);Label(errorText,new Color(1,.8f,.67f));
+            void Control(Button button,float x,string value){if(button==null)return;var r=(RectTransform)button.transform;r.anchorMin=r.anchorMax=new Vector2(x,.5f);r.anchoredPosition=new Vector2(0,-20);r.sizeDelta=new Vector2(400,Mathf.Lerp(72,84,layoutAmount));var text=button.GetComponentInChildren<Text>(true);if(text==null)return;if(presentationFont!=null)text.font=presentationFont;text.text=CustomDisplay.Katakana(value);text.fontSize=Mathf.RoundToInt(Mathf.Lerp(28,40,layoutAmount));text.resizeTextForBestFit=true;text.resizeTextMinSize=Mathf.RoundToInt(Mathf.Lerp(24,34,layoutAmount));text.resizeTextMaxSize=text.fontSize;text.alignment=TextAnchor.MiddleCenter;text.rectTransform.anchorMin=Vector2.zero;text.rectTransform.anchorMax=Vector2.one;text.rectTransform.offsetMin=new Vector2(12,6);text.rectTransform.offsetMax=new Vector2(-12,-6);}
+            Control(executeButton,.25f,"加工を実行");Control(cancelButton,.75f,"素材選択を取消");
+        }
+
         /// <summary>カスタマイズモードがアクティブか</summary>
         public bool IsActive { get; private set; }
 
@@ -46,10 +64,10 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         {
             Olca.Presentation.Dungeon.UiLook.Button(executeButton);
             Olca.Presentation.Dungeon.UiLook.Button(cancelButton);
-            Olca.Presentation.Dungeon.UiLook.Label(guideText);
+            ConfigurePresentation(presentationFont);
             IsActive = true;
             gameObject.SetActive(true);
-            SetGuideText("カスタマイズ: カードを選んでください（ESC でキャンセル）");
+            SetGuideText("素材を2枚選んでください");
             ClearError();
             UpdateExecuteButton(false);
         }
@@ -88,7 +106,8 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         {
             if (errorText != null)
             {
-                errorText.text = message;
+                errorText.text = CustomDisplay.Katakana(message);
+                if(guideText!=null)guideText.gameObject.SetActive(false);
                 errorText.gameObject.SetActive(true);
             }
         }
@@ -98,6 +117,7 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         /// </summary>
         public void ClearError()
         {
+            if(guideText!=null)guideText.gameObject.SetActive(true);
             if (errorText != null)
             {
                 errorText.text = string.Empty;
@@ -121,7 +141,7 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         private void SetGuideText(string text)
         {
             if (guideText != null)
-                guideText.text = text;
+                guideText.text = CustomDisplay.Katakana(text);
         }
 
         private void OnDestroy()

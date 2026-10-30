@@ -1,0 +1,104 @@
+{
+  "scope": "Round48 final EditMode run; log classification from recorded byte offset",
+  "evidence": {
+    "editorLog": "evidence/editor-round37-recovered-complete-20261029.log",
+    "recordedStartByteOffset": 795404107,
+    "runStartMarker": "[TestResultCollector] Run started: 3472 test(s)",
+    "runEndMarker": "[TestResultCollector] Run finished: 3472 total, 3472 passed, 0 failed",
+    "runStartMarkersAfterOffset": 1,
+    "runEndMarkersAfterOffset": 1,
+    "finalResult": "evidence/ui-round48-final-test-result.json"
+  },
+  "result": {
+    "summary": {
+      "total": 3472,
+      "passed": 3472,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "durationSeconds": 226.38,
+    "consoleErrors": 0
+  },
+  "warningCounts": {
+    "editorLogDebugLogWarning": 62,
+    "nativeConsoleGroundTruth": 62,
+    "streamConsoleCountsWarn": 45
+  },
+  "categories": [
+    {
+      "id": "card-reward-view-not-assigned",
+      "count": 53,
+      "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします",
+      "productSource": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs:2193",
+      "tests": [
+        "FloorSequenceControllerTestsのViewを作らない統合fixture（Win/Call経由）"
+      ],
+      "testSource": "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3326",
+      "classification": "headless_fixture_intentionally_missing_view",
+      "action": "テスト構成に伴う診断として分類を保持。製品の警告を抑制しない。"
+    },
+    {
+      "id": "card-reward-request-outside-phase",
+      "count": 2,
+      "message": "[WARNING] [DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効",
+      "productSource": "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs:252",
+      "tests": [
+        "中間ボス報酬完了後だけ進み最終階層だけクリアを通知する(bool)"
+      ],
+      "testSource": "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:4254",
+      "classification": "intentional_rejected_replay",
+      "action": "終端後再送を拒否する診断を維持。"
+    },
+    {
+      "id": "card-unavailable-during-stagger",
+      "count": 2,
+      "message": "[WARNING] 使用可能なカードがありません",
+      "productSource": "Assets/Olca/Core/Logic/Battle/CardUsageSystem.cs:85",
+      "tests": [
+        "既定出撃と保存復帰のプレイヤーは通常AIの累積削りで共通時間のけぞり入力を遮断する(int)"
+      ],
+      "testSource": "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3383",
+      "classification": "intentional_rejected_input",
+      "action": "のけぞり中の使用拒否診断を維持。"
+    },
+    {
+      "id": "invalid-keyboard-settings",
+      "count": 4,
+      "message": "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。",
+      "productSource": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs:1667",
+      "tests": [
+        "破損未知版と異なるデバイスのキー設定は初期操作で起動し上書きしない(string)"
+      ],
+      "testSource": "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:4170",
+      "classification": "intentional_invalid_settings_fixture",
+      "action": "破損・未知版・機器不一致時のデータ保護診断を維持。"
+    },
+    {
+      "id": "damage-number-pool-limit",
+      "count": 1,
+      "message": "[WorldDamageNumberPool] 最大プールサイズ(20)に達しています。",
+      "productSource": "Assets/Olca/Presentation/Effects/WorldDamageNumberPool.cs:125",
+      "tests": [
+        "WorldDamageNumberPoolTestsの最大プール到達テスト"
+      ],
+      "testSource": "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs:130",
+      "classification": "expected_capacity_warning",
+      "action": "既存LogAssert.Expectあり。警告を抑制しない。"
+    }
+  ],
+  "markerMissingWarnings": 0,
+  "newWarningMessagesComparedWithRound47": [],
+  "attribution": "全62件が既存テスト起点。詳細表示の今回変更を発生元とする警告は検出されなかった。",
+  "separatePlayWarnings": {
+    "evidence": "evidence/ui-round48-play-warnings.json",
+    "includedInTestWarningCounts": false
+  },
+  "limits": [
+    "この結果は記録された当該実行の分類であり、製品全体の警告不在を保証しない。",
+    "LogAssert.Expectは診断の発生を検証するものであり、Console警告件数を消さない。",
+    "ストリーム集計45件とnative groundTruth66件は異なる取得系の値として保持する。",
+    "コード行番号は当該記録時点のもの。"
+  ],
+  "actionsExecuted": "Read-only log parsing; private classification JSON written; no tests, Play, product edits or settings changes."
+}

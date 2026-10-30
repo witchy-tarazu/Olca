@@ -1,0 +1,31 @@
+{
+  "code": {
+    "reviewer": "equipment_save_review",
+    "scope": "four source/test files; references/input/cancel/undo/save/lifetimes; touch fixture current isolation",
+    "unresolved": 0
+  },
+  "nativeVisual": {
+    "reviewer": "independent_refactor_review",
+    "sizes": [
+      "1920x1080",
+      "3840x2160",
+      "1440x1080"
+    ],
+    "states": [
+      "empty",
+      "preview",
+      "ready",
+      "invalid",
+      "ten-card long names/descriptions"
+    ],
+    "findingsFixed": [
+      "source label contact with mini frame",
+      "lack of continuation cue for long text"
+    ],
+    "unresolved": 0
+  },
+  "limits": [
+    "Review scope does not guarantee all-game correctness or aesthetic completion",
+    "No physical pad/touch/IME validation"
+  ]
+}

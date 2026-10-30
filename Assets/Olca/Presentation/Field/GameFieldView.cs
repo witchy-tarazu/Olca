@@ -253,6 +253,28 @@ namespace Olca.Presentation.Field
             public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts=new List<(SpriteRenderer,float)>();
         }
         private readonly Dictionary<int,VisitVisual> visitVisuals=new Dictionary<int,VisitVisual>();
+        private Sprite visitShopSprite;
+        // bytes包装から生成したSprite/TextureだけをこのViewが所有する。
+        private Sprite GetVisitShopSprite()
+        {
+            if(visitShopSprite!=null)return visitShopSprite;
+            var source=Resources.Load<TextAsset>("OlcaVisits/shop_bag");if(source==null)return null;
+            var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);
+            if(!texture.LoadImage(source.bytes,true)){
+                if(UnityEngine.Application.isPlaying)Destroy(texture);else DestroyImmediate(texture);return null;
+            }
+            texture.name="VisitShopIcon";texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
+            visitShopSprite=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),64,0,SpriteMeshType.FullRect);
+            visitShopSprite.name="VisitShopIcon";visitShopSprite.hideFlags=HideFlags.HideAndDontSave;
+            return visitShopSprite;
+        }
+        private void DisposeVisitShopSprite()
+        {
+            if(visitShopSprite==null)return;var texture=visitShopSprite.texture;
+            if(UnityEngine.Application.isPlaying){Destroy(visitShopSprite);Destroy(texture);}else{DestroyImmediate(visitShopSprite);DestroyImmediate(texture);}
+            visitShopSprite=null;
+        }
+
         private void RemoveVisitVisual(int cell)
         {
             if(!visitVisuals.TryGetValue(cell,out var visual))return;visitVisuals.Remove(cell);
@@ -274,8 +296,13 @@ namespace Olca.Presentation.Field
             Part("Face",0,0,.46f,.4f,.08f);Part("Top",0,.2f,.46f,.014f,.9f);Part("Bottom",0,-.2f,.46f,.014f,.9f);
             Part("Left",-.23f,0,.014f,.4f,.9f);Part("Right",.23f,0,.014f,.4f,.9f);
             if(definition.IsShop){
-                Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
-                Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+                var sprite=GetVisitShopSprite();
+                if(sprite!=null){Part("ShopIcon",0,0,.4f,.4f,1);visual.Parts[visual.Parts.Count-1].Renderer.sprite=sprite;}
+                else{
+                    // 包装がない場合だけ従来の識別図形を保つ。
+                    Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
+                    Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+                }
             }else{Part("RecoveryHorizontal",0,0,.25f,.055f,1);Part("RecoveryVertical",0,0,.055f,.25f,1);}
             visual.Near=new GameObject("Near");visual.Near.transform.SetParent(visual.Root.transform,false);
             Part("ArrowLeft",-.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,-35);Part("ArrowRight",.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,35);
@@ -448,7 +475,9 @@ namespace Olca.Presentation.Field
                 var root = new GameObject("BombProjectile"); root.transform.SetParent(transform, false);
                 for (int i=0;i<4;i++) {
                     var part=new GameObject(i==0?"Body":"Blast"+(i-1));part.transform.SetParent(root.transform,false);
-                    var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.3f,1f,1f,.85f);
+                    var renderer=part.AddComponent<SpriteRenderer>();
+                    Sprite prop; bool illustrated = SharedAttackPropCatalog.TryGetSprite(i==0?SharedAttackPropCatalog.Bomb:SharedAttackPropCatalog.Blast, out prop);
+                    renderer.sprite=illustrated?prop:obstacleWhiteSprite;renderer.color=illustrated?Color.white:new Color(.3f,1f,1f,.85f);
                     renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=6;
                 }
                 bombVisuals.Add(effect,root);
@@ -466,15 +495,21 @@ namespace Olca.Presentation.Field
                 if(flying){
                     float t=effect.Progress;float startX=battleGridView.GridIndexToWorldX(effect.SourcePosition.Value.X);
                     body.position=new Vector3(Mathf.Lerp(startX,targetX,t),ground+LogicalToWorld(.45f+4f*t*(1f-t)*1.4f),0);
-                    body.localScale=Vector3.one*LogicalToWorld(.18f);body.rotation=Quaternion.Euler(0,0,45);
+                    bool illustrated=body.GetComponent<SpriteRenderer>().sprite!=obstacleWhiteSprite;
+                    // 旧1x1四角を45度傾けた可視高さを保つ。画像の余白で投射物を縮めない。
+                    body.localScale=Vector3.one*LogicalToWorld(illustrated ? .18f*Mathf.Sqrt(2f)/SharedAttackPropCatalog.BombVisibleHeight : .18f);
+                    body.rotation=illustrated?Quaternion.identity:Quaternion.Euler(0,0,45);
                 }
                 for(int i=0;i<3;i++){
                     var part=root.transform.GetChild(i+1);int x=effect.TargetPosition.X+i-1;
                     part.gameObject.SetActive(blast&&x>=0&&x<BattleField.GRID_WIDTH);
                     if(!part.gameObject.activeSelf)continue;
                     part.position=new Vector3(battleGridView.GridIndexToWorldX(x),ground+LogicalToWorld(.38f),0);
-                    part.localScale=new Vector3(LogicalToWorld(.82f),LogicalToWorld(.18f),1);
-                    part.GetComponent<SpriteRenderer>().color=new Color(.4f,1f,1f,.75f*(1f-elapsed/6f));
+                    var renderer=part.GetComponent<SpriteRenderer>();bool illustrated=renderer.sprite!=obstacleWhiteSprite;
+                    // 透明余白を除く素材の可視領域を、既存の1タイル内の爆風範囲へ合わせる。
+                    part.localScale=new Vector3(LogicalToWorld(.82f)/(illustrated?SharedAttackPropCatalog.BlastVisibleWidth:1f),LogicalToWorld(.18f)/(illustrated?SharedAttackPropCatalog.BlastVisibleHeight:1f),1);
+                    float alpha=.75f*(1f-elapsed/6f);
+                    renderer.color=illustrated?new Color(1,1,1,alpha):new Color(.4f,1f,1f,alpha);
                 }
             }
         }
@@ -557,7 +592,7 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
             guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose();
@@ -570,6 +605,7 @@ namespace Olca.Presentation.Field
             generatedSomersaultSprites = null;
             ClearTerrainVisuals(); ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
+            DisposeVisitShopSprite();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
             if (currentBattle != null)
@@ -779,6 +815,8 @@ namespace Olca.Presentation.Field
 
         public void OnBattleEnded()
         {
+            // 終了した対象の数値を、報酬・帰還や次の戦闘へ持ち越さない。
+            worldDamageNumberPool?.ClearAll();
             guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             actionPoseRenderer?.Clear();
             ClearBombVisuals();

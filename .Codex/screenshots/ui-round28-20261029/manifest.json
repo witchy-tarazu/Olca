@@ -1,0 +1,50 @@
+[
+  {
+    "file": "status-hud-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "2df88bcc5eeabf1ede53633b15e71a2daf5a4bf5354d5cdb90c0afd33ff0e3fc"
+  },
+  {
+    "file": "status-hud-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8e958acff75322f7fd2175740913d5fc57e8215496f62b3782098f1a14b0f340"
+  },
+  {
+    "file": "expired-details-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "973fad335ee43d253777866eea59b2e56e22a45d44828b147a66268515940616"
+  },
+  {
+    "file": "expired-details-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "21692d33c4bdcb88de911355e59e4797b697aad1415830a950ff32c80e0e8155"
+  },
+  {
+    "file": "healed-cleared-details-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "1365a3dac7ac1ae20944f7b31afd3aae1745c9f14f61464636b5fb8f6812fc1b"
+  },
+  {
+    "file": "healed-cleared-details-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "c36f4261036028621ecd816e52f4ea6cd147270d0816d45d39a606a9d8b69b75"
+  },
+  {
+    "file": "clean-reopened-hud-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "064e42068a232e14b7f47ca15d1e222a648e9f5a8e48db6274c900789bf51146"
+  },
+  {
+    "file": "clean-reopened-hud-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "83a6619d237eb5ddec8eacd16089717d5705dffca556051a918b702a88d16b68"
+  }
+]

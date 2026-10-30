@@ -1,0 +1,25 @@
+{
+  "saved": {
+    "Revision": 5,
+    "accessories": [
+      "アクアリング"
+    ],
+    "placements": [
+      {
+        "PartId": "エルパーツ",
+        "X": 0,
+        "Y": 0,
+        "rotation": 0
+      },
+      {
+        "PartId": "ストレート",
+        "X": 3,
+        "Y": 0,
+        "rotation": 90
+      }
+    ]
+  },
+  "normalControllerReloadMatched": true,
+  "actualUiReopenedMatched": true,
+  "virtualPadCancelNoSave": true
+}

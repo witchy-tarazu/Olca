@@ -95,6 +95,30 @@ namespace Olca.Tests
             });
         }
 
+        [Test]
+        public void 加工プレビューは本絵と専用miniを分け借用し素材とUndoを変更しない()
+        {
+            Assert.AreEqual("ソザイのケイトウがヒトつです",CustomDisplay.Katakana("素材の系統が一つです"));
+            var a=factory.CreateById("sword");var b=factory.CreateById("bomb");var model=Open(a,b);var before=model.CurrentHand.ToArray();var texture=new Texture2D(16,16);var art=Sprite.Create(texture,new Rect(0,0,16,16),new Vector2(.5f,.5f));var mini=Sprite.Create(texture,new Rect(0,0,8,8),new Vector2(.5f,.5f));
+            try{WithView(model,(view,mode,button,selected)=>{
+                var imageObject=new GameObject("SelectedCardImage",typeof(RectTransform),typeof(Image));imageObject.transform.SetParent(view.transform,false);var image=imageObject.GetComponent<Image>();typeof(CustomScreenView).GetField("selectedCardImage",Flags).SetValue(view,image);
+                var textObject=new GameObject("Description",typeof(RectTransform),typeof(Text));textObject.transform.SetParent(view.transform,false);var text=textObject.GetComponent<Text>();text.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");typeof(CustomScreenView).GetField("selectedCardDescription",Flags).SetValue(view,text);
+                view.ConfigureCardVisuals(new[]{new CardVisualEntry{CardId="fire_sword",Illustration=art,CustomIcon=mini},new CardVisualEntry{CardId="sword",CustomIcon=mini},new CardVisualEntry{CardId="bomb",CustomIcon=mini}});selected.Add(a);selected.Add(b);var update=typeof(CustomScreenView).GetMethod("UpdateCustomizationPreview",Flags);update.Invoke(view,new object[]{-1});
+                Assert.AreSame(art,image.sprite);Assert.AreNotSame(mini,image.sprite);Assert.AreEqual(Color.white,image.color);Assert.AreEqual(2,view.GetComponentsInChildren<Image>().Count(i=>i.name=="MaterialIcon"&&i.sprite==mini));StringAssert.Contains("ソード",text.text);StringAssert.Contains("ボム",text.text);StringAssert.Contains("ミジッコウ",text.text);CollectionAssert.AreEqual(before,model.CurrentHand);Assert.AreEqual(0,model.CustomizationUndoCount);Assert.AreEqual(0,model.SelectedCards.Count);
+                mode.Exit();typeof(CustomScreenView).GetMethod("UpdateProcessingControls",Flags).Invoke(view,null);Assert.IsFalse(view.GetComponentsInChildren<Image>().Any(i=>i.name=="MaterialIcon"));Assert.IsNull(image.sprite);mode.Enter();
+                selected.Clear();update.Invoke(view,new object[]{-1});Assert.IsNull(image.sprite);Assert.AreEqual(0,image.color.a);Assert.IsFalse(view.GetComponentsInChildren<Image>().Any(i=>i.name=="MaterialIcon"));CollectionAssert.AreEqual(before,model.CurrentHand);Assert.AreEqual(0,model.CustomizationUndoCount);
+            });Assert.IsTrue(art!=null);Assert.IsTrue(mini!=null);}finally{UnityEngine.Object.DestroyImmediate(art);UnityEngine.Object.DestroyImmediate(mini);UnityEngine.Object.DestroyImmediate(texture);}
+        }
+        [Test]
+        public void 加工操作はJiki表示で通常確定を一時退避し取消後に同じ操作位置へ戻す()
+        {
+            var model=Open(factory.CreateById("sword"),factory.CreateById("bomb"));WithView(model,(view,mode,button,selected)=>{
+                var normal=new GameObject("Confirm",typeof(RectTransform),typeof(Button));normal.transform.SetParent(view.transform,false);var rect=(RectTransform)normal.transform;rect.anchoredPosition=new Vector2(20,-400);typeof(CustomScreenView).GetField("confirmButton",Flags).SetValue(view,normal.GetComponent<Button>());var normalLabel=new GameObject("Label",typeof(RectTransform),typeof(Text));normalLabel.transform.SetParent(normal.transform,false);normalLabel.GetComponent<Text>().font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                var guideObject=new GameObject("Guide",typeof(RectTransform),typeof(Text));guideObject.transform.SetParent(mode.transform,false);var guide=guideObject.GetComponent<Text>();typeof(CustomizeModeView).GetField("guideText",Flags).SetValue(mode,guide);var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");mode.ConfigurePresentation(font);mode.ApplyLayout(1);Assert.AreSame(font,guide.font);Assert.AreEqual(Color.white,guide.color);
+                var visibility=typeof(CustomScreenView).GetMethod("UpdateProcessingControls",Flags);visibility.Invoke(view,null);Assert.IsFalse(normal.activeSelf);typeof(CustomScreenView).GetMethod("ShowDetailsValue",Flags).Invoke(view,new object[]{"テスト"});var close=view.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseCustomPadDetails");Assert.IsTrue(close.gameObject.activeInHierarchy);close.onClick.Invoke();Assert.IsTrue(mode.IsActive);Assert.IsFalse(normal.activeSelf);mode.Exit();visibility.Invoke(view,null);Assert.IsTrue(normal.activeSelf);Assert.AreEqual(new Vector2(20,-400),rect.anchoredPosition);Assert.IsFalse(model.IsConfirming);Assert.AreEqual(0,model.CustomizationUndoCount);
+            });
+        }
+
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
         private static void WithView(CustomScreenSystem model,
             System.Action<CustomScreenView, CustomizeModeView, Button, List<Card>> check)

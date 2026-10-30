@@ -1,0 +1,128 @@
+[
+  {
+    "file": "dungeon-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "cbb858823633c1d1b778ff5b39f507fcba1b803b5701eb39085418d33ce8169d",
+    "source": "ui-round9-dungeon-before-4by3.png"
+  },
+  {
+    "file": "dungeon-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "437eb2b62b6f9fac08a1947a24a22c38b977be7a6d16cc68de09a868d9fb63cf",
+    "source": "ui-round9-dungeon-after-4by3.png"
+  },
+  {
+    "file": "dungeon-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "d8cebc8de18d136c59bc97ff6128e8d79f1291e8109144cc0bbe56ac7e71da66",
+    "source": "ui-round9-dungeon-before-fhd.png"
+  },
+  {
+    "file": "dungeon-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "75cf7960ebfbcebb915faadee84fa5b12375ed3a4637203426d973e374420d94",
+    "source": "ui-round9-dungeon-after-fhd.png"
+  },
+  {
+    "file": "dungeon-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "2fe28cd58105db4082a432a6e580ec7a19f030b6f7c81d764a1db60d04b24bb7",
+    "source": "ui-round9-dungeon-before-4k.png"
+  },
+  {
+    "file": "dungeon-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "933a1a8b2099f2fa005c029c016d96b8e6574b25f108d991a07ac69f7a3e0c25",
+    "source": "ui-round9-dungeon-after-4k.png"
+  },
+  {
+    "file": "style-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "9aa71cbabb72f6ce2c550ef81d2592618ebaa557e5bce4642a340cebd02d3af5",
+    "source": "ui-round9-style-before-4by3.png"
+  },
+  {
+    "file": "style-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "613895f109a3e0a21c988d2c103187f8b80bbf4efbf8f828ae05bf40a267a7b7",
+    "source": "ui-round9-style-after-4by3.png"
+  },
+  {
+    "file": "style-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "30cea5092e7d73d46e274b844da031e650392540b42fe669c03fdf3ca8d11616",
+    "source": "ui-round9-style-before-fhd.png"
+  },
+  {
+    "file": "style-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ddb7acd9a4e88cf65abeed3de90b39961ff3c4a8aa917202ca9c6bb9a1a22571",
+    "source": "ui-round9-style-after-fhd.png"
+  },
+  {
+    "file": "style-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "d76c04c87b4911d3579cf454dce75102d5e6a6fc8122bc9fa7e73626ecefff9a",
+    "source": "ui-round9-style-before-4k.png"
+  },
+  {
+    "file": "style-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "55fffe64eccb019fa65e083ad35e1298f40cf1a1cc95eeaa4bc02b59490350a5",
+    "source": "ui-round9-style-after-4k.png"
+  },
+  {
+    "file": "exchange-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "2373800a8a2a20742efb4dbd2518f688493c8f740f8ceb05a570355ccb217933",
+    "source": "ui-round9-exchange-before-4by3.png"
+  },
+  {
+    "file": "exchange-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "998138c625d21e3ad1cb91679c3d9907fa6c07b158f122ce1fbdc78a5fafcca0",
+    "source": "ui-round9-exchange-after-4by3.png"
+  },
+  {
+    "file": "exchange-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "4d4b427a2f916ae7b23958b62ef2187614e040096e71242bb81b3f8ca863e328",
+    "source": "ui-round9-exchange-before-fhd.png"
+  },
+  {
+    "file": "exchange-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "7e9ba2c6ae6ed626687deecd992b5295bd184e96f55674fcdce85fce49cff5f9",
+    "source": "ui-round9-exchange-after-fhd.png"
+  },
+  {
+    "file": "exchange-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8ea58b3e40f4b44a10121ae70b22251ac9795c55ed57630e3ad89bafe56fbbf4",
+    "source": "ui-round9-exchange-before-4k.png"
+  },
+  {
+    "file": "exchange-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "e387ff10bfea980ee19fa9019f109e9687a459426220b97a94a6ba1ecf13b38d",
+    "source": "ui-round9-exchange-after-4k.png"
+  }
+]

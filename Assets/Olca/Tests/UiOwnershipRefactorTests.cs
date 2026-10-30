@@ -59,7 +59,8 @@ namespace Olca.Tests
                 var plan=new CustomizationAcquisitionDefinition("test",1,new[]{grant},new Dictionary<string,string>{{id,"テスト"}}).Snapshot;
                 view.Open(plan,new CustomizationProgress());
                 Button Find(string name)=>view.GetComponentsInChildren<Button>().Single(v=>v.name==name);
-                var old=Find("AcquisitionCandidate_"+id);Assert.AreEqual(new Vector2(1500,80),old.GetComponent<RectTransform>().sizeDelta);old.onClick.Invoke();
+                var old=Find("AcquisitionCandidate_"+id);// 左側候補列の新配置を検証し、フォントと旧入力の寿命の期待値は維持する。
+                Assert.AreEqual(new Vector2(620,80),old.GetComponent<RectTransform>().sizeDelta);Assert.AreEqual(new Vector2(-620,255),old.GetComponent<RectTransform>().anchoredPosition);old.onClick.Invoke();
                 Assert.IsTrue(view.GetComponentsInChildren<Text>().All(v=>v.font==font));Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(0,received);
                 Find("ClaimCustomizationAcquisition").onClick.Invoke();Assert.AreEqual(1,received);
                 view.Close();Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(1,received);

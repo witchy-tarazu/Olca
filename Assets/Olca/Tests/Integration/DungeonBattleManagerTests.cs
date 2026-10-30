@@ -1007,6 +1007,31 @@ namespace Olca.Tests.Integration
             } finally {UnityEngine.Application.logMessageReceived-=delay;UnityEngine.Object.DestroyImmediate(go);UnityEngine.Time.timeScale=oldScale;
                 Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();}
         }
+        [TestCase(false)] [TestCase(true)]
+        public void 撤退確認中の古い図鑑操作を拒否し取消後に同じ停止状態で図鑑へ戻れる(bool battle)
+        {
+            Create();if(battle)Contact();manager.SetUserPaused(true);
+            var host=new UnityEngine.GameObject("retreat-modal-test");host.SetActive(false);
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var type=controller.GetType();
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            object Get(string name)=>type.GetField(name,flags).GetValue(controller);
+            void Call(string name)=>type.GetMethod(name,flags).Invoke(controller,null);
+            var progress=new ClearReturnSession(new MemoryClearReturnStore(new ClearReturnProfile()));
+            Set("manager",manager);Set("clearReturnSession",progress);
+            try {
+                Call("CreatePauseControls");var pause=(UnityEngine.GameObject)Get("pauseOverlay");pause.SetActive(true);
+                var button=(UnityEngine.UI.Button)Get("cardCollectionButton");var oldOpen=button.onClick;
+                long revision=progress.Snapshot.Revision;long frame=manager.CurrentBattle?.LogicalFrame??0;bool custom=manager.CurrentBattle?.CustomScreen.IsOpen??false;
+                for(int repeat=0;repeat<2;repeat++){
+                    Call("RequestRetreat");Assert.IsTrue(((UnityEngine.GameObject)Get("retreatConfirmation")).activeInHierarchy);
+                    oldOpen.Invoke();Assert.IsFalse((bool)Get("cardCollectionOpen"));Assert.IsFalse(pause.activeSelf);Assert.AreEqual(revision,progress.Snapshot.Revision);
+                    var cancel=((UnityEngine.GameObject)Get("retreatConfirmation")).GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="CancelRetreat");cancel.onClick.Invoke();
+                    Assert.IsTrue(pause.activeSelf);oldOpen.Invoke();Assert.IsTrue((bool)Get("cardCollectionOpen"));Assert.IsFalse(pause.activeSelf);Call("CloseCardCollection");
+                    revision=progress.Snapshot.Revision;Assert.IsTrue(pause.activeSelf);Assert.IsTrue(manager.IsUserPaused);Assert.AreEqual(frame,manager.CurrentBattle?.LogicalFrame??0);Assert.AreEqual(custom,manager.CurrentBattle?.CustomScreen.IsOpen??false);
+                }
+            } finally {var canvas=Get("pauseCanvas") as UnityEngine.GameObject;if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(host);}
+        }
         private DungeonBattleManager manager;
         private DungeonCheckpointSession session;
         private FailingStore store;
@@ -3184,7 +3209,9 @@ namespace Olca.Tests.Integration
             var locked=SelectionButton(c,"DungeonChoice_1").GetComponentInChildren<UnityEngine.UI.Text>().text;
             StringAssert.Contains("ミクリア",first);StringAssert.Contains("？？？",locked);StringAssert.DoesNotContain("selection-b",locked);StringAssert.Contains("ヒトつマエのダンジョンをクリア",locked);
             var help=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Text>(false).Single(t=>t.name=="DungeonSelectionHelp").text;
-            StringAssert.Contains("テキゾクセイ: ムゾクセイ",help);StringAssert.Contains("チケイ: ノーマル",help);
+            StringAssert.Contains("キホン / ムゾクセイ",help);
+            var preview=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Text>(false).Single(t=>t.name=="DungeonPreviewInformation");
+            Assert.IsTrue(preview.gameObject.activeInHierarchy);StringAssert.Contains("テキゾクセイ: ムゾクセイ",preview.text);StringAssert.Contains("チケイ: ノーマル",preview.text);
             KeyboardButton(c,"DungeonChoice_1");Assert.AreEqual(0,Get(c,"selectedDungeon"));Assert.AreEqual(revision,c.PersistentProgress.Revision);Assert.IsNull(c.PersistentProgress.NextDeparture);
         }
         [Test]
@@ -3765,6 +3792,14 @@ namespace Olca.Tests.Integration
         private static void SavedName(Olca.Application.Dungeon.DungeonBattleController c,string name)
         {((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentInChildren<UnityEngine.UI.InputField>(true).text=name;}
         [Test]
+        public void 上限名の保存と複製は元名と所持を変えず新しいコピー名を上限内へ収める()
+        {
+            var c=SavedDeckFixture();Set(Get(c,"clearReturnView"),"font",UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Font>("Assets/Font/JikiTourai.ttf"));KeyboardButton(c,"SavedDeckMenu");KeyboardButton(c,"NewSavedDeck");string name=new string('ヴ',16);SavedName(c,name);KeyboardButton(c,"SaveNamedDeck");
+            var first=c.PersistentProgress.SavedDecks.Single();Assert.AreEqual(name,first.Name);KeyboardButton(c,"CloseOwnedDeparture");KeyboardButton(c,"CloneDeck_"+first.Id);
+            var copy=c.PersistentProgress.SavedDecks.Single(d=>d.Id!=first.Id);Assert.IsTrue(SavedDeckNameRules.IsValid(copy.Name));Assert.IsTrue(((Olca.Presentation.Dungeon.ClearReturnView)Get(c,"clearReturnView")).CanUseDeckName(copy.Name));Assert.AreEqual(name,c.PersistentProgress.SavedDecks.Single(d=>d.Id==first.Id).Name);StringAssert.EndsWith(" の複製",copy.Name);
+        }
+
+        [Test]
         public void 保存デッキの空保存と編成と複製と装備と確認付き削除を実UIから接続し選択二十枚で再開する()
         {
             var c=SavedDeckFixture();var owned=c.PersistentProgress.Owned.Select(o=>o.Count).ToArray();var receipts=c.PersistentProgress.Receipts.Length;
@@ -4248,6 +4283,61 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(2, restarted.CurrentFloorIndex);
         }
         [Test]
+        public void 実シーンの探索HP欄は一度接続し被害回復と再開値を同じ表示へ反映する()
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);
+            try
+            {
+                var hud = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.Dungeon.DungeonHudView>(true)).Single();
+                Assert.IsNull(Get(hud, "hpText"));
+                var custom = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true)).Single();
+                var uiFont = custom.GetComponentInChildren<UnityEngine.UI.Text>(true).font;
+                hud.ConfigureMissingStatusFont(uiFont);
+                foreach (var value in new (int hp, int max)[] { (100, 100), (83, 100), (100, 100), (73, 100), (0, 590), (1, 1), (1, 590), (590, 590), (int.MaxValue, int.MaxValue) })
+                {
+                    hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(value.hp, value.max, 1, 25, false, false, 6, 0));
+                    var label = (UnityEngine.UI.Text)Get(hud, "hpText");
+                    Assert.IsNotNull(label); Assert.AreEqual($"HP: {value.hp} / {value.max}", label.text);
+                    using (var generation = new UnityEngine.TextGenerator())
+                    {
+                        Assert.IsTrue(generation.Populate(label.text, label.GetGenerationSettings(label.rectTransform.rect.size)));
+                        Assert.AreEqual(label.text.Length, generation.characterCountVisible, "HP値を省略せず表示する");
+                    }
+                    Assert.AreSame(hud.transform, label.transform.parent); Assert.IsFalse(label.raycastTarget);
+                    Assert.AreSame(uiFont, label.font);
+                    Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "ExplorationHpText"));
+                }
+                // 既に割り当てられたTextとフォントを、次のRefreshで置換しない。
+                var assigned = (UnityEngine.UI.Text)Get(hud, "hpText"); var font = assigned.font;
+                hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(91, 100, 2, 25, false, false, 6, 0));
+                Assert.AreSame(assigned, Get(hud, "hpText")); Assert.AreSame(font, assigned.font);
+                Assert.AreEqual("HP: 91 / 100", assigned.text);
+                var suppliedHost = new UnityEngine.GameObject("SuppliedHp", typeof(UnityEngine.RectTransform), typeof(UnityEngine.UI.Text));
+                suppliedHost.transform.SetParent(hud.transform, false);
+                var supplied = suppliedHost.GetComponent<UnityEngine.UI.Text>();
+                supplied.font = UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf");
+                var suppliedFont = supplied.font;
+                var other = suppliedHost.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>();
+                Set(other, "hpText", supplied); other.ConfigureMissingStatusFont(uiFont);
+                other.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(88, 100, 2, 25, false, false, 6, 0));
+                Assert.AreSame(supplied, Get(other, "hpText")); Assert.AreSame(suppliedFont, supplied.font);
+                Assert.AreEqual("HP: 88 / 100", supplied.text);
+            }
+            finally { UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true); }
+        }
+        [Test]
+        public void 通常単階層Controllerも現在階層と進行度をHUDへ渡す()
+        {
+            var controller = Start(); var dungeon = Model(controller).Dungeon;
+            var hud = (Olca.Presentation.Dungeon.DungeonHudView)Get(controller, "dungeonHudView");
+            Call(controller, "RefreshDungeonHud");
+            var label = (UnityEngine.UI.Text)Get(hud, "progressText");
+            Assert.IsNotNull(label); Assert.AreEqual($"1カイ  0 / {dungeon.Map.TotalCellCount:F0}", label.text);
+            Call(controller, "RefreshDungeonHud");
+            Assert.AreSame(label, Get(hud, "progressText"));
+            Assert.AreEqual(1, hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Count(t => t.name == "FloorProgressText"));
+        }
+        [Test]
         public void 実シーンの未割当進行度欄も階層列でだけ一度生成し同じHUDで更新する()
         {
             var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);
@@ -4474,6 +4564,21 @@ namespace Olca.Tests.Integration
         }
 
         [Test]
+        public void デッキ名上限は新規と改名だけに適用し旧名の完全一致と結合文字の原文を保持する()
+        {
+            var session=new ClearReturnSession(Store());var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();Assert.IsTrue(session.InitializeStarter(cards));
+            Assert.IsTrue(session.Begin(Terminal(),"fixture",new ClearReturnSettings()));Assert.IsTrue(session.ConfirmSelection());Assert.IsTrue(session.ConfirmReturn());
+            var p=session.Snapshot.Copy();string legacy=" "+new string('ヴ',32)+" ";p.SavedDecks[0].Name=legacy;var memory=new MemoryClearReturnStore(p);session=new ClearReturnSession(memory);string id=p.SavedDecks[0].Id;
+            Assert.IsTrue(session.SaveDeck(id,legacy,p.SavedDecks[0].Cards));Assert.AreEqual(legacy,session.Snapshot.SavedDecks[0].Name);string before=PortableCheckpointJson.Hash(PortableCheckpointJson.Encode(session.Snapshot));
+            foreach(var invalid in new[]{legacy,new string('ヴ',17),"あ\nい","\uD800"}){
+                Assert.IsFalse(session.SaveDeck(System.Guid.NewGuid().ToString("N"),invalid,new SavedDeckCard[0]));Assert.AreEqual(before,PortableCheckpointJson.Hash(PortableCheckpointJson.Encode(session.Snapshot)));
+            }
+            Assert.IsFalse(session.SaveDeck(id,new string('ヴ',31),p.SavedDecks[0].Cards));Assert.AreEqual(before,PortableCheckpointJson.Hash(PortableCheckpointJson.Encode(session.Snapshot)));
+            string combined=string.Concat(Enumerable.Repeat("e\u0301",16));Assert.AreEqual(16,SavedDeckNameRules.Count(combined));Assert.AreEqual(1,SavedDeckNameRules.Count("\uD83D\uDE00"));
+            Assert.IsTrue(session.SaveDeck(id,combined,p.SavedDecks[0].Cards));Assert.AreEqual(combined,session.Snapshot.SavedDecks[0].Name);Assert.AreEqual(combined,PortableCheckpointJson.DecodeProgress(PortableCheckpointJson.Encode(session.Snapshot)).SavedDecks[0].Name);
+        }
+
+        [Test]
         public void スターター配布後の複数デッキ保存切替と再開は所持を増殖しない()
         {
             var session=new ClearReturnSession(Store());var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
@@ -4527,7 +4632,9 @@ namespace Olca.Tests.Integration
         {
             var old=new CollectionRecipe("legacy",new[]{"a","b"},"fire_sword");var p=new ClearReturnProfile{RevealedRecipes=new[]{"legacy"}};
             Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{old})[0].Result);
-            Assert.AreEqual("公開済み：？？？ ＋ ？？？ → ？？？",CollectionDisplay.RecipeText(p,old));
+            Assert.AreEqual("公開済み：？？？ ＋ ？？？ → ？？？\n結果の詳細定義は未特定です。",CollectionDisplay.RecipeText(p,old));
+            Assert.IsNull(CollectionDisplay.RecipeRows(p,new[]{old})[0].Performance);
+            Assert.AreEqual("？？？　未公開レシピ",CollectionDisplay.RecipeText(new ClearReturnProfile(),old));
         }
         [Test]
         public void 図鑑はスターターを登録し未入手のカード性能とレシピ素材を公開しない()
@@ -4638,6 +4745,14 @@ namespace Olca.Tests.Integration
             var fallback=CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);Assert.IsTrue(session.Begin(Terminal(fallback),"overflow",new ClearReturnSettings()));
             Assert.IsTrue(session.Toggle(0));Assert.IsTrue(session.ConfirmSelection());Assert.AreEqual(2,session.Snapshot.Owned.Length);Assert.AreEqual(4,session.Snapshot.Owned.Single(o=>o.Name=="ヒール").Count);Assert.AreEqual(1,session.Snapshot.Owned.Single(o=>o.Name=="heal_card").Count);Assert.AreEqual(0,session.Snapshot.Tokens);
             Assert.IsTrue(CollectionDisplay.IsKnown(session.Snapshot,fallback,f.CollectionCards));
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void hash欄省略の旧図鑑封筒は一意候補だけ正規化し再読込と再確認で増分保存しない(bool ambiguous)
+        {
+            var a=new Card("shared","おなじナマエ",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,17,"カクニンA");var b=new Card(a.Id,a.Name,a.Cost,a.Rarity,a.Category,a.Element,a.Series,71,"ヒミツB");var initial=new ClearReturnProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),DiscoveredCards=new[]{new DiscoveredCard{Id=a.Id,Name=a.Name,Level=a.ExceedLevel,Rarity=a.Rarity}}};
+            string raw=System.Text.Encoding.UTF8.GetString(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(initial));StringAssert.Contains("\"DefinitionHash\":null",raw);raw=raw.Replace("\"DefinitionHash\":null,","").Replace(",\"DefinitionHash\":null","");StringAssert.DoesNotContain("DefinitionHash",raw);var payload=System.Text.Encoding.UTF8.GetBytes(raw);string before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(payload);string envelope="{\"Version\":1,\"Payload\":"+System.Text.Encoding.UTF8.GetString(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(raw))+",\"Sha256\":\""+before+"\"}";var loaded=Olca.Core.Logic.Dungeon.PortableCheckpointJson.DecodeProgress(System.Text.Encoding.UTF8.GetBytes(envelope));Assert.IsNull(loaded.DiscoveredCards.Single().DefinitionHash);
+            var store=new Olca.Core.Logic.Dungeon.MemoryClearReturnStore(loaded);var catalog=ambiguous?new[]{a,b}:new[]{a};var session=new ClearReturnSession(store,definitions:catalog);Assert.IsTrue(session.EnsureCollection(),session.Error);Assert.AreEqual(ambiguous?1:2,session.Snapshot.Revision);Assert.AreEqual(ambiguous?null:CollectionDisplay.DefinitionHash(a),session.Snapshot.DiscoveredCards.Single().DefinitionHash);Assert.AreEqual(a.Name,session.Snapshot.DiscoveredCards.Single().Name);string saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(session.Snapshot));long revision=session.Snapshot.Revision;
+            Assert.IsTrue(session.EnsureCollection());Assert.AreEqual(revision,session.Snapshot.Revision);Assert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(session.Snapshot)));var resumed=new ClearReturnSession(store,definitions:catalog);Assert.IsTrue(resumed.EnsureCollection());Assert.AreEqual(revision,resumed.Snapshot.Revision);var roundtrip=Olca.Core.Logic.Dungeon.PortableCheckpointJson.DecodeProgress(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(resumed.Snapshot));Assert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(roundtrip)));Assert.AreEqual(!ambiguous,CollectionDisplay.IsKnown(roundtrip,a,catalog));if(ambiguous)Assert.IsFalse(CollectionDisplay.IsKnown(roundtrip,b,catalog));Assert.IsNull(loaded.DiscoveredCards.Single().DefinitionHash);Assert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(payload));
         }
         [Test]
         public void 図鑑統合は現カタログから外れた同名旧定義の履歴を別定義の既知判定で消さない()
@@ -5517,6 +5632,14 @@ namespace Olca.Tests.Integration
             try{a.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(()=>{received++;first.SetActive(false);second.SetActive(true);scope.Bind(second.transform,"Skip",()=>skipped++);});b.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(()=>skipped++);scope.Bind(first.transform,"Receive",()=>{});State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,received);Assert.AreEqual(0,skipped);State(pad);scope.Tick();State(pad,UnityEngine.InputSystem.LowLevel.GamepadButton.East,UnityEngine.InputSystem.LowLevel.GamepadButton.South);scope.Tick();Assert.AreEqual(1,skipped,"同時入力は取消だけ");}
             finally{scope.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.Object.DestroyImmediate(first);UnityEngine.Object.DestroyImmediate(second);}
         }
+        [Test]
+        public void 手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する()
+        {
+            var existing=UnityEngine.EventSystems.EventSystem.current;var previous=existing?.currentSelectedGameObject;var es=existing!=null?existing:new UnityEngine.GameObject("ScrollEventSystem",typeof(UnityEngine.EventSystems.EventSystem)).GetComponent<UnityEngine.EventSystems.EventSystem>();var root=new UnityEngine.GameObject("List",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.ScrollRect));var area=(UnityEngine.RectTransform)root.transform;area.sizeDelta=new UnityEngine.Vector2(200,100);var contentObject=new UnityEngine.GameObject("Content",typeof(UnityEngine.RectTransform));contentObject.transform.SetParent(area,false);var content=(UnityEngine.RectTransform)contentObject.transform;content.anchorMin=new UnityEngine.Vector2(0,1);content.anchorMax=UnityEngine.Vector2.one;content.pivot=new UnityEngine.Vector2(.5f,1);content.anchoredPosition=UnityEngine.Vector2.zero;content.sizeDelta=new UnityEngine.Vector2(0,300);var scroll=root.GetComponent<UnityEngine.UI.ScrollRect>();scroll.viewport=area;scroll.content=content;scroll.horizontal=false;var buttons=new UnityEngine.UI.Button[3];for(int i=0;i<3;i++){var obj=new UnityEngine.GameObject(i==0?"First":i==1?"Middle":"Last",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));obj.transform.SetParent(content,false);var rect=(UnityEngine.RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new UnityEngine.Vector2(.5f,1);rect.anchoredPosition=new UnityEngine.Vector2(0,i==0?-25:i==1?-175:-275);rect.sizeDelta=new UnityEngine.Vector2(180,50);buttons[i]=obj.GetComponent<UnityEngine.UI.Button>();}var footer=new UnityEngine.GameObject("Footer",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));footer.transform.SetParent(area,false);((UnityEngine.RectTransform)footer.transform).anchoredPosition=new UnityEngine.Vector2(0,-200);var bar=new UnityEngine.GameObject("Scrollbar",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Scrollbar));bar.transform.SetParent(area,false);bar.GetComponent<UnityEngine.UI.Scrollbar>().navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};var menu=new Olca.Unity.MenuPadScope(()=>true);
+            try{if(existing==null)typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnEnable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(es,null);UnityEngine.EventSystems.EventSystem.current=es;UnityEngine.Canvas.ForceUpdateCanvases();menu.Bind(root.transform,"First",()=>{},scroll,directionScroll:false);scroll.verticalNormalizedPosition=0;menu.Tick();NUnit.Framework.Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01,"同じ焦点で手動スクロールを戻さない");NUnit.Framework.Assert.AreSame(buttons[2],buttons[1].navigation.selectOnDown,"スクロール後の実座標で方向ナビを更新する");es.SetSelectedGameObject(bar);menu.Tick();NUnit.Framework.Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01,"バー操作で焦点を戻しても位置を巻き戻さない");scroll.verticalNormalizedPosition=1;es.SetSelectedGameObject(buttons[2].gameObject);menu.Tick();NUnit.Framework.Assert.AreEqual("Last",menu.FocusName);NUnit.Framework.Assert.Less(scroll.verticalNormalizedPosition,.1,"新しい選択は表示範囲へ追従する");}
+            finally{menu.Dispose();if(existing!=null)es.SetSelectedGameObject(previous);else UnityEngine.Object.DestroyImmediate(es.gameObject);UnityEngine.Object.DestroyImmediate(root);}
+        }
+
         [Test]
         public void 再描画を伴う決定は保持で重複せず背面と切断復帰を遮断する()
         {

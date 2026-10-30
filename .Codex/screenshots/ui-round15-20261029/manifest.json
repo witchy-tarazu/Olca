@@ -1,0 +1,74 @@
+[
+  {
+    "file": "boundary-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "06701b688d25e2132dab8e11213e2b4d8bcbb4366396ed89f6a947c90e50d9a1"
+  },
+  {
+    "file": "boundary-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b2e701f3f36996473b9deb3c2056bd38fa8230cca61d856dd05a8b6bec96d618"
+  },
+  {
+    "file": "boundary-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "b1bdda4f545896772b96de2d709c571df0cba12fc6d04206c7e33c4ba6a23247"
+  },
+  {
+    "file": "boundary-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "a035bf1ca4c0e5fede10848ed4c787466d79bc4b31aed2d0dbd468a8b608a5bc"
+  },
+  {
+    "file": "boundary-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "6aab942dbd357a8a5c97911aa100d80eb93ba34c2b2fd4a21b612355557b5412"
+  },
+  {
+    "file": "boundary-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "01687c0a32723d7940c2f0c087cc7dd03fc69375a40631fb56d89ef6f7f9326c"
+  },
+  {
+    "file": "pending-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3c1dcffe7fd145cee4824482a21a65f3286c6243608ea038c41f37d5319e6e7a"
+  },
+  {
+    "file": "pending-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3ff7045db1f601468cc016e42b052c184f1ae1e57e9aea078bc48bda74073e1d"
+  },
+  {
+    "file": "pending-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "31c05abfa8662cf5ad405fc5bafa5e85c78e52fd35245660bd864e6c5f63ae01"
+  },
+  {
+    "file": "validation-after.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "7438167858bed0a7c36be8297c293c04105f4a98fe862ae4c24e295f0e2df3dc"
+  },
+  {
+    "file": "unresolved-after.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "b5b04918125cb526db3eea6699f1c2acba10f0297012e713d7485508510d976f"
+  },
+  {
+    "file": "card-after.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b24999f845fde26124a3cf39f90482092dc44e64ac66713470bef4ef2f11e5e3"
+  }
+]

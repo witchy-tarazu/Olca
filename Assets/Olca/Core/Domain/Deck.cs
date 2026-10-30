@@ -339,6 +339,29 @@ namespace Olca.Core.Domain
         public ExceedLevel Level;
         public SavedDeckCard Copy() => (SavedDeckCard)MemberwiseClone();
     }
+    /// <summary>新規・改名だけに適用する入力契約。保存済み名の読込や原文は変更しない。</summary>
+    public static class SavedDeckNameRules
+    {
+        public const int MaximumTextElements = 16;
+        public static bool IsSingleLine(string value)
+        {
+            if(value==null)return false;
+            for(int i=0;i<value.Length;i++){
+                if(char.IsHighSurrogate(value[i])){if(i+1>=value.Length||!char.IsLowSurrogate(value[i+1]))return false;i++;}
+                else if(char.IsLowSurrogate(value[i]))return false;
+            }
+            try { value.Normalize(System.Text.NormalizationForm.FormC); }
+            catch(ArgumentException){return false;}
+            return !value.Any(c=>char.IsControl(c)||char.GetUnicodeCategory(c)==System.Globalization.UnicodeCategory.LineSeparator||char.GetUnicodeCategory(c)==System.Globalization.UnicodeCategory.ParagraphSeparator);
+        }
+        public static int Count(string value)
+        {
+            try{return new System.Globalization.StringInfo((value??"").Normalize(System.Text.NormalizationForm.FormC)).LengthInTextElements;}
+            catch(ArgumentException){return int.MaxValue;}
+        }
+        public static bool IsValid(string value)=>!string.IsNullOrWhiteSpace(value)&&IsSingleLine(value)&&Count(value)<=MaximumTextElements;
+    }
+
     public sealed class SavedDepartureDeck
     {
         public string Id, Name;
@@ -623,8 +646,12 @@ namespace Olca.Core.Domain
                 .Select(g=>g.Key.Name+"　登録済み（詳細定義未特定）")).ToArray();
         }
         public static string RecipeText(ClearReturnProfile profile,CollectionRecipe recipe,IReadOnlyList<Card> catalog=null)
-            => !recipe.IsRevealed(profile,catalog)?"？？？　未公開レシピ":
-                "公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i,catalog)))+" → "+recipe.ResultName(profile,catalog);
+        {
+            if(!recipe.IsRevealed(profile,catalog))return "？？？　未公開レシピ";
+            var text="公開済み："+string.Join(" ＋ ",Enumerable.Range(0,recipe.Materials.Count).Select(i=>recipe.MaterialName(profile,i,catalog)))+" → "+recipe.ResultName(profile,catalog);
+            // 公開履歴や名前だけから性能を補わず、既存の定義取得結果に従って案内する。
+            return recipe.TryGetResult(profile,out _,catalog)?text:text+"\n結果の詳細定義は未特定です。";
+        }
         public static CollectionRecipeRow[] RecipeRows(ClearReturnProfile profile,IEnumerable<CollectionRecipe> recipes,IReadOnlyList<Card> catalog=null)
             => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
         public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+
@@ -976,7 +1003,10 @@ namespace Olca.Core.Domain
             if(!DeckEditingAvailable())return Fail("帰還後・保存完了後にデッキを編集してください");
             try{
                 var next=current.Copy();var decks=next.SavedDecks.ToList();var prior=decks.SingleOrDefault(d=>d.Id==id);
-                var saved=new SavedDepartureDeck{Id=id,Name=name?.Trim(),Cards=cards?.Select(c=>c?.Copy()).ToArray()};
+                bool unchanged=prior!=null&&string.Equals(name,prior.Name,StringComparison.Ordinal);
+                var savedName=unchanged?prior.Name:name?.Trim();
+                if(!unchanged&&!SavedDeckNameRules.IsValid(savedName))return Fail("デッキ名は1〜16文字の1行で入力してください");
+                var saved=new SavedDepartureDeck{Id=id,Name=savedName,Cards=cards?.Select(c=>c?.Copy()).ToArray()};
                 if(saved.Cards==null||saved.Cards.Any(c=>c==null))return Fail("カード参照が不正です");
                 foreach(var group in saved.Cards.GroupBy(c=>(c.Id,c.Level,c.DefinitionKey)))
                     if(OwnedDefinition.Resolve(current,group.First())==null&&group.Count()>(prior?.Cards.Count(c=>c.Id==group.Key.Id&&c.Level==group.Key.Level&&c.DefinitionKey==group.Key.DefinitionKey)??0))

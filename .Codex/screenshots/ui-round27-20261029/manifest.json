@@ -1,0 +1,38 @@
+[
+  {
+    "file": "before-retreat-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "d0a8c346035c9dd655dc53a072d40e1e3575eda302ec570098bd523b622d27ef"
+  },
+  {
+    "file": "before-leak-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3e60592f268a8365c59ea11614b3567eacec4a9b10cc1b004a7df555921c1f2d"
+  },
+  {
+    "file": "after-retreat-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3fb2f15293130bcb79107a74c3c9eb2e6941ab6ccf79f81510db1df311b6227c"
+  },
+  {
+    "file": "after-retreat-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "c19cb4146e5054df4e2387b8734939dad4aaabb11e712286fd15966039008fdb"
+  },
+  {
+    "file": "after-retreat-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "702f0e91e1466e2977a2ff757e19b27db478b87d9549264e00ee0dfa61341a2e"
+  },
+  {
+    "file": "after-custom-return-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "d5a320c8d6ad1e6aed5b347cf7d9e7bb517e136eb9681dc122c55517fc87a1a3"
+  }
+]

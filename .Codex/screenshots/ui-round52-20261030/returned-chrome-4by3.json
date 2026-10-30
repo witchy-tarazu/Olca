@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 100,\n  \"executeMs\": 7,\n  \"assemblyName\": \"PipelineRunScript_Inventory52Proof_befdb4eb354f44ef8cc9ad835b691604\",\n  \"success\": true,\n  \"result\": {\n    \"screen\": [\n      1440,\n      1080\n    ],\n    \"overlaps\": [],\n    \"labels\": [\n      {\n        \"name\": \"Title\",\n        \"preferredWidth\": 185.906784,\n        \"preferredHeight\": 35.79572,\n        \"width\": 1212.83777,\n        \"height\": 80\n      },\n      {\n        \"name\": \"HomeStats\",\n        \"preferredWidth\": 428.393921,\n        \"preferredHeight\": 80.82904,\n        \"width\": 1620,\n        \"height\": 90\n      }\n    ],\n    \"faces\": [\n      {\n        \"name\": \"ReturnHeader\",\n        \"bounds\": \"(x:60.00, y:832.50, width:969.63, height:90.00)\"\n      },\n      {\n        \"name\": \"ReturnBody\",\n        \"bounds\": \"(x:60.00, y:585.00, width:1320.00, height:93.75)\"\n      },\n      {\n        \"name\": \"ReturnSummary\",\n        \"bounds\": \"(x:60.00, y:701.25, width:1320.00, height:82.50)\"\n      }\n    ]\n  }\n}"
+    }
+  ]
+}

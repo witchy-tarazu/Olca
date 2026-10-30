@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 3482,
+    "passed": 3481,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 264.19,
+  "failed": [
+    {
+      "FullName": "Olca.Tests.Application.BattleSessionControllerTests.UI上で開始した実指は移動へ混入せず別の指の保持とキーボードを壊さない",
+      "Status": "Failed",
+      "Duration": 0.0727419,
+      "Message": "  UI指は後押し優先へ入らない\n  Expected: -1\n  But was:  1.0f\n",
+      "StackTrace": "at Olca.Tests.Application.BattleSessionControllerTests.UI上で開始した実指は移動へ混入せず別の指の保持とキーボードを壊さない () [0x0017a] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/BattleSessionControllerTests.cs:513\n"
+    }
+  ],
+  "reason": "fixture current EventSystem was destroyed; expectations and product input unchanged"
+}

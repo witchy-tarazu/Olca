@@ -1,0 +1,11 @@
+{
+  "actualRaycast": true,
+  "selectionPageCancelCycles": 2,
+  "nestedStyleFocusRestored": true,
+  "initialSelectionNoSaveOrLaunch": true,
+  "actualDepartureAndRetreatReturned": true,
+  "ownedCurrencyExperienceUnchangedByRetreat": true,
+  "returnedConfirmOnlySelectsDestination": true,
+  "returnedConfirmNoSaveOrSecondLaunch": true,
+  "sameSaveReloadMatched": true
+}

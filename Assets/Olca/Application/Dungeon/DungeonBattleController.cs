@@ -261,14 +261,14 @@ namespace Olca.Application.Dungeon
         }
         private void ShowStyleSelection()
         {
-            clearReturnView.RenderStyleSelection(departureStyles.Select(s => s.Name + " / " + (s.Attack?.Element.ToString() ?? "None") +
-                (s.RequiredClear == null ? "" : " / 解放: " + s.RequiredClear + "クリア")).ToArray(),
+            clearReturnView.RenderStyleSelection(departureStyles.Select(ClearReturnView.FormatDepartureStyleChoice).ToArray(),
                 departureStyles.Select(s => s.IsUnlocked(clearReturnSession.Snapshot)).ToArray(), styleDraft,
                 i => { if (styleSelectionOpen && CanSelectDungeon && i >= 0 && i < departureStyles.Length && departureStyles[i].IsUnlocked(clearReturnSession.Snapshot)) { styleDraft = i; ShowStyleSelection(); } },
                 () => { if (!styleSelectionOpen || !CanSelectDungeon || styleDraft < 0 || styleDraft >= departureStyles.Length) return;
                     if (!clearReturnSession.SelectDepartureStyle(departureStyles[styleDraft])) { ShowStyleSelection(); return; } CloseStyleSelection(); },
                 () => { if (styleSelectionOpen && CanSelectDungeon) CloseStyleSelection(); },
-                !CanSelectDungeon, clearReturnSession.Error, RetryStyleSelection);
+                !CanSelectDungeon, clearReturnSession.Error, RetryStyleSelection,
+                System.Array.FindIndex(departureStyles,s=>s.Id==(clearReturnSession.Snapshot.SelectedStyleId??DepartureStyleDefinition.BasicId)));
         }
         // 出撃先から開いた子画面は、未確定の選択先を保って同じ画面へ戻す。
         private void CloseStyleSelection() { styleSelectionOpen = false; if (initialHub || dungeonSelectionOpen) ShowDungeonSelection(); else ShowClearReturn(); }
@@ -316,7 +316,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray());
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), initialHub);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
@@ -468,7 +468,7 @@ namespace Olca.Application.Dungeon
                 customizationAcquisitionPending=clearReturnSession.HasPendingSave;
                 if(!prepared&&!customizationAcquisitionPending)throw new System.ArgumentException(clearReturnSession.Error);
                 clearReturnView.gameObject.SetActive(false);
-                customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending);RefreshProgressActions();
+                customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending,customizationCatalog);RefreshProgressActions();
             }catch(System.ArgumentException){clearReturnError="ソウビのコウホをカクニンできません。ホゾンをホジしています";if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
         }
         private void ClaimCustomizationAcquisition(string requestId)
@@ -807,6 +807,8 @@ namespace Olca.Application.Dungeon
                 var existing = customScreenView.GetComponentInChildren<Text>(true);
                 if (existing != null && existing.font != null) font = existing.font;
             }
+            dungeonHudView?.ConfigureMissingStatusFont(font);
+            cardSelectionView?.ConfigurePresentation(font,card=>customScreenView!=null?customScreenView.GetCardIllustrationForCard(card):null);
             Button MakeButton(string name, string label, Transform parent, Vector2 anchor, Vector2 position)
             {
                 var obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); obj.transform.SetParent(parent, false);
@@ -840,7 +842,8 @@ namespace Olca.Application.Dungeon
             receiveCurrencyButton = MakeButton("ReceiveCurrencyButton", "ウケトル", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(-240,-80));
             receiveCurrencyButton.onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(true); });
             MakeButton("SkipCurrencyButton", "スキップ", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(240,-80)).onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(false); });
-            currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-160,-125), new Vector2(300,45));
+            currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-182,-125), new Vector2(300,45));
+            currencyBalanceText.alignment=TextAnchor.MiddleRight; currencyBalanceText.fontSize=26;
             currencyBalanceText.color=Color.white; // 背景上のHUDだけは明るい文字で可読性を保つ。
             MakeButton("PauseCurrencyReward","ポーズ",currencyOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
             currencyOverlay.SetActive(false);
@@ -852,10 +855,10 @@ namespace Olca.Application.Dungeon
             MakeButton("PauseItemReward","ポーズ",itemRewardOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
             itemRewardOverlay.SetActive(false);
 
-            MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-120, -60)).onClick.AddListener(() => SetUserPaused(true));
+            MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-132, -64)).onClick.AddListener(() => SetUserPaused(true));
             pauseOverlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image)); pauseOverlay.transform.SetParent(pauseCanvas.transform, false);
             var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
-            pauseOverlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
+            pauseOverlay.GetComponent<Image>().color = new Color(.025f, .07f, .10f, .86f);
             MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
             MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
             MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
@@ -869,7 +872,7 @@ namespace Olca.Application.Dungeon
             vibrationToggle.onClick.AddListener(()=>{TrySetGamepadVibrationEnabled(!GamepadVibrationEnabled,out _);RefreshVibrationSetting();});RefreshVibrationSetting();
             var animationSetting=MakeButton("TransformationAnimationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-200));
             ((RectTransform)animationSetting.transform).sizeDelta=new Vector2(420,70);
-            void RefreshAnimationSetting(){animationSetting.GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出："+(shortTransformationPresentation?"短縮":"通常");}
+            void RefreshAnimationSetting(){animationSetting.GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出：\n"+(shortTransformationPresentation?"短縮":"通常");}
             animationSetting.onClick.AddListener(()=>{
                 if(transformationSettings.TrySave(!shortTransformationPresentation,out transformationSettingsError)){
                     shortTransformationPresentation=!shortTransformationPresentation;
@@ -886,8 +889,12 @@ namespace Olca.Application.Dungeon
             var wt = warning.GetComponent<Text>(); wt.font = font; wt.fontSize = 30; UiLook.Label(wt); wt.alignment = TextAnchor.MiddleCenter; wt.raycastTarget = false;
             wt.text = "撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
             wt.rectTransform.sizeDelta = new Vector2(1600,200); wt.rectTransform.anchoredPosition = new Vector2(0,150);
-            MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100)).onClick.AddListener(ConfirmRetreat);
-            MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100)).onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
+            var confirmRetreatButton = MakeButton("ConfirmRetreat", "撤退して帰還", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(-280,-100));
+            ((RectTransform)confirmRetreatButton.transform).sizeDelta = new Vector2(420,70);
+            confirmRetreatButton.onClick.AddListener(ConfirmRetreat);
+            var cancelRetreatButton = MakeButton("CancelRetreat", "攻略へ戻る", retreatConfirmation.transform, new Vector2(.5f,.5f), new Vector2(280,-100));
+            ((RectTransform)cancelRetreatButton.transform).sizeDelta = new Vector2(420,70);
+            cancelRetreatButton.onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
             retreatConfirmation.SetActive(false);
             var settingsPanel = new GameObject("KeyboardSettingsPanel", typeof(RectTransform));
             settingsPanel.transform.SetParent(pauseCanvas.transform, false);
@@ -920,8 +927,9 @@ namespace Olca.Application.Dungeon
             CreateProgressActions(font,MakeButton);
             var dialoguePanel=new GameObject("DialoguePanel",typeof(RectTransform));dialoguePanel.transform.SetParent(pauseCanvas.transform,false);dialogueView=dialoguePanel.AddComponent<DialogueView>();dialogueView.Initialize(font,()=>SetUserPaused(true));
             var textSpeedButton=MakeButton("DialogueTextSpeedButton","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-400));((RectTransform)textSpeedButton.transform).sizeDelta=new Vector2(420,70);
-            void RefreshTextSpeed(){textSpeedButton.GetComponentInChildren<Text>().text=dialogueSettingsError??"文字表示："+new[]{"ゆっくり","標準","速い","即時"}[(int)dialogueSpeed];}
+            void RefreshTextSpeed(){textSpeedButton.GetComponentInChildren<Text>().text=dialogueSettingsError??"文字表示：\n"+new[]{"ゆっくり","標準","速い","即時"}[(int)dialogueSpeed];}
             textSpeedButton.onClick.AddListener(()=>{var candidate=(DialogueTextSpeed)(((int)dialogueSpeed+1)%4);if(dialogueSettings.TrySave(candidate,out dialogueSettingsError)){dialogueSpeed=candidate;dialogue?.SetSpeed(candidate);}RefreshTextSpeed();});RefreshTextSpeed();
+            LayoutPauseMenu(font);
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
@@ -932,9 +940,11 @@ namespace Olca.Application.Dungeon
             basicAttackHud.gameObject.SetActive(false);
             var collectionPanel=new GameObject("CardCollectionPanel",typeof(RectTransform));collectionPanel.transform.SetParent(pauseCanvas.transform,false);
             cardCollectionView=collectionPanel.AddComponent<ClearReturnView>();cardCollectionView.Initialize(font,null,null,null,null);
-            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,Vector2.one,new Vector2(-310,-85));
+            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,Vector2.one,new Vector2(-402,-64));
             ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
-            cardCollectionButton.onClick.AddListener(()=>OpenCardCollection());
+            var collectionLabel=cardCollectionButton.GetComponentInChildren<Text>(); collectionLabel.fontSize=collectionLabel.resizeTextMaxSize=26;
+            collectionLabel.rectTransform.offsetMin=new Vector2(16,4); collectionLabel.rectTransform.offsetMax=new Vector2(-16,-4);
+            cardCollectionButton.onClick.AddListener(()=>{if(CardCollectionUiAvailable)OpenCardCollection();});
             cardCollectionButton.gameObject.SetActive(false);
             var customizationPanel = new GameObject("CustomizationEditor", typeof(RectTransform)); customizationPanel.transform.SetParent(pauseCanvas.transform, false);
             customizationEditorView = customizationPanel.AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();
@@ -950,7 +960,7 @@ namespace Olca.Application.Dungeon
             ((RectTransform)customizationAcquisitionButton.transform).sizeDelta=new Vector2(300,60);customizationAcquisitionButton.onClick.AddListener(OpenCustomizationAcquisitions);customizationAcquisitionButton.gameObject.SetActive(false);
             customizationUnlockButton=MakeButton("OpenCustomizationUnlocks","マスカイホウ",pauseCanvas.transform,Vector2.one,new Vector2(-310,-235));
             ((RectTransform)customizationUnlockButton.transform).sizeDelta=new Vector2(300,60);customizationUnlockButton.onClick.AddListener(OpenCustomizationUnlocks);customizationUnlockButton.gameObject.SetActive(false);
-            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null);
+            clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);
         }
         private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
         private GameObject progressActionOverlay;
@@ -963,6 +973,54 @@ namespace Olca.Application.Dungeon
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
         private bool CanStartNewGame => !progressStartupBlocked&&clearReturnSession!=null&&clearReturnSession.Ready&&
             (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
+        // ポーズの操作を攻略と設定へまとめ、既存の水鏡素材と余白を共有する。入力・購読は既存ボタンを維持。
+        private void LayoutPauseMenu(Font font)
+        {
+            var panel = new GameObject("PauseMenuSurface", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(pauseOverlay.transform, false);
+            panel.transform.SetAsFirstSibling();
+            var rect = (RectTransform)panel.transform;
+            rect.sizeDelta = new Vector2(1440, 840);
+            UiLook.Face(panel.GetComponent<Image>());
+            panel.GetComponent<Image>().color = new Color(1, 1, 1, .96f);
+            panel.GetComponent<Image>().raycastTarget = false;
+            Text Heading(string name, string text, Vector2 position, Vector2 size, int fontSize)
+            {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Text));
+                obj.transform.SetParent(panel.transform, false);
+                var label = obj.GetComponent<Text>(); label.font = font; label.text = text;
+                UiLook.Label(label); label.fontSize = fontSize; label.alignment = TextAnchor.MiddleLeft;
+                label.rectTransform.sizeDelta = size; label.rectTransform.anchoredPosition = position;
+                return label;
+            }
+            Heading("PauseMenuTitle", "ポーズ", new Vector2(-480, 320), new Vector2(360, 70), 44);
+            Heading("PausePlayHeading", "コウリャク", new Vector2(-480, 210), new Vector2(360, 40), 24);
+            Heading("PauseSettingsHeading", "セッテイ", new Vector2(210, 210), new Vector2(740, 40), 24);
+            void Rule(string name, Vector2 position, Vector2 size)
+            {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Image)); obj.transform.SetParent(panel.transform, false);
+                var line = obj.GetComponent<Image>(); line.color = new Color(.17f, .63f, .71f, .3f); line.raycastTarget = false;
+                ((RectTransform)obj.transform).sizeDelta = size; ((RectTransform)obj.transform).anchoredPosition = position;
+            }
+            Rule("PauseHeaderRule", new Vector2(0, 260), new Vector2(1296, 2));
+            Rule("PauseSectionRule", new Vector2(-210, -40), new Vector2(2, 460));
+            void Place(string name, float x, float y, float width)
+            {
+                var button = pauseOverlay.transform.Find(name).GetComponent<Button>();
+                var target = (RectTransform)button.transform;
+                target.anchoredPosition = new Vector2(x, y); target.sizeDelta = new Vector2(width, 88);
+                var label = button.GetComponentInChildren<Text>();
+                label.rectTransform.offsetMin = new Vector2(18, 6); label.rectTransform.offsetMax = new Vector2(-18, -6);
+                label.fontSize = label.resizeTextMaxSize = 28;
+
+            }
+            Place("ResumeButton", -480, 120, 360); Place("LoadCheckpointButton", -480, 12, 360);
+            Place("OwnedCardsButton", -480, -96, 360); Place("RetreatButton", -480, -244, 360);
+            Place("KeyboardSettingsButton", 20, 120, 340); Place("GamepadSettingsButton", 400, 120, 340);
+            Place("AudioSettingsButton", 20, 0, 340); Place("VibrationSetting", 400, 0, 340);
+            Place("TransformationAnimationSetting", 20, -120, 340); Place("DialogueTextSpeedButton", 400, -120, 340);
+        }
+
         private void CreateProgressActions(Font font,System.Func<string,string,Transform,Vector2,Vector2,Button> MakeButton)
         {
             manualSaveButton=MakeButton("ManualSaveButton","保存（スロット1）",pauseCanvas.transform,new Vector2(0,1),new Vector2(260,-85));
@@ -993,7 +1051,10 @@ namespace Olca.Application.Dungeon
             if(customizationEditorButton!=null){
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
                 customizationEditorButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;
-                customizationEditorButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":"ソウビ・パーツ";
+                var label=customizationEditorButton.GetComponentInChildren<Text>();
+                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":"ソウビ・パーツ";
+                // 未登録注記の2行だけ、既存の外形と上下の装飾内に余白を確保する。
+                label.resizeTextMaxSize=customizationCatalog==null?24:30;
             }
             if(customizationUnlockButton!=null){customizationUnlockButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);customizationUnlockButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
             if(customizationAcquisitionButton!=null){customizationAcquisitionButton.gameObject.SetActive(allowProgressActions&&IsProgressHub&&customizationAcquisitionProvider!=null);customizationAcquisitionButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;}
@@ -1040,9 +1101,16 @@ namespace Olca.Application.Dungeon
         private ClearReturnView cardCollectionView;
         private UnityEngine.UI.Button cardCollectionButton;
         private bool cardCollectionOpen, collectionWasPaused;
+        // UIの表示と受付をそろえる。融合履歴の保存失敗から開く内部経路は別に保つ。
+        private bool CardCollectionUiAvailable => manager != null && clearReturnSession?.Ready == true &&
+            !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen &&
+            !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView != null && keyboardSettingsView.gameObject.activeInHierarchy) &&
+            !(gamepadSettingsView != null && gamepadSettingsView.gameObject.activeInHierarchy) &&
+            !(retreatConfirmation != null && retreatConfirmation.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen &&
+            !(clearReturnView?.HasMenuModal ?? false) && (IsUserPaused || clearReturnVisible);
         private void OpenCardCollection()
         {
-            if(progressDialogOpen||cardCollectionOpen||manager==null||!clearReturnSession.Ready)return;
+            if(progressDialogOpen||cardCollectionOpen||manager==null||clearReturnSession?.Ready!=true)return;
             cardCollectionOpen=true;collectionWasPaused=IsUserPaused;SetUserPaused(true);pauseOverlay.SetActive(false);
             clearReturnSession.ConfigureCollectionDefinitions(CurrentCollectionDefinitions());
             clearReturnSession.EnsureCollection();ShowCardCollection();
@@ -1127,6 +1195,10 @@ namespace Olca.Application.Dungeon
         private void SaveEditingDeck()
         {
             if(!CanEditOwnedDeparture||editingSavedDeckId==null)return;
+            var original=SavedDecks.SingleOrDefault(d=>d.Id==editingSavedDeckId)?.Name;
+            if(!string.Equals(original,editingSavedDeckName,System.StringComparison.Ordinal)&&!clearReturnView.CanUseDeckName(editingSavedDeckName)){
+                ownedDepartureError="デッキ名は16文字までで画面に収まる名前にしてください";ShowOwnedDeparture();return;
+            }
             if(clearReturnSession.SaveDeck(editingSavedDeckId,editingSavedDeckName,ownedDepartureDraft.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=DraftDefinitionKey(c)}).ToArray())){
                 var saved=SavedDecks.Single(d=>d.Id==editingSavedDeckId);
                 for(int n=0;n<ownedDepartureDraft.Count;n++)ownedDepartureKeys[ownedDepartureDraft[n]]=saved.Cards[n].DefinitionKey;
@@ -1152,7 +1224,15 @@ namespace Olca.Application.Dungeon
         private void CloneSavedDeck(string id)
         {
             if(!CanEditOwnedDeparture)return;var saved=SavedDecks.SingleOrDefault(d=>d.Id==id);if(saved==null)return;
-            clearReturnSession.SaveDeck(System.Guid.NewGuid().ToString("N"),saved.Name+" の複製",saved.Cards);ShowSavedDeckMenu();
+            string suffix=" の複製",name=saved.Name+suffix;
+            if(!clearReturnView.CanUseDeckName(name)){
+                var starts=System.Globalization.StringInfo.ParseCombiningCharacters(saved.Name);
+                for(int n=System.Math.Min(starts.Length,SavedDeckNameRules.MaximumTextElements);n>=0;n--){
+                    name=saved.Name.Substring(0,n==starts.Length?saved.Name.Length:starts[n]).TrimEnd()+suffix;
+                    if(clearReturnView.CanUseDeckName(name))break;
+                }
+            }
+            clearReturnSession.SaveDeck(System.Guid.NewGuid().ToString("N"),name,saved.Cards);ShowSavedDeckMenu();
         }
         private readonly List<Card> ownedDepartureDraft = new List<Card>();
         private readonly Dictionary<Card,string> ownedDepartureKeys = new Dictionary<Card,string>();
@@ -1189,7 +1269,7 @@ namespace Olca.Application.Dungeon
             clearReturnView.RenderOwnedDeparture(clearReturnSession.Snapshot, ownedDepartureOptions, ownedDepartureDraft,
                 ownedDepartureError ?? validation, validation == null, ChangeOwnedDeparture, ConfirmOwnedDeparture,
                 CloseOwnedDeparture, () => ShowOwnedDeparture(), confirmDiscard, editingSavedDeckId==null?null:SaveEditingDeck,
-                editingSavedDeckName, name=>{editingSavedDeckName=name;savedDeckDirty=true;}, clearReturnSession.HasPendingSave, RetryClearReturn,ownedDepartureDraft.Select(DraftDefinitionKey).ToArray());
+                editingSavedDeckName, name=>{editingSavedDeckName=name;savedDeckDirty=true;}, clearReturnSession.HasPendingSave, RetryClearReturn,ownedDepartureDraft.Select(DraftDefinitionKey).ToArray(),SavedDecks.SingleOrDefault(d=>d.Id==editingSavedDeckId)?.Name);
         }
         private void ChangeOwnedDeparture(int index, int delta)
         {
@@ -1723,18 +1803,18 @@ namespace Olca.Application.Dungeon
                     needed>0&&visitRemovalTargets.Count==needed&&d.CanChooseVisit(selectedVisit),
                     i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon)||i<0||i>=cards.Length)return;var card=cards[i];if(!visitRemovalTargets.Remove(card)&&visitRemovalTargets.Count<needed)visitRemovalTargets.Add(card);ShowDungeonVisit();},
                     ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ChooseVisit(selectedVisit,cards.Where(c=>visitRemovalTargets.Contains(c)).ToArray());ResetVisitSelection();ShowDungeonVisit();},
-                    ()=>{ResetVisitSelection();ShowDungeonVisit();},()=>SetUserPaused(true));return;
+                    ()=>{ResetVisitSelection();ShowDungeonVisit();},()=>SetUserPaused(true),cards,cards.Select(c=>d.GetObtainedCards().Contains(c)).ToArray(),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);return;
             }
             var enabled=state.Purchased.Select((p,i)=>!p&&(definition.IsShop||!state.Purchased.Any(x=>x))&&(definition.Options[state.Options[i]].RemoveCount==0||d.GetCurrentDeck().TotalCount>0)).ToArray();
             var names=state.Options.Select((n,i)=>(state.Purchased[i]?"［済］ ":"")+definition.Options[n].Label+" / "+definition.Options[n].Price+" 通貨").ToArray();
             bool can=selectedVisit>=0&&selectedVisit<enabled.Length&&enabled[selectedVisit]&&d.CanChooseVisit(selectedVisit);
-            clearReturnView.RenderDungeonVisit((definition.IsShop?"ダンジョンショップ":"イベント")+" / 所持 "+d.Currency+" 通貨",names,enabled,selectedVisit,d.IsCheckpointBlocked,can,
+            clearReturnView.RenderDungeonVisit((definition.IsShop?"ダンジョンショップ":"イベント"),names,enabled,selectedVisit,d.IsCheckpointBlocked,can,
                 i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon))return;ResetVisitSelection();selectedVisit=i;ShowDungeonVisit();},
                 ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;
                     if(selectedVisit>=0&&selectedVisit<state.Options.Length&&definition.Options[state.Options[selectedVisit]].RemoveCount>0&&d.CanChooseVisit(selectedVisit))selectingVisitRemoval=true;
                     else{d.ChooseVisit(selectedVisit);ResetVisitSelection();}ShowDungeonVisit();},
                 ()=>{ResetVisitSelection();ShowDungeonVisit();},
-                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true),d.CanExitVisit);
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true),d.CanExitVisit,state.Options.Select(n=>definition.Options[n]).ToArray(),state.Purchased,d.Currency,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);
         }
 
         private void LateUpdate()
@@ -1850,7 +1930,7 @@ namespace Olca.Application.Dungeon
             if(CustomizationEditorOpen)customizationEditorView.transform.SetAsLastSibling();
             if(CustomizationUnlockOpen)customizationUnlockView.transform.SetAsLastSibling();
             if(CustomizationAcquisitionOpen)customizationAcquisitionView.transform.SetAsLastSibling();
-            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(!CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView!=null&&keyboardSettingsView.gameObject.activeInHierarchy) && !(gamepadSettingsView!=null&&gamepadSettingsView.gameObject.activeInHierarchy) && !progressDialogOpen && !cardCollectionOpen && !(clearReturnView?.HasMenuModal??false) && (IsUserPaused||clearReturnVisible));
+            if(cardCollectionButton!=null){cardCollectionButton.gameObject.SetActive(CardCollectionUiAvailable);
                 if(cardCollectionButton.gameObject.activeSelf)cardCollectionButton.transform.SetAsLastSibling();}
             if (currencyBalanceText != null) currencyBalanceText.text = $"通貨: {manager?.Dungeon.Currency ?? 0}";
             dungeonHudView?.SetDeckCountVisible(manager.CurrentPhase!=GamePhase.CardReward);
@@ -1886,7 +1966,7 @@ namespace Olca.Application.Dungeon
                     isDashCooldown: dashCooldownRemaining > 0f,
                     deckCount: manager.Dungeon.GetCurrentDeck().TotalCount,
                     obtainedCardCount: manager.Dungeon.GetObtainedCards().Count,
-                    floorNumber: floorDefinitions != null ? CurrentFloorIndex + 1 : 0
+                    floorNumber: CurrentFloorIndex + 1
                 );
                 dungeonHudView.Refresh(data);
             }

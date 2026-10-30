@@ -1,0 +1,122 @@
+[
+  {
+    "file": "empty-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "aace739ce3043afe104fb80d254e8d3ba2e551c9dbff7a57bdcfc440a93c03e1"
+  },
+  {
+    "file": "empty-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "668f870ff8ddeb5b51c0d55d366baec208e69dfea3b718a166a5b47effaa97a6"
+  },
+  {
+    "file": "empty-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "c4e4175ab65f0ea407edd6726e1064f7c9e8093cb684d3c078e44de32211d336"
+  },
+  {
+    "file": "empty-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "6e47a574604e52e65398748daf484ff5d2607d42615d7aacdf09bd53f7893832"
+  },
+  {
+    "file": "empty-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "6b4a6dca4163ec30aec6a9a25e6fbc21e180ae1a00cf2f4328588f85d82f044c"
+  },
+  {
+    "file": "empty-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "d4bc814097b02cd2da9c733722507762a9b9641fcfbefe997ed76ea474b43615"
+  },
+  {
+    "file": "empty-error-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3339a3a1876f9b8c7b653524c19b44b7bc83582cdde43a6e9cb1611cd6657b38"
+  },
+  {
+    "file": "empty-error-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "4935825c87182f418c8f9410f75d1c1b23ed0d44f9fbe20a6b2564d526650b7c"
+  },
+  {
+    "file": "empty-error-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "202af9963a0ff15ef23696fca88a3488a3074571f82fadc1b03372e2990efd3d"
+  },
+  {
+    "file": "empty-error-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "f630117ff33ed5f2381780f17bf84026c04d56dad49735bdf85e00375de938f2"
+  },
+  {
+    "file": "empty-error-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "dc79b7176ce8035dd269a4c2e31bc5a3e137e719fae6f9b0f43113cfaa3fc488"
+  },
+  {
+    "file": "empty-error-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "d4ea7c24d674a0357a9d8c9b10167d996a7247f14b7fbd18c740db46d975d656"
+  },
+  {
+    "file": "filled-error-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "a9283c15382e568f942c2bf29355f1b3555b61cd2a61fc3880311c8a305ed28d"
+  },
+  {
+    "file": "filled-error-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "cf55c30d3f598968f9d7ac751cee52c139149fb92df513e29d5ddb89fae5726f"
+  },
+  {
+    "file": "filled-error-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "017dc6f4382b35907d9e613a92db6de9b516d985bc0ee26203688a4fcd34bb8f"
+  },
+  {
+    "file": "filled-error-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "3cd847e3dc048a55cd7039ab4bfee61ae689bcf8ced017e0662dfaaee0c50f1c"
+  },
+  {
+    "file": "filled-error-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "e2363932103702b9f6dae23a3fa3db8784f3d92de21a98ab7b5f70fd68a928c8"
+  },
+  {
+    "file": "filled-error-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "803e24f8b9125ea88179f384426fde9d412b4a1e64ec31d8180339b2f31ee1b4"
+  },
+  {
+    "file": "details-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f6b4f5238b0b0cfe658aeb21e2ffb339141b20729d809d0da6ebf02c6a3461c0"
+  },
+  {
+    "file": "details-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "3df26df11151af94caf78c8610db13eb72f146603a7aae1698bf3570259d93be"
+  }
+]

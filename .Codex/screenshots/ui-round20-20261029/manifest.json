@@ -1,0 +1,98 @@
+[
+  {
+    "file": "cards-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "1d1ea315f51b868f530b47af74dc1471d26a35fc81c1305eb12c6a9bac4dcf45"
+  },
+  {
+    "file": "cards-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "a883d07856d0aadf476ffba54f275baabad33aa196d0f48f0cf094ecae96d94f"
+  },
+  {
+    "file": "cards-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "97b2491cf00621f850f3ca3730a4d6010ce9481c45400410db8203868e654227"
+  },
+  {
+    "file": "cards-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "9b5a92170035cef42868aa7629ef9d7134eee4481b453bf0e9de44fbe7dec116"
+  },
+  {
+    "file": "cards-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "105bf37e73dc5f739a0850b02f291d375b27df85925f6d60e8cb5e1fc9425b2e"
+  },
+  {
+    "file": "cards-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "fac6e24fb73eb3a1b6bee5f55af70d520c16f10fdff0192c9097612b26fe4c44"
+  },
+  {
+    "file": "recipes-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "9c14d45c2bd83e6056f752db85b97b21c5107a7ec923a503a6d42c4c932b2a67"
+  },
+  {
+    "file": "recipes-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "1fab641b697587cccc0cb95f0afb1bbe06da593646d7b3f472d454a97abdbd83"
+  },
+  {
+    "file": "recipes-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "878ede5ae18bb7d7060a02d492b6a4130c24e79123f83da7b9f307b2c223c728"
+  },
+  {
+    "file": "recipes-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "6f53dbcbe825a7e58850d3ca277357816e8b7fa95f7d3fbdc19a11b23352dc40"
+  },
+  {
+    "file": "recipes-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "29dbc36bf8e272e33c7c91d3c393cb4db91d0482c906dcab48fff518f95edcbe"
+  },
+  {
+    "file": "recipes-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "24a51b9f9bbe334899265ac823fffcabad39d24c2e2f557989ad32b6fdff088c"
+  },
+  {
+    "file": "edge-before.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "e65b88375dbd3c141ae2e83386e375a1f5c23632cca0be18f25ba299544e08b9"
+  },
+  {
+    "file": "edge-after.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "629a1a4b6fed7abb57dd1eeba51ec89ff11b022a766013c7be3a2e24438b7c85"
+  },
+  {
+    "file": "full-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "865cfd75f6e4274ade0530dfa7651edfe2f24acfe2278ad5c930ebf96d46fca0"
+  },
+  {
+    "file": "full-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "bcf964da34cf7cdb1f13c6baf9a5c4816d08525cb109fa1d7ea08068720c7520"
+  }
+]

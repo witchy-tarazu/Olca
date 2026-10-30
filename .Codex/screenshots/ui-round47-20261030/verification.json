@@ -1,0 +1,347 @@
+{
+  "baseline": "7f2252cef66aec2c4582e1293e2919c216ce15b1",
+  "unity": "6000.3.26f1",
+  "fullTests": {
+    "summary": {
+      "total": 3472,
+      "passed": 3472,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 227.87,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T04:57:25.748128Z",
+      "ageMs": 94,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 66,
+      "consoleLogs": 2679,
+      "seeded": true
+    },
+    "wrapperTimedOut": true
+  },
+  "targetTests": {
+    "status": "completed",
+    "duration": 0.35,
+    "summary": {
+      "total": 26,
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "results": [
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.プレイヤー状態ドックは開閉と比率変更でも一定寸法でHPへ追従し非表示に残らない",
+        "Status": "Passed",
+        "Duration": 0.0991964,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.各停止中は状態と防御の表示割合を進めない(\"user\")",
+        "Status": "Passed",
+        "Duration": 0.0139131,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.各停止中は状態と防御の表示割合を進めない(\"custom\")",
+        "Status": "Passed",
+        "Duration": 0.00052,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.各停止中は状態と防御の表示割合を進めない(\"dark\")",
+        "Status": "Passed",
+        "Duration": 0.0028394,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.各停止中は状態と防御の表示割合を進めない(\"hit\")",
+        "Status": "Passed",
+        "Duration": 0.0060081,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Poison)",
+        "Status": "Passed",
+        "Duration": 0.0067994,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Paralyze)",
+        "Status": "Passed",
+        "Duration": 0.0010026,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Confusion)",
+        "Status": "Passed",
+        "Duration": 0.0010731,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Blind)",
+        "Status": "Passed",
+        "Duration": 0.0009592,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Guard)",
+        "Status": "Passed",
+        "Duration": 0.0009194,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Barrier)",
+        "Status": "Passed",
+        "Duration": 0.0011022,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Aura)",
+        "Status": "Passed",
+        "Duration": 0.0011113,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Float)",
+        "Status": "Passed",
+        "Duration": 0.0010209,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.専用素材は同じ共有参照を返し元PNGと実行用包装は一致して真透過である(Concentrate)",
+        "Status": "Passed",
+        "Duration": 0.0014582,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.描画更新は重複生成せず割合と消去を反映して入力や数値を追加しない",
+        "Status": "Passed",
+        "Duration": 0.0162368,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.敵も全長を保持し死亡時は残状態や補助のアイコンを返さない",
+        "Status": "Passed",
+        "Duration": 0.016968,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.時間制防御は時間割合だけを表示し耐久値や性能を変更しない(False)",
+        "Status": "Passed",
+        "Duration": 0.0013096,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.時間制防御は時間割合だけを表示し耐久値や性能を変更しない(True)",
+        "Status": "Passed",
+        "Duration": 0.0002152,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.未対応の種は別の素材へ置き換えない",
+        "Status": "Passed",
+        "Duration": 0.0001893,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.毒保存の形式と残時計を変えず復帰時残量を表示基準にする",
+        "Status": "Passed",
+        "Duration": 0.0540873,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.無時間バフは既存フラグで表示しバリアとオーラを重複させない",
+        "Status": "Passed",
+        "Duration": 0.0007117,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.状態読取は元の全長と確定残量だけを返し時計を進めない",
+        "Status": "Passed",
+        "Duration": 0.0012899,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.異なる毒種は共有絵を使い個別の安定識別を持ち解除で消える",
+        "Status": "Passed",
+        "Duration": 0.0010396,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.短い再付与も長い再付与も重複せず新期間を表示基準にする",
+        "Status": "Passed",
+        "Duration": 0.0005857,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.耐性後の全長を使い無効な付与予約を表示へ混ぜない",
+        "Status": "Passed",
+        "Duration": 0.0003416,
+        "Message": null,
+        "StackTrace": null
+      },
+      {
+        "FullName": "Olca.Tests.CombatStatusIconsTests.通常敵は素材を作らずボス二体のアイコンと隣ゲージを重ねない",
+        "Status": "Passed",
+        "Duration": 0.019109,
+        "Message": null,
+        "StackTrace": null
+      }
+    ]
+  },
+  "finalSourceHashes": {
+    "Assets/Olca/Presentation/Battle/BattleView.cs": "df30b6678541fa4aa9bb1b69382068b5b081913f78741ee3fdc23c34be8a6f37",
+    "Assets/Olca/Presentation/Battle/CombatStatusIconStrip.cs": "2323b2488a6a018e874e4f081ca7c6f48bc3a52da5de0f4bb0eb18cbb67d00be",
+    "Assets/Olca/Presentation/Battle/EnemyView.cs": "d1481e385750b7c021c805cf24489a1e6a2512ed1b7b18a1c489539c7af2a6a7",
+    "Assets/Olca/Tests/CombatStatusIconsTests.cs": "63a5b14c2687fd8f44205066043bbd64bfaf29f2505b4bd3fce787d4127e2969"
+  },
+  "pointer": {
+    "pointerRaycastCycles": 2,
+    "lifo": true,
+    "emptyNoOp": true,
+    "hideRestoreSelection": true,
+    "pauseReturnHeld": true,
+    "states": [
+      {
+        "screen": [
+          1440,
+          1080
+        ],
+        "right": 720.0001,
+        "half": 720,
+        "minCardPixels": 59.0163879,
+        "confirmMinPixels": 59.0163956,
+        "scale": "(0.59, 0.59, 1.00)",
+        "cost": "コスト: 3 / 10",
+        "selected": [
+          "sword",
+          "bomb"
+        ],
+        "frame": 60
+      },
+      {
+        "screen": [
+          1440,
+          1080
+        ],
+        "right": 720.0001,
+        "half": 720,
+        "minCardPixels": 59.0163879,
+        "confirmMinPixels": 59.0163956,
+        "scale": "(0.59, 0.59, 1.00)",
+        "cost": "コスト: 3 / 10",
+        "selected": [
+          "sword",
+          "bomb"
+        ],
+        "frame": 60
+      }
+    ]
+  },
+  "lifecycle": {
+    "pauseTicks": 60,
+    "pauseClockUnchanged": true,
+    "reapplyNoDuplicate": true,
+    "hiddenRestored": true
+  },
+  "expired": {
+    "frame": 184,
+    "playerCount": 3,
+    "bossCounts": [
+      3
+    ]
+  },
+  "cleared": {
+    "playerCount": 0,
+    "bossCounts": [
+      0
+    ]
+  },
+  "retreatRemainingVisible": [],
+  "finalPlayConsole": {
+    "sampledUtc": "2026-10-30T04:58:06.947614Z",
+    "ageMs": 216,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 18,
+    "seeded": true
+  },
+  "afterStopConsole": {
+    "sampledUtc": "2026-10-30T04:58:11.04093Z",
+    "ageMs": 42,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 18,
+    "seeded": true
+  },
+  "isolatedSave": true,
+  "dedicatedTempDirectoryGuard": true,
+  "nativeSizes": [
+    [
+      1920,
+      1080
+    ],
+    [
+      3840,
+      2160
+    ],
+    [
+      1440,
+      1080
+    ]
+  ],
+  "independentCodeReviewUnresolved": 0,
+  "independentVisualReviewUnresolved": 0,
+  "assetIds": [
+    "Poison",
+    "Paralyze",
+    "Confusion",
+    "Blind",
+    "Guard",
+    "Barrier",
+    "Aura",
+    "Float",
+    "Concentrate"
+  ],
+  "newImageGeneration": false,
+  "sharedMaterialNewConnection": "Resources/OlcaUI/description",
+  "notRun": [
+    "physical gamepad",
+    "physical touchscreen",
+    "OS IME",
+    "arbitrary unlimited simultaneous poison kinds",
+    "new character attack body animation"
+  ]
+}

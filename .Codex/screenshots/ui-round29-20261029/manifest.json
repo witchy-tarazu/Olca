@@ -1,0 +1,62 @@
+[
+  {
+    "file": "before-names-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "a28e1879595c987018eadb81df6e931b2083bdf65aeec52ba3efd07a7d887812"
+  },
+  {
+    "file": "before-names-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8eef266509838c7a46bcbc2e3ff3e3b7617a64f20680dd22f2f4b10eb6ade109"
+  },
+  {
+    "file": "initial-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "8424ccee2ae36500b46173e9a218d1ce2f2d2622155eefeeed19a43686e7564c"
+  },
+  {
+    "file": "initial-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "718988d124bb5dc643796b49288c5440d70c1443bf7352b502565deabb54850a"
+  },
+  {
+    "file": "hurt-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "925d6ce07188ca5cc3a0f57801964985115ddbbd70cb1d9e1de780946a1e8324"
+  },
+  {
+    "file": "hurt-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "55b7de196ebe451de4a06e6c16f8bd073c12767721aa33fff64e7e9721ccdc58"
+  },
+  {
+    "file": "after-death-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "94aace2ee51517e4cfa06d4effc0e53a4641e261ffac3cea44e91b7784837b61"
+  },
+  {
+    "file": "after-death-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "2ff2a5c3ac7c293102fe6956e95130c3037ff2aec96c72d1630c375b5f5f960d"
+  },
+  {
+    "file": "boss-details-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "21531e57f15b3279cb24f1dd2828ab668e10ea2ff66892139c886fc94d87b2e0"
+  },
+  {
+    "file": "normal-details-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ae448158a6d05d9caa428ae4fa0f943e1b960ee2e600e53e3606417e085b70f6"
+  }
+]

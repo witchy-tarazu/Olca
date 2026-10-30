@@ -1,0 +1,6173 @@
+[
+  {
+    "receipt": "ui-round53-functional-cancel0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_bomb",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-cancel1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_bomb",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-close-custom.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "センタクしたカードをカクテイしました",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": false
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-deselect0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "bomb"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ボム\n\n2マイメにカーソルをアわせてください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 1,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "2マイメにカーソルをアわせてください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-deselect1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "bomb"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ボム\n\n2マイメにカーソルをアわせてください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 1,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "2マイメにカーソルをアわせてください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-enter0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "サイショのソザイをエラんでください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "サイショのソザイをエラんでください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-enter1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "サイショのソザイをエラんでください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "サイショのソザイをエラんでください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-exceed-enter.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "サイショのソザイをエラんでください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "サイショのソザイをエラんでください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-exceed-execute.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード★",
+          "cost": 1,
+          "power": 45,
+          "tuning": 0,
+          "level": "Lv1",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード★\nコスト: 1 / イリョク: 45\nゾクセイ ムゾクセイ / スタンダード / ソード / チョウエツ 1\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "チョウエツ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-exceed-first.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\n\n2マイメにカーソルをアわせてください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 1,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "2マイメにカーソルをアわせてください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-exceed-second.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword",
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（センタクチュウ）: ソード\n\nチョウエツ → ケッカプレビュー（ミジッコウ）\nソード★\nコスト: 1 / イリョク: 45\nゾクセイ ムゾクセイ / スタンダード / ソード / チョウエツ 1\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "チョウエツ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-exceed-undo.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "チョウエツ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-execute.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "fire_sword",
+          "Name": "ファイアソード",
+          "cost": 2,
+          "power": 60,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "FireSwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-fusion-bomb.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword",
+        "bomb"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（センタクチュウ）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-fusion-enter.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "サイショのソザイをエラんでください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "サイショのソザイをエラんでください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-fusion-sword.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（カーソル）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: 2マイメをセンタクしてカクテイ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-invalid-cancel.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_bomb",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: ジッコウフカ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-invalid-enter.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "サイショのソザイをエラんでください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "サイショのソザイをエラんでください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-invalid-shield.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（カーソル）: シールド\n\nユウゴウ / ジッコウフカ\nこの系統とレギュレーションのツウジョウユウゴウレシピがミトウロクです\n\nカコウはまだジッコウしていません",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: ジッコウフカ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-invalid-source.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（カーソル）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: 2マイメをセンタクしてカクテイ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-load.json",
+    "success": true,
+    "result": {
+      "phase": "Battle",
+      "paused": false
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-pair0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword",
+        "bomb"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（センタクチュウ）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-pair1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword",
+        "bomb"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（センタクチュウ）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-pause.json",
+    "success": true,
+    "result": {
+      "phase": "Battle",
+      "paused": true
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-persisted.json",
+    "success": true,
+    "result": {
+      "Revision": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "owned": 0,
+      "receipts": 0
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-preview0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（カーソル）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: 2マイメをセンタクしてカクテイ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-preview1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（カーソル）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: 2マイメをセンタクしてカクテイ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-recipe-after-undo.json",
+    "success": true,
+    "result": {
+      "Revision": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "owned": 0,
+      "receipts": 0
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-reloaded-confirmed.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-reloaded.json",
+    "success": false,
+    "result": null,
+    "error": "Runtime Error"
+  },
+  {
+    "receipt": "ui-round53-functional-remember.json",
+    "success": true,
+    "result": true,
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-reselect0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "bomb",
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ボム\nソザイ2（センタクチュウ）: ソード\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-reselect1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "bomb",
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ボム\nソザイ2（センタクチュウ）: ソード\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-result-4by3.json",
+    "success": true,
+    "result": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "fire_sword",
+          "Name": "ファイアソード",
+          "cost": 2,
+          "power": 60,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "FireSwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-result-4k.json",
+    "success": true,
+    "result": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "fire_sword",
+          "Name": "ファイアソード",
+          "cost": 2,
+          "power": 60,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "FireSwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-result-fhd.json",
+    "success": true,
+    "result": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "fire_sword",
+          "Name": "ファイアソード",
+          "cost": 2,
+          "power": 60,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "FireSwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-result-hover.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "fire_sword",
+          "Name": "ファイアソード",
+          "cost": 2,
+          "power": 60,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "FireSwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-source0.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\n\n2マイメにカーソルをアわせてください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 1,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "2マイメにカーソルをアわせてください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-source1.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（カーソル）: ボム\n\nユウゴウ → ケッカプレビュー（ミジッコウ）\nファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: 2マイメをセンタクしてカクテイ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-stale-execute.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "fire_sword",
+          "Name": "ファイアソード",
+          "cost": 2,
+          "power": 60,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "FireSwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_fire_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-start.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: ジッコウフカ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-tuning-enter.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "サイショのソザイをエラんでください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "サイショのソザイをエラんでください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-tuning-execute.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 40,
+          "tuning": 1,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード\nコスト: 1 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nイリョク +10\n\nチョウリツ / コスト 0\nダンカイ 1\nイリョク +10",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 1,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "チョウリツ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-tuning-first.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\n\n2マイメにカーソルをアわせてください",
+      "art": null,
+      "artEnabled": true,
+      "artAlpha": 0,
+      "processingFrames": 1,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": false
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "2マイメにカーソルをアわせてください",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-tuning-second.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": true,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [
+        "sword",
+        "tuning"
+      ],
+      "regular": [],
+      "description": "ソザイ1（センタクチュウ）: ソード\nソザイ2（センタクチュウ）: チューニング\n\nチョウリツ → ケッカプレビュー（ミジッコウ）\nソード\nコスト: 1 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nイリョク +10\n\nチョウリツ / コスト 0\nダンカイ 1\nイリョク +10",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 2,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ExecuteButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "チョウリツ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-tuning-undo.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "チョウリツ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "receipt": "ui-round53-functional-undo.json",
+    "success": true,
+    "result": {
+      "screen": [
+        640,
+        360
+      ],
+      "mode": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "cost": 1,
+          "power": 30,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "SwordCustomIcon"
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "cost": 1,
+          "power": 0,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "tuningCustomIcon"
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "cost": 2,
+          "power": 40,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "bombCustomIcon"
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "cost": 1,
+          "power": 15,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "shieldCustomIcon"
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "cost": 2,
+          "power": 20,
+          "tuning": 0,
+          "level": "Normal",
+          "sprite": "healCustomIcon"
+        }
+      ],
+      "materials": [],
+      "regular": [],
+      "description": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "art": "OlcaCardArt_sword",
+      "artEnabled": true,
+      "artAlpha": 1,
+      "processingFrames": 0,
+      "undo": 0,
+      "recipes": [
+        "special/v1/bomb+sword/fire_sword"
+      ],
+      "frame": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        }
+      ],
+      "modeLabels": [
+        {
+          "name": "GuideText",
+          "text": "ユウゴウ: Enterでジッコウ",
+          "fontSize": 26,
+          "rect": "(x:-440.00, y:-22.00, width:880.00, height:44.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "カコウをジッコウ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        },
+        {
+          "name": "Label",
+          "text": "ソザイセンタクをトリケシ",
+          "fontSize": 28,
+          "rect": "(x:-188.00, y:-30.00, width:376.00, height:60.00)",
+          "font": "JikiTourai",
+          "color": "RGBA(0.055, 0.170, 0.220, 1.000)"
+        }
+      ]
+    },
+    "error": null
+  }
+]

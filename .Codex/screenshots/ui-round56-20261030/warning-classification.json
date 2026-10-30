@@ -1,0 +1,19 @@
+{
+  "count": 62,
+  "messages": {
+    "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします": 53,
+    "[WARNING] [DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効": 2,
+    "[WARNING] 使用可能なカードがありません": 2,
+    "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。": 4,
+    "[WorldDamageNumberPool] 最大プールサイズ(20)に達しています。": 1
+  },
+  "suppressed": false,
+  "source": "final log segment and console groundTruth",
+  "categories": {
+    "isolated Controller tests optional reward view unassigned": 53,
+    "invalid settings safe fallback tests": 4,
+    "invalid reward phase boundary tests": 2,
+    "no usable card boundary tests": 2,
+    "bounded pool maximum test": 1
+  }
+}

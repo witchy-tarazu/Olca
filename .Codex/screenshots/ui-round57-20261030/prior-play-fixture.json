@@ -1,0 +1,12 @@
+{
+  "changedFields": [
+    "Revision",
+    "CommitId",
+    "RevealedRecipes",
+    "SelectedStyleId"
+  ],
+  "revealedRecipe": "special/v1/bomb+sword/fire_sword",
+  "cause": "Private initial seed omitted registered recipes; existing ClearReturnSession.Stage -> UpdateCollection recorded the already-owned FireSword known-result recipe. Production Controller initializes the session with the recipe provider.",
+  "fix": "Only private setup now uses the same Controller factory/recipe provider/definitions before starter initialization. Root702 evidence preserved. Product save code unchanged.",
+  "finalProofRoot": "ui-round57-703"
+}

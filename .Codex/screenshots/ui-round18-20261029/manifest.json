@@ -1,0 +1,74 @@
+[
+  {
+    "file": "stale-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "ac4ce1e990c88e27306bf042a66c39a17fdfb2a7b6e798474bda1428e4e5aec5"
+  },
+  {
+    "file": "stale-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "cdc7ed5f472b928c4b8465d6bbfe83cb94c8037abcf5850d651ae441e3b653a4"
+  },
+  {
+    "file": "stale-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "f80b5e8d5bfbb15ed7214681c2462ac9c8ee9d5e8f72ae1899e3b4558d09e84d"
+  },
+  {
+    "file": "stale-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "c57d6005e89995b7b337aeb75e7c80de275cd747ef66d1b6445c4f0d5864b357"
+  },
+  {
+    "file": "stale-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f228c8be9a4f09e914560143f6e24d43d6dea6768a36eccc85e2a71853ea770a"
+  },
+  {
+    "file": "stale-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "c0256628e864273344677dcccb861fc57f999fa9785b7e056011ede9dccbd4fd"
+  },
+  {
+    "file": "return-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "d0a48454c78121e09c35696504c14f7bffbe6a63aecaa66b3cc2a3dd5925d47b"
+  },
+  {
+    "file": "return-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "314eb69f67bb77a46fd989fcf83a9e6492c547cde2219dfebfad4f22f4ea69a3"
+  },
+  {
+    "file": "return-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "9d20c45e8112bab28b7f05ce205c2fb80b9052c98b578f65809084f8eb011f61"
+  },
+  {
+    "file": "return-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "f38c41e00447a994f28a3e7048259760625396d8695ff55e2a3c2618a231793b"
+  },
+  {
+    "file": "return-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "3cf621cd249c95b50af2ad97acab5d86bc8cab8ee60466abcd06ffc1210da11c"
+  },
+  {
+    "file": "return-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "7da5b69eceee3a534291c88fc8d4be1cc5f03bf03b8746084e361089d8992123"
+  }
+]

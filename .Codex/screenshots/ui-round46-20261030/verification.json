@@ -1,0 +1,403 @@
+{
+  "baseline": "3b0572681b42972e6c816d2accbbd8111ea65657",
+  "originalBackgroundSha256": "5b500512b29d2af355f25e3aec5dd996c150b6a5fab9ff24f5fcda4561294cd3",
+  "interactions": {
+    "pointerRaycastCycles": 2,
+    "lifo": true,
+    "emptyNoOp": true,
+    "hideRestoreSelection": true,
+    "pauseReturnHeld": true,
+    "states": [
+      {
+        "screen": [
+          1440,
+          1080
+        ],
+        "right": 719.999939,
+        "half": 720,
+        "minCardPixels": 59.0163879,
+        "confirmMinPixels": 59.0163879,
+        "scale": "(0.59, 0.59, 1.00)",
+        "cost": "コスト: 3 / 10",
+        "selected": [
+          "sword",
+          "bomb"
+        ],
+        "frame": 0
+      },
+      {
+        "screen": [
+          1440,
+          1080
+        ],
+        "right": 719.999939,
+        "half": 720,
+        "minCardPixels": 59.0163879,
+        "confirmMinPixels": 59.0163879,
+        "scale": "(0.59, 0.59, 1.00)",
+        "cost": "コスト: 3 / 10",
+        "selected": [
+          "sword",
+          "bomb"
+        ],
+        "frame": 0
+      }
+    ]
+  },
+  "closedAndReopened": {
+    "closed": {
+      "scale": "(1.00, 1.00, 1.00)",
+      "position": "(-900.00, 0.00)",
+      "bgHeight": 1000,
+      "gaugeHeight": 750
+    },
+    "reopened": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "right": 719.999939,
+      "half": 720,
+      "minCardPixels": 59.0163879,
+      "confirmMinPixels": 59.0163879,
+      "scale": "(0.59, 0.59, 1.00)",
+      "cost": "コスト: 0 / 10",
+      "selected": [],
+      "frame": 2
+    }
+  },
+  "runtimeDisposal": {
+    "actualPlayOnDestroy": true,
+    "ownedSpriteReleased": true,
+    "sharedSpritePreserved": true,
+    "originalRestored": true
+  },
+  "metrics": {
+    "fhd": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "viewport": "(x:-190.00, y:-135.00, width:380.00, height:270.00)",
+      "background": "(x:-640.00, y:-500.00, width:1280.00, height:1000.00)",
+      "labels": [
+        {
+          "name": "SelectedCardDescription",
+          "text": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+          "fontSize": 28,
+          "effectiveFontPixels": 22.0327835,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "CostDisplay",
+          "text": "コスト: 3 / 10",
+          "fontSize": 30,
+          "effectiveFontPixels": 23.606554,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "カクテイ",
+          "fontSize": 30,
+          "effectiveFontPixels": 23.606554,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ジブン",
+          "fontSize": 26,
+          "effectiveFontPixels": 20.459013,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ガメンをカクす",
+          "fontSize": 24,
+          "effectiveFontPixels": 18.8852425,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        }
+      ]
+    },
+    "4k": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "viewport": "(x:-190.00, y:-135.00, width:380.00, height:270.00)",
+      "background": "(x:-640.00, y:-500.00, width:1280.00, height:1000.00)",
+      "labels": [
+        {
+          "name": "SelectedCardDescription",
+          "text": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+          "fontSize": 28,
+          "effectiveFontPixels": 44.06558,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "CostDisplay",
+          "text": "コスト: 3 / 10",
+          "fontSize": 30,
+          "effectiveFontPixels": 47.21312,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "カクテイ",
+          "fontSize": 30,
+          "effectiveFontPixels": 47.21312,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ジブン",
+          "fontSize": 26,
+          "effectiveFontPixels": 40.9180374,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ガメンをカクす",
+          "fontSize": 24,
+          "effectiveFontPixels": 37.7704964,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        }
+      ]
+    },
+    "4by3": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "viewport": "(x:-230.00, y:-325.00, width:460.00, height:650.00)",
+      "background": "(x:-640.00, y:-820.00, width:1280.00, height:1640.00)",
+      "labels": [
+        {
+          "name": "SelectedCardDescription",
+          "text": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+          "fontSize": 40,
+          "effectiveFontPixels": 23.6065578,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "CostDisplay",
+          "text": "コスト: 3 / 10",
+          "fontSize": 40,
+          "effectiveFontPixels": 23.6065578,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "カクテイ",
+          "fontSize": 40,
+          "effectiveFontPixels": 23.6065578,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ジブン",
+          "fontSize": 36,
+          "effectiveFontPixels": 21.245903,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ガメンをカクす",
+          "fontSize": 36,
+          "effectiveFontPixels": 21.245903,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        }
+      ]
+    },
+    "fhd-return": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "viewport": "(x:-190.00, y:-135.00, width:380.00, height:270.00)",
+      "background": "(x:-640.00, y:-500.00, width:1280.00, height:1000.00)",
+      "labels": [
+        {
+          "name": "SelectedCardDescription",
+          "text": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+          "fontSize": 28,
+          "effectiveFontPixels": 22.0327835,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "CostDisplay",
+          "text": "コスト: 3 / 10",
+          "fontSize": 30,
+          "effectiveFontPixels": 23.606554,
+          "resizeTextForBestFit": false,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "カクテイ",
+          "fontSize": 30,
+          "effectiveFontPixels": 23.606554,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ジブン",
+          "fontSize": 26,
+          "effectiveFontPixels": 20.459013,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        },
+        {
+          "name": "Text (Legacy)",
+          "text": "ガメンをカクす",
+          "fontSize": 24,
+          "effectiveFontPixels": 18.8852425,
+          "resizeTextForBestFit": true,
+          "font": "JikiTourai"
+        }
+      ]
+    }
+  },
+  "ten-metrics": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "handCount": 10,
+    "viewport": "(x:-230.00, y:-325.00, width:460.00, height:650.00)",
+    "contentHeight": 650,
+    "guide": [
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: センタク / East: トリケシ\nStart: カクテイ・カコウ / North: カコウキリカエ\nWest: Undo / Select: テフダ・ヘンシン\nR3: ショウサイ / LB: ガメン / RB: ジブン",
+        "fontSize": 30,
+        "effectiveFontPixels": 17.7049179,
+        "resizeTextForBestFit": false,
+        "font": "JikiTourai"
+      }
+    ],
+    "scrollPosition": null
+  },
+  "transforms-two": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "handCount": 10,
+    "viewport": "(x:-230.00, y:-176.00, width:460.00, height:352.00)",
+    "contentHeight": 516,
+    "guide": [
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: センタク / East: トリケシ\nStart: カクテイ・カコウ / North: カコウキリカエ\nWest: Undo / Select: テフダ・ヘンシン\nR3: ショウサイ / LB: ガメン / RB: ジブン",
+        "fontSize": 30,
+        "effectiveFontPixels": 17.70492,
+        "resizeTextForBestFit": false,
+        "font": "JikiTourai"
+      }
+    ],
+    "scrollPosition": null
+  },
+  "transforms-scroll": {
+    "screen": null,
+    "handCount": 0,
+    "viewport": "(x:-230.00, y:-176.00, width:460.00, height:352.00)",
+    "contentHeight": null,
+    "guide": [],
+    "scrollPosition": -6.5129e-07
+  },
+  "actual-restored": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "handCount": 10,
+    "viewport": "(x:-230.00, y:-325.00, width:460.00, height:650.00)",
+    "contentHeight": 650,
+    "guide": [
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: センタク / East: トリケシ\nStart: カクテイ・カコウ / North: カコウキリカエ\nWest: Undo / Select: テフダ・ヘンシン\nR3: ショウサイ / LB: ガメン / RB: ジブン",
+        "fontSize": 30,
+        "effectiveFontPixels": 17.7049179,
+        "resizeTextForBestFit": false,
+        "font": "JikiTourai"
+      }
+    ],
+    "scrollPosition": null
+  },
+  "finalTests": {
+    "summary": {
+      "total": 3471,
+      "passed": 3471,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 237.23,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T04:16:28.777136Z",
+      "ageMs": 1225,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 66,
+      "consoleLogs": 2680,
+      "seeded": true
+    },
+    "consoleCounts": {
+      "error": 0,
+      "warn": 45,
+      "log": 1955
+    },
+    "wrapperTimedOut": true
+  },
+  "targetedTests": {
+    "custom": {
+      "summary": {
+        "total": 368,
+        "passed": 368,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 22.99
+    },
+    "progression": {
+      "summary": {
+        "total": 199,
+        "passed": 199,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 72.87
+    }
+  },
+  "finalHealth": {
+    "editorStopped": true,
+    "runnerStopped": true,
+    "actualRender": [
+      640,
+      360
+    ],
+    "dedicatedTmpdirGuard": true,
+    "consoleErrors": 0
+  }
+}

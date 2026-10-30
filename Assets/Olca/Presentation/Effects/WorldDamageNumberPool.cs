@@ -85,6 +85,9 @@ namespace Olca.Presentation.Effects
                 worldPosition.y+=count*Mathf.Max(.1f,renderer!=null?renderer.bounds.size.y:0f);
             }
             owners[instance]=owner;
+            // 貸出時に表示中の敵ラベル参照を集める。boundsと可視性は各描画frameで再評価する。
+            var labels=perEffect&&owner!=null?FeedbackLabels(owner):null;
+            instance.AlignViewport=perEffect&&owner!=null?()=>WorldDamageNumberView.KeepGroupBelowViewportTop(owners.Where(pair=>ReferenceEquals(pair.Value,owner)).Select(pair=>pair.Key),labels):null;
 
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, clearCts.Token);
             try
@@ -95,6 +98,14 @@ namespace Olca.Presentation.Effects
             {
                 Return(instance);
             }
+        }
+
+        private static Renderer[] FeedbackLabels(object owner)
+        {
+            var own=owner is Component component?component.GetComponentsInChildren<TextMesh>():new TextMesh[0];
+            return own.Concat(UnityEngine.Object.FindObjectsByType<Olca.Presentation.Field.WorldEnemyView>(FindObjectsSortMode.None)
+                .SelectMany(view=>view.GetComponentsInChildren<TextMesh>())).Select(label=>label.GetComponent<Renderer>())
+                .Where(renderer=>renderer!=null).Distinct().ToArray();
         }
 
         private WorldDamageNumberView Get()=>TakeInstance(true);
@@ -127,6 +138,7 @@ namespace Olca.Presentation.Effects
             if (ReferenceEquals(instance, null) || !activeInstances.Remove(instance)) return;
             owners.Remove(instance);
             if (instance == null || isDestroyed) return;
+            instance.AlignViewport=null;
             instance.gameObject.SetActive(false);
             // 同時ヒットの一時超過は表示するが、待機プールの保持数は増やさない。
             if(pool.Count>=maxPoolSize){DestroyInstance(instance);return;}

@@ -1,0 +1,86 @@
+[
+  {
+    "file": "cards-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "9878ae45632a8b97b144cb33bca7ad8225d20b469ff3b5ac22264889c40eab7f"
+  },
+  {
+    "file": "cards-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b9ea94b60c2ee8d9d60e35b83b8017713484121bd06600aa8d79d9721755476d"
+  },
+  {
+    "file": "cards-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "50bb07073096ea21dba06e61d6ee427058e780d0d2d482176d3a92518d842291"
+  },
+  {
+    "file": "cards-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "34ae5a9f87e69b99438904cbe53b26d905494cb661e135063a7c8faab41e9137"
+  },
+  {
+    "file": "cards-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "9b690f8892c446187876c3e5302e3b063e70d34abd6e10483eb425c6c58bfece"
+  },
+  {
+    "file": "cards-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "9561f558a3c38dbbfb76c1f8f069661c0d6eb462d6bebfc2736eeb44b6eddb1d"
+  },
+  {
+    "file": "recipe-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "8801aef6c72a6c7d22ea87fec070ed5201f72faf5d65054f0859fc1e9f71e029"
+  },
+  {
+    "file": "recipe-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "bf839ab0696cc73ea4133699f37a4614bb25799379666f92eb761336ea40dd2b"
+  },
+  {
+    "file": "recipe-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "dccb8670bf14e264d56d40386b0ceb92a170642814f2bcf0b973828c5abd1898"
+  },
+  {
+    "file": "recipe-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "271bd3ca68fc56910ba1412742fb0438f7a1268a7e83bc664d0fd7f7bea70018"
+  },
+  {
+    "file": "recipe-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "bf7255483fbc92d675d87d58984108a94dfff82d562e0d8907267efbd7e7e4df"
+  },
+  {
+    "file": "recipe-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "fd7afcb963a128536a6e018dc52c3b614c9e06ee1b26ff04e2e22a1131dc4463"
+  },
+  {
+    "file": "pending-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "d1b3b5d0c905f2e1ff7a425266e6717b5dfb39e254f8ee0aec13164a2be288cb"
+  },
+  {
+    "file": "pending-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "809e86b3766ea61a89133e305ff1793c72f6ed38814d0316d98afe7f1d095c67"
+  }
+]

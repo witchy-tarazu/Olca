@@ -1,0 +1,14 @@
+{
+  "input": "actual EventSystem Raycast route",
+  "cancelLoops": 2,
+  "cancelSavedFileHashesUnchanged": true,
+  "overlapAndLockedPlacementsRejected": true,
+  "placedInstanceRotationAndRemovalVerified": true,
+  "savedLoadoutReopened": true,
+  "staleSaveButtonClicks": 3,
+  "staleSaveRevisionUnchanged": true,
+  "unequipSaved": true,
+  "finalAccessoryCount": 1,
+  "finalPlacementCount": 2,
+  "noRealSaveFaultInjection": true
+}

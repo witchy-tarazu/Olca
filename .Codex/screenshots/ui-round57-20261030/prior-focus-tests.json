@@ -1,0 +1,19 @@
+{
+  "summary": {
+    "total": 377,
+    "passed": 376,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 25.81,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.全文入口が消えた後は外部保存でなく画面の既定選択へ戻る",
+      "Status": "Failed",
+      "Duration": 0.0239247,
+      "Message": "  Expected string length 13 but was 25. Strings differ at index 5.\n  Expected: \"StyleChoice_0\"\n  But was:  \"StyleSelectionHelpDetails\"\n  ----------------^\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.全文入口が消えた後は外部保存でなく画面の既定選択へ戻る () [0x00324] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:215\n"
+    }
+  ]
+}

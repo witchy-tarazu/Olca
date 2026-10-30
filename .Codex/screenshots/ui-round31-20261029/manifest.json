@@ -1,0 +1,77 @@
+{
+  "unit": "round31-world-feedback-top-boundary",
+  "images": [
+    {
+      "file": "before-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "4e7bb173c197d3f57b57cb9d4038cb303c06f4d15211cf3517ea1a6e94ad6348",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "before-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "8ea83852a362759f82d2604c46c545bde0ff2fed69952b264a0971c08d986129",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "after-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "6eddba3dc525094858f1198d008ad21d70ccdd905587ca5cfc0196e56034b10f",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "after-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "3a3de190c5c502fdc3e3e30e1fc7b8c43f7abffb16aa71c4e0345e726a3d32f5",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "after-visible-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "abc7d02a03be843b34ecc3bc5842119736d2d55bd0bd6d1c89cdd9946d7b009f",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "after-visible-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "fef144d3e07df19d173c08d4b9479a86cd8b3008394fe4ec99351d2453ba1902",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "multi-after-fhd.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "0373e910c6cb1dd9cb78e94c84b623cfe80bad73a93fdf8cf55abd6db29ccb54",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    },
+    {
+      "file": "multi-after-4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "0bc079ba039e1ae03634fc59e1f01efd8b3363f4f28d4abcac0d285437794948",
+      "capture": "Unity MCP capture_game_view source=screen; isolated save"
+    }
+  ]
+}

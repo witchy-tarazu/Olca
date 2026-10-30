@@ -499,8 +499,10 @@ namespace Olca.Tests.Application
         {
             var screen=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Touchscreen>();
             var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            var previousEvents=UnityEngine.EventSystems.EventSystem.current;
             var system=new UnityEngine.GameObject("touch-test-events",typeof(TouchTestEventSystem));
             system.GetComponent<TouchTestEventSystem>().Register();
+            UnityEngine.EventSystems.EventSystem.current=system.GetComponent<TouchTestEventSystem>();
             var canvas=new UnityEngine.GameObject("touch-test-ui",typeof(UnityEngine.Canvas),typeof(TouchUiRaycaster));
             canvas.GetComponent<UnityEngine.Canvas>().renderMode=UnityEngine.RenderMode.ScreenSpaceOverlay;
             var button=new UnityEngine.GameObject("excluded-button",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));button.transform.SetParent(canvas.transform,false);
@@ -516,7 +518,7 @@ namespace Olca.Tests.Application
                 Touch(1,UnityEngine.InputSystem.TouchPhase.Ended,.2f);provider.CaptureTimestamped();
                 UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.D));UnityEngine.InputSystem.InputSystem.Update();
                 Assert.AreEqual(1,provider.CaptureTimestamped().Last().Input.Horizontal);
-            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(screen);UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);canvas.GetComponent<TouchUiRaycaster>().Unregister();system.GetComponent<TouchTestEventSystem>().Unregister();UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(system);}
+            } finally {provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(screen);UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);canvas.GetComponent<TouchUiRaycaster>().Unregister();system.GetComponent<TouchTestEventSystem>().Unregister();if(previousEvents!=null)UnityEngine.EventSystems.EventSystem.current=previousEvents;UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(system);}
         }
         [TestCase(30,false)][TestCase(60,false)][TestCase(120,false)][TestCase(30,true)][TestCase(120,true)]
         public void スマホ保持移動は描画fpsや追いつき処理で変わらない(int fps,bool stall)

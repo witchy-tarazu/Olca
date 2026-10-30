@@ -1,0 +1,569 @@
+{
+  "card-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "font": "JikiTourai",
+    "fontSize": 30,
+    "effectivePixels": 23.606554,
+    "viewport": {
+      "min": [
+        45.3245926,
+        234.059036
+      ],
+      "max": [
+        710.0852,
+        846.8852
+      ]
+    },
+    "content": {
+      "min": [
+        45.3245926,
+        234.059052
+      ],
+      "max": [
+        710.0852,
+        846.8852
+      ]
+    },
+    "panel": {
+      "min": [
+        -3.43322754e-05,
+        115.082024
+      ],
+      "max": [
+        755.4097,
+        964.917969
+      ]
+    },
+    "contentHeight": 778.8,
+    "preferredHeight": 303,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "カード ショウサイ",
+        "fontSize": 36,
+        "effectivePixels": 28.3278656
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+        "fontSize": 30,
+        "effectivePixels": 23.606554
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 30,
+        "effectivePixels": 23.606554
+      }
+    ]
+  },
+  "card-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "font": "JikiTourai",
+    "fontSize": 30,
+    "effectivePixels": 47.2131157,
+    "viewport": {
+      "min": [
+        90.64921,
+        468.117981
+      ],
+      "max": [
+        1420.17065,
+        1693.77039
+      ]
+    },
+    "content": {
+      "min": [
+        90.64921,
+        468.118042
+      ],
+      "max": [
+        1420.17065,
+        1693.77051
+      ]
+    },
+    "panel": {
+      "min": [
+        6.10351563e-05,
+        230.16391
+      ],
+      "max": [
+        1510.81982,
+        1929.836
+      ]
+    },
+    "contentHeight": 778.8,
+    "preferredHeight": 299.5,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "カード ショウサイ",
+        "fontSize": 36,
+        "effectivePixels": 56.65574
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+        "fontSize": 30,
+        "effectivePixels": 47.2131157
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 30,
+        "effectivePixels": 47.2131157
+      }
+    ]
+  },
+  "card-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "font": "JikiTourai",
+    "fontSize": 40,
+    "effectivePixels": 23.60656,
+    "viewport": {
+      "min": [
+        33.9934578,
+        191.567169
+      ],
+      "max": [
+        532.564,
+        935.4099
+      ]
+    },
+    "content": {
+      "min": [
+        33.9934578,
+        191.567184
+      ],
+      "max": [
+        532.564,
+        935.4099
+      ]
+    },
+    "panel": {
+      "min": [
+        -5.722046e-06,
+        56.0655136
+      ],
+      "max": [
+        566.557434,
+        1023.93451
+      ]
+    },
+    "contentHeight": 1260.4,
+    "preferredHeight": 456,
+    "scroll": 0,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "カード ショウサイ",
+        "fontSize": 44,
+        "effectivePixels": 25.9672165
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+        "fontSize": 40,
+        "effectivePixels": 23.60656
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 36,
+        "effectivePixels": 21.2459049
+      }
+    ]
+  },
+  "transform-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "text": "テスト ヘンシン\nテフダジョウゲン +0\nジャクテン: Fire / None\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Fire / ツウジョウ 100% / タメ 200% / 60フレーム",
+    "font": "JikiTourai",
+    "fontSize": 30,
+    "effectivePixels": 23.606554,
+    "viewport": {
+      "min": [
+        45.3245926,
+        234.059036
+      ],
+      "max": [
+        710.0852,
+        846.8852
+      ]
+    },
+    "content": {
+      "min": [
+        45.3245926,
+        234.059052
+      ],
+      "max": [
+        710.0852,
+        846.8852
+      ]
+    },
+    "panel": {
+      "min": [
+        -3.43322754e-05,
+        115.082024
+      ],
+      "max": [
+        755.4097,
+        964.917969
+      ]
+    },
+    "contentHeight": 778.8,
+    "preferredHeight": 225,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "ヘンシン ショウサイ",
+        "fontSize": 36,
+        "effectivePixels": 28.3278656
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "テスト ヘンシン\nテフダジョウゲン +0\nジャクテン: Fire / None\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Fire / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "fontSize": 30,
+        "effectivePixels": 23.606554
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 30,
+        "effectivePixels": 23.606554
+      }
+    ]
+  },
+  "transform-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "text": "テスト ヘンシン\nテフダジョウゲン +0\nジャクテン: Fire / None\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Fire / ツウジョウ 100% / タメ 200% / 60フレーム",
+    "font": "JikiTourai",
+    "fontSize": 30,
+    "effectivePixels": 47.21312,
+    "viewport": {
+      "min": [
+        90.6491547,
+        468.11795
+      ],
+      "max": [
+        1420.17065,
+        1693.77051
+      ]
+    },
+    "content": {
+      "min": [
+        90.6491547,
+        468.11795
+      ],
+      "max": [
+        1420.17065,
+        1693.77051
+      ]
+    },
+    "panel": {
+      "min": [
+        3.81469727e-06,
+        230.163849
+      ],
+      "max": [
+        1510.81982,
+        1929.83618
+      ]
+    },
+    "contentHeight": 778.8,
+    "preferredHeight": 222.5,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "ヘンシン ショウサイ",
+        "fontSize": 36,
+        "effectivePixels": 56.6557426
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "テスト ヘンシン\nテフダジョウゲン +0\nジャクテン: Fire / None\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Fire / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "fontSize": 30,
+        "effectivePixels": 47.21312
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 30,
+        "effectivePixels": 47.21312
+      }
+    ]
+  },
+  "transform-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "text": "テスト ヘンシン\nテフダジョウゲン +0\nジャクテン: Fire / None\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Fire / ツウジョウ 100% / タメ 200% / 60フレーム",
+    "font": "JikiTourai",
+    "fontSize": 40,
+    "effectivePixels": 23.60656,
+    "viewport": {
+      "min": [
+        33.9934578,
+        191.567169
+      ],
+      "max": [
+        532.564,
+        935.4099
+      ]
+    },
+    "content": {
+      "min": [
+        33.9934578,
+        191.567184
+      ],
+      "max": [
+        532.564,
+        935.4099
+      ]
+    },
+    "panel": {
+      "min": [
+        -5.722046e-06,
+        56.0655136
+      ],
+      "max": [
+        566.557434,
+        1023.93451
+      ]
+    },
+    "contentHeight": 1260.4,
+    "preferredHeight": 300,
+    "scroll": 0,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "ヘンシン ショウサイ",
+        "fontSize": 44,
+        "effectivePixels": 25.9672165
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "テスト ヘンシン\nテフダジョウゲン +0\nジャクテン: Fire / None\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Fire / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "fontSize": 40,
+        "effectivePixels": 23.60656
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 36,
+        "effectivePixels": 21.2459049
+      }
+    ]
+  },
+  "long-fhd": {
+    "screen": [
+      1920,
+      1080
+    ],
+    "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+    "font": "JikiTourai",
+    "fontSize": 30,
+    "effectivePixels": 23.606554,
+    "viewport": {
+      "min": [
+        45.3245926,
+        234.059036
+      ],
+      "max": [
+        710.0852,
+        846.8852
+      ]
+    },
+    "content": {
+      "min": [
+        45.3245926,
+        234.059052
+      ],
+      "max": [
+        710.0852,
+        846.8852
+      ]
+    },
+    "panel": {
+      "min": [
+        -3.43322754e-05,
+        115.082024
+      ],
+      "max": [
+        755.4097,
+        964.917969
+      ]
+    },
+    "contentHeight": 778.8,
+    "preferredHeight": 303,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "ヘンシン ショウサイ",
+        "fontSize": 36,
+        "effectivePixels": 28.3278656
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "fontSize": 30,
+        "effectivePixels": 23.606554
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 30,
+        "effectivePixels": 23.606554
+      }
+    ]
+  },
+  "long-4k": {
+    "screen": [
+      3840,
+      2160
+    ],
+    "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+    "font": "JikiTourai",
+    "fontSize": 30,
+    "effectivePixels": 47.2131157,
+    "viewport": {
+      "min": [
+        90.64921,
+        468.117981
+      ],
+      "max": [
+        1420.17065,
+        1693.77039
+      ]
+    },
+    "content": {
+      "min": [
+        90.64921,
+        468.118042
+      ],
+      "max": [
+        1420.17065,
+        1693.77051
+      ]
+    },
+    "panel": {
+      "min": [
+        6.10351563e-05,
+        230.16391
+      ],
+      "max": [
+        1510.81982,
+        1929.836
+      ]
+    },
+    "contentHeight": 778.8,
+    "preferredHeight": 299.5,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "ヘンシン ショウサイ",
+        "fontSize": 36,
+        "effectivePixels": 56.65574
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "fontSize": 30,
+        "effectivePixels": 47.2131157
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 30,
+        "effectivePixels": 47.2131157
+      }
+    ]
+  },
+  "long-4by3": {
+    "screen": [
+      1440,
+      1080
+    ],
+    "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+    "font": "JikiTourai",
+    "fontSize": 40,
+    "effectivePixels": 23.6065578,
+    "viewport": {
+      "min": [
+        33.99345,
+        191.5672
+      ],
+      "max": [
+        532.563965,
+        935.409851
+      ]
+    },
+    "content": {
+      "min": [
+        33.99345,
+        191.5672
+      ],
+      "max": [
+        532.563965,
+        935.409851
+      ]
+    },
+    "panel": {
+      "min": [
+        -7.62939453e-06,
+        56.0655632
+      ],
+      "max": [
+        566.5574,
+        1023.93445
+      ]
+    },
+    "contentHeight": 1260.4,
+    "preferredHeight": 456,
+    "scroll": 1,
+    "texts": [
+      {
+        "name": "CustomDetailsHeading",
+        "text": "ヘンシン ショウサイ",
+        "fontSize": 44,
+        "effectivePixels": 25.9672127
+      },
+      {
+        "name": "CustomPadDetailsText",
+        "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "fontSize": 40,
+        "effectivePixels": 23.6065578
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "トじる / East・R3",
+        "fontSize": 36,
+        "effectivePixels": 21.245903
+      }
+    ]
+  }
+}

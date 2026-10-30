@@ -1,0 +1,70 @@
+{
+  "before-4by3.png": {
+    "bytes": 232662,
+    "sha256": "44ac1bbb7e4e3f449e053efdaef55aaf8215e82f698900f79c83c0c5a502f092"
+  },
+  "after-4by3.png": {
+    "bytes": 342897,
+    "sha256": "ab37c6897ee2e0ecf39da5c5cf1957ff8c149d37a76038427882bbcc10a794fb"
+  },
+  "before-4k.png": {
+    "bytes": 525914,
+    "sha256": "61b1177174999fa916e3c625e3492127919030a8032eb0a284c87d41eeedf4c6"
+  },
+  "canonical-4by3.png": {
+    "bytes": 422365,
+    "sha256": "0531d0cc84cc98ea697160451a48a95eee6e7a897e659660c6c4ba9bbee17267"
+  },
+  "dense-end.png": {
+    "bytes": 356328,
+    "sha256": "fc3171e2c8d4f6cfcc9cab97feedb097d3d90edea0ad43dc4709ca35991ec03b"
+  },
+  "after-fhd.png": {
+    "bytes": 414729,
+    "sha256": "a5abee1dc0efff91a460346bd860a5aac7077de8cdab5a2e319fff4e09b5922c"
+  },
+  "dense-4by3.png": {
+    "bytes": 355102,
+    "sha256": "b4a9f7dd938c1ad8883ec940e7621d6fa1e2a35312811f25cb8bcd9f35c37eaa"
+  },
+  "canonical-fhd.png": {
+    "bytes": 494200,
+    "sha256": "aaa56977872c5cc3997d3d3141dfda526fc5f1abb5ad76866cf37636d4bdfa64"
+  },
+  "shop-camera-fhd.png": {
+    "bytes": 380862,
+    "sha256": "32e0982ab027fdea94efc81a94a1204afe252b652688f505049274da6cf0c15d"
+  },
+  "shop-camera-4by3.png": {
+    "bytes": 272605,
+    "sha256": "f3963bed4a27cd5d93174d3aa7f064b987aad540957fc58458c6d70973e306f3"
+  },
+  "dense-4k.png": {
+    "bytes": 1139627,
+    "sha256": "f7bde9a7baf89a9f0ca9ebc9fa01716420b1f17d4d1ce12ea150a07a376a1ec2"
+  },
+  "before-fhd.png": {
+    "bytes": 301192,
+    "sha256": "930b4d43962884f7d967ce1a30dc3b0e959ae6764ad0b7730fdf1fc6d3e77ffa"
+  },
+  "shop-small-preview.png": {
+    "bytes": 6377,
+    "sha256": "a131d4c4a6e4ff50c53a21415a155ba440915eb8264b558f92ffb27b4b3647b7"
+  },
+  "shop-camera-4k.png": {
+    "bytes": 559750,
+    "sha256": "470fa4785939b9ca1461084541064603a55f834394f31f2c1b46a0a7b8eb5e36"
+  },
+  "canonical-4k.png": {
+    "bytes": 1342814,
+    "sha256": "dc14f7bd233d1040ed5510023ed5636008fd3ca18517b931f3c23e4d3a604b5d"
+  },
+  "dense-fhd.png": {
+    "bytes": 427209,
+    "sha256": "3707ececc488d8ac5c8402c2c89962f1aeb3cafccfab9a2eb66fc41324ad2af9"
+  },
+  "after-4k.png": {
+    "bytes": 1118029,
+    "sha256": "beebb24b9c5f9dfb4e90466f3d9407e2290f7e276162016da2943c02abcdbdcd"
+  }
+}

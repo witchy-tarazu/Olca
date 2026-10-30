@@ -1,0 +1,86 @@
+[
+  {
+    "file": "card-0-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "48f947ecd18191bedcf1db5e72be1b9fc68dd0fc0b021555abf8efc450bc8838"
+  },
+  {
+    "file": "card-0-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "74f0e0f9b5029efcb2be8d03e8bfefba2a74ea024946953b9f67e1e42b90ea3b"
+  },
+  {
+    "file": "card-0-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "dd748cfa6985cd21b6374d39be8b04426b82ddf34ef821402fe2052f1571a19d"
+  },
+  {
+    "file": "card-1-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "f17f371224f19134e3005da596e4373561e5579d834224c6e0a7bbd873c68d7d"
+  },
+  {
+    "file": "card-1-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "0799749ac7296013b7ea09464b1bd2ad725cbe4113f5ad22ad126069e7ac9499"
+  },
+  {
+    "file": "card-1-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "b18f9718a654b53d60b9f1fa8fab967d8674418d7b415739d405daeb6caa324b"
+  },
+  {
+    "file": "recipe-0-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "b9cd39e2f5e8c99fa8bcaccaefa6162c21d32289b2a3550d61cab260dec2f87e"
+  },
+  {
+    "file": "recipe-0-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f838885f1a4b73388f4edbbd27f84623881887e6671e14e3abd84777f350ff57"
+  },
+  {
+    "file": "recipe-0-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "371b3c9aec58fe95564dda8597a5e9b11b780e78cdf9ff5a5bf3ede009777cd6"
+  },
+  {
+    "file": "recipe-1-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "80327e8f1653f19ba73cf18f411965acd229ca474844e93940f8dc48e89b0546"
+  },
+  {
+    "file": "recipe-1-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ebe54e90f252a81ab7e9b4711dec759aaa4b12be73dffd43ad383100c7770000"
+  },
+  {
+    "file": "recipe-1-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "0241c4bb510c6e452945daba030cc2d4426bbd6aeff450784a78e0c572b1272e"
+  },
+  {
+    "file": "long-info-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f05e24c305898057234cbb39898b07ff9d0b624719b5aa8763f626adde2c59e6"
+  },
+  {
+    "file": "long-info-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "707a4bf7849a7bafac1f06d669561b1b4fd8b7e868c30257060f6a4a20dc4df2"
+  }
+]

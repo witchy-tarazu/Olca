@@ -1,0 +1,70 @@
+[
+  {
+    "file": "before-common-fhd.png",
+    "sha256": "4b9e3d34a91fbed5d8a760acc8b9026be7dec388ff59b8c701178502cc2b7f19"
+  },
+  {
+    "file": "after-common-fhd.png",
+    "sha256": "86605c301ff6cb3799ea05a794b499d7eef627cedccf6a459b1e223068575db5"
+  },
+  {
+    "file": "before-dense-normal-fhd.png",
+    "sha256": "79d7120c79dd29998fa1eb2bc9aa46a72e3a2d6833deab0c380e55d92077289e"
+  },
+  {
+    "file": "after-dense-normal-fhd.png",
+    "sha256": "9c7aa99bc8d89bbfd7d83553f12de1b01460563e96d7e8249749a4325c8bba1b"
+  },
+  {
+    "file": "before-dense-normal-4k.png",
+    "sha256": "9bb911bc448bcaaac80bcc65bf397ed36a24db7b4ae0cbee66bce873edaa349a"
+  },
+  {
+    "file": "after-dense-normal-4k.png",
+    "sha256": "fadce53cf6a8c602e41a9297152c87f7a17b91a03d0e12dc7b95af160304d299"
+  },
+  {
+    "file": "before-dense-normal-4by3.png",
+    "sha256": "e20d5de2e3975e3c3fc960029b59d5e31000c3a4495ef0b08f5f54112ab9d81e"
+  },
+  {
+    "file": "after-dense-normal-4by3.png",
+    "sha256": "6e386edecca2673ac151798e73ac80b8869ed146201c9799e51160f0aa9935fe"
+  },
+  {
+    "file": "before-dense-custom-fhd.png",
+    "sha256": "073ae23d3102e32638ae81d44a22ffecdab204310054d0f9153ad928abee69f6"
+  },
+  {
+    "file": "after-dense-custom-fhd.png",
+    "sha256": "e84d2bcca4f3ed25571aaf393f764b0c6594b33cfca866f6acccfe9e67a33389"
+  },
+  {
+    "file": "before-dense-custom-4k.png",
+    "sha256": "65bb490e02528d9f82616ab5b9e32a7e26bcfa85f2b9bc92e439fbaf301c1c99"
+  },
+  {
+    "file": "after-dense-custom-4k.png",
+    "sha256": "57e72b1b1494e17918d71aab15597b4e9a93740df8e56303d46f1367675d8502"
+  },
+  {
+    "file": "before-dense-custom-4by3.png",
+    "sha256": "1e825b41abf9125a663ba612cc4911359d2036037c1b76c245f67bcc1cf3742a"
+  },
+  {
+    "file": "after-dense-custom-4by3.png",
+    "sha256": "1d615872f84b72155b3f4221cac4e52e4593080de1fbbf0195dbab9c9b1955ae"
+  },
+  {
+    "file": "after-visible-boss-fhd.png",
+    "sha256": "64dbaf7db8fe798cb83086a8895e4a65e6c60285db4943ec3a4cdb281d0c4af8"
+  },
+  {
+    "file": "after-visible-boss-4k.png",
+    "sha256": "e6aa30f9492d3cf0734c85d03ebd9d5b63178607df570ca75707fabddbf575db"
+  },
+  {
+    "file": "after-visible-boss-4by3.png",
+    "sha256": "4256489a291559dbffff38c72eef4758cac03015c2f0d371e89f4f58c93f4695"
+  }
+]

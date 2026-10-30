@@ -1,0 +1,62 @@
+{
+  "after-hp83-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 633909,
+    "sha256": "2d54c6233be148237df348edd95f92f2ba6a6a973acafc6ee234ed0d13eda75f"
+  },
+  "after-hp83-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 357212,
+    "sha256": "9db73a586e21a23514ab41d18c8f7ed5c2c9501c4d2c0a4a2bd4f5a60097170c"
+  },
+  "battle-hidden-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 1593566,
+    "sha256": "210fba78484c14497b00d16861f4f7a0d3f5b1aba79b1d54fbffd5a7240b3489"
+  },
+  "battle-hidden-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 700900,
+    "sha256": "a98506bef220ba3ccfc9a8c02588a10f8289df68238de10ab9a627f00c1eb733"
+  },
+  "before-hp83-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 628581,
+    "sha256": "5bee10fea50da5dcda7e3c89f32db36f7e551d7a7eda77d7e2bf61c120127a95"
+  },
+  "before-hp83-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 354446,
+    "sha256": "41e1a13548918500f1c41a89e4d115ae93a2e0f747e3345b0462e4db6a572614"
+  },
+  "exploration-return-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 626985,
+    "sha256": "9666dd9e58568387c9e301b0e704a656236b68f55150d8a89150fa26d6b05c8b"
+  },
+  "exploration-return-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 355022,
+    "sha256": "a42109a6d6aade160219b4b2bae2039b54bd6fb5d85bf01d17206f86a138578e"
+  },
+  "healed-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 635726,
+    "sha256": "cf1091237250a74711fd0645086c4d35cd75a37851d7c45759ed600eedbd28c0"
+  },
+  "healed-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 358605,
+    "sha256": "56cd6c28eab0a5e2e93f349e1927192e56f330ec1cd56ff382d07c8d2549d006"
+  }
+}

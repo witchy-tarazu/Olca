@@ -55,6 +55,71 @@ namespace Olca.Tests
             UnityEngine.Object.DestroyImmediate(source);
         }
 
+        [TestCase(false)] [TestCase(true)]
+        public void 浮遊文字は上昇位置を画面上端へ収め通常位置と文字設定を変えない(bool perspective)
+        {
+            var go=new GameObject("DamageBoundaryCamera");var camera=go.AddComponent<Camera>();camera.tag="MainCamera";camera.orthographic=!perspective;camera.orthographicSize=5;camera.transform.position=new Vector3(0,0,-10);camera.pixelRect=new Rect(0,0,1920,1080);camera.depth=100;if(perspective)camera.transform.rotation=Quaternion.Euler(20,0,15);
+            var number=new GameObject("DamageBoundaryText");var text=number.AddComponent<TextMesh>();text.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");text.fontSize=40;text.characterSize=.1f;text.text="2147483647";var view=number.AddComponent<WorldDamageNumberView>();typeof(WorldDamageNumberView).GetField("textMesh",Private).SetValue(view,text);var clamp=typeof(WorldDamageNumberView).GetMethod("KeepBelowViewportTop",Private);number.SetActive(true);
+            try{
+                // 他のテスト用カメラがあっても、この検証カメラを明示的なmainにする。
+                var others=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Where(c=>c!=camera&&c.CompareTag("MainCamera")).ToArray();foreach(var c in others)c.tag="Untagged";
+                try{
+                    number.transform.position=camera.ViewportToWorldPoint(new Vector3(.5f,1.05f,10));var scale=number.transform.localScale;var color=text.color;
+                    for(int n=0;n<3;n++){number.transform.position+=Vector3.up*.8f;clamp.Invoke(view,null);var b=text.GetComponent<Renderer>().bounds;for(int i=0;i<8;i++){var corner=b.center+Vector3.Scale(b.extents,new Vector3((i&1)==0?-1:1,(i&2)==0?-1:1,(i&4)==0?-1:1));Assert.LessOrEqual(camera.WorldToViewportPoint(corner).y,1f-8f/1080f+.0001f);}}
+                    Assert.AreEqual("2147483647",text.text);Assert.AreEqual(40,text.fontSize);Assert.AreEqual(scale,number.transform.localScale);Assert.AreEqual(color,text.color);
+                    typeof(WorldDamageNumberView).GetField("viewportOffset",Private).SetValue(view,Vector3.zero);number.transform.position=Vector3.zero;var original=number.transform.position;clamp.Invoke(view,null);Assert.AreEqual(original,number.transform.position);
+                }finally{foreach(var c in others)if(c!=null)c.tag="MainCamera";}
+            }finally{UnityEngine.Object.DestroyImmediate(number);UnityEngine.Object.DestroyImmediate(go);}
+        }
+
+        [Test]
+        public async Task 同一対象の上端ヒット群は相対間隔を維持して取消と再利用で補正を持ち越さない()
+        {
+            var go=new GameObject("DamageGroupCamera");var camera=go.AddComponent<Camera>();camera.tag="MainCamera";camera.orthographic=true;camera.orthographicSize=5;camera.transform.position=new Vector3(0,0,-10);camera.pixelRect=new Rect(0,0,1920,1080);
+            var others=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Where(c=>c!=camera&&c.CompareTag("MainCamera")).ToArray();foreach(var c in others)c.tag="Untagged";
+            try{
+                foreach(var view in Waiting.Concat(new[]{source.GetComponent<WorldDamageNumberView>()})){var text=view.GetComponent<TextMesh>();text.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");text.fontSize=40;text.characterSize=.1f;text.text="00";}
+                var labelObject=new GameObject("OwnerName");labelObject.transform.SetParent(go.transform,false);var label=labelObject.AddComponent<TextMesh>();label.font=source.GetComponent<TextMesh>().font;label.fontSize=40;label.characterSize=.1f;label.text="ボス";labelObject.transform.position=camera.ViewportToWorldPoint(new Vector3(.5f,.94f,10));var owner=label;for(int cycle=0;cycle<2;cycle++){
+                    using var cts=new CancellationTokenSource();var tasks=new[]{1,22,333}.Select(n=>((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage,n),camera.ViewportToWorldPoint(new Vector3(.5f,1.05f,10)),cts.Token,owner)).AsTask()).ToArray();
+                    var bounds=Active.Select(v=>v.GetComponent<Renderer>().bounds).OrderBy(b=>b.min.y).ToArray();Assert.AreEqual(3,bounds.Length);Assert.IsTrue(bounds.All(b=>!b.Intersects(label.GetComponent<Renderer>().bounds)),"上端から下げても対象名を隠さない");
+                    for(int n=0;n<3;n++){Assert.LessOrEqual(camera.WorldToViewportPoint(bounds[n].max).y,1f-8f/1080f+.0001f);if(n>0)Assert.LessOrEqual(bounds[n-1].max.y,bounds[n].min.y+.0001f);}
+                    CollectionAssert.AreEquivalent(new[]{"1","22","333"},Active.Select(v=>v.GetComponent<TextMesh>().text));cts.Cancel();await Completed(Task.WhenAll(tasks));Assert.AreEqual(0,Active.Count);
+                }
+            }finally{foreach(var c in others)if(c!=null)c.tag="MainCamera";UnityEngine.Object.DestroyImmediate(go);}
+        }
+
+        [Test]
+        public async Task 上端外でなくても幅広い防御表示は別の敵名を隠さず再利用後も原点へ戻る()
+        {
+            var go=new GameObject("OtherEnemyNameCamera");var camera=go.AddComponent<Camera>();camera.tag="MainCamera";camera.orthographic=true;camera.orthographicSize=5;camera.transform.position=new Vector3(0,0,-10);camera.pixelRect=new Rect(0,0,1920,1080);
+            var others=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Where(c=>c!=camera&&c.CompareTag("MainCamera")).ToArray();foreach(var c in others)c.tag="Untagged";
+            var enemyObject=new GameObject("OtherEnemyName",typeof(Olca.Presentation.Field.WorldEnemyView));var label=enemyObject.AddComponent<TextMesh>();label.font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");label.fontSize=40;label.characterSize=.1f;label.text="ボス";enemyObject.transform.position=Vector3.zero;
+            var pauseOwner=new object();Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);
+            try{
+                foreach(var view in Waiting){var text=view.GetComponent<TextMesh>();text.font=label.font;text.fontSize=40;text.characterSize=.1f;text.text="00";}
+                var owner=new object();using(var cts=new CancellationTokenSource()){
+                    var task=((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Guard),Vector3.zero,cts.Token,owner)).AsTask();var view=Active.Single();Assert.AreEqual("ガード",view.GetComponent<TextMesh>().text);Assert.IsFalse(view.GetComponent<Renderer>().bounds.Intersects(label.GetComponent<Renderer>().bounds));Assert.AreEqual(0,view.transform.position.y,.0001f,"上端内なら高さは変えない");cts.Cancel();await Completed(task);
+                }
+                label.GetComponent<Renderer>().forceRenderingOff=true;using(var cts=new CancellationTokenSource()){
+                    var task=((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Immune),Vector3.zero,cts.Token,owner)).AsTask();var view=Active.Single();Assert.AreEqual(Vector3.zero,view.transform.position,"強制非表示のラベルは回避しない");
+                    var align=typeof(WorldDamageNumberView).GetMethod("KeepBelowViewportTop",Private);label.GetComponent<Renderer>().forceRenderingOff=false;align.Invoke(view,null);Assert.IsFalse(view.GetComponent<Renderer>().bounds.Intersects(label.GetComponent<Renderer>().bounds),"解除すると再びラベルを回避する");label.GetComponent<Renderer>().forceRenderingOff=true;align.Invoke(view,null);Assert.AreEqual(Vector3.zero,view.transform.position,"再遮蔽で補正を残さない");cts.Cancel();await Completed(task);
+                }
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);foreach(var c in others)if(c!=null)c.tag="MainCamera";UnityEngine.Object.DestroyImmediate(enemyObject);UnityEngine.Object.DestroyImmediate(go);}
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public async Task フィールド終了と無効化は両者の浮遊表示を消し重複終了や旧返却で次の表示を消さない(bool disable)
+        {
+            var go=new GameObject("EndingField");go.SetActive(false);var field=go.AddComponent<Olca.Presentation.Field.GameFieldView>();typeof(Olca.Presentation.Field.GameFieldView).GetField("worldDamageNumberPool",Private).SetValue(field,pool);
+            try{
+                Task Feedback(int n,object owner,CancellationToken ct)=>((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage,n),Vector3.zero,ct,owner)).AsTask();
+                var enemy=Feedback(7,new object(),CancellationToken.None);var player=Feedback(5,new object(),CancellationToken.None);Assert.AreEqual(2,Active.Count);
+                for(int repeat=0;repeat<2;repeat++){if(disable)typeof(Olca.Presentation.Field.GameFieldView).GetMethod("OnDisable",Private).Invoke(field,null);else field.OnBattleEnded();}
+                Assert.IsTrue(Active.All(v=>!v.gameObject.activeSelf),"非同期返却の前にも描画を止める");
+                using var cts=new CancellationTokenSource();var next=Feedback(9,new object(),cts.Token);var nextView=Active.Single(v=>v.GetComponent<TextMesh>().text=="9");await Completed(Task.WhenAll(enemy,player));Assert.AreEqual(1,Active.Count);Assert.IsTrue(nextView.gameObject.activeSelf);Assert.AreEqual("9",nextView.GetComponent<TextMesh>().text);cts.Cancel();await Completed(next);Assert.AreEqual(0,Active.Count);Assert.AreEqual(Waiting.Count,Waiting.Distinct().Count());
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+
         [Test]
         public void Get_初期容量を超えて上限まで全て別実体を貸し出す()
         {
@@ -196,7 +261,8 @@ namespace Olca.Tests
             var view = go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
             var header = GameObject.CreatePrimitive(PrimitiveType.Quad);
             header.transform.SetParent(go.transform, false);
-            header.transform.localPosition = new Vector3(0, 5, 0);
+            // 画面内の見出しより上への表示を検証する。画面外の高位置は上端境界テストで扱う。
+            header.transform.localPosition = new Vector3(0, 1, 0);
             var enemy = new Olca.Core.Domain.Enemy("feedback", "テスト", 100, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(3, 0));
             try {
                 view.SetDamageNumberPool(pool); view.Initialize(enemy, 0);
@@ -321,6 +387,26 @@ namespace Olca.Tests
             Assert.Greater(first.y,second.y);Assert.AreEqual(Vector3.zero,a.transform.position);Assert.AreEqual(Vector3.zero,b.transform.position);
             b.Initialize(Enemy());b.ShowHp();b.Refresh();Assert.Less(Vector3.Distance(second,b.transform.Find("Hp").position),.0001f);
             a.HideHp();b.Refresh();Assert.Less(Vector3.Distance(first,b.transform.Find("Hp").position),.0001f);
+        }
+        [TestCase(2)] [TestCase(6)]
+        public void 同位置の通常敵名を各HP円と対応させ反復と単独復帰でずらしを残さない(int count)
+        {
+            var views=new List<Olca.Presentation.Battle.EnemyView>();var labels=new List<TextMesh>();
+            for(int i=0;i<count;i++){
+                var view=View(Enemy());var label=new GameObject("Name",typeof(TextMesh));label.transform.SetParent(view.transform,false);label.transform.localPosition=Vector3.up;
+                var text=label.GetComponent<TextMesh>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.characterSize=.2f;text.text="enemy"+new string('x',i);
+                label.GetComponent<MeshRenderer>().sharedMaterial=text.font.material;
+                typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyNameText",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,text);
+                view.Initialize(new Olca.Core.Domain.Enemy("grunt","enemy"+new string('x',i),100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)));view.ShowHp();views.Add(view);labels.Add(text);
+            }
+            for(int repeat=0;repeat<3;repeat++){
+                foreach(var view in views)view.Refresh();
+                for(int i=0;i<count;i++){var bounds=labels[i].GetComponent<Renderer>().bounds;var hp=views[i].transform.Find("Hp").position;
+                    Assert.Less(bounds.max.x,hp.x);Assert.That(bounds.center.y,Is.EqualTo(hp.y).Within(.0001f));Assert.AreEqual(Vector3.zero,views[i].transform.position);Assert.AreEqual(Vector3.one,labels[i].transform.localScale);
+                    for(int j=0;j<i;j++)Assert.IsFalse(bounds.Intersects(labels[j].GetComponent<Renderer>().bounds));}
+            }
+            views[count-1].Initialize(new Olca.Core.Domain.Enemy("grunt","rebound",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)));views[count-1].ShowHp();
+            for(int i=0;i<count-1;i++)views[i].HideHp();views[count-1].Refresh();Assert.That(Vector3.Distance(Vector3.up,labels[count-1].transform.localPosition),Is.LessThan(.0001f));
         }
         [Test] public void 通常敵の強靭度はHP円の右外側だけに沿う()
         {

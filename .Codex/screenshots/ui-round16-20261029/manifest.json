@@ -1,0 +1,86 @@
+[
+  {
+    "file": "return-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "fdb960ca7355003c7d56734d77295ff5da99ec48083ef4ba43f73f38fe1af2d9"
+  },
+  {
+    "file": "return-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "4127bc7b3ccb40d54f05ccc49ab0a59aaec8085ea136a39e3456548d857057d1"
+  },
+  {
+    "file": "return-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "8e20f30f8ac4889f10a457081d62308ba81e531fcc80b38ba620f53382ff868e"
+  },
+  {
+    "file": "return-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "c2e852e0a3a03c91f338f1b14f0013900264ceea714280f893920e04049a89e1"
+  },
+  {
+    "file": "return-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b428eae92d2bf911b1812dda847ee59fb10f7dc762c26681c323287a35e7a4f8"
+  },
+  {
+    "file": "return-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "a085a4e9224ab5a89a52b41b2e9e187719650fe8ae59a4f84696e5a90ba274f3"
+  },
+  {
+    "file": "end-before-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "9171f265f2b9023b8058c1905e26d0f155885295c853625ed0ac8e8842c511ce"
+  },
+  {
+    "file": "end-before-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ba56f6d0b749a91525e84617992b5e6e8844360cb48dabd13c00e132f0af626b"
+  },
+  {
+    "file": "end-before-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "7158281277719bb14ac4b59e2fb073605994aff2559a59055c3522b58aa12691"
+  },
+  {
+    "file": "end-after-4by3.png",
+    "width": 1440,
+    "height": 1080,
+    "sha256": "d65ab1076ecfd28af6681882e797cbc0e65c842a2355e753618dc8df3bd86428"
+  },
+  {
+    "file": "end-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "d08ddfc3efa1c90f6b11e5d290429277c69167d65b9d81597ed616b7ffe8f209"
+  },
+  {
+    "file": "end-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "6bc3948de6e48a492baee7cd5d6ee3864cdef747d33332f7e760372e483aa082"
+  },
+  {
+    "file": "detail-after-fhd.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b9efedee526608c0b7f51edcdb43b6bc46338772bd0d1ee26b7451814bfc560f"
+  },
+  {
+    "file": "dialog-after-4k.png",
+    "width": 3840,
+    "height": 2160,
+    "sha256": "0fc294e1756cc05173260858c8299149c6190a41e9f3a30664a448d83d2946d4"
+  }
+]
