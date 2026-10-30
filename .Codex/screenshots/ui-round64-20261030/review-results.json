@@ -1,0 +1,32 @@
+{
+  "assetQA": {
+    "unresolvedFindings": 0,
+    "correctedMetadata": "available palette6 versus actual opaque colours5",
+    "trueAlpha": true,
+    "wrapperAndHashesMatch": true,
+    "originalRetained": true
+  },
+  "codeReview": {
+    "agent": "equipment_save_review",
+    "unresolvedFindings": 0,
+    "scope": [
+      "pickup sprite only, root/tint/Core unchanged",
+      "existing shop/visit cache ownership retained",
+      "new resource shares across cells and reentry, freed on view destruction",
+      "fallback and consumption/save logic unchanged"
+    ]
+  },
+  "visualReview": {
+    "agent": "independent_refactor_review",
+    "nativeAfterViews": 6,
+    "beforeCompared": "ready/collected FHD",
+    "unresolvedFindings": 0,
+    "findings": [
+      "vial neck/body/plus readable at4:3",
+      "shape and height distinguish shop and recovery visit",
+      "no excessive emission/ornament or background loss",
+      "no foot/foreground occlusion; disappears on contact; +20 legible"
+    ],
+    "limits": "Static native image review; floating text phase differences noted"
+  }
+}

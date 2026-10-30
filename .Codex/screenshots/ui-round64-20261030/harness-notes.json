@@ -1,0 +1,6 @@
+{
+  "firstCompile": "Private script attempted DungeonMap.MapCells, compile rejected before execution; corrected to supported GetCell enumeration",
+  "pauseEntry": "Initial reload attempted PauseButton while capture user-pause remained set; that resumed instead of opening overlay, so Load button was absent and no load executed",
+  "safeRecovery": "Read actual state, explicitly release capture pause, choose existing PauseVisit or PauseButton, then actual LoadCheckpointButton; saved HP80/collected maintained",
+  "productGuardsOrSaveFormatChanged": false
+}

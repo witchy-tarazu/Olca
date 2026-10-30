@@ -1,0 +1,514 @@
+{
+  "before-ready": {
+    "position": 50.466,
+    "clock": 379,
+    "hp": 60,
+    "maxHp": 100,
+    "heal": 20,
+    "cell": 51,
+    "collected": false,
+    "sequence": 3,
+    "pose": {
+      "rootX": 80.7456,
+      "cameraX": 83.1456,
+      "cameraY": 1.2750001
+    },
+    "marker": [
+      "Face",
+      "Top",
+      "Bottom",
+      "Left",
+      "Right",
+      "HealHorizontal",
+      "HealVertical"
+    ],
+    "state": {
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Dungeon",
+      "focus": "SkipCurrencyButton",
+      "hand": null,
+      "handLimit": null,
+      "custom": null,
+      "handHashes": null,
+      "deck": 20,
+      "owned": 20,
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationJumpButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationDashButton",
+          "interactable": true
+        }
+      ],
+      "texts": [
+        {
+          "name": "Label",
+          "text": "ポーズ"
+        },
+        {
+          "name": "DungeonCardCounts",
+          "text": "デッキ: 20マイ\nカクトク: 0マイ"
+        },
+        {
+          "name": "ExplorationHpText",
+          "text": "HP: 60 / 100"
+        },
+        {
+          "name": "FloorProgressText",
+          "text": "1カイ  50 / 100"
+        },
+        {
+          "name": "CurrencyBalance",
+          "text": "ツウカ: 0"
+        },
+        {
+          "name": "ExplorationJumpButtonLabel",
+          "text": "ジャンプ\nSpace"
+        },
+        {
+          "name": "ExplorationDashButtonLabel",
+          "text": "ダッシュ\nLeftShift"
+        },
+        {
+          "name": "InstructionText",
+          "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ"
+        }
+      ]
+    }
+  },
+  "after-ready": {
+    "position": 50.333,
+    "clock": 378,
+    "hp": 60,
+    "maxHp": 100,
+    "heal": 20,
+    "cell": 51,
+    "collected": false,
+    "sequence": 3,
+    "pose": {
+      "rootX": 80.5328,
+      "cameraX": 82.9328,
+      "cameraY": 1.2750001
+    },
+    "marker": [
+      "HealPickupIcon"
+    ],
+    "state": {
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Dungeon",
+      "focus": "SkipCurrencyButton",
+      "hand": null,
+      "handLimit": null,
+      "custom": null,
+      "handHashes": null,
+      "deck": 20,
+      "owned": 20,
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationJumpButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationDashButton",
+          "interactable": true
+        }
+      ],
+      "texts": [
+        {
+          "name": "DungeonCardCounts",
+          "text": "デッキ: 20マイ\nカクトク: 0マイ"
+        },
+        {
+          "name": "CurrencyBalance",
+          "text": "ツウカ: 0"
+        },
+        {
+          "name": "ExplorationHpText",
+          "text": "HP: 60 / 100"
+        },
+        {
+          "name": "ExplorationDashButtonLabel",
+          "text": "ダッシュ\nLeftShift"
+        },
+        {
+          "name": "InstructionText",
+          "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ"
+        },
+        {
+          "name": "FloorProgressText",
+          "text": "1カイ  50 / 100"
+        },
+        {
+          "name": "ExplorationJumpButtonLabel",
+          "text": "ジャンプ\nSpace"
+        },
+        {
+          "name": "Label",
+          "text": "ポーズ"
+        }
+      ]
+    }
+  },
+  "after-ready-pose": {
+    "position": 50.333,
+    "clock": 378,
+    "hp": 60,
+    "phase": "Dungeon",
+    "paused": true,
+    "terrains": [
+      {
+        "cell": 56,
+        "type": "Ice"
+      },
+      {
+        "cell": 57,
+        "type": "Ice"
+      }
+    ],
+    "registry": {
+      "count": 3,
+      "capacity": 160,
+      "live": 186
+    },
+    "pose": {
+      "rootX": 80.7456,
+      "cameraX": 83.1456,
+      "cameraY": 1.2750001
+    },
+    "state": {
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Dungeon",
+      "focus": "SkipCurrencyButton",
+      "hand": null,
+      "handLimit": null,
+      "custom": null,
+      "handHashes": null,
+      "deck": 20,
+      "owned": 20,
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationJumpButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationDashButton",
+          "interactable": true
+        }
+      ],
+      "texts": [
+        {
+          "name": "DungeonCardCounts",
+          "text": "デッキ: 20マイ\nカクトク: 0マイ"
+        },
+        {
+          "name": "CurrencyBalance",
+          "text": "ツウカ: 0"
+        },
+        {
+          "name": "ExplorationHpText",
+          "text": "HP: 60 / 100"
+        },
+        {
+          "name": "ExplorationDashButtonLabel",
+          "text": "ダッシュ\nLeftShift"
+        },
+        {
+          "name": "InstructionText",
+          "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ"
+        },
+        {
+          "name": "FloorProgressText",
+          "text": "1カイ  50 / 100"
+        },
+        {
+          "name": "ExplorationJumpButtonLabel",
+          "text": "ジャンプ\nSpace"
+        },
+        {
+          "name": "Label",
+          "text": "ポーズ"
+        }
+      ]
+    }
+  },
+  "before-contact": {
+    "pausedHeld": true,
+    "beforeHp": 60,
+    "expectedHp": 80,
+    "sequenceBefore": 3,
+    "result": {
+      "position": 51.133,
+      "clock": 384,
+      "hp": 80,
+      "maxHp": 100,
+      "heal": 20,
+      "cell": 51,
+      "collected": true,
+      "sequence": 3,
+      "pose": {
+        "rootX": 81.8128,
+        "cameraX": 84.2128,
+        "cameraY": 1.2750001
+      },
+      "marker": null,
+      "state": {
+        "screen": [
+          640,
+          360
+        ],
+        "phase": "Dungeon",
+        "focus": "SkipCurrencyButton",
+        "hand": null,
+        "handLimit": null,
+        "custom": null,
+        "handHashes": null,
+        "deck": 20,
+        "owned": 20,
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": true
+          },
+          {
+            "name": "ExplorationJumpButton",
+            "interactable": true
+          },
+          {
+            "name": "ExplorationDashButton",
+            "interactable": true
+          }
+        ],
+        "texts": [
+          {
+            "name": "Label",
+            "text": "ポーズ"
+          },
+          {
+            "name": "DungeonCardCounts",
+            "text": "デッキ: 20マイ\nカクトク: 0マイ"
+          },
+          {
+            "name": "ExplorationHpText",
+            "text": "HP: 80 / 100"
+          },
+          {
+            "name": "FloorProgressText",
+            "text": "1カイ  51 / 100"
+          },
+          {
+            "name": "CurrencyBalance",
+            "text": "ツウカ: 0"
+          },
+          {
+            "name": "ExplorationJumpButtonLabel",
+            "text": "ジャンプ\nSpace"
+          },
+          {
+            "name": "ExplorationDashButtonLabel",
+            "text": "ダッシュ\nLeftShift"
+          },
+          {
+            "name": "InstructionText",
+            "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ"
+          }
+        ]
+      }
+    }
+  },
+  "after-contact": {
+    "pausedHeld": true,
+    "beforeHp": 60,
+    "expectedHp": 80,
+    "sequenceBefore": 3,
+    "result": {
+      "position": 51.4,
+      "clock": 386,
+      "hp": 80,
+      "maxHp": 100,
+      "heal": 20,
+      "cell": 51,
+      "collected": true,
+      "sequence": 3,
+      "pose": {
+        "rootX": 82.2400055,
+        "cameraX": 84.64001,
+        "cameraY": 1.2750001
+      },
+      "marker": null,
+      "state": {
+        "screen": [
+          640,
+          360
+        ],
+        "phase": "Dungeon",
+        "focus": "SkipCurrencyButton",
+        "hand": null,
+        "handLimit": null,
+        "custom": null,
+        "handHashes": null,
+        "deck": 20,
+        "owned": 20,
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": true
+          },
+          {
+            "name": "ExplorationJumpButton",
+            "interactable": true
+          },
+          {
+            "name": "ExplorationDashButton",
+            "interactable": true
+          }
+        ],
+        "texts": [
+          {
+            "name": "DungeonCardCounts",
+            "text": "デッキ: 20マイ\nカクトク: 0マイ"
+          },
+          {
+            "name": "CurrencyBalance",
+            "text": "ツウカ: 0"
+          },
+          {
+            "name": "ExplorationHpText",
+            "text": "HP: 80 / 100"
+          },
+          {
+            "name": "ExplorationDashButtonLabel",
+            "text": "ダッシュ\nLeftShift"
+          },
+          {
+            "name": "InstructionText",
+            "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ"
+          },
+          {
+            "name": "FloorProgressText",
+            "text": "1カイ  51 / 100"
+          },
+          {
+            "name": "ExplorationJumpButtonLabel",
+            "text": "ジャンプ\nSpace"
+          },
+          {
+            "name": "Label",
+            "text": "ポーズ"
+          }
+        ]
+      }
+    }
+  },
+  "after-contact-pose": {
+    "position": 51.4,
+    "clock": 386,
+    "hp": 80,
+    "phase": "Dungeon",
+    "paused": true,
+    "terrains": [
+      {
+        "cell": 56,
+        "type": "Ice"
+      },
+      {
+        "cell": 57,
+        "type": "Ice"
+      }
+    ],
+    "registry": {
+      "count": 3,
+      "capacity": 160,
+      "live": 186
+    },
+    "pose": {
+      "rootX": 81.8128,
+      "cameraX": 84.2128,
+      "cameraY": 1.2750001
+    },
+    "state": {
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Dungeon",
+      "focus": "SkipCurrencyButton",
+      "hand": null,
+      "handLimit": null,
+      "custom": null,
+      "handHashes": null,
+      "deck": 20,
+      "owned": 20,
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationJumpButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationDashButton",
+          "interactable": true
+        }
+      ],
+      "texts": [
+        {
+          "name": "DungeonCardCounts",
+          "text": "デッキ: 20マイ\nカクトク: 0マイ"
+        },
+        {
+          "name": "CurrencyBalance",
+          "text": "ツウカ: 0"
+        },
+        {
+          "name": "ExplorationHpText",
+          "text": "HP: 80 / 100"
+        },
+        {
+          "name": "ExplorationDashButtonLabel",
+          "text": "ダッシュ\nLeftShift"
+        },
+        {
+          "name": "InstructionText",
+          "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ"
+        },
+        {
+          "name": "FloorProgressText",
+          "text": "1カイ  51 / 100"
+        },
+        {
+          "name": "ExplorationJumpButtonLabel",
+          "text": "ジャンプ\nSpace"
+        },
+        {
+          "name": "Label",
+          "text": "ポーズ"
+        }
+      ]
+    }
+  }
+}

@@ -245,7 +245,12 @@ namespace Olca.Presentation.Field
                 if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
                 var root=new GameObject("FieldHealCell_"+i);root.transform.SetParent(transform,false);root.transform.position=new Vector3(x,CharacterDisplayOffsetY+LogicalToWorld(.45f),0);fieldItemVisuals.Add(i,root);
                 void Part(string name,float px,float py,float w,float h,float alpha){var go=new GameObject(name);go.transform.SetParent(root.transform,false);go.transform.localPosition=new Vector3(LogicalToWorld(px),LogicalToWorld(py),0);go.transform.localScale=new Vector3(LogicalToWorld(w),LogicalToWorld(h),1);var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.35f,1f,.7f,alpha);renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;}
-                Part("Face",0,0,.34f,.34f,.08f);Part("Top",0,.17f,.34f,.014f,.6f);Part("Bottom",0,-.17f,.34f,.014f,.6f);Part("Left",-.17f,0,.014f,.34f,.6f);Part("Right",.17f,0,.014f,.34f,.6f);Part("HealHorizontal",0,0,.24f,.055f,1);Part("HealVertical",0,0,.055f,.24f,1);
+                var sprite=GetFieldHealSprite();
+                if(sprite!=null){Part("HealPickupIcon",0,0,.4f,.4f,1);root.transform.Find("HealPickupIcon").GetComponent<SpriteRenderer>().sprite=sprite;}
+                else{
+                    // 専用素材がない場合は従来の接触回復表示を保つ。
+                    Part("Face",0,0,.34f,.34f,.08f);Part("Top",0,.17f,.34f,.014f,.6f);Part("Bottom",0,-.17f,.34f,.014f,.6f);Part("Left",-.17f,0,.014f,.34f,.6f);Part("Right",.17f,0,.014f,.34f,.6f);Part("HealHorizontal",0,0,.24f,.055f,1);Part("HealVertical",0,0,.055f,.24f,1);
+                }
             }
             foreach(var cell in new List<int>(fieldItemVisuals.Keys))if(!retained.Contains(cell))RemoveFieldItemVisual(cell);
         }
@@ -256,11 +261,12 @@ namespace Olca.Presentation.Field
             public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts=new List<(SpriteRenderer,float)>();
         }
         private readonly Dictionary<int,VisitVisual> visitVisuals=new Dictionary<int,VisitVisual>();
-        private Sprite visitShopSprite,visitRecoverySprite;
+        private Sprite visitShopSprite,visitRecoverySprite,fieldHealSprite;
         // bytes包装から生成したSprite/TextureだけをこのViewが所有する。
-        private Sprite GetVisitShopSprite()=>GetVisitSprite("OlcaVisits/shop_bag","VisitShopIcon",ref visitShopSprite);
-        private Sprite GetVisitRecoverySprite()=>GetVisitSprite("OlcaVisits/recovery_drop","VisitRecoveryIcon",ref visitRecoverySprite);
-        private Sprite GetVisitSprite(string key,string name,ref Sprite cached)
+        private Sprite GetVisitShopSprite()=>GetMarkerSprite("OlcaVisits/shop_bag","VisitShopIcon",ref visitShopSprite);
+        private Sprite GetVisitRecoverySprite()=>GetMarkerSprite("OlcaVisits/recovery_drop","VisitRecoveryIcon",ref visitRecoverySprite);
+        private Sprite GetFieldHealSprite()=>GetMarkerSprite("OlcaPickups/heal_vial","FieldHealIcon",ref fieldHealSprite);
+        private Sprite GetMarkerSprite(string key,string name,ref Sprite cached)
         {
             if(cached!=null)return cached;
             var source=Resources.Load<TextAsset>(key);if(source==null)return null;
@@ -272,13 +278,13 @@ namespace Olca.Presentation.Field
             cached=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),64,0,SpriteMeshType.FullRect);
             cached.name=name;cached.hideFlags=HideFlags.HideAndDontSave;return cached;
         }
-        private void DisposeVisitSprites()
+        private void DisposeMarkerSprites()
         {
             void Release(Sprite sprite){
                 if(sprite==null)return;var texture=sprite.texture;
                 if(UnityEngine.Application.isPlaying){Destroy(sprite);Destroy(texture);}else{DestroyImmediate(sprite);DestroyImmediate(texture);}
             }
-            Release(visitShopSprite);Release(visitRecoverySprite);visitShopSprite=null;visitRecoverySprite=null;
+            Release(visitShopSprite);Release(visitRecoverySprite);Release(fieldHealSprite);visitShopSprite=null;visitRecoverySprite=null;fieldHealSprite=null;
         }
 
         private void RemoveVisitVisual(int cell)
@@ -655,7 +661,7 @@ namespace Olca.Presentation.Field
             generatedSomersaultSprites = null;
             ClearTerrainVisuals(); ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
-            DisposeVisitSprites();
+            DisposeMarkerSprites();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
             if (currentBattle != null)

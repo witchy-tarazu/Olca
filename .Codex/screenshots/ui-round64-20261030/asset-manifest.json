@@ -1,0 +1,45 @@
+{
+  "tool": "OpenAI image_gen",
+  "references": [
+    "Assets/Art/UI/Visits/shop_bag.png",
+    "Assets/Art/UI/Visits/recovery_drop.png"
+  ],
+  "referenceContainsCharacter": false,
+  "generatedOriginal": "SourceFiles/Pickups/heal_vial_generated.png",
+  "originalDimensions": [
+    1254,
+    1254
+  ],
+  "nativeAlphaRange": [
+    0,
+    255
+  ],
+  "largestComponentBounds": [
+    393,
+    429,
+    862,
+    969
+  ],
+  "exportDimensions": [
+    64,
+    64
+  ],
+  "visibleBounds": [
+    13,
+    10,
+    51,
+    54
+  ],
+  "processing": [
+    "largest connected alpha>=128 component",
+    "aspect-preserving nearest-neighbour height44",
+    "same six neutral colours as recovery_drop",
+    "hard0/255alpha",
+    "fixed64canvas centered top10"
+  ],
+  "originalSha256": "7cd8a263d7a7a3304bad5048adf0a26b453802e852214ee6adab9a2d333a83b6",
+  "exportSha256": "d9ed6ea391ece6a23c656e4710a60f4097a40007ba02f3b97cf988016308977b",
+  "wrapperMatches": true,
+  "paletteAvailableColours": 6,
+  "exportOpaqueColours": 5
+}
