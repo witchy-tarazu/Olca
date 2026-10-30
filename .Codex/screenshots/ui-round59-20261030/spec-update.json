@@ -1,0 +1,19 @@
+{
+  "authoredCommit": "b2882a86194df639e296ebacef5c3766c814b574",
+  "pulledMergeCommit": "23dccffb0789409273bc4b0524fbf5b1892a17aa",
+  "changedFilesComparedToLastVerifiedMaster": [
+    "Planning/ゲーム全体仕様.md"
+  ],
+  "specificationDate": "2026-10-31",
+  "changes": [
+    "outside-dungeon airborne card availability per card",
+    "outside-dungeon normal/charged unique attacks airborne, possible distinct air performance",
+    "attack-specific falling/pause/movement",
+    "normal dash ground only",
+    "variable jump height by hold",
+    "wall jump/slide basic actions"
+  ],
+  "documentationPulled": true,
+  "implementedInThisRound": false,
+  "currentGridFixImpact": "No source changes or conflict; new outside-dungeon mechanics remain separate scope"
+}

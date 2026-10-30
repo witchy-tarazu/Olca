@@ -40,6 +40,8 @@ namespace Olca.Presentation.Field
         }
         private void RefreshTelegraphs()
         {
+            // Play中の再コンパイルでは未生成のnull配列が空配列として復元される。遅延生成前の状態へ戻す。
+            if(attackMarkers!=null&&attackMarkers.Length==0)attackMarkers=null;
             // Update後に中断されても、描画直前にはCoreの確定集合を読む。
             if(telegraphBattle!=null){attackTiles.Clear();foreach(var tile in telegraphBattle.EnemyAttackTiles)if(tile.Y==0&&tile.X>=0&&tile.X<GRID_WIDTH)attackTiles.Add(tile.X);}
             if(panelRenderers==null||attackMarkers==null&&attackTiles.Count==0)return;
