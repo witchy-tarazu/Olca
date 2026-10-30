@@ -10,6 +10,7 @@ namespace Olca.Tests
         [TestCase(SharedAttackPropCatalog.Sword, "shared_sword", 256)]
         [TestCase(SharedAttackPropCatalog.ThrowingKnife, "shared_throwing_knife", 64)]
         [TestCase(SharedAttackPropCatalog.ShotBolt, "shared_shot_bolt", 32)]
+        [TestCase(SharedAttackPropCatalog.Bomb, "shared_bomb", 64)]
         public void 共用素材は同じSpriteを返し実ファイルに透明と不透明の画素がある(string key,string file,int size)
         {
             Assert.IsTrue(SharedAttackPropCatalog.TryGetSprite(key,out var first));
@@ -26,6 +27,11 @@ namespace Olca.Tests
                 int transparent=0,opaque=0;
                 foreach(var pixel in image.GetPixels32()){if(pixel.a==0)transparent++;else if(pixel.a==255)opaque++;else Assert.Fail("半透明の縁が残っています");}
                 Assert.Greater(transparent,0);Assert.Greater(opaque,0);
+                if(key==SharedAttackPropCatalog.Bomb){
+                    int firstRow=size,lastRow=-1;var pixels=image.GetPixels32();
+                    for(int y=0;y<size;y++)for(int x=0;x<size;x++)if(pixels[y*size+x].a!=0){firstRow=System.Math.Min(firstRow,y);lastRow=System.Math.Max(lastRow,y);}
+                    Assert.AreEqual(SharedAttackPropCatalog.BombVisibleHeight,(lastRow-firstRow+1)/100f);
+                }
             }finally{Object.DestroyImmediate(image);}
         }
         [Test] public void 未登録キーは既存の別素材へ置換しない(){Assert.IsFalse(SharedAttackPropCatalog.TryGetSprite("missing",out var sprite));Assert.IsNull(sprite);Assert.IsFalse(SharedAttackPropCatalog.TryGetSprite(null,out sprite));}

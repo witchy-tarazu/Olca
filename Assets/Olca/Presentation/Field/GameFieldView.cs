@@ -448,7 +448,9 @@ namespace Olca.Presentation.Field
                 var root = new GameObject("BombProjectile"); root.transform.SetParent(transform, false);
                 for (int i=0;i<4;i++) {
                     var part=new GameObject(i==0?"Body":"Blast"+(i-1));part.transform.SetParent(root.transform,false);
-                    var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.3f,1f,1f,.85f);
+                    var renderer=part.AddComponent<SpriteRenderer>();
+                    Sprite bomb = null; bool illustrated = i == 0 && SharedAttackPropCatalog.TryGetSprite(SharedAttackPropCatalog.Bomb, out bomb);
+                    renderer.sprite=illustrated?bomb:obstacleWhiteSprite;renderer.color=illustrated?Color.white:new Color(.3f,1f,1f,.85f);
                     renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=6;
                 }
                 bombVisuals.Add(effect,root);
@@ -466,7 +468,10 @@ namespace Olca.Presentation.Field
                 if(flying){
                     float t=effect.Progress;float startX=battleGridView.GridIndexToWorldX(effect.SourcePosition.Value.X);
                     body.position=new Vector3(Mathf.Lerp(startX,targetX,t),ground+LogicalToWorld(.45f+4f*t*(1f-t)*1.4f),0);
-                    body.localScale=Vector3.one*LogicalToWorld(.18f);body.rotation=Quaternion.Euler(0,0,45);
+                    bool illustrated=body.GetComponent<SpriteRenderer>().sprite!=obstacleWhiteSprite;
+                    // 旧1x1四角を45度傾けた可視高さを保つ。画像の余白で投射物を縮めない。
+                    body.localScale=Vector3.one*LogicalToWorld(illustrated ? .18f*Mathf.Sqrt(2f)/SharedAttackPropCatalog.BombVisibleHeight : .18f);
+                    body.rotation=illustrated?Quaternion.identity:Quaternion.Euler(0,0,45);
                 }
                 for(int i=0;i<3;i++){
                     var part=root.transform.GetChild(i+1);int x=effect.TargetPosition.X+i-1;

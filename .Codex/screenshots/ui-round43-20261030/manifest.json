@@ -1,0 +1,56 @@
+{
+  "before-pause-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 199690,
+    "sha256": "0ea05d455020f22475f51afcef0b34be6b0c9c47c40c312d576fe47644e2e354"
+  },
+  "before-explore-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 399480,
+    "sha256": "fbeac14570bbcb246cbc0be44b9bb79e8f521d33b2fe1098458c793bc7771612"
+  },
+  "after-pause-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 200398,
+    "sha256": "6a86eb0e5fa0260183fffa9289010fc3ba37b4776661a5c5ca962cd79d2b8bcb"
+  },
+  "after-explore-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 403504,
+    "sha256": "5d61a4e3365442dd6baeb5eb87dfbce16ee35c9dde03d198fea4cd553c5e96ad"
+  },
+  "after-explore-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 621529,
+    "sha256": "f6ac4f94e0457705fbf77e3069c29d1a7ac329ae07aada3fcc77a1aa6424e844"
+  },
+  "after-explore-4by3.png": {
+    "width": 1440,
+    "height": 1080,
+    "bytes": 324745,
+    "sha256": "41aeee53ab0bae6e323edd0032753b991ea864c5466d2cd7e7ffbdb2525ab23b"
+  },
+  "bomb-legacy-fixture-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 470625,
+    "sha256": "ac3f0b199e21238d5b885649286cf0d4bc454e84edc74152be2e1ac8cdf9c2c3"
+  },
+  "bomb-after-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 470878,
+    "sha256": "4212dac44472e5d893f788dadd93e83bc3fcd90dc5a4025f5fda1d7a76abe1c1"
+  },
+  "bomb-after-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 835417,
+    "sha256": "b156301dc4ab47c9977faaae95077d42959c3ba629befe856e70cf192bffac92"
+  }
+}

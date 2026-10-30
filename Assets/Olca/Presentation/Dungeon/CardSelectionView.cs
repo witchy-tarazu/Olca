@@ -939,8 +939,15 @@ namespace Olca.Presentation.Dungeon
             title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,70);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=20;
             exploration.SetActive(false);
         }
+        private void SetSurfaceSize(float width, float height)
+        {
+            var rect = (UnityEngine.RectTransform)transform; var size = new UnityEngine.Vector2(width, height);
+            if (rect.sizeDelta != size) rect.sizeDelta = size;
+        }
         public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
+            // 操作ボタンの位置と当たり領域を維持し、探索では使わない説明領域だけを縮める。
+            SetSurfaceSize(460, 132);
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","exploration",action)]);
@@ -951,6 +958,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null)
         {
+            SetSurfaceSize(500, 210);
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}

@@ -841,7 +841,8 @@ namespace Olca.Application.Dungeon
             receiveCurrencyButton = MakeButton("ReceiveCurrencyButton", "ウケトル", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(-240,-80));
             receiveCurrencyButton.onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(true); });
             MakeButton("SkipCurrencyButton", "スキップ", currencyOverlay.transform, new Vector2(.5f,.5f), new Vector2(240,-80)).onClick.AddListener(() => { if (!GameplayPause.InputBlocked) currencyChoice?.TrySetResult(false); });
-            currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-160,-125), new Vector2(300,45));
+            currencyBalanceText = CurrencyText("CurrencyBalance", pauseCanvas.transform, Vector2.one, new Vector2(-182,-125), new Vector2(300,45));
+            currencyBalanceText.alignment=TextAnchor.MiddleRight; currencyBalanceText.fontSize=26;
             currencyBalanceText.color=Color.white; // 背景上のHUDだけは明るい文字で可読性を保つ。
             MakeButton("PauseCurrencyReward","ポーズ",currencyOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
             currencyOverlay.SetActive(false);
@@ -853,7 +854,7 @@ namespace Olca.Application.Dungeon
             MakeButton("PauseItemReward","ポーズ",itemRewardOverlay.transform,Vector2.one,new Vector2(-120,-60)).onClick.AddListener(()=>SetUserPaused(true));
             itemRewardOverlay.SetActive(false);
 
-            MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-120, -60)).onClick.AddListener(() => SetUserPaused(true));
+            MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-132, -64)).onClick.AddListener(() => SetUserPaused(true));
             pauseOverlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image)); pauseOverlay.transform.SetParent(pauseCanvas.transform, false);
             var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
             pauseOverlay.GetComponent<Image>().color = new Color(.025f, .07f, .10f, .86f);
@@ -938,8 +939,10 @@ namespace Olca.Application.Dungeon
             basicAttackHud.gameObject.SetActive(false);
             var collectionPanel=new GameObject("CardCollectionPanel",typeof(RectTransform));collectionPanel.transform.SetParent(pauseCanvas.transform,false);
             cardCollectionView=collectionPanel.AddComponent<ClearReturnView>();cardCollectionView.Initialize(font,null,null,null,null);
-            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,Vector2.one,new Vector2(-310,-85));
+            cardCollectionButton=MakeButton("CardCollectionButton","カード図鑑",pauseCanvas.transform,Vector2.one,new Vector2(-402,-64));
             ((RectTransform)cardCollectionButton.transform).sizeDelta=new Vector2(300,60);
+            var collectionLabel=cardCollectionButton.GetComponentInChildren<Text>(); collectionLabel.fontSize=collectionLabel.resizeTextMaxSize=26;
+            collectionLabel.rectTransform.offsetMin=new Vector2(16,4); collectionLabel.rectTransform.offsetMax=new Vector2(-16,-4);
             cardCollectionButton.onClick.AddListener(()=>{if(CardCollectionUiAvailable)OpenCardCollection();});
             cardCollectionButton.gameObject.SetActive(false);
             var customizationPanel = new GameObject("CustomizationEditor", typeof(RectTransform)); customizationPanel.transform.SetParent(pauseCanvas.transform, false);
