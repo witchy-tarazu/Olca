@@ -1,0 +1,34 @@
+{
+  "summary": {
+    "total": 375,
+    "passed": 372,
+    "failed": 3,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 25.24,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(1920.0f,1080.0f,3)",
+      "Status": "Failed",
+      "Duration": 0.0112958,
+      "Message": "System.InvalidOperationException : Sequence contains no matching element",
+      "StackTrace": "  at System.Linq.Enumerable.Single[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Func`2[T,TResult] predicate) [0x00070] in <33953ffc026d46eb8cea4e584475e250>:0 \n  at Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する (System.Single width, System.Single height, System.Int32 mode) [0x0021c] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:179 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(1662.77f,1247.08f,3)",
+      "Status": "Failed",
+      "Duration": 0.0071077,
+      "Message": "System.InvalidOperationException : Sequence contains no matching element",
+      "StackTrace": "  at System.Linq.Enumerable.Single[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Func`2[T,TResult] predicate) [0x00070] in <33953ffc026d46eb8cea4e584475e250>:0 \n  at Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する (System.Single width, System.Single height, System.Int32 mode) [0x0021c] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:179 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(2199.64f,942.7f,3)",
+      "Status": "Failed",
+      "Duration": 0.0064844,
+      "Message": "System.InvalidOperationException : Sequence contains no matching element",
+      "StackTrace": "  at System.Linq.Enumerable.Single[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Func`2[T,TResult] predicate) [0x00070] in <33953ffc026d46eb8cea4e584475e250>:0 \n  at Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する (System.Single width, System.Single height, System.Int32 mode) [0x0021c] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:179 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    }
+  ],
+  "correction": "既存ExchangeBalanceDetails入口の改名を製品側で戻した。期待値を緩和しない。"
+}

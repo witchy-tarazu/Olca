@@ -1,0 +1,2300 @@
+{
+  "twoLongNameReadonlyCyclesSaveUnchanged": true,
+  "twoCancelReopenLoopsSaveUnchanged": true,
+  "overflowUsesExistingPriceAndConversion": true,
+  "normalCardAddedToExistingOwnedCount": true,
+  "duplicateConfirmAndSoldSelectionNoWrite": true,
+  "stockRoundAndReceiptsSurviveActualReload": true,
+  "profiles": [
+    {
+      "step": "initial",
+      "profile": {
+        "Version": 1,
+        "Revision": 3,
+        "Experience": 0,
+        "Tokens": 90,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "df7df0b1597144d1aed8bb23b3c1a49d",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 3
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 0,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": null,
+        "ExchangeReceipts": null,
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "cancel-disk0",
+      "profile": {
+        "Version": 1,
+        "Revision": 3,
+        "Experience": 0,
+        "Tokens": 90,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "df7df0b1597144d1aed8bb23b3c1a49d",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 3
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 0,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": null,
+        "ExchangeReceipts": null,
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "cancel-disk1",
+      "profile": {
+        "Version": 1,
+        "Revision": 3,
+        "Experience": 0,
+        "Tokens": 90,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "df7df0b1597144d1aed8bb23b3c1a49d",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 3
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 0,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": null,
+        "ExchangeReceipts": null,
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "overflow-saved",
+      "profile": {
+        "Version": 1,
+        "Revision": 4,
+        "Experience": 0,
+        "Tokens": 88,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "1e6037125d3746f2a9af6d73e11d9783",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 3
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 1,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": [
+          {
+            "ProductId": "card-sword",
+            "Count": 1
+          }
+        ],
+        "ExchangeReceipts": [
+          {
+            "RequestId": "2413294737a2486d92cc33645c7d226f",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-sword",
+            "Paid": 3,
+            "OverflowTokens": 1
+          }
+        ],
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "no-duplicate",
+      "profile": {
+        "Version": 1,
+        "Revision": 4,
+        "Experience": 0,
+        "Tokens": 88,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "1e6037125d3746f2a9af6d73e11d9783",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 3
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 1,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": [
+          {
+            "ProductId": "card-sword",
+            "Count": 1
+          }
+        ],
+        "ExchangeReceipts": [
+          {
+            "RequestId": "2413294737a2486d92cc33645c7d226f",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-sword",
+            "Paid": 3,
+            "OverflowTokens": 1
+          }
+        ],
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "heal-saved",
+      "profile": {
+        "Version": 1,
+        "Revision": 5,
+        "Experience": 0,
+        "Tokens": 85,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "e254bff088d04b3a90cd43fbd931c37a",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 1,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 1,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": [
+          {
+            "ProductId": "card-sword",
+            "Count": 1
+          },
+          {
+            "ProductId": "card-heal",
+            "Count": 1
+          }
+        ],
+        "ExchangeReceipts": [
+          {
+            "RequestId": "2413294737a2486d92cc33645c7d226f",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-sword",
+            "Paid": 3,
+            "OverflowTokens": 1
+          },
+          {
+            "RequestId": "7702a0ae9f504aef9384df9462170ffd",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-heal",
+            "Paid": 3,
+            "OverflowTokens": 0
+          }
+        ],
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "sold-stable",
+      "profile": {
+        "Version": 1,
+        "Revision": 5,
+        "Experience": 0,
+        "Tokens": 85,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "e254bff088d04b3a90cd43fbd931c37a",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 1,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 1,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": [
+          {
+            "ProductId": "card-sword",
+            "Count": 1
+          },
+          {
+            "ProductId": "card-heal",
+            "Count": 1
+          }
+        ],
+        "ExchangeReceipts": [
+          {
+            "RequestId": "2413294737a2486d92cc33645c7d226f",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-sword",
+            "Paid": 3,
+            "OverflowTokens": 1
+          },
+          {
+            "RequestId": "7702a0ae9f504aef9384df9462170ffd",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-heal",
+            "Paid": 3,
+            "OverflowTokens": 0
+          }
+        ],
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    },
+    {
+      "step": "reload",
+      "profile": {
+        "Version": 1,
+        "Revision": 5,
+        "Experience": 0,
+        "Tokens": 85,
+        "Level": 1,
+        "ReturnedHp": 0,
+        "CommitId": "e254bff088d04b3a90cd43fbd931c37a",
+        "CheckpointGeneration": null,
+        "Owned": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Rarity": 0,
+            "Level": 0,
+            "Count": 4
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Rarity": 1,
+            "Level": 0,
+            "Count": 1
+          }
+        ],
+        "ClearedDungeons": [],
+        "Receipts": [],
+        "Flow": null,
+        "NextDeparture": null,
+        "SavedDecks": [
+          {
+            "Id": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+            "Name": "スターター",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "fire_sword",
+                "DefinitionKey": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+                "Level": 0
+              }
+            ]
+          }
+        ],
+        "EquippedDeckId": "c91dc04c34dd4ebcad87bd4dbaabfec1",
+        "ExchangeStock": {
+          "RoundId": "initial-departure-v1",
+          "Offers": [
+            {
+              "Id": "card-sword",
+              "CardId": "sword",
+              "Name": "ソード",
+              "CardDefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 0,
+              "Maximum": 0,
+              "Purchased": 1,
+              "Random": false
+            },
+            {
+              "Id": "card-heal",
+              "CardId": "heal",
+              "Name": "ヒール",
+              "CardDefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 1,
+              "Random": true
+            },
+            {
+              "Id": "card-shield",
+              "CardId": "shield",
+              "Name": "シールド",
+              "CardDefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Rarity": 0,
+              "Level": 0,
+              "Price": 3,
+              "OverflowTokens": 1,
+              "Limit": 1,
+              "Maximum": 1,
+              "Purchased": 0,
+              "Random": true
+            }
+          ]
+        },
+        "ExchangeTotals": [
+          {
+            "ProductId": "card-sword",
+            "Count": 1
+          },
+          {
+            "ProductId": "card-heal",
+            "Count": 1
+          }
+        ],
+        "ExchangeReceipts": [
+          {
+            "RequestId": "2413294737a2486d92cc33645c7d226f",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-sword",
+            "Paid": 3,
+            "OverflowTokens": 1
+          },
+          {
+            "RequestId": "7702a0ae9f504aef9384df9462170ffd",
+            "RoundId": "initial-departure-v1",
+            "ProductId": "card-heal",
+            "Paid": 3,
+            "OverflowTokens": 0
+          }
+        ],
+        "DiscoveredCards": [
+          {
+            "Id": "sword",
+            "Name": "ソード",
+            "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "shield",
+            "Name": "シールド",
+            "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+            "Level": 0,
+            "Rarity": 0
+          },
+          {
+            "Id": "fire_sword",
+            "Name": "ファイアソード",
+            "DefinitionHash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+            "Level": 0,
+            "Rarity": 1
+          }
+        ],
+        "RevealedRecipes": [
+          "special/v1/bomb+sword/fire_sword"
+        ],
+        "SelectedStyleId": null,
+        "Customization": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "actualControllerAndRaycast": true,
+  "zeroTokensFromIsolatedFixture": true,
+  "disabledConfirmNoConsumptionOrReward": true,
+  "cancelBackReopenNoRerollOrWrites": true,
+  "registeredMiniIcons": [
+    {
+      "name": "ExchangeCardIcon_card-sword",
+      "sprite": "SwordCustomIcon",
+      "preserveAspect": true,
+      "raycastTarget": false
+    },
+    {
+      "name": "ExchangeCardIcon_card-heal",
+      "sprite": "healCustomIcon",
+      "preserveAspect": true,
+      "raycastTarget": false
+    },
+    {
+      "name": "ExchangeCardIcon_card-shield",
+      "sprite": "shieldCustomIcon",
+      "preserveAspect": true,
+      "raycastTarget": false
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "beforeVisible": 11,
+  "characters": 24,
+  "after": [
+    {
+      "name": "ExchangeOfferPrice_card-sword",
+      "text": "9223372036854775807\nトークン",
+      "fontSize": 30,
+      "resizeTextForBestFit": true,
+      "visible": 24,
+      "characters": 24,
+      "rect": "(300.00, 52.00)"
+    },
+    {
+      "name": "ExchangeOfferPrice_card-heal",
+      "text": "3 トークン",
+      "fontSize": 30,
+      "resizeTextForBestFit": true,
+      "visible": 6,
+      "characters": 6,
+      "rect": "(260.00, 52.00)"
+    },
+    {
+      "name": "ExchangeOfferPrice_card-shield",
+      "text": "3 トークン",
+      "fontSize": 30,
+      "resizeTextForBestFit": true,
+      "visible": 6,
+      "characters": 6,
+      "rect": "(260.00, 52.00)"
+    }
+  ],
+  "productValuesUnchanged": true,
+  "typeBoundaryFixtureOnly": true
+}

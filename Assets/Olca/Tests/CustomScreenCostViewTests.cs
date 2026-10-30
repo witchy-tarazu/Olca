@@ -147,12 +147,16 @@ namespace Olca.Tests
                 string name=string.Concat(Enumerable.Repeat("ながいテストめいしょう",mode==2?15:8));int chosen=-1;
                 if(mode==0)view.RenderDungeonSelection(new[]{name,name},new[]{true,true},0,i=>chosen=i,()=>{},()=>{},false,null,()=>{},cleared:new[]{false,false});
                 else if(mode==1)view.RenderStyleSelection(new[]{name+" / None",name+" / None"},new[]{true,true},0,i=>chosen=i,()=>{},()=>{},false,null,()=>{});
-                else view.RenderTokenExchange(new ClearReturnProfile{Tokens=100,ExchangeStock=new ExchangeStockData{Offers=new[]{new ExchangeOfferData{Id="long",CardId="fixture",Name=name,Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}}}},null,false,null,_=>chosen=0,()=>{},()=>{},()=>{},()=>{});
+                else view.RenderTokenExchange(new ClearReturnProfile{Tokens=100,ExchangeStock=new ExchangeStockData{Offers=new[]{new ExchangeOfferData{Id="long",CardId="fixture",Name=name,Level=ExceedLevel.Lv1,Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}}}},null,false,null,_=>chosen=0,()=>{},()=>{},()=>{},()=>{});
                 Canvas.ForceUpdateCanvases();var button=host.GetComponentsInChildren<Button>().First(b=>b.name.StartsWith(mode==0?"DungeonChoice_":mode==1?"StyleChoice_":"ExchangeOffer_"));var label=button.GetComponentInChildren<Text>();var rect=(RectTransform)button.transform;
                 Assert.AreEqual(mode==2?1730:1450,rect.rect.width);Assert.AreEqual(mode==2?76:78,rect.rect.height);RequireInside(viewport,rect);RequireInside(rect,label.rectTransform);
                 Assert.Less(label.rectTransform.rect.width,rect.rect.width);Assert.Less(label.rectTransform.rect.height,rect.rect.height);Assert.AreSame(font,label.font);Assert.IsFalse(label.raycastTarget);
-                StringAssert.Contains(name,label.text);Assert.AreEqual(label.text.Length,label.cachedTextGenerator.characterCountVisible,"内側余白で文字を欠落させない");
+                if(mode==2){StringAssert.Contains(name.Substring(0,36)+"…",label.text);StringAssert.EndsWith("★",label.text);}else StringAssert.Contains(name,label.text);Assert.AreEqual(label.text.Length,label.cachedTextGenerator.characterCountVisible,"内側余白で表示文字を欠落させない");
                 button.onClick.Invoke();Assert.GreaterOrEqual(chosen,0);RequireSeparateButtons(host);
+                if(mode==2){
+                    // 商品一覧は名前を省略表示し、選択後の既存の読取専用詳細で原文全体を保つ。
+                    view.RenderTokenExchange(new ClearReturnProfile{Tokens=100,ExchangeStock=new ExchangeStockData{Offers=new[]{new ExchangeOfferData{Id="long",CardId="fixture",Name=name,Level=ExceedLevel.Lv1,Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}}}},"long",false,null,_=>{},()=>Assert.Fail("閲覧で交換しない"),()=>{},()=>{},()=>{});Canvas.ForceUpdateCanvases();host.GetComponentsInChildren<Button>().Single(b=>b.name=="ExchangeConfirmationDetails").onClick.Invoke();StringAssert.Contains(name,host.GetComponentsInChildren<Text>().Single(t=>t.name=="ReadonlyCardPerformance").text);host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails").onClick.Invoke();RequireSeparateButtons(host);
+                }
             }finally{Object.DestroyImmediate(root);}
         }
         [TestCase(1920f,1080f,0)] [TestCase(1662.77f,1247.08f,0)] [TestCase(2199.64f,942.70f,0)]
@@ -548,6 +552,12 @@ namespace Olca.Tests
                 }
                 for(int i=0;i<profiles.Count;i++){Assert.AreEqual(beforeHashes[i],string.Join("|",profiles[i].DiscoveredCards.Select(x=>x.DefinitionHash??"legacy")));Assert.IsTrue(profiles[i].DiscoveredCards.All(x=>x.Name==name));}Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 交換商品のminiは保存済み定義hashで解決し同名別定義を代用しない()
+        {
+            var root=new GameObject("ExchangeArt",typeof(RectTransform),typeof(Canvas));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var texture=new Texture2D(2,2);var sprite=Sprite.Create(texture,new Rect(0,0,2,2),Vector2.one*.5f);
+            try{var host=new GameObject("ExchangeView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});var card=new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");string hash=new string('a',64);view.ConfigureMenuNavigation(null,o=>o.DefinitionHash==hash?card:null,_=>sprite);var profile=new ClearReturnProfile{Tokens=100,ExchangeStock=new ExchangeStockData{Offers=new[]{new ExchangeOfferData{Id="match",CardId="fixture",Name="テスト",CardDefinitionHash=hash,Price=long.MaxValue,OverflowTokens=1,Limit=ExchangeLimit.Unlimited},new ExchangeOfferData{Id="other",CardId="fixture",Name="テスト",CardDefinitionHash=new string('b',64),Price=3,OverflowTokens=1,Limit=ExchangeLimit.Unlimited}}}};view.RenderTokenExchange(profile,null,false,null,_=>{},()=>{},()=>{},()=>{},()=>{});var image=host.GetComponentsInChildren<Image>().Single(i=>i.name=="ExchangeCardIcon_match");Assert.AreSame(sprite,image.sprite);Assert.IsTrue(image.preserveAspect);Assert.IsFalse(image.raycastTarget);Assert.IsFalse(host.GetComponentsInChildren<Image>().Any(i=>i.name=="ExchangeCardIcon_other"));Assert.AreEqual(100,profile.Tokens);Canvas.ForceUpdateCanvases();var price=host.GetComponentsInChildren<Text>().Single(t=>t.name=="ExchangeOfferPrice_match");StringAssert.Contains(long.MaxValue.ToString()+"\nトークン",price.text);Assert.AreEqual(price.text.Length,price.cachedTextGenerator.characterCountVisible,"型上限の価格も全桁を表示する");view.RenderTokenExchange(new ClearReturnProfile(),null,false,null,_=>{},()=>{},()=>{},()=>{},()=>{});StringAssert.Contains("キョテンへモド",host.GetComponentsInChildren<Text>().Single(t=>t.name=="ExchangeConfirmation").text);Assert.IsFalse(host.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmTokenExchange").interactable);}
+            finally{Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
         }
         private static void RequireSeparateButtons(GameObject host)
         {

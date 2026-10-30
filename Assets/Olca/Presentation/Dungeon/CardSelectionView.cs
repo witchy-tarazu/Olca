@@ -753,25 +753,36 @@ namespace Olca.Presentation.Dungeon
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("TokenExchangeContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             UseReferenceLayout();
-            gameObject.SetActive(true);
-            Text("ExchangeTitle","トークン交換所",0,455,1700,80,36);
-            AddOverflowTextDetails(Text("ExchangeBalance",$"所持 {profile.Tokens} トークン / 永続所持へ交換\n"+(error??"ランダム商品は帰還時に更新。任意の再抽選はできません。"),0,345,1750,100,25),error==null?"コウカンのセツメイ":"ホゾンエラー");
+            gameObject.SetActive(true);CommerceSurface();CommerceFace("ExchangeHeader",-140,435,1480,145,true);CommerceFace("ExchangeFooter",0,-425,1760,245,true);
+            Text("ExchangeTitle","トークン交換所",-220,465,1300,60,36).color=Color.white;
+            Text("ExchangeTokens",$"所持 {profile.Tokens} トークン",-220,405,1300,50,32).color=Color.white;
+            var explanation=Text("ExchangeBalance",error??"永続所持へ交換 / ランダム商品は帰還時に更新。任意の再抽選はできません。",0,345,1750,65,24);explanation.color=Color.white;AddOverflowTextDetails(explanation,error==null?"コウカンのセツメイ":"ホゾンエラー");
             var offers=profile.ExchangeStock?.Offers??Array.Empty<ExchangeOfferData>();const int rows=5;int pages=Math.Max(1,(offers.Length+rows-1)/rows);exchangePage=Math.Min(exchangePage,pages-1);
+            int shown=Math.Min(rows,Math.Max(0,offers.Length-exchangePage*rows));float bottom=shown>0?205-(shown-1)*90-70:50;CommerceFace("ExchangeBody",0,(310+bottom)/2,1760,310-bottom);
+            Text("ExchangeCardColumn","カード",-290,280,850,30,22).alignment=TextAnchor.MiddleLeft;Text("ExchangePriceColumn","カカク",330,280,260,30,22).alignment=TextAnchor.MiddleRight;Text("ExchangeStateColumn","ショジ / セイゲン",650,280,350,30,22).alignment=TextAnchor.MiddleRight;
             for(int row=0;row<rows&&exchangePage*rows+row<offers.Length;row++){
                 var item=offers[exchangePage*rows+row];var ownedMatches=profile.Owned.Where(c=>c.Id==item.CardId&&c.Level==item.Level&&c.Name==item.Name&&c.Rarity==item.Rarity&&(item.CardDefinitionHash==null||c.DefinitionHash==item.CardDefinitionHash)).ToArray();int owned=ownedMatches.Length==1?ownedMatches[0].Count:0;
                 long total=(profile.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>()).SingleOrDefault(t=>t.ProductId==item.Id)?.Count??0;
                 bool sold=item.Limit!=ExchangeLimit.Unlimited&&(item.Limit==ExchangeLimit.PerRefresh?item.Purchased:total)>=item.Maximum;
                 string limit=item.Limit==ExchangeLimit.Unlimited?"無制限":item.Limit==ExchangeLimit.PerRefresh?$"更新まで {item.Purchased}/{item.Maximum}":$"通算 {total}/{item.Maximum}";
-                var b=Button("ExchangeOffer_"+item.Id,(selected==item.Id?"［選択中］ ":sold?"［売切れ］ ":"［選択］ ")+(item.Random?"ランダム ":"固定 ")+item.Name+new string('★',(int)item.Level)+$" / {item.Price} トークン / 所持{owned}/4 / "+limit,0,205-row*90,1730,76,()=>choose(item.Id));
-                InsetChoiceLabel(b);
-                b.interactable=!blocked&&!sold;if(selected==item.Id)b.GetComponent<Image>().color=UiLook.Chosen;
+                float y=205-row*90;string state=selected==item.Id?"［選択中］ ":sold?"［売切れ］ ":"";
+                var b=Button("ExchangeOffer_"+item.Id,state+CustomizationMenuElements.ShortName(item.Name,36)+new string('★',(int)item.Level),0,y,1730,76,()=>choose(item.Id));
+                var name=b.GetComponentInChildren<UnityEngine.UI.Text>();name.supportRichText=false;name.alignment=TextAnchor.MiddleLeft;name.rectTransform.anchoredPosition=new Vector2(-290,0);name.rectTransform.sizeDelta=new Vector2(850,64);name.fontSize=28;name.resizeTextMaxSize=28;
+                string digits=item.Price.ToString();bool widePrice=digits.Length>12;var price=Text("ExchangeOfferPrice_"+item.Id,widePrice?digits+"\nトークン":digits+" トークン",widePrice?310:330,y,widePrice?300:260,52,30);price.alignment=TextAnchor.MiddleRight;price.resizeTextForBestFit=true;price.resizeTextMinSize=20;price.resizeTextMaxSize=30;
+                Text("ExchangeOfferOwned_"+item.Id,(item.Random?"ランダム":"固定")+" / 所持 "+owned+"/4",650,y+14,350,24,22).alignment=TextAnchor.MiddleRight;
+                Text("ExchangeOfferLimit_"+item.Id,limit,650,y-14,350,24,22).alignment=TextAnchor.MiddleRight;
+                // 保存済みの識別子/定義hashを既存の定義解決へ渡す。別の同名カードへ代替しない。
+                var card=resolveOwned?.Invoke(new OwnedCardCount{Id=item.CardId,Name=item.Name,Rarity=item.Rarity,Level=item.Level,DefinitionHash=item.CardDefinitionHash,Count=1});var sprite=card==null?null:resolveReturnIcon?.Invoke(card);if(sprite!=null)CollectionIcon("ExchangeCardIcon_"+item.Id,card,-790,y,60,_=>sprite);
+                b.interactable=!blocked&&!sold;if(selected==item.Id){b.GetComponent<Image>().color=UiLook.Chosen;CustomizationMenuElements.SelectionMarker(b.transform,-850,56);}
+
             }
             Button("PreviousExchangePage","前へ",-380,-270,260,60,()=>{exchangePage--;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage>0;
             Button("NextExchangePage","次へ",380,-270,260,60,()=>{exchangePage++;RenderTokenExchange(profile,selected,blocked,error,choose,buy,cancel,close,retrySave);}).interactable=!blocked&&exchangePage+1<pages;
-            Text("ExchangePage",$"{exchangePage+1}/{pages}",0,-270,250,60,24);
+            Text("ExchangePage",$"{exchangePage+1}/{pages}",0,-270,250,60,24).color=Color.white;
+            if(offers.Length==0)Text("ExchangeEmpty","交換商品はありません。",0,120,1500,130,30);
             var choice=offers.SingleOrDefault(o=>o.Id==selected);
-            string help=choice==null?"商品を選んで確認してください。":$"{choice.Price} トークンを支払い1枚獲得。"+(profile.Owned.Any(c=>c.Id==choice.CardId&&c.Level==choice.Level&&c.Count==4)?$"所持上限のため{choice.OverflowTokens}トークンへ変換。":!ClearReturnSession.CanExchange(profile,choice)?"トークン不足または売切れ。":"");
-            Text("ExchangeConfirmation",help,0,-355,1750,75,24);
+            string help=choice==null?(offers.Length==0?"交換商品はありません。拠点へ戻ってください。":"商品を選んで確認してください。"):$"{choice.Price} トークンを支払い1枚獲得。"+(profile.Owned.Any(c=>c.Id==choice.CardId&&c.Level==choice.Level&&c.Count==4)?$"所持上限のため{choice.OverflowTokens}トークンへ変換。":!ClearReturnSession.CanExchange(profile,choice)?"トークン不足または売切れ。":"");
+            var confirmation=Text("ExchangeConfirmation",choice==null?help:choice.Name+"\n"+help,0,-355,1750,75,24);confirmation.color=Color.white;confirmation.supportRichText=false;AddOverflowTextDetails(confirmation,"コウカンナイヨウ");
             Button("ConfirmTokenExchange","交換を確定",-560,-440,520,72,buy).interactable=!blocked&&ClearReturnSession.CanExchange(profile,choice);
             Button("CancelTokenExchange","選択取消",0,-440,520,72,cancel).interactable=!blocked&&selected!=null;
             Button("CloseTokenExchange","拠点へ戻る",560,-440,520,72,close).interactable=!blocked;
