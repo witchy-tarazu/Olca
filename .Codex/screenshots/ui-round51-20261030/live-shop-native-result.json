@@ -1,0 +1,153 @@
+{
+  "purchaseAndRemovalOnce": true,
+  "cancelNoEffect": true,
+  "exitSaved": true,
+  "recoveryOnce": true,
+  "heldExitNoCustomLeak": true,
+  "final": {
+    "contact": {
+      "inputBlocked": false,
+      "handAnimating": false,
+      "phase": "Battle",
+      "starts": 2,
+      "custom": true,
+      "selected": 0,
+      "cursor": 0,
+      "frame": 0,
+      "position": "(1, 0)",
+      "playerHp": 87,
+      "fieldReady": true,
+      "explorationButtons": [],
+      "subscriptions": [
+        {
+          "name": "OnBattleStarted",
+          "count": 1
+        },
+        {
+          "name": "OnBattleEnded",
+          "count": 1
+        },
+        {
+          "name": "OnCardRewardPresented",
+          "count": 1
+        },
+        {
+          "name": "OnGameOver",
+          "count": 1
+        },
+        {
+          "name": "OnDungeonClearCompleted",
+          "count": 1
+        }
+      ],
+      "state": {
+        "retreat": false,
+        "collection": false,
+        "countdown": false,
+        "focus": "ExitVisit",
+        "phase": "Battle",
+        "custom": true,
+        "frame": 0,
+        "paused": false,
+        "logicalPaused": true,
+        "visualPaused": true,
+        "screen": [
+          3840,
+          2160
+        ],
+        "texts": [
+          "CostText:1",
+          "Label:\u30dd\u30fc\u30ba",
+          "BasicAttackState:\u30ab\u30b9\u30bf\u30e0\u30c1\u30e5\u30a6",
+          "CostDisplay:\u30b3\u30b9\u30c8: 0 / 10",
+          "CostText:1",
+          "Text (Legacy):\u30ab\u30b3\u30a6\u3092\u30e2\u30c9\u3059",
+          "Text (Legacy):\u30ab\u30af\u30c6\u30a4",
+          "CostText:1",
+          "Text (Legacy):\u30b8\u30d6\u30f3",
+          "BasicAttackLabel:\u30b3\u30a6\u30b2\u30ad",
+          "CostText:2",
+          "SelectedCardDescription:\u30b7\u30fc\u30eb\u30c9\n\u30b3\u30b9\u30c8: 1 / \u30a4\u30ea\u30e7\u30af: 15\n\u30be\u30af\u30bb\u30a4 \u30e0\u30be\u30af\u30bb\u30a4 / \u30b9\u30bf\u30f3\u30c0\u30fc\u30c9 / \u306a\u3057 / \u30c4\u30a6\u30b8\u30e7\u30a6\n\n\u30dc\u30a6\u30ae\u30e7\n\n\u30ab\u30fc\u30c9\u30db\u30bb\u30a4 (\u30b4\u30a6\u30b1\u30a4)\n\u306a\u3057",
+          "PlayerHpText:87",
+          "CostText:1",
+          "Text (Legacy):\u30ac\u30e1\u30f3\u3092\u30ab\u30af\u3059",
+          "CurrencyBalance:\u30c4\u30a6\u30ab: 0",
+          "TouchCardUseButtonLabel:\u30ab\u30fc\u30c9",
+          "InstructionText:L\u30b9\u30c6\u30a3\u30c3\u30af / \u30b8\u30e5\u30a6\u30b8\u30d2\u30c0\u30ea / \u30b8\u30e5\u30a6\u30b8\u30df\u30ae / \u30b8\u30e5\u30a6\u30b8\u30a6\u30a8 / \u30b8\u30e5\u30a6\u30b8\u30b7\u30bf: \u30a4\u30c9\u30a6\nWest: \u30b3\u30e6\u30a6\u30b3\u30a6\u30b2\u30ad  RB: \u30ab\u30fc\u30c9  North: \u30ab\u30b9\u30bf\u30e0  Start: \u30dd\u30fc\u30ba",
+          "BasicAttackKey:\u30b3\u30a6\u30b2\u30ad [West]  \u30ab\u30fc\u30c9 [RB]\nNorth: \u30ab\u30b9\u30bf\u30e0 / Start: \u30dd\u30fc\u30ba",
+          "CustomPadGuide:Pad South: \u30bb\u30f3\u30bf\u30af / East: \u30c8\u30ea\u30b1\u30b7 / Start: \u30ab\u30af\u30c6\u30a4\u30fb\u30ab\u30b3\u30a6 / North: \u30ab\u30b3\u30a6\u30ad\u30ea\u30ab\u30a8\nWest: Undo / Select: \u30c6\u30d5\u30c0\u30fb\u30d8\u30f3\u30b7\u30f3 / R3: \u30b7\u30e7\u30a6\u30b5\u30a4 / LB: \u30ac\u30e1\u30f3 / RB: \u30b8\u30d6\u30f3",
+          "DungeonCardCounts:\u30c7\u30c3\u30ad: 6\u30de\u30a4\n\u30ab\u30af\u30c8\u30af: 1\u30de\u30a4",
+          "CostText:1",
+          "CustomGaugeLabel:CUSTOM",
+          "ExplorationHpText:HP: 87 / 100",
+          "FloorProgressText:1\u30ab\u30a4  19 / 60"
+        ],
+        "buttons": [
+          "BasicAttackButton",
+          "SelectionIndicator",
+          "TouchCardUseButton",
+          "PauseButton",
+          "HideCustomPresentation",
+          "HandCardViewPrefab(Clone)",
+          "HandCardViewPrefab(Clone)",
+          "ConfirmButton",
+          "HandCardViewPrefab(Clone)",
+          "HandCardViewPrefab(Clone)",
+          "InspectCombatants",
+          "HandCardViewPrefab(Clone)",
+          "UndoCustomizationButton",
+          "HandCardViewPrefab(Clone)"
+        ]
+      }
+    },
+    "visit": {
+      "phase": "Battle",
+      "cell": null,
+      "currency": 0,
+      "deck": 6,
+      "obtained": 1,
+      "hp": 87,
+      "selected": -1,
+      "removing": false,
+      "options": null,
+      "purchased": null,
+      "position": 19,
+      "savedSequence": 6,
+      "savedCurrency": 0,
+      "savedDeck": 6,
+      "savedObtained": 1,
+      "savedVisits": [
+        {
+          "Cell": 18,
+          "Closed": true,
+          "Purchased": [
+            true,
+            true
+          ]
+        },
+        {
+          "Cell": 19,
+          "Closed": true,
+          "Purchased": [
+            true
+          ]
+        }
+      ],
+      "focus": "ExitVisit",
+      "paused": false,
+      "buttons": [
+        "SelectionIndicator",
+        "PauseButton",
+        "HideCustomPresentation",
+        "HandCardViewPrefab(Clone)",
+        "HandCardViewPrefab(Clone)",
+        "ConfirmButton",
+        "HandCardViewPrefab(Clone)",
+        "HandCardViewPrefab(Clone)",
+        "InspectCombatants",
+        "HandCardViewPrefab(Clone)",
+        "HandCardViewPrefab(Clone)"
+      ]
+    }
+  }
+}

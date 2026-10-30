@@ -1,0 +1,32 @@
+{
+  "current": {
+    "stage": "Returned",
+    "selected": [
+      0
+    ],
+    "selectedNames": [
+      "fire_card"
+    ],
+    "experience": 100,
+    "level": 2,
+    "tokens": 0,
+    "owned": [
+      "fire_card:1"
+    ],
+    "receipts": 1,
+    "texts": [
+      "HomeStats:Lv 2　ソウケイケンチ 100　トークン 0\nHP 105/105　コウゲキ 11\nカード・ケイケンチはホゾンズみです。"
+    ]
+  },
+  "savedStage": "Returned",
+  "savedExperience": 100,
+  "savedLevel": 2,
+  "savedTokens": 0,
+  "savedOwned": [
+    "fire_card:1"
+  ],
+  "savedSelected": [
+    0
+  ],
+  "savedReceipts": 1
+}

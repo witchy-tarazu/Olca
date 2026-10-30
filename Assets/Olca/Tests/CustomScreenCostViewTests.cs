@@ -710,6 +710,38 @@ namespace Olca.Tests
         }
 
         [Test]
+        public void 店の型付き表示は表示順の価格と専用アイコンを借用し不足通貨での選択と他画面の面を保つ()
+        {
+            var root=new GameObject("ShopTypedPresentation",typeof(RectTransform));var texture=new Texture2D(8,8);var sprite=Sprite.Create(texture,new Rect(0,0,8,8),new Vector2(.5f,.5f));
+            try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);int chosen=-1;
+                var details=new[]{new DungeonVisitOption("heal",long.MaxValue,Create("heal",CardSeries.Sword)),new DungeonVisitOption("sword",10,Create("sword",CardSeries.Sword))};var enabled=new[]{true,false};var purchased=new[]{false,true};var names=new[]{"legacy 1","legacy 2"};
+                view.RenderDungeonVisit("ショップ",names,enabled,0,false,false,i=>chosen=i,()=>{},()=>{},()=>{},()=>{},true,details,purchased,0,_=>sprite);Canvas.ForceUpdateCanvases();
+                var price=root.GetComponentsInChildren<Text>().Single(t=>t.name=="VisitPrice_0");StringAssert.Contains(long.MaxValue.ToString(),price.text);price.cachedTextGenerator.Populate(price.text,price.GetGenerationSettings(price.rectTransform.rect.size));Assert.GreaterOrEqual(price.cachedTextGenerator.characterCountVisible,price.text.Length);
+                Assert.AreEqual(CustomDisplay.Katakana(details[0].Label),root.GetComponentsInChildren<Text>().Single(t=>t.name=="VisitOption_0Label").text);StringAssert.Contains("コウニュウズみ",root.GetComponentsInChildren<Text>().Single(t=>t.name=="VisitState_1").text);
+                var image=root.GetComponentsInChildren<Image>().Single(i=>i.name=="VisitCardIcon_0");Assert.AreSame(sprite,image.sprite);Assert.IsTrue(image.preserveAspect);Assert.IsFalse(image.raycastTarget);
+                var select=root.GetComponentsInChildren<Button>().Single(b=>b.name=="VisitOption_0");Assert.IsTrue(select.interactable);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmVisit").interactable);Assert.AreEqual(-1,chosen);select.onClick.Invoke();Assert.AreEqual(0,chosen);
+                Assert.AreEqual("legacy 1",names[0]);Assert.AreEqual(long.MaxValue,details[0].Price);Assert.IsTrue(enabled[0]);Assert.IsFalse(purchased[0]);
+                var dense=Enumerable.Range(0,5).Select(i=>new DungeonVisitOption("dense"+i,10,new Card("long",string.Concat(Enumerable.Repeat("ヒールのナガいナマエ",7)),1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"セツメイ"))).ToArray();view.RenderDungeonVisit("ショップ",dense.Select(o=>o.Label).ToArray(),Enumerable.Repeat(true,5).ToArray(),1,false,true,_=>{},()=>{},()=>{},()=>{},()=>{},true,dense,new bool[5],100,_=>sprite);
+                var row=root.GetComponentsInChildren<Button>().Single(b=>b.name=="VisitOption_1");var rowRect=(RectTransform)row.transform;var nameLabel=row.GetComponentInChildren<Text>();Assert.LessOrEqual(nameLabel.rectTransform.anchoredPosition.y+nameLabel.rectTransform.rect.height/2,rowRect.rect.height/2-10);nameLabel.cachedTextGenerator.Populate(nameLabel.text,nameLabel.GetGenerationSettings(nameLabel.rectTransform.rect.size));Assert.GreaterOrEqual(nameLabel.cachedTextGenerator.characterCountVisible,nameLabel.text.Length);
+                var descriptionLabel=root.GetComponentsInChildren<Text>().Single(t=>t.name=="VisitDescription_1");Assert.GreaterOrEqual(descriptionLabel.rectTransform.anchoredPosition.y-descriptionLabel.rectTransform.rect.height/2,rowRect.anchoredPosition.y-rowRect.rect.height/2+10);
+                view.RenderVisitRemoval("削除",new[]{"A"},new[]{false},1,10,false,false,_=>{},()=>{},()=>{},()=>{});Assert.AreEqual(UiLook.Surface,root.GetComponent<Image>().color);Object.DestroyImmediate(root);root=null;Assert.IsTrue(sprite!=null);Assert.IsTrue(texture!=null);
+            }finally{if(root!=null)Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
+        }
+
+        [Test]
+        public void 帰還miniは候補の定義ハッシュで解決した素材だけを借用し未解決時に別絵を流用しない()
+        {
+            var root=new GameObject("ReturnMiniBinding",typeof(RectTransform));var texture=new Texture2D(8,8);var sprite=Sprite.Create(texture,new Rect(0,0,8,8),new Vector2(.5f,.5f));
+            try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var card=Create("same",CardSeries.Sword);string hash=CollectionDisplay.DefinitionHash(card),requested=null;
+                view.ConfigureMenuNavigation(null,owned=>{requested=owned.DefinitionHash;return owned.DefinitionHash==hash?card:null;},_=>sprite);var profile=new ClearReturnProfile{Revision=3};var candidate=new ReturnCardData{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,ValueHash=hash};var flow=new ClearReturnData{RunId="binding",Stage=ClearReturnStage.Awarded,Outcome=RunReturnOutcome.Cleared,Candidates=new[]{candidate},Selected=new[]{0},ReturnedMaxHp=100,ReturnedAttack=10};
+                view.Render(profile,flow,false,null);Assert.AreEqual(hash,requested);var image=root.GetComponentsInChildren<Image>().Single(i=>i.name=="ReturnCardIcon_0");Assert.AreSame(sprite,image.sprite);Assert.IsTrue(image.preserveAspect);Assert.IsFalse(image.raycastTarget);Assert.AreEqual(3,profile.Revision);Assert.IsEmpty(profile.Owned);
+                candidate.ValueHash="unresolved";view.Render(profile,flow,false,null);Assert.AreEqual("unresolved",requested);Assert.IsFalse(root.GetComponentsInChildren<Image>().Any(i=>i.name=="ReturnCardIcon_0"));Assert.IsTrue(root.GetComponentsInChildren<Text>().Any(t=>t.name=="ReturnCardIndex_0"));Object.DestroyImmediate(root);root=null;Assert.IsTrue(sprite!=null);Assert.IsTrue(texture!=null);
+            }finally{if(root!=null)Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
+        }
+
+        [Test]
         public void 店の削除案内は現在枚数の漢字だけをカナにして助詞を保持する()
             =>Assert.AreEqual("カードサクジョ 2マイ（ゲンザイマイスウまで）",CustomDisplay.Katakana("カード削除 2枚（現在枚数まで）"));
 
