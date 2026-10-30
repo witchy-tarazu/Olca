@@ -1,0 +1,7 @@
+{
+  "currentConsoleWarnings": 1,
+  "currentWarning": "Could not save connection info: Read-only file system",
+  "source": "Unity.AI.MCP.Editor.Helpers.ServerDiscovery.SaveConnectionInfo",
+  "additionalRelayHistory": "Editor is already in edit mode: ordinary redundant stop, not current product warning",
+  "productAssetWarnings": 0
+}
