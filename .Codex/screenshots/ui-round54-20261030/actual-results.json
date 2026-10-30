@@ -1,0 +1,1475 @@
+[
+  {
+    "step": "fixture-close",
+    "result": {
+      "open": false,
+      "accessories": null,
+      "placements": null,
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "before",
+    "result": {
+      "Revision": 3,
+      "accessories": [
+        "アクアリング"
+      ],
+      "placements": [
+        {
+          "PartId": "エルパーツ",
+          "X": 0,
+          "Y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  },
+  {
+    "step": "open0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "equip0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "part-page0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "part0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチマエ / 0ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "rotate0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチマエ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "place0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "overlap0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "パーツがカサなります"
+        }
+      ]
+    }
+  },
+  {
+    "step": "locked0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ミカイホウのマスです"
+        }
+      ]
+    }
+  },
+  {
+    "step": "clear0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "existing0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "エルパーツ"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 0ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "rotate-existing0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        },
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "エルパーツ"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "remove0",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "5cd47531f2e94511ab9e31d1b73a2d1e",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "cancel0",
+    "result": {
+      "open": false,
+      "accessories": null,
+      "placements": null,
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "open1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "equip1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "part-page1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "part1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチマエ / 0ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "rotate1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチマエ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "place1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "overlap1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "パーツがカサなります"
+        }
+      ]
+    }
+  },
+  {
+    "step": "locked1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ミカイホウのマスです"
+        }
+      ]
+    }
+  },
+  {
+    "step": "clear1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "existing1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "エルパーツ"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 0ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "rotate-existing1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        },
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "エルパーツ"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "remove1",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "21c9c04167024c638f9e80eed7c37427",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "cancel1",
+    "result": {
+      "open": false,
+      "accessories": null,
+      "placements": null,
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-open",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-equip",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-part-page",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-part",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチマエ / 0ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-rotate",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチマエ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-place",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "6c0c590cf7a14d7f8270d98392bc32a4",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "remember",
+    "result": true
+  },
+  {
+    "step": "save",
+    "result": {
+      "open": false,
+      "accessories": null,
+      "placements": null,
+      "saved": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "ストレート"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ハイチズミをヘンシュウ / 90ド"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "saved",
+    "result": {
+      "Revision": 4,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "PartId": "エルパーツ",
+          "X": 0,
+          "Y": 0,
+          "rotation": 0
+        },
+        {
+          "PartId": "ストレート",
+          "X": 3,
+          "Y": 0,
+          "rotation": 90
+        }
+      ]
+    }
+  },
+  {
+    "step": "stale-save",
+    "result": {
+      "Revision": 4,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "PartId": "エルパーツ",
+          "X": 0,
+          "Y": 0,
+          "rotation": 0
+        },
+        {
+          "PartId": "ストレート",
+          "X": 3,
+          "Y": 0,
+          "rotation": 90
+        }
+      ]
+    }
+  },
+  {
+    "step": "reopen-saved",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "6c0c590cf7a14d7f8270d98392bc32a4",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "unequip",
+    "result": {
+      "open": true,
+      "accessories": [
+        "アクアリング"
+      ],
+      "placements": [
+        {
+          "InstanceId": "placed-a",
+          "PartId": "エルパーツ",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "InstanceId": "6c0c590cf7a14d7f8270d98392bc32a4",
+          "PartId": "ストレート",
+          "x": 3,
+          "y": 0,
+          "rotation": 90
+        }
+      ],
+      "saved": [
+        "アクアリング",
+        "ミラーチャーム"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "save-unequip",
+    "result": {
+      "open": false,
+      "accessories": null,
+      "placements": null,
+      "saved": [
+        "アクアリング"
+      ],
+      "texts": [
+        {
+          "name": "CustomizationSelection",
+          "text": "パーツをエラんで\nマスをオしてください"
+        },
+        {
+          "name": "CustomizationSelectionState",
+          "text": "ミカイホウ: X\nハイチズミ: バンゴウ"
+        },
+        {
+          "name": "CustomizationMessage",
+          "text": "ヘンコウはまだホゾンしていません"
+        }
+      ]
+    }
+  },
+  {
+    "step": "saved-unequip",
+    "result": {
+      "Revision": 5,
+      "accessories": [
+        "アクアリング"
+      ],
+      "placements": [
+        {
+          "PartId": "エルパーツ",
+          "X": 0,
+          "Y": 0,
+          "rotation": 0
+        },
+        {
+          "PartId": "ストレート",
+          "X": 3,
+          "Y": 0,
+          "rotation": 90
+        }
+      ]
+    }
+  }
+]

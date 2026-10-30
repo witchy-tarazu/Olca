@@ -1,0 +1,8 @@
+{
+  "errors": 0,
+  "warnings": 1,
+  "compilationFailed": false,
+  "warning": "Unity AI MCP ServerDiscovery connection-info save: read-only filesystem",
+  "source": "post-play groundTruth and Editor log signature",
+  "securityOrCredentialsChanged": false
+}

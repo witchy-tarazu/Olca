@@ -1,0 +1,12 @@
+{
+  "actualRaycastHoverAndWheel": true,
+  "idLengthFixture": 270,
+  "readout": {
+    "before": 1,
+    "after": 0,
+    "readoutStayedOpen": true,
+    "accessories": 0,
+    "registeredIdPreserved": true
+  },
+  "savedFilesUnchanged": true
+}
