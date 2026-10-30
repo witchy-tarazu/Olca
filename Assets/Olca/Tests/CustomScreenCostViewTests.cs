@@ -16,6 +16,25 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(1440f)][TestCase(1920f)][TestCase(2560f)]
+        public void カスタムの外周は左半画面に収まり閉じたHUDと開閉途中のリサイズを保つ(float width)
+        {
+            var root=new GameObject("BattleViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,1080);
+            try{
+                var panel=new GameObject("CustomScreenContainer",typeof(RectTransform));panel.transform.SetParent(root.transform,false);var rect=(RectTransform)panel.transform;
+                rect.anchorMin=rect.anchorMax=new Vector2(0,.5f);rect.pivot=new Vector2(0,.5f);rect.sizeDelta=new Vector2(960,1080);
+                var background=new GameObject("BgCustom",typeof(RectTransform));background.transform.SetParent(panel.transform,false);var bg=(RectTransform)background.transform;bg.anchorMin=bg.anchorMax=new Vector2(0,.5f);bg.anchoredPosition=new Vector2(580,0);bg.sizeDelta=new Vector2(1280,1080);
+                var view=root.AddComponent<Olca.Presentation.Battle.BattleView>();var type=view.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;type.GetField("customScreenContainer",flags).SetValue(view,rect);
+                var set=type.GetMethod("SetCustomSlide",flags);var late=type.GetMethod("LateUpdate",flags);var corners=new Vector3[4];
+                foreach(float x in new[]{0f,-450f,50f}){
+                    set.Invoke(view,new object[]{x});viewport.sizeDelta=new Vector2(1440,1080);late.Invoke(view,null);Assert.AreEqual(rect.localScale.x,rect.localScale.y);Assert.Greater(rect.localScale.x,0);
+                    Assert.AreEqual(x*rect.localScale.x,rect.anchoredPosition.x,.01f);
+                    if(x==0){bg.GetWorldCorners(corners);Assert.AreEqual(viewport.rect.center.x,corners.Max(c=>viewport.InverseTransformPoint(c).x),.1f);Assert.AreEqual(viewport.rect.xMin,viewport.InverseTransformPoint(rect.position).x,.1f);}
+                    viewport.sizeDelta=new Vector2(width,1080);late.Invoke(view,null);if(x==0){bg.GetWorldCorners(corners);Assert.LessOrEqual(corners.Max(c=>viewport.InverseTransformPoint(c).x),viewport.rect.center.x+.1f);}
+                }
+                set.Invoke(view,new object[]{-900f});Assert.AreEqual(Vector3.one,rect.localScale);Assert.AreEqual(-900,rect.anchoredPosition.x);
+            }finally{Object.DestroyImmediate(root);}
+        }
         private static void RequireInside(RectTransform viewport,RectTransform control)
         {
             var corners=new Vector3[4];control.GetWorldCorners(corners);

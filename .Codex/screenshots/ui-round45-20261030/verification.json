@@ -1,0 +1,136 @@
+{
+  "interactions": {
+    "pointerRaycastCycles": 2,
+    "lifo": true,
+    "emptyNoOp": true,
+    "hideRestoreSelection": true,
+    "pauseReturnHeld": true,
+    "states": [
+      {
+        "screen": [
+          1440,
+          1080
+        ],
+        "right": 719.999939,
+        "half": 720,
+        "minCardPixels": 59.0163574,
+        "confirmMinPixels": 59.01642,
+        "scale": "(0.59, 0.59, 1.00)",
+        "cost": "コスト: 3 / 10",
+        "selected": [
+          "sword",
+          "bomb"
+        ],
+        "frame": 0
+      },
+      {
+        "screen": [
+          1440,
+          1080
+        ],
+        "right": 719.999939,
+        "half": 720,
+        "minCardPixels": 59.0163574,
+        "confirmMinPixels": 59.01642,
+        "scale": "(0.59, 0.59, 1.00)",
+        "cost": "コスト: 3 / 10",
+        "selected": [
+          "sword",
+          "bomb"
+        ],
+        "frame": 0
+      }
+    ]
+  },
+  "closedAndReopened": {
+    "closed": {
+      "scale": "(1.00, 1.00, 1.00)",
+      "position": "(-900.00, 0.00)"
+    },
+    "reopened": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "right": 720,
+      "half": 720,
+      "minCardPixels": 59.0163574,
+      "confirmMinPixels": 59.01642,
+      "scale": "(0.59, 0.59, 1.00)",
+      "cost": "コスト: 0 / 10",
+      "selected": [],
+      "frame": 7
+    }
+  },
+  "visualReview": "4:3敵名/HP/本体の遮蔽を解消。4:3は文字が小さく上下余白が増すが、一体パネルとして自然で欠損なし。追加縮小しない。",
+  "codeReview": "パラメータ幅復元後の境界assertを補い、未解決具体指摘なし。",
+  "baseline": "995f01ebcd0afc7d1abc99ee455394458efcc968",
+  "targetedTests": {
+    "layout": {
+      "summary": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.09
+    },
+    "custom": {
+      "summary": {
+        "total": 366,
+        "passed": 366,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 23.2
+    },
+    "related": {
+      "summary": {
+        "total": 199,
+        "passed": 199,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 69.84
+    }
+  },
+  "finalTests": {
+    "summary": {
+      "total": 3469,
+      "passed": 3469,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 249.39,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T03:21:05.558143Z",
+      "ageMs": 230,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 66,
+      "consoleLogs": 2685,
+      "seeded": true
+    },
+    "consoleCounts": {
+      "error": 0,
+      "warn": 45,
+      "log": 1955
+    },
+    "wrapperTimedOut": true
+  },
+  "finalHealth": {
+    "editorStopped": true,
+    "runnerStopped": true,
+    "actualRender": [
+      640,
+      360
+    ],
+    "dedicatedTmpdirGuard": true,
+    "consoleErrors": 0
+  }
+}

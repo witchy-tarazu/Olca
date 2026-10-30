@@ -132,6 +132,44 @@ namespace Olca.Presentation.Battle
         private const float CUSTOM_SCREEN_HIDDEN_X = -900f;  // 左端接続を保ち、縦ゲージ枠を画面内に残す閉じ位置
         private const float CUSTOM_SCREEN_VISIBLE_X = 0f;    // カスタム画面表示時のX座標（画面内）
 
+        private float customSlideX = CUSTOM_SCREEN_HIDDEN_X;
+        private readonly Vector3[] customLayoutCorners = new Vector3[4];
+
+        // パネルと張り出すHP/ゲージを一体で収める。閉状態のHUD寸法は変更しない。
+        private void SetCustomSlide(float x)
+        {
+            customSlideX = x;
+            RefreshCustomLayout();
+        }
+
+        private void LateUpdate() => RefreshCustomLayout();
+
+        private void RefreshCustomLayout()
+        {
+            if (customScreenContainer == null) return;
+            float fit = 1f;
+            var viewport = customScreenContainer.parent as RectTransform;
+            if (viewport != null && viewport.rect.width > 0f)
+            {
+                float right = customScreenContainer.rect.xMax;
+                // 元背景の外周には、右側のHP枠とゲージも含まれる。
+                var background = customScreenContainer.Find("BgCustom") as RectTransform;
+                if (background != null)
+                {
+                    background.GetWorldCorners(customLayoutCorners);
+                    foreach (var corner in customLayoutCorners)
+                        right = Mathf.Max(right, customScreenContainer.InverseTransformPoint(corner).x);
+                }
+                if (right > 0f) fit = Mathf.Min(1f, viewport.rect.width * .5f / right);
+            }
+            float progress = Mathf.InverseLerp(CUSTOM_SCREEN_HIDDEN_X, CUSTOM_SCREEN_VISIBLE_X, customSlideX);
+            float scale = Mathf.Lerp(1f, fit, progress);
+            customScreenContainer.localScale = new Vector3(scale, scale, 1f);
+            var position = customScreenContainer.anchoredPosition;
+            position.x = customSlideX * scale;
+            customScreenContainer.anchoredPosition = position;
+        }
+
         // ========== 初期化 ==========
         public void Initialize(BattleSystem battleSystem)
         {
@@ -155,9 +193,7 @@ namespace Olca.Presentation.Battle
             // 初期状態設定：カスタム画面コンテナを画面外に配置
             if (customScreenContainer != null)
             {
-                var anchoredPos = customScreenContainer.anchoredPosition;
-                anchoredPos.x = CUSTOM_SCREEN_HIDDEN_X;
-                customScreenContainer.anchoredPosition = anchoredPos;
+                SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
             }
 
             // CustomGaugeLabelのみ初期状態で非表示
@@ -228,9 +264,7 @@ namespace Olca.Presentation.Battle
             isCustomScreenOpen = false; gaugeResetting = false;
             if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(false);
             if (customScreenContainer != null) {
-                var position = customScreenContainer.anchoredPosition;
-                position.x = CUSTOM_SCREEN_HIDDEN_X;
-                customScreenContainer.anchoredPosition = position;
+                SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
             }
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
             DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();
@@ -364,7 +398,7 @@ namespace Olca.Presentation.Battle
                 float easedT = EaseOutQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_HIDDEN_X, CUSTOM_SCREEN_VISIBLE_X + overshootAmount, easedT);
-                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+                SetCustomSlide(currentX);
 
                 await Olca.Unity.GameplayPause.NextFrame(ct);
             }
@@ -380,13 +414,13 @@ namespace Olca.Presentation.Battle
                 float easedT = EaseInQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X + overshootAmount, CUSTOM_SCREEN_VISIBLE_X, easedT);
-                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+                SetCustomSlide(currentX);
 
                 await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終位置を保証
-            customScreenContainer.anchoredPosition = new Vector2(CUSTOM_SCREEN_VISIBLE_X, customScreenContainer.anchoredPosition.y);
+            SetCustomSlide(CUSTOM_SCREEN_VISIBLE_X);
         }
 
         /// <summary>
@@ -408,7 +442,7 @@ namespace Olca.Presentation.Battle
                 float easedT = EaseOutQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X, CUSTOM_SCREEN_VISIBLE_X + overshootAmount, easedT);
-                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+                SetCustomSlide(currentX);
 
                 await Olca.Unity.GameplayPause.NextFrame(ct);
             }
@@ -424,13 +458,13 @@ namespace Olca.Presentation.Battle
                 float easedT = EaseInQuad(t);
 
                 float currentX = Mathf.Lerp(CUSTOM_SCREEN_VISIBLE_X + overshootAmount, CUSTOM_SCREEN_HIDDEN_X, easedT);
-                customScreenContainer.anchoredPosition = new Vector2(currentX, customScreenContainer.anchoredPosition.y);
+                SetCustomSlide(currentX);
 
                 await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
             // 最終位置を保証
-            customScreenContainer.anchoredPosition = new Vector2(CUSTOM_SCREEN_HIDDEN_X, customScreenContainer.anchoredPosition.y);
+            SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
 
             // 「準備中」ラベルを非表示
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
