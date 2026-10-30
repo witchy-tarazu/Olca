@@ -1,0 +1,32 @@
+{
+  "before-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 372005,
+    "sha256": "91f7417dc91afd244a6e5deb0fc60e445d23f3d186076bf39023bcf8d3acd00e"
+  },
+  "after-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 205324,
+    "sha256": "0458c22dd6be617e3b05df16e098828f9724d7fca640ab08c62286a7b46777bf"
+  },
+  "after-4k.png": {
+    "width": 3840,
+    "height": 2160,
+    "bytes": 458159,
+    "sha256": "a70cc2110e66c1e7e57903e87c909977f5a2810ffac182ffab20578e2136c12f"
+  },
+  "after-4by3.png": {
+    "width": 1440,
+    "height": 1080,
+    "bytes": 207017,
+    "sha256": "f3b997e460b7a8dd10d164c2e530a4ed53674ebdfa8df04f743ab4b0a97b99c6"
+  },
+  "error-labels-fhd.png": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 214817,
+    "sha256": "e72b2d07661b1f8004975c970997990319100858cc1b3f5cac2c781fa81ddabd"
+  }
+}

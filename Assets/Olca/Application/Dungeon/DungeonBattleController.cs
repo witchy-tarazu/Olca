@@ -856,7 +856,7 @@ namespace Olca.Application.Dungeon
             MakeButton("PauseButton", "ポーズ", pauseCanvas.transform, Vector2.one, new Vector2(-120, -60)).onClick.AddListener(() => SetUserPaused(true));
             pauseOverlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image)); pauseOverlay.transform.SetParent(pauseCanvas.transform, false);
             var overlayRect = (RectTransform)pauseOverlay.transform; overlayRect.anchorMin = Vector2.zero; overlayRect.anchorMax = Vector2.one; overlayRect.offsetMin = overlayRect.offsetMax = Vector2.zero;
-            pauseOverlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
+            pauseOverlay.GetComponent<Image>().color = new Color(.025f, .07f, .10f, .86f);
             MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
             MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
             MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
@@ -870,7 +870,7 @@ namespace Olca.Application.Dungeon
             vibrationToggle.onClick.AddListener(()=>{TrySetGamepadVibrationEnabled(!GamepadVibrationEnabled,out _);RefreshVibrationSetting();});RefreshVibrationSetting();
             var animationSetting=MakeButton("TransformationAnimationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-200));
             ((RectTransform)animationSetting.transform).sizeDelta=new Vector2(420,70);
-            void RefreshAnimationSetting(){animationSetting.GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出："+(shortTransformationPresentation?"短縮":"通常");}
+            void RefreshAnimationSetting(){animationSetting.GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出：\n"+(shortTransformationPresentation?"短縮":"通常");}
             animationSetting.onClick.AddListener(()=>{
                 if(transformationSettings.TrySave(!shortTransformationPresentation,out transformationSettingsError)){
                     shortTransformationPresentation=!shortTransformationPresentation;
@@ -925,8 +925,9 @@ namespace Olca.Application.Dungeon
             CreateProgressActions(font,MakeButton);
             var dialoguePanel=new GameObject("DialoguePanel",typeof(RectTransform));dialoguePanel.transform.SetParent(pauseCanvas.transform,false);dialogueView=dialoguePanel.AddComponent<DialogueView>();dialogueView.Initialize(font,()=>SetUserPaused(true));
             var textSpeedButton=MakeButton("DialogueTextSpeedButton","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-400));((RectTransform)textSpeedButton.transform).sizeDelta=new Vector2(420,70);
-            void RefreshTextSpeed(){textSpeedButton.GetComponentInChildren<Text>().text=dialogueSettingsError??"文字表示："+new[]{"ゆっくり","標準","速い","即時"}[(int)dialogueSpeed];}
+            void RefreshTextSpeed(){textSpeedButton.GetComponentInChildren<Text>().text=dialogueSettingsError??"文字表示：\n"+new[]{"ゆっくり","標準","速い","即時"}[(int)dialogueSpeed];}
             textSpeedButton.onClick.AddListener(()=>{var candidate=(DialogueTextSpeed)(((int)dialogueSpeed+1)%4);if(dialogueSettings.TrySave(candidate,out dialogueSettingsError)){dialogueSpeed=candidate;dialogue?.SetSpeed(candidate);}RefreshTextSpeed();});RefreshTextSpeed();
+            LayoutPauseMenu(font);
             ShowCheckpointStatus();
             var returnPanel = new GameObject("ClearReturnPanel", typeof(RectTransform)); returnPanel.transform.SetParent(pauseCanvas.transform, false);
             clearReturnView = returnPanel.AddComponent<ClearReturnView>();
@@ -968,6 +969,54 @@ namespace Olca.Application.Dungeon
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
         private bool CanStartNewGame => !progressStartupBlocked&&clearReturnSession!=null&&clearReturnSession.Ready&&
             (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
+        // ポーズの操作を攻略と設定へまとめ、既存の水鏡素材と余白を共有する。入力・購読は既存ボタンを維持。
+        private void LayoutPauseMenu(Font font)
+        {
+            var panel = new GameObject("PauseMenuSurface", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(pauseOverlay.transform, false);
+            panel.transform.SetAsFirstSibling();
+            var rect = (RectTransform)panel.transform;
+            rect.sizeDelta = new Vector2(1440, 840);
+            UiLook.Face(panel.GetComponent<Image>());
+            panel.GetComponent<Image>().color = new Color(1, 1, 1, .96f);
+            panel.GetComponent<Image>().raycastTarget = false;
+            Text Heading(string name, string text, Vector2 position, Vector2 size, int fontSize)
+            {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Text));
+                obj.transform.SetParent(panel.transform, false);
+                var label = obj.GetComponent<Text>(); label.font = font; label.text = text;
+                UiLook.Label(label); label.fontSize = fontSize; label.alignment = TextAnchor.MiddleLeft;
+                label.rectTransform.sizeDelta = size; label.rectTransform.anchoredPosition = position;
+                return label;
+            }
+            Heading("PauseMenuTitle", "ポーズ", new Vector2(-480, 320), new Vector2(360, 70), 44);
+            Heading("PausePlayHeading", "コウリャク", new Vector2(-480, 210), new Vector2(360, 40), 24);
+            Heading("PauseSettingsHeading", "セッテイ", new Vector2(210, 210), new Vector2(740, 40), 24);
+            void Rule(string name, Vector2 position, Vector2 size)
+            {
+                var obj = new GameObject(name, typeof(RectTransform), typeof(Image)); obj.transform.SetParent(panel.transform, false);
+                var line = obj.GetComponent<Image>(); line.color = new Color(.17f, .63f, .71f, .3f); line.raycastTarget = false;
+                ((RectTransform)obj.transform).sizeDelta = size; ((RectTransform)obj.transform).anchoredPosition = position;
+            }
+            Rule("PauseHeaderRule", new Vector2(0, 260), new Vector2(1296, 2));
+            Rule("PauseSectionRule", new Vector2(-210, -40), new Vector2(2, 460));
+            void Place(string name, float x, float y, float width)
+            {
+                var button = pauseOverlay.transform.Find(name).GetComponent<Button>();
+                var target = (RectTransform)button.transform;
+                target.anchoredPosition = new Vector2(x, y); target.sizeDelta = new Vector2(width, 88);
+                var label = button.GetComponentInChildren<Text>();
+                label.rectTransform.offsetMin = new Vector2(18, 6); label.rectTransform.offsetMax = new Vector2(-18, -6);
+                label.fontSize = label.resizeTextMaxSize = 28;
+
+            }
+            Place("ResumeButton", -480, 120, 360); Place("LoadCheckpointButton", -480, 12, 360);
+            Place("OwnedCardsButton", -480, -96, 360); Place("RetreatButton", -480, -244, 360);
+            Place("KeyboardSettingsButton", 20, 120, 340); Place("GamepadSettingsButton", 400, 120, 340);
+            Place("AudioSettingsButton", 20, 0, 340); Place("VibrationSetting", 400, 0, 340);
+            Place("TransformationAnimationSetting", 20, -120, 340); Place("DialogueTextSpeedButton", 400, -120, 340);
+        }
+
         private void CreateProgressActions(Font font,System.Func<string,string,Transform,Vector2,Vector2,Button> MakeButton)
         {
             manualSaveButton=MakeButton("ManualSaveButton","保存（スロット1）",pauseCanvas.transform,new Vector2(0,1),new Vector2(260,-85));
