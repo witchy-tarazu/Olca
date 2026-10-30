@@ -1803,7 +1803,7 @@ namespace Olca.Application.Dungeon
                     needed>0&&visitRemovalTargets.Count==needed&&d.CanChooseVisit(selectedVisit),
                     i=>{if(IsUserPaused||d.IsCheckpointBlocked||!ReferenceEquals(d,manager.Dungeon)||i<0||i>=cards.Length)return;var card=cards[i];if(!visitRemovalTargets.Remove(card)&&visitRemovalTargets.Count<needed)visitRemovalTargets.Add(card);ShowDungeonVisit();},
                     ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ChooseVisit(selectedVisit,cards.Where(c=>visitRemovalTargets.Contains(c)).ToArray());ResetVisitSelection();ShowDungeonVisit();},
-                    ()=>{ResetVisitSelection();ShowDungeonVisit();},()=>SetUserPaused(true));return;
+                    ()=>{ResetVisitSelection();ShowDungeonVisit();},()=>SetUserPaused(true),cards,cards.Select(c=>d.GetObtainedCards().Contains(c)).ToArray(),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);return;
             }
             var enabled=state.Purchased.Select((p,i)=>!p&&(definition.IsShop||!state.Purchased.Any(x=>x))&&(definition.Options[state.Options[i]].RemoveCount==0||d.GetCurrentDeck().TotalCount>0)).ToArray();
             var names=state.Options.Select((n,i)=>(state.Purchased[i]?"［済］ ":"")+definition.Options[n].Label+" / "+definition.Options[n].Price+" 通貨").ToArray();

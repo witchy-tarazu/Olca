@@ -364,7 +364,30 @@ namespace Olca.Presentation.Dungeon
             var size=new Vector2(departure?width:width-root.rect.width,departure?60:70);var position=new Vector2(Mathf.Clamp(0,left+width/2,right-width/2),departure?455:-85);
             if(rect.sizeDelta!=size)rect.sizeDelta=size;if(rect.anchoredPosition!=position)rect.anchoredPosition=position;
         }
-        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();RefreshReadonlyLayout();menu?.Tick();}
+        // 帰還の補助操作は既存位置に残し、実座標が重なる面だけを避ける。
+        private void FitReturnPanels()
+        {
+            if(content==null||content.name!="ReturnContents")return;
+            var stats=content.transform.Find("HomeStats")?.GetComponent<Text>();if(stats==null)return;
+            var root=(RectTransform)content.transform;
+            void Fit(string name,float y,float height,Text label,float inset)
+            {
+                var face=content.transform.Find(name) as RectTransform;if(face==null)return;
+                float left=-880,right=880;
+                foreach(var button in menuExtras?.Invoke()??System.Array.Empty<Button>()){
+                    if(button==null||!button.gameObject.activeInHierarchy)continue;
+                    var corners=new Vector3[4];((RectTransform)button.transform).GetWorldCorners(corners);var points=corners.Select(root.InverseTransformPoint).ToArray();
+                    if(points.Min(v=>v.y)>=y+height/2||points.Max(v=>v.y)<=y-height/2)continue;
+                    float min=points.Min(v=>v.x),max=points.Max(v=>v.x);if((min+max)/2<0)left=Mathf.Max(left,max+16);else right=Mathf.Min(right,min-16);
+                }
+                if(right-left<=inset)return;
+                face.anchoredPosition=new Vector2((left+right)/2,y);face.sizeDelta=new Vector2(right-left,height);
+                label.rectTransform.anchoredPosition=new Vector2((left+right)/2,label.rectTransform.anchoredPosition.y);label.rectTransform.sizeDelta=new Vector2(right-left-inset,label.rectTransform.sizeDelta.y);
+            }
+            Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
+            Fit("ReturnSummary",270,110,stats,140);
+        }
+        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();RefreshReadonlyLayout();menu?.Tick();}
         private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
@@ -464,6 +487,7 @@ namespace Olca.Presentation.Dungeon
             content = new GameObject("ReturnContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
             gameObject.SetActive(true); profile = profile ?? new ClearReturnProfile();
+            float homeFooterY=-420,homeAuxY=-493,homePageY=-340;
             CommerceSurface();CommerceFace("ReturnHeader",0,450,1760,120,true);CommerceFace("ReturnBody",0,-30,1760,700);
             var heading=Text("Title", blocked && flow != null && flow.Outcome != RunReturnOutcome.Cleared ? "敗北・撤退の帰還を保存できません" : collectionOnly ? "所持カード・成長" : flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
                 flow.Stage == ClearReturnStage.Awarded ? "持ち帰り・経験値を反映しました" :
@@ -501,27 +525,38 @@ namespace Olca.Presentation.Dungeon
                 var stats=Text("ReturnStats",$"帰還後：HP {flow.ReturnedMaxHp}/{flow.ReturnedMaxHp} / 攻撃 {flow.ReturnedAttack}\n帰還を確定すると、攻略中の状態を解除して全回復します。",0,statsY,1640,120,26);stats.lineSpacing=1.2f;
                 Button("ConfirmReturn","帰還を確定",0,Mathf.Max(-420,-280-(rows-1)*80),900,75,finish).interactable=!blocked;
             } else {
-                Text("HomeStats", collectionOnly ? $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\n所持カードは攻略中に消費・減少しません。" : $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}{(flow.Outcome == RunReturnOutcome.Cleared ? "\nカード・経験値は保存済みです。" : "")}", 0, 260, 1750, 130, 28);
+                if(profile.Owned.Length<=4){
+                    float bottom=profile.Owned.Length==0?10:120-(profile.Owned.Length-1)*56-60;
+                    var body=(RectTransform)content.transform.Find("ReturnBody");body.sizeDelta=new Vector2(1760,320-bottom);body.anchoredPosition=new Vector2(0,(320+bottom)/2);
+                    homePageY=bottom-55;homeFooterY=homePageY-100;homeAuxY=homeFooterY-85;
+                }
+                var listBody=(RectTransform)content.transform.Find("ReturnBody");float listBottom=listBody.anchoredPosition.y-listBody.sizeDelta.y/2;listBody.sizeDelta=new Vector2(1760,185-listBottom);listBody.anchoredPosition=new Vector2(0,(185+listBottom)/2);
+                CommerceFace("ReturnSummary",0,270,1760,110);
+                var homeStats=Text("HomeStats", collectionOnly ? $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\n所持カードは攻略中に消費・減少しません。" : $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}{(flow.Outcome == RunReturnOutcome.Cleared ? "\nカード・経験値は保存済みです。" : "")}", 0, 270, 1620, 90, 26);homeStats.alignment=TextAnchor.MiddleLeft;
                 int pages = Math.Max(1, (profile.Owned.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
-                Text("OwnedTitle", "永続所持カード", 0, 180, 1500, 60, 28);
+                Text("OwnedTitle","永続所持カード",-135,155,1150,32,24).alignment=TextAnchor.MiddleLeft;Text("OwnedQuantityHeading","マイスウ",565,155,170,32,22);
                 for (int row = 0; row < PageSize && page * PageSize + row < profile.Owned.Length; row++) {
                     var card = profile.Owned[page * PageSize + row];
-                    Text("OwnedCard_" + row, OwnedDefinition.DisplayName(card) + $"　{card.Count}/4枚", -100, 105 - row * 49, 1350, 48, 26);
-                    var detail=resolveOwned?.Invoke(card);int index=page*PageSize+row;Button("OwnedCardDetails_"+index,"詳細",780,105-row*49,180,44,()=>OpenCardDetails(detail,"OwnedCardDetails_"+index)).interactable=detail!=null&&!blocked;
+                    float y=120-row*56;int index=page*PageSize+row;var detail=resolveOwned?.Invoke(card);
+                    var name=Text("OwnedCard_"+row,OwnedDefinition.DisplayName(card),-135,y,1150,50,28);name.alignment=TextAnchor.MiddleLeft;name.resizeTextForBestFit=true;name.resizeTextMinSize=20;name.resizeTextMaxSize=28;
+                    Text("OwnedCardCount_"+row,$"{card.Count}/4枚",565,y,170,50,26);
+                    var sprite=detail==null?null:resolveReturnIcon?.Invoke(detail);if(sprite!=null)CollectionIcon("OwnedCardIcon_"+row,detail,-800,y,44,_=>sprite);else Text("OwnedCardIndex_"+row,(index+1).ToString(),-800,y,44,50,22);
+                    var divider=new GameObject("OwnedRowDivider_"+row,typeof(RectTransform),typeof(Image));divider.transform.SetParent(content.transform,false);var line=(RectTransform)divider.transform;line.anchorMin=line.anchorMax=new Vector2(.5f,.5f);line.anchoredPosition=new Vector2(0,y-28);line.sizeDelta=new Vector2(1640,1);divider.GetComponent<Image>().color=new Color(.17f,.5f,.58f,.2f);divider.GetComponent<Image>().raycastTarget=false;
+                    Button("OwnedCardDetails_"+index,"詳細",780,y,180,44,()=>OpenCardDetails(detail,"OwnedCardDetails_"+index)).interactable=detail!=null&&!blocked;
                 }
-                if (profile.Owned.Length == 0) Text("NoOwnedCards", "永続所持カードはまだありません。", 0, 50, 1500, 80, 28);
-                Pages(profile, flow, blocked, error, pages, collectionOnly);
-                if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, -420, 900, 75, closeCollection);
+                if (profile.Owned.Length == 0) Text("NoOwnedCards", "永続所持カードはまだありません。", 0, 80, 1500, 80, 28);
+                Pages(profile, flow, blocked, error, pages, collectionOnly,dungeonName,homePageY,profile.Owned.Length<=4);
+                if (collectionOnly) Button("CloseOwnedCards", "戻る", 0, homeFooterY, 900, 75, closeCollection);
                 else {
-                    if (editOwnedDeparture != null) Button("EditOwnedDeparture", "所持カードで出撃デッキを編成", -440, -420, 820, 75, editOwnedDeparture).interactable = !blocked;
-                    if (depart != null) Button("NextDeparture", (dungeonName==null?"":dungeonName+"へ\n")+(profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃"), 440, -420, 820, 75, depart).interactable = !blocked;
+                    if (editOwnedDeparture != null) Button("EditOwnedDeparture", "所持カードで出撃デッキを編成", -440, homeFooterY, 820, 75, editOwnedDeparture).interactable = !blocked;
+                    if (depart != null) Button("NextDeparture", (dungeonName==null?"":dungeonName+"へ\n")+(profile.EquippedDeckId==null?"既存デッキで再出撃":"装備デッキで再出撃"), 440, homeFooterY, 820, 75, depart).interactable = !blocked;
                 }
             }
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",-645,-493,410,58,savedDeckMenu);
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectDungeon!=null&&!blocked&&error==null)Button("SelectDungeon","ダンジョンを選択",645,-493,410,58,selectDungeon);
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,-493,410,58,selectStyle);
-            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,-493,410,58,openExchange);
-            if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, -493, 800, 58, retry);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&savedDeckMenu!=null&&!blocked&&error==null)Button("SavedDeckMenu","保存デッキ・装備",-645,homeAuxY,410,58,savedDeckMenu);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectDungeon!=null&&!blocked&&error==null)Button("SelectDungeon","ダンジョンを選択",645,homeAuxY,410,58,selectDungeon);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,homeAuxY,410,58,selectStyle);
+            if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,homeAuxY,410,58,openExchange);
+            if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, homeAuxY, 800, 58, retry);
                     SetMenu(content.transform,collectionOnly?closeCollection:null,collectionOnly?"CloseOwnedCards":"SavedDeckMenu");
         }
         public static string FormatDungeonInformation(DungeonDeparturePreview info)
@@ -637,26 +672,36 @@ namespace Olca.Presentation.Dungeon
             var titleLabel=Text("VisitTitle",title,-140,balance.HasValue?455:430,1400,66,36);titleLabel.color=Color.white;
             if(balance.HasValue){var value=Text("VisitBalance",$"所持 {balance.Value} 通貨",-140,397,1360,44,26);value.color=Color.white;}
             Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit);
-            float rowHeight=Mathf.Min(176,580f/Mathf.Max(1,names.Length));float bodyHeight=names.Length*rowHeight+48,bodyBottom=310-bodyHeight;
+            float rowHeight=Mathf.Min(176,580f/Mathf.Max(1,Mathf.Min(5,names.Length)));float bodyHeight=Mathf.Min(5,names.Length)*rowHeight+48,bodyBottom=310-bodyHeight;
             CommerceFace("VisitBody",0,310-bodyHeight/2,1760,bodyHeight);
+            var listScroll=names.Length>5?CreateRowScroll("VisitOptionsScroll",1700,580,names.Length*rowHeight,-4):null;
             for(int i=0;i<names.Length;i++){
-                int slot=i;float y=286-rowHeight/2-i*rowHeight;var option=details!=null&&i<details.Count?details[i]:null;
+                int firstChild=content.transform.childCount;int slot=i;float y=286-rowHeight/2-i*rowHeight;var option=details!=null&&i<details.Count?details[i]:null;
                 var button=Button("VisitOption_"+i,option==null?(selected==i?"［選択中］ ":"")+names[i]:"",0,y,1660,rowHeight-16,()=>choose(slot));button.interactable=!blocked&&enabled[i];
                 if(option!=null){
-                    var card=option.Card;bool descriptionVisible=card!=null&&names.Length<=5;float nameHeight=descriptionVisible?Mathf.Min(64,Mathf.Max(44,rowHeight*.38f)):Mathf.Max(40,rowHeight-32);float descriptionHeight=Mathf.Min(52,Mathf.Max(26,rowHeight-40-nameHeight-6));float labelY=descriptionVisible?rowHeight/2-20-nameHeight/2:0;float descriptionY=-rowHeight/2+20+descriptionHeight/2;
+                    var card=option.Card;bool descriptionVisible=card!=null;float nameHeight=descriptionVisible?Mathf.Min(64,Mathf.Max(44,rowHeight*.38f)):Mathf.Max(40,rowHeight-32);float descriptionHeight=Mathf.Min(52,Mathf.Max(26,rowHeight-40-nameHeight-6));float labelY=descriptionVisible?rowHeight/2-20-nameHeight/2:0;float descriptionY=-rowHeight/2+20+descriptionHeight/2;
                     var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(option.Label);label.alignment=TextAnchor.MiddleLeft;label.fontSize=30;label.resizeTextMaxSize=30;label.rectTransform.sizeDelta=new Vector2(980,nameHeight);label.rectTransform.anchoredPosition=new Vector2(-150,labelY);
                     var price=Text("VisitPrice_"+i,$"{option.Price} 通貨",590,y+labelY,400,nameHeight,30);price.alignment=TextAnchor.MiddleRight;price.resizeTextForBestFit=true;price.resizeTextMinSize=20;price.resizeTextMaxSize=30;
-                    if(names.Length>5){label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((purchased!=null&&i<purchased.Count&&purchased[i]?"［済］ ":selected==i?"［選択中］ ":"")+option.Label);}
-                    string state=names.Length>5?"":purchased!=null&&i<purchased.Count&&purchased[i]?"購入済み":selected==i?"選択中":"";var stateLabel=Text("VisitState_"+i,state,590,y+descriptionY,400,32,22);stateLabel.alignment=TextAnchor.MiddleRight;
+                    string state=purchased!=null&&i<purchased.Count&&purchased[i]?"購入済み":selected==i?"選択中":"";var stateLabel=Text("VisitState_"+i,state,590,y+descriptionY,400,32,22);stateLabel.alignment=TextAnchor.MiddleRight;
                     if(card!=null){if(descriptionVisible){var description=Text("VisitDescription_"+i,card.Description,-150,y+descriptionY,980,descriptionHeight,22);description.alignment=TextAnchor.MiddleLeft;description.resizeTextForBestFit=true;description.resizeTextMinSize=20;description.resizeTextMaxSize=22;}var sprite=icon?.Invoke(card);if(sprite!=null)CollectionIcon("VisitCardIcon_"+i,card,-740,y,Mathf.Min(90,rowHeight-32),_=>sprite);}
                 }
+                if(listScroll!=null)foreach(var child in content.transform.Cast<Transform>().Skip(firstChild).ToArray()){var rect=(RectTransform)child;var position=rect.anchoredPosition;child.SetParent(listScroll.content,false);rect.anchorMin=rect.anchorMax=new Vector2(.5f,1);rect.anchoredPosition=position-new Vector2(0,286);}
             }
             float footer=Mathf.Max(-440,bodyBottom-210);
             var help=Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,bodyBottom-50,1700,60,24);help.color=Color.white;
             Button("ConfirmVisit","選択を確定",-560,footer,520,72,confirmVisit).interactable=!blocked&&canConfirm;
             Button("CancelVisit","選択取消",0,footer,520,72,cancelVisit).interactable=!blocked&&selected>=0;
             Button("ExitVisit","退出して保存",560,footer,520,72,exitVisit).interactable=!blocked&&canExit;
-            SetMenu(content.transform,blocked?null:selected>=0?cancelVisit:canExit?exitVisit:null,selected>=0?"VisitOption_"+selected:"VisitOption_0");
+            SetMenu(content.transform,blocked?null:selected>=0?cancelVisit:canExit?exitVisit:null,selected>=0?"VisitOption_"+selected:"VisitOption_0",scroll:listScroll,directionScroll:false);
+        }
+
+        private ScrollRect CreateRowScroll(string name,float width,float height,float contentHeight,float y)
+        {
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));obj.transform.SetParent(content.transform,false);var area=(RectTransform)obj.transform;area.anchorMin=area.anchorMax=new Vector2(.5f,.5f);area.anchoredPosition=new Vector2(0,y);area.sizeDelta=new Vector2(width,height);obj.GetComponent<Image>().color=Color.clear;
+            var body=new GameObject("Rows",typeof(RectTransform));body.transform.SetParent(area,false);var rows=(RectTransform)body.transform;rows.anchorMin=new Vector2(0,1);rows.anchorMax=Vector2.one;rows.pivot=new Vector2(.5f,1);rows.anchoredPosition=Vector2.zero;rows.sizeDelta=new Vector2(0,contentHeight);
+            var scroll=obj.GetComponent<ScrollRect>();scroll.viewport=area;scroll.content=rows;scroll.horizontal=false;scroll.movementType=ScrollRect.MovementType.Clamped;scroll.scrollSensitivity=40;
+            var barObject=new GameObject("Scrollbar",typeof(RectTransform),typeof(Image),typeof(Scrollbar));barObject.transform.SetParent(area,false);var barRect=(RectTransform)barObject.transform;barRect.anchorMin=barRect.anchorMax=new Vector2(1,.5f);barRect.pivot=new Vector2(1,.5f);barRect.sizeDelta=new Vector2(8,height);barRect.anchoredPosition=Vector2.zero;barObject.GetComponent<Image>().color=new Color(.05f,.2f,.25f,.15f);
+            var handleObject=new GameObject("Handle",typeof(RectTransform),typeof(Image));handleObject.transform.SetParent(barRect,false);var handle=(RectTransform)handleObject.transform;handle.anchorMin=Vector2.zero;handle.anchorMax=Vector2.one;handle.offsetMin=handle.offsetMax=Vector2.zero;handleObject.GetComponent<Image>().color=new Color(.05f,.25f,.3f,.65f);var bar=barObject.GetComponent<Scrollbar>();bar.direction=Scrollbar.Direction.BottomToTop;bar.handleRect=handle;bar.targetGraphic=handleObject.GetComponent<Image>();bar.navigation=new Navigation{mode=Navigation.Mode.None};scroll.verticalScrollbar=bar;scroll.verticalScrollbarVisibility=ScrollRect.ScrollbarVisibility.AutoHide;return scroll;
         }
 
         // 16:9での余白を保ち、狭い横幅や横長画面でも操作部を画面端から離す。
@@ -672,23 +717,31 @@ namespace Olca.Presentation.Dungeon
 
         private int removalPage;
         public void RenderVisitRemoval(string title,string[] names,bool[] selected,int needed,long price,bool blocked,bool canConfirm,
-            Action<int> choose,Action confirm,Action cancel,Action pause)
+            Action<int> choose,Action confirm,Action cancel,Action pause,IReadOnlyList<Card> cards=null,IReadOnlyList<bool> obtained=null,Func<Card,Sprite> icon=null)
         {
-            StopMenu();
-            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
-            content=new GameObject("VisitRemovalContents",typeof(RectTransform));content.transform.SetParent(transform,false);
-            var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
-            Text("RemovalTitle",title,0,435,1450,90,32);AnchorVisitButton(Button("PauseVisit","ポーズ",780,480,260,60,pause),Vector2.one,new Vector2(-180,-60));
+            StopMenu();if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("VisitRemovalContents",typeof(RectTransform));content.transform.SetParent(transform,false);UseReferenceLayout();gameObject.SetActive(true);CommerceSurface();CommerceFace("RemovalHeader",-140,450,1480,120,true);var body=CommerceFace("RemovalBody",0,-4,1760,628);
+            Text("RemovalTitle",title,-140,450,1400,80,32).color=Color.white;Button("PauseVisit","ポーズ",780,480,260,60,pause);
+            var summary=Text("RemovalSummary",$"削除対象 {System.Array.FindAll(selected,x=>x).Length}/{needed}枚 / 支払 {price} 通貨",0,350,1720,56,26);summary.color=Color.white;
             const int rows=6;int pages=System.Math.Max(1,(names.Length+rows-1)/rows);removalPage=System.Math.Min(removalPage,pages-1);
+            // ページ操作は固定し、少数行では明るい面だけを最終行へ合わせる。
+            int visibleRows=Mathf.Min(rows,names.Length-removalPage*rows);if(visibleRows<rows){float height=Mathf.Max(1,visibleRows)*96+36;body.rectTransform.sizeDelta=new Vector2(1760,height);body.rectTransform.anchoredPosition=new Vector2(0,310-height/2);}
             for(int row=0;row<rows&&removalPage*rows+row<names.Length;row++){
-                int index=removalPage*rows+row;
-                var rowButton=Button("RemovalCard_"+index,(selected[index]?"［選択中］ ":"")+names[index],0,285-row*78,1750,68,()=>choose(index));rowButton.interactable=!blocked;InsetVisitRow((RectTransform)rowButton.transform,85);
+                int index=removalPage*rows+row;float y=254-row*96;var card=cards!=null&&index<cards.Count?cards[index]:null;
+                var button=Button("RemovalCard_"+index,card==null?(selected[index]?"［削除対象］ ":"")+names[index]:"",0,y,1660,88,()=>choose(index));button.interactable=!blocked;
+                if(card!=null){var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name+new string('★',(int)card.ExceedLevel));label.alignment=TextAnchor.MiddleLeft;label.fontSize=28;label.resizeTextMaxSize=28;label.rectTransform.anchoredPosition=new Vector2(-120,14);label.rectTransform.sizeDelta=new Vector2(980,40);
+                    var provenance=Text("RemovalOrigin_"+index,obtained!=null&&index<obtained.Count&&obtained[index]?"攻略中取得・持帰り履歴は保持":"持込・永続所持は保持",-120,y-22,980,24,20);provenance.alignment=TextAnchor.MiddleLeft;
+                    Text("RemovalCost_"+index,$"コスト {card.GetFinalCost()}",620,y+14,330,28,22).alignment=TextAnchor.MiddleRight;Text("RemovalPower_"+index,$"威力 {card.GetFinalPower()}",620,y-14,330,28,22).alignment=TextAnchor.MiddleRight;
+                    var sprite=icon?.Invoke(card);if(sprite!=null)CollectionIcon("RemovalCardIcon_"+index,card,-790,y,56,_=>sprite);
+                    var state=Text("RemovalState_"+index,selected[index]?"削除対象":"",-690,y,132,40,21);state.color=new Color(.50f,.19f,.10f,1);
+                }
+                if(selected[index]){var mark=new GameObject("RemovalSelected_"+index,typeof(RectTransform),typeof(Image));mark.transform.SetParent(button.transform,false);var rect=(RectTransform)mark.transform;rect.anchorMin=rect.anchorMax=new Vector2(0,.5f);rect.anchoredPosition=new Vector2(6,0);rect.sizeDelta=new Vector2(5,68);mark.GetComponent<Image>().color=new Color(.66f,.28f,.14f,1);mark.GetComponent<Image>().raycastTarget=false;}
             }
-            AnchorVisitButton(Button("RemovalPrevious","前",-430,-240,450,55,()=>{removalPage--;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}),new Vector2(.5f,0),new Vector2(-430,300)).interactable=!blocked&&removalPage>0;
-            AnchorVisitButton(Button("RemovalNext","次",430,-240,450,55,()=>{removalPage++;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause);}),new Vector2(.5f,0),new Vector2(430,300)).interactable=!blocked&&removalPage<pages-1;
-            var help=Text("RemovalHelp",$"{removalPage+1}/{pages}ページ / {System.Array.FindAll(selected,x=>x).Length}/{needed}枚選択\n確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-340,1750,110,25);InsetVisitRow(help.rectTransform,85);help.rectTransform.anchorMin=Vector2.zero;help.rectTransform.anchorMax=Vector2.right;help.rectTransform.anchoredPosition=new Vector2(0,200);
-            AnchorVisitButton(Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-460,800,72,confirm),new Vector2(.5f,0),new Vector2(-430,80)).interactable=!blocked&&canConfirm;
-            AnchorVisitButton(Button("CancelVisitRemoval","確定せず戻る",430,-460,800,72,cancel),new Vector2(.5f,0),new Vector2(430,80)).interactable=!blocked;
+            Button("RemovalPrevious","前",-430,-345,450,48,()=>{removalPage--;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause,cards,obtained,icon);}).interactable=!blocked&&removalPage>0;
+            Button("RemovalNext","次",430,-345,450,48,()=>{removalPage++;RenderVisitRemoval(title,names,selected,needed,price,blocked,canConfirm,choose,confirm,cancel,pause,cards,obtained,icon);}).interactable=!blocked&&removalPage<pages-1;Text("RemovalPage",$"{removalPage+1}/{pages}",0,-345,240,48,24).color=Color.white;
+            Text("RemovalHelp","確定前は支払・削除なし。獲得済みカードの持帰り履歴は残ります。",0,-395,1740,44,22).color=Color.white;
+            var commit=Button("ConfirmVisitRemoval",price+"通貨で削除を確定",-430,-470,800,72,confirm);commit.interactable=!blocked&&canConfirm;commit.GetComponentInChildren<UnityEngine.UI.Text>().color=commit.interactable?new Color(.50f,.19f,.10f,1):new Color(.29f,.36f,.38f,.85f);
+            Button("CancelVisitRemoval","確定せず戻る",430,-470,800,72,cancel).interactable=!blocked;
             SetMenu(content.transform,blocked?null:cancel,"CancelVisitRemoval");
         }
 
@@ -913,11 +966,11 @@ namespace Olca.Presentation.Dungeon
             SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+profile.EquippedDeckId,force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
         }
 
-        private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false)
+        private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false,string dungeonName=null,float y=-340,bool darkBackdrop=false)
         {
-            Text("ReturnPage", $"{page + 1}/{pages}", 0, -340, 300, 55, 24);
-            Button("ReturnPreviousPage", "前へ", -380, -340, 240, 55, () => { page = Math.Max(0, page - 1); Render(p, f, blocked, error, collectionOnly); }).interactable = page > 0;
-            Button("ReturnNextPage", "次へ", 380, -340, 240, 55, () => { page = Math.Min(pages - 1, page + 1); Render(p, f, blocked, error, collectionOnly); }).interactable = page + 1 < pages;
+            Text("ReturnPage", $"{page + 1}/{pages}", 0, y, 300, 55, 24).color=darkBackdrop?Color.white:UiLook.Ink;
+            Button("ReturnPreviousPage", "前へ", -380, y, 240, 55, () => { page = Math.Max(0, page - 1); Render(p, f, blocked, error, collectionOnly,dungeonName); }).interactable = page > 0;
+            Button("ReturnNextPage", "次へ", 380, y, 240, 55, () => { page = Math.Min(pages - 1, page + 1); Render(p, f, blocked, error, collectionOnly,dungeonName); }).interactable = page + 1 < pages;
         }
         private UnityEngine.UI.Text Text(string name, string value, float x, float y, float width, float height, int size)
         {

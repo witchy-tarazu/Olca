@@ -1,0 +1,33 @@
+{
+  "WheelEndNone": {
+    "position": 0,
+    "focus": "VisitOption_0",
+    "choice": null,
+    "calls": null,
+    "padCount": 0
+  },
+  "Drag[True]": {
+    "position": 1,
+    "focus": "VisitOption_0",
+    "choice": null,
+    "calls": null,
+    "padCount": 0
+  },
+  "Drag[False]": {
+    "position": 0,
+    "focus": "VisitOption_0",
+    "choice": null,
+    "calls": null,
+    "padCount": 0
+  },
+  "pad": {
+    "position": 0.0229884181,
+    "focus": "VisitOption_7",
+    "choice": 7,
+    "calls": 1,
+    "padCount": 1
+  },
+  "cleanup": {
+    "padCount": 0
+  }
+}

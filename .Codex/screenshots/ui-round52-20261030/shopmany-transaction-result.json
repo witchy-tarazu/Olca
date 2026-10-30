@@ -1,0 +1,52 @@
+{
+  "phase": "Dungeon",
+  "cell": 19,
+  "currency": 5,
+  "deck": 7,
+  "obtained": 1,
+  "hp": 100,
+  "selected": -1,
+  "removing": false,
+  "options": [
+    "recover"
+  ],
+  "purchased": [
+    false
+  ],
+  "position": 19,
+  "savedSequence": 4,
+  "savedCurrency": 5,
+  "savedDeck": 7,
+  "savedObtained": 1,
+  "savedVisits": [
+    {
+      "Cell": 18,
+      "Closed": true,
+      "Purchased": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "Cell": 19,
+      "Closed": false,
+      "Purchased": [
+        false
+      ]
+    }
+  ],
+  "focus": "ExitVisit",
+  "paused": false,
+  "buttons": [
+    "PauseVisit",
+    "ExitVisit",
+    "VisitOption_0",
+    "PauseButton"
+  ]
+}

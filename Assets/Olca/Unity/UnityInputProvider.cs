@@ -775,7 +775,7 @@ namespace Olca.Unity
     {
         private readonly CustomGamepadInput input;private readonly System.Func<bool> top;private readonly System.Func<IEnumerable<UnityEngine.UI.Button>> external;
         private UnityEngine.UI.Selectable[] linked=System.Array.Empty<UnityEngine.UI.Selectable>();
-        private bool directionScroll=true;
+        private bool directionScroll=true;private Vector2 linkedScrollPosition;private bool linkedScrollTracked;
         private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Selectable focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
         public string FocusName=>focused!=null?focused.name:null;
         public static bool IsTopmost(Transform root)
@@ -796,8 +796,8 @@ namespace Olca.Unity
         {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;this.directionScroll=directionScroll;linked=System.Array.Empty<UnityEngine.UI.Selectable>();focused=null;if(!restorePosition)havePoint=false;
             if(Usable()){var initial=Buttons().FirstOrDefault(b=>b.name==preferred);if(initial!=null)Focus(initial);}Refresh();}
         public void Suspend(){version++;input.Reset();root=null;focused=null;cancel=null;scroll=null;}
-        private void Focus(UnityEngine.UI.Selectable button)
-        {focused=button;if(button==null)return;preferred=button.name;lastPoint=Point(button);havePoint=true;button.Select();Follow(button);}
+        private void Focus(UnityEngine.UI.Selectable button,bool follow=true)
+        {focused=button;if(button==null)return;preferred=button.name;lastPoint=Point(button);havePoint=true;button.Select();if(follow)Follow(button);RefreshLinks(Buttons());}
         private void Follow(UnityEngine.UI.Selectable button)
         {
             foreach(var area in root.GetComponentsInChildren<UnityEngine.UI.ScrollRect>()){
@@ -806,14 +806,22 @@ namespace Olca.Unity
                 if(move!=0){area.StopMovement();area.content.anchoredPosition+=new Vector2(0,move);}
             }
         }
+        // 手動スクロール後は行と固定操作の実座標で方向ナビを更新する。
+        private void RefreshLinks(UnityEngine.UI.Selectable[] buttons)
+        {
+            bool tracking=scroll!=null&&scroll.content!=null;var position=tracking?scroll.content.anchoredPosition:Vector2.zero;
+            if(!linked.SequenceEqual(buttons)||tracking&&(!linkedScrollTracked||position!=linkedScrollPosition)){linked=buttons;foreach(var b in buttons)b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.Explicit,selectOnLeft=b is UnityEngine.UI.Slider?null:Near(b,Vector2.left,buttons),selectOnRight=b is UnityEngine.UI.Slider?null:Near(b,Vector2.right,buttons),selectOnUp=Near(b,Vector2.up,buttons),selectOnDown=Near(b,Vector2.down,buttons)};}
+            linkedScrollTracked=tracking;linkedScrollPosition=position;
+        }
         private void Refresh()
         {
             if(!Usable())return;var buttons=Buttons();
-            if(!linked.SequenceEqual(buttons)){linked=buttons;foreach(var b in buttons)b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.Explicit,selectOnLeft=b is UnityEngine.UI.Slider?null:Near(b,Vector2.left,buttons),selectOnRight=b is UnityEngine.UI.Slider?null:Near(b,Vector2.right,buttons),selectOnUp=Near(b,Vector2.up,buttons),selectOnDown=Near(b,Vector2.down,buttons)};}
+            RefreshLinks(buttons);
             var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;var actual=buttons.FirstOrDefault(b=>b.gameObject==selected);
-            if(actual!=null){focused=actual;preferred=actual.name;lastPoint=Point(actual);havePoint=true;Follow(actual);return;}
+            if(actual!=null){bool changed=focused!=actual;focused=actual;preferred=actual.name;lastPoint=Point(actual);havePoint=true;if(changed){Follow(actual);RefreshLinks(buttons);}return;}
+            var previous=focused;
             if(focused==null||!buttons.Contains(focused))focused=buttons.FirstOrDefault(b=>b.name==preferred)??(havePoint?buttons.OrderBy(b=>(Point(b)-lastPoint).sqrMagnitude).FirstOrDefault():buttons.FirstOrDefault());
-            Focus(focused);
+            Focus(focused,focused!=previous);
         }
         public void Tick()
         {

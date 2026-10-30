@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 127,\n  \"executeMs\": 8,\n  \"assemblyName\": \"PipelineRunScript_Inventory52Proof_aff703f4caca494c8c28639bb71fdda6\",\n  \"success\": true,\n  \"result\": {\n    \"screen\": [\n      1920,\n      1080\n    ],\n    \"overlaps\": [],\n    \"labels\": [\n      {\n        \"name\": \"Title\",\n        \"preferredWidth\": 189,\n        \"preferredHeight\": 36,\n        \"width\": 536,\n        \"height\": 80\n      },\n      {\n        \"name\": \"HomeStats\",\n        \"preferredWidth\": 436,\n        \"preferredHeight\": 82,\n        \"width\": 1224,\n        \"height\": 90\n      }\n    ],\n    \"faces\": [\n      {\n        \"name\": \"ReturnHeader\",\n        \"bounds\": \"(x:736.00, y:930.00, width:616.00, height:120.00)\"\n      },\n      {\n        \"name\": \"ReturnBody\",\n        \"bounds\": \"(x:80.00, y:600.00, width:1760.00, height:125.00)\"\n      },\n      {\n        \"name\": \"ReturnSummary\",\n        \"bounds\": \"(x:80.00, y:755.00, width:1364.00, height:110.00)\"\n      }\n    ]\n  }\n}"
+    }
+  ]
+}

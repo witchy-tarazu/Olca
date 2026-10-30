@@ -1,0 +1,230 @@
+{
+  "before-owned-dense-fhd.png": {
+    "sha256": "f77f347f9b2983185b6ee93cca52d6eb80bdbc001e8c0a3bf7e66f51debbdea2",
+    "bytes": 173671,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-removal-normal-4k.png": {
+    "sha256": "cc26196895220c5f6c5dae9ff6b211f5e1d9e32c30648072854048d6f9bb319b",
+    "bytes": 399338,
+    "width": 3840,
+    "height": 2160
+  },
+  "after-owned-dense-fhd.png": {
+    "sha256": "dda181a1be8bc3a87dd08e3c117d5e58b4b3b53b112fd6682a3ac8842a2da220",
+    "bytes": 185727,
+    "width": 1920,
+    "height": 1080
+  },
+  "before-removal-normal-fhd.png": {
+    "sha256": "5f971feb825aa5b3513805d1559c0652e31c4015755dbc4c87ef8b22948c8bec",
+    "bytes": 159274,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-removal-normal-4by3.png": {
+    "sha256": "a9740d9e3ee949c872d9e99bc0b5047e577d244a240e83c1f2357a57db2fa761",
+    "bytes": 187994,
+    "width": 1440,
+    "height": 1080
+  },
+  "before-returned-live-4k.png": {
+    "sha256": "bedb1572d6996a6e70eb88d325c89551ea79eabd449f64b3d7b94aae403d8bd3",
+    "bytes": 340454,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-removal-normal-4k.png": {
+    "sha256": "e6105a394fb43dcc4d4883e4d3d635a18873d5f880a1d31ba0353054b3f1bae3",
+    "bytes": 377634,
+    "width": 3840,
+    "height": 2160
+  },
+  "after-shopmany-normal-4k.png": {
+    "sha256": "a6ce25f1169283c8d7f1d83edc9e94b4a21e5bfdec0298baa43d345767838c6e",
+    "bytes": 347700,
+    "width": 3840,
+    "height": 2160
+  },
+  "after-owned-normal-4k.png": {
+    "sha256": "612e16610c7d458b3ac272abd84353d21d067b4eb0e14ee01b72ddf71b07441e",
+    "bytes": 350537,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-shopmany-normal-fhd.png": {
+    "sha256": "ae31d9161b440bcac9714100872178adea0aa1ab7991e765e9b95057f4c1ba93",
+    "bytes": 142948,
+    "width": 1920,
+    "height": 1080
+  },
+  "before-removal-dense-fhd.png": {
+    "sha256": "f14c6a004ccc933ee47726b909cca12a370bfb975de322283609dbb53fc95bd7",
+    "bytes": 165008,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-owned-normal-4by3.png": {
+    "sha256": "0a39f9c904234f4b912eae0271b70962f5d589783d8127a44b604cff6c4d1079",
+    "bytes": 151370,
+    "width": 1440,
+    "height": 1080
+  },
+  "before-owned-dense-4k.png": {
+    "sha256": "6a29edd0641ed9b57e7b1ff4136d84ddbfa370d3f655037ccde10d491e0cef11",
+    "bytes": 409943,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-returned-live-4by3.png": {
+    "sha256": "b79ba585c204140eb003361ce8afaaf31bc66b41e3bc72d5ad7e66c6bda228a6",
+    "bytes": 150113,
+    "width": 1440,
+    "height": 1080
+  },
+  "after-shopmany-normal-4by3.png": {
+    "sha256": "6060775e387b8362d26f64803626140a9984cb62fd580bd691520e84bbb62440",
+    "bytes": 164141,
+    "width": 1440,
+    "height": 1080
+  },
+  "after-removal-dense-4by3.png": {
+    "sha256": "a4ddb7b3e183ff001de27768f04e329fc04c4d3dbe5242da7c32653a471c26b0",
+    "bytes": 203987,
+    "width": 1440,
+    "height": 1080
+  },
+  "before-shopmany-normal-4k.png": {
+    "sha256": "d67b37c4b5f6b18f9a332da209eee2a73d05cd59ad0f197e0ee0e3ccbcb4338c",
+    "bytes": 362121,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-owned-normal-4k.png": {
+    "sha256": "3d983d4686dcf17fce355eb6ae31af21ba645d985a11aa05d63c064622d88f0c",
+    "bytes": 309528,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-removal-dense-4by3.png": {
+    "sha256": "b6e82d9be4ea74285eb4d1fcf9cf86791785e910414dd5a105ca6c2def3ce77b",
+    "bytes": 166873,
+    "width": 1440,
+    "height": 1080
+  },
+  "after-removal-normal-fhd.png": {
+    "sha256": "1ba632a8a134e43990a3d3f6b6426b315ec3fc343618f4bc07d6e2c3fcdc0e6e",
+    "bytes": 161465,
+    "width": 1920,
+    "height": 1080
+  },
+  "before-removal-last-fhd.png": {
+    "sha256": "c78e62a11ef33463fc7d173fe9164c9d6c1cefeecee57ed46e9960c45992c50a",
+    "bytes": 103413,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-owned-dense-4k.png": {
+    "sha256": "9f9f9188c40a7a5b244ce195cf74c56ddf1db9657fc8e2fe55998a5b4c7e2d0a",
+    "bytes": 442643,
+    "width": 3840,
+    "height": 2160
+  },
+  "after-removal-dense-4k.png": {
+    "sha256": "476dc180bcdc6063917a28d4e6e1f84565055c3fe93578c3324cc2d5f333f6fa",
+    "bytes": 413922,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-owned-normal-4by3.png": {
+    "sha256": "871404040ee4549a6f8e096db7844883c49aa35bee26f95155997f3c44be90fe",
+    "bytes": 139256,
+    "width": 1440,
+    "height": 1080
+  },
+  "after-removal-last-fhd.png": {
+    "sha256": "14a2b7914319d13bd8abc9d405a43d176c8c7948e51fef02c71e53928a2af7cb",
+    "bytes": 115133,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-owned-dense-4by3.png": {
+    "sha256": "3cab663a49b137c44efca6b93cec72f05552d5d8f7b5fea4d06ed02965a886e3",
+    "bytes": 207381,
+    "width": 1440,
+    "height": 1080
+  },
+  "before-owned-dense-4by3.png": {
+    "sha256": "71bcf5ad6f130da32857b54b503eff8e321e7b765b6a7a1c8f730f0aae2e1cd8",
+    "bytes": 200355,
+    "width": 1440,
+    "height": 1080
+  },
+  "before-removal-normal-4by3.png": {
+    "sha256": "5416ba6ff5667b028e6c672d74084995d06161fa2c92526abc8bbdfaa1993da3",
+    "bytes": 162348,
+    "width": 1440,
+    "height": 1080
+  },
+  "before-owned-normal-fhd.png": {
+    "sha256": "7778550c2e1fad574d900803d7e74c0af5110b968b67b16f3e98bea82804f40e",
+    "bytes": 126939,
+    "width": 1920,
+    "height": 1080
+  },
+  "before-shopmany-normal-4by3.png": {
+    "sha256": "85261d31f358f6c71e3b78835da5b301b0690ec2d1f89e05a3b1abbecc888da3",
+    "bytes": 162879,
+    "width": 1440,
+    "height": 1080
+  },
+  "live-returned-4by3.png": {
+    "sha256": "276865a1da7ecee02037b944c85e229ee21df51e9d00209e2cd1506ab87db092",
+    "bytes": 163729,
+    "width": 1440,
+    "height": 1080
+  },
+  "live-returned-fhd.png": {
+    "sha256": "40e1227f444cb3bda64f402c7f451ed31579634e25604bf2428c7b68ee1efa10",
+    "bytes": 152766,
+    "width": 1920,
+    "height": 1080
+  },
+  "before-removal-dense-4k.png": {
+    "sha256": "5ce577a2db29030424bae4566300ba75aa7e7c289a7f3a8318b4f211ace513cc",
+    "bytes": 390993,
+    "width": 3840,
+    "height": 2160
+  },
+  "after-owned-normal-fhd.png": {
+    "sha256": "216d22b23633ce65ced068e6d4c08c0d2e023c82112bfa696487c14587c6c522",
+    "bytes": 143149,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-removal-dense-fhd.png": {
+    "sha256": "7cf4c30295333122956d58002a6de6ccbf36cd1a6d2207a1899b9169edc69230",
+    "bytes": 166065,
+    "width": 1920,
+    "height": 1080
+  },
+  "after-shopmany-normal-fhd.png": {
+    "sha256": "092ff14222b083e5bb15b8d0ad3d3f87001196bfaabdb9623882494157ebe1fe",
+    "bytes": 139872,
+    "width": 1920,
+    "height": 1080
+  },
+  "live-returned-4k.png": {
+    "sha256": "db7b0a58625ccef3382d79e306f47dfbea974a6ab20d59c9f9b1b693123e02e8",
+    "bytes": 371899,
+    "width": 3840,
+    "height": 2160
+  },
+  "before-returned-live-fhd.png": {
+    "sha256": "907635a9041c661a95a0662dc662167b255fbcd920bd3d40a7f68ead6e5038e7",
+    "bytes": 140261,
+    "width": 1920,
+    "height": 1080
+  }
+}
