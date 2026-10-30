@@ -15,5 +15,19 @@
   ],
   "documentationPulled": true,
   "implementedInThisRound": false,
-  "currentGridFixImpact": "No source changes or conflict; new outside-dungeon mechanics remain separate scope"
+  "currentGridFixImpact": "No source changes or conflict; new outside-dungeon mechanics remain separate scope",
+  "additionalUpdate": {
+    "commit": "ba229b58346953d3e61df4e3eb39046a277e5cab",
+    "changedFiles": [
+      "Planning/ゲーム全体仕様.md"
+    ],
+    "rules": [
+      "outside-dungeon ground dash starts fixed-distance/time action on press, no held continuation",
+      "dash jump has increased horizontal travel and afterimage effect",
+      "normal ground dash uses same afterimage effect",
+      "double jump is equipment-enabled, not initial basic action"
+    ],
+    "documentationMerged": true,
+    "implementedInThisRound": false
+  }
 }
