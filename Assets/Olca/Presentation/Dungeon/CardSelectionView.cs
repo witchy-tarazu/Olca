@@ -909,7 +909,7 @@ namespace Olca.Presentation.Dungeon
             }
             title = Label("BasicAttackKey",-80,50,300,44,26);
             Label("BasicAttackHelp",-80,0,310,60,22).text = "前方一マス・敵一体\n短く押して離す";
-            state = Label("BasicAttackState",0,-72,470,36,22);
+            state = Label("BasicAttackState",0,-72,470,36,20);
             var o = new UnityEngine.GameObject("BasicAttackButton",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button)); o.transform.SetParent(transform,false);
             var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,-5); r.sizeDelta = new UnityEngine.Vector2(155,74);
             o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>(); UiLook.Button(button);
@@ -936,7 +936,7 @@ namespace Olca.Presentation.Dungeon
             cardButton.transform.SetParent(transform,false);((UnityEngine.RectTransform)cardButton.transform).anchoredPosition=new UnityEngine.Vector2(-80,-5);
             ((UnityEngine.RectTransform)cardButton.transform).sizeDelta=new UnityEngine.Vector2(190,60);
             // 説明・操作・状態を別の段に置き、2行の割当表示とボタンを重ねない。
-            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,70);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=20;
+            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,70);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=18;
             exploration.SetActive(false);
         }
         private void SetSurfaceSize(float width, float height)

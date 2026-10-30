@@ -1,0 +1,174 @@
+{
+  "play": {
+    "pauseHeld": true,
+    "mid": {
+      "elapsed": 3,
+      "parts": [
+        {
+          "name": "Blast0",
+          "sprite": "shared/blast",
+          "position": "(0.00, 0.31, 0.00)",
+          "width": 1.312,
+          "height": 0.288000017,
+          "alpha": 0.375
+        },
+        {
+          "name": "Blast1",
+          "sprite": "shared/blast",
+          "position": "(1.60, 0.31, 0.00)",
+          "width": 1.312,
+          "height": 0.288000017,
+          "alpha": 0.375
+        },
+        {
+          "name": "Blast2",
+          "sprite": "shared/blast",
+          "position": "(3.20, 0.31, 0.00)",
+          "width": 1.312,
+          "height": 0.288000017,
+          "alpha": 0.375
+        }
+      ],
+      "hp": [
+        960
+      ],
+      "damage": [
+        "40"
+      ]
+    },
+    "endedAt6": true,
+    "remaining": 0
+  },
+  "tempGuard": {
+    "dedicatedTmpdir": "save/tmp",
+    "guard": true,
+    "beforeEqualsAfter": true
+  },
+  "asset": {
+    "source": "retained-original:exec-c91483c1-9daf-4cac-9013-34aad2fb36b5.png",
+    "sourceSha256": "88659f8d6264116045da193408d078437487b7a8eecef4f87b81b8dc336f2642",
+    "sourceCanvas": [
+      1983,
+      793
+    ],
+    "referenceImagesSent": [],
+    "alphaThreshold": 128,
+    "sourceCrop": [
+      125,
+      306,
+      1850,
+      555
+    ],
+    "canvas": [
+      64,
+      32
+    ],
+    "opaqueBBox": [
+      5,
+      12,
+      59,
+      20
+    ],
+    "visible": [
+      54,
+      8
+    ],
+    "pivot": [
+      32,
+      16
+    ],
+    "ppu": 100,
+    "paletteReference": "Assets/Art/Sprites/AttackProps/shared_sword.png",
+    "opaqueColors": 10,
+    "alpha": [
+      0,
+      255
+    ],
+    "png": "Assets/Art/Sprites/AttackProps/shared_blast.png",
+    "bytes": "Assets/Resources/OlcaAttackProps/shared_blast.bytes",
+    "sha256": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+    "registrationPending": false,
+    "timingChanges": false,
+    "nativeAspect": 6.927710843373494,
+    "exportAspect": 6.75
+  },
+  "independentReview": {
+    "codeAsset": "今回範囲で未解決具体指摘なし",
+    "visual": "FHD/4K/通常4:3で主従・可読性を確認。カスタム4:3遮蔽は既存別残件。",
+    "legacyComparison": "旧矩形は同着弾frameの再構成fixture"
+  },
+  "finalTests": {
+    "summary": {
+      "total": 3466,
+      "passed": 3466,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 258.01,
+    "groundTruth": {
+      "sampledUtc": "2026-10-30T02:59:35.39285Z",
+      "ageMs": 74,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 66,
+      "consoleLogs": 2687,
+      "seeded": true
+    },
+    "consoleCounts": {
+      "error": 0,
+      "warn": 45,
+      "log": 1955
+    },
+    "wrapperTimedOut": true
+  },
+  "targetedTests": {
+    "catalog": {
+      "summary": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.1
+    },
+    "projectile": {
+      "summary": {
+        "total": 8,
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.17
+    },
+    "gauges": {
+      "summary": {
+        "total": 10,
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.09
+    },
+    "related": {
+      "summary": {
+        "total": 199,
+        "passed": 199,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 72.43
+    }
+  },
+  "finalActualRender": [
+    640,
+    360
+  ],
+  "finalEditorStopped": true,
+  "finalTmpGuard": true
+}

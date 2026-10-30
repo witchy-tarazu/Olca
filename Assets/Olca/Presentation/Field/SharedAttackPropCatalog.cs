@@ -10,6 +10,8 @@ namespace Olca.Presentation.Field
         public const string ThrowingKnife = "shared/throwing-knife";
         public const string ShotBolt = "shared/shot-bolt";
         public const string Bomb = "shared/bomb";
+        public const string Blast = "shared/blast";
+        public const float BlastVisibleWidth = 54f / 100f, BlastVisibleHeight = 8f / 100f;
         public const float BombVisibleHeight = 38f / 100f;
         private static readonly Dictionary<string, Sprite> loaded = new Dictionary<string, Sprite>();
 
@@ -24,6 +26,7 @@ namespace Olca.Presentation.Field
                 case ThrowingKnife: resource = "shared_throwing_knife"; pivot = new Vector2(.5f, .5f); break;
                 case ShotBolt: resource = "shared_shot_bolt"; pivot = new Vector2(.5f, .5f); break;
                 case Bomb: resource = "shared_bomb"; pivot = new Vector2(.5f, .5f); break;
+                case Blast: resource = "shared_blast"; pivot = new Vector2(.5f, .5f); break;
                 default: return false;
             }
             if (loaded.TryGetValue(key, out sprite) && sprite != null) return true;
