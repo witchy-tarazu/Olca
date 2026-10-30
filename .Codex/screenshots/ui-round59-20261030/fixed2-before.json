@@ -1,0 +1,109 @@
+[
+  {
+    "name": "WorldBattleGrid",
+    "active": true,
+    "panels": 6,
+    "panelIds": [
+      -131878274,
+      -131878280,
+      -131878286,
+      -131878292,
+      -131878298,
+      -131878304
+    ],
+    "markers": 6,
+    "markerData": [
+      {
+        "id": -131885076,
+        "active": false,
+        "position": [
+          0,
+          -0.700000048,
+          0.09
+        ],
+        "parts": 5
+      },
+      {
+        "id": -131885110,
+        "active": false,
+        "position": [
+          1.6,
+          -0.700000048,
+          0.09
+        ],
+        "parts": 5
+      },
+      {
+        "id": -131885144,
+        "active": true,
+        "position": [
+          3.2,
+          -0.700000048,
+          0.09
+        ],
+        "parts": 5
+      },
+      {
+        "id": -131885178,
+        "active": false,
+        "position": [
+          4.8,
+          -0.700000048,
+          0.09
+        ],
+        "parts": 5
+      },
+      {
+        "id": -131885212,
+        "active": false,
+        "position": [
+          6.4,
+          -0.700000048,
+          0.09
+        ],
+        "parts": 5
+      },
+      {
+        "id": -131885246,
+        "active": false,
+        "position": [
+          8,
+          -0.700000048,
+          0.09
+        ],
+        "parts": 5
+      }
+    ],
+    "surrounding": 12,
+    "children": [
+      "GridPanel_0",
+      "GridPanel_1",
+      "GridPanel_2",
+      "GridPanel_3",
+      "GridPanel_4",
+      "GridPanel_5",
+      "FloorPanel_0",
+      "FloorPanel_1",
+      "FloorPanel_2",
+      "FloorPanel_3",
+      "FloorPanel_4",
+      "FloorPanel_5",
+      "FloorPanel_6",
+      "FloorPanel_7",
+      "FloorPanel_8",
+      "FloorPanel_9",
+      "FloorPanel_10",
+      "FloorPanel_11",
+      "EnemyAttackTelegraph_0",
+      "EnemyAttackTelegraph_1",
+      "EnemyAttackTelegraph_2",
+      "EnemyAttackTelegraph_3",
+      "EnemyAttackTelegraph_4",
+      "EnemyAttackTelegraph_5"
+    ],
+    "screen": [
+      640,
+      360
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "scope": "WorldBattleGridView empty hotreload array normalization and regression test",
+  "independentReviewer": "equipment_save_review",
+  "sourceReview": "0 concrete unresolved; empty array returns to existing lazy creation path, valid six-element array untouched, no catch/suppression or model/timing/geometry/save changes",
+  "regressionReview": "observed zero-array state, Bind/no eager creation, position, clear/hide/reuse/no duplication covered",
+  "actualProofByRoot": "same Editor normal script reload reproduced old exception null->empty; fixed uncreated and created cases passed; floor renderer IDs and marker IDs/positions retained, two rebind cycles, save hashes unchanged, normal newPlay departure/retreat error0",
+  "evidenceReview": "0 unresolved after independent final review: baseline and fixed reloads, IDs/marker positions/cycles, save hashes, normal Play,3495/262.04s/warnings62, final source hashes,cleanup and README links matched; equipment_save_review completed",
+  "limits": "Editor lifecycle and normal fresh Play verified; no physical pad/touch/IME/build checks, no claim of full Core hotreload model restoration",
+  "specMergeReview": "Independent review0 for b2882a8/23dccff and ba229b5 documentation-only integration; implementation not claimed and tested source hashes unchanged"
+}

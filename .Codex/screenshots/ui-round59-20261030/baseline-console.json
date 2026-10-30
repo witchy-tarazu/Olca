@@ -1,0 +1,33 @@
+{
+  "entries": [
+    {
+      "seq": 207821,
+      "timestampUtc": "2026-10-30T15:55:42.502227Z",
+      "level": "error",
+      "logType": "Exception",
+      "message": "IndexOutOfRangeException: Index was outside the bounds of the array.",
+      "stackTrace": "Olca.Presentation.Field.WorldBattleGridView.RefreshTelegraphs () (at Assets/Olca/Presentation/Field/WorldBattleGridView.cs:60)\nOlca.Presentation.Field.WorldBattleGridView.BindTelegraphs (Olca.Core.Logic.Battle.BattleSystem battle) (at Assets/Olca/Presentation/Field/WorldBattleGridView.cs:35)\nOlca.Presentation.Field.GameFieldView.OnEnable () (at Assets/Olca/Presentation/Field/GameFieldView.cs:591)\n",
+      "seeded": false
+    }
+  ],
+  "cursor": 207822,
+  "session": "1d6289ebbd3941d6976ca2529ae9203c",
+  "returned": 1,
+  "dropped": false,
+  "reset": false,
+  "counts": {
+    "error": 1,
+    "warn": 1,
+    "log": 0
+  },
+  "groundTruth": {
+    "sampledUtc": "2026-10-30T15:56:25.567398Z",
+    "ageMs": 243,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 1,
+    "consoleLogs": 0,
+    "seeded": true
+  }
+}

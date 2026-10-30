@@ -1989,6 +1989,19 @@ namespace Olca.Tests
             }finally{UnityEngine.Object.DestroyImmediate(root);}
         }
         [NUnit.Framework.Test]
+        public void 再読込で未生成マーカーが空配列でも予告の遅延生成と解除を維持する()
+        {
+            var root=new UnityEngine.GameObject("TelegraphReload");try{
+                var grid=root.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                typeof(Olca.Presentation.Field.WorldBattleGridView).GetMethod("Awake",flags).Invoke(grid,null);
+                // 実際のPlay再コンパイルで観測したnull→空配列の復元状態。
+                typeof(Olca.Presentation.Field.WorldBattleGridView).GetField("attackMarkers",flags).SetValue(grid,System.Array.Empty<UnityEngine.GameObject>());
+                NUnit.Framework.Assert.DoesNotThrow(()=>grid.BindTelegraphs(null));grid.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>());NUnit.Framework.Assert.IsNull(root.transform.Find("EnemyAttackTelegraph_0"),"予告なしでは生成しない");
+                grid.Show(new Olca.Core.Logic.Battle.BattleField(),3.7f);grid.ShowTelegraphs(new[]{new Olca.Core.Domain.Vector2Int(2,0)});var marker=root.transform.Find("EnemyAttackTelegraph_2");NUnit.Framework.Assert.IsTrue(marker.gameObject.activeSelf);NUnit.Framework.Assert.AreEqual(grid.GridIndexToWorldX(2),marker.position.x,.001f);int count=root.transform.childCount;
+                grid.BindTelegraphs(null);grid.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>());NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);grid.Hide();grid.Show(new Olca.Core.Logic.Battle.BattleField(),3.7f);grid.ShowTelegraphs(new[]{new Olca.Core.Domain.Vector2Int(2,0)});NUnit.Framework.Assert.AreSame(marker,root.transform.Find("EnemyAttackTelegraph_2"));NUnit.Framework.Assert.AreEqual(count,root.transform.childCount);NUnit.Framework.Assert.AreEqual(5,marker.childCount);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [NUnit.Framework.Test]
         public void 描画直前に最新予告を読み中断した同フレームに古い枠を残さない()
         {
             var root=new UnityEngine.GameObject("TelegraphLateRead");

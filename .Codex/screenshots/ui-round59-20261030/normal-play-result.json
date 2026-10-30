@@ -1,0 +1,16 @@
+{
+  "actualRaycastDepartureAndRetreat": true,
+  "returnedStage": 2,
+  "revision": 4,
+  "consoleGroundTruth": {
+    "sampledUtc": "2026-10-30T16:08:29.916389Z",
+    "ageMs": 141,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 8,
+    "seeded": true
+  },
+  "dedicatedSaveGuard": true
+}

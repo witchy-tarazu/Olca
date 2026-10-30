@@ -1,0 +1,33 @@
+[
+  {
+    "name": "WorldBattleGrid",
+    "active": true,
+    "panels": 6,
+    "markers": null,
+    "surrounding": 12,
+    "children": [
+      "GridPanel_0",
+      "GridPanel_1",
+      "GridPanel_2",
+      "GridPanel_3",
+      "GridPanel_4",
+      "GridPanel_5",
+      "FloorPanel_0",
+      "FloorPanel_1",
+      "FloorPanel_2",
+      "FloorPanel_3",
+      "FloorPanel_4",
+      "FloorPanel_5",
+      "FloorPanel_6",
+      "FloorPanel_7",
+      "FloorPanel_8",
+      "FloorPanel_9",
+      "FloorPanel_10",
+      "FloorPanel_11"
+    ],
+    "screen": [
+      640,
+      360
+    ]
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "baselineNullBecameEmptyAndThrew": true,
+  "fixedUncreatedReloadNoErrorNoEagerMarkers": true,
+  "fixedCreatedReloadSameSixRoots": true,
+  "floorRendererIdsUnchanged": true,
+  "markerPositionsUnchanged": true,
+  "markersClearedAfterReload": true,
+  "rebindShowHideTwoCyclesNoDuplicate": true,
+  "savedFilesUnchanged": true,
+  "finalSourceRestored": true,
+  "actualScreen": [
+    640,
+    360
+  ]
+}

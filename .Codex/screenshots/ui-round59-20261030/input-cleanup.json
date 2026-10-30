@@ -1,0 +1,20 @@
+{
+  "devices": [
+    {
+      "deviceId": 1,
+      "name": "Mouse",
+      "layout": "Mouse",
+      "native": true,
+      "description": "Mouse (Gtk)"
+    },
+    {
+      "deviceId": 2,
+      "name": "Keyboard",
+      "layout": "Keyboard",
+      "native": true,
+      "description": "Keyboard (Gtk)"
+    }
+  ],
+  "temporaryDevicesRemaining": false,
+  "physicalPadTouchIMEBuild": "untested"
+}
