@@ -505,7 +505,7 @@ namespace Olca.Presentation.CustomScreen
         // 幅を保ったまま、狭い比率で余る高さを本文と操作の間隔へ配分する。
         public void ApplyNarrowLayout(float amount)
         {
-            if (amount <= 0f && narrowLayout == null) return;
+            if (amount <= 0f && narrowLayout == null){RefreshHierarchyLayout();return;}
             if (narrowLayout == null) narrowLayout = new NarrowCustomLayout();
             narrowLayoutAmount = Mathf.Clamp01(amount);
             narrowLayout.Apply(this, narrowLayoutAmount);
@@ -515,8 +515,54 @@ namespace Olca.Presentation.CustomScreen
                     if(handCardViews[i]!=null)((RectTransform)handCardViews[i].transform).anchoredPosition=GetCardPosition(i);
                 if(cursorIndicator!=null&&cursorIndicator.activeSelf&&cursor!=null)UpdateCursorIndicator(cursor.CurrentIndex);
             }
+            RefreshHierarchyLayout();
         }
         private Vector2 AuthoredConfirmPosition => narrowLayout?.Position((RectTransform)confirmButton.transform) ?? ((RectTransform)confirmButton.transform).anchoredPosition;
+
+        private Text focusHeading, handHeading, selectionHeading, selectionHint;
+        private Image readingSurface;
+        internal int SelectionOrdinal(Card card)
+        {
+            if(customScreen==null)return 0;
+            for(int i=0;i<customScreen.SelectedCards.Count;i++)if(ReferenceEquals(customScreen.SelectedCards[i],card))return i+1;
+            return 0;
+        }
+        private Text HierarchyLabel(ref Text label,string name)
+        {
+            if(label!=null)return label;
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);label=obj.GetComponent<Text>();
+            label.font=selectedCardDescription!=null?selectedCardDescription.font:costDisplay.font;label.raycastTarget=false;label.alignment=TextAnchor.MiddleLeft;
+            label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;
+            var rect=label.rectTransform;rect.anchorMin=rect.anchorMax=((RectTransform)transform).pivot;rect.pivot=new Vector2(0,.5f);
+            return label;
+        }
+        private void RefreshHierarchyLayout()
+        {
+            var bg=transform.Find("BgCustom");var hand=handCardContainer as RectTransform;
+            if(bg==null||hand==null||costDisplay==null||selectedCardDescription==null||selectedCardDescription.font==null)return;
+            float amount=narrowLayoutAmount,center=hand.localPosition.x,left=center-350;
+            if(readingSurface==null){
+                var obj=new GameObject("CustomReadingSurface",typeof(RectTransform),typeof(Image));obj.transform.SetParent(transform,false);obj.transform.SetSiblingIndex(bg.GetSiblingIndex()+1);
+                readingSurface=obj.GetComponent<Image>();readingSurface.raycastTarget=false;readingSurface.color=new Color(.12f,.19f,.26f,.9f);
+                var rect=readingSurface.rectTransform;rect.anchorMin=rect.anchorMax=((RectTransform)transform).pivot;
+            }
+            bool visible=customScreen!=null&&customScreen.IsOpen;readingSurface.gameObject.SetActive(visible);
+            readingSurface.rectTransform.localPosition=new Vector3(center-20,0,0);readingSurface.rectTransform.sizeDelta=new Vector2(860,Mathf.Lerp(900,1540,amount));
+            void Place(Text label,float x,float y,float width,float height,int size){label.rectTransform.localPosition=new Vector3(x,y,0);label.rectTransform.sizeDelta=new Vector2(width,height);label.fontSize=size;label.resizeTextForBestFit=false;label.color=new Color(.72f,.9f,.96f,1);}
+            var area=selectedCardImage!=null?selectedCardImage.transform.parent as RectTransform:null;
+            var focus=HierarchyLabel(ref focusHeading,"FocusHeading");focus.gameObject.SetActive(visible);focus.text="フォーカス";
+            Place(focus,left,(area!=null?area.localPosition.y+area.rect.height*.5f:400)+Mathf.Lerp(16,28,amount),Mathf.Lerp(150,300,amount),Mathf.Lerp(30,44,amount),Mathf.RoundToInt(Mathf.Lerp(24,34,amount)));
+            var heading=HierarchyLabel(ref handHeading,"HandHeading");heading.text=$"テフダ　{inputHand.Count}マイ";
+            Place(heading,left,hand.localPosition.y+Mathf.Lerp(137.5f,147.5f,amount),700,Mathf.Lerp(24,40,amount),Mathf.RoundToInt(Mathf.Lerp(22,32,amount)));
+            // 変身候補の案内が同じ狭幅の余白を使う場合は、追加見出しだけを控える。
+            heading.gameObject.SetActive(visible&&!(amount>.5f&&transformationStatus!=null&&transformationStatus.gameObject.activeSelf));
+            var cost=costDisplay.rectTransform;cost.localPosition=new Vector3(center+200,cost.localPosition.y,cost.localPosition.z);costDisplay.alignment=TextAnchor.MiddleRight;
+            var selected=HierarchyLabel(ref selectionHeading,"SelectionHeading");selected.gameObject.SetActive(visible);selected.text=$"シヨウジュン　{customScreen?.SelectedCards.Count??0} / {customScreen?.MaxSelectionCount??5}";
+            Place(selected,left,cost.localPosition.y,340,cost.rect.height,Mathf.RoundToInt(Mathf.Lerp(24,32,amount)));
+            var indicator=transform.Find("SelectionIndicator") as RectTransform;
+            if(indicator!=null){foreach(Transform slot in indicator){var number=slot.Find("QueueOrder")?.GetComponent<Text>();if(number!=null)number.fontSize=Mathf.RoundToInt(Mathf.Lerp(18,28,amount));}var hint=HierarchyLabel(ref selectionHint,"SelectionHint");hint.gameObject.SetActive(visible);hint.text="さいごの1マイ\nをもどす";Place(hint,indicator.localPosition.x+190,indicator.localPosition.y,210,indicator.rect.height,Mathf.RoundToInt(Mathf.Lerp(18,26,amount)));hint.color=new Color(.63f,.8f,.86f,.9f);}
+            foreach(var view in handCardViews)if(view!=null)view.SetSelectionPresentation(amount);
+        }
 
         private sealed class NarrowCustomLayout
         {
@@ -1706,9 +1752,15 @@ namespace Olca.Presentation.CustomScreen
             for(int i=0;i<images.Length;i++){
                 var image=images[i];var card=i<owner.SelectedCards.Count?owner.SelectedCards[i]:null;
                 image.gameObject.SetActive(i<owner.MaxSelectionCount);image.sprite=card==null?null:GetCardIconForCard(card);
-                image.preserveAspect=true;image.color=card==null?new Color(.18f,.27f,.33f,1f):Color.white;image.raycastTarget=false;
+                image.preserveAspect=true;image.color=card==null?new Color(.23f,.38f,.46f,.5f):Color.white;image.raycastTarget=false;
+                var number=image.transform.Find("QueueOrder")?.GetComponent<Text>();
+                if(number==null&&selectedCardDescription!=null&&selectedCardDescription.font!=null){var obj=new GameObject("QueueOrder",typeof(RectTransform),typeof(Text));obj.transform.SetParent(image.transform,false);number=obj.GetComponent<Text>();number.font=selectedCardDescription.font;number.alignment=TextAnchor.UpperLeft;number.raycastTarget=false;var rect=number.rectTransform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;}
+                if(number!=null){number.text=(i+1).ToString();number.fontSize=Mathf.RoundToInt(Mathf.Lerp(18,28,narrowLayoutAmount));number.color=card==null?new Color(.65f,.83f,.9f,.7f):new Color(1,.91f,.58f,1);}
+
                 var oldButton=image.GetComponent<Button>();if(oldButton!=null){oldButton.onClick.RemoveAllListeners();oldButton.enabled=false;}
             }
+            foreach(var view in handCardViews)if(view!=null)view.SetSelectionOrder(SelectionOrdinal(view.Card));
+            RefreshHierarchyLayout();
         }
 
         /// <summary>

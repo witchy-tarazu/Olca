@@ -16,6 +16,38 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [Test]
+        public void 使用順の番号と枚数は同一IDの別カードを区別し追加表示が入力領域を変えない()
+        {
+            var root=new GameObject("Hierarchy",typeof(RectTransform));root.SetActive(false);
+            try{
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;var view=root.AddComponent<CustomScreenView>();
+                var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");var font=prefab.GetComponentInChildren<Text>(true).font;
+                RectTransform Rect(string name,Transform parent,Vector2 position,Vector2 size){var obj=new GameObject(name,typeof(RectTransform));obj.transform.SetParent(parent,false);var rect=(RectTransform)obj.transform;rect.localPosition=position;rect.sizeDelta=size;return rect;}
+                var bg=Rect("BgCustom",root.transform,new Vector2(580,0),new Vector2(1280,1000));bg.gameObject.AddComponent<Image>();
+                var container=Rect("Hand",root.transform,new Vector2(480,-50),new Vector2(700,300));typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,container);
+                var area=Rect("Details",root.transform,new Vector2(480,250),new Vector2(700,300));var art=Rect("Art",area,Vector2.zero,new Vector2(300,300)).gameObject.AddComponent<Image>();typeof(CustomScreenView).GetField("selectedCardImage",flags).SetValue(view,art);
+                var desc=Rect("Description",area,Vector2.zero,new Vector2(380,270)).gameObject.AddComponent<Text>();desc.font=font;typeof(CustomScreenView).GetField("selectedCardDescription",flags).SetValue(view,desc);
+                var cost=Rect("Cost",root.transform,new Vector2(480,-250),new Vector2(400,56)).gameObject.AddComponent<Text>();cost.font=font;typeof(CustomScreenView).GetField("costDisplay",flags).SetValue(view,cost);
+                var indicator=Rect("SelectionIndicator",root.transform,new Vector2(480,-300),new Vector2(800,50));for(int i=0;i<5;i++)Rect("Slot"+i,indicator,new Vector2(-150+75*i,0),new Vector2(50,50)).gameObject.AddComponent<Image>();
+                var markers=new Transform[10];for(int i=0;i<10;i++)markers[i]=Rect("Marker"+i,container,new Vector2(-250+125*(i%5),75-150*(i/5)),Vector2.zero);typeof(CustomScreenView).GetField("cardPositionMarkers",flags).SetValue(view,markers);
+                var factory=new Olca.Application.Battle.SimpleCardFactory();var model=new CustomScreenSystem(new Deck(Enumerable.Range(0,5).Select(_=>factory.CreateById("sword")).ToList()));model.Open(new Card[0],new MockRandomProvider(0));typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);
+                var input=model.CurrentHand.ToArray();typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,input.ToList());var hands=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);foreach(var card in input){var obj=Object.Instantiate(prefab,container);var hand=obj.GetComponent<HandCardView>();hand.Initialize(card,view);hands.Add(hand);}
+                var update=typeof(CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags);
+                int recordedCost=0;
+                for(int count=0;count<=5;count++){
+                    if(count>0)Assert.IsTrue(model.TrySelectCard(input[count-1]));recordedCost=model.GetTotalUsedCost();update.Invoke(view,null);
+                    Assert.AreEqual("テフダ　5マイ",root.transform.Find("HandHeading").GetComponent<Text>().text);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                    Assert.AreEqual($"シヨウジュン　{count} / 5",root.transform.Find("SelectionHeading").GetComponent<Text>().text);
+                    for(int i=0;i<5;i++){var badge=hands[i].transform.Find("SelectionOrder").GetComponent<Text>();Assert.AreEqual(i<count?(i+1).ToString():"",badge.text);Assert.AreEqual(i<count,badge.gameObject.activeSelf);Assert.AreEqual(new Vector2(100,100),((RectTransform)hands[i].transform).sizeDelta);}
+                }
+                view.ApplyNarrowLayout(1);Assert.AreEqual(28,indicator.Find("Slot0/QueueOrder").GetComponent<Text>().fontSize);Assert.AreEqual(34,hands[0].transform.Find("SelectionOrder").GetComponent<Text>().fontSize);view.ApplyNarrowLayout(0);Assert.AreEqual(24,hands[0].transform.Find("SelectionOrder").GetComponent<Text>().fontSize);
+                Assert.AreEqual(new Vector2(800,50),indicator.sizeDelta);Assert.IsTrue(indicator.GetComponent<Image>().raycastTarget);
+                foreach(var graphic in root.GetComponentsInChildren<Graphic>(true).Where(g=>new[]{"FocusHeading","HandHeading","SelectionHeading","SelectionHint","CustomReadingSurface","HandSurface","SelectionOrder","QueueOrder"}.Contains(g.name))){Assert.IsFalse(graphic.raycastTarget,graphic.name);if(graphic is Text text)Assert.AreSame(font,text.font);}
+                Assert.AreEqual(5,model.SelectedCards.Count);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                model.Close();view.ApplyNarrowLayout(0);Assert.IsFalse(root.transform.Find("CustomReadingSurface").gameObject.activeSelf);Assert.IsFalse(root.transform.Find("FocusHeading").gameObject.activeSelf);
+            }finally{Object.DestroyImmediate(root);}
+        }
         [TestCase(1440f)][TestCase(1920f)][TestCase(2560f)]
         public void カスタムの外周は左半画面に収まり閉じたHUDと開閉途中のリサイズを保つ(float width)
         {
