@@ -790,32 +790,50 @@ namespace Olca.Presentation.Dungeon
             SetMenu(content.transform,blocked?null:selected!=null?cancel:close,blocked?"RetryTokenExchange":selected==null?"CloseTokenExchange":"ExchangeOffer_"+selected,blocked);
         }
 
+        public static string FormatDepartureStyleChoice(DepartureStyleDefinition value)
+        {
+            if(value==null)throw new ArgumentNullException(nameof(value));var element=value.Attack?.Element??ElementType.None;
+            string attribute=element==ElementType.None?"ムゾクセイ":element==ElementType.Fire?"ヒ":element==ElementType.Water?"ミズ":element==ElementType.Wind?"カゼ":element==ElementType.Earth?"ツチ":"？？？";
+            return value.Name+(value.Id==DepartureStyleDefinition.BasicId?"":" / ゾクセイ "+attribute)+(value.RequiredClear==null?"":" / カイホウ: "+value.RequiredClear+"クリア");
+        }
         private int stylePage;
         public void RenderStyleSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
-            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave)
+            Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, int current = -1)
         {
+            if(names==null||unlocked==null||names.Length!=unlocked.Length)throw new ArgumentException("スタイル一覧の表示情報が一致しません");
             StopMenu();
-            if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
-            content = new GameObject("StyleSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
-            UseReferenceLayout();
-            gameObject.SetActive(true);
-            Text("StyleSelectionTitle", "出撃スタイル", 0, 455, 1700, 80, 36);
-            AddOverflowTextDetails(Text("StyleSelectionHelp", error ?? "攻略中は固定。属性と固有・タメ攻撃が変わります。", 0, 350, 1700, 80, 25),error==null?"スタイルのセツメイ":"ホゾンエラー");
-            const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); stylePage = Math.Min(stylePage, pages - 1);
-            for (int row = 0; row < rows && stylePage * rows + row < names.Length; row++) {
-                int index = stylePage * rows + row;
-                var button = Button("StyleChoice_" + index, (unlocked[index] ? selected == index ? "［選択中］ " : "［選択］ " : "［未解放］ ") + names[index], 0, 240 - row * 95, 1450, 78, () => choose(index));
-                InsetChoiceLabel(button);
-                if(!unlocked[index])AddOverflowConditionDetails(button);
-                button.interactable = !blocked && unlocked[index];
-                if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
+            if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            content=new GameObject("StyleSelectionContents",typeof(RectTransform));content.transform.SetParent(transform,false);UseReferenceLayout();gameObject.SetActive(true);CommerceSurface();CommerceFace("StyleHeader",-140,440,1480,145,true);CommerceFace("StyleFooter",0,-420,1760,230,true);
+            Text("StyleSelectionTitle","出撃スタイル",-220,465,1300,60,36).color=Color.white;
+            var help=Text("StyleSelectionHelp",error??"攻略中は固定。保存しても出撃は開始しません。",-220,397,1300,44,24);help.color=Color.white;if(error!=null||NeedsTextDetails(help))AddOverflowTextDetails(help,error==null?"スタイルのセツメイ":"ホゾンエラー");
+            bool hasCurrent=current>=0&&current<names.Length,hasCandidate=selected>=0&&selected<names.Length;
+            string currentName=hasCurrent?(names[current]??"ミトウロク"):"ミトウロク",candidateName=hasCandidate?(names[selected]??"ミトウロク"):"コウホなし";
+            const int rows=5;int pages=Math.Max(1,(names.Length+rows-1)/rows);stylePage=Math.Min(stylePage,pages-1);int shown=Math.Min(rows,Math.Max(0,names.Length-stylePage*rows));float bottom=shown>0?240-(shown-1)*95-69:120;float comparisonHeight=Mathf.Min(190,bottom+189);bool hasComparison=comparisonHeight>=75,same=hasCurrent&&hasCandidate&&current==selected;int shortLimit=comparisonHeight<130?26:36;
+            bool shortened=CustomizationMenuElements.ShortName(currentName,shortLimit)!=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(currentName)||CustomizationMenuElements.ShortName(candidateName,shortLimit)!=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(candidateName);
+            if(!hasComparison||shortened){CommerceFace("StyleSummaryHeader",0,330,1760,60,true);var summary=Text("StyleSelectionSummary",same?"現在とコウホは同じ: "+currentName:"現在: "+currentName+" / コウホ: "+candidateName,0,330,1700,44,23);summary.color=Color.white;summary.supportRichText=false;AddOverflowTextDetails(summary,"ゲンザイとコウホ");}
+            CommerceFace("StyleBody",0,(295+bottom)/2,1760,295-bottom);
+            for(int row=0;row<rows&&stylePage*rows+row<names.Length;row++){
+                int index=stylePage*rows+row;string state=!unlocked[index]?"［未解放］ ":current==index&&selected==index?"［現在・コウホ］ ":current==index?"［現在］ ":selected==index?"［コウホ］ ":"［選択］ ";
+                var button=Button("StyleChoice_"+index,state+names[index],0,240-row*95,1450,78,()=>choose(index));InsetChoiceLabel(button);button.GetComponentInChildren<UnityEngine.UI.Text>().supportRichText=false;
+                if(!unlocked[index])AddOverflowConditionDetails(button);button.interactable=!blocked&&unlocked[index];if(selected==index){button.GetComponent<Image>().color=UiLook.Chosen;CustomizationMenuElements.SelectionMarker(button.transform,-710,58);}
             }
-            Button("PreviousStylePage", "前へ", -380, -285, 260, 60, () => { stylePage--; RenderStyleSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && stylePage > 0;
-            Button("NextStylePage", "次へ", 380, -285, 260, 60, () => { stylePage++; RenderStyleSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave); }).interactable = !blocked && stylePage + 1 < pages;
-            Text("StylePage", $"{stylePage+1}/{pages}", 0, -285, 250, 60, 24);
-            Button("ConfirmStyleSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
-            Button("CancelStyleSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
-            if (error != null || blocked) Button("RetryStyleDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);
+            if(names.Length==0)Text("NoDepartureStyles","登録されたスタイルはありません。",0,205,1600,100,30);
+            // 少数コウホの余白は保存済み/変更コウホの比較に使う。密なページでは上部の同じ情報を保持する。
+            if(hasComparison){
+                float y=(bottom-26-215)/2,top=y+comparisonHeight/2,low=y-comparisonHeight/2;
+                for(int role=0;role<2;role++){
+                    float x=role==0?-440:440;bool candidate=role==1;CommerceFace(candidate?"StyleCandidatePanel":"StyleCurrentPanel",x,y,800,comparisonHeight,candidate);
+                    var label=Text(candidate?"StyleCandidateRole":"StyleCurrentRole",candidate?"コウホ / "+(!hasCandidate?"なし":!unlocked[selected]?"未解放":same?"現在と同じ":"ミホゾン"):"現在 / "+(hasCurrent?"保存済み":"未登録"),x,top-(comparisonHeight>=130?26:18),740,30,comparisonHeight>=130?26:22);if(candidate)label.color=Color.white;
+                    string valueText=candidate&&same?"変更なし":CustomizationMenuElements.ShortName(candidate?candidateName:currentName,shortLimit);var value=Text(candidate?"StyleCandidateValue":"StyleCurrentValue",valueText,x,comparisonHeight>=130?y:low+24,740,comparisonHeight>=130?70:30,comparisonHeight>=130?28:23);value.supportRichText=false;if(candidate)value.color=Color.white;
+                    if(comparisonHeight>=160){var note=Text(candidate?"StyleCandidateNote":"StyleCurrentNote",candidate?(!hasCandidate?"変更せず戻れます":!unlocked[selected]?"解放条件を確認してください":"確定するまで変更しません"):(hasCurrent?"保存された出撃スタイル":"登録情報を確認してください"),x,low+26,740,28,22);if(candidate)note.color=Color.white;}
+                }
+            }
+            Button("PreviousStylePage","前へ",-380,-285,260,60,()=>{stylePage--;RenderStyleSelection(names,unlocked,selected,choose,confirmDeparture,cancelSelection,blocked,error,retrySave,current);}).interactable=!blocked&&stylePage>0;
+            Button("NextStylePage","次へ",380,-285,260,60,()=>{stylePage++;RenderStyleSelection(names,unlocked,selected,choose,confirmDeparture,cancelSelection,blocked,error,retrySave,current);}).interactable=!blocked&&stylePage+1<pages;
+            Text("StylePage",$"{stylePage+1}/{pages}",0,-285,250,60,24).color=Color.white;
+            if(!blocked&&error==null)Text("StyleEffectHelp","属性と固有・タメ攻撃が変わります。",0,-477,1700,40,22).color=Color.white;
+            Button("ConfirmStyleSelection","スタイルを保存",-430,-400,800,75,confirmDeparture).interactable=!blocked&&hasCandidate&&unlocked[selected];Button("CancelStyleSelection","変更せず戻る",430,-400,800,75,cancelSelection).interactable=!blocked;
+            if(error!=null||blocked)Button("RetryStyleDeparture","スタイル保存を再試行",0,-493,850,58,retrySave);
             SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryStyleDeparture":"StyleChoice_"+selected,blocked);
         }
 

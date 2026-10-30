@@ -261,14 +261,14 @@ namespace Olca.Application.Dungeon
         }
         private void ShowStyleSelection()
         {
-            clearReturnView.RenderStyleSelection(departureStyles.Select(s => s.Name + " / " + (s.Attack?.Element.ToString() ?? "None") +
-                (s.RequiredClear == null ? "" : " / 解放: " + s.RequiredClear + "クリア")).ToArray(),
+            clearReturnView.RenderStyleSelection(departureStyles.Select(ClearReturnView.FormatDepartureStyleChoice).ToArray(),
                 departureStyles.Select(s => s.IsUnlocked(clearReturnSession.Snapshot)).ToArray(), styleDraft,
                 i => { if (styleSelectionOpen && CanSelectDungeon && i >= 0 && i < departureStyles.Length && departureStyles[i].IsUnlocked(clearReturnSession.Snapshot)) { styleDraft = i; ShowStyleSelection(); } },
                 () => { if (!styleSelectionOpen || !CanSelectDungeon || styleDraft < 0 || styleDraft >= departureStyles.Length) return;
                     if (!clearReturnSession.SelectDepartureStyle(departureStyles[styleDraft])) { ShowStyleSelection(); return; } CloseStyleSelection(); },
                 () => { if (styleSelectionOpen && CanSelectDungeon) CloseStyleSelection(); },
-                !CanSelectDungeon, clearReturnSession.Error, RetryStyleSelection);
+                !CanSelectDungeon, clearReturnSession.Error, RetryStyleSelection,
+                System.Array.FindIndex(departureStyles,s=>s.Id==(clearReturnSession.Snapshot.SelectedStyleId??DepartureStyleDefinition.BasicId)));
         }
         // 出撃先から開いた子画面は、未確定の選択先を保って同じ画面へ戻す。
         private void CloseStyleSelection() { styleSelectionOpen = false; if (initialHub || dungeonSelectionOpen) ShowDungeonSelection(); else ShowClearReturn(); }

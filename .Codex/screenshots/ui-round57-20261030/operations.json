@@ -1,0 +1,23 @@
+{
+  "actualRaycast": true,
+  "longReadonlyCycles": 2,
+  "longReadonlyNoSave": true,
+  "candidatePageLockedCancelCycles": 2,
+  "currentAndDraftSeparated": true,
+  "cancelAndLockedSelectionNoSave": true,
+  "saveOnlyChangedFields": [
+    "Revision",
+    "CommitId",
+    "SelectedStyleId"
+  ],
+  "savedStyleId": "audit-style-1",
+  "beforeRevision": 2,
+  "afterRevision": 3,
+  "nextDepartureRemainsNull": true,
+  "checkpointJsonCreated": false,
+  "currencyAndAllOtherProfileFieldsPreserved": true,
+  "sameStyleConfirmRepeatedTwiceNoWrite": true,
+  "normalControllerSameSaveReloadMatched": true,
+  "savedCurrentLabelAndDraftMatched": true,
+  "kanjiAbsentInCheckedUI": true
+}
