@@ -665,6 +665,20 @@ namespace Olca.Tests
             }
             finally{Object.DestroyImmediate(root);}
         }
+        [Test]
+        public void 報酬の本絵は借用の正方形で再利用され本文とフォントを変換せず末尾まで保持する()
+        {
+            var root=new GameObject("RewardPresentation",typeof(RectTransform));var texture=new Texture2D(8,8);var art=Sprite.Create(texture,new Rect(0,0,8,8),new Vector2(.5f,.5f));
+            try{
+                var view=root.AddComponent<CardSelectionItemView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");
+                Text Label(string name,string field){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(root.transform,false);var label=obj.GetComponent<Text>();label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");typeof(CardSelectionItemView).GetField(field,flags).SetValue(view,label);return label;}
+                var name=Label("Name","cardNameText");Label("Cost","cardCostText");Label("Rarity","cardRarityText");var body=Label("Description","cardDescText");
+                string description=string.Join("\n",Enumerable.Repeat("前方1マス攻撃 ひらがな ABC",20));var card=new Card("sword","ソード",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,30,description);
+                for(int repeat=0;repeat<2;repeat++){view.ConfigurePresentation(font,art);view.Setup(card);var image=root.transform.Find("RewardCardIllustration").GetComponent<Image>();Assert.AreSame(art,image.sprite);Assert.IsTrue(image.preserveAspect);Assert.IsFalse(image.raycastTarget);Assert.AreEqual(image.rectTransform.rect.width,image.rectTransform.rect.height);Assert.AreEqual(1,root.GetComponentsInChildren<Image>().Count(x=>x.name=="RewardCardIllustration"));Assert.AreSame(font,name.font);Assert.AreSame(font,body.font);Assert.AreEqual(CustomDisplay.Katakana(description),body.text);Assert.AreEqual(description,card.Description);var scroll=body.GetComponentInParent<ScrollRect>();Assert.NotNull(scroll.verticalScrollbar);Assert.AreEqual(ScrollRect.ScrollbarVisibility.AutoHide,scroll.verticalScrollbarVisibility);Assert.AreEqual(Navigation.Mode.None,scroll.verticalScrollbar.navigation.mode);Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);Assert.AreEqual(1,scroll.verticalNormalizedPosition,.01f);scroll.verticalNormalizedPosition=0;}
+                Assert.AreEqual(30,card.Power);Assert.AreEqual(1,card.Cost);Object.DestroyImmediate(root);root=null;Assert.IsTrue(art!=null);Assert.IsTrue(texture!=null);
+            }finally{if(root!=null)Object.DestroyImmediate(root);Object.DestroyImmediate(art);Object.DestroyImmediate(texture);}
+        }
+
         [TestCase(false)][TestCase(true)]
         public void 報酬の長い名前は元フォントと通常文字サイズを保ちながら名前欄へ収まる(bool longName)
         {
@@ -678,6 +692,23 @@ namespace Olca.Tests
             }
             finally{Object.DestroyImmediate(root);}
         }
+        [Test]
+        public void 報酬の見出しとフッターの間に横長画面でも本絵カードを収める()
+        {
+            foreach(var size in new[]{new Vector2(2199.64f,942.7f),new Vector2(1920,1080),new Vector2(1440,1080)}){
+                var root=new GameObject("RewardViewport",typeof(RectTransform));
+                try{
+                    var rect=(RectTransform)root.transform;rect.sizeDelta=size;var view=root.AddComponent<CardSelectionView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");
+                    Assert.NotNull(font);typeof(CardSelectionView).GetField("containerRoot",flags).SetValue(view,root);view.ConfigurePresentation(font,null);
+                    var items=Enumerable.Range(0,3).Select(i=>{var obj=new GameObject("Choice"+i,typeof(RectTransform));obj.transform.SetParent(root.transform,false);var item=obj.AddComponent<CardSelectionItemView>();item.ConfigurePresentation(font,null);return item;}).ToArray();
+                    typeof(CardSelectionView).GetField("cardItems",flags).SetValue(view,items);typeof(CardSelectionView).GetMethod("UpdateChoiceLayout",flags).Invoke(view,null);
+                    var header=(RectTransform)root.transform.Find("RewardHeader");float headerBottom=size.y/2+header.anchoredPosition.y-header.rect.height;
+                    foreach(var item in items){var r=(RectTransform)item.transform;float half=r.rect.height*r.localScale.y/2;Assert.LessOrEqual(r.anchoredPosition.y+half,headerBottom-24+.01f);Assert.GreaterOrEqual(r.anchoredPosition.y-half,-size.y/2+112-.01f);Assert.AreEqual(r.localScale.x,r.localScale.y);}
+                    if(size.y==1080)Assert.AreEqual(-5,((RectTransform)items[0].transform).anchoredPosition.y,.01f);
+                }finally{Object.DestroyImmediate(root);}
+            }
+        }
+
         [Test]
         public void 店の削除案内は現在枚数の漢字だけをカナにして助詞を保持する()
             =>Assert.AreEqual("カードサクジョ 2マイ（ゲンザイマイスウまで）",CustomDisplay.Katakana("カード削除 2枚（現在枚数まで）"));

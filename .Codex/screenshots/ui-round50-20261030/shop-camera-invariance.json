@@ -1,0 +1,46 @@
+{
+  "before": {
+    "camera": "Main Camera",
+    "enabled": true,
+    "target": null,
+    "position": 0.4,
+    "cell": null,
+    "currency": 0,
+    "deck": 6,
+    "obtained": 0,
+    "paused": true,
+    "icons": [
+      {
+        "name": "ShopIcon",
+        "active": true,
+        "sprite": "VisitShopIcon",
+        "bounds": "Center: (4.00, 2.28, 0.00), Extents: (0.32, 0.32, 0.10)",
+        "color": "RGBA(0.250, 0.850, 0.950, 1.000)",
+        "filter": "Point"
+      }
+    ]
+  },
+  "after": {
+    "camera": "Main Camera",
+    "enabled": true,
+    "target": null,
+    "position": 0.4,
+    "cell": null,
+    "currency": 0,
+    "deck": 6,
+    "obtained": 0,
+    "paused": true,
+    "icons": [
+      {
+        "name": "ShopIcon",
+        "active": true,
+        "sprite": "VisitShopIcon",
+        "bounds": "Center: (4.00, 2.28, 0.00), Extents: (0.32, 0.32, 0.10)",
+        "color": "RGBA(0.250, 0.850, 0.950, 1.000)",
+        "filter": "Point"
+      }
+    ]
+  },
+  "filesUnchanged": 2,
+  "cameraOnlyNotOverlay": true
+}

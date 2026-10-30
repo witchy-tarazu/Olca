@@ -808,6 +808,7 @@ namespace Olca.Application.Dungeon
                 if (existing != null && existing.font != null) font = existing.font;
             }
             dungeonHudView?.ConfigureMissingStatusFont(font);
+            cardSelectionView?.ConfigurePresentation(font,card=>customScreenView!=null?customScreenView.GetCardIllustrationForCard(card):null);
             Button MakeButton(string name, string label, Transform parent, Vector2 anchor, Vector2 position)
             {
                 var obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button)); obj.transform.SetParent(parent, false);

@@ -23,6 +23,11 @@ namespace Olca.Presentation.Dungeon
         [SerializeField] private float fadeInDuration = 0.3f;
 
         private UniTaskCompletionSource<Card> selectionTcs;
+        private Font presentationFont;
+        private System.Func<Card,Sprite> illustrationSource;
+        private Image rewardHeader;
+        public void ConfigurePresentation(Font font,System.Func<Card,Sprite> artwork)
+        {presentationFont=font;illustrationSource=artwork;if(font!=null)foreach(var text in GetComponentsInChildren<Text>(true))text.font=font;}
         private Button skipButton;
         private Text battleTimeText;
         private Olca.Unity.MenuPadScope rewardMenu;
@@ -64,6 +69,7 @@ namespace Olca.Presentation.Dungeon
             {
                 if (i < choices.Count)
                 {
+                    cardItems[i].ConfigurePresentation(presentationFont,illustrationSource?.Invoke(choices[i]));
                     cardItems[i].Setup(choices[i]);
                     var choiceButton=cardItems[i].GetComponentInChildren<Button>(true);if(choiceButton!=null)choiceButton.name="CardRewardChoice_"+i;
                     cardItems[i].gameObject.SetActive(true);
@@ -137,6 +143,7 @@ namespace Olca.Presentation.Dungeon
 
         private void UpdateChoiceLayout()
         {
+            RefreshRewardHeader();
             if (cardItems == null) return;
             var visible = new List<RectTransform>();
             float width = 0f, height = 0f;
@@ -152,18 +159,31 @@ namespace Olca.Presentation.Dungeon
             if (visible.Count == 0 || width <= 0f || height <= 0f) return;
             var parent = visible[0].parent as RectTransform;
             if (parent == null) return;
-            const float gap = 16f;
+            float gap = presentationFont!=null?24f:16f;
             // 上下はHUD用の余白を残し、カードと文字を同じ比率で縮小する。
             float availableWidth = Mathf.Max(1f, parent.rect.width - 32f - gap * (visible.Count - 1));
-            float availableHeight = Mathf.Max(1f, parent.rect.height - 220f);
+            float availableHeight = Mathf.Max(1f, parent.rect.height - (presentationFont!=null?320f:220f));
             float scale = Mathf.Min(1f, availableWidth / (width * visible.Count), availableHeight / height);
             for (int i = 0; i < visible.Count; i++)
             {
                 var rect = visible[i];
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
                 rect.localScale = new Vector3(scale, scale, 1f);
-                rect.anchoredPosition = new Vector2((i - (visible.Count - 1) * 0.5f) * (width * scale + gap), 45f);
+                rect.anchoredPosition = new Vector2((i - (visible.Count - 1) * 0.5f) * (width * scale + gap), presentationFont!=null?Mathf.Clamp(-5f,-parent.rect.height*.5f+112f+height*scale*.5f,parent.rect.height*.5f-208f-height*scale*.5f):45f);
             }
+        }
+
+        private void RefreshRewardHeader()
+        {
+            if(presentationFont==null||containerRoot==null)return;
+            var root=containerRoot.transform as RectTransform;if(root==null)return;
+            bool created=rewardHeader==null;
+            if(created){var obj=new GameObject("RewardHeader",typeof(RectTransform),typeof(Image));obj.transform.SetParent(root,false);rewardHeader=obj.GetComponent<Image>();rewardHeader.sprite=Resources.Load<Sprite>("OlcaUI/description");rewardHeader.type=Image.Type.Sliced;rewardHeader.color=Color.white;rewardHeader.raycastTarget=false;}
+            float width=Mathf.Max(360,Mathf.Min(1180,root.rect.width-600));var rect=rewardHeader.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-24);rect.sizeDelta=new Vector2(width,160);
+            void Label(Text text,float x,float y,float w,int size){if(text==null)return;text.font=presentationFont;text.fontSize=size;text.color=Color.white;text.alignment=TextAnchor.MiddleCenter;var r=text.rectTransform;r.anchorMin=r.anchorMax=new Vector2(.5f,1);r.pivot=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(w,48);if(created)text.transform.SetAsLastSibling();}
+            Label(root.Find("TitleText")?.GetComponent<Text>(),0,-62,width-48,36);
+            Label(deckCountText,-width*.32f,-128,width*.27f,24);
+            Label(battleTimeText,width*.15f,-128,width*.64f,24);
         }
 
         /// <summary>

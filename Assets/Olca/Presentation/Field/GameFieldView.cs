@@ -253,6 +253,28 @@ namespace Olca.Presentation.Field
             public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts=new List<(SpriteRenderer,float)>();
         }
         private readonly Dictionary<int,VisitVisual> visitVisuals=new Dictionary<int,VisitVisual>();
+        private Sprite visitShopSprite;
+        // bytes包装から生成したSprite/TextureだけをこのViewが所有する。
+        private Sprite GetVisitShopSprite()
+        {
+            if(visitShopSprite!=null)return visitShopSprite;
+            var source=Resources.Load<TextAsset>("OlcaVisits/shop_bag");if(source==null)return null;
+            var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);
+            if(!texture.LoadImage(source.bytes,true)){
+                if(UnityEngine.Application.isPlaying)Destroy(texture);else DestroyImmediate(texture);return null;
+            }
+            texture.name="VisitShopIcon";texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
+            visitShopSprite=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),64,0,SpriteMeshType.FullRect);
+            visitShopSprite.name="VisitShopIcon";visitShopSprite.hideFlags=HideFlags.HideAndDontSave;
+            return visitShopSprite;
+        }
+        private void DisposeVisitShopSprite()
+        {
+            if(visitShopSprite==null)return;var texture=visitShopSprite.texture;
+            if(UnityEngine.Application.isPlaying){Destroy(visitShopSprite);Destroy(texture);}else{DestroyImmediate(visitShopSprite);DestroyImmediate(texture);}
+            visitShopSprite=null;
+        }
+
         private void RemoveVisitVisual(int cell)
         {
             if(!visitVisuals.TryGetValue(cell,out var visual))return;visitVisuals.Remove(cell);
@@ -274,8 +296,13 @@ namespace Olca.Presentation.Field
             Part("Face",0,0,.46f,.4f,.08f);Part("Top",0,.2f,.46f,.014f,.9f);Part("Bottom",0,-.2f,.46f,.014f,.9f);
             Part("Left",-.23f,0,.014f,.4f,.9f);Part("Right",.23f,0,.014f,.4f,.9f);
             if(definition.IsShop){
-                Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
-                Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+                var sprite=GetVisitShopSprite();
+                if(sprite!=null){Part("ShopIcon",0,0,.4f,.4f,1);visual.Parts[visual.Parts.Count-1].Renderer.sprite=sprite;}
+                else{
+                    // 包装がない場合だけ従来の識別図形を保つ。
+                    Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
+                    Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+                }
             }else{Part("RecoveryHorizontal",0,0,.25f,.055f,1);Part("RecoveryVertical",0,0,.055f,.25f,1);}
             visual.Near=new GameObject("Near");visual.Near.transform.SetParent(visual.Root.transform,false);
             Part("ArrowLeft",-.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,-35);Part("ArrowRight",.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,35);
@@ -578,6 +605,7 @@ namespace Olca.Presentation.Field
             generatedSomersaultSprites = null;
             ClearTerrainVisuals(); ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
+            DisposeVisitShopSprite();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
             if (currentBattle != null)

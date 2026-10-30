@@ -1,0 +1,198 @@
+[
+  {
+    "name": "CardSelectionPanel",
+    "root": "(x:-720.00, y:-540.00, width:1440.00, height:1080.00)",
+    "items": [
+      {
+        "name": "CardItem_0",
+        "rect": "(x:-180.00, y:-320.00, width:360.00, height:640.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "labels": [
+          {
+            "name": "CardName",
+            "text": "fire_card",
+            "font": "JikiTourai",
+            "fontSize": 32,
+            "rect": "(x:-156.00, y:-68.00, width:312.00, height:68.00)",
+            "position": "(0.00, -18.00)",
+            "anchors": "(0.00, 1.00)(1.00, 1.00)"
+          },
+          {
+            "name": "CardCost",
+            "text": "コスト: 1",
+            "font": "JikiTourai",
+            "fontSize": 26,
+            "rect": "(x:-156.00, y:-40.00, width:312.00, height:40.00)",
+            "position": "(0.00, -378.00)",
+            "anchors": "(0.50, 1.00)(0.50, 1.00)"
+          },
+          {
+            "name": "CardRarity",
+            "text": "スタンダード",
+            "font": "JikiTourai",
+            "fontSize": 22,
+            "rect": "(x:-156.00, y:-30.00, width:312.00, height:30.00)",
+            "position": "(0.00, -426.00)",
+            "anchors": "(0.50, 1.00)(0.50, 1.00)"
+          },
+          {
+            "name": "ButtonText",
+            "text": "カクトク",
+            "font": "JikiTourai",
+            "fontSize": 28,
+            "rect": "(x:-144.00, y:-28.00, width:288.00, height:56.00)",
+            "position": "(0.00, 0.00)",
+            "anchors": "(0.00, 0.00)(1.00, 1.00)"
+          },
+          {
+            "name": "CardDesc",
+            "text": "Fallback card",
+            "font": "JikiTourai",
+            "fontSize": 22,
+            "rect": "(x:-150.00, y:-80.00, width:300.00, height:80.00)",
+            "position": "(0.00, 0.00)",
+            "anchors": "(0.00, 1.00)(1.00, 1.00)"
+          }
+        ]
+      },
+      {
+        "name": "CardItem_1",
+        "rect": "(x:-180.00, y:-320.00, width:360.00, height:640.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "labels": [
+          {
+            "name": "CardName",
+            "text": "sword_card",
+            "font": "JikiTourai",
+            "fontSize": 32,
+            "rect": "(x:-156.00, y:-68.00, width:312.00, height:68.00)",
+            "position": "(0.00, -18.00)",
+            "anchors": "(0.00, 1.00)(1.00, 1.00)"
+          },
+          {
+            "name": "CardCost",
+            "text": "コスト: 1",
+            "font": "JikiTourai",
+            "fontSize": 26,
+            "rect": "(x:-156.00, y:-40.00, width:312.00, height:40.00)",
+            "position": "(0.00, -378.00)",
+            "anchors": "(0.50, 1.00)(0.50, 1.00)"
+          },
+          {
+            "name": "CardRarity",
+            "text": "スタンダード",
+            "font": "JikiTourai",
+            "fontSize": 22,
+            "rect": "(x:-156.00, y:-30.00, width:312.00, height:30.00)",
+            "position": "(0.00, -426.00)",
+            "anchors": "(0.50, 1.00)(0.50, 1.00)"
+          },
+          {
+            "name": "ButtonText",
+            "text": "カクトク",
+            "font": "JikiTourai",
+            "fontSize": 28,
+            "rect": "(x:-144.00, y:-28.00, width:288.00, height:56.00)",
+            "position": "(0.00, 0.00)",
+            "anchors": "(0.00, 0.00)(1.00, 1.00)"
+          },
+          {
+            "name": "CardDesc",
+            "text": "Fallback card",
+            "font": "JikiTourai",
+            "fontSize": 22,
+            "rect": "(x:-150.00, y:-80.00, width:300.00, height:80.00)",
+            "position": "(0.00, 0.00)",
+            "anchors": "(0.00, 1.00)(1.00, 1.00)"
+          }
+        ]
+      },
+      {
+        "name": "CardItem_2",
+        "rect": "(x:-180.00, y:-320.00, width:360.00, height:640.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "labels": [
+          {
+            "name": "CardName",
+            "text": "heal_card",
+            "font": "JikiTourai",
+            "fontSize": 32,
+            "rect": "(x:-156.00, y:-68.00, width:312.00, height:68.00)",
+            "position": "(0.00, -18.00)",
+            "anchors": "(0.00, 1.00)(1.00, 1.00)"
+          },
+          {
+            "name": "CardCost",
+            "text": "コスト: 1",
+            "font": "JikiTourai",
+            "fontSize": 26,
+            "rect": "(x:-156.00, y:-40.00, width:312.00, height:40.00)",
+            "position": "(0.00, -378.00)",
+            "anchors": "(0.50, 1.00)(0.50, 1.00)"
+          },
+          {
+            "name": "CardRarity",
+            "text": "スタンダード",
+            "font": "JikiTourai",
+            "fontSize": 22,
+            "rect": "(x:-156.00, y:-30.00, width:312.00, height:30.00)",
+            "position": "(0.00, -426.00)",
+            "anchors": "(0.50, 1.00)(0.50, 1.00)"
+          },
+          {
+            "name": "ButtonText",
+            "text": "カクトク",
+            "font": "JikiTourai",
+            "fontSize": 28,
+            "rect": "(x:-144.00, y:-28.00, width:288.00, height:56.00)",
+            "position": "(0.00, 0.00)",
+            "anchors": "(0.00, 0.00)(1.00, 1.00)"
+          },
+          {
+            "name": "CardDesc",
+            "text": "Fallback card",
+            "font": "JikiTourai",
+            "fontSize": 22,
+            "rect": "(x:-150.00, y:-80.00, width:300.00, height:80.00)",
+            "position": "(0.00, 0.00)",
+            "anchors": "(0.00, 1.00)(1.00, 1.00)"
+          }
+        ]
+      }
+    ],
+    "texts": [
+      {
+        "name": "Label",
+        "text": "ウけトらずにススむ",
+        "fontSize": 28,
+        "font": "JikiTourai",
+        "rect": "(x:-250.00, y:-35.00, width:500.00, height:70.00)",
+        "position": "(0.00, 0.00)"
+      },
+      {
+        "name": "TitleText",
+        "text": "カードを1マイカクトク",
+        "fontSize": 36,
+        "font": "JikiTourai",
+        "rect": "(x:-396.00, y:-24.00, width:792.00, height:48.00)",
+        "position": "(0.00, -62.00)"
+      },
+      {
+        "name": "DeckCountText",
+        "text": "デッキ: 6マイ",
+        "fontSize": 24,
+        "font": "JikiTourai",
+        "rect": "(x:-113.40, y:-24.00, width:226.80, height:48.00)",
+        "position": "(-268.80, -128.00)"
+      },
+      {
+        "name": "BattleTimeText",
+        "text": "ヒョウカ: シュウ / ゲキハタイム: 00:00.05",
+        "fontSize": 24,
+        "font": "JikiTourai",
+        "rect": "(x:-268.80, y:-24.00, width:537.60, height:48.00)",
+        "position": "(126.00, -128.00)"
+      }
+    ]
+  }
+]

@@ -1,0 +1,65 @@
+{
+  "sourceSha256": "736720d787c5b2715af6b931f310c01989a09f8caabfc1b25819d602af815343",
+  "sourceCanvas": [
+    1254,
+    1254
+  ],
+  "sourceCrop": [
+    319,
+    319,
+    935,
+    951
+  ],
+  "referenceImagesSent": [],
+  "referenceImagesInspected": [
+    "Assets/Art/UI/CombatStatus/guard.png",
+    "Assets/Resources/OlcaUI/description.png"
+  ],
+  "canvas": [
+    64,
+    64
+  ],
+  "opaqueBBox": [
+    12,
+    11,
+    52,
+    52
+  ],
+  "palette": [
+    [
+      128,
+      128,
+      128
+    ],
+    [
+      192,
+      192,
+      192
+    ],
+    [
+      248,
+      248,
+      248
+    ]
+  ],
+  "alpha": [
+    0,
+    255
+  ],
+  "sha256": "67e285c5cefed51d0b998ad66cbc53b33300e62ce661b74032fda4de753038ed",
+  "generationAttempts": 1,
+  "generationRefused": false,
+  "proposedPurpose": "既存ショップVisitVisualの袋6矩形を置換する1枚glyph。外枠/矢印/チェック/ゲーム性能は維持。",
+  "smallPreviewCanvasPixels": [
+    16,
+    20,
+    24
+  ],
+  "registeredPaths": [
+    "Assets/Art/UI/Visits/shop_bag.png",
+    "Assets/Resources/OlcaVisits/shop_bag.bytes"
+  ],
+  "candidateGenerationOnly": true,
+  "registeredAfterCandidateQA": true,
+  "candidateQAProductFilesChanged": false
+}

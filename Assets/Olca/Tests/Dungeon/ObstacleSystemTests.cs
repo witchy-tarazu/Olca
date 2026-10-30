@@ -285,26 +285,50 @@ namespace Olca.Tests.Dungeon
             root=new UnityEngine.GameObject("VisitView");view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();typeof(Olca.Presentation.Field.GameFieldView).GetField("fieldCamera",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(view,camera);view.Initialize(game.Dungeon);
         }
         private UnityEngine.Transform Cell(int cell)=>root.transform.Find("VisitCell_"+cell);
+        private void AssertShopTint()
+        {
+            var frame=Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color;
+            var icon=Cell(2).Find("ShopIcon").GetComponent<UnityEngine.SpriteRenderer>().color;
+            Assert.AreEqual(frame.r,icon.r);Assert.AreEqual(frame.g,icon.g);Assert.AreEqual(frame.b,icon.b);
+            Assert.That(icon.a,Is.EqualTo(frame.a/.9f).Within(.001f));
+        }
         [TearDown]public void Cleanup(){if(root!=null)UnityEngine.Object.DestroyImmediate(root);if(cameraObject!=null)UnityEngine.Object.DestroyImmediate(cameraObject);}
         [Test]
         public void 停止地点マーカーは画面内だけ生成し形状を分け再入場でも二重表示しない()
         {
-            Setup();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));Assert.IsNotNull(Cell(2).Find("BagHandle"));
+            Setup();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));Assert.IsNotNull(Cell(2).Find("ShopIcon"));var shopSprite=Cell(2).Find("ShopIcon").GetComponent<UnityEngine.SpriteRenderer>().sprite;Assert.IsNull(Cell(2).Find("BagHandle"));
             var face=Cell(2).Find("Face").GetComponent<UnityEngine.SpriteRenderer>();Assert.That(face.bounds.size.x,Is.EqualTo(.46f).Within(.001));Assert.Less(face.color.a,.1f);
-            for(int i=0;i<10;i++)view.RefreshVisitVisuals();Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(r=>r.name=="BagHandle"));
+            for(int i=0;i<10;i++)view.RefreshVisitVisuals();Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(r=>r.name=="ShopIcon"));
             camera.transform.position=new UnityEngine.Vector3(9,0,-10);view.RefreshVisitVisuals();Assert.IsNull(Cell(2));Assert.IsNotNull(Cell(8).Find("RecoveryHorizontal"));Assert.IsFalse(Cell(8).Find("Near").gameObject.activeSelf);
-            camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);view.RefreshVisitVisuals();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));Assert.IsTrue(Cell(2).Find("Near").gameObject.activeSelf);
+            camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);view.RefreshVisitVisuals();Assert.IsNotNull(Cell(2));Assert.IsNull(Cell(8));Assert.IsTrue(Cell(2).Find("Near").gameObject.activeSelf);Assert.AreSame(shopSprite,Cell(2).Find("ShopIcon").GetComponent<UnityEngine.SpriteRenderer>().sprite);
+        }
+        [Test]
+        public void ショップ専用画像は包装と真透過を保ち無効化で共有し破棄時だけ所有資源を解放する()
+        {
+            Setup();var source=UnityEngine.Resources.Load<UnityEngine.TextAsset>("OlcaVisits/shop_bag");Assert.IsNotNull(source);
+            var original=System.IO.File.ReadAllBytes("Assets/Art/UI/Visits/shop_bag.png");CollectionAssert.AreEqual(original,source.bytes);
+            var renderer=Cell(2).Find("ShopIcon").GetComponent<UnityEngine.SpriteRenderer>();var sprite=renderer.sprite;var texture=sprite.texture;
+            Assert.AreEqual(64,texture.width);Assert.AreEqual(64,texture.height);Assert.AreEqual(64,sprite.pixelsPerUnit);
+            Assert.AreEqual(UnityEngine.FilterMode.Point,texture.filterMode);Assert.AreEqual(UnityEngine.TextureWrapMode.Clamp,texture.wrapMode);Assert.IsFalse(texture.isReadable);
+            Assert.That(renderer.bounds.size.x,Is.EqualTo(.4f).Within(.001));Assert.That(renderer.bounds.size.y,Is.EqualTo(.4f).Within(.001));
+            var decoded=new UnityEngine.Texture2D(2,2);
+            try{Assert.IsTrue(UnityEngine.ImageConversion.LoadImage(decoded,original));var pixels=decoded.GetPixels32();Assert.IsTrue(pixels.Any(v=>v.a==0));Assert.IsTrue(pixels.Any(v=>v.a==255));Assert.IsTrue(pixels.All(v=>v.a==0||v.a==255));}
+            finally{UnityEngine.Object.DestroyImmediate(decoded);}
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            view.enabled=false;view.GetType().GetMethod("OnDisable",flags).Invoke(view,null);Assert.IsNotNull(sprite);Assert.IsNotNull(texture);
+            view.enabled=true;view.GetType().GetMethod("OnEnable",flags).Invoke(view,null);Assert.AreSame(sprite,Cell(2).Find("ShopIcon").GetComponent<UnityEngine.SpriteRenderer>().sprite);
+            view.GetType().GetMethod("OnDestroy",flags).Invoke(view,null);Assert.IsTrue(sprite==null);Assert.IsTrue(texture==null);Assert.IsNotNull(source);CollectionAssert.AreEqual(original,source.bytes);
         }
         [Test]
         public void 接近入場使用退出と保存復帰の表示はゲーム状態を進めず停止中も変化しない()
         {
-            Setup();var d=game.Dungeon;long seq=session.Store.Read().Sequence;var color=Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color;
+            Setup();AssertShopTint();var d=game.Dungeon;long seq=session.Store.Read().Sequence;var color=Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color;
             for(int i=0;i<100;i++)view.RefreshVisitVisuals();Assert.AreEqual(0,d.PlayerPosition);Assert.AreEqual(20,d.Currency);Assert.AreEqual(60,d.Player.CurrentHp);Assert.AreEqual(seq,session.Store.Read().Sequence);
-            while(d.ActiveVisit==null)game.TickFrame(17);view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Active,d.GetVisitDisplayState(2));Assert.IsFalse(Cell(2).Find("Near").gameObject.activeSelf);
+            while(d.ActiveVisit==null)game.TickFrame(17);view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Active,d.GetVisitDisplayState(2));AssertShopTint();Assert.IsFalse(Cell(2).Find("Near").gameObject.activeSelf);
             game.SetUserPaused(true);var pos=d.PlayerPosition;color=Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color;
             for(int i=0;i<30;i++){game.TickFrame(17);view.RefreshVisitVisuals();}Assert.AreEqual(pos,d.PlayerPosition);Assert.AreEqual(color,Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color);game.SetUserPaused(false);
-            Assert.IsTrue(d.ChooseVisit(0));view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Used,d.GetVisitDisplayState(2));Assert.IsTrue(Cell(2).Find("Check").gameObject.activeSelf);
-            Assert.IsTrue(d.ExitVisit());view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Closed,d.GetVisitDisplayState(2));Assert.Less(Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color.a,.5f);
+            Assert.IsTrue(d.ChooseVisit(0));view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Used,d.GetVisitDisplayState(2));AssertShopTint();Assert.IsTrue(Cell(2).Find("Check").gameObject.activeSelf);
+            Assert.IsTrue(d.ExitVisit());view.RefreshVisitVisuals();Assert.AreEqual(DungeonVisitDisplayState.Closed,d.GetVisitDisplayState(2));AssertShopTint();Assert.Less(Cell(2).Find("Top").GetComponent<UnityEngine.SpriteRenderer>().color.a,.5f);
             Assert.IsTrue(Olca.Core.Logic.Integration.DungeonBattleManager.TryRestoreCheckpoint(new DungeonCheckpointSession(session.Definitions,session.Store),new MockRandomProvider(),new MockLogger(),out var restored,out var error),error);
             view.Initialize(restored.Dungeon);Assert.IsTrue(Cell(2).Find("Check").gameObject.activeSelf);Assert.IsFalse(Cell(2).Find("Near").gameObject.activeSelf);Assert.AreEqual(10,restored.Dungeon.Currency);Assert.AreEqual(1,restored.Dungeon.GetObtainedCards().Count);
         }
