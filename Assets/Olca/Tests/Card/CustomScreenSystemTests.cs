@@ -14,6 +14,20 @@ namespace Olca.Tests.CardTests
     [TestFixture]
     public class CustomScreenSystemTests
     {
+        [TestCase(0)] [TestCase(3)] [TestCase(20)]
+        public void 通常初回は五枚上限まで引き再表示で十枚へ増えない(int deckCount)
+        {
+            var cards = Enumerable.Range(0, deckCount).Select(i => ZeroCostCard("initial-" + i)).ToList();
+            var screen = new CustomScreenSystem(new Deck(cards));
+            Assert.AreEqual(5, screen.MaxHandSize);
+            screen.Open(new Card[0], new MockRandomProvider(0));
+            Assert.AreEqual(System.Math.Min(5, deckCount), screen.CurrentHand.Count);
+            screen.Close();screen.Open(new Card[0], new MockRandomProvider(0));
+            Assert.AreEqual(System.Math.Min(5, deckCount), screen.CurrentHand.Count);
+            var battle = new BattleSystem(new PlayerCharacter(100), new List<Enemy>(), new Deck(cards));
+            Assert.AreEqual(5, battle.CustomScreen.MaxHandSize);
+        }
+
         private static Card StageMaterial(string id, bool missingSecond = false)
         {
             var stages = new Dictionary<int, CardModifier> { { 1, new CardModifier { BonusDamage = 3 } } };

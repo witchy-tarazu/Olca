@@ -1,0 +1,26 @@
+{
+  "sampledDrawFrames": 27,
+  "dashDrawFrames": 14,
+  "sameLogicalFramePairs": [
+    {
+      "fromRender": 50,
+      "toRender": 51,
+      "clock": 22,
+      "rootX": 5.97280025,
+      "cameraDelta": 0.11000699999999952,
+      "spriteUnchanged": true
+    },
+    {
+      "fromRender": 60,
+      "toRender": 61,
+      "clock": 32,
+      "rootX": 11.3056,
+      "cameraDelta": 0.14082239999999935,
+      "spriteUnchanged": true
+    }
+  ],
+  "sameClockCameraOnlyMoves": 2,
+  "noSpriteAssetOrPivotScaleChange": true,
+  "backwardScreenRelativeStepsDuringDash": 5,
+  "intentionalDashCameraLeadAndNormalEndReturnPreserved": true
+}

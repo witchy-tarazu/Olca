@@ -1,0 +1,20 @@
+{
+  "actualSceneDefaults": true,
+  "normalStarterDeck20": true,
+  "normalFirstEnemy50": true,
+  "actualRaycastSelectionStyleCancelCycles": 2,
+  "stageCancelNoSaveChanges": true,
+  "newInitialHand": 5,
+  "newHandLimit": 5,
+  "normalEnemyContact": true,
+  "console": {
+    "sampledUtc": "2026-10-30T17:08:45.365368Z",
+    "ageMs": 109,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 21,
+    "seeded": true
+  }
+}

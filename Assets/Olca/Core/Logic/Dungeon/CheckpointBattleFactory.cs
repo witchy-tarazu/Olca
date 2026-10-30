@@ -29,7 +29,7 @@ namespace Olca.Core.Logic.Dungeon
                 if(checkpointRandomRestored){if(!(random is SeededBattleRandom seeded)||!savedRandom.Matches(seeded))throw new ArgumentException("呼出元の乱数が保存状態と一致しません");}
                 else random=savedRandom.Restore();
             }else logger?.LogWarning("[Checkpoint] 旧保存に乱数状態がないため従来の外部乱数を使用します。旧ライブ列の再現は保証しません");
-            var battle=new BattleSystem(player,plan.ParticipantCells.Select(i=>map.GetCell(i).Enemy).ToList(),deck,gaugeSpeed,random,logger,exceed,tuning,fusion,cardDatabase:cardDatabase,enemyAIProvider:enemyAIProvider);
+            var battle=new BattleSystem(player,plan.ParticipantCells.Select(i=>map.GetCell(i).Enemy).ToList(),deck,gaugeSpeed,random,logger,exceed,tuning,fusion,cardDatabase:cardDatabase,enemyAIProvider:enemyAIProvider,maxHandSize:plan.HandLimit);
             if(savedRandom!=null)battle.UseCheckpointRandom();
             battle.StartEffects.Configure(plan.DashContact,plan.DashEffect,plan.DashValue);
             ApplyTerrain(battle,map,(int)plan.GridOriginX);battle.CustomScreen.RestoreCheckpointHand(firstHand);return battle;

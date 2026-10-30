@@ -1,0 +1,66 @@
+{
+  "rows": [
+    {
+      "prior": false,
+      "hand": 5,
+      "limit": 5,
+      "rewardOffered": false,
+      "rewardChoices": 0,
+      "choicesReturned": false,
+      "phase": "Dungeon",
+      "blocked": false
+    },
+    {
+      "prior": true,
+      "hand": 5,
+      "limit": 5,
+      "rewardOffered": false,
+      "rewardChoices": 0,
+      "choicesReturned": false,
+      "phase": "Dungeon",
+      "blocked": false
+    }
+  ],
+  "seeds": [
+    {
+      "seed": 0,
+      "firstNormalRewardRoll": 0.2716635024508757,
+      "offered": true
+    },
+    {
+      "seed": 1,
+      "firstNormalRewardRoll": 0.2209818112761629,
+      "offered": true
+    },
+    {
+      "seed": 2,
+      "firstNormalRewardRoll": 0.17030012010145007,
+      "offered": true
+    },
+    {
+      "seed": 3,
+      "firstNormalRewardRoll": 0.11961842892673724,
+      "offered": true
+    },
+    {
+      "seed": 4,
+      "firstNormalRewardRoll": 0.06893673775202443,
+      "offered": true
+    },
+    {
+      "seed": 5,
+      "firstNormalRewardRoll": 0.01825504657731161,
+      "offered": true
+    },
+    {
+      "seed": 6,
+      "firstNormalRewardRoll": 0.9675733554025989,
+      "offered": false
+    },
+    {
+      "seed": 7,
+      "firstNormalRewardRoll": 0.9168916642278859,
+      "offered": false
+    }
+  ]
+}

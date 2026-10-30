@@ -1,0 +1,17 @@
+{
+  "activeConsoleErrors": 0,
+  "activeConsoleWarnings": 1,
+  "historyWarnings": 2,
+  "historyCategories": [
+    {
+      "message": "Editor is already in edit mode",
+      "category": "Unity Pipeline/AI environment or tool",
+      "productWarning": false
+    },
+    {
+      "message": "Could not save connection info: Read-only file system",
+      "category": "Unity Pipeline/AI environment or tool",
+      "productWarning": false
+    }
+  ]
+}

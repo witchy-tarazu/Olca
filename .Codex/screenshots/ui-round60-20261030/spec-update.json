@@ -1,0 +1,24 @@
+{
+  "headAfterSafePull": "e8c27a6cb327dd46fd1b4ee32c74b11cb5f93b49",
+  "changedSpecification": "Planning/ゲーム全体仕様.md",
+  "newSpecCommits": [
+    "badc022",
+    "914e0d9",
+    "e8c27a6"
+  ],
+  "importedDocumentationOnly": true,
+  "notImplementedInThisRound": [
+    "outside-dungeon dash direction changes",
+    "air horizontal control",
+    "equipment-granted dash invincibility",
+    "two-dash cooldown and reset: exact durations unresolved"
+  ],
+  "fourUserIssuesTakePriority": true,
+  "confirmedExactCommits": [
+    "ba229b58346953d3e61df4e3eb39046a277e5cab",
+    "badc022e750d08815b9264501119ff474a9c5ffc",
+    "e8c27a6cb327dd46fd1b4ee32c74b11cb5f93b49"
+  ],
+  "latestDirectionRule": "Left/right can reverse dash direction; e8c27a6 replaces the direction lock introduced by badc022",
+  "oldDirectionLockNotImplementedByCameraFix": true
+}

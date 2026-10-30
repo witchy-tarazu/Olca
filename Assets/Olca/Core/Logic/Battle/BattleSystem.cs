@@ -258,7 +258,7 @@ namespace Olca.Core.Logic.Battle
             ExceedSystem exceedSystem = null,
             TuningSystem tuningSystem = null,
             FusionSystem fusionSystem = null,
-            IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null, IEnemyAIProvider enemyAIProvider = null)
+            IEnumerable<Vector2Int> initialPermanentHoles = null, ICardDatabase cardDatabase = null, IEnemyAIProvider enemyAIProvider = null, int maxHandSize = 5)
         {
             StartEffects = new BattleStartEffects(this,logger);
             this.player = player ?? throw new ArgumentNullException(nameof(player));
@@ -268,7 +268,7 @@ namespace Olca.Core.Logic.Battle
 
             this.battleField = new BattleField(initialPermanentHoles);
             this.customGauge = new CustomGaugeSystem(customGaugeSpeed);
-            this.customScreen = new CustomScreenSystem(deck,
+            this.customScreen = new CustomScreenSystem(deck, maxHandSize: maxHandSize,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem);
