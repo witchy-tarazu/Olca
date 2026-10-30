@@ -1,0 +1,170 @@
+{
+  "activity": {
+    "open": true,
+    "device": "Gamepad",
+    "mode": true,
+    "hand": 10,
+    "selected": 0,
+    "undo": 0,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "ユウゴウ: LTでジッコウ",
+        "active": true
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: 素材選択 / RT: 取消して戻る / LT: 加工実行 / North: 加工を閉じる\nWest: 加工を戻す / R3: 詳細 / LB: ガメン / RB: ジブン",
+        "active": true
+      }
+    ]
+  },
+  "touch-activity": {
+    "open": true,
+    "device": "Touch",
+    "mode": true,
+    "hand": 10,
+    "selected": 0,
+    "undo": 0,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "ユウゴウ: 「カコウをジッコウ」をタップ",
+        "active": true
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: 素材選択 / RT: 取消して戻る / LT: 加工実行 / North: 加工を閉じる\nWest: 加工を戻す / R3: 詳細 / LB: ガメン / RB: ジブン",
+        "active": false
+      }
+    ]
+  },
+  "keyboard-state": {
+    "open": true,
+    "device": "KeyboardMouse",
+    "mode": true,
+    "hand": 10,
+    "selected": 0,
+    "undo": 0,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "ユウゴウ: Enterでジッコウ",
+        "active": true
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: ソザイセンタク / RT: トリケシしてモドる / LT: カコウジッコウ / North: カコウをトじる\nWest: カコウをモドす / R3: ショウサイ / LB: ガメン / RB: ジブン",
+        "active": false
+      }
+    ]
+  },
+  "keyboard-execute": {
+    "open": true,
+    "device": "KeyboardMouse",
+    "mode": false,
+    "hand": 9,
+    "selected": 0,
+    "undo": 1,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "ユウゴウ: Enterでジッコウ",
+        "active": false
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: センタク / RT: トリケシ / LT: ケッテイ / North: カコウ\nWest: カコウをモドす / Select: ヘンシン / R3: ショウサイ / LB: ガメン / RB: ジブン",
+        "active": false
+      }
+    ]
+  },
+  "pad-execute": {
+    "open": true,
+    "device": "Gamepad",
+    "mode": false,
+    "hand": 9,
+    "selected": 0,
+    "undo": 1,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "ユウゴウ: LTでジッコウ",
+        "active": false
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: 選択 / RT: 取消 / LT: 決定 / North: 加工\nWest: 加工を戻す / Select: 変身 / R3: 詳細 / LB: ガメン / RB: ジブン",
+        "active": true
+      }
+    ]
+  },
+  "touch-execute": {
+    "open": true,
+    "device": "Touch",
+    "mode": false,
+    "hand": 9,
+    "selected": 0,
+    "undo": 1,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "ユウゴウ: 「カコウをジッコウ」をタップ",
+        "active": false
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: 選択 / RT: 取消 / LT: 決定 / North: 加工\nWest: 加工を戻す / Select: 変身 / R3: 詳細 / LB: ガメン / RB: ジブン",
+        "active": false
+      }
+    ]
+  },
+  "pad-cancel": {
+    "open": true,
+    "device": "Gamepad",
+    "mode": false,
+    "hand": 10,
+    "selected": 0,
+    "undo": 0,
+    "confirm": "LeftTrigger",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "Southで2マイメをセンタク",
+        "active": false
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: 選択 / RT: 取消 / LT: 決定 / North: 加工\nWest: 加工を戻す / Select: 変身 / R3: 詳細 / LB: ガメン / RB: ジブン",
+        "active": true
+      }
+    ]
+  },
+  "restore-profile": {
+    "open": true,
+    "device": "Gamepad",
+    "mode": false,
+    "hand": 10,
+    "selected": 0,
+    "undo": 0,
+    "confirm": "Start",
+    "guide": [
+      {
+        "name": "GuideText",
+        "text": "Southで2マイメをセンタク",
+        "active": false
+      },
+      {
+        "name": "CustomPadGuide",
+        "text": "Pad South: センタク / RT: トリケシ / LT: ケッテイ / North: カコウ\nWest: カコウをモドす / Select: ヘンシン / R3: ショウサイ / LB: ガメン / RB: ジブン",
+        "active": true
+      }
+    ]
+  }
+}

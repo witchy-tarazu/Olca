@@ -686,7 +686,7 @@ namespace Olca.Presentation.CustomScreen
         }
         private void RefreshKana(){
             ApplyNarrowLayout(narrowLayoutAmount);
-            UpdateProcessingControls();ProcessingLayout(narrowLayoutAmount);
+            UpdateProcessingControls();ProcessingLayout(narrowLayoutAmount);RefreshProcessingHint();
             foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);
             if(cardDescriptionScroll!=null&&selectedCardDescription!=null){
                 float width=cardDescriptionScroll.viewport.rect.width;
@@ -748,12 +748,49 @@ namespace Olca.Presentation.CustomScreen
                 padGuidePanel=new GameObject("CustomPadGuidePanel",typeof(RectTransform),typeof(Image));padGuidePanel.transform.SetParent(transform,false);var area=(RectTransform)padGuidePanel.transform;area.anchorMin=new Vector2(.02f,.94f);area.anchorMax=new Vector2(.98f,.995f);area.offsetMin=area.offsetMax=Vector2.zero;var face=padGuidePanel.GetComponent<Image>();Olca.Presentation.Dungeon.UiLook.Face(face);face.raycastTarget=false;
                 var obj=new GameObject("CustomPadGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(padGuidePanel.transform,false);padGuide=obj.GetComponent<Text>();padGuide.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padGuide.fontSize=18;padGuide.alignment=TextAnchor.MiddleCenter;padGuide.raycastTarget=false;Olca.Presentation.Dungeon.UiLook.Label(padGuide);var r=padGuide.rectTransform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=new Vector2(8,2);r.offsetMax=new Vector2(-8,-2);
             }
-            padGuidePanel.SetActive(gamepadInput.HasGamepad&&!Olca.Unity.GameplayPause.InputBlocked&&!(detailsPanel!=null&&detailsPanel.activeSelf));string Key(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom",action)]);
-            authoredPadGuideText=$"Pad {Key("Decide")}: 選択 / {Key("Cancel")}: 取消 / {Key("Confirm")}: 確定・加工 / {Key("Customize")}: 加工切替\n{Key("Undo")}: Undo / {Key("Transform")}: 手札・変身 / {Key("Details")}: 詳細 / {Key("PageUp")}: ガメン / {Key("PageDown")}: ジブン";
-            // キーと動作を分離せず、狭い画面では意味のまとまりごとに4行へ分ける。
-            narrowPadGuideText=$"Pad {Key("Decide")}: 選択 / {Key("Cancel")}: 取消\n{Key("Confirm")}: 確定・加工 / {Key("Customize")}: 加工切替\n{Key("Undo")}: Undo / {Key("Transform")}: 手札・変身\n{Key("Details")}: 詳細 / {Key("PageUp")}: ガメン / {Key("PageDown")}: ジブン";
+            var device=Olca.Unity.InputGuideActivity.Current;
+            padGuidePanel.SetActive(gamepadInput.HasGamepad&&device==Olca.Unity.InputGuideDevice.Gamepad&&!Olca.Unity.GameplayPause.InputBlocked&&!(detailsPanel!=null&&detailsPanel.activeSelf));
+            bool processing=customizeModeView!=null&&customizeModeView.IsActive;
+            authoredPadGuideText=FormatPadGuide(processing,false,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
+            narrowPadGuideText=FormatPadGuide(processing,true,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
             padGuide.text=narrowLayoutAmount>0?narrowPadGuideText:authoredPadGuideText;
-            if(detailsPanel!=null){var close=detailsPanel.transform.Find("CloseCustomPadDetails")?.GetComponentInChildren<Text>();if(close!=null)close.text="閉じる / "+Key("Cancel")+"・"+Key("Details");}
+            if(detailsPanel!=null){var close=detailsPanel.transform.Find("CloseCustomPadDetails")?.GetComponentInChildren<Text>();if(close!=null)close.text=device==Olca.Unity.InputGuideDevice.Gamepad?
+                "閉じる / "+CustomGuideKey(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,"Cancel")+"・"+CustomGuideKey(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,"Details"):
+                device==Olca.Unity.InputGuideDevice.Touch?"閉じる":"閉じる / Esc";}
+        }
+        private static string CustomGuideKey(Olca.Core.Domain.InputBindingProfile profile,string action)
+        {
+            string binding=null;profile?.Bindings.TryGetValue(("gamepad","custom",action),out binding);
+            return Olca.Unity.UnityInputProvider.GamepadBindingLabel(binding);
+        }
+        private static string FormatPadGuide(bool processing,bool narrow,Olca.Core.Domain.InputBindingProfile profile)
+        {
+            string Key(string action)=>CustomGuideKey(profile,action);
+            string select=processing?"素材選択":"選択",cancel=processing?"取消して戻る":"取消",confirm=processing?"加工実行":"決定",customize=processing?"加工を閉じる":"加工";
+            string first=$"Pad {Key("Decide")}: {select} / {Key("Cancel")}: {cancel}";
+            string second=$"{Key("Confirm")}: {confirm} / {Key("Customize")}: {customize}";
+            string third=processing?$"{Key("Undo")}: 加工を戻す / {Key("Details")}: 詳細":$"{Key("Undo")}: 加工を戻す / {Key("Transform")}: 変身";
+            string fourth=(processing?"":$"{Key("Details")}: 詳細 / ")+$"{Key("PageUp")}: ガメン / {Key("PageDown")}: ジブン";
+            return first+(narrow?"\n":" / ")+second+"\n"+third+(narrow?"\n":" / ")+fourth;
+        }
+        private enum ProcessingHintKind { First, Second, Invalid, Candidate, Ready }
+        private ProcessingHintKind processingHintKind;
+        private string processingHintOperation;
+        private void SetProcessingHint(ProcessingHintKind kind,string operation=null){processingHintKind=kind;processingHintOperation=operation;RefreshProcessingHint();}
+        private void RefreshProcessingHint()
+        {
+            if(customizeModeView!=null&&customizeModeView.IsActive)
+                customizeModeView.UpdateOperationHint(FormatProcessingHint(processingHintKind,processingHintOperation,Olca.Unity.InputGuideActivity.Current,Olca.Unity.UnityInputProvider.ActiveGamepadProfile));
+        }
+        private static string FormatProcessingHint(ProcessingHintKind kind,string operation,Olca.Unity.InputGuideDevice device,Olca.Core.Domain.InputBindingProfile profile)
+        {
+            if(kind==ProcessingHintKind.First)return "最初の素材を選んでください";
+            if(kind==ProcessingHintKind.Invalid)return "素材を選びなおすか、取消してください";
+            string select=device==Olca.Unity.InputGuideDevice.Gamepad?CustomGuideKey(profile,"Decide"):"Space";
+            string confirm=device==Olca.Unity.InputGuideDevice.Gamepad?CustomGuideKey(profile,"Confirm"):"Enter";
+            if(kind==ProcessingHintKind.Second)return device==Olca.Unity.InputGuideDevice.Touch?"2枚目をタップ":select+"で2枚目を選択";
+            if(kind==ProcessingHintKind.Candidate)return device==Olca.Unity.InputGuideDevice.Touch?"2枚目をタップ → 加工を実行":select+"で選択 → "+confirm+"で実行";
+            return operation+": "+(device==Olca.Unity.InputGuideDevice.Touch?"「加工を実行」をタップ":confirm+"で実行");
         }
         private readonly HashSet<CustomDetailHold> touchDetailHolds = new HashSet<CustomDetailHold>();
         private bool CanOpenTouchDetails()=>isScreenVisible&&IsCustomPadUiActive()&&!handAnimating&&!(detailsPanel!=null&&detailsPanel.activeSelf);
@@ -1516,7 +1553,6 @@ namespace Olca.Presentation.CustomScreen
             var opType = DetectCustomizeOperation();
             bool canExecute = PreviewFromCommand(customizeSelectedCards).CanExecute;
             customizeModeView.UpdateExecuteButton(canExecute);
-            customizeModeView.UpdateOperationHint(GetOperationHint(opType));
 
             RefreshCustomizeHighlights(opType);
             UpdateCursorCardDisplay(cursor?.CurrentIndex ?? -1);
@@ -1527,22 +1563,6 @@ namespace Olca.Presentation.CustomScreen
         /// </summary>
         private CustomizationOperation DetectCustomizeOperation()
             => PreviewFromCommand(customizeSelectedCards).Operation;
-
-        /// <summary>操作種別に応じたガイドテキストを返す</summary>
-        private string GetOperationHint(CustomizationOperation opType)
-        {
-            switch (opType)
-            {
-                case CustomizationOperation.Exceed:
-                    return $"超越: {customizeSelectedCards[0].Name} × 2 → Enterで実行";
-                case CustomizationOperation.Tuning:
-                    return $"調律: Enterで実行";
-                case CustomizationOperation.Fusion:
-                    return $"融合: {customizeSelectedCards.Count}枚選択中 → Enterで実行";
-                default:
-                    return "カスタマイズ: カードを選んでください（ESC でキャンセル）";
-            }
-        }
 
         /// <summary>
         /// 実行ボタン押下: 自動判定した操作種別でカスタマイズを実行する
@@ -1885,8 +1905,7 @@ namespace Olca.Presentation.CustomScreen
             customizeModeView.UpdateExecuteButton(PreviewFromCommand(customizeSelectedCards).CanExecute);
             if (materials.Count < 2)
             {
-                string guide = materials.Count == 0 ? "最初の素材を選んでください" : "2枚目にカーソルを合わせてください";
-                customizeModeView.UpdateOperationHint(guide);
+                SetProcessingHint(materials.Count==0?ProcessingHintKind.First:ProcessingHintKind.Second);
                 if (selectedCardDescription != null) selectedCardDescription.text = sources;
                 return;
             }
@@ -1896,15 +1915,14 @@ namespace Olca.Presentation.CustomScreen
             if (!preview.CanExecute)
             {
                 string status = preview.Status == CustomizationPreviewStatus.Undefined ? "未定義" : "実行不可";
-                customizeModeView.UpdateOperationHint("素材を選びなおすか、取消してください");
+                SetProcessingHint(ProcessingHintKind.Invalid);
                 if (selectedCardDescription != null)
                     selectedCardDescription.text = $"{operation} / {status}\n{preview.Reason}\n\n"+sources;
                 return;
             }
             var result = preview.ResultCard;
             ShowProcessingVisuals(materials,customizeSelectedCards.Count,result);
-            customizeModeView.UpdateOperationHint(customizeSelectedCards.Count >= 2 ?
-                $"{operation}: Enterで実行" : $"{operation}: 2枚目を選択して確定");
+            SetProcessingHint(customizeSelectedCards.Count>=2?ProcessingHintKind.Ready:ProcessingHintKind.Candidate,operation);
             if (selectedCardDescription != null) {
                 // 実行判断に必要な結果名と素材の扱いを、詳細性能より先に読める順へ並べる。
                 string details=CustomDisplay.CardDetails(result);int lineEnd=details.IndexOf('\n');
