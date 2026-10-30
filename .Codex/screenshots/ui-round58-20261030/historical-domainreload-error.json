@@ -1,0 +1,24 @@
+{
+  "groundTruth": {
+    "sampledUtc": "2026-10-30T15:06:13.369793Z",
+    "ageMs": 1,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 2,
+    "consoleWarnings": 1,
+    "consoleLogs": 0,
+    "seeded": true
+  },
+  "entries": [
+    {
+      "seq": 198981,
+      "timestampUtc": "2026-10-30T15:05:55.436289Z",
+      "level": "error",
+      "logType": "Exception",
+      "message": "IndexOutOfRangeException: Index was outside the bounds of the array.",
+      "stackTrace": "Olca.Presentation.Field.WorldBattleGridView.RefreshTelegraphs () (at Assets/Olca/Presentation/Field/WorldBattleGridView.cs:60)\nOlca.Presentation.Field.WorldBattleGridView.BindTelegraphs (Olca.Core.Logic.Battle.BattleSystem battle) (at Assets/Olca/Presentation/Field/WorldBattleGridView.cs:35)\nOlca.Presentation.Field.GameFieldView.OnEnable () (at Assets/Olca/Presentation/Field/GameFieldView.cs:591)\n",
+      "seeded": false
+    }
+  ],
+  "context": "Paused active Play script recompilation; unchanged WorldBattleGridView.RefreshTelegraphs/OnEnable. Preserved, not claimed fixed. Final normal Play checked separately."
+}

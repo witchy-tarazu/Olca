@@ -1,0 +1,25 @@
+{
+  "scope": "Round58 destination visual presentation only",
+  "codeReviewer": "equipment_save_review",
+  "visualReviewer": "independent_refactor_review",
+  "findings": [
+    {
+      "finding": "Guide line/header border crossed",
+      "resolution": "Retained80px help height, adjusted position and header padding; existing full-text tests unchanged"
+    },
+    {
+      "finding": "Auxiliary unlock button intersected body/header face",
+      "resolution": "Rows32px down, bodytop263, narrow header ending1350 avoids fixed auxiliary column; page/footer spacing separated"
+    },
+    {
+      "finding": "Kanji in new destination/condition messages",
+      "resolution": "Explicit readings preserve original hiragana; regression checks empty/locked UI has no Han characters"
+    }
+  ],
+  "sourceReview": "0 concrete unresolved in destination/style interaction presentation scope; final kana messages and regression successful",
+  "nativeReview": "0 unresolved final normal/sparse/dense/long/locked/pending/empty/unavailable at native sizes; scope includes FHD4K4:3",
+  "limits": "Independent reviewers inspect source/native images; root verifies Raycast, actual departure/retreat/save/reload separately. Physical pad/touch/IME/build untested.",
+  "evidenceReview": "0 unresolved after final evidence review: final3494/272.28s, related615, source hashes,48 image links, prior failures, fixture diagnostics, historical reload exception, cleanup and limits matched; completed by equipment_save_review",
+  "actualValidation": "Root803 actual Raycast selection/cancel, departure/retreat, return selection-only, exact saved profile reload and normal Play console0 verified by root",
+  "testLocationReview": "Independent review0: same enemy/terrain expected values moved to active preview assertion, help style added; hidden/locked/revision/NextDeparture assertions preserved. No expectation weakening."
+}

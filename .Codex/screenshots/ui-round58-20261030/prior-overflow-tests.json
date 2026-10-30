@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "total": 378,
+    "passed": 375,
+    "failed": 3,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "failures": [
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ(1920.0f,1080.0f)",
+      "Status": "Failed",
+      "Duration": 0.0159059,
+      "Message": "  Expected: 75\n  But was:  48\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ (System.Single width, System.Single height) [0x00293] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:200\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ(1662.77f,1247.08f)",
+      "Status": "Failed",
+      "Duration": 0.0068513,
+      "Message": "  Expected: 75\n  But was:  48\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ (System.Single width, System.Single height) [0x00293] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:200\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ(2199.64f,942.7f)",
+      "Status": "Failed",
+      "Duration": 0.0064744,
+      "Message": "  Expected: 75\n  But was:  48\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.一行に収まる長めの説明も右上の補助操作と重ならず全文を保つ (System.Single width, System.Single height) [0x00293] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:200\n"
+    }
+  ],
+  "resolution": "Restored80px help height and adjusted only position; original test expectations retained."
+}

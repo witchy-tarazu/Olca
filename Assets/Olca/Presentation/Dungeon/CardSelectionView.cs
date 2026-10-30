@@ -626,7 +626,7 @@ namespace Olca.Presentation.Dungeon
 
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
-            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null)
+            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true)
         {
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
@@ -635,27 +635,33 @@ namespace Olca.Presentation.Dungeon
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
-            gameObject.SetActive(true);
-            Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 1700, 80, 36);
-            string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
-            AddOverflowTextDetails(Text("DungeonSelectionHelp", error ?? ("クリアに応じて解放 / " + styleName + (string.IsNullOrEmpty(info)?"":"\n"+info)), 0, 350, 1700, 80, 25),error==null?"シュツゲキのセツメイ":"ホゾンエラー");
+            gameObject.SetActive(true);CommerceSurface();CommerceFace("DungeonHeader",-245,410,1270,210,true);CommerceFace("DungeonFooter",0,-430,1760,210,true);
+            Text("DungeonSelectionTitle", "出撃するダンジョン", 0, 455, 700, 80, 36).color=Color.white;
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
+            int shown=Math.Min(rows,Math.Max(0,names.Length-dungeonPage*rows));float bottom=shown>0?208-(shown-1)*95-69:120;bool preview=shown<=3;
+            bool valid=selected>=0&&selected<names.Length&&unlocked[selected];
+            string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
+            var help=Text("DungeonSelectionHelp",error??("クリアに応じて解放 / "+styleName+(!preview&&!string.IsNullOrEmpty(info)?"\n"+info:"")),-245,375,1250,80,25);help.color=Color.white;AddOverflowTextDetails(help,error==null?"シュツゲキのセツメイ":"ホゾンエラー");
+            CommerceFace("DungeonBody",0,(263+bottom)/2,1760,263-bottom);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
                 int index = dungeonPage * rows + row;
                 string label = unlocked[index]
                     ? (selected==index ? "［センタクチュウ］ " : "［センタク］ ")+names[index]+(cleared==null?"":cleared[index]?" / クリア済み":" / ミクリア")
                     : "［ミカイホウ］ ？？？" + (unlockConditions==null||string.IsNullOrEmpty(unlockConditions[index])?"":"\nカイホウ: "+unlockConditions[index]);
-                var button = Button("DungeonChoice_" + index, label, 0, 240 - row * 95, 1450, 78, () => choose(index));
-                InsetChoiceLabel(button);
+                var button = Button("DungeonChoice_" + index, label, 0, 208 - row * 95, 1450, 78, () => choose(index));
+                InsetChoiceLabel(button);button.GetComponentInChildren<UnityEngine.UI.Text>().supportRichText=false;
                 if(!unlocked[index])AddOverflowConditionDetails(button);
                 button.interactable = !blocked && unlocked[index];
-                if (selected == index) button.GetComponent<Image>().color = UiLook.Chosen;
+                if (selected == index){button.GetComponent<Image>().color = UiLook.Chosen;CustomizationMenuElements.SelectionMarker(button.transform,-710,58);}
             }
-            Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions); }).interactable = !blocked && dungeonPage > 0;
-            Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions); }).interactable = !blocked && dungeonPage + 1 < pages;
-            Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, -285, 250, 60, 24);
-            Button("ConfirmDungeonSelection", "選択を確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
-            Button("CancelDungeonSelection", "取消し", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
+            if(names.Length==0)Text("NoDepartureDungeons","トウロクされたイきサキはありません。",0,180,1600,100,30);
+            // 少数のイきサキでは余白を選択先の情報へ使い、密な一覧は上部説明で同じ情報を保つ。
+            if(preview){float height=Mathf.Min(210,bottom+189),y=(bottom-26-215)/2;CommerceFace("DungeonPreview",0,y,1660,height,true);var title=Text("DungeonPreviewName",valid?CustomizationMenuElements.ShortName(names[selected],46):"シュツゲキできるイきサキをエラんでください",0,y+height/2-30,1540,44,28);title.color=Color.white;title.supportRichText=false;var detail=Text("DungeonPreviewInformation",valid?(info??"トウロクされたツイカジョウホウはありません。"):"ミカイホウのイきサキはジョウケンをカクニンしてください。",0,y-10,1540,Mathf.Max(40,height-100),25);detail.color=Color.white;detail.supportRichText=false;AddOverflowTextDetails(detail,"イキサキのジョウホウ");}
+            Button("PreviousDungeonPage", "前へ", -380, -285, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", 380, -285, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, -285, 250, 60, 24).color=Color.white;
+            Button("ConfirmDungeonSelection", startImmediately?"このイきサキで出撃":"イきサキを確定", -430, -400, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
+            Button("CancelDungeonSelection", "変更せず戻る", 430, -400, 800, 75, cancelSelection).interactable = !blocked;
             if (chooseStyle != null && !blocked && error == null) Button("SelectDepartureStyle", "出撃スタイル", -430, -493, 800, 58, chooseStyle);
             if (openTokenExchange != null && !blocked && error == null) Button("OpenTokenExchange", "トークン交換所", 430, -493, 800, 58, openTokenExchange);
             if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, -493, 850, 58, retrySave);

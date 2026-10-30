@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 3494,
+    "passed": 3493,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 262.09,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.出撃前は未解放名を隠して解放条件と既存マップ情報を示し保存しない",
+      "Status": "Failed",
+      "Duration": 0.1233379,
+      "Message": "  Expected: String containing \"テキゾクセイ: ムゾクセイ\"\n  But was:  \"クリアにオウじてカイホウ / キホン / ムゾクセイ\"\n",
+      "StackTrace": "at NUnit.Framework.StringAssert.Contains (System.String expected, System.String actual, System.String message, System.Object[] args) [0x00007] in <f577cd9686154d6ab10efd7e65e64366>:0\nat NUnit.Framework.StringAssert.Contains (System.String expected, System.String actual) [0x00000] in <f577cd9686154d6ab10efd7e65e64366>:0\nat Olca.Tests.Integration.FloorSequenceControllerTests.出撃前は未解放名を隠して解放条件と既存マップ情報を示し保存しない () [0x000ab] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3212\n"
+    }
+  ],
+  "resolution": "Same enemy/terrain values asserted on active sparse preview instead of former help label; style help assertion added. Hidden/locked/no-save assertions preserved. Independently reviewed."
+}
