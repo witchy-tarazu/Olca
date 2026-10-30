@@ -111,3 +111,24 @@ namespace Olca.Tests
         }
     }
 }
+namespace Olca.Tests
+{
+    public class CustomizationAcquisitionPresentationTests
+    {
+        private UnityEngine.GameObject root;private Olca.Presentation.Dungeon.CustomizationAcquisitionView view;private int claims,cancels,retries;
+        private UnityEngine.UI.Button Button(string name)=>view.GetComponentsInChildren<UnityEngine.UI.Button>().Single(v=>v.name==name);
+        private void Create(){root=new UnityEngine.GameObject("AcquisitionFixture",typeof(UnityEngine.RectTransform),typeof(UnityEngine.Canvas));var go=new UnityEngine.GameObject("Acquisition",typeof(UnityEngine.RectTransform));go.transform.SetParent(root.transform,false);view=go.AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();view.Initialize(UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf"),_=>claims++,()=>{cancels++;view.Close();},()=>retries++);}
+        [TearDown]public void Destroy(){if(root!=null)UnityEngine.Object.DestroyImmediate(root);claims=cancels=retries=0;}
+        [Test]public void 受領前と保存済み結果は区別し登録形状だけを表示して二重確定しない()
+        {
+            Create();string id=Guid.NewGuid().ToString("N");var grant=new CustomizationGrant(id,parts:new Dictionary<string,int>{{"dot",1}});var plan=new CustomizationAcquisitionDefinition("event",1,new[]{grant},new Dictionary<string,string>{{id,"<b>セット</b>"}}).Snapshot;plan.BoardId="fixture";var progress=new CustomizationProgress{OwnedParts=new[]{new CustomizationItemCount{Id="dot",Count=1}}};
+            view.Open(plan,progress);Button("AcquisitionCandidate_"+id).onClick.Invoke();Assert.IsFalse(view.GetComponentsInChildren<UnityEngine.RectTransform>().Any(v=>v.name=="AcquisitionShape_0"));
+            var catalog=new CustomizationCatalog("fixture",new PartsBoardDefinition(2,1,new[]{new Vector2Int(0,0)}),null,new Dictionary<string,PartShape>{{"dot",new PartShape(new[]{new Vector2Int(0,0)})}},null);view.Open(plan,progress,false,catalog);Button("AcquisitionCandidate_"+id).onClick.Invoke();Assert.AreEqual(1,view.GetComponentsInChildren<UnityEngine.RectTransform>().Single(v=>v.name=="AcquisitionShape_0").childCount);Assert.AreEqual(0,claims);var body=view.GetComponentsInChildren<UnityEngine.UI.Text>().Single(v=>v.name=="AcquisitionPreviewInfoText");StringAssert.Contains("<b>セット</b>",body.text);Assert.IsFalse(body.supportRichText);StringAssert.Contains("dot × 1 / ショジ 1",body.text);var old=Button("ClaimCustomizationAcquisition");old.onClick.Invoke();Assert.AreEqual(1,claims);
+            var received=progress.Copy();received.OwnedParts[0].Count=2;received.Receipts=new[]{new CustomizationGrantReceipt{RequestId=id,Fingerprint=new string('0',64)}};view.Saved(plan,received);StringAssert.Contains("ウケトリズみ",view.GetComponentsInChildren<UnityEngine.UI.Text>().Single(v=>v.name=="AcquisitionPreviewInfoText").text);Assert.IsFalse(Button("ClaimCustomizationAcquisition").interactable);Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(1,claims);Assert.AreEqual(1,progress.OwnedParts[0].Count);view.Close();view.Open(plan,received,false,catalog);var completed=view.GetComponentsInChildren<UnityEngine.UI.Text>().Single(v=>v.name=="AcquisitionPreviewInfoText").text;StringAssert.Contains("カンリョウ",completed);Assert.IsFalse(completed.Contains("コウホをエラ"));Assert.IsFalse(Button("ClaimCustomizationAcquisition").interactable);
+        }
+        [Test]public void 空候補と保存未完了は受領取消を誤って実行しない()
+        {
+            Create();view.Open(new CustomizationAcquisitionPlan{ContextId="empty",MaximumClaims=0,Candidates=Array.Empty<CustomizationAcquisitionCandidate>()},new CustomizationProgress());Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Text>().Any(v=>v.name=="NoAcquisitionCandidates"));Assert.IsFalse(Button("ClaimCustomizationAcquisition").interactable);view.Failed(true);Button("CancelCustomizationAcquisition").onClick.Invoke();Assert.AreEqual(0,cancels);Assert.AreEqual(0,claims);var old=Button("RetryCustomizationAcquisition");old.onClick.Invoke();Assert.AreEqual(1,retries);view.Close();Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(1,retries);
+        }
+    }
+}

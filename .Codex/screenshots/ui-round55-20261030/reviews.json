@@ -1,0 +1,67 @@
+{
+  "scope": "Round55 unlock/acquisition views, shared UI helpers, Controller Catalog supply and four added presentation regressions",
+  "code": {
+    "reviewer": "equipment_save_review",
+    "initialAndFinalUnresolved": 0,
+    "completionHintReopenFinalUnresolved": 0,
+    "checked": [
+      "Core/save/economy unchanged",
+      "existing Open API compatible",
+      "fixed shape and viewport only",
+      "owned/limit/pending callbacks preserved",
+      "literal IDs and grapheme truncation"
+    ],
+    "legacyOwnershipLayoutRecheckUnresolved": 0,
+    "legacyOwnershipTestUpdate": "New 620x80 size and (-620,255) position explicit; font/stale button/claim count/Close lifetime assertions retained"
+  },
+  "visual": {
+    "reviewer": "independent_refactor_review",
+    "method": "native image inspection",
+    "finding": "selected name/body touched decorative frame",
+    "correction": "read-only viewport padding enlarged; normal bundle compact category layout",
+    "recheckUnresolved": 0,
+    "offscreenAndPendingRecheckUnresolved": 0,
+    "completionReopenReview": {
+      "nativeResolutions": [
+        [
+          1920,
+          1080
+        ],
+        [
+          3840,
+          2160
+        ],
+        [
+          1440,
+          1080
+        ]
+      ],
+      "unresolved": 0,
+      "checked": [
+        "2/2 and received/owned/limit statuses match completion guide",
+        "claim disabled and return emphasized",
+        "reading comfort and padding retained"
+      ]
+    }
+  },
+  "limits": [
+    "Review scope is this visual unit, not a defect-free guarantee",
+    "Physical touch/pad/IME untested",
+    "No product values, accessory drawings or body animation created"
+  ],
+  "evidenceReview": {
+    "reviewer": "equipment_save_review",
+    "actualOperationsConsistent": true,
+    "temporaryFinding": "verification/warning JSON not yet placed while full suite running; final documentation must place results before publication",
+    "resolution": "Final verification/warning/operation/reload files placed and checked before publication",
+    "finalUnresolved": 0,
+    "finalChecked": [
+      "final3490 vs prior3489/1 separated",
+      "warning62 vs stream45 separated",
+      "all source hashes match",
+      "README image links resolve",
+      "cleanup verified",
+      "hardware/product data limits retained"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 3490,
+    "passed": 3489,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 292.22,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.UiOwnershipRefactorTests.受取画面の再生成は指定フォントと配置を保持し古いボタンから確定しない",
+      "Status": "Failed",
+      "Duration": 0.0149511,
+      "Message": "  Expected: (1500.00, 80.00)\n  But was:  (620.00, 80.00)\n",
+      "StackTrace": "at Olca.Tests.UiOwnershipRefactorTests.受取画面の再生成は指定フォントと配置を保持し古いボタンから確定しない () [0x00154] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/UiOwnershipRefactorTests.cs:62\n"
+    }
+  ],
+  "reason": "旧候補行幅1500固定が新配置620と不一致。配置を620×80/(-620,255)へ明示検証しfont/旧入力寿命/claim回数は保持。最終ソース結果とは別。"
+}

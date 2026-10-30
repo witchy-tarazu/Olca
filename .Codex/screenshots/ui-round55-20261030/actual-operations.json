@@ -1,0 +1,12 @@
+{
+  "cancelLoops": 2,
+  "offscreenRevealAndManualNavigation": true,
+  "savedHashesUnchangedOnSelectionCancelAndReadoutWheel": true,
+  "repeatAppliedClicks": 6,
+  "ownedUnlockCountsPreserved": true,
+  "equipmentAndPlacementsPreserved": true,
+  "newCellsPersisted": 2,
+  "cappedAcquisitionLoops": 2,
+  "disabledReceivedOwnedAndClaimDoNotGrantAgain": true,
+  "planRerollPrevented": true
+}

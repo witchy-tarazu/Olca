@@ -468,7 +468,7 @@ namespace Olca.Application.Dungeon
                 customizationAcquisitionPending=clearReturnSession.HasPendingSave;
                 if(!prepared&&!customizationAcquisitionPending)throw new System.ArgumentException(clearReturnSession.Error);
                 clearReturnView.gameObject.SetActive(false);
-                customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending);RefreshProgressActions();
+                customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending,customizationCatalog);RefreshProgressActions();
             }catch(System.ArgumentException){clearReturnError="ソウビのコウホをカクニンできません。ホゾンをホジしています";if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
         }
         private void ClaimCustomizationAcquisition(string requestId)
