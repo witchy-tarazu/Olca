@@ -1,0 +1,10 @@
+{
+  "Assets/Olca/Application/Management/BattlePresentationBinding.cs": "e9afdb19be7913368543cb127707f0ce9116a75ea9a62960f2de9b0364b75aad",
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "9c4e6f44fa93c8b4c7281000455820008b8f0cc507a2f8186627690fbdfabcb9",
+  "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "96c017244ca68b4d9b21848e9b986a38a2bf9e49a5c02798b7ebb6a400ef6c31",
+  "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs": "e15fd70099f534df0d5f2f86c2b049ab47bcc99ecb51fba336dc4c1e2cd5de31",
+  "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "f9b562e2b1db6d7970296260fae47ae3f5ea999e74c215f1380144a12aecadbf",
+  "Assets/Resources/OlcaSystem/BattlePresentation.prefab": "4946bf4f37e8caa42587721f1eccf9e894a196be6f91d787bf69dc6dfa46a9c6",
+  "Assets/Scenes/DungeonScene.unity": "35005135185d3137e10004b9121ca7c1b9efd8cdffc83d559022dcbc30e38d96",
+  "Assets/Olca/Presentation/Battle/BattleView.cs": "c9d834daca9a2abc8e8c6be16bcadd8d5d769be1e8588fe5cab14ff6154e7fe8"
+}

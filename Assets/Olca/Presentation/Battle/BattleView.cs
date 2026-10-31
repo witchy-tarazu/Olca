@@ -284,7 +284,12 @@ namespace Olca.Presentation.Battle
         private void OnBattleEnded(BattleResult result) {statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         /// <summary>撤退等でセッションを破棄する。古い開閉処理が再表示しないよう所有権を先に外す。</summary>
-        public void EndSessionPresentation()
+        public void EndSessionPresentation() => EndSessionPresentationCore(true);
+
+        /// <summary>実体破棄ではレイアウトを再生成せず、演出とモデルの購読だけを返却する。</summary>
+        public void ReleaseSessionPresentation() => EndSessionPresentationCore(false);
+
+        private void EndSessionPresentationCore(bool restoreLayout)
         {
             var previous = animationCts;
             animationCts = null;
@@ -292,7 +297,7 @@ namespace Olca.Presentation.Battle
             TransformationVisualSource?.StopHandPresentation();
             isCustomScreenOpen = false; gaugeResetting = false;
             if (customScreenBackdrop != null) customScreenBackdrop.gameObject.SetActive(false);
-            if (customScreenContainer != null) {
+            if (restoreLayout && customScreenContainer != null) {
                 SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
             }
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);

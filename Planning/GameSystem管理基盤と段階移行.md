@@ -122,3 +122,26 @@ Core/Input/固定時計・攻略状態は引き続きController/host所有。Bat
 
 
 [第四段階の実経路・原寸比較・テスト証跡](../.Codex/screenshots/system-stage4-20261031/README.md)。最終公開判定とcommit/pushは別操作で実行する。次段階候補はBattle/Customの表示グループのPrefab化と参照束縛、またはCore/Input/時計のhost session境界整理。Scene全コピーや一括所有移行は行わない。実build・物理機器・聴感未確認、歴史的UGUI/Pipeline/UnityAI履歴は継続して区別する。
+
+
+## 第五段階: Battle/Custom表示Prefab（実装・検証済み）
+
+BattleView root配下の50 GameObject/162 Sceneブロックを一つのBattlePresentation Prefabへ切り出す。外部Scene参照はなく、ControllerからのBattleView/CustomScreenViewの2参照を生成時に注入する。役者/床/背景はGameFieldの別寿命のため今回は移さない。
+
+BattlePresentationBindingがResourceManager経由の実体leaseをViewManagerのbattle層に登録し、host開始から終了まで所有する。gameplay HUD層や設定画面層とは非排他的。layer currentは実体の寿命であり、戦闘/探索のactive切替・Customの開閉とCore pause理由・入力判定は既存Controller/Systemに残す。CustomはBattle画面内の操作モードで、設定確認等のポップアップを所有するDialogManagerの置換ではない。Custom内の従来詳細UIのManager移行は残る。
+
+起動時にHUD→Battle/Custom→Inputの確認delegate→BattleSessionの順で準備する。図鑑/店等の素材resolverもCustomを参照するため戦闘開始まで生成を遅らせない。終了はBattleSession.Detach→Battle演出終了→Customの入力/モデル/確認delegate解除→owner登録解除/lease破棄→Controller参照解除。生成Sprite/手札/狭幅素材は各Viewの従来OnDestroyが所有し、ResourceManagerは二重破棄しない。旧Scene直Playも同じPrefab供給を使い、明示Viewを注入する検証fixtureは維持する。
+
+Core/Input/固定時計・攻略状態、world役者/床/背景、操作設定内部Initializeは今回もhost側に残る。Root/UIRoot/EventSystem/カメラ借用/音/保存順・固定フレーム/初手5旧10/LIFO/元映像を変更しない。外界機能・D05/S08等は別件。
+
+
+第五段階の関連9/9成功（8.10秒）、最終全件3566/3566成功（285.71秒）、error0。警告59件は既知fixtureの5分類で抑制なし。独立設計/コードレビューのcleanup指摘3件（破棄時Custom補助UI生成、加工Mode callback残留、Battle通常layout復元の再生成）を修正し、通常EndSessionの見た目は保持。今回の具体的未解決指摘0。
+
+直Play/Bootstrap/Custom選択とLIFO/仮想pad加工取消/確認Dialog/保存復帰/Single/host close-open/missing-cancel/load回復を実経路で確認。closed時Battle/Custom実体0、古い入力/モデル参照と生成Sprite解放、Root UI/EventSystem/Camera/音の再利用。既存damageAPIによる勝利fixtureから実報酬skip/訪問退室/次接触を通し、新Battleモデルへ同じ表示Prefabを再利用、旧購読解除と各1実体を確認した。物理戦闘操作の勝利検証ではない。
+
+原寸Custom/戦闘の前後6組と管理起動の戦闘/設定/Dialog9枚を確認し、独立視覚レビュー15枚の新必須指摘0。検証pad除去の自動pauseと、途中shop/eventの探索停止は既存仕様どおりだったため、実Resume/ExitVisitを通して検証を続けた。製品修正とは区別する。Pipelineのreadiness/timeout/ThreadAbortとUnityAI警告、歴史的UGUI未解決は別履歴に保持。実build/物理機器/OS/聴感は未確認。
+
+[第五段階の証跡・比較・残依存](../.Codex/screenshots/system-stage5-20261031/README.md)。次候補はGameFieldのworld表示依存の切出し、Custom素材resolverと表示の分離による必要時load、内部Initialize組立の段階的Prefab化。Core/Input/固定時計のhost境界は別まとまりで扱い、今回のUI移行を全体Scene依存解消とはしない。
+
+
+第五段階の公開checkは、類似YAML大量削除で不変Materialの`m_LockedProperties`行をGitが追加扱いしたため一度停止した。Assetsは再編集せず、HEAD/index同type・一意fileIDの完全block byte一致と厳密指定行だけを証明しreceiptへ記録する判定を追加。CR/stripped等未対応header/重複ID/新規・変更blockは停止。公開CLIの隔離18テスト成功、独立ゲートレビューの具体的未解決0。Unity最終検証済み8資産/コードのbyteは不変で、再検証結果を別ソースへ流用していない。

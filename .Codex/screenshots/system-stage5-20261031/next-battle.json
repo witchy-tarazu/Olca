@@ -1,0 +1,24 @@
+{
+  "result": {
+    "actualNextBattleWithSameView": true,
+    "oldBattleAndCustomSubscriptionsRemoved": true,
+    "state": {
+      "phase": "Battle",
+      "battleIdentity": -1945729952,
+      "view": -236109076,
+      "custom": -236109086,
+      "hand": 5,
+      "selected": [],
+      "frame": 0,
+      "currency": 0,
+      "registered": 1,
+      "battleViews": 1,
+      "customViews": 1
+    }
+  },
+  "interveningVisitsExitedNormally": [
+    "ダンジョンショップ",
+    "イベント"
+  ],
+  "waitCorrection": "Initial helper waited for nextbattle while existing shop at52 intentionally paused exploration; normal ExitVisit path used, no product change"
+}

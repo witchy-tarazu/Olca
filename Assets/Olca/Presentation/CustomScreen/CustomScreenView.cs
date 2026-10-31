@@ -1973,8 +1973,23 @@ namespace Olca.Presentation.CustomScreen
             if(confirmButton!=null)confirmButton.onClick.RemoveListener(OnConfirmClicked);
         }
 
+        /// <summary>ホスト終了時は遅延Destroyより先に入力・モデル購読と論理確認delegateを返却する。</summary>
+        public void ReleaseSessionPresentation()
+        {
+            StopHandPresentation();ResetCustomPad();gamepadInput?.Dispose();gamepadInput=null;
+            UnbindCustomScreen();customScreen=null;
+            if(customizeModeView!=null){customizeModeView.OnExecuteRequested-=OnCustomizeExecuteRequested;customizeModeView.OnCancelled-=OnCustomizeModeCancelled;}
+            if(cursor!=null)cursor.OnCursorMoved-=OnCursorMoved;
+            UnbindTransformations();inspectionBattle=null;
+            if(inspectionButton!=null)inspectionButton.gameObject.SetActive(false);
+            if(hideCustomButton!=null)hideCustomButton.gameObject.SetActive(false);
+            ConfigureLogicalConfirmation(null,null);
+            Olca.Unity.BattleVisualClock.SetPaused(this,false);
+        }
+
         private void OnDestroy()
         {
+            ReleaseSessionPresentation();
             narrowLayout?.Dispose();
             SetScreenVisibility(true);
             Olca.Unity.BattleVisualClock.SetPaused(this,false);

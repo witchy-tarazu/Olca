@@ -1,0 +1,13 @@
+{
+  "passed": 18,
+  "total": 18,
+  "failed": 0,
+  "scope": "Temporary local git/bare repos only; strict negative tests plus complete unchangedUnity block proof and stripped/duplicate/CR/changed-block refusals",
+  "sourceHashes": {
+    ".Codex/tools/verified_publish.py": "28cbded84259d3580d600aa41fb5684f3c8b7092e2137f6bc4e2a0130446ba8d",
+    ".Codex/tools/test_verified_publish.py": "781de57cb97df811e12288744c59671605b7a7f23d5424a0ee2b118cb41c7ce9",
+    ".Codex/tools/README.md": "bc96b348adb61f45ed7edeff9c552f1e3d8e8fff880e0b0535a2cbd4cba0169b",
+    ".Codex/skills/olca-git/SKILL.md": "a8730317ba5d4e700d6b1be9c3e6efc5c242120cd0e97e379fc36724a04da65e"
+  },
+  "mainRepoCommitPushNotPerformedByTests": true
+}

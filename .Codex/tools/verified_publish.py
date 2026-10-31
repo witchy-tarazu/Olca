@@ -110,6 +110,36 @@ def evidence_facts(directory, workspace):
             'relatedSummary': docs['related-tests']['summary']}
 
 
+def unchanged_unity_block(before, after, number):
+    """類似Sceneブロックの差分誤対応でも、既存byteを変更せず証明する。"""
+    prefix = '%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n'
+    if not before.startswith(prefix) or not after.startswith(prefix) or '\r' in before or '\r' in after:
+        return None
+    def blocks(text):
+        rows = text.splitlines(keepends=True)
+        # stripped等の未対応headerを無視して一意性を推定しない。
+        if any(row.startswith('---') and re.fullmatch(r'--- !u!\d+ &\d+\r?\n?', row) is None for row in rows):
+            return None
+        starts = [(i, row.rstrip('\r\n')) for i, row in enumerate(rows)
+                  if re.fullmatch(r'--- !u!\d+ &\d+\r?\n?', row)]
+        ids = [header.split('&')[1] for _, header in starts]
+        if len(ids) != len(set(ids)):
+            return None
+        return [(start + 1, (starts[i + 1][0] if i + 1 < len(starts) else len(rows)),
+                 header, ''.join(rows[start:starts[i + 1][0] if i + 1 < len(starts) else len(rows)]))
+                for i, (start, header) in enumerate(starts)]
+    prior, current = blocks(before), blocks(after)
+    if prior is None or current is None:
+        return None
+    for first, last, header, content in current:
+        if first <= number <= last:
+            old = next((b for b in prior if b[2] == header), None)
+            if old is not None and content == old[3]:
+                return {'unityBlockHeader': header, 'unityBlockSha256': sha(content.encode('utf-8')),
+                        'baseLine': old[0] + number - first}
+    return None
+
+
 def whitespace_exceptions(repo, base):
     raw = git(repo, 'diff', '--cached', '--check', base, allowed=(0, 2)).decode('utf-8')
     lines = raw.splitlines()
@@ -122,11 +152,21 @@ def whitespace_exceptions(repo, base):
         data = git(repo, 'show', ':' + path).decode('utf-8')
         content = data.splitlines()
         require(data.startswith('%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n') and
-                0 < number <= len(content) and lines[i + 1] == '+' + content[number - 1] and
-                re.fullmatch(r'  m_(?:Name|EditorClassIdentifier): +', content[number - 1]) is not None,
+                0 < number <= len(content) and lines[i + 1] == '+' + content[number - 1],
                 'non-approved whitespace: ' + lines[i])
-        exceptions.append({'path': path, 'line': number, 'text': content[number - 1],
-                           'reason': 'Unity YAML empty m_Name/m_EditorClassIdentifier scalar; tested bytes preserved'})
+        proof = None
+        empty_metadata = re.fullmatch(r'  m_(?:Name|EditorClassIdentifier): +', content[number - 1]) is not None
+        if not empty_metadata:
+            require(content[number - 1] == '  m_LockedProperties: ', 'non-approved whitespace: ' + lines[i])
+            prior = git(repo, 'show', base + ':' + path, allowed=(0, 128)).decode('utf-8')
+            proof = unchanged_unity_block(prior, data, number)
+            require(proof is not None, 'non-approved whitespace: ' + lines[i])
+        item = {'path': path, 'line': number, 'text': content[number - 1],
+                'reason': 'Unity YAML empty m_Name/m_EditorClassIdentifier scalar; tested bytes preserved' if empty_metadata else
+                          'Complete Unity YAML block unchanged byte-for-byte from base with same unique type/fileID; diff alignment only'}
+        if proof is not None:
+            item.update(proof)
+        exceptions.append(item)
         i += 2
     return exceptions
 

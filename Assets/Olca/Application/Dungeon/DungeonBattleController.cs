@@ -203,6 +203,13 @@ namespace Olca.Application.Dungeon
         private GameObject pauseCanvas;
         private bool managedUiContent,managedDungeonHud;
         private Olca.Application.Management.GameplayCameraBinding managedCameraBinding;
+        private Olca.Application.Management.BattlePresentationBinding managedBattlePresentation;
+        private void PrepareBattlePresentation()
+        {
+            if(!UnityEngine.Application.isPlaying||gameSystem==null||gameFieldView==null||battleView!=null||customScreenView!=null)return;
+            managedBattlePresentation=new Olca.Application.Management.BattlePresentationBinding(this,gameSystem.Resources,gameSystem.Views,gameFieldView.transform);
+            battleView=managedBattlePresentation.Battle;customScreenView=managedBattlePresentation.Custom;
+        }
         public void ConfigureManagedCamera(Olca.Application.Management.GameSystem services)
         {
             if(managedCameraBinding!=null)throw new System.InvalidOperationException("カメラの束縛が重複しています");
@@ -226,6 +233,7 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
+            if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
             managedCameraBinding?.Dispose();managedCameraBinding=null;
         }
@@ -1759,6 +1767,7 @@ namespace Olca.Application.Dungeon
             if (gameSystem != null) gameSystemSession = gameSystem.BeginSession(this,
                 gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"), CheckpointDirectory, ProgressDirectory);
             PrepareGameplayHud();
+            PrepareBattlePresentation();
             clearReturnStore = clearReturnStore ?? gameSystemSession?.Storage.Progress ?? new ClearReturnFileStore(ProgressDirectory);
             clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
             progressStartupBlocked = !clearReturnSession.Ready;

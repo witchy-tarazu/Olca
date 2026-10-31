@@ -31,7 +31,7 @@ python .Codex/tools/verified_publish.py --repo . push --receipt /tmp/olca-publis
 
 全tested hashの現在のsubmissionと検証workspaceの実ファイル、全stagedファイルとindex blobを照合します。staged Assetsはすべて全件tested hash集合に必要です。追加のドキュメント/Pythonもindexとworktreeが一致する必要があります。未stageのtracked変更、競合、merge、master以外、Asset検証漏れ、削除/symlink/submodule、`.meta`・`.env*`・既知の資格情報パス/鍵拡張子を拒否します。資格情報の網羅的検出器ではないため、差分の人手確認も必要です。
 
-`git diff --cached --check <baseHEAD>` は実行し、エラーを丸ごと無効化しません。core.whitespaceの標準3検査を明示し、stagedファイルのwhitespace属性上書きは拒否します。唯一の許容例外はAssets下の`.prefab`/`.unity`で、先頭が厳密に次の2行の場合の、追加/変更行 `^  m_(?:Name|EditorClassIdentifier): +$` です。空のUnity scalarの末尾**ASCII space**だけを許容します。非空値、タブ、別フィールド、異なるヘッダ、その他のcheck診断は停止します。
+`git diff --cached --check <baseHEAD>` は実行し、エラーを丸ごと無効化しません。core.whitespaceの標準3検査を明示し、stagedファイルのwhitespace属性上書きは拒否します。通常の許容例外はAssets下の`.prefab`/`.unity`で、先頭が厳密に次の2行の場合の、追加/変更行 `^  m_(?:Name|EditorClassIdentifier): +$` です。空のUnity scalarの末尾**ASCII space**だけを許容します。非空値、タブ、別フィールド、異なるヘッダ、その他のcheck診断は停止します。
 
 ```text
 %YAML 1.1
@@ -57,3 +57,7 @@ PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s .Codex/tools -p 'test_v
 ```
 
 一時repoと一時bare remoteだけで動作します。実プロジェクトのcommit/pushやUnity操作は行いません。
+
+## 既存Sceneブロックの差分誤対応
+
+大量の類似YAMLブロック削除では、Gitが不変Materialを追加行として対応させることがあります。追加の限定判定は、診断行が厳密に`  m_LockedProperties: `（末尾ASCII space1個）であり、HEAD/indexがLFのUnity YAML、全headerが対応する`--- !u!数字 &数字`形式で各fileIDが両側一意、同type/fileIDのheaderから次header/EOFまでの全byteが一致する場合だけです。未対応header（stripped等）、CR、重複ID、新規/変更block/他fieldは拒否します。receiptへindex行/base対応行/header/block SHAと不変理由を記録し、資産のテスト済みbyteを維持します。diff --checkは実行し続け、他の診断を無効化しません。

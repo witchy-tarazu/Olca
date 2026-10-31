@@ -80,6 +80,29 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(vp.value(self.repo, 'rev-parse', 'HEAD'), before)
         self.assertEqual(vp.value(self.remote, 'rev-parse', 'master'), remote_before)
 
+    def test_unchanged_unity_block_has_exact_base_line_proof(self):
+        prefix = '%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n'
+        removed = '--- !u!1 &1\nGameObject:\n  m_Name: Removed\n'
+        kept = '--- !u!21 &2\nMaterial:\n  m_LockedProperties: \n'
+        proof = vp.unchanged_unity_block(prefix + removed + kept, prefix + kept, 5)
+        self.assertIsNotNone(proof)
+        self.assertEqual(proof['unityBlockHeader'], '--- !u!21 &2')
+        self.assertEqual(proof['unityBlockSha256'], vp.sha(kept.encode()))
+        self.assertEqual(proof['baseLine'], 8)
+
+    def test_unity_block_proof_rejects_changed_new_or_duplicate_block(self):
+        prefix = '%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n'
+        kept = '--- !u!21 &2\nMaterial:\n  m_LockedProperties: \n'
+        before = prefix + kept
+        for after in (prefix + kept.replace('Properties: ', 'Properties: x '),
+                      prefix + kept.replace('&2', '&3'),
+                      before + kept, prefix + kept + '  extra: 1\n', before.replace('Material:\n', 'Material:\r\n')):
+            self.assertIsNone(vp.unchanged_unity_block(before, after, 5))
+        stripped = prefix + '--- !u!114 &2 stripped\nMonoBehaviour: {}\n' + kept
+        self.assertIsNone(vp.unchanged_unity_block(stripped, stripped, 7))
+        self.assertIsNone(vp.unchanged_unity_block('', before, 5))
+        self.assertIsNone(vp.unchanged_unity_block(before, before, 1))
+
     def test_success_check_commit_push_refetch(self):
         self.check()
         head = vp.commit(self.repo, self.receipt, self.message)
