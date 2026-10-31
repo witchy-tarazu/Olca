@@ -1,0 +1,37 @@
+{
+  "scope": "Stage9 independent static code review of Core factory/checkpoint candidate extraction",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "6cec0daee7a7b90cbd6d63587806d19050d6f8f1672664ce4566ad62396f72e5",
+    "Assets/Olca/Application/Management/DungeonCoreFactory.cs": "1a67a0a2be848117a08d5fffb8391caf19153244fbebf4b90937b6371a5827a9",
+    "Assets/Olca/Application/Management/DungeonCheckpointFlow.cs": "aee7e038440b506aa1c4c592180797380faf22655ddb57c46cf84fbf21e24c0d",
+    "Assets/Olca/Tests/Application/DungeonCoreFactoryTests.cs": "ec43fb7fc9fbd094c97a1b532fed1e106f109fe3df55a16c0ea6245d15960603"
+  },
+  "validationCopyHashesMatch": true,
+  "validationCopyMismatches": [],
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Initial Player HP/attack/milestone growth and initial position preserved.",
+    "Processing keeps first card factory for database/Exceed/Tuning/Fusion and second factory for recipe provider; no new factory in preview.",
+    "Preview retains no-processing constructor and temporary checkpoint capture, and does not adopt Runtime Core.",
+    "Initial evaluation suppression/checkpoint/hasNextFloor condition expressions match the removed constructor path.",
+    "Floor restoration preserves route.Current.State, checkpoint session index and next-floor boundary.",
+    "Single file checkpoint restore reopens the same directory; memory checkpoint identity is preserved.",
+    "Terminal and non-Cleared receipt refusal return no candidate and do not suspend current Core.",
+    "Current Core suspension, route assignment, Runtime adoption, timeline reset, events and view replacement remain in Controller existing order.",
+    "Next-departure writes/runID/definition validation/legacy matching and atomic plan ordering remain outside the new read flow.",
+    "Restore wrapper observation/finally input release and thrown read exception behavior are untouched."
+  ],
+  "newTestsRead": [
+    "Two normal versus frozen-preview construction cases assert factory calls and processing configuration.",
+    "Two candidate versus defeated-receipt cases assert current Core not suspended and save bytes unchanged."
+  ],
+  "notes": [
+    "For restore/floor paths, CreateProcessing evaluates the second card/recipe factory before constructing Exceed/Tuning, whereas old expressions constructed Exceed/Tuning first. Inspected constructors only store references and do not invoke factory/gameplay callbacks; no behavioral issue found. Exact whole-constructor call-order equivalence is not claimed."
+  ],
+  "limits": [
+    "Compile/related476/full3584 results are pending; reviewer performed no Unity operations or tests.",
+    "New tests do not directly cover floor/file read exceptions or all evaluation/hasNextFloor policies; existing integration regression results remain necessary.",
+    "No claim of new external-world behavior, full Controller migration or save-format changes."
+  ]
+}

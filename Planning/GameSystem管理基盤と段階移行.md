@@ -243,3 +243,35 @@ GameSystem.Sessionが普通のGameplayRuntimeSessionを所有する。Input/Rand
 修正後の5sourceで明示コンパイル完了/error0、関連472/472（40.24秒）、全3580/3580（278.55秒）成功、skip0/error0。警告59件は既存fixture5分類で、期待値や保存ガードは緩めていない。Source hashはsubmission/project/関連/全件/最終で一致。同Editor Scroll1/UIRuntime4の2周10件と全件後はEventSystem current CLR/Unity null・登録0/Scene0で、global一覧clearはしない。FHD/4K/4:3の15枚を独立原寸比較して今回の新しい必須視覚指摘0。管理起動側は既存boss保存からの再開で旧通常敵画像と状態差があることを明示し、直起動6枚は同testmap6/seed7/frame0・60で比較した。
 
 既存のDomain Reload/Pipeline期限超過とCLI editor status名不一致・UnityAI接続情報保存警告は別履歴で保全。同Editor PID137059/VM/model/認証を維持し、未確定Play/fixture/コンパイル/テストを重複再送せず、実RT640×360/専用TMPDIR/guardを確認してテストした。全体の安定化完了ではなく、上記の必須残境界を次段階に追跡する。
+
+
+## 第九段階: Core組立factoryと復帰候補flow
+
+DungeonCoreFactoryはPlayerの既存HP/攻撃成長、加工System、通常Core、出撃計画の凍結preview、単独checkpointと階層Coreの組立を担当する普通のサービス。Core/Input/主時計の所有は引き続きGameSystem.Session.Runtimeで、factoryは生成物を返すだけ。previewは従来どおり加工Systemなしで、通常Coreと不用意に共通化しない。評価報酬抑制・次階層・既存初期デッキ・旧保存定義の条件は維持する。
+
+DungeonCheckpointFlowは保存から復帰候補とcheckpoint/routeを読み、終了済み・敗北撤退確定の再開を拒否する。現在Coreは受け取らず、停止/採用・時計・View・保存確定を所有しない。Controllerは候補検証成功後にだけ既存順の旧Core停止→route束縛→旧演出・購読・表示解除→timeline/入力reset→Runtimeとmanager置換→新View束縛を行う。例外時の観測点/finally入力解放、次出撃のwrite planとrun ID/定義検証/原子的保存順は変更しない。工場の生成結果を採用した後の寿命はRuntime、拒否候補の停止はflowが担う。
+
+### 入力文脈と別時計の実在用途
+
+- 主Loop: 60Hzの攻略更新と時刻付き入力command。Runtimeが所有しhostだけがdriver。View再生成で新時計を作らない。
+- GamepadContext: 現在Dungeonならexploration、それ以外はbattle。GameplayActive/PauseAvailableは訪問、会話、保存選択、custom、pauseなどの既存条件を束ねる。タッチの探索/戦闘可用性も同様にhostがUnity入力とphaseを調停している。将来この判定を小さな入力文脈adapterへ移す場合も、純粋な条件の抽出に限定し、InputProviderや主時計を増やさない。
+- dialogueLoop: 攻略停止中にも文字送りする会話専用。backlog/skip確認/ユーザーpauseでは進めず、終了で主Loopへ戻す。攻略時計へ統合すると停止契約が変わるため、この別時計は残してよい。
+- explorationResumeLoop: 探索明示再開の3→2→1各30frameを進める表示/再開flow。攻略停止中の専用時計として必要。再停止、画面終了で取消す契約を維持し、攻略の速度/時間へ加算しない。
+
+### 安定化必須残件と終点
+
+1. host組立のpad/音量設定、checkpoint選択、Dialogue、ClearReturnと所持カード、出撃先・編成・スタイル・交換・図鑑、装備/パーツ・unlock・acquisition等の画面を、既存の画面単位ViewManagerへ整理する。まず一画面群ずつPrefab/Resource leaseで取得し、close/reopenで旧入力/参照0、通常操作と保存不変、旧直起動互換を完了条件にする。内部Initializeで表示を組むこと自体と寿命の未管理を区別する。
+2. RetreatConfirmationなど局所popup、上記画面内の確認/詳細をDialogManager専属へ移す。親遷移時に閉鎖、結果/取消一回、モーダルlock/選択復帰/購読解放を完了条件にし、画面Managerへ二重所有しない。
+3. SharedAttackPropCatalog.loadedの生成Texture2D/Spriteの資産所有をRoot Resource側へ接続する。利用中に破棄せず、最終所有者解放でgenerated Unity objectを返却、再取得/ホスト再入で残留/重複しないことを完了条件にする。PortableBattle/ProcessingCatalogの純C# DTOは対象外。
+
+本段階はCore生成と復帰候補読取の境界を閉じる。表示接続、既存の保存write plan、入力phase調停はhostに残り、全Controllerロジックの移動を安定化条件にはしない。上記の画面/popup/生成資源境界を閉じ、Bootstrap単独起動・失敗取消・保存復帰・単一更新・終了再生成・全回帰を満たしたら、追加仕様/機能改修へ戻れる状態とする。phase別lazy取得や内部UI組立の表現整理は後続改善で、無限の抽象化を必須としない。新外界/ボスラッシュ/D05/S08は今回実装しない。
+
+### 第九段階 最終検証
+
+最終4sourceで明示コンパイル完了/error0、関連476/476（40.41秒）、全3584/3584（265.43秒）、skip0/error0。追加4ケースは通常加工System/加工なしpreviewの差と、復帰候補作成/敗北確定拒否時の現Core・保存不変を確認した。source hashはsubmission/project/関連/全件/最終一致。同Editor Scroll1/UIRuntime4を2周して10件成功、各回と全件後はEventSystem current CLR/Unity null・static0/Scene0で、一覧全clearなし。警告59件は従来のfixture5分類と完全一致。
+
+旧Scene新規開始→Bootstrap既存boss保存復帰、HUDのManager破棄/再生成、Custom/設定/Dialog・実仮想pad取消・割当変更と既定保存復元、checkpoint、Dialog中Single、timeScale0終了、実Prefab生成後取消/欠損/同時reOpenを実確認した。HUD再生成は開始前menu/frame0でRuntime/Core/Input/主Loop参照とframe不変、全Worldホットリロードではない。入力文脈はCustomで攻略無効、閉Battleで有効、pauseで無効。同一戦闘内のCustom→閉BattleではCore/Input/Loop参照を維持した。実9901保存先6ファイルはSingle前からClose/cancel/Open後までhash一致。報酬保留UIに実経路で入り、終了でphase/deckを確定せず、checkpoint復帰後も保留開始時の6保存hash不変を確認。勝利生成は既存damage API fixtureで、物理操作の全攻略ではない。
+
+FHD/4K/4:3の15枚をStage8同場面と独立比較、4Kの文字/mini/Dialog代表領域も無拡縮で補足し、新たな必須視覚指摘0。コード/設計の必須未解決0。文書のtimeline順序表現1件は実コードに合わせて訂正した。詳細と出所は[第九段階証跡](../.Codex/screenshots/system-stage9-20261031/README.md)へ記録する。
+
+同Editor PID137059のrecompile/Play Domain Reload後にPipeline main-thread timeoutが発生し、通常待機で回復した。ready表示だけで成功とせず、期限超過したfixtureの起動済みをreadonly観察して確認し、Play/fixture/テストを重複再送しなかった。CLI editor status名不一致とUnityAI接続情報保存警告は履歴として分離し、製品console0と混同しない。VM/model/認証と元プロジェクトを保持。全HotReload/実build/物理機器/OS/聴感、歴史的UGUIの未確認/未解決を維持。基盤全体の安定化完了ではなく、上記の画面/popup/生成資源所有を次段階で閉じる。

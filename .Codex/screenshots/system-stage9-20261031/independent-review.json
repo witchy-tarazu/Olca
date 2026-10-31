@@ -1,0 +1,302 @@
+{
+  "reviewer": "equipment_save_review (design/code) + independent_refactor_review (native visual)",
+  "scope": "Stage9 Core factory/checkpoint candidate extraction; no whole-system guarantee",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "sourceHashes": {
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "6cec0daee7a7b90cbd6d63587806d19050d6f8f1672664ce4566ad62396f72e5",
+      "Assets/Olca/Application/Management/DungeonCoreFactory.cs": "1a67a0a2be848117a08d5fffb8391caf19153244fbebf4b90937b6371a5827a9",
+      "Assets/Olca/Application/Management/DungeonCheckpointFlow.cs": "aee7e038440b506aa1c4c592180797380faf22655ddb57c46cf84fbf21e24c0d",
+      "Assets/Olca/Tests/Application/DungeonCoreFactoryTests.cs": "ec43fb7fc9fbd094c97a1b532fed1e106f109fe3df55a16c0ea6245d15960603"
+    },
+    "detail": "system-stage9-final-static-review.json",
+    "docOrderFindingCorrected": true
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedAfterImageCount": 15,
+    "comparisonReferenceVerification": "All fifteen Stage8 reference SHA256 values were checked against the prior reviewed Stage8 JSON and are unchanged.",
+    "images": [
+      {
+        "file": "system-stage9-native-after-custom-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "f75768fa5a558c1c7cf4c04f120a5eac05a561e883e57bb2d23eef501436f8aa",
+        "comparisonFile": "system-stage8-native-after-custom-fhd.png",
+        "comparisonSha256": "cb07731c5506d17a1b03a18fb788a9cddd4c4d45cd374aad8dc62fdb88ef818b",
+        "differenceBoundingBox": [
+          14,
+          70,
+          1800,
+          1026
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-custom-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "d8b033eafa9271f1e1516f22a62292823f55b1a06257a8ef4055c8e5f1339f6c",
+        "comparisonFile": "system-stage8-native-after-custom-4k.png",
+        "comparisonSha256": "0741169d39dc179cdfe4efcf52121bb71ce10a295f227c94d9fb06b712fa9b43",
+        "differenceBoundingBox": [
+          0,
+          297,
+          1915,
+          1861
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-custom-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "c7895f3333ec697151d14f89954767be864044e573e0a429348bb643f4989cbe",
+        "comparisonFile": "system-stage8-native-after-custom-4by3.png",
+        "comparisonSha256": "00f20a90fc609792ab23297e9c3e8903149a6b14e924050072f49b5308584abe",
+        "differenceBoundingBox": [
+          12,
+          43,
+          1315,
+          1022
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "c8c2713dfa8999ff6908e6b4ed37b8ff54a22352b7669c0f54a63ee254deee0a",
+        "comparisonFile": "system-stage8-native-after-battle-host-fhd.png",
+        "comparisonSha256": "032d7306884351eb33939ff8881faa40a55e5c80abb255603ae195799cb167f2",
+        "differenceBoundingBox": [
+          1762,
+          897,
+          1767,
+          898
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "89ca26911c4ba76f700eab310e9149b12b6f599d776b3d98ec86002d063133f9",
+        "comparisonFile": "system-stage8-native-after-battle-host-4k.png",
+        "comparisonSha256": "89ca26911c4ba76f700eab310e9149b12b6f599d776b3d98ec86002d063133f9",
+        "differenceBoundingBox": null,
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "0472a676507a8e8b5aaefb1bffcba2a1322f86a52c1a11806f466d13eb7f13be",
+        "comparisonFile": "system-stage8-native-after-battle-host-4by3.png",
+        "comparisonSha256": "e717af501dd8dbefbb2645b4208a24d69cfc0d3c57d23d5dc74e9edd363fdcde",
+        "differenceBoundingBox": [
+          1122,
+          43,
+          1315,
+          1020
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-managed-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "bd3cfeaea8aec52e93524e1e6d8800dc22de756e58a8624bd57379aab4317edc",
+        "comparisonFile": "system-stage8-native-after-managed-battle-host-fhd.png",
+        "comparisonSha256": "69c9ca3bcf1b85a414736f997fc45a3b18eeca481a6bfe0faa5aab5849298cc9",
+        "differenceBoundingBox": [
+          1762,
+          897,
+          1767,
+          898
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-managed-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "d5e533b689e13f70e4180e99026dc82ccf1d6fff15d49eea33e69a4b3beceb92",
+        "comparisonFile": "system-stage8-native-after-managed-battle-host-4k.png",
+        "comparisonSha256": "addcb89c8325646bcc51e739241c94d3e7b15173a12a3ff54bbf64ddc26f986f",
+        "differenceBoundingBox": [
+          488,
+          154,
+          3762,
+          2048
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-managed-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "940a3d569c3eafbec717f00b6807d5e0f1c0f1484b3fdc5996d3a99fc7eee0fa",
+        "comparisonFile": "system-stage8-native-after-managed-battle-host-4by3.png",
+        "comparisonSha256": "8a3821faad24d514d7cd0f0db7bf046ad0bd8ea3328affdc896e04a759fbcf06",
+        "differenceBoundingBox": [
+          187,
+          43,
+          1418,
+          1031
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "407d33c2d5b713145b59c9c28d14f44aefe1ca8d1d6169eb9967bd559dec5ec5",
+        "comparisonFile": "system-stage8-native-after-keyboard-settings-fhd.png",
+        "comparisonSha256": "89af04a1eb7a7af7a9c44bb78bd9d1aacbc92efe743ddb11fd3c987a37bd5319",
+        "differenceBoundingBox": [
+          188,
+          89,
+          1858,
+          969
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "8eabad758695685932797a824f877e67437f36d8ae9badc8b69c1ed93c2eee28",
+        "comparisonFile": "system-stage8-native-after-keyboard-settings-4k.png",
+        "comparisonSha256": "38313f77041810022dd04401bedbc13210462568b1cde428a27c29a68f6853b4",
+        "differenceBoundingBox": [
+          382,
+          160,
+          3712,
+          1938
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "395c964a0492ff1959b1e0aead50f1600b6ee56231c57c44e5185bffaa0b6613",
+        "comparisonFile": "system-stage8-native-after-keyboard-settings-4by3.png",
+        "comparisonSha256": "4d1eca15ed27c25887abddcd3a339721b7590d31a8ad87b9548eb40630c6bdd5",
+        "differenceBoundingBox": [
+          92,
+          108,
+          1416,
+          912
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "930947dff733c078af04d794f2bb069e20bfff04b0b9f38de96bc8f75b7612f0",
+        "comparisonFile": "system-stage8-native-after-reset-dialog-fhd.png",
+        "comparisonSha256": "7287a3aebd2f710b471b3f14602f96a28ec5d971ff08e9feaf5b5ca76b906507",
+        "differenceBoundingBox": [
+          232,
+          241,
+          1557,
+          963
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "9e8c45ef12dd75ec8dd276c15b0184ebd152d32de9bdc0a5a269b357a6880195",
+        "comparisonFile": "system-stage8-native-after-reset-dialog-4k.png",
+        "comparisonSha256": "708ed18157f1ecfa11261406ec5a0c0a68390f1c4f4cee8767587f96cadcdfdb",
+        "differenceBoundingBox": [
+          418,
+          167,
+          3210,
+          1937
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      },
+      {
+        "file": "system-stage9-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "85ef3d8d525d8fa7b49bdf11e5870409a276b2fdc3ba42e8a4f0aa31bfb67c64",
+        "comparisonFile": "system-stage8-native-after-reset-dialog-4by3.png",
+        "comparisonSha256": "33bbbcf9b918bb115d769986ee2109facdedfd1727c7c7875dff1b2204034991",
+        "differenceBoundingBox": [
+          102,
+          140,
+          1360,
+          912
+        ],
+        "viewed": "view_image detail original requested; full4K output viewer-resized"
+      }
+    ],
+    "observations": [
+      "Direct Custom retains left-half/left-edge framing, five square minis, sword artwork, readable body/cost/order/confirm and gauge layout",
+      "Direct closed battle retains actor proportions and visible feet/ground contact, floor/foreground texture boundary, enemy name/HP group spacing and right touch HUD anchors",
+      "Managed restored boss keeps its body proportions, ground relationship, fixed HP200/poise bars and player gauge compared with Stage8 managed boss",
+      "Keyboard settings and reset dialog preserve Jiki typography, three-column key/clear controls, footer actions and modal visual hierarchy without newly visible clipping or overlap"
+    ],
+    "stateAndPhaseDistinctions": [
+      "Direct map/seed/nominal Frame0/60 are main-agent supplied capture conditions, not reviewer-executed gameplay checks",
+      "Separate native runs may differ in idle animation or glyph/render phase; no pixel-exact equality or motion-stability claim",
+      "Managed boss is compared to Stage8 managed boss, not to earlier-stage normal-enemy managed captures; gameplay-specific state remains distinct"
+    ],
+    "limits": [
+      "No Unity commands, source edits, test execution, input/raycast checks, save validation or runtime ownership/disposal tests performed by reviewer",
+      "Static images do not validate factory parameters, checkpoint restoration values/order, input guards, lifecycle identity, focus or frame progression",
+      "4K full-image output was viewer-resized; native4kSupplement separately records four representative unscaled lossless in-memory crops. No original PNG was changed.",
+      "Dense statuses, warning/effect phases, reward/return UI, physical devices, historical UGUI and listening quality are outside this fifteen-view comparison."
+    ]
+  },
+  "dynamicEvidence": "Native lifecycle and pending-reward main-agent receipts passed. Final3584/3584 and related476/476, error0, unchanged4source; independent reviewers did not personally replay these runs.",
+  "limits": [
+    "Physical devices/OS/audio listening/builds and every HotReload path not verified",
+    "Historical UGUI not diagnosed or marked fixed",
+    "Full-suite and cleanup acceptance are separate mandatory gate conditions"
+  ],
+  "fullSuiteSummary": {
+    "total": 3584,
+    "passed": 3584,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  }
+}

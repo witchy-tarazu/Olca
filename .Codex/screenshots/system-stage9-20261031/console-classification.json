@@ -1,0 +1,280 @@
+{
+  "scope": "historical/native tool receipts; final suite results added after recovery",
+  "history": [
+    {
+      "file": "system-stage9-pre-related-history.json",
+      "counts": {
+        "error": 2,
+        "warn": 44,
+        "log": 1954
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] 使用可能なカードがありません"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] 使用可能なカードがありません"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。"
+        },
+        {
+          "level": "warn",
+          "message": "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします"
+        },
+        {
+          "level": "warn",
+          "message": "[WorldDamageNumberPool] 最大プールサイズ(20)に達しています。"
+        },
+        {
+          "level": "warn",
+          "message": "Could not save connection info: Read-only file system"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        },
+        {
+          "level": "error",
+          "message": "connection.state_change"
+        }
+      ]
+    },
+    {
+      "file": "system-stage9-pre-final-error-history.json",
+      "counts": {
+        "error": 4,
+        "warn": 1,
+        "log": 115
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_clip, create_gameobjects, get_audio_settings, set_runtime_pipeline_sett"
+        },
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_clip, create_gameobjects, get_audio_settings, set_runtime_pipeline_sett"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 4000ms"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        }
+      ]
+    },
+    {
+      "file": "system-stage9-pre-final-warn-history.json",
+      "counts": {
+        "error": 4,
+        "warn": 1,
+        "log": 115
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_clip, create_gameobjects, get_audio_settings, set_runtime_pipeline_sett"
+        },
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_clip, create_gameobjects, get_audio_settings, set_runtime_pipeline_sett"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 4000ms"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        },
+        {
+          "level": "warn",
+          "message": "Could not save connection info: Read-only file system"
+        }
+      ]
+    }
+  ],
+  "classification": {
+    "Pipeline": "same Editor domain-reload/main-thread timeouts. Readonly outcome confirmed timed-out Fixture DID execute; no activation/play/test duplicated. No product cause claimed.",
+    "CLI": "editor status with a space from CLI fallback while actual registered editor_status exists. Native pre-final two such errors plus4s/120s tooltimeouts (4 errors total).",
+    "UnityAI": "connection.state_change / connection-info readonly warning during relay recovery, kept separate; no credential edits",
+    "historicalUGUI": "unresolved, no speculative fix",
+    "fixtureHistory": "pre-related console includes persisted previous fixture diagnostics; not the current final-suite counts",
+    "unverified": "real builds, physical devices/OS, actual listening, every HotReload path remain unverified"
+  },
+  "finalSuite": {
+    "summary": {
+      "total": 3584,
+      "passed": 3584,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 265.43,
+    "consoleErrors": 0,
+    "consoleWarnings": 59,
+    "warningCategories": 5,
+    "fixtureDiagnosticsMatchPrior": true
+  }
+}

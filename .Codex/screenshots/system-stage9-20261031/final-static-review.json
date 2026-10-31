@@ -1,0 +1,34 @@
+{
+  "scope": "Stage9 final independent static rereview of unchanged four-file source and corrected architecture order documentation",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "6cec0daee7a7b90cbd6d63587806d19050d6f8f1672664ce4566ad62396f72e5",
+    "Assets/Olca/Application/Management/DungeonCoreFactory.cs": "1a67a0a2be848117a08d5fffb8391caf19153244fbebf4b90937b6371a5827a9",
+    "Assets/Olca/Application/Management/DungeonCheckpointFlow.cs": "aee7e038440b506aa1c4c592180797380faf22655ddb57c46cf84fbf21e24c0d",
+    "Assets/Olca/Tests/Application/DungeonCoreFactoryTests.cs": "ec43fb7fc9fbd094c97a1b532fed1e106f109fe3df55a16c0ea6245d15960603"
+  },
+  "sourceCopiesAndRelatedHashesMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "correctedDocumentation": {
+    "path": "Planning/GameSystem管理基盤と段階移行.md",
+    "sha256": "f1e40bc900c0ae2cf9ead623363ec3660e1a9ce51c59e576bc50e81f9db3ba40",
+    "resolvedFinding": "Order now states current Core suspension, route binding, old presentation/subscription detach, timeline/input reset, Runtime/manager replacement, and new View binding, consistent with Controller."
+  },
+  "relatedResults": {
+    "summary": {
+      "total": 476,
+      "passed": 476,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "durationSeconds": 40.41,
+    "consoleErrors": 0
+  },
+  "limits": [
+    "Final full suite has not started at review time.",
+    "Native close/cancel/reentry verification remains in progress; partial native successes reported by main agent are not treated as final completion.",
+    "Reviewer did not execute Unity or tests and did not independently replay native operations.",
+    "No whole-system migration or new external-world feature completion claim."
+  ]
+}

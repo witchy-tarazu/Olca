@@ -1,0 +1,107 @@
+[
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-custom-fhd.png",
+    "target": "before-custom-fhd.png",
+    "sha256": "cb07731c5506d17a1b03a18fb788a9cddd4c4d45cd374aad8dc62fdb88ef818b",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-custom-4k.png",
+    "target": "before-custom-4k.png",
+    "sha256": "0741169d39dc179cdfe4efcf52121bb71ce10a295f227c94d9fb06b712fa9b43",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-custom-4by3.png",
+    "target": "before-custom-4by3.png",
+    "sha256": "00f20a90fc609792ab23297e9c3e8903149a6b14e924050072f49b5308584abe",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-battle-host-fhd.png",
+    "target": "before-battle-host-fhd.png",
+    "sha256": "032d7306884351eb33939ff8881faa40a55e5c80abb255603ae195799cb167f2",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-battle-host-4k.png",
+    "target": "before-battle-host-4k.png",
+    "sha256": "89ca26911c4ba76f700eab310e9149b12b6f599d776b3d98ec86002d063133f9",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-battle-host-4by3.png",
+    "target": "before-battle-host-4by3.png",
+    "sha256": "e717af501dd8dbefbb2645b4208a24d69cfc0d3c57d23d5dc74e9edd363fdcde",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-managed-battle-host-fhd.png",
+    "target": "before-managed-battle-host-fhd.png",
+    "sha256": "69c9ca3bcf1b85a414736f997fc45a3b18eeca481a6bfe0faa5aab5849298cc9",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-managed-battle-host-4k.png",
+    "target": "before-managed-battle-host-4k.png",
+    "sha256": "addcb89c8325646bcc51e739241c94d3e7b15173a12a3ff54bbf64ddc26f986f",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-managed-battle-host-4by3.png",
+    "target": "before-managed-battle-host-4by3.png",
+    "sha256": "8a3821faad24d514d7cd0f0db7bf046ad0bd8ea3328affdc896e04a759fbcf06",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-keyboard-settings-fhd.png",
+    "target": "before-keyboard-settings-fhd.png",
+    "sha256": "89af04a1eb7a7af7a9c44bb78bd9d1aacbc92efe743ddb11fd3c987a37bd5319",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-keyboard-settings-4k.png",
+    "target": "before-keyboard-settings-4k.png",
+    "sha256": "38313f77041810022dd04401bedbc13210462568b1cde428a27c29a68f6853b4",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-keyboard-settings-4by3.png",
+    "target": "before-keyboard-settings-4by3.png",
+    "sha256": "4d1eca15ed27c25887abddcd3a339721b7590d31a8ad87b9548eb40630c6bdd5",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-reset-dialog-fhd.png",
+    "target": "before-reset-dialog-fhd.png",
+    "sha256": "7287a3aebd2f710b471b3f14602f96a28ec5d971ff08e9feaf5b5ca76b906507",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-reset-dialog-4k.png",
+    "target": "before-reset-dialog-4k.png",
+    "sha256": "708ed18157f1ecfa11261406ec5a0c0a68390f1c4f4cee8767587f96cadcdfdb",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage8-20261031/after-reset-dialog-4by3.png",
+    "target": "before-reset-dialog-4by3.png",
+    "sha256": "33bbbcf9b918bb115d769986ee2109facdedfd1727c7c7875dff1b2204034991",
+    "sourceCommit": "faff9c137af6d850fcbcdc3b64fa31acf51ade9c",
+    "note": "Stage8後画像を引用。新before撮影ではない。同じ直接fixture map6 seed7 frame0/60、管理側は同一複製元boss保存。別runのidle位相差あり。"
+  }
+]
