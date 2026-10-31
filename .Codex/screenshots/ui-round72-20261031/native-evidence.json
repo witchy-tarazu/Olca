@@ -1,0 +1,2766 @@
+{
+  "images": {
+    "ui-round72-before-final-normal-custom-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "81aa3f48c88fc332b74c09b5018b081fcd4d3d44aef7897b55086adcbb68c445"
+    },
+    "ui-round72-before-final-normal-custom-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "107634ea715f0f7df150b3430861f33fcefe871e5ba23afb55df526b829b4067"
+    },
+    "ui-round72-before-final-normal-custom-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "e4c4f62257347930ce9881d3a23dd5d31de37bbf0bebea0cb3c08c014e1b1a9b"
+    },
+    "ui-round72-after-normal-custom-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "b1762cbd763728dccf3f4f17822e3986848bae92807cd107b65fd389f782d6e5"
+    },
+    "ui-round72-after-normal-custom-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "4e170c43cff71ae40fe6c451f5638378e979a0263858d60b9e7d7aa5f75f3163"
+    },
+    "ui-round72-after-normal-custom-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "7d67ccb3924762a49d14e328b178a7647e971fc1b448060417caac5e3bdbf501"
+    },
+    "ui-round72-before-final-normal-play-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "39aac98fcb635836f4f43c57a59dd2d92f0cdb8c917509dfbf08c9a4cd84be24"
+    },
+    "ui-round72-before-final-normal-play-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "6ac1655e0ce38062296b385f0e0729ec9a9accdbc437f7f30700353e4c5a66c8"
+    },
+    "ui-round72-before-final-normal-play-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "5cd1680d3f511ece0a4cc20e9df583a6ac20c37b44d80635a7e78ec631e81219"
+    },
+    "ui-round72-after-normal-play-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "1ed9379621d8350664d19ff0305b63b31c42659b271c6db6037ef1a2d9cdb466"
+    },
+    "ui-round72-after-normal-play-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "6bc070b38e05cfea541f3a70cfeb44b2283910efe4d6a75356665b3bca70ff6c"
+    },
+    "ui-round72-after-normal-play-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "6baf9cf3bed5fdbd382e3e74a46539a43f15e4e26cef6d553a299ed94c6ba40e"
+    },
+    "ui-round72-before-final-multi-play-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "9398f6afc1c3485ba9b95e1b4b9ed836a123735a1b6cabeb98f9e2a255e842e0"
+    },
+    "ui-round72-before-final-multi-play-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "045a0110216108301d2dcba0d275ab092494a16927d4a4a9e14798f0e590ea62"
+    },
+    "ui-round72-before-final-multi-play-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "7ec90e26f6a7472a35ca61e47f024da44e88cb28a0e2bc9065c26566a9cb89c4"
+    },
+    "ui-round72-after-multi-play-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "b99ad40d0201f99058428089bd8d339d2951cba0581bd4565b9ebf338781abb1"
+    },
+    "ui-round72-after-multi-play-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "e34d7224fa22062ba5d708ff95f87868240d6ade525c5a188ddef84b152f1942"
+    },
+    "ui-round72-after-multi-play-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "ac32208531f00d5db449a1463961dd09381bc1d03e0b51032714e61c94cdf0c6"
+    },
+    "ui-round72-before-final-multi-approach-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "31a237953177e3220b95a8058b0d53897c92ea57bbe8c9b56df4db1642a89d60"
+    },
+    "ui-round72-before-final-multi-approach-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "928ad8c6de13d8b4439b3ae265a4a6583d7902403e73e86fbbcaf6544a59dc41"
+    },
+    "ui-round72-before-final-multi-approach-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "ff1bf1f9851c2e1f0f30354416eadecd4cb1698409664e8861c625b17a7ac9c6"
+    },
+    "ui-round72-after-multi-approach-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "2285d4b7035119af80c5f821751ab46750cba891bb176c20b671edba772d5e42"
+    },
+    "ui-round72-after-multi-approach-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "9ff9b604d95feb6c099edde586f58948d3e07cc3b1ebfeceb27de5fdd5cd64da"
+    },
+    "ui-round72-after-multi-approach-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "de237c25fc9bf419b8a5f4223403805565415aa1158ed3b0411c15f37db2b4cb"
+    },
+    "ui-round72-before-final-multi-warning-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "c3e40ba4c70c4850b8829efee4b37c2e7e6578e5eeedcc42c470e97037821729"
+    },
+    "ui-round72-before-final-multi-warning-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "f3cc68891150f700145e7aeb3ed4b8510798f68f4ac8e8b7e2f061c206b2dbeb"
+    },
+    "ui-round72-before-final-multi-warning-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "803decaa52631f30b209e2ffd6225a8bf62d7f3db619fcd391fdd5d9adc82371"
+    },
+    "ui-round72-after-multi-warning-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "d563400528027320f1af3520e4d903a9632da4ed9550c20760dd5696a96f8f65"
+    },
+    "ui-round72-after-multi-warning-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "157361ab525e3b9a26e2963d1b43d71b6b324d20a343cc8ad7572df65227fa48"
+    },
+    "ui-round72-after-multi-warning-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "8db47ca20659e5f3c4fa0cfc4b15b9ff151672cc6ef1255f76eb24b8b45cbb23"
+    },
+    "ui-round72-before-final-boss-play-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "c77a65690054aafb28f683f9e8d1fcc5b3615248a6c95947916659cdb2779309"
+    },
+    "ui-round72-before-final-boss-play-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "a202383086f85216fb3b4eac954a887aa8111718cdff1215a31b5668ced6f0fd"
+    },
+    "ui-round72-before-final-boss-play-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "0b52af5f1bc4d118b7c7cd9cfd720b8be1cd1ffa920d9dcc84db70f88ad677d6"
+    },
+    "ui-round72-after-boss-play-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "09f0dda56adc17e020591f0f1907cc0df42063b604d29559f498fc0cf75838a9"
+    },
+    "ui-round72-after-boss-play-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "1aee48bfb128e5d8ad5365634f08783dd5152c933316f9dbea6e87dc608e415b"
+    },
+    "ui-round72-after-boss-play-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "aafd0fb7cdd93bae4d3b5973106788ce32b00d02fff0080b1b45bd999c07d3c0"
+    },
+    "ui-round72-after-multi-custom-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "fe061f29d987b82ef5c4e6c642e2fa16bd94e0d5535c0513c71e03ac0458618e"
+    },
+    "ui-round72-after-multi-custom-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "e43d776478bc2ddaaf7ce0090fae5d093b60ce437d64430f2ff8049f8ead4709"
+    },
+    "ui-round72-after-multi-custom-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "8d54c3e5520e3dcdee561d356b87ef76be3201bc471fb2e46fa00a706d18ff48"
+    },
+    "ui-round72-after-normal-states-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "2d910d31d2862503ad7c2eb1a53d571de374c22bf3cccbcdb4bd70df1f40128d"
+    },
+    "ui-round72-after-normal-states-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "bed007501452d45a671db244be4ddbacee43c295e6cc4e2b6cbf120d8819a351"
+    },
+    "ui-round72-after-normal-states-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "1c6d180ffab5139b934d21432fcfdd52b3aaa07e55ac850367b67ea26b185d76"
+    },
+    "ui-round72-after-multi-states-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "001769eed3d4c8d9323df85597c040ffb0f55b61594209f08bf7a690505f92c6"
+    },
+    "ui-round72-after-multi-states-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "ef8c091fb5bcbc2d35e3a66227f47b6dba3944f18e0baaf1519ca29cfc2763c2"
+    },
+    "ui-round72-after-multi-states-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "82c588e21f969dcaddc0d273a1e0a6eb3e68c9f81e734ec47a6943af61e71722"
+    },
+    "ui-round72-after-boss-custom-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "ce4fe94704d404d000da7c5e9d4baf1150ec9640fe632e3bc7221e3aba8190e4"
+    },
+    "ui-round72-after-boss-custom-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "d2eb0beab28ee8daacb7b1428851ba498a405a55f49d7301b25c578129410db3"
+    },
+    "ui-round72-after-boss-custom-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "f51f6ed132b8e283e5eb9307578dc9d8e4559e63a797b28dbbeb468d81d005bf"
+    },
+    "ui-round72-after-boss-states-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "9ff4d54a28cf1f6795ad9f2ce549c1ee59f17fb617c34bfa287abc515f94f62e"
+    },
+    "ui-round72-after-boss-states-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "00fefe67d5529a2762356bbffa435f3c75c27bb417a221487b911cd574fa3049"
+    },
+    "ui-round72-after-boss-states-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "f0ef7a4ed26b95e74ea65a136c0545041497a94feab5a530d1da38abcdebe13b"
+    },
+    "ui-round72-after-normal-reload-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "0c3b8a123e418f7cb6e9b35c1d8b6948c7177474fb3104d5cb4313c90b7fb000"
+    },
+    "ui-round72-after-normal-reload-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "0fc86754366c1f2919c51d67cfadce8c842729595c8a0b706505488690c9180a"
+    },
+    "ui-round72-after-normal-reload-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "6670d593420f2dea062574fc24a5d5519d2b136634e69eebc5d25556a8325fb1"
+    }
+  },
+  "states": {
+    "ui-round72-before-final-normal-custom-fhd.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.92, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1371.43, 675.94, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-normal-custom-4k.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2742.86, 1351.89, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-normal-custom-4by3.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1028.57, 574.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-custom-fhd.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.92, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-custom-4k.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.54, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-custom-4by3.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-normal-play-fhd.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.92, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1371.43, 675.94, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-normal-play-4k.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2742.86, 1351.89, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-normal-play-4by3.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1028.57, 574.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-play-fhd.png": {
+      "previewTiles": 0,
+      "frame": 47,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.92, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-play-4k.png": {
+      "previewTiles": 0,
+      "frame": 47,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.54, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-play-4by3.png": {
+      "previewTiles": 0,
+      "frame": 47,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-play-fhd.png": {
+      "previewTiles": 0,
+      "frame": 47,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 487.52, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 487.52, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1371.43, 675.94, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 566.23, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-play-4k.png": {
+      "previewTiles": 0,
+      "frame": 47,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 975.05, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 975.05, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2742.86, 1351.89, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 1132.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-play-4by3.png": {
+      "previewTiles": 0,
+      "frame": 47,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 413.47, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 413.47, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1028.57, 574.46, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 492.17, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-play-fhd.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 519.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 519.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-play-4k.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.53, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 1038.39, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 1038.39, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-play-4by3.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 490.31, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 490.31, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-approach-fhd.png": {
+      "previewTiles": 0,
+      "frame": 89,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(684.34, 208.29, 10.00)",
+          "bodyMax": "(961.37, 359.14, 10.00)",
+          "hp": "(822.86, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(822.86, 675.94, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1371.43, 675.94, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1097.14, 675.94, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-approach-4k.png": {
+      "previewTiles": 0,
+      "frame": 89,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1368.69, 416.57, 10.00)",
+          "bodyMax": "(1922.74, 718.29, 10.00)",
+          "hp": "(1645.71, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1645.71, 1351.89, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2742.86, 1351.89, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2194.29, 1351.89, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-approach-4by3.png": {
+      "previewTiles": 0,
+      "frame": 89,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(513.26, 223.71, 10.00)",
+          "bodyMax": "(721.03, 336.86, 10.00)",
+          "hp": "(617.14, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(617.14, 574.46, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1028.57, 574.46, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(822.86, 574.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-approach-fhd.png": {
+      "previewTiles": 0,
+      "frame": 88,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(684.34, 208.29, 10.00)",
+          "bodyMax": "(961.37, 359.14, 10.00)",
+          "hp": "(822.86, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(734.19, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-approach-4k.png": {
+      "previewTiles": 0,
+      "frame": 88,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.53, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1368.69, 416.57, 10.00)",
+          "bodyMax": "(1922.74, 718.29, 10.00)",
+          "hp": "(1645.71, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1468.39, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-approach-4by3.png": {
+      "previewTiles": 0,
+      "frame": 88,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(513.26, 223.71, 10.00)",
+          "bodyMax": "(721.03, 336.86, 10.00)",
+          "hp": "(617.14, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(538.77, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-warning-fhd.png": {
+      "previewTiles": 1,
+      "frame": 90,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(684.34, 208.29, 10.00)",
+          "bodyMax": "(961.37, 359.14, 10.00)",
+          "hp": "(822.86, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(822.86, 675.94, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1371.43, 675.94, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 566.23, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1097.14, 675.94, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-warning-4k.png": {
+      "previewTiles": 1,
+      "frame": 90,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1368.69, 416.57, 10.00)",
+          "bodyMax": "(1922.74, 718.29, 10.00)",
+          "hp": "(1645.71, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1645.71, 1351.89, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2742.86, 1351.89, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 1132.46, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2194.29, 1351.89, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-multi-warning-4by3.png": {
+      "previewTiles": 1,
+      "frame": 90,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(513.26, 223.71, 10.00)",
+          "bodyMax": "(721.03, 336.86, 10.00)",
+          "hp": "(617.14, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(617.14, 574.46, 9.90)"
+        },
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1028.57, 574.46, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 492.17, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(822.86, 574.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-warning-fhd.png": {
+      "previewTiles": 1,
+      "frame": 89,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(684.34, 208.29, 10.00)",
+          "bodyMax": "(961.37, 359.14, 10.00)",
+          "hp": "(822.86, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(734.19, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-warning-4k.png": {
+      "previewTiles": 1,
+      "frame": 89,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.53, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1368.69, 416.57, 10.00)",
+          "bodyMax": "(1922.74, 718.29, 10.00)",
+          "hp": "(1645.71, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1468.39, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-warning-4by3.png": {
+      "previewTiles": 1,
+      "frame": 89,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(513.26, 223.71, 10.00)",
+          "bodyMax": "(721.03, 336.86, 10.00)",
+          "hp": "(617.14, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(538.77, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-boss-play-fhd.png": {
+      "previewTiles": 0,
+      "frame": 45,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1027.20, 208.29, 10.00)",
+          "bodyMax": "(1717.03, 750.00, 10.00)",
+          "hp": "(1852.80, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1371.43, 977.66, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-boss-play-4k.png": {
+      "previewTiles": 0,
+      "frame": 45,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2054.40, 416.57, 10.00)",
+          "bodyMax": "(3434.06, 1500.00, 10.00)",
+          "hp": "(3705.60, 572.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(2742.86, 1955.31, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-before-final-boss-play-4by3.png": {
+      "previewTiles": 0,
+      "frame": 45,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(770.40, 223.71, 10.00)",
+          "bodyMax": "(1287.77, 630.00, 10.00)",
+          "hp": "(1389.60, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1028.57, 800.74, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-play-fhd.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1027.20, 208.29, 10.00)",
+          "bodyMax": "(1717.03, 750.00, 10.00)",
+          "hp": "(1852.80, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1372.11, 872.23, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-play-4k.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2054.40, 416.57, 10.00)",
+          "bodyMax": "(3434.06, 1500.00, 10.00)",
+          "hp": "(3705.60, 572.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(2744.23, 1744.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-play-4by3.png": {
+      "previewTiles": 0,
+      "frame": 46,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(770.40, 223.71, 10.00)",
+          "bodyMax": "(1287.77, 630.00, 10.00)",
+          "hp": "(1389.60, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1029.09, 721.67, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-custom-fhd.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 519.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 519.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-custom-4k.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.53, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 1038.39, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 1038.39, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-custom-4by3.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 490.31, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 490.31, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-states-fhd.png": {
+      "previewTiles": 0,
+      "frame": 79,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.92, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-states-4k.png": {
+      "previewTiles": 0,
+      "frame": 79,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.54, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-states-4by3.png": {
+      "previewTiles": 0,
+      "frame": 79,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(78.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-states-fhd.png": {
+      "previewTiles": 0,
+      "frame": 78,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.91, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 519.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 519.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(958.63, 208.29, 10.00)",
+          "bodyMax": "(1235.66, 359.14, 10.00)",
+          "hp": "(1097.14, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1008.48, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-states-4k.png": {
+      "previewTiles": 0,
+      "frame": 78,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.53, 860.19, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 1038.39, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 1038.39, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1917.26, 416.57, 10.00)",
+          "bodyMax": "(2471.31, 718.29, 10.00)",
+          "hp": "(2194.29, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2016.96, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-multi-states-4by3.png": {
+      "previewTiles": 0,
+      "frame": 78,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_2",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(0.00, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.19, 401.21, 9.90)"
+        },
+        {
+          "modelId": "enemy_4",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 490.31, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 490.31, 9.90)"
+        },
+        {
+          "modelId": "enemy_3",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(718.97, 223.71, 10.00)",
+          "bodyMax": "(926.74, 336.86, 10.00)",
+          "hp": "(822.86, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(744.48, 401.21, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-custom-fhd.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1027.20, 208.29, 10.00)",
+          "bodyMax": "(1717.03, 750.00, 10.00)",
+          "hp": "(1852.80, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1372.11, 872.23, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-custom-4k.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2054.40, 416.57, 10.00)",
+          "bodyMax": "(3434.06, 1500.00, 10.00)",
+          "hp": "(3705.60, 572.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(2744.23, 1744.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-custom-4by3.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(770.40, 223.71, 10.00)",
+          "bodyMax": "(1287.77, 630.00, 10.00)",
+          "hp": "(1389.60, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1029.09, 721.67, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-states-fhd.png": {
+      "previewTiles": 0,
+      "frame": 57,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1027.20, 208.29, 10.00)",
+          "bodyMax": "(1717.03, 750.00, 10.00)",
+          "hp": "(1852.80, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1372.11, 872.23, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-states-4k.png": {
+      "previewTiles": 0,
+      "frame": 57,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2054.40, 416.57, 10.00)",
+          "bodyMax": "(3434.06, 1500.00, 10.00)",
+          "hp": "(3705.60, 572.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(2744.23, 1744.46, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-boss-states-4by3.png": {
+      "previewTiles": 0,
+      "frame": 57,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "boss",
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(770.40, 223.71, 10.00)",
+          "bodyMax": "(1287.77, 630.00, 10.00)",
+          "hp": "(1389.60, 286.20, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(1029.09, 721.67, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-reload-fhd.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1920,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(73.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(1232.92, 208.29, 10.00)",
+          "bodyMax": "(1509.94, 359.14, 10.00)",
+          "hp": "(1371.43, 430.09, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(1282.77, 430.09, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-reload-4k.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        3840,
+        2160
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(73.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(2465.83, 416.57, 10.00)",
+          "bodyMax": "(3019.89, 718.29, 10.00)",
+          "hp": "(2742.86, 860.19, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(2565.53, 860.19, 9.90)"
+        }
+      ]
+    },
+    "ui-round72-after-normal-reload-4by3.png": {
+      "previewTiles": 0,
+      "frame": 0,
+      "custom": true,
+      "paused": true,
+      "screen": [
+        1440,
+        1080
+      ],
+      "views": [
+        {
+          "modelId": "enemy_50",
+          "modelHp": 50,
+          "gaugeValue": "50",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": false,
+          "GaugeVisible": true,
+          "sprite": "grunt_256",
+          "root": "(73.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(924.69, 223.71, 10.00)",
+          "bodyMax": "(1132.46, 336.86, 10.00)",
+          "hp": "(1028.57, 401.21, 9.90)",
+          "caption": "スライム",
+          "namePosition": "(950.20, 401.21, 9.90)"
+        }
+      ]
+    }
+  }
+}

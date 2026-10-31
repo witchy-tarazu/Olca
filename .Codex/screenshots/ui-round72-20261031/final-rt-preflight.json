@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 65,\n  \"executeMs\": 5,\n  \"assemblyName\": \"PipelineRunScript_Settings70RenderProof_2688d7d2600d4a14ad1bd9c6388da977\",\n  \"success\": true,\n  \"result\": {\n    \"screen\": [\n      640,\n      360\n    ],\n    \"textures\": [\n      {\n        \"name\": \"GameView.m_RenderTexture\",\n        \"width\": 640,\n        \"height\": 360\n      },\n      {\n        \"name\": \"PlayModeView.m_TargetTexture\",\n        \"width\": 640,\n        \"height\": 360\n      }\n    ],\n    \"temp\": \"/workspace/olca-validation-20261024/save/tmp/\"\n  }\n}"
+    }
+  ]
+}

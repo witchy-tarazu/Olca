@@ -101,6 +101,31 @@ namespace Olca.Presentation.Battle
         }
         private static void Bar(LineRenderer line,Vector3 bottom,Vector3 top,float width,float fraction)
         {line.startWidth=line.endWidth=width;line.positionCount=2;line.SetPosition(0,bottom);line.SetPosition(1,Vector3.Lerp(bottom,top,fraction));}
+        private readonly System.Collections.Generic.List<Rect> placedHudRects=new System.Collections.Generic.List<Rect>();
+        private Rect NormalHudRect(Vector3 center,float radius)
+        {
+            var label=enemyNameText==null?null:enemyNameText.GetComponent<Renderer>();
+            float width=label==null?0:label.bounds.size.x,height=label==null?0:label.bounds.size.y;
+            return Rect.MinMaxRect(center.x-radius*1.6f-width,center.y-Mathf.Max(radius*1.4f,height*.5f),center.x+radius*1.4f,center.y+Mathf.Max(radius*1.4f,height*.5f));
+        }
+        private bool TryNormalBodyHud(float radius,out Vector3 center)
+        {
+            center=Vector3.zero;if(enemyImage==null||enemyImage.sprite==null)return false;
+            placedHudRects.Clear();
+            foreach(var view in normalGauges){
+                if(view==null||!view.GaugeVisible||view.enemyImage==null||view.enemyImage.sprite==null)continue;
+                var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(view.enemyImage);
+                // 既存の状態演出の最大1.35倍の外周を常時空け、付与/解除でHUDを跳ねさせない。
+                var candidate=new Vector3(body.center.x,body.max.y+body.size.y*.175f+radius*1.5f,view.hpText!=null?view.hpText.transform.position.z:view.transform.position.z);
+                var box=view.NormalHudRect(candidate,radius);
+                for(int n=0;n<normalGauges.Count;n++){
+                    float lift=0;foreach(var placed in placedHudRects)if(box.Overlaps(placed))lift=Mathf.Max(lift,placed.yMax-box.yMin+radius*.2f);
+                    if(lift<=0)break;candidate.y+=lift;box=view.NormalHudRect(candidate,radius);
+                }
+                if(view==this){center=candidate;return true;}placedHudRects.Add(box);
+            }
+            var fallback=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);center=new Vector3(fallback.center.x,fallback.max.y+fallback.size.y*.175f+radius*1.5f,hpText!=null?hpText.transform.position.z:transform.position.z);return true;
+        }
         private void RefreshGauges()
         {
             bool visible=GaugeVisible;if(hpBack==null&&!visible){HideStatusIcons();return;}EnsureGauges();
@@ -130,13 +155,14 @@ namespace Olca.Presentation.Battle
                     if(other!=null&&other.GaugeVisible&&Vector3.Distance(other.transform.position,transform.position)<radius*2.4f)row++;
                 }
                 var center=(hpText!=null?hpText.transform.position:transform.position+Vector3.up)+Vector3.down*(row*radius*2.65f);
+                bool bodyHud=TryNormalBodyHud(radius,out var bodyCenter);if(bodyHud)center=bodyCenter;
                 if(hpText!=null)hpText.transform.position=center;
                 FitHpText(radius*2);
                 Arc(hpBack,center,radius,360,radius*.16f);Arc(hpFill,center,radius,360*HpFraction,radius*.11f);
                 Arc(poiseBack,center,radius*1.28f,180,radius*.09f);Arc(poiseFill,center,radius*1.28f,180*(PoiseFraction??0),radius*.06f);
-                // 同位置の名前は各HP円の左へそろえる。円の行間や本体・文字の大きさは変えない。
-                if(enemyNameText!=null&&normalGauges.Exists(other=>other!=this&&other!=null&&other.GaugeVisible&&
-                    Vector3.Distance(other.transform.position,transform.position)<radius*2.4f)){
+                // 本体の近くで名前と円を一組にする。未知の描画fixtureは従来の行分離を保つ。
+                if(enemyNameText!=null&&(bodyHud||normalGauges.Exists(other=>other!=this&&other!=null&&other.GaugeVisible&&
+                    Vector3.Distance(other.transform.position,transform.position)<radius*2.4f))){
                     var labelRenderer=enemyNameText.GetComponent<Renderer>();
                     if(labelRenderer!=null){var bounds=labelRenderer.bounds;var position=enemyNameText.transform.position;
                         position.x+=center.x-radius*1.6f-bounds.max.x;position.y+=center.y-bounds.center.y;
@@ -171,7 +197,13 @@ namespace Olca.Presentation.Battle
             this.enemy = enemy;
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
             if(enemyNameText!=null&&namePositionCached)enemyNameText.transform.localPosition=nameLocalPosition;
+            if(enemyNameText!=null)enemyNameText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
             ApplyAppearance();
+            if(IsBossGauge&&enemyNameText!=null&&enemyImage!=null&&enemyImage.sprite!=null){
+                var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);
+                var label=enemyNameText.GetComponent<Renderer>();float height=label==null ? .15f : Mathf.Max(.15f,label.bounds.size.y);
+                var position=enemyNameText.transform.position;position.x=body.center.x;position.y=body.max.y+body.size.y*.175f+height;enemyNameText.transform.position=position;
+            }
             if(enemyNameText!=null){nameLocalPosition=enemyNameText.transform.localPosition;namePositionCached=true;}
             if(hpText!=null){hpLocalPosition=hpText.transform.localPosition;hpLocalScale=hpText.transform.localScale;}
 
@@ -197,12 +229,13 @@ namespace Olca.Presentation.Battle
             enemyImage.color = Color.white;
             enemyImage.flipX = true; // 右向きの原画を、左側のプレイヤーへ向ける
 
-            // 大型ボスでも名前とHPが絵に重ならないよう、スプライトの上に配置する。
+            // 元絵の透明余白でなく、既存の可視領域校正へ名前をつなぐ。絵とpivotは変更しない。
             float top = sprite.bounds.max.y;
             if (enemyNameText != null)
                 enemyNameText.transform.localPosition = new Vector3(0f, top + 1.05f, -0.1f);
             if (hpText != null)
                 hpText.transform.localPosition = new Vector3(0f, top + 0.25f, -0.1f);
+
         }
 
         private static void SetTextSortingOrder(TextMesh tm, int order)

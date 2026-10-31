@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 29,\n  \"executeMs\": 1,\n  \"assemblyName\": \"PipelineRunScript_Round37TempProof_bf564e23e7ca4badbb67b79a5dd6dfce\",\n  \"success\": true,\n  \"result\": {\n    \"before\": \"/workspace/olca-validation-20261024/save/tmp\",\n    \"after\": \"/workspace/olca-validation-20261024/save/tmp/\",\n    \"guard\": true\n  }\n}"
+    }
+  ]
+}
