@@ -102,3 +102,23 @@ Prefabは検証Editorの通常PrefabUtilityで作成し、metaを手書き・ス
 - 初回関連3失敗はEditModeのEventSystem OnEnable登録不足2件と取消Task派生例外の期待型1件。既存テスト同様の登録/解除手順と取消カテゴリへ修正し、製品の保存ガードやゲーム期待値は緩めていない。寸法観測helperの構造体serialize/Prefab名フィルタも修正し、ゲーム操作を再実行せず現在状態から回収した。
 - 再読込/初回実行で回復したPipeline timeoutとUnityAI接続情報保存警告は履歴として保持し、native期間と最終全件測定を区別。歴史的UGUI未解決、実ビルド/物理機器/OS/聴感未検証を解決済み扱いにしない。全件前後の実640×360・専用TMPDIR/saveguard、仮想機器除去、元project clean/Asset一致を確認。
 - [第三段階の証跡](../.Codex/screenshots/system-stage3-20261031/README.md)。次の対象はカメラ借用/返却とGameplay表示群のPrefab/View切出し、操作設定内部Initializeと他画面のController依存。Core/Input/固定時計・外界状態退避復元はまだ移行していない。
+
+## 第四段階: Camera借用とGameplay HUD View（実装・検証済み）
+
+管理起動はCameraRuntimeManagerからCamera/AudioListener/既存URP設定のPrefab実体を排他的に借りる。GameFieldViewが従来どおり追従と投影サイズを計算し、Managerは位置更新や論理時計を持たない。利用終了時は旧GameField/背景の参照を外してから、Cameraの設定・行列・aspect・RT・Transform/ListenerをPrefab基準へ戻し非activeでキャッシュする。URP追加componentはPrefab設定を維持し、既存Viewは変更しない。
+
+GameplayCameraBindingがホストのScene Camera/Listenerの元enabled状態と既存参照を捕捉し、管理起動時はそれらを無効化して共通CameraをGameField/全ScrollingBackgroundへ明示注入する。終了では参照復元→Rental返却→互換Camera/Listenerの状態復元の順。既に破棄されたUnity wrapperにも純managed setterで共通Camera参照を残さない。旧Scene直Playは従来Scene Cameraを使用し、共通Cameraを追加取得しない。Scene側Cameraは互換用として残る。
+
+Scene内のDungeonCanvasだけを内部Text/CanvasGroup参照を含むDungeonHud Prefabへ切り出した。Controller、GameFieldのHUD/debug参照は起動時に明示注入する。ViewManagerのgameplay層でResourceManager leaseを所有し、設定画面の排他切替とは独立して表示する。各層は同じViewManagerの寿命ツリーで、owner終了と親Disposeで子層/current/pending/後着生成を解放する。戦闘フェード、報酬時枚数欄非表示、フォント・order5は従来どおり。現在のResources同期ロードを前提とし、起動中に未完了Taskになった場合は取消して失敗を返す。新しい非同期基盤/Addressablesは導入しない。
+
+HUD PrefabのUnity出力の空Text scalarと引用符内折返し末尾空白は、安全な表現へ正規化した。Unityが読む4Textの値・Font・local IDが前後一致することをImport後に確認。m_Name/m_EditorClassIdentifierの空scalarのspaceはUnity生成形式として厳密条件付きで保持し、公開receiptへ列挙する。
+
+公開は`.Codex/tools/verified_publish.py`のcheck/commit/pushを別操作とし、必須証跡・最終バイト・tree/base HEAD・空白診断を再確認して失敗時は停止する。コード/文書や非空scalarの空白を一括で許容しない。既存6行も根拠と行番号を記録する。
+
+Core/Input/固定時計・攻略状態は引き続きController/host所有。BattleView/CustomScreen/役者/床・背景等のScene依存、操作設定内部Initialize組立、残るStore接続は次段階。外界/ボスラッシュ仕様・D05/S08の未決を今回の実装完了へ混ぜない。
+
+
+第四段階の初回全件は3564件中3562成功・2失敗。既存HP／階層進行度回帰がScene直配置HUDを検索して取得失敗したため、本番Resources HUD Prefabを生成して同じ検証Sceneで所有・破棄するfixtureへ移行した。HP全範囲・回復・再開値・字体・進行度・一度だけ生成の期待値は変更していない。独立差分レビューで期待値緩和なし、具体的未解決0。最終再検証は3564/3564成功（284.12秒）、関連7/7成功（7.86秒）、error0。警告59件は既知fixture由来5分類で抑制なし。FHD/4K/4:3の戦闘・操作設定・Dialog9枚と実経路でCamera/Listener/EventSystemの各1、返却参照・再利用・HUD再生成・保存byte不変を確認。独立コード／原寸視覚レビューの今回範囲の未解決具体指摘0。原寸確認後の製品14ファイルは同一で、変更は既存fixtureのみ。
+
+
+[第四段階の実経路・原寸比較・テスト証跡](../.Codex/screenshots/system-stage4-20261031/README.md)。最終公開判定とcommit/pushは別操作で実行する。次段階候補はBattle/Customの表示グループのPrefab化と参照束縛、またはCore/Input/時計のhost session境界整理。Scene全コピーや一括所有移行は行わない。実build・物理機器・聴感未確認、歴史的UGUI/Pipeline/UnityAI履歴は継続して区別する。

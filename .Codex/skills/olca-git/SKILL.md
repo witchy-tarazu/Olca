@@ -47,3 +47,7 @@ Generated with Codex
 - 変更概要
 - ステージ・コミット・pushの有無
 - 注意点
+
+## 検証済み公開ゲート
+
+通常公開は[verified_publish手順](../../tools/README.md)の `check` → receiptレビュー → `commit` → `push` を別コマンドで実行する。各終了コード0を確認し、失敗時は次のGit変更操作へ進まない。証跡/tree/HEADが変われば新checkが必要。Unity YAML空scalarの限定例外はreceiptの行/理由で確認し、生成資産を正規化しない。公開承認の要件は上記安全ルールどおり。

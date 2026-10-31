@@ -1,0 +1,17 @@
+{
+  "Assets/Olca/Unity/Management/CameraRuntimeManager.cs": "ae00967e9cc1d4d41a4cd274d1fe1bd4f4c28bed97c2a2e37d7f8f3fd0ea9ad7",
+  "Assets/Olca/Application/Management/GameplayCameraBinding.cs": "a40c742107d0417f5f5889d08fd0b57531466840e4c382cbf2fa6b4a9e04ec86",
+  "Assets/Olca/Presentation/Management/ViewManager.cs": "565a97f808b1ce120cf899d81548c8b9948238211693c83fbd296edb85e1f7de",
+  "Assets/Olca/Application/Management/GameSystem.cs": "a072c94b3d464a0f9d155379fe46233cf425fd63af08aa91a9873eab5e7f04fd",
+  "Assets/Olca/Application/Management/GameSystemRoot.cs": "665d9663c8819d1a72b990b877b8b61440d776d76f38243bfaf64b18544cea56",
+  "Assets/Olca/Application/Management/BootstrapEntry.cs": "c83107176f31b857ff573d6f34293b9ea79bb8532db95329c975751da8262032",
+  "Assets/Olca/Presentation/Field/GameFieldView.cs": "79c1eda9aff31d5449ef65d0d21e821d4a4a846cb898f66fb02f6497e3e163b2",
+  "Assets/Olca/Presentation/Field/ScrollingBackgroundView.cs": "a16ba6f8ec81910888aeb10903ac35369c6c9f4b691d8e8d3a2f8d9bdab3f316",
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "4c6ed6bb5b44fd35c325d9a8229dab2eaac8943606822c0dfd50796e982c088a",
+  "Assets/Scenes/DungeonScene.unity": "200034c6642336af8617a559e4116fb322601cc0f7219d8bfee120abe3510b83",
+  "Assets/Resources/OlcaSystem/GameplayCamera.prefab": "f3ccf0cd042611bfb96b77911a8f7b0024bb332b2ff192d18fc0570757763051",
+  "Assets/Resources/OlcaSystem/DungeonHud.prefab": "bc1ffbc5366d8942f6da8887e1cf0865d62fceb8bedcc7de010b143fefe8889f",
+  "Assets/Olca/Tests/Application/CameraPresentationManagementTests.cs": "3e1b16258636d2b5a3c2477afd4fada63711fe1fb3199ba8839de228f7bc51e4",
+  "Assets/Olca/Tests/Application/LayerPresentationManagementTests.cs": "4f2c62f39450f302fa507b47e3b6e899a6d3c95e513146e87069d9fae498ade3",
+  "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "00658ff82e4f189beb6031a3fbd97515aec04af1b68386977e452e76911cbf58"
+}

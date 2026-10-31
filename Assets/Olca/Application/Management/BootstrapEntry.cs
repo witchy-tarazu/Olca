@@ -35,6 +35,7 @@ namespace Olca.Application.Management
             }
             return new HostOpenRequest(CompatibilityScenePath,scene=>{
                 var controller=Controller(scene);controller.ConfigureGameSystem(services);
+                controller.ConfigureManagedCamera(services);
                 if(storage!=null){controller.ConfigureGameplaySettingsDirectory(storage.BootstrapSettings);controller.ConfigureCheckpointDirectory(storage.BootstrapCheckpoint);controller.ConfigureProgressDirectory(storage.BootstrapProgress);controller.RequireValidationStorageGuard();}
             },scene=>{
                 var controller=Controller(scene);

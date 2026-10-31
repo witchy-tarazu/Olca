@@ -1,0 +1,215 @@
+{
+  "reviewer": "independent_refactor_review",
+  "scope": "Stage4 Camera/Listener root rental and HUD layer integration: bounded static read plus nine native screenshots compared with Stage3",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "boundaries": [
+      "Read CameraRuntimeManager rental/reset/return and GameplayCameraBinding attach/release",
+      "Read Bootstrap managed camera injection and Controller HUD preparation/release integration",
+      "Read GameFieldView/ScrollingBackgroundView camera-reference adapters",
+      "Read ViewManager child layer owner-unregister and Dispose propagation",
+      "Read GameplayCamera prefab projection/transform/Listener/URP serialization"
+    ],
+    "executionByReviewer": false,
+    "note": "No independent Unity execution or test rerun. Equipment reviewer ownership finding/fix and main-agent 7/7 native assertions are reported externally, not represented as execution by this reviewer. This is not a comprehensive migration-completion claim.",
+    "sourceHashesRead": {
+      "Assets/Olca/Unity/Management/CameraRuntimeManager.cs": "ae00967e9cc1d4d41a4cd274d1fe1bd4f4c28bed97c2a2e37d7f8f3fd0ea9ad7",
+      "Assets/Olca/Application/Management/GameplayCameraBinding.cs": "a40c742107d0417f5f5889d08fd0b57531466840e4c382cbf2fa6b4a9e04ec86",
+      "Assets/Olca/Application/Management/BootstrapEntry.cs": "c83107176f31b857ff573d6f34293b9ea79bb8532db95329c975751da8262032",
+      "Assets/Olca/Application/Management/GameSystem.cs": "a072c94b3d464a0f9d155379fe46233cf425fd63af08aa91a9873eab5e7f04fd",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "4c6ed6bb5b44fd35c325d9a8229dab2eaac8943606822c0dfd50796e982c088a",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "79c1eda9aff31d5449ef65d0d21e821d4a4a846cb898f66fb02f6497e3e163b2",
+      "Assets/Olca/Presentation/Field/ScrollingBackgroundView.cs": "a16ba6f8ec81910888aeb10903ac35369c6c9f4b691d8e8d3a2f8d9bdab3f316",
+      "Assets/Olca/Presentation/Management/ViewManager.cs": "565a97f808b1ce120cf899d81548c8b9948238211693c83fbd296edb85e1f7de",
+      "Assets/Resources/OlcaSystem/GameplayCamera.prefab": "f3ccf0cd042611bfb96b77911a8f7b0024bb332b2ff192d18fc0570757763051"
+    }
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedOriginalImageCount": 9,
+    "images": [
+      {
+        "file": "system-stage4-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "cf23ad1856f09d3631201f2751e59096f6f183f05ff2ef663306ff79884afc55",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-battle-host-fhd.png",
+          "differenceBoundingBox": [
+            186,
+            51,
+            1773,
+            1023
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "db6c708de98dbb8bff1a871f5769ead2a06c8615c3764452108de68a01ff351b",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-battle-host-4k.png",
+          "differenceBoundingBox": [
+            3204,
+            1784,
+            3582,
+            1808
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "5403c4a9d95ab2fe332548a2c95f13dec5d66d4547c999f4b1642bae496935b1",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-battle-host-4by3.png",
+          "differenceBoundingBox": [
+            1152,
+            922,
+            1373,
+            1023
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "064c4ae9fe5960d5cfbab02f707b95beb71ca5999b95e7e04940eaeb0bb86a4b",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-keyboard-settings-fhd.png",
+          "differenceBoundingBox": [
+            203,
+            89,
+            1733,
+            969
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "65790da1e398735d551b48ebb4f8344bb8eb08877c55cc240fd6256477ec01eb",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-keyboard-settings-4k.png",
+          "differenceBoundingBox": [
+            371,
+            142,
+            3202,
+            1938
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "d0b4f7507223fce2c29f3dec1f6876181ef7f6c6b637a34c772f9bf704d41fe6",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-keyboard-settings-4by3.png",
+          "differenceBoundingBox": [
+            101,
+            108,
+            1359,
+            912
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "7b0dcc956996da36b289eebe3683f5bb2b6d7bdb58307d32edacbc612faf25ab",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-reset-dialog-fhd.png",
+          "differenceBoundingBox": [
+            231,
+            241,
+            1550,
+            968
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "b11dd712c640e8a76137ba2f3241a7c3cbd8af5fd52feef79359b40e3b6c7916",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-reset-dialog-4k.png",
+          "differenceBoundingBox": [
+            418,
+            197,
+            2343,
+            1937
+          ]
+        }
+      },
+      {
+        "file": "system-stage4-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "c8d21d1a0ce5548d553479c814a71d79d7bfedc512382520c45a58f8d465e215",
+        "viewed": "original requested; 4K full images display downscaled, representative 1:1 crops additionally inspected",
+        "stage3Comparison": {
+          "file": "system-stage3-native-after-reset-dialog-4by3.png",
+          "differenceBoundingBox": [
+            102,
+            130,
+            1360,
+            912
+          ]
+        }
+      }
+    ],
+    "observations": [
+      "No new visible camera framing, actor scale, feet/ground or background/foreground discontinuity versus Stage3 in these views",
+      "Battle HUD gauge/name/numbers and touch controls remain positioned and readable at FHD/4K/4:3",
+      "Keyboard settings retain three-column labels/buttons/footer; no new clipping or overlap",
+      "Reset dialog retains legible two-line message, separate actions and visible modal hierarchy over subdued background"
+    ],
+    "limits": [
+      "Static screenshots do not prove actual hit regions/raycast blocking, input dispatch, selected-object focus, save integrity or lifecycle instance counts",
+      "No Unity/Editor commands, motion tests, audio tests, camera rental/reentry tests or automated tests performed by reviewer",
+      "Stage3/Stage4 captures are separate runs; difference boxes include glyph/render state changes and do not establish pixel equality",
+      "4K full-image display was resized by viewer; unscaled actor, settings-key and dialog text/action crops were inspected in addition"
+    ],
+    "comparisonNote": "All nine final Stage4 images and corresponding Stage3 images were opened. Conclusion is no newly visible required regression within those states, not a global visual or behavioral guarantee."
+  },
+  "sourceEditsByReviewer": false,
+  "integrationFixtureRereview": {
+    "reviewer": "equipment_save_review",
+    "unresolvedConcreteFindings": 0,
+    "scope": "Existing two FloorSequenceControllerTests Scene HUD lookup migrated to production Resources prefab; all HP/font/progress/count assertions preserved; scene finally cleanup destroys instance",
+    "executedByReviewer": false
+  }
+}

@@ -201,7 +201,34 @@ namespace Olca.Application.Dungeon
         }
         private bool battleFieldReady;
         private GameObject pauseCanvas;
-        private bool managedUiContent;
+        private bool managedUiContent,managedDungeonHud;
+        private Olca.Application.Management.GameplayCameraBinding managedCameraBinding;
+        public void ConfigureManagedCamera(Olca.Application.Management.GameSystem services)
+        {
+            if(managedCameraBinding!=null)throw new System.InvalidOperationException("カメラの束縛が重複しています");
+            var roots=gameObject.scene.GetRootGameObjects();
+            var cameras=roots.SelectMany(x=>x.GetComponentsInChildren<Camera>(true)).ToArray();
+            if(cameras.Length!=1||services.Cameras==null)throw new System.InvalidOperationException("互換ホストのカメラ構成が不正です");
+            var backgrounds=roots.SelectMany(x=>x.GetComponentsInChildren<Olca.Presentation.Field.ScrollingBackgroundView>(true)).ToArray();
+            managedCameraBinding=new Olca.Application.Management.GameplayCameraBinding(this,services.Cameras,gameFieldView,cameras[0],backgrounds);
+        }
+        private void PrepareGameplayHud()
+        {
+            if(!UnityEngine.Application.isPlaying||gameSystem==null||gameFieldView==null||dungeonHudView!=null)return;
+            var layer=gameSystem.Views.GetLayer("gameplay");
+            layer.Register(this,"dungeon-hud",ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Instantiate(gameSystem.Resources.GetShared<GameObject>("OlcaSystem/DungeonHud"),gameFieldView.transform,false));},
+                (panel,context)=>{dungeonHudView=panel.GetComponent<DungeonHudView>();if(dungeonHudView==null)throw new System.InvalidOperationException("探索HUDのViewがありません");managedDungeonHud=true;gameFieldView.ConfigureDungeonHud(dungeonHudView);},panel=>{if(panel!=null)panel.SetActive(false);});
+            using(var cancellation=new System.Threading.CancellationTokenSource()){
+                var showing=layer.ShowAsync("dungeon-hud",cancellation.Token);
+                if(!showing.IsCompleted){cancellation.Cancel();throw new System.InvalidOperationException("起動HUDは同期ロード可能なPrefabが必要です");}
+                var result=showing.GetAwaiter().GetResult();if(!result.Succeeded)throw new System.InvalidOperationException(result.Error??"探索HUDを開始できません");
+            }
+        }
+        private void ReleasePresentationBindings()
+        {
+            if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
+            managedCameraBinding?.Dispose();managedCameraBinding=null;
+        }
         private GameObject pauseOverlay;
         private GameplayKeyboardSettingsView keyboardSettingsView,gamepadSettingsView;
         private float timeScaleBeforePause;
@@ -1712,6 +1739,7 @@ namespace Olca.Application.Dungeon
             resourceRewardMenu?.Dispose(); resourceRewardMenu = null; resourceRewardRoot = null;
             combatFeedbackAudio?.Dispose(); combatFeedbackAudio = null;
             if (gameSystemSession == null) gameplayAudio?.Dispose();
+            ReleasePresentationBindings();
             gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null; gameplayAudio = null;
             if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
             inputProvider?.Dispose(); inputProvider = null;
@@ -1730,6 +1758,7 @@ namespace Olca.Application.Dungeon
             gameSystem = configuredGameSystem ?? (UnityEngine.Application.isPlaying ? Olca.Application.Management.GameSystemRoot.Ensure().Services : null);
             if (gameSystem != null) gameSystemSession = gameSystem.BeginSession(this,
                 gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"), CheckpointDirectory, ProgressDirectory);
+            PrepareGameplayHud();
             clearReturnStore = clearReturnStore ?? gameSystemSession?.Storage.Progress ?? new ClearReturnFileStore(ProgressDirectory);
             clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
             progressStartupBlocked = !clearReturnSession.Ready;
@@ -2587,6 +2616,7 @@ namespace Olca.Application.Dungeon
             inputProvider?.Dispose();
             logicalLoop.Dispose();
             if (IsUserPaused) ApplyUserPauseImmediate(false);
+            ReleasePresentationBindings();
             gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null;
             if (!managedUiContent && pauseCanvas != null) Destroy(pauseCanvas);
             transitionCts?.Cancel();
