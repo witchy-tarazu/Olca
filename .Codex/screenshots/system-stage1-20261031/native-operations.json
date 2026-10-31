@@ -1,0 +1,75 @@
+{
+  "normalRaycastOperations": [
+    "pause→keyboard settings",
+    "reset dialog cancel→Reset focus",
+    "virtual pad East held cancel does not close parent",
+    "close/reopen same cached screen",
+    "clear battle LeftPrimary then save",
+    "disk/profile equality",
+    "reset-confirm changes draft then save defaults",
+    "parent screen close cancels popup",
+    "checkpoint continue restores custom with first hand5"
+  ],
+  "rootCountDuringPlay": 1,
+  "eventSystemCount": 1,
+  "lazyOwnedBeforeOpen": 0,
+  "cachedOwnedAfterOpen": 1,
+  "cachedRectId": -219572960,
+  "audioSourceIdsStable": [
+    -219567708,
+    -219567702,
+    -219567696
+  ],
+  "audioSourceCount": 3,
+  "audioRouterShared": true,
+  "sessionAndInputRebound": true,
+  "soundPausedDuringManualPause": true,
+  "soundUnpausedAfterCheckpoint": true,
+  "settingsChangedAndRestoredOnlyInIsolatedStore": true,
+  "devicesAfterVirtualPad": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [
+      {
+        "name": "EventSystem",
+        "enabled": true,
+        "scene": "Assets/Scenes/DungeonScene.unity",
+        "activeSelf": true
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "stop": {
+    "playing": false,
+    "roots": 0,
+    "managedScreens": 0,
+    "events": 1
+  },
+  "images": [
+    "system-stage1-final-native-after-keyboard-settings-fhd.png",
+    "system-stage1-final-native-after-keyboard-settings-4k.png",
+    "system-stage1-final-native-after-keyboard-settings-4by3.png",
+    "system-stage1-final-native-after-reset-dialog-fhd.png",
+    "system-stage1-final-native-after-reset-dialog-4k.png",
+    "system-stage1-final-native-after-reset-dialog-4by3.png"
+  ],
+  "limitations": [
+    "physical pad/touch/OS not tested",
+    "FMOD noaudio: API/state verified, audible output not verified",
+    "no dedicated BootScene or whole-Scene migration yet"
+  ]
+}

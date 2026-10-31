@@ -1,0 +1,19 @@
+{
+  "nativeGroundTruth": {
+    "sampledUtc": "2026-10-31T10:49:45.30409Z",
+    "ageMs": 112,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 2,
+    "consoleWarnings": 1,
+    "consoleLogs": 30,
+    "seeded": true
+  },
+  "nativeErrorCategory": "recovered Unity.Pipeline main-thread request timeout; counter2, one repeated message category",
+  "nativeWarningCategory": "UnityAI connection-info write to read-only environment; current counter1",
+  "historicalEntry": "already-edit-mode warning also retained in tool history; not counted as a product issue",
+  "productExceptionObservedInNativeOrStop": false,
+  "fullTestPeriod": "separate explicit clear before final suite; result recorded separately",
+  "historicalUGUI": "unresolved historical limitation; not claimed fixed",
+  "logsSuppressed": false
+}

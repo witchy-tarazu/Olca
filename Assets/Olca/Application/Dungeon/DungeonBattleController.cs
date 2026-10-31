@@ -85,6 +85,16 @@ namespace Olca.Application.Dungeon
         [SerializeField] private DungeonHudView dungeonHudView;
         [SerializeField] private CardSelectionView cardSelectionView;
 
+        private Olca.Application.Management.GameSystem configuredGameSystem, gameSystem;
+        private Olca.Application.Management.GameSystem.Session gameSystemSession;
+        private const string ManagedKeyboardScreen = "keyboard-settings";
+        public Olca.Application.Management.GameSystem ManagedGameSystem => gameSystem;
+        public void ConfigureGameSystem(Olca.Application.Management.GameSystem services)
+        {
+            if (manager != null || inputProvider != null) throw new System.InvalidOperationException("GameSystemは起動前に供給してください");
+            configuredGameSystem = services ?? throw new System.ArgumentNullException(nameof(services));
+        }
+
         private DungeonBattleManager manager;
         private UnityRandomProvider randomProvider;
         private UnityLogger logger;
@@ -875,10 +885,10 @@ namespace Olca.Application.Dungeon
             MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
             MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
             MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
-                .onClick.AddListener(() => {if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose();keyboardSettingsView.Open(GameplayKeyboardProfile);});
+                .onClick.AddListener(() => {if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose();OpenKeyboardSettings();});
             var padSettingsButton=MakeButton("GamepadSettingsButton","パッド設定",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-100));
             ((RectTransform)padSettingsButton.transform).sizeDelta=new Vector2(420,70);
-            padSettingsButton.onClick.AddListener(()=>{keyboardSettingsView.DiscardAndClose();gamepadSettingsView.Open(GameplayGamepadProfile);});
+            padSettingsButton.onClick.AddListener(()=>{keyboardSettingsView?.DiscardAndClose();gamepadSettingsView.Open(GameplayGamepadProfile);});
             var vibrationToggle=MakeButton("VibrationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(-420,-200));
             ((RectTransform)vibrationToggle.transform).sizeDelta=new Vector2(420,70);
             void RefreshVibrationSetting(){vibrationToggle.GetComponentInChildren<Text>().text=vibrationSettingsError!=null?"シンドウ: ホゾンエラー（サイシコウ）":"シンドウ: "+(GamepadVibrationEnabled?"ON":"OFF");}
@@ -909,10 +919,21 @@ namespace Olca.Application.Dungeon
             ((RectTransform)cancelRetreatButton.transform).sizeDelta = new Vector2(420,70);
             cancelRetreatButton.onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
             retreatConfirmation.SetActive(false);
-            var settingsPanel = new GameObject("KeyboardSettingsPanel", typeof(RectTransform));
-            settingsPanel.transform.SetParent(pauseCanvas.transform, false);
-            keyboardSettingsView = settingsPanel.AddComponent<GameplayKeyboardSettingsView>();
-            keyboardSettingsView.Initialize(font, candidate => TryApplyGameplayKeyboardProfile(candidate, out var error) ? null : error);
+            GameObject CreateKeyboardPanel()
+            {
+                var panel = new GameObject("KeyboardSettingsPanel", typeof(RectTransform));
+                try {
+                    panel.transform.SetParent(pauseCanvas.transform, false);
+                    keyboardSettingsView = panel.AddComponent<GameplayKeyboardSettingsView>();
+                    keyboardSettingsView.Initialize(font, candidate => TryApplyGameplayKeyboardProfile(candidate, out var error) ? null : error);
+                    return panel;
+                } catch { Destroy(panel); throw; }
+            }
+            if (gameSystem == null) CreateKeyboardPanel();
+            else gameSystem.Views.Register(this, ManagedKeyboardScreen,
+                ct => { ct.ThrowIfCancellationRequested(); return System.Threading.Tasks.Task.FromResult(CreateKeyboardPanel()); },
+                (panel, context) => { var view = panel.GetComponent<GameplayKeyboardSettingsView>(); view.ConfigureManagement(context); view.Open(GameplayKeyboardProfile); },
+                panel => { if (panel != null) panel.GetComponent<GameplayKeyboardSettingsView>().DiscardAndClose(); });
             var padPanel=new GameObject("GamepadSettingsPanel",typeof(RectTransform));padPanel.transform.SetParent(pauseCanvas.transform,false);gamepadSettingsView=padPanel.AddComponent<GameplayKeyboardSettingsView>();
             gamepadSettingsView.Initialize(font,candidate=>TryApplyGameplayGamepadProfile(candidate,out var error)?null:error,true);
             var audioPanel=new GameObject("AudioSettingsPanel",typeof(RectTransform));audioPanel.transform.SetParent(pauseCanvas.transform,false);
@@ -975,6 +996,20 @@ namespace Olca.Application.Dungeon
             ((RectTransform)customizationUnlockButton.transform).sizeDelta=new Vector2(300,60);customizationUnlockButton.onClick.AddListener(OpenCustomizationUnlocks);customizationUnlockButton.gameObject.SetActive(false);
             clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);
         }
+        private void OpenKeyboardSettings()
+        {
+            if (gameSystem == null) { keyboardSettingsView.Open(GameplayKeyboardProfile); return; }
+            OpenManagedKeyboardAsync().Forget();
+        }
+        private async UniTask OpenManagedKeyboardAsync()
+        {
+            var owner = gameSystemSession;
+            var result = await gameSystem.Views.ShowAsync(ManagedKeyboardScreen);
+            if (this != null && ReferenceEquals(owner,gameSystemSession) && !result.Succeeded && !result.Cancelled) {
+                GameplayKeyboardSettingsError = result.Error; logger?.LogWarning(result.Error);
+            }
+        }
+
         private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
         private GameObject progressActionOverlay;
         private Text progressActionMessage;
@@ -1645,14 +1680,45 @@ namespace Olca.Application.Dungeon
                 }
         }
 
+        private bool runtimeStarting, runtimeStarted;
         private void Start()
+        {
+            if (runtimeStarting || runtimeStarted) return;
+            runtimeStarting = true;
+            try { InitializeRuntime(); runtimeStarted = true; }
+            catch { RollbackRuntimeInitialization(); throw; }
+            finally { runtimeStarting = false; }
+        }
+        private void RollbackRuntimeInitialization()
+        {
+            transitionCts?.Cancel(); transitionCts?.Dispose(); transitionCts = null;
+            battleSession?.Detach(); battleSession = null;
+            if (manager != null) { UnbindManagerEvents(manager); manager.SuspendForCheckpoint(); }
+            CancelExplorationResume(); CancelOutcomePresentation(); FinishDialogue(interrupt:true);
+            if (IsUserPaused) ApplyUserPauseImmediate(false);
+            systemMenu?.Dispose(); systemMenu = null; systemMenuRoot = null;
+            resourceRewardMenu?.Dispose(); resourceRewardMenu = null; resourceRewardRoot = null;
+            combatFeedbackAudio?.Dispose(); combatFeedbackAudio = null;
+            if (gameSystemSession == null) gameplayAudio?.Dispose();
+            gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null; gameplayAudio = null;
+            if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
+            inputProvider?.Dispose(); inputProvider = null;
+            gamepadVibration?.Dispose(); gamepadVibration = null;
+            if (pauseCanvas != null) { pauseCanvas.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(pauseCanvas); else DestroyImmediate(pauseCanvas); }
+            pauseCanvas = null; manager = null; memoryCheckpoints = null; floorSession = null; floorStore = null; clearReturnSession = null;
+            pendingCardChoices = null; automaticPauseOwner = null; logicalLoop.StartNewTimeline();
+        }
+        private void InitializeRuntime()
         {
             // 検証時はPlay再読込で設定先が失われたら、保存処理を生成する前に停止する。
             ValidationStorageGuard.RequireEditorStartup(gameplaySettingsDirectoryOverride, CheckpointDirectory, ProgressDirectory, validationStorageRequired);
             if (commonHitInvincibilityMs <= 0 || (long)commonHitInvincibilityMs * 60 <= (long)battleStaggerFrames * 1000)
                 throw new System.ArgumentOutOfRangeException(nameof(commonHitInvincibilityMs), "被弾無敵は共通のけぞり時間より長く設定してください");
             ReturnSettings().Validate();
-            clearReturnStore = clearReturnStore ?? new ClearReturnFileStore(ProgressDirectory);
+            gameSystem = configuredGameSystem ?? (UnityEngine.Application.isPlaying ? Olca.Application.Management.GameSystemRoot.Ensure().Services : null);
+            if (gameSystem != null) gameSystemSession = gameSystem.BeginSession(this,
+                gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"), CheckpointDirectory, ProgressDirectory);
+            clearReturnStore = clearReturnStore ?? gameSystemSession?.Storage.Progress ?? new ClearReturnFileStore(ProgressDirectory);
             clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
             progressStartupBlocked = !clearReturnSession.Ready;
             int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
@@ -1666,16 +1732,16 @@ namespace Olca.Application.Dungeon
                 (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused);
             inputProvider.GamepadContext=()=>manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
             inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen);
-            gamepadSettings=new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            gamepadSettings=gameSystemSession?.Storage.Gamepad ?? new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             inputProvider.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _);
             if(gamepadSettings.TryRead(out var padProfile,out var padError))inputProvider.TryRestoreGamepadProfile(padProfile,out padError);GameplayGamepadSettingsError=padError;
-            keyboardSettings = new KeyboardBindingFileStore(gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            keyboardSettings = gameSystemSession?.Storage.Keyboard ?? new KeyboardBindingFileStore(gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             transformationSettings=new TransformationPresentationFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             transformationSettings.TryRead(out shortTransformationPresentation,out transformationSettingsError);
             dialogueSettings=new DialogueTextSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));dialogueSettings.TryRead(out dialogueSpeed,out dialogueSettingsError);
-            audioSettingsStore=new AudioVolumeFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+            audioSettingsStore=gameSystemSession?.Storage.Audio ?? new AudioVolumeFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             audioSettingsStore.TryRead(out audioVolumes,out var audioError);GameplayAudioSettingsError=audioError;
-            gameplayAudio=new GameplayAudioRouter(transform);combatFeedbackAudio=new CombatFeedbackAudio(transform,gameplayAudio);gameplayAudio.Apply(audioVolumes);gameplayAudio.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
+            gameplayAudio=gameSystem != null ? gameSystem.Sounds.BeginSession(this,audioVolumes) : new GameplayAudioRouter(transform);combatFeedbackAudio=new CombatFeedbackAudio(transform,gameplayAudio);gameplayAudio.Apply(audioVolumes);gameplayAudio.SetPaused(IsUserPaused||!isActiveAndEnabled);gameplayAudio.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
             if (keyboardSettings.TryRead(out var profile, out var settingsError)) inputProvider.TryRestoreKeyboardProfile(profile, out settingsError);
             GameplayKeyboardSettingsError = settingsError;
             if (settingsError != null) logger.LogWarning(settingsError);
@@ -1785,6 +1851,7 @@ namespace Olca.Application.Dungeon
                 battleSession = new BattleSessionController(battleView, customScreenView, randomProvider, logger,
                     (frames, action) => logicalLoop.AfterFrames(frames, action), battleView.CloseDurationFrames, transformationPresentation:true);
 
+            gameSystemSession?.Bind(manager, inputProvider);
             CreatePauseControls();
             ResumeClearReturnIfNeeded();
             logicalLoop.Observe(false);
@@ -2454,6 +2521,7 @@ namespace Olca.Application.Dungeon
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
             manager = restored;
+            gameSystemSession?.Bind(manager, inputProvider);
             manager.RequireBattleEndPresentation();
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
             manager.Dungeon.ConfigureCurrencyReward(currencyPerEnemy);
@@ -2501,11 +2569,13 @@ namespace Olca.Application.Dungeon
             systemMenu?.Dispose();
             resourceRewardMenu?.Dispose();
             FinishDialogue(interrupt:true);dialogueLoop.Dispose();
-            combatFeedbackAudio?.Dispose();gameplayAudio?.Dispose();
+            combatFeedbackAudio?.Dispose();
+            if (gameSystemSession == null) gameplayAudio?.Dispose();
             if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
             inputProvider?.Dispose();
             logicalLoop.Dispose();
             if (IsUserPaused) ApplyUserPauseImmediate(false);
+            gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null;
             if (pauseCanvas != null) Destroy(pauseCanvas);
             transitionCts?.Cancel();
             transitionCts?.Dispose();
