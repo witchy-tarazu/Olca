@@ -1084,6 +1084,8 @@ namespace Olca.Presentation.Dungeon
     public sealed class BasicAttackHud : UnityEngine.MonoBehaviour
     {
         private UnityEngine.UI.Text title, state;
+        private UnityEngine.UI.Image surface;
+        private UnityEngine.Color surfaceColor;
         private UnityEngine.UI.Button button, jumpButton, dashButton, cardButton;
         private UnityEngine.GameObject exploration;
         private BasicAttackTapButton attackPointer;
@@ -1092,6 +1094,7 @@ namespace Olca.Presentation.Dungeon
             var rect = (UnityEngine.RectTransform)transform; rect.anchorMin = rect.anchorMax = new UnityEngine.Vector2(1,0);
             rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,210); rect.anchoredPosition = new UnityEngine.Vector2(-280,135);
             var face = gameObject.AddComponent<UnityEngine.UI.Image>(); UiLook.Face(face); face.raycastTarget = false;
+            surface=face;surfaceColor=face.color;
             var edge = gameObject.GetComponent<UnityEngine.UI.Outline>() ?? gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
             UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
             {
@@ -1140,7 +1143,7 @@ namespace Olca.Presentation.Dungeon
         public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
             // 操作ボタンの位置と当たり領域を維持し、探索では使わない説明領域だけを縮める。
-            SetSurfaceSize(460, 132);
+            SetSurfaceSize(460, 132);if(surface!=null)surface.color=surfaceColor;
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","exploration",action)]);
@@ -1151,7 +1154,8 @@ namespace Olca.Presentation.Dungeon
         }
         public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null)
         {
-            SetSurfaceSize(500, 210);
+            // 戦闘の操作領域は固定したまま、背後の敵や床が読める薄い水鏡にする。
+            SetSurfaceSize(500, 210);if(surface!=null){var color=surfaceColor;color.a*=.68f;surface.color=color;}
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}

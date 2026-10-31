@@ -1,0 +1,9 @@
+{
+  "head": "68ceb65a62b28ab2e39083ae4a626d2d1a5f2279",
+  "integration": "safe fetch and fast-forward merge",
+  "changed": [
+    "Planning/ゲーム全体仕様.md"
+  ],
+  "presentationSourceHashesUnchanged": true,
+  "implementedNewOutsideDungeonMechanics": false
+}

@@ -1,0 +1,11 @@
+{
+  "Assets/Olca/Presentation/Battle/EnemyView.cs": "17ff8ac5bb93bd8054ee271733691962dd8de60cad262606bb152407b8cb76f9",
+  "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "b77463ebe6835ed9dde496628830c6d983756c8186341d9d1be5135d4b3a8371",
+  "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "2fd51e605d3353f8eb73c736076b44617ed2a9326a75e1ad651c9e70bdc5209a",
+  "Assets/Olca/Presentation/Field/GameFieldView.cs": "19a19712772dc46c85bfb25f9db863677eb9c1eb0fb76ce3b0d85a9771c6797e",
+  "Assets/Olca/Tests/CustomizeMaterialBoundaryTests.cs": "1342667069c4b64abe34c4c84b1b7b70788394615cb479e342a4f60a640637d0",
+  "Assets/Olca/Presentation/CustomScreen/CustomizeMode/CustomizeModeView.cs": "cadd5d7f3f5d55ab2094c7908a866e22cd4f11ff06e2cd80aea6a23acd6e35ea",
+  "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "d99ee18892d96b872949f298c0974e86af04b491eee9afed358eea19c2c27dc2",
+  "Assets/Olca/Presentation/CustomScreen/HandCardView.cs": "765b29aa23b39afb490b8ba3a62b75243e47e1d91d62ba7166e1e1d47122403c",
+  "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "8c03e34c30042f9d96f7eaebe7fab949ed1c9ab4c7f210dbc7184c89154cdd45"
+}

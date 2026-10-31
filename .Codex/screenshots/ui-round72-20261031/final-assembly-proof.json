@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 95,\n  \"executeMs\": 0,\n  \"assemblyName\": \"PipelineRunScript_Battle72Proof_d4a6cb2a8ebf4d069671062071dc1c45\",\n  \"success\": true,\n  \"result\": {\n    \"finalEnemyLayout\": true,\n    \"originalTintPreservation\": true\n  }\n}"
+    }
+  ]
+}

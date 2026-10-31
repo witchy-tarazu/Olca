@@ -408,6 +408,45 @@ namespace Olca.Tests
             views[count-1].Initialize(new Olca.Core.Domain.Enemy("grunt","rebound",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)));views[count-1].ShowHp();
             for(int i=0;i<count-1;i++)views[i].HideHp();views[count-1].Refresh();Assert.That(Vector3.Distance(Vector3.up,labels[count-1].transform.localPosition),Is.LessThan(.0001f));
         }
+        private Olca.Presentation.Battle.EnemyView SpriteView()
+        {
+            var view=View(Enemy());
+            var body=new GameObject("Body",typeof(SpriteRenderer));body.transform.SetParent(view.transform,false);
+            var renderer=body.GetComponent<SpriteRenderer>();
+            var sprite=UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Sprites/Enemies/grunt_256.png");Assert.IsNotNull(sprite);
+            var label=new GameObject("Name",typeof(TextMesh));label.transform.SetParent(view.transform,false);
+            var text=label.GetComponent<TextMesh>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.characterSize=.2f;label.GetComponent<MeshRenderer>().sharedMaterial=text.font.material;
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=view.GetType();
+            type.GetField("enemyImage",flags).SetValue(view,renderer);type.GetField("gruntSprite",flags).SetValue(view,sprite);type.GetField("enemyNameText",flags).SetValue(view,text);
+            view.transform.localScale=new Vector3(.8f,.8f,1);view.Initialize(Enemy());view.ShowHp();view.Refresh();return view;
+        }
+        [Test] public void 通常敵のHPと名前を透明余白ではなく既存の可視本体へ近づける()
+        {
+            var view=SpriteView();var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(view.BodyRenderer);var hp=view.transform.Find("Hp").position;
+            float radius=Camera.main!=null?Camera.main.orthographicSize*.055f:.55f;
+            Assert.That(hp.y,Is.EqualTo(body.max.y+body.size.y*.175f+radius*1.5f).Within(.0001f));Assert.That(hp.x,Is.EqualTo(body.center.x).Within(.0001f));
+            var name=view.transform.Find("Name").GetComponent<Renderer>().bounds;Assert.Less(name.max.x,hp.x);Assert.That(name.center.y,Is.EqualTo(hp.y).Within(.0001f));
+            Assert.AreEqual(Vector3.zero,view.transform.position);Assert.AreEqual(new Vector3(.8f,.8f,1),view.transform.localScale);
+            view.Refresh();Assert.That(Vector3.Distance(hp,view.transform.Find("Hp").position),Is.LessThan(.0001f));
+        }
+        [TestCase(2)] [TestCase(6)] public void 可視本体に重なる敵の名前とHPを組で分離し単独復帰で余分な段を残さない(int count)
+        {
+            var views=new List<Olca.Presentation.Battle.EnemyView>();for(int i=0;i<count;i++)views.Add(SpriteView());
+            foreach(var view in views)view.Refresh();var first=views[0].transform.Find("Hp").position;
+            for(int i=0;i<count;i++){
+                var hp=views[i].transform.Find("Hp").position;var name=views[i].transform.Find("Name").GetComponent<Renderer>().bounds;
+                Assert.That(name.center.y,Is.EqualTo(hp.y).Within(.0001f));
+                for(int j=0;j<i;j++)Assert.IsFalse(name.Intersects(views[j].transform.Find("Name").GetComponent<Renderer>().bounds));
+                views[i].Refresh();Assert.That(Vector3.Distance(hp,views[i].transform.Find("Hp").position),Is.LessThan(.0001f));
+            }
+            for(int i=0;i<count-1;i++)views[i].HideHp();views[count-1].Refresh();Assert.That(Vector3.Distance(first,views[count-1].transform.Find("Hp").position),Is.LessThan(.0001f));
+        }
+        [Test] public void 本体素材のないボス名は校正を適用せず既存配置を保持する()
+        {
+            var view=View(Enemy("boss"));var obj=new GameObject("Name",typeof(TextMesh));obj.transform.SetParent(view.transform,false);obj.transform.localPosition=new Vector3(2,3,0);
+            typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyNameText",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,obj.GetComponent<TextMesh>());
+            view.Initialize(Enemy("boss"));Assert.AreEqual(new Vector3(2,3,0),obj.transform.localPosition);
+        }
         [Test] public void 通常敵の強靭度はHP円の右外側だけに沿う()
         {
             var view=View(Enemy());view.ShowHp();var hp=Line(view,"EnemyHpTrack");var poise=Line(view,"EnemyPoiseTrack");

@@ -1,0 +1,20 @@
+{
+  "code": {
+    "resolved": [
+      "boss名更新前のbounds計測を更新後へ修正",
+      "body/sprite欠損時の既存配置fallbackを保護",
+      "元Face tintを保持しalpha変更を累積させない"
+    ],
+    "remainingRequired": 0
+  },
+  "visual": {
+    "remainingRequired": 0,
+    "limitations": [
+      "完全同位置・同外見の敵本体は個体まで静止画で区別不能。HP組は分離する",
+      "入力位置固定によりtouchHUDと右下の本体端の重なりは残る",
+      "同位置6体は自動回帰。実全景は3通常敵・単独bossを確認"
+    ]
+  },
+  "historicalUGUI": "未解決。今回の成功を解消証明としない",
+  "hardware": "物理タッチ/パッド/実機buildは未確認。Editor EventSystem Raycastの検証"
+}
