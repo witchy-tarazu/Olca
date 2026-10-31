@@ -1322,10 +1322,29 @@ namespace Olca.Presentation.Field
         private GameObject resetConfirmation;
         private Font font;
         private Olca.Unity.MenuPadScope menu;private bool navigationDirty;private int assignedFrame=-1;private string normalFocus="CloseKeyboardSettings";
-        private void InvalidateNavigation(){var name=menu?.FocusName;if(name!=null&&name!="CancelCapture"&&name!="ConfirmKeyboardReset"&&name!="CancelKeyboardReset")normalFocus=name;menu?.Suspend();navigationDirty=true;}
+        private void InvalidateNavigation(){var name=menu?.FocusName;if(managedContext?.DialogBlocksInput!=true&&name!=null&&name!="CancelCapture"&&name!="ConfirmKeyboardReset"&&name!="CancelKeyboardReset")normalFocus=name;menu?.Suspend();navigationDirty=true;}
+        private Olca.Presentation.Management.ManagedScreenContext managedContext;
+        private UnityEngine.UI.Button resetConfirmButton, resetCancelButton;
+        public void ConfigureManagement(Olca.Presentation.Management.ManagedScreenContext context) { managedContext = context; }
+        private void OpenReset()
+        {
+            listening = null;
+            if (managedContext == null) resetConfirmation.SetActive(true);
+            else { normalFocus="ResetKeyboardSettings"; managedContext.ShowDialog(resetConfirmation,resetConfirmButton,resetCancelButton,result => {
+                if (result == Olca.Presentation.Management.DialogResult.Confirmed) CompleteReset(true);
+                else if (result == Olca.Presentation.Management.DialogResult.Cancelled) CompleteReset(false);
+            }); }
+            Refresh("");
+        }
+        private void CompleteReset(bool confirmed)
+        {
+            if (confirmed) edit = Defaults().BeginEdit();
+            resetConfirmation.SetActive(false);
+            Refresh(confirmed ? "初期配置を表示しました。保存・適用で確定します。" : "初期化を取り消しました。");
+        }
         private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
-        private void LateUpdate(){FitSettingsLayout();if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
-        private void OnDisable(){menu?.Suspend();}
+        private void LateUpdate(){FitSettingsLayout();if(managedContext?.DialogBlocksInput==true){menu?.Suspend();navigationDirty=true;return;}if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
+        private void OnDisable(){menu?.Suspend();managedContext?.NotifyHidden();}
         private void OnDestroy(){menu?.Dispose();}
 
         public void Initialize(Font font, System.Func<InputBindingProfile, string> save, bool gamepad=false)
@@ -1364,7 +1383,7 @@ namespace Olca.Presentation.Field
             saveButton = MakeButton("SaveKeyboardSettings", "保存・適用", transform, new Vector2(-560, -420), new Vector2(400, 70));
             saveButton.onClick.AddListener(Save);
             MakeButton("ResetKeyboardSettings", "初期配置へ戻す", transform, new Vector2(0, -420), new Vector2(400, 70))
-                .onClick.AddListener(() => { listening = null; resetConfirmation.SetActive(true); Refresh(""); });
+                .onClick.AddListener(OpenReset);
             MakeButton("CloseKeyboardSettings", "破棄して戻る", transform, new Vector2(560, -420), new Vector2(400, 70))
                 .onClick.AddListener(DiscardAndClose);
             resetConfirmation = new GameObject("ResetKeyboardConfirmation", typeof(RectTransform), typeof(UnityEngine.UI.Image));
@@ -1375,13 +1394,10 @@ namespace Olca.Presentation.Field
             resetReading=ReadingFace("ResetReading",resetConfirmation.transform,new Vector2(0,100),new Vector2(1600,210));
             MakeText("ResetQuestion", "初期配置へ戻しますか？\n保存・適用するまでは変更を破棄できます。", resetConfirmation.transform,
                 new Vector2(0, 100), new Vector2(1500, 150), 34);
-            MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75))
-                .onClick.AddListener(() => {
-                    edit = Defaults().BeginEdit();
-                    resetConfirmation.SetActive(false); Refresh("初期配置を表示しました。保存・適用で確定します。");
-                });
-            MakeButton("CancelKeyboardReset", "やめる", resetConfirmation.transform, new Vector2(280, -80), new Vector2(450, 75))
-                .onClick.AddListener(() => { resetConfirmation.SetActive(false); Refresh("初期化を取り消しました。"); });
+            resetConfirmButton = MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75));
+            resetConfirmButton.onClick.AddListener(() => { if (managedContext == null) CompleteReset(true); });
+            resetCancelButton = MakeButton("CancelKeyboardReset", "やめる", resetConfirmation.transform, new Vector2(280, -80), new Vector2(450, 75));
+            resetCancelButton.onClick.AddListener(() => { if (managedContext == null) CompleteReset(false); });
             layoutWidth=-1;FitSettingsLayout();resetConfirmation.SetActive(false); gameObject.SetActive(false);
         }
 
