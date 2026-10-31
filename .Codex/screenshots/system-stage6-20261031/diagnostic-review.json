@@ -1,0 +1,122 @@
+{
+  "scope": "Stage6: failure diagnostics and camera isolation in the feedback subscription fixture; independent read-only review",
+  "source": {
+    "path": "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs",
+    "sha256": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "verifiedChange": "Original count, value, header-relative Y, blindness and old-subscription expectations remain unchanged. The fixture now owns an origin-positioned orthographic size-5 camera with 1920x1080 pixelRect, asserts Camera.main identity, temporarily removes MainCamera tags from existing active cameras and restores those surviving cameras in finally after destroying its own camera.",
+  "limits": [
+    "The concrete preceding operation that changed the ambient camera remains unidentified.",
+    "The camera preset was observed before TestRunner only; no claim is made that it persisted throughout the 22-case run.",
+    "The fixture asserts its own Camera.main identity, retains original expectations and dedicated boundary tests, and passed the final full suite in the original order.",
+    "No Unity operations or tests were executed by this reviewer; result files were independently read.",
+    "This diagnostic review does not guarantee every visual state, physical build or absence of all defects."
+  ],
+  "suggestedAdditionalDiagnostics": [
+    "Per-view viewportOffset and text renderer bounds/font/fontSize/characterSize",
+    "Failure-time camera instance ID, rotation, aspect, pixelRect and projection",
+    "Owner transform position"
+  ],
+  "publicationStatus": "Post-normalization final related/full verification pending; prior finalVerification remains historical pre-normalization evidence.",
+  "observedFailure": {
+    "evidence": "evidence/system-stage6-diagnostic-full-failure.json",
+    "headerTop": 1.5,
+    "numberY": [
+      1.328745,
+      4.285
+    ],
+    "cameraPosition": [
+      2.4,
+      1.28,
+      -10.0
+    ],
+    "orthographicSize": 3.15,
+    "interpretation": "Failure-time camera differs from successful isolated runs; the existing group viewport clamp can lower numbers below the fixture header. Source and observation support a camera-dependent fixture contract conflict, not a new product fix."
+  },
+  "finalVerification": {
+    "full": {
+      "evidence": "evidence/system-stage6-final-test-result.json",
+      "summary": {
+        "total": 3569,
+        "passed": 3569,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "durationSeconds": 287.88,
+      "consoleErrors": 0,
+      "groundTruthWarnings": 59,
+      "wrapperTimedOut": true,
+      "interpretation": "Completed Unity run result was recovered; wrapper timeout is not treated as test failure."
+    },
+    "related": {
+      "evidence": "evidence/system-stage6-related-test-result.json",
+      "summary": {
+        "total": 12,
+        "passed": 12,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "durationSeconds": 11.4
+    },
+    "poolClass": {
+      "evidence": "evidence/system-stage6-pool-isolation-regression.json",
+      "summary": {
+        "total": 22,
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "durationSeconds": 2.45,
+      "limit": "Preset observed immediately before TestRunner; runner scene restoration is not treated as evidence of ambient camera throughout test. Revised test itself asserts unique owned Camera.main and final full retains original suite order."
+    },
+    "sourceHashesSubmissionAndValidationMatchFinal": true,
+    "sourceHashesRelatedAndFullMatch": true,
+    "verifiedSourceFileCount": 12,
+    "sourceHashes": {
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "a50710a7e4fe2fd26c7a48ef65fce3ba6b90c30e4b5d15b4e9fc1440918b699f",
+      "Assets/Olca/Unity/Management/WorldVisualResources.cs": "3f300f1eb77da55b1d57bc6956780e351bca10f974b6f52cac3afa9e1d4a40c6",
+      "Assets/Olca/Unity/Management/ResourceManager.cs": "45f5e1d73345b96844b1a5a4de3294baa353ee2f2d0fd54553e5eadcf5a131a3",
+      "Assets/Olca/Application/Management/BootstrapEntry.cs": "04e6c4ddb801370968d2a910dfc048633490cfefaae36a792c9af10d2645b8c4",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "3bece41e4b6c43c5ed689ac74167c350e5cf0a5f761c27ca78182a4090663109",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "1b7cacc7c1ac31f1f576adfe6fe7aaa8de38eab57a6ab547e07635834a8e5bdd",
+      "Assets/Olca/Tests/Application/WorldPresentationManagementTests.cs": "500b43421b0e3cd39dc60ae5f514878c80908545756fcf7a1b94c2d9e6cd8ab4",
+      "Assets/Resources/OlcaSystem/WorldPresentation.prefab": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+      "Assets/Resources/OlcaSystem/WorldGround.mat": "a2dbcaa952cb14e1b5fd9750c16e7db656d95ef98571c62d4e6c161e27e40f7d",
+      "Assets/Resources/OlcaSystem/WorldDungeonBackground.mat": "b56d9c76d063b56e674aa68d1191fa1d1b204234fa863a8d4b676a143b68c7ca",
+      "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8",
+      "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4"
+    }
+  },
+  "prefabNormalizationReview": {
+    "exactOneDelimiterSpaceRemoval": true,
+    "beforeSha256": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+    "afterSha256": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+    "nativeBefore": {
+      "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+      "imported": false,
+      "property": "m_WarningMessage",
+      "type": "String",
+      "value": "",
+      "animators": 1,
+      "objects": 7
+    },
+    "nativeAfter": {
+      "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+      "imported": true,
+      "property": "m_WarningMessage",
+      "type": "String",
+      "value": "",
+      "animators": 1,
+      "objects": 7
+    },
+    "nativeEmptyStringAndCountsEqual": true,
+    "interpretation": "Only Animator serialized empty warning-message scalar formatting changed; no authored UI Text, Sprite, controller or motion data changed. Native imported String value remains empty. This is not a generic publication-gate exception.",
+    "limits": "Previous native/visual captures and full/related success describe pre-normalization assets; final tests on the new hash are pending. Native receipts do not directly measure Inspector visibility of the property.",
+    "unresolvedRequiredFindings": 0
+  }
+}

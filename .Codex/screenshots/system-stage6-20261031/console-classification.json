@@ -1,0 +1,132 @@
+{
+  "nativeWindow": {
+    "errors": [
+      {
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+        "seq": 303245
+      },
+      {
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms",
+        "seq": 303247
+      }
+    ],
+    "productExceptionsObserved": 0,
+    "warnings": [
+      {
+        "message": "Editor is already in edit mode",
+        "seq": 303244
+      },
+      {
+        "message": "Could not save connection info: Read-only file system",
+        "seq": 303246
+      }
+    ],
+    "groundTruth": {
+      "sampledUtc": "2026-10-31T16:22:31.950697Z",
+      "ageMs": 155,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 3,
+      "consoleWarnings": 1,
+      "consoleLogs": 73,
+      "seeded": true
+    }
+  },
+  "compileHistory": "Stage6 explicit compile succeeded and related12 passed, product bytes unchanged during actual checks",
+  "recovery": "Domain/Play reload timeouts retained. Same PID137059 recovered via supported CLI readiness; actualController manager/input observed before resuming capture without repeating fixture. Dedicated TMPDIR/actual640/guard confirmed before tests.",
+  "worldScope": "World7objects/23blocks and two inlineMaterials replaced by Resource prefab/material path binding; Core/Input/clock/world calculations unchanged",
+  "assetNormalization": "Only emptyMaterial m_LockedProperties scalar spaces normalized. Native serializedMaterial fields match export; only assetName differs from sourceScene Material; prefab noSceneDependency andmaterials injectedbyResourcepaths.",
+  "historicalUnresolved": [
+    "UGUI reload exception"
+  ],
+  "environmentHistory": [
+    "Pipeline timeout recovery",
+    "UnityAI connectioninfo read-only warning",
+    "FMOD noaudio:聴感未確認"
+  ],
+  "publication": "Receipt-bound separated check/commit/push; strict emptyName/ClassIdentifier metadata whitespace exception only",
+  "verificationBoundaries": {
+    "beforeImages": "ReusedStage5after6 captures atunchangedbaseHEAD094, provenance and byteequality retained; no newbefore capture claimed",
+    "nextBattleIdentity": "First nextbattle was normalenemy80, so filenames corrected to next-battle; actualboss99 then separately reached and IsBossGauge/GaugeVisible asserted before actual-boss3 capture",
+    "input": "Virtualpad removal triggers specifiedautopause; used actualResume beforeconfirm. ExitVisit handles existing exploration visits. No productcode edits",
+    "materials": "Original Scene materialshader/settings equal afterassetexport exceptroleassetnames, then emptyLockedProperties scalar syntax normalized and nativeJSON equality verified"
+  },
+  "nativeErrorCounterReconciliation": {
+    "mcpErrorEntries": 2,
+    "groundTruth": 3,
+    "boundedEditorLogMessages": [
+      "Failed to handle /api/exec request: Thread was being aborted.",
+      "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+      "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+    ],
+    "note": "Raw boundedEditor log retains Pipeline ThreadAbort/timeout messages; not a clean nativeconsole claim; final suite separate clear."
+  },
+  "postPlayStop": {
+    "rawEvidence": "system-stage6-post-stop-errors.json",
+    "productExceptionEntriesObserved": 0,
+    "preservedBeforeClear": true
+  },
+  "postDiagnosticDomainReload": {
+    "sameEditorPID": 137059,
+    "explicitRecompile": "completed failed=false errors=[]",
+    "cliReadiness": "unreachable then normal bounded wait ready; no restart",
+    "timedOutMainThreadRequests": [
+      {
+        "tool": "run_script",
+        "entry": "FlowAspectProof.Small",
+        "timeoutMs": 60000,
+        "execution": "not blindly repeated; later actual render read640x360"
+      },
+      {
+        "tool": "editor_status",
+        "timeoutMs": 60000,
+        "execution": "read-only; preserved timeout"
+      }
+    ],
+    "recoveryActualRender": {
+      "screen": [
+        640,
+        360
+      ],
+      "textures": [
+        {
+          "name": "GameView.m_RenderTexture",
+          "width": 640,
+          "height": 360
+        },
+        {
+          "name": "PlayModeView.m_TargetTexture",
+          "width": 640,
+          "height": 360
+        }
+      ],
+      "temp": "/workspace/olca-validation-20261024/save/tmp/"
+    },
+    "existingTestsObserved": "completed22/22, no pending full; later related12/12 passed and one new full begun",
+    "cause": "not established; connection readiness is distinct from main-thread responsiveness",
+    "historicalErrorsNotSuppressed": true
+  },
+  "poolRegressionPreflight": {
+    "refusedBeforeTests": "private helper omitted existing inactive-controller preparation; AfterStop guard correctly refused",
+    "correction": "added unchanged Battle76Proof.Prepare before guard; no guard or expected value weakened",
+    "testsStartedByRejectedAttempt": false
+  },
+  "isolationFixtureRecompileRecovery": {
+    "explicitRecompile": "completed error0",
+    "sameEditorPID": 137059,
+    "cli": "unreachable then ready",
+    "readOnlyRender": "first timed out, later success640x360 but no RT; existing Small then verified real RT640x360 before tests",
+    "noRestart": true,
+    "noDuplicateTests": true,
+    "finalFullConsoleErrors": 0
+  },
+  "eventFixtureCleanup": {
+    "fullFailure": "normalized full3568/3569, destroyed EventSystem registry detected, not formatting behavior",
+    "diagnosis": "manual fixture OnEnable without OnDisable across runs; product manager and strict null assertion unchanged",
+    "staticClearByHarness": false,
+    "repeatCyclesPassed": 2,
+    "postFullRegistryEmpty": true,
+    "finalFullErrors": 0,
+    "finalFullWarnings": 59
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "recordedAmbientCamera": [
+    2.4,
+    1.275,
+    -10,
+    3.15
+  ],
+  "summary": {
+    "total": 22,
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 2.45,
+  "originalCamera": {
+    "x": 0,
+    "y": 0,
+    "z": -10,
+    "size": 5
+  },
+  "restored": {
+    "before": {
+      "x": 0,
+      "y": 0,
+      "z": -10,
+      "size": 5
+    },
+    "after": [
+      {
+        "name": "Main Camera",
+        "active": true,
+        "tag": "MainCamera",
+        "x": 0,
+        "y": 0,
+        "z": -10,
+        "size": 5,
+        "rotation": "(0.00, 0.00, 0.00)",
+        "rect": "(x:0.00, y:0.00, width:640.00, height:360.00)"
+      }
+    ],
+    "sceneSaved": false
+  },
+  "sceneSaved": false,
+  "cameraBeforeRunner": [
+    {
+      "name": "Main Camera",
+      "active": true,
+      "tag": "MainCamera",
+      "x": 2.4,
+      "y": 1.275,
+      "z": -10,
+      "size": 3.15,
+      "rotation": "(0.00, 0.00, 0.00)",
+      "rect": "(x:0.00, y:0.00, width:640.00, height:360.00)"
+    }
+  ],
+  "limit": "Preset observed immediately before TestRunner; runner scene restoration is not treated as evidence of ambient camera throughout test. Revised test itself asserts unique owned Camera.main and final full retains original suite order."
+}

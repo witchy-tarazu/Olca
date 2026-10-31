@@ -1,0 +1,9 @@
+{
+  "unityMaterialPropertiesAfterNormalizationMatchExport": true,
+  "fieldsNormalized": [
+    "empty m_LockedProperties scalar trailing ASCII space"
+  ],
+  "sourceVsAssetDifference": "Asset names only, all other serialized shader/settings equal",
+  "worldPrefabHasNoSceneDependency": true,
+  "newMaterialReferences": "Resources path injection before world activation; no newMaterialGUID dependency inPrefab"
+}

@@ -1,0 +1,32 @@
+{
+  "status": "reproduced with coordinate diagnostics; fixture camera assumption isolated",
+  "assertion": "two contact feedback numbers are above header; duplicate refresh adds none",
+  "sourceFacts": [
+    "new source TextMesh and Pool in each SetUp, teardown destroys active/idle/external parent",
+    "preceding death test does not modify camera/font/pause owner and tears down enemy/CTS",
+    "viewport tests destroy dedicated camera, restore other camera tags and release unique pause owner in finally",
+    "this fixture uses ambient Camera.main and does not freeze BattleVisualClock",
+    "ShowTextAsync advances elapsed using DeltaTime before first await; Pool stacks by current unclamped glyph bounds; group viewport clamp can lower whole group"
+  ],
+  "notFound": "no concrete leaked Pool/subscription/pause owner identified in checked order",
+  "hypotheses": [
+    "ambient camera or glyph bounds alter clamp",
+    "first-frame DeltaTime plus stacking causes clamp"
+  ],
+  "notClaimed": "no established root cause from post-run camera or focused successes; production behavior not speculatively changed",
+  "observed": {
+    "headerTop": 1.5,
+    "numberY": [
+      1.328745,
+      4.285
+    ],
+    "cameraPositionDisplay": "(2.40,1.28,-10)",
+    "orthographicSize": 3.15,
+    "numberSpan": 2.956255,
+    "upperRequiredForBothAboveHeader": 4.4562550000000005,
+    "observedClampTop": 4.285
+  },
+  "conclusion": "ambient narrow camera makes header-above condition incompatible with preserved group spacing/top clamp for artificial glyph fixture; dedicated origin camera size5 restores explicit intended test precondition",
+  "fix": "fixture-only owned MainCamera, preserve/restore other MainCamera tags in finally; original assertions plus dedicated camera assertion; product untouched",
+  "remaining": "exact preceding camera-framing invocation not identified; final regression pending"
+}

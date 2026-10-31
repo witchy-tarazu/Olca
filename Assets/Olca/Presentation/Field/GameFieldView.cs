@@ -22,6 +22,19 @@ namespace Olca.Presentation.Field
     /// </summary>
     public class GameFieldView : MonoBehaviour
     {
+        private Olca.Unity.WorldVisualResources visualResources;
+        public void ConfigureVisualResources(Olca.Unity.WorldVisualResources resources){visualResources=resources;}
+        private T VisualResource<T>(string path) where T:UnityEngine.Object
+            => visualResources!=null?visualResources.Find<T>(path):Resources.Load<T>(path);
+        /// <summary>表示返却ではmodel/camera参照だけを外し、論理状態を変更しない。</summary>
+        public void ReleasePresentation()
+        {
+            UnbindPlayerDamage();
+            if(currentBattle!=null){currentBattle.OnSummonAdded-=OnSummonAdded;currentBattle.OnBattleEnd-=OnSummonBattleEnd;}
+            currentBattle=null;dungeonSystem=null;cameraObservedDungeon=null;
+            enemyViews.Clear();visualResources=null;fieldCamera=null;ConfigureDungeonHud(null);
+        }
+
         [Header("プレイヤー")]
         [SerializeField] private Transform playerTransform;
         [SerializeField] private SpriteRenderer playerSprite;
@@ -49,7 +62,7 @@ namespace Olca.Presentation.Field
             if (somersaultSprites != null && somersaultSprites.Length > 0) return;
             var textures = new Texture2D[6];
             for (int i = 0; i < textures.Length; i++) {
-                textures[i] = Resources.Load<Texture2D>("OlcaCharacterMotion/BackJump/backjump_" + (i + 1).ToString("00"));
+                textures[i] = VisualResource<Texture2D>("OlcaCharacterMotion/BackJump/backjump_" + (i + 1).ToString("00"));
                 if (textures[i] == null || textures[i].width != 256 || textures[i].height != 256) return;
             }
             var frames = new Sprite[textures.Length];
@@ -277,7 +290,7 @@ namespace Olca.Presentation.Field
         private Sprite GetMarkerSprite(string key,string name,ref Sprite cached)
         {
             if(cached!=null)return cached;
-            var source=Resources.Load<TextAsset>(key);if(source==null)return null;
+            var source=VisualResource<TextAsset>(key);if(source==null)return null;
             var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);
             if(!texture.LoadImage(source.bytes,true)){
                 if(UnityEngine.Application.isPlaying)Destroy(texture);else DestroyImmediate(texture);return null;
@@ -659,6 +672,7 @@ namespace Olca.Presentation.Field
         private void OnDisable() { worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
+            ReleasePresentation();
             guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose();
             actionPoseRenderer?.Dispose();
             projectilePoseRenderer?.Dispose();

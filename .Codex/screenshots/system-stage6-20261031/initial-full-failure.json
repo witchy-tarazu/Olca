@@ -1,0 +1,9 @@
+[
+  {
+    "FullName": "Olca.Tests.WorldDamageNumberPoolTests.敵Viewは個別ヒットを購読し接触演出後や毎フレーム更新で二重表示しない",
+    "Status": "Failed",
+    "Duration": 1.4886677,
+    "Message": "  名前/HPの表示範囲より上に出す\n  Expected: True\n  But was:  False\n",
+    "StackTrace": "at Olca.Tests.WorldDamageNumberPoolTests.敵Viewは個別ヒットを購読し接触演出後や毎フレーム更新で二重表示しない () [0x0013b] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/WorldDamageNumberPoolTests.cs:317\nat UnityEngine.TestTools.TestRunner.TestTaskWrapper+<Execute>d__2.MoveNext () [0x00063] in ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEngine.TestRunner/TestRunner/TestTaskWrapper.cs:31\nat UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0003a] in ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44\n"
+  }
+]

@@ -29,13 +29,16 @@ namespace Olca.Unity
         private bool disposed;
         public int OwnedInstanceCount => instances.Count;
         public T GetShared<T>(string path) where T : UnityEngine.Object
+            => FindShared<T>(path) ?? throw new InvalidOperationException("リソースがありません: " + path);
+        /// <summary>任意素材の未登録はnullを維持する。共有import素材だけを追跡し、生成Spriteは所有しない。</summary>
+        public T FindShared<T>(string path) where T : UnityEngine.Object
         {
             if (disposed) throw new ObjectDisposedException(nameof(ResourceManager));
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException(nameof(path));
             var key = (typeof(T), path);
             if (!shared.TryGetValue(key, out var value) || value == null) {
                 value = Resources.Load<T>(path);
-                if (value == null) throw new InvalidOperationException("リソースがありません: " + path);
+                if (value == null) return null;
                 shared[key] = value;
             }
             return (T)value;

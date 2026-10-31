@@ -204,6 +204,14 @@ namespace Olca.Application.Dungeon
         private bool managedUiContent,managedDungeonHud;
         private Olca.Application.Management.GameplayCameraBinding managedCameraBinding;
         private Olca.Application.Management.BattlePresentationBinding managedBattlePresentation;
+        private Olca.Application.Management.WorldPresentationBinding managedWorldPresentation;
+        public void PrepareWorldPresentation(Olca.Application.Management.GameSystem services)
+        {
+            if(gameFieldView!=null)return;
+            managedWorldPresentation=new Olca.Application.Management.WorldPresentationBinding(this,services.Resources,services.Views,transform);
+            gameFieldView=managedWorldPresentation.Field;
+        }
+
         private void PrepareBattlePresentation()
         {
             if(!UnityEngine.Application.isPlaying||gameSystem==null||gameFieldView==null||battleView!=null||customScreenView!=null)return;
@@ -216,7 +224,7 @@ namespace Olca.Application.Dungeon
             var roots=gameObject.scene.GetRootGameObjects();
             var cameras=roots.SelectMany(x=>x.GetComponentsInChildren<Camera>(true)).ToArray();
             if(cameras.Length!=1||services.Cameras==null)throw new System.InvalidOperationException("互換ホストのカメラ構成が不正です");
-            var backgrounds=roots.SelectMany(x=>x.GetComponentsInChildren<Olca.Presentation.Field.ScrollingBackgroundView>(true)).ToArray();
+            var backgrounds=gameFieldView.GetComponentsInChildren<Olca.Presentation.Field.ScrollingBackgroundView>(true);
             managedCameraBinding=new Olca.Application.Management.GameplayCameraBinding(this,services.Cameras,gameFieldView,cameras[0],backgrounds);
         }
         private void PrepareGameplayHud()
@@ -236,6 +244,7 @@ namespace Olca.Application.Dungeon
             if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
             managedCameraBinding?.Dispose();managedCameraBinding=null;
+            if(managedWorldPresentation!=null){managedWorldPresentation.Dispose();managedWorldPresentation=null;gameFieldView=null;}
         }
         private GameObject pauseOverlay;
         private GameplayKeyboardSettingsView keyboardSettingsView,gamepadSettingsView;
@@ -1766,6 +1775,12 @@ namespace Olca.Application.Dungeon
             gameSystem = configuredGameSystem ?? (UnityEngine.Application.isPlaying ? Olca.Application.Management.GameSystemRoot.Ensure().Services : null);
             if (gameSystem != null) gameSystemSession = gameSystem.BeginSession(this,
                 gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"), CheckpointDirectory, ProgressDirectory);
+            if(gameSystem!=null)PrepareWorldPresentation(gameSystem);
+            if(managedWorldPresentation!=null&&managedCameraBinding==null){
+                var legacyCameras=gameObject.scene.GetRootGameObjects().SelectMany(x=>x.GetComponentsInChildren<Camera>(true)).ToArray();
+                if(legacyCameras.Length!=1)throw new System.InvalidOperationException("互換カメラは1つ必要です");
+                managedWorldPresentation.ConfigureCamera(legacyCameras[0]);
+            }
             PrepareGameplayHud();
             PrepareBattlePresentation();
             clearReturnStore = clearReturnStore ?? gameSystemSession?.Storage.Progress ?? new ClearReturnFileStore(ProgressDirectory);
@@ -1890,6 +1905,7 @@ namespace Olca.Application.Dungeon
             // イベント購読
             BindManagerEvents(manager);
 
+            managedWorldPresentation?.Activate();
             // GameFieldView 初期化（フィールド・敵スプライトを世界空間に配置）
             gameFieldView?.Initialize(manager.Dungeon);
 

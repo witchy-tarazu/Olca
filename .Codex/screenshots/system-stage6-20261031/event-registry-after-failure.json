@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 99,\n  \"executeMs\": 7,\n  \"assemblyName\": \"PipelineRunScript_Stage6EventRegistryProof_49bad9026f3740e782ca48f313a496cb\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"currentClrNull\": false,\n    \"currentUnityNull\": true,\n    \"registered\": [\n      {\n        \"clrNull\": false,\n        \"unityNull\": true,\n        \"id\": -249829302,\n        \"name\": \"destroyed\",\n        \"scene\": \"destroyed\",\n        \"parent\": \"destroyed\"\n      },\n      {\n        \"clrNull\": false,\n        \"unityNull\": true,\n        \"id\": -247094368,\n        \"name\": \"destroyed\",\n        \"scene\": \"destroyed\",\n        \"parent\": \"destroyed\"\n      }\n    ],\n    \"sceneEvents\": []\n  }\n}"
+    }
+  ]
+}

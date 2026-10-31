@@ -1,0 +1,64 @@
+{
+  "initial": {
+    "phase": "Battle",
+    "battleIdentity": 1847138096,
+    "view": -238874852,
+    "custom": -238874862,
+    "hand": 5,
+    "selected": [],
+    "frame": 0,
+    "currency": 0,
+    "registered": 1,
+    "battleViews": 1,
+    "customViews": 1
+  },
+  "selectionCounts": [
+    1,
+    2,
+    1,
+    0
+  ],
+  "mode": {
+    "virtualGamepadInputSystemRoute": true,
+    "actualCustomizeEnteredAndCanceled": true,
+    "handUnchanged": 5,
+    "selectionUnchanged": 0,
+    "physicalDeviceNotTested": true
+  },
+  "readonlySaveBytesUnchanged": true,
+  "remembered": {
+    "phase": "Battle",
+    "battleIdentity": 1847138096,
+    "view": -238874852,
+    "custom": -238874862,
+    "hand": 5,
+    "selected": [],
+    "frame": 0,
+    "currency": 0,
+    "registered": 1,
+    "battleViews": 1,
+    "customViews": 1
+  },
+  "nextBattle": {
+    "actualNextBattleWithSameView": true,
+    "oldBattleAndCustomSubscriptionsRemoved": true,
+    "state": {
+      "phase": "Battle",
+      "battleIdentity": 1133916048,
+      "view": -238874852,
+      "custom": -238874862,
+      "hand": 5,
+      "selected": [],
+      "frame": 0,
+      "currency": 0,
+      "registered": 1,
+      "battleViews": 1,
+      "customViews": 1
+    }
+  },
+  "normalVisitsExited": [
+    "ダンジョンショップ",
+    "イベント"
+  ],
+  "victoryFixture": "Existing damageAPI forced victory to exercise unchanged outcome/reward/next-contact flow; not physical combat validation"
+}

@@ -1,0 +1,28 @@
+{
+  "failure": "UIRuntimeManagementTests.Content strict CLR null assertion",
+  "observedRegistryReceipt": "system-stage6-event-registry-after-failure.json",
+  "observed": {
+    "sceneEventSystems": 0,
+    "staticDestroyedWrappers": 2,
+    "clrNull": false,
+    "unityNull": true
+  },
+  "sourceDefect": "MenuPadScopeTests scroll fixture calls EventSystem.OnEnable manually only when it creates one, but old finally destroyed it without corresponding OnDisable",
+  "packageBehavior": "UGUI EventSystem.OnEnable appends self; OnDisable removes self; current returns list first without Unity-null filtering",
+  "runOrder": {
+    "uiStrictCheckIndex": 494,
+    "scrollFixtureIndex": 3459
+  },
+  "crossRunExplanation": "late run fixture can leave registry wrapper for next run without Domain Reload; formatting-only prefab import did not reset static list",
+  "fix": "manual OnDisable only for fixture-owned EventSystem, assert unregistered, finally destroy self and outer finally destroy UI root; borrowed EventSystem selection restored unchanged",
+  "unchanged": [
+    "product UIRuntimeManager",
+    "strict Assert.IsNull(EventSystem.current)",
+    "UI behavior expectations",
+    "gameplay/save guards"
+  ],
+  "limits": [
+    "old two wrapper IDs not directly mapped to creation names; exact old instance attribution is not claimed"
+  ],
+  "requiredValidation": "two Scroll1/UI4 cycles in same Editor without DomainReload, observe empty CLR/Unity registry; final related/full plus post-full registry"
+}
