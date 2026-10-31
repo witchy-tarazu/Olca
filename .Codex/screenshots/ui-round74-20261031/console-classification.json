@@ -1,0 +1,43 @@
+{
+  "native": {
+    "sampledUtc": "2026-10-31T05:35:23.329442Z",
+    "ageMs": 134,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 1,
+    "consoleLogs": 49,
+    "seeded": true
+  },
+  "nativeError": {
+    "count": 1,
+    "category": "recovered Unity.Pipeline /api/exec startup main-thread60000ms timeout",
+    "entry": {
+      "seq": 268271,
+      "timestampUtc": "2026-10-31T05:30:43.83482Z",
+      "level": "error",
+      "logType": "Error",
+      "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+      "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+      "seeded": false
+    },
+    "notSuppressed": true
+  },
+  "nativeWarning": {
+    "count": 1,
+    "category": "UnityAI connection info save read-only filesystem"
+  },
+  "finalFull": {
+    "count": 59,
+    "messages": {
+      "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします": 50,
+      "[WARNING] [DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効": 2,
+      "[WARNING] 使用可能なカードがありません": 2,
+      "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。": 4,
+      "[WorldDamageNumberPool] 最大プールサイズ(20)に達しています。": 1
+    },
+    "classification": "expected test-fixture diagnostics; actual messages retained, not suppressed",
+    "suppressed": false
+  },
+  "historicalUGUI": "unresolved; different from this Pipeline startup error"
+}

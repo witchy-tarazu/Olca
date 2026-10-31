@@ -1,0 +1,1652 @@
+[
+  {
+    "state": "states",
+    "ratio": "fhd",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 100,
+      "playerParalyzed": true,
+      "playerParalysis": 180,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        }
+      ]
+    }
+  },
+  {
+    "state": "states",
+    "ratio": "4k",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 100,
+      "playerParalyzed": true,
+      "playerParalysis": 180,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        }
+      ]
+    }
+  },
+  {
+    "state": "states",
+    "ratio": "4by3",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 100,
+      "playerParalyzed": true,
+      "playerParalysis": 180,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        }
+      ]
+    }
+  },
+  {
+    "state": "warning",
+    "ratio": "fhd",
+    "Coreframe": 99,
+    "previewTiles": 1,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 100,
+      "playerParalyzed": true,
+      "playerParalysis": 171,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.56, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.20, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.40, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.40, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.56, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Fill",
+          "sortingOrder": 2,
+          "alpha": 0.035,
+          "center": "(-4.80, -0.70, 0.09)",
+          "size": "(1.60, 0.80, 0.20)",
+          "owner": "EnemyAttackTelegraph_1"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.04, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge4"
+        },
+        {
+          "name": "WarningStem",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.80, -0.63, 0.09)",
+          "size": "(0.03, 0.14, 0.20)",
+          "owner": "Fill"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.04, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.20, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge4"
+        }
+      ]
+    }
+  },
+  {
+    "state": "warning",
+    "ratio": "4k",
+    "Coreframe": 99,
+    "previewTiles": 1,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 100,
+      "playerParalyzed": true,
+      "playerParalysis": 171,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.56, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.20, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.40, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.40, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.56, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Fill",
+          "sortingOrder": 2,
+          "alpha": 0.035,
+          "center": "(-4.80, -0.70, 0.09)",
+          "size": "(1.60, 0.80, 0.20)",
+          "owner": "EnemyAttackTelegraph_1"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.04, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge4"
+        },
+        {
+          "name": "WarningStem",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.80, -0.63, 0.09)",
+          "size": "(0.03, 0.14, 0.20)",
+          "owner": "Fill"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.04, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.20, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge4"
+        }
+      ]
+    }
+  },
+  {
+    "state": "warning",
+    "ratio": "4by3",
+    "Coreframe": 99,
+    "previewTiles": 1,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 100,
+      "playerParalyzed": true,
+      "playerParalysis": 171,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.56, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.20, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.40, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.40, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-5.56, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Fill",
+          "sortingOrder": 2,
+          "alpha": 0.035,
+          "center": "(-4.80, -0.70, 0.09)",
+          "size": "(1.60, 0.80, 0.20)",
+          "owner": "EnemyAttackTelegraph_1"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.04, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge4"
+        },
+        {
+          "name": "WarningStem",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.80, -0.63, 0.09)",
+          "size": "(0.03, 0.14, 0.20)",
+          "owner": "Fill"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.04, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(-4.20, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge4"
+        }
+      ]
+    }
+  },
+  {
+    "state": "impact",
+    "ratio": "fhd",
+    "Coreframe": 132,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 138,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        }
+      ]
+    }
+  },
+  {
+    "state": "impact",
+    "ratio": "4k",
+    "Coreframe": 132,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 138,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        }
+      ]
+    }
+  },
+  {
+    "state": "impact",
+    "ratio": "4by3",
+    "Coreframe": 132,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 138,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-1.60, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(-3.20, -0.22, 0.00)",
+          "size": "(1.97, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(0.00, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(-1.60, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(-3.20, -0.13, 0.00)",
+          "size": "(1.86, 1.01, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(-4.80, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 3,
+          "alpha": 0.65,
+          "center": "(0.00, -0.22, 0.00)",
+          "size": "(2.02, 1.19, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        }
+      ]
+    }
+  },
+  {
+    "state": "cleared",
+    "ratio": "fhd",
+    "Coreframe": 175,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "cleared",
+    "ratio": "4k",
+    "Coreframe": 175,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "cleared",
+    "ratio": "4by3",
+    "Coreframe": 175,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-states",
+    "ratio": "fhd",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 180,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-states",
+    "ratio": "4k",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 180,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-states",
+    "ratio": "4by3",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 180,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-warning",
+    "ratio": "fhd",
+    "Coreframe": 128,
+    "previewTiles": 1,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 172,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(0.84, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.20, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.00, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.00, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(0.84, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Fill",
+          "sortingOrder": 2,
+          "alpha": 0.035,
+          "center": "(1.60, -0.70, 0.09)",
+          "size": "(1.60, 0.80, 0.20)",
+          "owner": "EnemyAttackTelegraph_1"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.36, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge4"
+        },
+        {
+          "name": "WarningStem",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.60, -0.63, 0.09)",
+          "size": "(0.03, 0.14, 0.20)",
+          "owner": "Fill"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.36, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.20, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge4"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-warning",
+    "ratio": "4k",
+    "Coreframe": 128,
+    "previewTiles": 1,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 172,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(0.84, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.20, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.00, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.00, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(0.84, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Fill",
+          "sortingOrder": 2,
+          "alpha": 0.035,
+          "center": "(1.60, -0.70, 0.09)",
+          "size": "(1.60, 0.80, 0.20)",
+          "owner": "EnemyAttackTelegraph_1"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.36, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge4"
+        },
+        {
+          "name": "WarningStem",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.60, -0.63, 0.09)",
+          "size": "(0.03, 0.14, 0.20)",
+          "owner": "Fill"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.36, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.20, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge4"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-warning",
+    "ratio": "4by3",
+    "Coreframe": 128,
+    "previewTiles": 1,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 93,
+      "playerParalyzed": true,
+      "playerParalysis": 172,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(0.84, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.20, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.00, -0.33, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.00, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge3"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(0.84, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge1"
+        },
+        {
+          "name": "Fill",
+          "sortingOrder": 2,
+          "alpha": 0.035,
+          "center": "(1.60, -0.70, 0.09)",
+          "size": "(1.60, 0.80, 0.20)",
+          "owner": "EnemyAttackTelegraph_1"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.36, -0.95, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge4"
+        },
+        {
+          "name": "WarningStem",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(1.60, -0.63, 0.09)",
+          "size": "(0.03, 0.14, 0.20)",
+          "owner": "Fill"
+        },
+        {
+          "name": "Vertical",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.36, -0.45, 0.09)",
+          "size": "(0.04, 0.24, 0.20)",
+          "owner": "Edge2"
+        },
+        {
+          "name": "Horizontal",
+          "sortingOrder": 6,
+          "alpha": 1,
+          "center": "(2.20, -1.07, 0.09)",
+          "size": "(0.32, 0.04, 0.20)",
+          "owner": "Edge4"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-impact",
+    "ratio": "fhd",
+    "Coreframe": 162,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": true,
+      "playerParalysis": 138,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-impact",
+    "ratio": "4k",
+    "Coreframe": 162,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": true,
+      "playerParalysis": 138,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-impact",
+    "ratio": "4by3",
+    "Coreframe": 162,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": true,
+      "playerParalysis": 138,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": [
+        {
+          "name": "ActorCondition_Guard",
+          "sortingOrder": 0,
+          "alpha": 0.42,
+          "center": "(3.20, 0.92, 0.00)",
+          "size": "(4.91, 4.27, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "DefensiveFieldVisual",
+          "sortingOrder": 1,
+          "alpha": 0.55,
+          "center": "(3.20, 1.24, 0.00)",
+          "size": "(4.63, 3.63, 0.20)",
+          "owner": "EnemyViewPrerfab(Clone)"
+        },
+        {
+          "name": "ActorCondition_Paralyze",
+          "sortingOrder": 11,
+          "alpha": 0.65,
+          "center": "(1.60, 0.48, 0.00)",
+          "size": "(1.41, 3.08, 0.20)",
+          "owner": "PlayerSprite"
+        }
+      ]
+    }
+  },
+  {
+    "state": "boss-cleared",
+    "ratio": "fhd",
+    "Coreframe": 205,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-cleared",
+    "ratio": "4k",
+    "Coreframe": 205,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-cleared",
+    "ratio": "4by3",
+    "Coreframe": 205,
+    "previewTiles": 0,
+    "bodyModelsAnchorsAndForegroundUnchanged": true,
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  }
+]

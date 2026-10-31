@@ -60,14 +60,15 @@ namespace Olca.Presentation.Effects
                 var obj = new GameObject("DefensiveFieldVisual", typeof(SpriteRenderer)); obj.transform.SetParent(body.transform, false);
                 field = obj.GetComponent<SpriteRenderer>();
             } else if (field.transform.parent != body.transform) field.transform.SetParent(body.transform, false);
-            field.sprite = sprite; field.color = new Color(1, 1, 1, .65f);
+            field.sprite = sprite; field.color = new Color(1, 1, 1, .55f);
             field.sortingLayerID = body.sortingLayerID;
             field.sortingOrder = body.sortingOrder == int.MinValue ? int.MinValue : body.sortingOrder - 1;
             var bounds = GetBodyBounds(body);
-            float height = bounds.size.y * 1.15f, width = Mathf.Max(bounds.size.x * 1.25f, bounds.size.y * .7f);
+            float height = bounds.size.y * 1.15f, width = Mathf.Max(bounds.size.x * 1.15f, bounds.size.y * .62f);
             var parentScale = body.transform.lossyScale;
             if (height <= 0 || width <= 0 || Mathf.Abs(parentScale.x) < .00001f || Mathf.Abs(parentScale.y) < .00001f) { Clear(); return; }
-            field.transform.position = bounds.center;
+            // 本体を動かさず外周だけを寄せ、足場と予兆の下端を覆わない。
+            field.transform.position = bounds.center + Vector3.up * bounds.size.y * .1f;
             field.transform.localScale = new Vector3(width / sprite.bounds.size.x / Mathf.Abs(parentScale.x), height / sprite.bounds.size.y / Mathf.Abs(parentScale.y), 1);
             field.forceRenderingOff = false; field.enabled = true; VisibleKind = kind;
         }

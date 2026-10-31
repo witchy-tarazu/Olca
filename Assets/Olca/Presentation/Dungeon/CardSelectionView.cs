@@ -1083,8 +1083,8 @@ namespace Olca.Presentation.Dungeon
     // 既存FHD Canvas上の小さな操作面。面は透過し、操作ボタン以外は入力を遮らない。
     public sealed class BasicAttackHud : UnityEngine.MonoBehaviour
     {
-        private UnityEngine.UI.Text title, state;
-        private UnityEngine.UI.Image surface;
+        private UnityEngine.UI.Text title, state, attackLabel, cardLabel;
+        private UnityEngine.UI.Image surface, battleSurface;
         private UnityEngine.Color surfaceColor;
         private UnityEngine.UI.Button button, jumpButton, dashButton, cardButton;
         private UnityEngine.GameObject exploration;
@@ -1095,6 +1095,10 @@ namespace Olca.Presentation.Dungeon
             rect.pivot = new UnityEngine.Vector2(.5f,.5f); rect.sizeDelta = new UnityEngine.Vector2(500,210); rect.anchoredPosition = new UnityEngine.Vector2(-280,135);
             var face = gameObject.AddComponent<UnityEngine.UI.Image>(); UiLook.Face(face); face.raycastTarget = false;
             surface=face;surfaceColor=face.color;
+            // 本体の足先と競合した上側の空白を除き、入力領域は元の位置に保つ。
+            var panel=new UnityEngine.GameObject("BattleControlSurface",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));panel.transform.SetParent(transform,false);
+            battleSurface=panel.GetComponent<UnityEngine.UI.Image>();UiLook.Face(battleSurface);battleSurface.raycastTarget=false;
+            var panelRect=(UnityEngine.RectTransform)panel.transform;panelRect.anchorMin=panelRect.anchorMax=new UnityEngine.Vector2(.5f,.5f);panelRect.sizeDelta=new UnityEngine.Vector2(500,170);panelRect.anchoredPosition=new UnityEngine.Vector2(0,-20);panel.SetActive(false);
             var edge = gameObject.GetComponent<UnityEngine.UI.Outline>() ?? gameObject.AddComponent<UnityEngine.UI.Outline>(); edge.effectColor = new UnityEngine.Color(.5f,.9f,.93f,.6f); edge.effectDistance = new UnityEngine.Vector2(1,-1);
             UnityEngine.UI.Text Label(string name, float x, float y, float w, float h, int size)
             {
@@ -1105,13 +1109,13 @@ namespace Olca.Presentation.Dungeon
             }
             title = Label("BasicAttackKey",-80,50,300,44,26);
             Label("BasicAttackHelp",-80,0,310,60,22).text = "前方一マス・敵一体\n短く押して離す";
-            state = Label("BasicAttackState",0,-72,470,36,20);
+            state = Label("BasicAttackState",0,-72,470,46,20);
             var o = new UnityEngine.GameObject("BasicAttackButton",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button)); o.transform.SetParent(transform,false);
             var r = (UnityEngine.RectTransform)o.transform; r.anchorMin = r.anchorMax = new UnityEngine.Vector2(.5f,.5f); r.anchoredPosition = new UnityEngine.Vector2(155,-5); r.sizeDelta = new UnityEngine.Vector2(155,74);
             o.GetComponent<UnityEngine.UI.Image>().color = new UnityEngine.Color(.2f,.46f,.53f,.86f); button = o.GetComponent<UnityEngine.UI.Button>(); UiLook.Button(button);
             button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
             attackPointer = o.AddComponent<BasicAttackTapButton>(); attackPointer.InitializeHold(hold, cancel, tap);
-            var label = Label("BasicAttackLabel",0,0,155,74,26); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
+            var label = attackLabel = Label("BasicAttackLabel",0,0,155,74,20); label.text = "攻撃"; label.transform.SetParent(o.transform,false); label.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
         }
         public void CancelAttackPointer() => attackPointer?.ClearPointer();
         public void InitializeExploration(UnityEngine.Font font, System.Action jump, System.Action dash, System.Action card)
@@ -1129,10 +1133,11 @@ namespace Olca.Presentation.Dungeon
             }
             jumpButton=Make("ExplorationJumpButton","ジャンプ\nPad South",-110,jump);dashButton=Make("ExplorationDashButton","ダッシュ\nPad L押込",110,dash);
             cardButton=Make("TouchCardUseButton","カード",0,card);
+            cardLabel=cardButton.GetComponentInChildren<UnityEngine.UI.Text>();cardLabel.fontSize=24;cardLabel.lineSpacing=.9f;
             cardButton.transform.SetParent(transform,false);((UnityEngine.RectTransform)cardButton.transform).anchoredPosition=new UnityEngine.Vector2(-80,-5);
             ((UnityEngine.RectTransform)cardButton.transform).sizeDelta=new UnityEngine.Vector2(190,60);
             // 説明・操作・状態を別の段に置き、2行の割当表示とボタンを重ねない。
-            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,70);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,52);title.fontSize=18;
+            title.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,46);title.rectTransform.sizeDelta=new UnityEngine.Vector2(470,24);title.fontSize=18;
             exploration.SetActive(false);
         }
         private void SetSurfaceSize(float width, float height)
@@ -1143,7 +1148,7 @@ namespace Olca.Presentation.Dungeon
         public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
             // 操作ボタンの位置と当たり領域を維持し、探索では使わない説明領域だけを縮める。
-            SetSurfaceSize(460, 132);if(surface!=null)surface.color=surfaceColor;
+            SetSurfaceSize(460, 132);if(surface!=null){surface.enabled=true;surface.color=surfaceColor;}if(battleSurface!=null)battleSurface.gameObject.SetActive(false);
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);cardButton.gameObject.SetActive(false);exploration.SetActive(true);
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","exploration",action)]);
@@ -1152,22 +1157,29 @@ namespace Olca.Presentation.Dungeon
             jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ"+Hint("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ"+Hint("DashPrimary");
             jumpButton.interactable=dashButton.interactable=available;
         }
-        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null)
+        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null,bool chargeReady=false)
         {
             // 戦闘の操作領域は固定したまま、背後の敵や床が読める薄い水鏡にする。
-            SetSurfaceSize(500, 210);if(surface!=null){var color=surfaceColor;color.a*=.68f;surface.color=color;}
+            SetSurfaceSize(500, 210);if(surface!=null)surface.enabled=false;if(battleSurface!=null){var color=surfaceColor;color.a*=.68f;battleSurface.color=color;battleSurface.gameObject.SetActive(true);}
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);
             transform.Find("BasicAttackHelp").gameObject.SetActive(false);if(exploration!=null)exploration.SetActive(false);
             if(cardButton!=null){cardButton.gameObject.SetActive(true);cardButton.interactable=canUseCard;}
             string Pad(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","battle",action)]);
             var profile=keyboardProfile??Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
             string Key(string action)=>profile.Bindings[("keyboard","battle",action)]??"ミワリアテ";
-            title.text=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad?
-                "コウゲキ ["+Pad("AttackPrimary")+"]  カード ["+Pad("CardPrimary")+"]\n"+Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ":
-                Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Touch?"タッチ: コウゲキ / カード / カスタム":
-                "コウゲキ ["+(key??"ミワリアテ")+"]  カード ["+Key("CardPrimary")+"]\n"+Key("CustomPrimary")+": カスタム / Escape: ポーズ";
+            var device=Olca.Unity.InputGuideActivity.Current;
+            bool touch=device==Olca.Unity.InputGuideDevice.Touch;
+            string attackKey=device==Olca.Unity.InputGuideDevice.Gamepad?Pad("AttackPrimary"):key??"ミワリアテ";
+            string cardKey=device==Olca.Unity.InputGuideDevice.Gamepad?Pad("CardPrimary"):Key("CardPrimary");
+            // 主操作の割当は各ボタンへ集約。上段には実在する補助操作だけを置く。
+            attackLabel.text="固有攻撃"+(touch?"":"\n<size=16>["+attackKey+"]</size>");
+            if(cardLabel!=null)cardLabel.text="カード"+(touch?"":"\n<size=16>["+cardKey+"]</size>");
+            title.text=touch?"右上: ポーズ":device==Olca.Unity.InputGuideDevice.Gamepad?
+                Pad("CustomPrimary")+": カスタム / "+Pad("Pause")+": ポーズ":
+                Key("CustomPrimary")+": カスタム / Escape: ポーズ";
             state.text = value; button.interactable = available;
-            state.color = UiLook.Ink;
+            state.fontSize=chargeReady?22:20;
+            state.color = chargeReady?new UnityEngine.Color(.035f,.32f,.38f,1f):UiLook.Ink;
         }
     }
 }

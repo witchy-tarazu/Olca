@@ -3785,6 +3785,40 @@ namespace Olca.Tests.Integration
             } finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame(); }
         }
 
+        [Test]
+        public void 固有攻撃HUDは実タメ完了と保持再開を区別し補助案内に主操作を重複しない()
+        {
+            var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
+            battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
+            var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
+            string Text(string name)=>hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Single(t=>t.name==name).text;
+            Tick(c,new LogicalInput { BasicAttackButtonDown=true,BasicAttackButton=true });
+            for(int f=1;f<60;f++)Tick(c,new LogicalInput { BasicAttackButton=true });
+            Call(c,"RefreshBasicAttackHud");StringAssert.Contains("タメ完了",Text("BasicAttackState"));
+            StringAssert.Contains("[Z]",Text("BasicAttackLabel"));Assert.IsFalse(Text("BasicAttackKey").Contains("[Z]"));
+            c.SetUserPaused(true);Call(c,"RefreshBasicAttackHud");StringAssert.Contains("60/60",Text("BasicAttackState"));
+            Assert.IsFalse(Text("BasicAttackState").Contains("離して攻撃"));c.SetUserPaused(false);
+            Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+            Call(c,"RefreshBasicAttackHud");StringAssert.Contains("再押下",Text("BasicAttackState"));
+            Assert.AreEqual(60,((Olca.Core.Logic.Battle.BasicAttackInputState)Get(c,"basicAttackInput")).ChargeFrames);
+        }
+        [Test]
+        public void 固有攻撃HUDは硬直取消可能なら再使用待ちと誤表示せずボタンと一致する()
+        {
+            var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
+            battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
+            Tick(c,new LogicalInput { BasicAttackButtonDown=true,BasicAttackButton=true });
+            Tick(c,new LogicalInput { BasicAttackButtonUp=true });
+            var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
+            var button=hud.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(x=>x.name=="BasicAttackButton");
+            bool observed=false;for(int i=0;i<20;i++){
+                Call(c,"RefreshBasicAttackHud");
+                if(battle.CanCancelPlayerRecovery){Assert.IsTrue(button.interactable);Assert.IsFalse(hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Single(t=>t.name=="BasicAttackState").text.Contains("再使用待ち"));observed=true;break;}
+                Tick(c);
+            }
+            Assert.IsTrue(observed,"既定の硬直取消窓を実行した");
+        }
+
         private Olca.Application.Dungeon.DungeonBattleController SavedDeckFixture()
         {
             var c=Start(new[]{DungeonConfig.CreateTestDungeon(5,30,4)});ToBattle(c);Model(c).SelectCardReward(Win(c)[0]);KeyboardButton(c,"ConfirmCarryHome");KeyboardButton(c,"ConfirmReturn");SeedOwnedDeparture(c);return c;

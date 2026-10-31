@@ -22,6 +22,7 @@ namespace Olca.Presentation.Field
         [SerializeField] private Sprite panelSprite;
 
         private const int GRID_WIDTH = 6;
+        private const int TelegraphOutlineOrder = 6;
 
         private BattleField battleField;
         private float originX;
@@ -51,17 +52,17 @@ namespace Olca.Presentation.Field
                     var root=new GameObject("EnemyAttackTelegraph_"+x);root.transform.SetParent(transform,false);attackMarkers[x]=root;
                     float w=panelSize*panelScale,h=panelHeight*panelScale;
                     var fill=HazardPart(root.transform,"Fill",whiteSprite,Vector2.zero,new Vector2(w,h),new Color(1f,.8f,.3f,.035f),2);
-                    // 色面ではなく角括弧と注意記号で予告を識別し、地形や足元を透かす。
-                    HazardPart(fill.transform,"WarningStem",whiteSprite,new Vector2(0,.09f),new Vector2(.018f,.18f),new Color(1f,.96f,.7f,1),2);
-                    HazardPart(fill.transform,"WarningDot",whiteSprite,new Vector2(0,-.065f),new Vector2(.025f,.035f),new Color(1f,.96f,.7f,1),2);
+                    // 色面は床側に残し、角枠と注意だけを本体/持続効果より手前へ。範囲と寿命はCore集合のまま。
+                    HazardPart(fill.transform,"WarningStem",whiteSprite,new Vector2(0,.09f),new Vector2(.018f,.18f),new Color(1f,.96f,.7f,1),TelegraphOutlineOrder);
+                    HazardPart(fill.transform,"WarningDot",whiteSprite,new Vector2(0,-.065f),new Vector2(.025f,.035f),new Color(1f,.96f,.7f,1),TelegraphOutlineOrder);
                     for(int corner=0;corner<4;corner++){
                         float sx=corner%2==0?-1:1,sy=corner<2?1:-1;
                         var edge=new GameObject("Edge"+(corner+1));edge.transform.SetParent(root.transform,false);edge.transform.localPosition=new Vector3(sx*w*.475f,sy*h*.46f,0);
                         foreach(bool horizontal in new[]{true,false}){
                             var at=horizontal?new Vector2(-sx*w*.1f,0):new Vector2(0,-sy*h*.15f);
                             var size=horizontal?new Vector2(w*.2f,panelSize*.025f):new Vector2(panelSize*.025f,h*.3f);
-                            var outline=HazardPart(edge.transform,horizontal?"HorizontalOutline":"VerticalOutline",whiteSprite,at,size+new Vector2(.025f,.025f),new Color(.035f,.055f,.065f,.95f),2);outline.transform.localPosition+=new Vector3(0,0,.001f);
-                            HazardPart(edge.transform,horizontal?"Horizontal":"Vertical",whiteSprite,at,size,new Color(1f,.93f,.57f,1f),2);
+                            var outline=HazardPart(edge.transform,horizontal?"HorizontalOutline":"VerticalOutline",whiteSprite,at,size+new Vector2(.025f,.025f),new Color(.035f,.055f,.065f,.95f),TelegraphOutlineOrder);outline.transform.localPosition+=new Vector3(0,0,.001f);
+                            HazardPart(edge.transform,horizontal?"Horizontal":"Vertical",whiteSprite,at,size,new Color(1f,.93f,.57f,1f),TelegraphOutlineOrder);
                         }
                     }
                 }

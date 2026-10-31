@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 143,\n  \"executeMs\": 0,\n  \"assemblyName\": \"PipelineRunScript_Hud73Proof_fb0b382847f8491cb029b6872f6e1bb4\",\n  \"success\": true,\n  \"result\": {\n    \"round73ButtonLabels\": true,\n    \"readyStatePresentation\": true\n  }\n}"
+    }
+  ]
+}

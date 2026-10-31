@@ -441,6 +441,45 @@ namespace Olca.Tests
             }
             for(int i=0;i<count-1;i++)views[i].HideHp();views[count-1].Refresh();Assert.That(Vector3.Distance(first,views[count-1].transform.Find("Hp").position),Is.LessThan(.0001f));
         }
+        [TestCase(2)] [TestCase(6)]
+        public void 投影が重なる同外見敵は個別HPを共通幹へ結び座標と足位置を変えない(int count)
+        {
+            var views=new List<Olca.Presentation.Battle.EnemyView>();var models=new List<Olca.Core.Domain.Enemy>();
+            for(int i=0;i<count;i++){var view=SpriteView();var model=(Olca.Core.Domain.Enemy)typeof(Olca.Presentation.Battle.EnemyView).GetField("enemy",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view);model.MoveTo(new Olca.Core.Domain.Vector2Int(3,i%2));views.Add(view);models.Add(model);}
+            foreach(var view in views)view.Refresh();
+            StringAssert.Contains("×"+count,views[0].transform.Find("Name").GetComponent<TextMesh>().text);
+            var anchor=Line(views[0],"EnemyBodyLink").GetPosition(3);
+            for(int i=0;i<count;i++){
+                var link=Line(views[i],"EnemyBodyLink");Assert.IsTrue(link.enabled);Assert.AreEqual(anchor,link.GetPosition(3));
+                Assert.AreEqual(new Olca.Core.Domain.Vector2Int(3,i%2),models[i].GridPosition);Assert.AreEqual(Vector3.zero,views[i].transform.position);Assert.AreEqual(new Vector3(.8f,.8f,1),views[i].transform.localScale);
+            }
+            models[count-1].TakeDamage(25,Olca.Core.Domain.ElementType.None);views[count-1].Refresh();Assert.AreEqual("75",views[count-1].transform.Find("Hp").GetComponent<TextMesh>().text);
+            for(int i=1;i<count;i++)views[i].HideHp();views[0].Refresh();Assert.AreEqual("テスト",views[0].transform.Find("Name").GetComponent<TextMesh>().text);Assert.IsFalse(Line(views[0],"EnemyBodyLink").enabled);
+        }
+        [Test]
+        public void 重なりの解除と非描画とボス再初期化で共有幹と重複数を残さない()
+        {
+            var a=SpriteView();var b=SpriteView();a.Refresh();b.Refresh();Assert.IsTrue(Line(a,"EnemyBodyLink").enabled);
+            b.BodyRenderer.forceRenderingOff=true;a.Refresh();b.Refresh();Assert.IsFalse(Line(a,"EnemyBodyLink").enabled);Assert.IsFalse(Line(b,"EnemyBodyLink").enabled);
+            b.BodyRenderer.forceRenderingOff=false;b.transform.position=Vector3.right*2;a.Refresh();b.Refresh();Assert.IsFalse(Line(a,"EnemyBodyLink").enabled);
+            b.transform.position=Vector3.zero;a.Refresh();b.Refresh();Assert.IsTrue(Line(a,"EnemyBodyLink").enabled);
+            b.gameObject.SetActive(false);a.Refresh();Assert.AreEqual("テスト",a.transform.Find("Name").GetComponent<TextMesh>().text);Assert.IsFalse(Line(a,"EnemyBodyLink").enabled);
+            b.gameObject.SetActive(true);b.Initialize(Enemy("boss"));b.ShowHp();a.Refresh();b.Refresh();Assert.IsTrue(b.IsBossGauge);Assert.IsFalse(Line(b,"EnemyBodyLink").enabled);
+        }
+        [Test]
+        public void 戦闘操作面の上側空白だけを除いてボタン領域と探索面復帰を保つ()
+        {
+            var obj=new GameObject("BattleSurfaceFixture",typeof(RectTransform));objects.Add(obj);var hud=obj.AddComponent<Olca.Presentation.Dungeon.BasicAttackHud>();
+            hud.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),()=>{},_=>{},()=>{});hud.InitializeExploration(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),()=>{},()=>{},()=>{});
+            var attack=(RectTransform)obj.transform.Find("BasicAttackButton");var card=(RectTransform)obj.transform.Find("TouchCardUseButton");var attackPosition=attack.anchoredPosition;var cardPosition=card.anchoredPosition;var attackSize=attack.sizeDelta;var cardSize=card.sizeDelta;
+            for(int repeat=0;repeat<3;repeat++){
+                hud.Render("Z","タメ完了",true);var panel=obj.transform.Find("BattleControlSurface").GetComponent<UnityEngine.UI.Image>();Assert.IsTrue(panel.isActiveAndEnabled);Assert.IsFalse(panel.raycastTarget);Assert.IsFalse(obj.GetComponent<UnityEngine.UI.Image>().enabled);
+                var guide=(RectTransform)obj.transform.Find("BasicAttackKey");float top=panel.rectTransform.anchoredPosition.y+panel.rectTransform.rect.yMax;
+                Assert.Less(top,((RectTransform)obj.transform).rect.yMax);Assert.GreaterOrEqual(top,guide.anchoredPosition.y+guide.rect.yMax);Assert.Greater(guide.anchoredPosition.y+guide.rect.yMin,attack.anchoredPosition.y+attack.rect.yMax);
+                Assert.AreEqual(attackPosition,attack.anchoredPosition);Assert.AreEqual(cardPosition,card.anchoredPosition);Assert.AreEqual(attackSize,attack.sizeDelta);Assert.AreEqual(cardSize,card.sizeDelta);
+                hud.RenderExploration(true);Assert.IsTrue(obj.GetComponent<UnityEngine.UI.Image>().enabled);Assert.IsFalse(panel.gameObject.activeSelf);
+            }
+        }
         [Test] public void 本体素材のないボス名は校正を適用せず既存配置を保持する()
         {
             var view=View(Enemy("boss"));var obj=new GameObject("Name",typeof(TextMesh));obj.transform.SetParent(view.transform,false);obj.transform.localPosition=new Vector3(2,3,0);

@@ -1,0 +1,65 @@
+{
+  "before": {
+    "frame": 90,
+    "surfaceName": "BasicAttackHud",
+    "surface": true,
+    "surfaceScreen": [
+      "(1390.00, 30.00)",
+      "(1390.00, 240.00)",
+      "(1890.00, 240.00)",
+      "(1890.00, 30.00)"
+    ],
+    "foregroundTop": 134.857162,
+    "bodyFeet": [
+      {
+        "name": "EnemyViewPrerfab(Clone)",
+        "feet": 208.285721
+      }
+    ],
+    "buttons": [
+      {
+        "name": "BasicAttackButton",
+        "size": "(155.00, 74.00)",
+        "position": "(155.00, -5.00)"
+      },
+      {
+        "name": "TouchCardUseButton",
+        "size": "(190.00, 60.00)",
+        "position": "(-80.00, -5.00)"
+      }
+    ]
+  },
+  "after": {
+    "frame": 90,
+    "surfaceName": "BattleControlSurface",
+    "surface": true,
+    "surfaceScreen": [
+      "(1390.00, 30.00)",
+      "(1390.00, 200.00)",
+      "(1890.00, 200.00)",
+      "(1890.00, 30.00)"
+    ],
+    "foregroundTop": 134.857162,
+    "bodyFeet": [
+      {
+        "name": "EnemyViewPrerfab(Clone)",
+        "feet": 208.285721
+      }
+    ],
+    "buttons": [
+      {
+        "name": "BasicAttackButton",
+        "size": "(155.00, 74.00)",
+        "position": "(155.00, -5.00)"
+      },
+      {
+        "name": "TouchCardUseButton",
+        "size": "(190.00, 60.00)",
+        "position": "(-80.00, -5.00)"
+      }
+    ]
+  },
+  "beforeOverlapPixels": 31.714279000000005,
+  "afterClearancePixels": 8.285720999999995,
+  "foregroundAndButtonsUnchanged": true
+}

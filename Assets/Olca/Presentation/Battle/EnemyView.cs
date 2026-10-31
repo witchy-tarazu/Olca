@@ -17,6 +17,8 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
+        private string displayedEnemyName;
+        private LineRenderer bodyLink;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
         private Olca.Presentation.Effects.ActorConditionVisual guardVisual, paralysisVisual;
         private void RefreshConditionVisuals()
@@ -126,9 +128,48 @@ namespace Olca.Presentation.Battle
             }
             var fallback=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);center=new Vector3(fallback.center.x,fallback.max.y+fallback.size.y*.175f+radius*1.5f,hpText!=null?hpText.transform.position.z:transform.position.z);return true;
         }
+        private bool SharesVisibleBody(EnemyView other)
+        {
+            return other!=null&&other.GaugeVisible&&GaugeVisible&&enemyImage!=null&&other.enemyImage!=null&&enemyImage.sprite!=null&&
+                enemyImage.enabled&&other.enemyImage.enabled&&!enemyImage.forceRenderingOff&&!other.enemyImage.forceRenderingOff&&enemyImage.gameObject.activeInHierarchy&&other.enemyImage.gameObject.activeInHierarchy&&
+                enemyImage.sprite==other.enemyImage.sprite&&enemyImage.flipX==other.enemyImage.flipX&&enemyImage.flipY==other.enemyImage.flipY&&
+                Vector3.SqrMagnitude(enemyImage.bounds.center-other.enemyImage.bounds.center)<.0001f&&
+                Vector3.SqrMagnitude(enemyImage.bounds.size-other.enemyImage.bounds.size)<.0001f;
+        }
+        private int CoincidentCount(out bool first)
+        {
+            int count=0;first=true;
+            foreach(var view in normalGauges)if(SharesVisibleBody(view)){
+                if(count==0)first=view==this;count++;
+            }
+            return count;
+        }
+        private void RefreshNormalNames()
+        {
+            foreach(var view in normalGauges){
+                if(view==null||view.enemyNameText==null||view.enemy==null)continue;
+                int count=view.CoincidentCount(out bool first);bool sameName=true;
+                if(count>1)foreach(var other in normalGauges)if(view.SharesVisibleBody(other)&&other.displayedEnemyName!=view.displayedEnemyName){sameName=false;break;}
+                view.enemyNameText.text=view.displayedEnemyName+(count>1&&first&&sameName?" ×"+count:"");
+            }
+        }
+        private void RefreshBodyLink(Vector3 center,float radius)
+        {
+            bool grouped=CoincidentCount(out _)>1;
+            if(!grouped){if(bodyLink!=null)bodyLink.enabled=false;return;}
+            if(bodyLink==null){
+                var obj=new GameObject("EnemyBodyLink");obj.transform.SetParent(transform,false);bodyLink=obj.AddComponent<LineRenderer>();bodyLink.sharedMaterial=gaugeMaterial;
+                bodyLink.useWorldSpace=true;bodyLink.numCapVertices=2;bodyLink.numCornerVertices=2;bodyLink.startColor=bodyLink.endColor=new Color(.25f,.62f,.67f,1f);bodyLink.sortingLayerID=enemyImage.sortingLayerID;bodyLink.sortingOrder=2;
+            }
+            var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);float x=body.center.x+radius*1.65f,y=body.max.y+radius*.1f;
+            // 共通の幹で「一つの見た目に複数のHP」を示す。識別IDや本体のずらしは加えない。
+            bodyLink.enabled=true;bodyLink.startWidth=bodyLink.endWidth=radius*.045f;bodyLink.positionCount=4;
+            bodyLink.SetPosition(0,center+Vector3.right*radius*1.4f);bodyLink.SetPosition(1,new Vector3(x,center.y,center.z));
+            bodyLink.SetPosition(2,new Vector3(x,y,center.z));bodyLink.SetPosition(3,new Vector3(body.center.x,y,center.z));
+        }
         private void RefreshGauges()
         {
-            bool visible=GaugeVisible;if(hpBack==null&&!visible){HideStatusIcons();return;}EnsureGauges();
+            bool visible=GaugeVisible;if(bodyLink!=null)bodyLink.enabled=false;if(hpBack==null&&!visible){HideStatusIcons();return;}EnsureGauges();
             hpBack.enabled=visible;hpFill.enabled=visible&&HpFraction>0;
             poiseBack.enabled=visible&&PoiseFraction.HasValue;poiseFill.enabled=poiseBack.enabled&&PoiseFraction.Value>0;
             if(!visible){HideStatusIcons();return;}
@@ -145,6 +186,7 @@ namespace Olca.Presentation.Battle
                 if(hpText!=null)hpText.transform.position=Point(.965f,.265f);
                 FitHpText(height*.14f);
             }else{
+                RefreshNormalNames();
                 if(hpText!=null)hpText.transform.localPosition=hpLocalPosition;
                 if(enemyNameText!=null)enemyNameText.transform.localPosition=nameLocalPosition;
                 float radius=camera!=null&&camera.orthographic?camera.orthographicSize*.055f:.55f;
@@ -158,6 +200,7 @@ namespace Olca.Presentation.Battle
                 bool bodyHud=TryNormalBodyHud(radius,out var bodyCenter);if(bodyHud)center=bodyCenter;
                 if(hpText!=null)hpText.transform.position=center;
                 FitHpText(radius*2);
+                if(bodyHud)RefreshBodyLink(center,radius);
                 Arc(hpBack,center,radius,360,radius*.16f);Arc(hpFill,center,radius,360*HpFraction,radius*.11f);
                 Arc(poiseBack,center,radius*1.28f,180,radius*.09f);Arc(poiseFill,center,radius*1.28f,180*(PoiseFraction??0),radius*.06f);
                 // 本体の近くで名前と円を一組にする。未知の描画fixtureは従来の行分離を保つ。
@@ -181,7 +224,7 @@ namespace Olca.Presentation.Battle
         }
         private void RegisterGauge(){var list=IsBossGauge?bossGauges:normalGauges;if(!list.Contains(this))list.Add(this);}
         private void OnEnable(){if(hpVisible)RegisterGauge();}
-        private void OnDisable(){guardVisual?.Clear();paralysisVisual?.Clear();defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
+        private void OnDisable(){if(bodyLink!=null)bodyLink.enabled=false;guardVisual?.Clear();paralysisVisual?.Clear();defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
         private void LateUpdate(){if(hpVisible)RefreshGauges();RefreshDefensiveField();RefreshConditionVisuals();}
         private void OnDestroy(){guardVisual?.Dispose();paralysisVisual?.Dispose();defensiveField?.Dispose();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
 
@@ -194,7 +237,7 @@ namespace Olca.Presentation.Battle
         public void Initialize(Enemy enemy)
         {
             guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
-            this.enemy = enemy;
+            this.enemy = enemy;displayedEnemyName=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
             if(enemyNameText!=null&&namePositionCached)enemyNameText.transform.localPosition=nameLocalPosition;
             if(enemyNameText!=null)enemyNameText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
