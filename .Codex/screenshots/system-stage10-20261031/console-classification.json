@@ -1,0 +1,89 @@
+{
+  "scope": "historical/native tool logs separate from final test console",
+  "history": [
+    {
+      "file": "system-stage10-pre-related-history.json",
+      "counts": {
+        "error": 1,
+        "warn": 1,
+        "log": 25
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "warn",
+          "message": "Could not save connection info: Read-only file system"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        }
+      ]
+    },
+    {
+      "file": "system-stage10-pre-final-error-history.json",
+      "counts": {
+        "error": 2,
+        "warn": 1,
+        "log": 135
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        }
+      ]
+    },
+    {
+      "file": "system-stage10-pre-final-warn-history.json",
+      "counts": {
+        "error": 2,
+        "warn": 1,
+        "log": 135
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms"
+        },
+        {
+          "level": "warn",
+          "message": "Could not save connection info: Read-only file system"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        }
+      ]
+    }
+  ],
+  "classification": {
+    "Pipeline": "main-thread timeouts after domain reload. Same preserved PID137059 recovered; one guarded fixture activation succeeded. No test/play/activation duplicated. No speculative product cause.",
+    "CLI": "editor status name mismatch from discovery fallback (registered editor_status), tool-layer log",
+    "UnityAI": "connection-info readonly / relay connection/keychain warnings preserved; no credentials or security changes",
+    "initialRelated": "477/478, old expected registered count1 vs new3. Exact3+keyset correction independently reviewed, strict0 cleanup retained; original failure retained.",
+    "historicalUGUI": "unresolved; not marked fixed",
+    "audio": "numerical Router/API/source counts verified, physical listening unverified (FMOD noaudio)",
+    "limitations": "no real build/physical devices/OS/fullHotReload claim"
+  },
+  "finalSuite": {
+    "summary": {
+      "total": 3586,
+      "passed": 3586,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 258.93,
+    "consoleErrors": 0,
+    "consoleWarnings": 59,
+    "warningCategories": 5,
+    "fixtureDiagnosticsMatchPrior": true
+  }
+}

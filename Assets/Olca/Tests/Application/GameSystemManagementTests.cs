@@ -124,18 +124,38 @@ namespace Olca.Tests.Application
             var screen=await Screen();frame=10;var result=dialogs.Show(screen.Context,screen.Panel,screen.Confirm,screen.Cancel,_=>{});screen.Cancel.onClick.Invoke();await result;
             Assert.IsTrue(screen.Context.DialogBlocksInput);frame++;dialogs.Tick();Assert.IsFalse(screen.Context.DialogBlocksInput);
         }
-        [Test] public async Task 設定の初期化Dialogを取消すと起点ボタンへ戻る()
+        [TestCase(false)] [TestCase(true)] public async Task 設定の初期化Dialogを取消すと起点ボタンへ戻る(bool gamepad)
         {
             var panel=Panel("keyboard");var view=panel.AddComponent<Olca.Presentation.Field.GameplayKeyboardSettingsView>();
             // EditModeで手動更新したViewの入力購読も明示解放する。
             viewCleanup=()=>{if(view!=null)view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);};
-            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),profile=>null);
-            Register("keyboard",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(UnityInputProvider.CreateDefaultKeyboardProfile());});
+            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),profile=>null,gamepad);
+            Register("keyboard",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile());});
             await views.ShowAsync("keyboard");var update=view.GetType().GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);
             Assert.AreEqual("CloseKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
             var buttons=panel.GetComponentsInChildren<Button>(true);Array.Find(buttons,x=>x.name=="ResetKeyboardSettings").onClick.Invoke();update.Invoke(view,null);
             Array.Find(buttons,x=>x.name=="CancelKeyboardReset").onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);
             Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreEqual("ResetKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
+        }
+        [Test] public async Task 音量画面は閉鎖通知し旧クリックを拒否して再表示できる()
+        {
+            var panel=Panel("audio");var view=panel.AddComponent<Olca.Presentation.Field.GameplayAudioSettingsView>();
+            int saved=0,closed=0;
+            viewCleanup=()=>{if(view!=null)view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);};
+            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),value=>{saved++;return null;},()=>{closed++;view.DiscardAndClose();});
+            Register("audio",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(new AudioVolumeSettings(),null);});
+            await views.ShowAsync("audio");
+            var buttons=panel.GetComponentsInChildren<Button>(true);var save=Array.Find(buttons,x=>x.name=="SaveAudioSettings");var cancel=Array.Find(buttons,x=>x.name=="CancelAudioSettings");
+            save.onClick.Invoke();Assert.AreEqual(1,saved);
+            views.CloseCurrent();save.onClick.Invoke();cancel.onClick.Invoke();Assert.AreEqual(1,saved);Assert.AreEqual(0,closed);
+            await views.ShowAsync("audio");save.onClick.Invoke();Assert.AreEqual(2,saved);
+            cancel.onClick.Invoke();Assert.AreEqual(1,closed);
+            // EditModeの手動View操作ではMonoBehaviourの非表示通知も明示する。
+            view.GetType().GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.IsNull(views.CurrentKey);
+            save.onClick.Invoke();Assert.AreEqual(2,saved);
+            var oldSave=save.onClick;var oldCancel=cancel.onClick;var oldSlider=panel.GetComponentInChildren<Slider>(true).onValueChanged;
+            view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);viewCleanup=null;
+            views.UnregisterOwner(owner);oldSave.Invoke();oldCancel.Invoke();oldSlider.Invoke(50);Assert.AreEqual(2,saved);Assert.AreEqual(1,closed);
         }
         [Test] public async Task 破棄中のロードは後着しても表示せず二重解放しない()
         {
@@ -173,7 +193,9 @@ namespace Olca.Tests.Application
                 Assert.IsFalse(sounds.Router.IsPaused);
                 controller.enabled=false;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsTrue(sounds.Router.IsPaused);
                 controller.enabled=true;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnEnable",flags).Invoke(controller,null);Assert.IsFalse(sounds.Router.IsPaused);
-                Assert.AreEqual(1,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(1,views.RegisteredCount);
+                Assert.AreEqual(3,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(3,views.RegisteredCount);
+                var entries=(System.Collections.IDictionary)typeof(ViewManager).GetField("entries",flags).GetValue(views);
+                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings"},entries.Keys);
             } finally {
                 var canvas=(GameObject)typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("pauseCanvas",flags).GetValue(controller);if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);
                 // 反射StartのEditMode fixtureでは破棄通知も明示し、実行中購読を残さない。

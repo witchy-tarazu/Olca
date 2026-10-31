@@ -1,0 +1,334 @@
+{
+  "reviewer": "independent_refactor_review",
+  "stage": 10,
+  "scope": "Independent static visual comparison of 15 after views with 15 comparison views, five screen states across FHD/4K/4:3",
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "afterImageCount": 15,
+  "comparisonImageCount": 15,
+  "images": [
+    {
+      "file": "system-stage10-native-after-keyboard-settings-fhd.png",
+      "sha256": "07d9ea9dec0deaf99bb491359506a0b9d9a2ed57e7af2272394b5893d6436997",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage9-native-after-keyboard-settings-fhd.png",
+        "sha256": "407d33c2d5b713145b59c9c28d14f44aefe1ca8d1d6169eb9967bd559dec5ec5",
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Stage9 actual managed screen",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-keyboard-settings-4k.png",
+      "sha256": "cc5111776861d5c363f5c98d2f4fcb3faafa8eb4ee9791dc77f84ab428617ab6",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "comparison": {
+        "file": "system-stage9-native-after-keyboard-settings-4k.png",
+        "sha256": "8eabad758695685932797a824f877e67437f36d8ae9badc8b69c1ed93c2eee28",
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      "comparisonProvenance": "Stage9 actual managed screen",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-keyboard-settings-4by3.png",
+      "sha256": "8e799f3b72bdc08c8ca49673cd054a75a76bf1337f6268bcfb007bb428bdcc8f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage9-native-after-keyboard-settings-4by3.png",
+        "sha256": "395c964a0492ff1959b1e0aead50f1600b6ee56231c57c44e5185bffaa0b6613",
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Stage9 actual managed screen",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-reset-dialog-fhd.png",
+      "sha256": "81302acaf1e2d210dd8608c23272b2092e9da1355c66d01606aac5ff3e9965a7",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage9-native-after-reset-dialog-fhd.png",
+        "sha256": "930947dff733c078af04d794f2bb069e20bfff04b0b9f38de96bc8f75b7612f0",
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Stage9 actual managed screen",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-reset-dialog-4k.png",
+      "sha256": "9960d8cc186906d6acaf1ae8fab120a06ea58a3ee11cab0696c8a95fa3974067",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "comparison": {
+        "file": "system-stage9-native-after-reset-dialog-4k.png",
+        "sha256": "9e8c45ef12dd75ec8dd276c15b0184ebd152d32de9bdc0a5a269b357a6880195",
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      "comparisonProvenance": "Stage9 actual managed screen",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-reset-dialog-4by3.png",
+      "sha256": "7ab9c6365177badb69935e11e78122d4e919257e6ce6439136a8e40c263b218f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage9-native-after-reset-dialog-4by3.png",
+        "sha256": "85ef3d8d525d8fa7b49bdf11e5870409a276b2fdc3ba42e8a4f0aa31bfb67c64",
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Stage9 actual managed screen",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-gamepad-settings-fhd.png",
+      "sha256": "831cae02a4fe27ce14337a0f5b3cdc56a624f76380b2fe9e09291f0401326ee9",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-gamepad-settings-fhd.png",
+        "sha256": "3d55ada2231a64d9a6f10767ca2158bee1f8190e0fc985189006d49060719187",
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-gamepad-settings-4k.png",
+      "sha256": "58bc1b323f29d9938e529743620bca7d82fe3c026b287c9a113a9e2bb3eecd50",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-gamepad-settings-4k.png",
+        "sha256": "840a4ff569ef24c3849af525ece42f9c694ce7c433300c86d9d28e6a5d3b37a8",
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-gamepad-settings-4by3.png",
+      "sha256": "606af4f9cd777039c9c614afb19a30b172de71493daf682f0cc18006d097146e",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-gamepad-settings-4by3.png",
+        "sha256": "886b48e87fa3cbd9bfc0a62119ba1b730320de292bd0a5b85c2715ac351497d1",
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-pad-reset-dialog-fhd.png",
+      "sha256": "f696b6dfb2aba46b0a76c59dee0252e18652a1aa56d93f65cbe2427ce62b8d4f",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-pad-reset-dialog-fhd.png",
+        "sha256": "123e74c45a78b0bf0d4a87fb271e00796a826def1b71867d964dcf77e2282944",
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-pad-reset-dialog-4k.png",
+      "sha256": "950e1bd13ab6936c0aff59ff767f0b3038fadfa9c170e8129d13d319aa779896",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-pad-reset-dialog-4k.png",
+        "sha256": "56efd6981474e31c129f806221bcc7b577aef426f69051e098922400376638cb",
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-pad-reset-dialog-4by3.png",
+      "sha256": "708ddf9b866ec0bcf7190dd0cd35449ef460e029da9f0581bd24c1d82d05a7f5",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-pad-reset-dialog-4by3.png",
+        "sha256": "20ee0aba93d3e036148278b46eb3a434b1da9779bb89ccaf1b66c2a1168b00bd",
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-audio-settings-fhd.png",
+      "sha256": "ba8888cf5d755019dd53fbaa7566d7af4151fc351295b0986d67f6a9806bb958",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-audio-settings-fhd.png",
+        "sha256": "349c093171bbdc7b171b655e5672eb9e08a72b7fd83d25f6b7948d30821644ac",
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-audio-settings-4k.png",
+      "sha256": "b6c07bf5426b463f0725df924bb305ed72e4b23c05a9d4a5b8ec55cac86c9386",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-audio-settings-4k.png",
+        "sha256": "483da652864b2388e7b5e25bfbc73960bf0dcdc4657f4fbfe4981b5dd6a8c16c",
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    },
+    {
+      "file": "system-stage10-native-after-after-audio-settings-4by3.png",
+      "sha256": "a14bb0fc66ebf0cda2daca50c5cbb323af3958ef307131a3bc2b303bc277d1b2",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "comparison": {
+        "file": "system-stage10-native-after-before-audio-settings-4by3.png",
+        "sha256": "718940459e7015bb64559c6052e484d5cf726b6048375e3f3b7014a3d6168195",
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      "comparisonProvenance": "Renamed legacy View class, inert-save fixture in current host; not legacy full host/VM",
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "Keyboard settings/reset retain text, column spacing, action framing and modal hierarchy relative to Stage9.",
+    "Gamepad settings retain four columns, values, clear controls and lower actions; existing dense 4:3 spacing shows no new clipping in supplied views.",
+    "Pad reset dialog retains readable two-line message and separated reset/cancel actions in all three ratios.",
+    "Audio settings retain four label/slider/value rows, explanatory text and save/discard actions. Background world remains faintly visible as in the comparison.",
+    "Legacy standalone fixtures show an upper card-collection auxiliary button that actual managed after views hide. This is a fixture/host-context boundary, not evidence that the complete legacy host had this behavior."
+  ],
+  "native4kSupplement": {
+    "method": "Read original PNGs and display unscaled in-memory lossless crops; no source PNG or asset was edited. Full 4K viewer outputs were resized to 2048x1152.",
+    "crops": [
+      {
+        "file": "system-stage10-native-after-after-gamepad-settings-4k.png",
+        "rect": [
+          2750,
+          1050,
+          3350,
+          1250
+        ],
+        "observation": "Native glyph strokes and value-control frame edges remain distinct; crop boundaries intentionally cut neighboring content."
+      },
+      {
+        "file": "system-stage10-native-after-after-pad-reset-dialog-4k.png",
+        "rect": [
+          2100,
+          1180,
+          2700,
+          1350
+        ],
+        "observation": "Cancel glyph and button padding readable at 1:1."
+      },
+      {
+        "file": "system-stage10-native-after-after-audio-settings-4k.png",
+        "rect": [
+          2750,
+          650,
+          3250,
+          820
+        ],
+        "observation": "100 percent value glyphs readable at 1:1."
+      }
+    ]
+  },
+  "limits": [
+    "Static images do not demonstrate input blocking, raycast hit areas, callback counts, saving, modal lifetime or close/reopen behavior. Those require the parent native receipts.",
+    "Pad/audio/pad-reset before images are legacy View-only inert-save fixtures, disconnected from actual host field/context; not complete historical host executions.",
+    "Whole 4K views were viewer-resized; native crops supplement representative regions only, not every 4K pixel.",
+    "Physical controllers, historical UGUI variants, audio listening and unsupplied states were not validated.",
+    "No claim of pixel-perfect equality or complete aesthetic completion."
+  ],
+  "sourceReviewPerformedThisTurn": false,
+  "unityExecutionByReviewer": false,
+  "testsExecutedByReviewer": false,
+  "productEditsByReviewer": false
+}

@@ -1,0 +1,257 @@
+{
+  "scope": "Stage10 post-migration static inventory of screen/modal ownership; not a finding that existing lifetime cleanup is absent",
+  "migratedNow": [
+    "keyboard-settings",
+    "gamepad-settings",
+    "audio-settings via shared shell, ViewManager cached leases",
+    "keyboard/pad ResetKeyboardConfirmation via ManagedScreenContext/DialogManager"
+  ],
+  "alreadyManaged": [
+    "World/battle/gameplay HUD/card-reward nonexclusive ViewManager layers",
+    "Root UIRuntime Canvas/EventSystem and camera/resources/sound services"
+  ],
+  "entries": [
+    {
+      "category": "unmanaged-screen",
+      "type": "Controller-built pause UI",
+      "generatedNames": [
+        "PauseOverlay",
+        "PauseMenuSurface"
+      ],
+      "responsibility": "pause resume/settings launch",
+      "currentOwner": "Controller/pauseCanvas",
+      "source": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "boundary": "Not ViewManager current; child visuals are not each separate screen debt."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "Controller-built checkpoint UI",
+      "generatedNames": [
+        "CheckpointOverlay"
+      ],
+      "responsibility": "continue/retry/save error choice",
+      "currentOwner": "Controller",
+      "source": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "boundary": "Not ViewManager/DialogManager; existing storage gating must remain."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "DialogueView",
+      "generatedNames": [
+        "DialoguePanel"
+      ],
+      "responsibility": "story conversation/choice/backlog",
+      "currentOwner": "Controller + DialogueSession/dialogueLoop",
+      "source": "Assets/Olca/Presentation/Field/GameFieldView.cs",
+      "boundary": "Whole screen not ViewManager. Core session/time stays separate from popup ownership."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "ClearReturnView",
+      "generatedNames": [
+        "ClearReturnPanel"
+      ],
+      "responsibility": "return summary/reward distribution/home owned list and departure hub",
+      "currentOwner": "Controller + ClearReturnView content/MenuPadScope",
+      "source": "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+      "boundary": "One physical view with Render variants, not one missing prefab per button."
+    },
+    {
+      "category": "unmanaged-screen-variants",
+      "type": "ClearReturnView render family",
+      "generatedNames": [
+        "RenderDungeonSelection",
+        "RenderDungeonVisit",
+        "RenderVisitRemoval",
+        "RenderTokenExchange",
+        "RenderStyleSelection",
+        "RenderOwnedDeparture",
+        "RenderSavedDeckMenu"
+      ],
+      "responsibility": "destination/shop/removal/exchange/style/deck editing",
+      "currentOwner": "Controller flags/callbacks + shared ClearReturnView",
+      "source": "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+      "boundary": "Variants of existing ClearReturnPanel; may migrate coherently while retaining callback identities/transactions."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "ClearReturnView second instance",
+      "generatedNames": [
+        "CardCollectionPanel"
+      ],
+      "responsibility": "collection/cards/recipes",
+      "currentOwner": "Controller + ClearReturnView",
+      "source": "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+      "boundary": "Separate instance, not registered with ViewManager; result-disclosure rules must remain."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "CustomizationLoadoutView",
+      "generatedNames": [
+        "CustomizationEditor"
+      ],
+      "responsibility": "equipment and parts draft editing",
+      "currentOwner": "Controller",
+      "source": "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs",
+      "boundary": "Open/Close local callbacks and saving state; UI Initialize implementation itself is not the missing ownership boundary."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "CustomizationUnlockView",
+      "generatedNames": [
+        "CustomizationUnlocks"
+      ],
+      "responsibility": "fixed shape unlock confirmation/application",
+      "currentOwner": "Controller",
+      "source": "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs",
+      "boundary": "Open/Close local callbacks and saving state; UI Initialize implementation itself is not the missing ownership boundary."
+    },
+    {
+      "category": "unmanaged-screen",
+      "type": "CustomizationAcquisitionView",
+      "generatedNames": [
+        "CustomizationAcquisitions"
+      ],
+      "responsibility": "bundle selection/claim/retry",
+      "currentOwner": "Controller",
+      "source": "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs",
+      "boundary": "Open/Close local callbacks and saving state; UI Initialize implementation itself is not the missing ownership boundary."
+    },
+    {
+      "category": "unmanaged-dialog",
+      "type": "Controller-built confirmation",
+      "generatedNames": [
+        "RetreatConfirmation"
+      ],
+      "responsibility": "retreat confirm/cancel",
+      "currentOwner": "Controller local buttons/flags",
+      "source": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "boundary": "Not DialogManager; preserve phase/pending and cancel semantics."
+    },
+    {
+      "category": "unmanaged-dialog",
+      "type": "Controller progress action overlay",
+      "generatedNames": [
+        "ProgressActionOverlay",
+        "ConfirmNewGame",
+        "CancelProgressAction"
+      ],
+      "responsibility": "new-game confirmation/manual-save status and retry",
+      "currentOwner": "Controller progressDialogOpen/pending state",
+      "source": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "boundary": "Multiple states share panel; not all are confirmation dialogs. Never move save commit decision into DialogManager."
+    },
+    {
+      "category": "unmanaged-dialog",
+      "type": "ClearReturnView readonly popup",
+      "generatedNames": [
+        "ReadonlyCardDetails",
+        "ReadonlyCardScroll"
+      ],
+      "responsibility": "card/recipe/detail/overflow full-text reading",
+      "currentOwner": "ClearReturnView content swap/readonlyDetails/MenuPadScope",
+      "source": "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+      "boundary": "Parent is not yet managed either; separate modal ownership from underlying disclosed text and scroll layout."
+    },
+    {
+      "category": "unmanaged-dialog-state",
+      "type": "ClearReturnView saved-deck confirmation",
+      "generatedNames": [
+        "SavedDeckContents",
+        "DeleteDeckWarning",
+        "ConfirmDeleteDeck",
+        "CancelDeleteDeck"
+      ],
+      "responsibility": "delete saved deck confirm/cancel",
+      "currentOwner": "RenderSavedDeckMenu deleting branch",
+      "source": "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+      "boundary": "Confirmation is a render state in the same content, not a standalone pre-existing Dialog GameObject."
+    },
+    {
+      "category": "unmanaged-dialog",
+      "type": "CustomScreenView detail/inspection",
+      "generatedNames": [
+        "CustomPadDetails",
+        "CustomDetailsHeading"
+      ],
+      "responsibility": "card/transform/player/enemy readonly inspection",
+      "currentOwner": "CustomScreenView own menu/input/presentation-hide state",
+      "source": "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs",
+      "boundary": "Outer Battle/Custom prefab is managed; nested modal is not DialogManager-owned. Preserve Custom pause/long-press/focus restoration."
+    },
+    {
+      "category": "unmanaged-dialog-state",
+      "type": "DialogueView session states",
+      "generatedNames": [
+        "DialogueTitle",
+        "DialogueNext",
+        "DialogueHistory"
+      ],
+      "responsibility": "skip confirmation/backlog",
+      "currentOwner": "DialogueView + DialogueSession.SkipConfirmationOpen/BacklogOpen",
+      "source": "Assets/Olca/Presentation/Field/GameFieldView.cs",
+      "boundary": "Same dialogue panel rerendered, not distinct popup GameObjects. Skip confirmation is modal debt; backlog is a conversation subview."
+    },
+    {
+      "category": "local-nonmodal-not-popup",
+      "type": "CustomizationLoadoutView full-name readout",
+      "generatedNames": [
+        "CustomizationFullName"
+      ],
+      "responsibility": "hover/focus long ID reading",
+      "currentOwner": "CustomizationLoadoutView",
+      "source": "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs",
+      "boundary": "Noninteractive/readonly local readout; do not count as missing DialogManager confirmation."
+    },
+    {
+      "category": "host-owned-nonmodal",
+      "type": "BasicAttackHud and countdown",
+      "generatedNames": [
+        "BasicAttackHud",
+        "ExplorationResumeCountdown"
+      ],
+      "responsibility": "touch attack/control hints and resume countdown",
+      "currentOwner": "Controller",
+      "source": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "boundary": "No exclusive-screen/Dialog contract; overlay lifetime may be organized separately, not incorrectly migrated as modal."
+    },
+    {
+      "category": "host-owned-reward-overlays",
+      "type": "Controller reward overlays",
+      "generatedNames": [
+        "CurrencyRewardPanel",
+        "ItemRewardPanel"
+      ],
+      "responsibility": "currency/item receive or skip transaction",
+      "currentOwner": "Controller async choice + resourceRewardMenu",
+      "source": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "boundary": "Not ViewManager; pending choice lifetime/atomic transaction cancellation must be retained."
+    },
+    {
+      "category": "managed-outer-local-implementation",
+      "type": "Battle/Custom and reward children",
+      "generatedNames": [
+        "CustomizeModePanel",
+        "ProcessingMaterial_0",
+        "ProcessingMaterial_1",
+        "HiddenCustomControls",
+        "RewardHeader",
+        "SkipCardReward"
+      ],
+      "responsibility": "processing selection, preview, hand, reward controls",
+      "currentOwner": "Managed BattlePresentation/CardReward lease + child Views",
+      "source": "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs",
+      "boundary": "Ordinary local visual/control composition, not separate unowned screen. Processing mode remains an existing Custom submode; no new manager solely for Initialize."
+    }
+  ],
+  "priorities": [
+    "Move coherent Controller screen instances before subdividing their internal layout builders.",
+    "Transfer actual modal tickets/parent termination/focus ownership, preserving Core and save decisions.",
+    "Keep noninteractive labels/readouts and internally owned controls distinct from screen/Dialog migration."
+  ],
+  "limits": [
+    "Read-only code inventory; no Unity hierarchy/runtime enumeration or changes.",
+    "No claim every dynamic UI branch or arbitrary third-party popup was exhaustively enumerated.",
+    "Stage10 final compile/tests remain pending; this inventory does not certify its runtime behavior."
+  ]
+}

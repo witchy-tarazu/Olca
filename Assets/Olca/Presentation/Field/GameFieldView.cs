@@ -1346,10 +1346,12 @@ namespace Olca.Presentation.Field
         private Olca.Unity.MenuPadScope menu;private bool navigationDirty;private int assignedFrame=-1;private string normalFocus="CloseKeyboardSettings";
         private void InvalidateNavigation(){var name=menu?.FocusName;if(managedContext?.DialogBlocksInput!=true&&name!=null&&name!="CancelCapture"&&name!="ConfirmKeyboardReset"&&name!="CancelKeyboardReset")normalFocus=name;menu?.Suspend();navigationDirty=true;}
         private Olca.Presentation.Management.ManagedScreenContext managedContext;
+        private bool CanOperate=>this!=null&&(managedContext==null||gameObject.activeInHierarchy&&managedContext.IsCurrent&&!managedContext.DialogBlocksInput);
         private UnityEngine.UI.Button resetConfirmButton, resetCancelButton;
         public void ConfigureManagement(Olca.Presentation.Management.ManagedScreenContext context) { managedContext = context; }
         private void OpenReset()
         {
+            if(!CanOperate)return;
             listening = null;
             if (managedContext == null) resetConfirmation.SetActive(true);
             else { normalFocus="ResetKeyboardSettings"; managedContext.ShowDialog(resetConfirmation,resetConfirmButton,resetCancelButton,result => {
@@ -1367,7 +1369,7 @@ namespace Olca.Presentation.Field
         private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
         private void LateUpdate(){FitSettingsLayout();if(managedContext?.DialogBlocksInput==true){menu?.Suspend();navigationDirty=true;return;}if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
         private void OnDisable(){menu?.Suspend();managedContext?.NotifyHidden();}
-        private void OnDestroy(){menu?.Dispose();}
+        private void OnDestroy(){menu?.Dispose();save=null;managedContext=null;}
 
         public void Initialize(Font font, System.Func<InputBindingProfile, string> save, bool gamepad=false)
         {
@@ -1401,7 +1403,7 @@ namespace Olca.Presentation.Field
                 clear.onClick.AddListener(() => { listening = null; Assign(slot, null); });
             }
             MakeButton("CancelCapture", gamepad?"ボタン入力を取消":"キー入力を取消", transform, new Vector2(0,-350), new Vector2(600,50))
-                .onClick.AddListener(() => { listening = null; Refresh("キー入力を取り消しました。"); });
+                .onClick.AddListener(() => { if(!CanOperate)return;listening = null; Refresh("キー入力を取り消しました。"); });
             saveButton = MakeButton("SaveKeyboardSettings", "保存・適用", transform, new Vector2(-560, -420), new Vector2(400, 70));
             saveButton.onClick.AddListener(Save);
             MakeButton("ResetKeyboardSettings", "初期配置へ戻す", transform, new Vector2(0, -420), new Vector2(400, 70))
@@ -1417,9 +1419,9 @@ namespace Olca.Presentation.Field
             MakeText("ResetQuestion", "初期配置へ戻しますか？\n保存・適用するまでは変更を破棄できます。", resetConfirmation.transform,
                 new Vector2(0, 100), new Vector2(1500, 150), 34);
             resetConfirmButton = MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75));
-            resetConfirmButton.onClick.AddListener(() => { if (managedContext == null) CompleteReset(true); });
+            resetConfirmButton.onClick.AddListener(() => { if (this!=null&&managedContext == null) CompleteReset(true); });
             resetCancelButton = MakeButton("CancelKeyboardReset", "やめる", resetConfirmation.transform, new Vector2(280, -80), new Vector2(450, 75));
-            resetCancelButton.onClick.AddListener(() => { if (managedContext == null) CompleteReset(false); });
+            resetCancelButton.onClick.AddListener(() => { if (this!=null&&managedContext == null) CompleteReset(false); });
             layoutWidth=-1;FitSettingsLayout();resetConfirmation.SetActive(false); gameObject.SetActive(false);
         }
 
@@ -1433,13 +1435,14 @@ namespace Olca.Presentation.Field
         }
         public void BeginCapture((string Device, string Context, string Action) slot)
         {
+            if(!CanOperate)return;
             listening = slot; awaitRelease = true;captureTopology=Olca.Unity.UnityInputProvider.GamepadTopology();
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             Refresh(gamepad?"全ボタン・スティックを戻し、新しいボタンを1つ押してください。取消はマウス／Esc。":"押しているキーを離してから、新しいキーを1つ押してください。");
         }
         private void Update()
         {
-            if (!gameObject.activeSelf || !listening.HasValue) return;
+            if (!gameObject.activeSelf || !listening.HasValue || !CanOperate) return;
             var keys = gamepad?Olca.Unity.UnityInputProvider.CaptureGamepadBinding():Olca.Unity.UnityInputProvider.CaptureBindingKey();
             if(gamepad&&captureTopology!=Olca.Unity.UnityInputProvider.GamepadTopology()){captureTopology=Olca.Unity.UnityInputProvider.GamepadTopology();awaitRelease=true;return;}
             if (awaitRelease) { if (keys.HeldCount == 0) awaitRelease = false; return; }
@@ -1449,13 +1452,14 @@ namespace Olca.Presentation.Field
         }
         private void Assign((string Device, string Context, string Action) slot, string key)
         {
+            if(!CanOperate)return;
             var before=edit.Draft.ToDictionary(p=>p.Key,p=>p.Value);bool accepted=edit.TryAssign(slot,key,out var error);
             bool exchanged=accepted&&edit.Draft.Count(p=>before[p.Key]!=p.Value)>1;
             Refresh(accepted?(exchanged?"割当を交換しました。保存・適用で確定します。":"変更しました。保存・適用で確定します。"):error,!accepted);
         }
         private void Save()
         {
-            if (listening.HasValue) return;
+            if (!CanOperate || listening.HasValue) return;
             var candidate = edit.Preview();
             string error = save(candidate);
             if (error != null) { Refresh("保存できませんでした。変更はまだ適用されていません。\n再試行するか、破棄して戻ってください。",true); return; }
@@ -1463,6 +1467,7 @@ namespace Olca.Presentation.Field
         }
         public void DiscardAndClose()
         {
+            if(this==null)return;
             listening = null; if (applied != null) edit = applied.BeginEdit();
             gameObject.SetActive(false);
         }
@@ -1520,9 +1525,12 @@ namespace Olca.Presentation.Field
         private readonly Slider[] sliders=new Slider[4];private readonly Text[] values=new Text[4];
         private System.Func<Olca.Unity.AudioVolumeSettings,string> save;private System.Action close;private Text status;
         private Font font;private Button saveButton,cancelButton;private Olca.Unity.MenuPadScope menu;
-        private void LateUpdate(){menu?.Tick();}
-        private void OnDisable(){menu?.Suspend();}
-        private void OnDestroy(){menu?.Dispose();}
+        private Olca.Presentation.Management.ManagedScreenContext managedContext;
+        private bool CanOperate=>this!=null&&gameObject.activeInHierarchy&&(managedContext==null||managedContext.IsCurrent&&!managedContext.DialogBlocksInput);
+        public void ConfigureManagement(Olca.Presentation.Management.ManagedScreenContext context){managedContext=context;}
+        private void LateUpdate(){if(CanOperate)menu?.Tick();}
+        private void OnDisable(){menu?.Suspend();managedContext?.NotifyHidden();}
+        private void OnDestroy(){menu?.Dispose();save=null;close=null;managedContext=null;}
         private Text Label(string name,string value,Vector2 position,Vector2 size,int fontSize){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);
             var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.alignment=TextAnchor.MiddleCenter;text.text=value;Olca.Presentation.Dungeon.UiLook.Label(text);
             text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;}
@@ -1550,18 +1558,18 @@ namespace Olca.Presentation.Field
                 var slider=obj.GetComponent<Slider>();slider.minValue=0;slider.maxValue=100;slider.wholeNumbers=true;slider.fillRect=fill.rectTransform;slider.handleRect=handle.rectTransform;handle.rectTransform.sizeDelta=new Vector2(28,-12);slider.targetGraphic=handle;
                 var colors=slider.colors;colors.selectedColor=new Color(.2f,.7f,.85f);colors.highlightedColor=new Color(.4f,.9f,1f);slider.colors=colors;
                 sliders[n]=slider;values[n]=Label("AudioValue"+ids[n],"",new Vector2(550,y),new Vector2(180,60),30);
-                slider.onValueChanged.AddListener(v=>values[index].text=((int)v)+" %");
+                slider.onValueChanged.AddListener(v=>{if(CanOperate)values[index].text=((int)v)+" %";});
             }
             saveButton=Button("SaveAudioSettings","保存・適用",new Vector2(-300,-350));cancelButton=Button("CancelAudioSettings","破棄して戻る",new Vector2(300,-350));
-            saveButton.onClick.AddListener(()=>{var error=this.save(new Olca.Unity.AudioVolumeSettings((int)sliders[0].value,(int)sliders[1].value,(int)sliders[2].value,(int)sliders[3].value));status.text=error??"音量設定を保存し、再生経路へ適用しました。";});
-            cancelButton.onClick.AddListener(()=>this.close());
+            saveButton.onClick.AddListener(()=>{if(!CanOperate||this.save==null)return;var error=this.save(new Olca.Unity.AudioVolumeSettings((int)sliders[0].value,(int)sliders[1].value,(int)sliders[2].value,(int)sliders[3].value));status.text=error??"音量設定を保存し、再生経路へ適用しました。";});
+            cancelButton.onClick.AddListener(()=>{if(CanOperate)this.close?.Invoke();});
             for(int n=0;n<4;n++)sliders[n].navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=n==0?(Selectable)cancelButton:sliders[n-1],selectOnDown=n==3?(Selectable)saveButton:sliders[n+1],selectOnLeft=null,selectOnRight=null};
             saveButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=sliders[3],selectOnLeft=cancelButton,selectOnRight=cancelButton};
             cancelButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=sliders[3],selectOnLeft=saveButton,selectOnRight=saveButton};gameObject.SetActive(false);
         }
         public void Open(Olca.Unity.AudioVolumeSettings value,string error){int[] current={value.Master,value.Bgm,value.Effects,value.Voice};for(int n=0;n<4;n++){sliders[n].SetValueWithoutNotify(current[n]);values[n].text=current[n]+" %";}
             status.text=error??"0 %は消音、100 %は元の音量です。左右キーでも調整できます。\n保存・適用するまで音量は変わりません。試聴音は鳴らしません。";
-            gameObject.SetActive(true);transform.SetAsLastSibling();if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform));menu.Bind(transform,"AudioSliderMaster",()=>close());}
+            gameObject.SetActive(true);transform.SetAsLastSibling();if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform));menu.Bind(transform,"AudioSliderMaster",()=>{if(CanOperate)close?.Invoke();});}
         public void DiscardAndClose(){if(this!=null)gameObject.SetActive(false);}
     }
 

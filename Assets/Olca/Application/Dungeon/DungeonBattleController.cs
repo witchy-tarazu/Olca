@@ -88,6 +88,7 @@ namespace Olca.Application.Dungeon
         private Olca.Application.Management.GameSystem configuredGameSystem, gameSystem;
         private Olca.Application.Management.GameSystem.Session gameSystemSession;
         private const string ManagedKeyboardScreen = "keyboard-settings";
+        private const string ManagedGamepadScreen = "gamepad-settings", ManagedAudioScreen = "audio-settings";
         public Olca.Application.Management.GameSystem ManagedGameSystem => gameSystem;
         public void ConfigureGameSystem(Olca.Application.Management.GameSystem services)
         {
@@ -728,7 +729,7 @@ namespace Olca.Application.Dungeon
             if(audioSettingsStore==null||!audioSettingsStore.TrySave(value,out error)){GameplayAudioSettingsError=error;return false;}
             audioVolumes=value;gameplayAudio.Apply(value);GameplayAudioSettingsError=null;return true;
         }
-        private void OpenAudioSettings(){if(!IsUserPaused||progressDialogOpen||audioSettingsView==null)return;keyboardSettingsView?.DiscardAndClose();if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose();pauseOverlay.SetActive(false);audioSettingsView.Open(audioVolumes,GameplayAudioSettingsError);}
+        private void OpenAudioSettings(){if(!IsUserPaused||progressDialogOpen)return;if(gameSystem!=null){OpenManagedSettingsAsync(ManagedAudioScreen).Forget();return;}if(audioSettingsView==null)return;keyboardSettingsView?.DiscardAndClose();gamepadSettingsView?.DiscardAndClose();pauseOverlay.SetActive(false);audioSettingsView.Open(audioVolumes,GameplayAudioSettingsError);}
         private void CloseAudioSettings(){audioSettingsView.DiscardAndClose();pauseOverlay.SetActive(IsUserPaused);if(IsUserPaused)pauseOverlay.transform.SetAsLastSibling();}
 
         public string GameplayKeyboardSettingsError { get; private set; }
@@ -948,10 +949,10 @@ namespace Olca.Application.Dungeon
             MakeButton("ResumeButton", "再開", pauseOverlay.transform, new Vector2(0.5f, 0.5f), Vector2.zero).onClick.AddListener(() => SetUserPaused(false));
             MakeButton("LoadCheckpointButton", "続きから", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -100)).onClick.AddListener(ContinueCheckpointFromUi);
             MakeButton("KeyboardSettingsButton", "キー設定", pauseOverlay.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -200))
-                .onClick.AddListener(() => {if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose();OpenKeyboardSettings();});
+                .onClick.AddListener(OpenKeyboardSettings);
             var padSettingsButton=MakeButton("GamepadSettingsButton","パッド設定",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-100));
             ((RectTransform)padSettingsButton.transform).sizeDelta=new Vector2(420,70);
-            padSettingsButton.onClick.AddListener(()=>{keyboardSettingsView?.DiscardAndClose();gamepadSettingsView.Open(GameplayGamepadProfile);});
+            padSettingsButton.onClick.AddListener(OpenGamepadSettings);
             var vibrationToggle=MakeButton("VibrationSetting","",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(-420,-200));
             ((RectTransform)vibrationToggle.transform).sizeDelta=new Vector2(420,70);
             void RefreshVibrationSetting(){vibrationToggle.GetComponentInChildren<Text>().text=vibrationSettingsError!=null?"シンドウ: ホゾンエラー（サイシコウ）":"シンドウ: "+(GamepadVibrationEnabled?"ON":"OFF");}
@@ -982,26 +983,35 @@ namespace Olca.Application.Dungeon
             ((RectTransform)cancelRetreatButton.transform).sizeDelta = new Vector2(420,70);
             cancelRetreatButton.onClick.AddListener(() => { retreatConfirmation.SetActive(false); pauseOverlay.SetActive(true); });
             retreatConfirmation.SetActive(false);
-            GameObject CreateKeyboardPanel()
+            // 既存PrefabはRectTransformだけの共通shell。内容・保存処理は各Viewへ注入する。
+            GameObject CreateSettingsPanel(string name, System.Action<GameObject> initialize)
             {
-                var panel = gameSystem==null ? new GameObject("KeyboardSettingsPanel", typeof(RectTransform)) : Instantiate(gameSystem.Resources.GetShared<GameObject>("OlcaSystem/KeyboardSettings"));
-                panel.name="KeyboardSettingsPanel";
-                try {
-                    panel.transform.SetParent(pauseCanvas.transform, false);
-                    keyboardSettingsView = panel.AddComponent<GameplayKeyboardSettingsView>();
-                    keyboardSettingsView.Initialize(font, candidate => TryApplyGameplayKeyboardProfile(candidate, out var error) ? null : error);
-                    return panel;
-                } catch { Destroy(panel); throw; }
+                var panel=gameSystem==null?new GameObject(name,typeof(RectTransform)):Instantiate(gameSystem.Resources.GetShared<GameObject>("OlcaSystem/KeyboardSettings"));
+                panel.name=name;
+                try { panel.transform.SetParent(pauseCanvas.transform,false);initialize(panel);return panel; }
+                catch { Destroy(panel);throw; }
             }
-            if (gameSystem == null) CreateKeyboardPanel();
-            else gameSystem.Views.Register(this, ManagedKeyboardScreen,
-                ct => { ct.ThrowIfCancellationRequested(); return System.Threading.Tasks.Task.FromResult(CreateKeyboardPanel()); },
-                (panel, context) => { var view = panel.GetComponent<GameplayKeyboardSettingsView>(); view.ConfigureManagement(context); view.Open(GameplayKeyboardProfile); },
-                panel => { if (panel != null) panel.GetComponent<GameplayKeyboardSettingsView>().DiscardAndClose(); });
-            var padPanel=new GameObject("GamepadSettingsPanel",typeof(RectTransform));padPanel.transform.SetParent(pauseCanvas.transform,false);gamepadSettingsView=padPanel.AddComponent<GameplayKeyboardSettingsView>();
-            gamepadSettingsView.Initialize(font,candidate=>TryApplyGameplayGamepadProfile(candidate,out var error)?null:error,true);
-            var audioPanel=new GameObject("AudioSettingsPanel",typeof(RectTransform));audioPanel.transform.SetParent(pauseCanvas.transform,false);
-            audioSettingsView=audioPanel.AddComponent<GameplayAudioSettingsView>();audioSettingsView.Initialize(font,candidate=>TryApplyGameplayAudioVolumes(candidate,out var error)?null:error,CloseAudioSettings);
+            GameObject Keyboard(bool pad)=>CreateSettingsPanel(pad?"GamepadSettingsPanel":"KeyboardSettingsPanel",panel=>{
+                var view=panel.AddComponent<GameplayKeyboardSettingsView>();
+                if(pad){gamepadSettingsView=view;view.Initialize(font,candidate=>TryApplyGameplayGamepadProfile(candidate,out var error)?null:error,true);}
+                else{keyboardSettingsView=view;view.Initialize(font,candidate=>TryApplyGameplayKeyboardProfile(candidate,out var error)?null:error);}
+            });
+            GameObject Audio()=>CreateSettingsPanel("AudioSettingsPanel",panel=>{
+                audioSettingsView=panel.AddComponent<GameplayAudioSettingsView>();
+                audioSettingsView.Initialize(font,candidate=>TryApplyGameplayAudioVolumes(candidate,out var error)?null:error,CloseAudioSettings);
+            });
+            if(gameSystem==null){Keyboard(false);Keyboard(true);Audio();}
+            else {
+                void RegisterBindings(string key,bool pad)=>gameSystem.Views.Register(this,key,
+                    ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Keyboard(pad));},
+                    (panel,context)=>{if(!IsUserPaused)throw new System.OperationCanceledException();var view=panel.GetComponent<GameplayKeyboardSettingsView>();view.ConfigureManagement(context);pauseOverlay.SetActive(true);view.Open(pad?GameplayGamepadProfile:GameplayKeyboardProfile);},
+                    panel=>{if(panel!=null)panel.GetComponent<GameplayKeyboardSettingsView>().DiscardAndClose();});
+                RegisterBindings(ManagedKeyboardScreen,false);RegisterBindings(ManagedGamepadScreen,true);
+                gameSystem.Views.Register(this,ManagedAudioScreen,
+                    ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Audio());},
+                    (panel,context)=>{if(!IsUserPaused)throw new System.OperationCanceledException();var view=panel.GetComponent<GameplayAudioSettingsView>();view.ConfigureManagement(context);pauseOverlay.SetActive(false);view.Open(audioVolumes,GameplayAudioSettingsError);},
+                    panel=>{if(panel!=null)panel.GetComponent<GameplayAudioSettingsView>().DiscardAndClose();});
+            }
             var audioButton=MakeButton("AudioSettingsButton","音量設定",pauseOverlay.transform,new Vector2(.5f,.5f),new Vector2(420,-300));
             ((RectTransform)audioButton.transform).sizeDelta=new Vector2(420,70);audioButton.onClick.AddListener(OpenAudioSettings);
             pauseOverlay.SetActive(false);
@@ -1062,15 +1072,24 @@ namespace Olca.Application.Dungeon
         }
         private void OpenKeyboardSettings()
         {
-            if (gameSystem == null) { keyboardSettingsView.Open(GameplayKeyboardProfile); return; }
-            OpenManagedKeyboardAsync().Forget();
+            if(gameSystem==null){gamepadSettingsView?.DiscardAndClose();keyboardSettingsView.Open(GameplayKeyboardProfile);return;}
+            OpenManagedSettingsAsync(ManagedKeyboardScreen).Forget();
         }
-        private async UniTask OpenManagedKeyboardAsync()
+        private void OpenGamepadSettings()
         {
-            var owner = gameSystemSession;
-            var result = await gameSystem.Views.ShowAsync(ManagedKeyboardScreen);
-            if (this != null && ReferenceEquals(owner,gameSystemSession) && !result.Succeeded && !result.Cancelled) {
-                GameplayKeyboardSettingsError = result.Error; logger?.LogWarning(result.Error);
+            if(gameSystem==null){keyboardSettingsView?.DiscardAndClose();gamepadSettingsView.Open(GameplayGamepadProfile);return;}
+            OpenManagedSettingsAsync(ManagedGamepadScreen).Forget();
+        }
+        private async UniTask OpenManagedSettingsAsync(string key)
+        {
+            if(!IsUserPaused)return;
+            var owner=gameSystemSession;
+            var result=await gameSystem.Views.ShowAsync(key);
+            if(this!=null&&ReferenceEquals(owner,gameSystemSession)&&!result.Succeeded&&!result.Cancelled){
+                if(key==ManagedAudioScreen)GameplayAudioSettingsError=result.Error;
+                else if(key==ManagedGamepadScreen)GameplayGamepadSettingsError=result.Error;
+                else GameplayKeyboardSettingsError=result.Error;
+                logger?.LogWarning(result.Error);
             }
         }
 

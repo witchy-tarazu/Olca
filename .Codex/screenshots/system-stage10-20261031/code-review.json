@@ -1,0 +1,51 @@
+{
+  "scope": "Stage10 independent static review of managed keyboard/gamepad/audio settings and pad reset Dialog migration",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "7b1e5e2207ada8188e7f38e0957ee2e203e74d06d8e42a9ec87c9c7172304569",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "4ce0d2f3605208bcf3952b5c757587d59e5eb952397b54fa6c3288dd0a5bc353",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "372bd26bbaa04e6ff8c45d52c9f25150bd05a2c0865907e5a33033801fe29759"
+  },
+  "submissionValidationHashesMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "All three settings keys register on the same ViewManager; cached content reopens with current ManagedScreenContext.",
+    "Managed transitions no longer manually hide the prior settings screen before successful ViewManager switching.",
+    "Factory catches initialization failure and destroys its instantiated shell.",
+    "Show callbacks cancel if pause ended; returned errors are assigned to the relevant settings category.",
+    "Pad reuses existing GameplayKeyboardSettingsView reset behavior with managed Dialog ticket and focus restoration.",
+    "Managed stale capture/reset/save calls check current active context and dialog input blocking.",
+    "Audio Save/Cancel guard inactive or stale context and destruction; save and close delegates cleared on destruction.",
+    "Audio OnDisable notifies ViewManager; CloseCurrent and owner disposal preserve manager ownership and old callback rejection.",
+    "Existing Controller TryApply audio persists first and applies audio values only on successful write.",
+    "Legacy unmanaged fallback retains direct view construction and behavior."
+  ],
+  "testsRead": [
+    "Keyboard/pad reset cancellation focus parameterization",
+    "Audio close notification, old Save/Cancel rejection, cached reopen and saving once per current click"
+  ],
+  "limits": [
+    "Compile/reload and related/full/native tests are pending; no Unity operations executed by this reviewer.",
+    "No exhaustive Unity initialization-failure injection or real keyboard/pad replay performed here.",
+    "Other local popups and static generated texture/sprite ownership remain outside this stage.",
+    "Common shell retains legacy KeyboardSettings resource name; this is not a full prefab-content authoring migration."
+  ],
+  "finalGuardReReview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "CancelCapture button rejects stale managed operation.",
+      "Audio slider listener checks CanOperate before touching old labels.",
+      "Old Save/Cancel/Slider callback regression invokes retained UnityEvents after unregister and checks no extra save/close."
+    ],
+    "status": "Static source review only; explicit compile was not accepted while connection unavailable, AutoReload pending; no final test result claimed."
+  },
+  "registeredSettingsRegressionReview": {
+    "unresolvedRequiredFindings": 0,
+    "assessment": "Strict count1->3 tracks the intentionally expanded managed screen registration, reinforced by exact equivalence of keyboard-settings/gamepad-settings/audio-settings keys. Failure/final cleanup0, same session on repeated Start and subscription expectations remain unchanged.",
+    "initialRelatedFailure": "evidence/system-stage10-initial-related-failure.json",
+    "history": "Initial related478 completed477passed/1failed on the old count assertion. Not treated as final success.",
+    "productionTwoFilesUnchanged": true,
+    "finalSourceHashesMatchBothCopies": true,
+    "finalRecompileAndTests": "pending"
+  }
+}

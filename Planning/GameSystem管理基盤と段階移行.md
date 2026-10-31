@@ -275,3 +275,64 @@ DungeonCheckpointFlowは保存から復帰候補とcheckpoint/routeを読み、�
 FHD/4K/4:3の15枚をStage8同場面と独立比較、4Kの文字/mini/Dialog代表領域も無拡縮で補足し、新たな必須視覚指摘0。コード/設計の必須未解決0。文書のtimeline順序表現1件は実コードに合わせて訂正した。詳細と出所は[第九段階証跡](../.Codex/screenshots/system-stage9-20261031/README.md)へ記録する。
 
 同Editor PID137059のrecompile/Play Domain Reload後にPipeline main-thread timeoutが発生し、通常待機で回復した。ready表示だけで成功とせず、期限超過したfixtureの起動済みをreadonly観察して確認し、Play/fixture/テストを重複再送しなかった。CLI editor status名不一致とUnityAI接続情報保存警告は履歴として分離し、製品console0と混同しない。VM/model/認証と元プロジェクトを保持。全HotReload/実build/物理機器/OS/聴感、歴史的UGUIの未確認/未解決を維持。基盤全体の安定化完了ではなく、上記の画面/popup/生成資源所有を次段階で閉じる。
+
+
+## 第十段階: pad・音量設定の画面寿命と初期化Dialog
+
+既存keyboard-settingsにgamepad-settings/audio-settingsを加え、3画面を同じViewManagerへ登録する。既存OlcaSystem/KeyboardSettings PrefabはRectTransformだけの空画面shellであり、名前に反してキーボード固有画像を持たない。同じshellをResourceManager経由で借用し、既存Initializeへfont/保存delegateを注入する。新Manager/依存/Prefab複製は増やさない。gameSystemなしの旧テスト導線は従来の直組を維持。
+
+Closeではcached leaseを保持し、OnDisableでContextへ非表示通知。次回Openは新Context/現在保存値で再表示する。切替成功まで旧画面を手動破棄せず、ロード失敗/取消は旧画面を維持。親pause終了で各画面を閉じ、生成待ちのShowはpauseが終わっていれば取消。host終了/Singleではowner登録を解除し実体・入力購読・delegate・Contextを返す。閉じた/破棄済みの捕捉・保存・取消/Sliderのcallbackは受け付けない。
+
+padは既存GameplayKeyboardSettingsView(gamepad=true)を使い、従来keyboardと同じResetKeyboardConfirmationをDialogManagerへ委譲する。確認は編集案の初期化だけ、保存・適用までは未確定。取消/ParentClosed/多重要求で保存やreset確定を混在させず、起点へのfocus復帰と閉じた同frameの入力遮断は既存契約を使う。音量画面に存在しない確認/初期化機能は増やさない。
+
+音量の保存成功→Controller値更新→既存SoundManager共有Router適用の順序は不変。0..100/全体×系統×元音量、保存まで適用しない/試聴しない、保存形式はそのまま。設定ViewはAudioSourceや生成Texture/Spriteを所有せず、font/既存UI素材を借用する。Root音源とsessionの寿命を画面Closeへ移さない。GameSystem/Session/Factory/CheckpointFlow、攻略write plan・主時計・計算は変更しない。
+
+### Stage10後の未管理UI残一覧
+
+以下は管理APIへの未接続であり、現状にcleanupが全くないという断定ではない。単なるInitialize内の表示組立、すでに管理された画面の非モーダル子表示は別扱いにする。
+
+|区分|対象|現所有者|
+|---|---|---|
+|unmanaged-screen|Controller-built pause UI|Controller/pauseCanvas|
+|unmanaged-screen|Controller-built checkpoint UI|Controller|
+|unmanaged-screen|DialogueView|Controller + DialogueSession/dialogueLoop|
+|unmanaged-screen|ClearReturnView|Controller + ClearReturnView content/MenuPadScope|
+|unmanaged-screen-variants|ClearReturnView render family|Controller flags/callbacks + shared ClearReturnView|
+|unmanaged-screen|ClearReturnView second instance|Controller + ClearReturnView|
+|unmanaged-screen|CustomizationLoadoutView|Controller|
+|unmanaged-screen|CustomizationUnlockView|Controller|
+|unmanaged-screen|CustomizationAcquisitionView|Controller|
+|unmanaged-dialog|Controller-built confirmation|Controller local buttons/flags|
+|unmanaged-dialog|Controller progress action overlay|Controller progressDialogOpen/pending state|
+|unmanaged-dialog|ClearReturnView readonly popup|ClearReturnView content swap/readonlyDetails/MenuPadScope|
+|unmanaged-dialog-state|ClearReturnView saved-deck confirmation|RenderSavedDeckMenu deleting branch|
+|unmanaged-dialog|CustomScreenView detail/inspection|CustomScreenView own menu/input/presentation-hide state|
+|unmanaged-dialog-state|DialogueView session states|DialogueView + DialogueSession.SkipConfirmationOpen/BacklogOpen|
+|host-owned-reward-overlays|Controller reward overlays|Controller async choice + resourceRewardMenu|
+
+具体的な生成名/参照と分類は第十段階証跡のunmanaged-ui-inventory.jsonへ保存する。次段階は一つの画面群とそのpopupを実View/Dialog寿命へ移し、親遷移時取消・結果一回・focus/入力解除・保存不変・終了再生成を満たして閉じる。全メソッド移動や機械的Manager追加を終点にしない。
+
+### 生成資源の必須残件
+
+既知のSharedAttackPropCatalogだけでなく、以下6系統のstatic生成cacheに最終解放のRoot所有境界が残る。設定画面の新規生成物ではなく、今回広く資産整理しない。既存View所有で解放するGauge/mini/illustration wrapper等と区別し、借用元Textureを誤破棄しない。pure C# DTO catalogは対象外。
+
+- Presentation/Field/SharedAttackPropCatalog.cs：static loaded per shared key。
+- Presentation/Battle/CombatStatusIcons.cs：CombatStatusIconCatalog static loaded dictionary。
+- Presentation/CustomScreen/CardAttackPropertyIcons.cs：AttackPropertyIconCatalog static sprites。
+- Presentation/Effects/ActorConditionVisual.cs：static sprites by Guard/Paralyze。
+- Presentation/Effects/DefensiveFieldVisual.cs：static sprites by Barrier/Aura。
+- Presentation/Effects/TransformationEffectSprites.cs：static activation/release。
+
+必要な利用中leaseを保ち、最後の所有者でgenerated Sprite/Textureを返却し、再取得/host再入で重複しないことを次の完了条件にする。詳細はgenerated-assets-inventory.jsonに記録する。画面/popup/生成資産所有を閉じ、Bootstrap本番/保存復帰/失敗取消/入力音声/単一更新/回帰を満たすまで基盤安定化を継続。外界/ボスラッシュ/未決値の実装は混ぜない。
+
+### 第十段階 最終検証
+
+最終3sourceで明示コンパイルerror0、関連478/478（40.50秒）、全3586/3586（258.93秒）、skip/error0。初回は477/478で既存の管理画面登録数1の期待が新3画面と不一致。厳密3と正確な3キーをassertし、失敗/終了時0、sameSession、購読やguardを緩めず再検証した。製品2fileは初回から不変。初回失敗と修正根拠を証跡へ保持。Source hashはsubmission/project/関連/全件/最終で一致。
+
+同EditorでScroll1/UIRuntime4を2周し全10件成功、各回と全件後はEventSystem current CLR/Unity null・static登録0/Scene0。global一覧clearなし。警告59件は既存fixture5分類と完全一致。
+
+新規直起動→Bootstrap保存復帰、HUD再生成/keyboard/Dialog/設定復元、SingleとtimeScale0終了・欠損取消・同時再Openの基本導線で元6ファイル不変。pad/audio管理UIでは実Raycast/Sliderと仮想pad捕捉・競合交換・未保存破棄/未割当保存/初期化、Dialog held-cancel/focus、親pause終了、実shell生成後取消/欠損・同時要求を確認。音量非既定50/75/25/0の保存と既存Router音量式、Single/checkpoint/CloseOpen再読込が一致。親遷移/終了前の実8保存ファイルhashは不変。最後はUI経由でpad/音量を既定へ戻し、backup追加を含む最終10ファイルを記録した。設定保存は意図した隔離書込みで、常に全ファイル不変とはしない。破棄後旧Save/Cancel/Slider/入力取消callbackは保存/例外を起こさず、delegate/Contextを返却。Root/全AudioSourceはともに3、Root source identityを再利用。一時機器を除去し、AudioClose後のfocusは有効なResumeButtonへ戻る。音を聴いたとはしない。
+
+FHD/4K/4:3の15組を独立比較し必須視覚指摘0、4K代表3領域を無拡縮で補足。key系の前画像はStage9引用。pad/audioの前は旧commit1e9d718のViewクラスをrenameしたinert-save fixtureであり、旧VM/host全体の再実行ではない。host field未束縛による背面aux差と静止画/idleの限界を明記し、実afterの可読性と階層を別評価した。コード/設計レビュー必須未解決0。[第十段階証跡](../.Codex/screenshots/system-stage10-20261031/README.md)参照。
+
+Domain Reload後のPipeline timeout、CLI名不一致/UnityAI接続情報・relay警告は別履歴として保持。同じVM/Editor PID137059/model/認証を維持し、既存要求の成否回収前にPlay/activation/テストを重複送信しなかった。外界/ボスラッシュ/未決値は未実装のまま、実build/物理機器/聴感/全HotReload/歴史的UGUIの未確認・未解決を保持。未管理UIと生成cache6系統は上記の安定化必須残件で、今回だけで全体移行完了としない。
