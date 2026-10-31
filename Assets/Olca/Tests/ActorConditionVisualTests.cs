@@ -40,6 +40,16 @@ namespace Olca.Tests
             }
             Assert.IsNull(ActorConditionVisual.GetSprite((ActorConditionKind)99));Assert.Throws<System.ArgumentOutOfRangeException>(()=>new ActorConditionVisual((ActorConditionKind)99));
         }
+        [TestCase(ActorConditionKind.Guard)] [TestCase(ActorConditionKind.Paralyze)]
+        public void 隣接所有者の持続演出は絡まず本体位置を保つ(ActorConditionKind kind)
+        {
+            var peer=new GameObject("AdjacentActor",typeof(SpriteRenderer));peer.transform.position=Vector3.right*1.6f;var other=peer.GetComponent<SpriteRenderer>();other.sprite=sprite;other.sortingOrder=3;
+            try{using(var first=new ActorConditionVisual(kind))using(var second=new ActorConditionVisual(kind)){
+                first.Refresh(body,true);second.Refresh(other,true);
+                Assert.Less(first.Renderer.bounds.max.x,second.Renderer.bounds.min.x,"1.6の既存セル間隔で別所有者の外周を絡ませない");
+                Assert.AreEqual(Vector3.zero,body.transform.position);Assert.AreEqual(Vector3.right*1.6f,other.transform.position);Assert.AreSame(sprite,body.sprite);
+            }}finally{Object.DestroyImmediate(peer);}
+        }
         [Test] public void ガードと麻痺と防御フィールドは別レイヤーで併存し独立して消える()
         {
             using(var guard=new ActorConditionVisual(ActorConditionKind.Guard))using(var paralysis=new ActorConditionVisual(ActorConditionKind.Paralyze))using(var defense=new DefensiveFieldVisual()){

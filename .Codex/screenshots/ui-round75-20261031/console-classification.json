@@ -1,0 +1,45 @@
+{
+  "nativeCurrentGroundTruth": {
+    "sampledUtc": "2026-10-31T06:20:54.273816Z",
+    "ageMs": 134,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 173,
+    "seeded": true
+  },
+  "pipelineCachedHistory": {
+    "error": 1,
+    "warn": 4,
+    "log": 249
+  },
+  "retainedHistoryError": [
+    {
+      "seq": 271183,
+      "timestampUtc": "2026-10-31T06:05:02.148324Z",
+      "level": "error",
+      "logType": "Error",
+      "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+      "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+      "seeded": false
+    }
+  ],
+  "currentWarning": "UnityAI connection-info save read-only filesystem;1",
+  "cachedHistoryWarnings": {
+    "testPoolCap": 1,
+    "alreadyEditModeToolWarning": 1,
+    "UnityAIReadOnlyAcrossPlayStarts": 2
+  },
+  "toolRequestTimeoutReceipts": [
+    "ui-round75-bootstrap-ready-75.json",
+    "ui-round75-fixture-start.json",
+    "ui-round75-custom.json"
+  ],
+  "recovered": true,
+  "historicalUGUI": "unresolved; not reproduced or claimed fixed",
+  "renderVerification": "natural model expiry320, then standard native render and Canvas update confirms no Paralyze or DefensiveField renderer; Guard correctly remains until explicitly cleared",
+  "discardedComparison": "wall-time polling overshot99 to102; not included in matched comparisons",
+  "checkpointRecovery": "prior isolated7502 checkpoint preserved, actual ContinueCheckpointButton used; no duplicate fixture activation or deletion",
+  "productTimingChanged": false
+}

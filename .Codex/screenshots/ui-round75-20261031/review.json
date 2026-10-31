@@ -1,0 +1,40 @@
+{
+  "independentCodeRequiredUnresolved": 0,
+  "reviewedCSharpFiles": 6,
+  "codeScope": [
+    "ActorConditionVisual",
+    "DefensiveFieldVisual",
+    "WorldBattleGridView",
+    "ActorConditionVisualTests",
+    "DefensiveFieldVisualTests",
+    "CustomScreenCostViewTests"
+  ],
+  "codeFindings": "timing/model/lifetime/actor transform unchanged; defense max .175h headspace and feet clearance; fill2 vs outline6 explicit tested priority",
+  "independentNativeRequiredUnresolved": 0,
+  "nativeComparisonsReviewed": {
+    "normalStates": 6,
+    "bossStatesAndWarning": 12
+  },
+  "visualFindings": [
+    "actor-local state silhouette/less crowding",
+    "boss defense and player paralysis distinguishable",
+    "warning outline visible across body; floor fill stays translucent",
+    "no HP/status text regression or excessive foreground dominance"
+  ],
+  "reviewersEditedFiles": false,
+  "reviewersOperatedUnity": false,
+  "dynamicChecks": "owner verified actual pause/resume, checkpoint5, custom hide/show/detail return, normal3 to boss, warning and damage, native-rendered natural expiry and explicit guard clear",
+  "remaining": [
+    "fully coincident bodies individual identity",
+    "multiple coincident bosses",
+    "physical devices/standalone build",
+    "historical UGUI unresolved"
+  ],
+  "newRasterAssets": 0,
+  "existingAssetsReused": [
+    "guard/paralysis independent sprites",
+    "barrier/aura independent sprites",
+    "telegraph corners/exclamation and fill",
+    "original background/JikiTourai/water-mirror UI"
+  ]
+}

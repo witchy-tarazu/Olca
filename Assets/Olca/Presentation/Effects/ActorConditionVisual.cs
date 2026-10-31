@@ -39,10 +39,11 @@ namespace Olca.Presentation.Effects
             if (renderer == null) { var obj = new GameObject("ActorCondition_" + kind, typeof(SpriteRenderer)); obj.transform.SetParent(body.transform, false); renderer = obj.GetComponent<SpriteRenderer>(); }
             else if (renderer.transform.parent != body.transform) renderer.transform.SetParent(body.transform, false);
             renderer.gameObject.layer = body.gameObject.layer; renderer.maskInteraction = body.maskInteraction;
-            renderer.sprite = sprite; renderer.color = new Color(1, 1, 1, kind == ActorConditionKind.Guard ? .5f : .75f);
+            renderer.sprite = sprite; renderer.color = new Color(1, 1, 1, kind == ActorConditionKind.Guard ? .42f : .65f);
             renderer.sortingLayerID = body.sortingLayerID;
             renderer.sortingOrder = Mathf.Clamp(body.sortingOrder + (kind == ActorConditionKind.Guard ? -2 : 1), -32768, 32767);
-            float width = Mathf.Max(bounds.size.x * (kind == ActorConditionKind.Guard ? 1.4f : 1.6f), bounds.size.y * (kind == ActorConditionKind.Guard ? .7f : .85f));
+            // 隣の本体や予兆角枠へ横に張り出さず、状態の所有者の周囲へまとめる。
+            float width = Mathf.Max(bounds.size.x * (kind == ActorConditionKind.Guard ? 1.22f : 1.25f), bounds.size.y * (kind == ActorConditionKind.Guard ? .6f : .62f));
             renderer.transform.position = bounds.center;
             renderer.transform.localScale = new Vector3(width / sprite.bounds.size.x / Mathf.Abs(scale.x), bounds.size.y * 1.35f / sprite.bounds.size.y / Mathf.Abs(scale.y), 1);
             renderer.forceRenderingOff = false; renderer.enabled = true;

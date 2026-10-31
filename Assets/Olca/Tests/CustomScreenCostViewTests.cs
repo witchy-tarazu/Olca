@@ -2117,7 +2117,7 @@ namespace Olca.Tests
             }finally{UnityEngine.Object.DestroyImmediate(root);}
         }
         [NUnit.Framework.Test]
-        public void 予告描画は同一マスで一つ床より前キャラより後で戦闘切替時に解除する()
+        public void 予告面は床側で角枠だけ本体と持続効果より手前に保ち切替時に解除する()
         {
             var root=new UnityEngine.GameObject("TelegraphViewTest");
             try{
@@ -2126,7 +2126,12 @@ namespace Olca.Tests
                 grid.Show(new Olca.Core.Logic.Battle.BattleField(),0);
                 var tile=new Olca.Core.Domain.Vector2Int(1,0);grid.ShowTelegraphs(new[]{tile,tile});
                 var marker=root.transform.Find("EnemyAttackTelegraph_1");NUnit.Framework.Assert.IsTrue(marker.gameObject.activeSelf);NUnit.Framework.Assert.AreEqual(5,marker.childCount);
-                foreach(var renderer in marker.GetComponentsInChildren<UnityEngine.SpriteRenderer>()){NUnit.Framework.Assert.AreEqual(2,renderer.sortingOrder);NUnit.Framework.Assert.Greater(renderer.color.a,0);}
+                foreach(var renderer in marker.GetComponentsInChildren<UnityEngine.SpriteRenderer>()){NUnit.Framework.Assert.AreEqual(renderer.name=="Fill"?2:6,renderer.sortingOrder);NUnit.Framework.Assert.Greater(renderer.color.a,0);}
+                var actor=new UnityEngine.GameObject("TelegraphOwner",typeof(UnityEngine.SpriteRenderer));actor.transform.SetParent(root.transform,false);var body=actor.GetComponent<UnityEngine.SpriteRenderer>();body.sprite=UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Sprite>("Assets/Art/Sprites/Enemies/grunt_256.png");body.sortingOrder=3;
+                using(var condition=new Olca.Presentation.Effects.ActorConditionVisual(Olca.Presentation.Effects.ActorConditionKind.Paralyze)){
+                    condition.Refresh(body,true);NUnit.Framework.Assert.Less(marker.Find("Fill").GetComponent<UnityEngine.SpriteRenderer>().sortingOrder,body.sortingOrder);
+                    foreach(var renderer in marker.GetComponentsInChildren<UnityEngine.SpriteRenderer>())if(renderer.name!="Fill")NUnit.Framework.Assert.Greater(renderer.sortingOrder,condition.Renderer.sortingOrder);
+                }
                 NUnit.Framework.Assert.IsFalse(root.transform.Find("EnemyAttackTelegraph_2").gameObject.activeSelf);
                 grid.Hide();NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);grid.Show(new Olca.Core.Logic.Battle.BattleField(),0);NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);
                 grid.ShowTelegraphs(new[]{new Olca.Core.Domain.Vector2Int(2,0)});NUnit.Framework.Assert.IsFalse(marker.gameObject.activeSelf);NUnit.Framework.Assert.IsTrue(root.transform.Find("EnemyAttackTelegraph_2").gameObject.activeSelf);

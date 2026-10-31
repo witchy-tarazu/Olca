@@ -1,0 +1,434 @@
+[
+  {
+    "name": "ui-round75-before-states-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "97bd4eca16a682c3de68842b97351a5f01f2b299d698601dc1c8583c14e6ecee",
+    "Coreframe": 90
+  },
+  {
+    "name": "ui-round75-after-states-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "70b0e3e56358e277fde8e4078d66be52dd900f9930c16f897de69b096bb26e52",
+    "Coreframe": 90
+  },
+  {
+    "name": "ui-round75-before-states-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "7d342bcc4bf47ed098ef93f8dd30a1e2c3a3b844742184241cbcb25e8d4f07fd",
+    "Coreframe": 90
+  },
+  {
+    "name": "ui-round75-after-states-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "467703390eb788a045a42383c4330cccabd681902562de3125b8b321abe9d3cb",
+    "Coreframe": 90
+  },
+  {
+    "name": "ui-round75-before-states-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "8d1cafbd58564b517cea0c53d07f50358fa0f6d30c51230ae8eca57364a1d56b",
+    "Coreframe": 90
+  },
+  {
+    "name": "ui-round75-after-states-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "e41beb098f112210fd39fe165f7260615e7517cecb83e34d77530866c38c271a",
+    "Coreframe": 90
+  },
+  {
+    "name": "ui-round75-before-warning-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "0696e7de15a6aa8daecc932c49994f567b70e381c957f090839ee54e67dd9d7f",
+    "Coreframe": 99
+  },
+  {
+    "name": "ui-round75-after-warning-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "cba5c8bb3b31f6e727d7fac3cbbccc3ec10239e0a9a7f4e2fdfc9d532a8b4f5a",
+    "Coreframe": 99
+  },
+  {
+    "name": "ui-round75-before-warning-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "f09293c6ce24e74d35c618e8d8dea751f61c0c9b63bc7ef1d4030780d2992f32",
+    "Coreframe": 99
+  },
+  {
+    "name": "ui-round75-after-warning-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "7f5418d84e8bbcb5282805da257136623e7b15c549ca6eced150998a66f8895a",
+    "Coreframe": 99
+  },
+  {
+    "name": "ui-round75-before-warning-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "6ae485f3a05f1e8019c19d6ba30e2a30a50a393bc70f06fdb1df4ef9597c1097",
+    "Coreframe": 99
+  },
+  {
+    "name": "ui-round75-after-warning-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "f39b79279c4040d3152b28cabf1303c85e0d9814732350afd12bf7bdd044405c",
+    "Coreframe": 99
+  },
+  {
+    "name": "ui-round75-before-impact-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "5c18dcbba486cc6a8e3c614a3df9c80541db82bb7691d0836f792a91cb2fe2f4",
+    "Coreframe": 132
+  },
+  {
+    "name": "ui-round75-after-impact-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "d2c65345e7d99d0a774f94008560e729c4ceabe660a1102e9c19949214eabd32",
+    "Coreframe": 132
+  },
+  {
+    "name": "ui-round75-before-impact-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "31258bef8507b7637fb4a083103a2d3a403f97920dc28d139bcbb780f0972402",
+    "Coreframe": 132
+  },
+  {
+    "name": "ui-round75-after-impact-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "61d24f546edeb9135d0004e770f5dafec5958da7292ca094340072141104f1f9",
+    "Coreframe": 132
+  },
+  {
+    "name": "ui-round75-before-impact-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "6bad9ce2379c15262a4800495e1bf7b85175431e7ae04fb296406f92de7a9c36",
+    "Coreframe": 132
+  },
+  {
+    "name": "ui-round75-after-impact-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "ca49aee5fb0467baa5b6ec3c60451df927fdf07d458defe67eb00c41c6e6c6b8",
+    "Coreframe": 132
+  },
+  {
+    "name": "ui-round75-before-cleared-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "46ff3278f0116983de5c28ad77a32260530a93a095d888ecdf957d883492a72f",
+    "Coreframe": 175
+  },
+  {
+    "name": "ui-round75-after-cleared-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "5f5d27262d1674330e010b5c04db0522abeb11c50e8104f941c3968f560b6c26",
+    "Coreframe": 175
+  },
+  {
+    "name": "ui-round75-before-cleared-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "92dbf3634b86b788b019ef0ef554947f62141a4a5928880433ee24a3f9869cab",
+    "Coreframe": 175
+  },
+  {
+    "name": "ui-round75-after-cleared-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "3068e24d6151cebcce54a4868eba2cba1d2a98ccd51ffaf4c409ac8ca4c289ed",
+    "Coreframe": 175
+  },
+  {
+    "name": "ui-round75-before-cleared-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "5fd6e991314acd47db0e26bd6f0d39467bbc299826eec5b414ec36c3968d8929",
+    "Coreframe": 175
+  },
+  {
+    "name": "ui-round75-after-cleared-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "8a8ab66ba349272accfd0c0af067a44265594578d3cf837c687660a88d9ab498",
+    "Coreframe": 175
+  },
+  {
+    "name": "ui-round75-before-boss-states-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "47ae4b1b1aad95a98678e4fc306618be7706b6b5a8d821962f56d7a90221446d",
+    "Coreframe": 120
+  },
+  {
+    "name": "ui-round75-after-boss-states-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "741fe662c85629706f54c7e7f4b643340b97fade4c7d165cfcc5cfca7915797f",
+    "Coreframe": 120
+  },
+  {
+    "name": "ui-round75-before-boss-states-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "22933c6c71e7a74187b47d9d18c77849de427a33f3bfab949fa4909b1d2a9c17",
+    "Coreframe": 120
+  },
+  {
+    "name": "ui-round75-after-boss-states-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "b45917c17871009bacb13f941cb8205a66f7dc7fcca2c89ec7f065ccf4fb32cf",
+    "Coreframe": 120
+  },
+  {
+    "name": "ui-round75-before-boss-states-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "82cbe8beb447610ab1026024909e3c0c2e7e71c31937ff44507c8cc1e1c05d2b",
+    "Coreframe": 120
+  },
+  {
+    "name": "ui-round75-after-boss-states-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "7ab8d34f7b4fa69f0f59a0afbdc350f78a502c465c928101bb60f447d1b79127",
+    "Coreframe": 120
+  },
+  {
+    "name": "ui-round75-before-boss-warning-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "8ae8fd69a4976fc8af74a4b5aad2f6329c04fabd1cc1e2416a0b355e92e545d9",
+    "Coreframe": 128
+  },
+  {
+    "name": "ui-round75-after-boss-warning-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "00ab3dded5312829023f1a578fd8e05c01fc923fa4698236c1d356582cb696a2",
+    "Coreframe": 128
+  },
+  {
+    "name": "ui-round75-before-boss-warning-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "77b139611fb4c10eae20f903765913fc34b37903a4100bf074ede67825ab0a58",
+    "Coreframe": 128
+  },
+  {
+    "name": "ui-round75-after-boss-warning-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "de89112eef6ba110ba9c30030855c432405135d989a230ee92885eacf5f177ce",
+    "Coreframe": 128
+  },
+  {
+    "name": "ui-round75-before-boss-warning-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "fec00767b2f1d6099ec47fe2598d57a495e95ca155d309a245d21e749d0e251c",
+    "Coreframe": 128
+  },
+  {
+    "name": "ui-round75-after-boss-warning-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "2b6f2f05cfbba4ec00aaf569a8a877484d7a969f68a497584a2461e9f7dfbe3b",
+    "Coreframe": 128
+  },
+  {
+    "name": "ui-round75-before-boss-impact-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "7e61a9520204acd4154ab12bfc9be676a01d189f03a0e7255d47e7c798205d3c",
+    "Coreframe": 162
+  },
+  {
+    "name": "ui-round75-after-boss-impact-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "693937f2a107d916f5b0ed3bde6b0217daa666902086b3028ea35e095b763196",
+    "Coreframe": 162
+  },
+  {
+    "name": "ui-round75-before-boss-impact-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "eb5b547a8c09d8af2ef5d98ea75acbfd1797492966eaf70866e18bc16d8bd814",
+    "Coreframe": 162
+  },
+  {
+    "name": "ui-round75-after-boss-impact-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "1843d84cb72bebd1519132b36741f79e73dcead874e398fdaf238eb04fae12cc",
+    "Coreframe": 162
+  },
+  {
+    "name": "ui-round75-before-boss-impact-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "193c461927f8fdb3a261f86304330f6458213ceedd279cef2687f7c863d525a3",
+    "Coreframe": 162
+  },
+  {
+    "name": "ui-round75-after-boss-impact-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "5968557f7d4ccb76270acef80fd5bb087bb9ae5eac50c2d3dba50760d3b03f97",
+    "Coreframe": 162
+  },
+  {
+    "name": "ui-round75-before-boss-cleared-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "2ea00bb005abd5d9b7d9c5b2fae0557f12d6232a84d07ab97b1e7042998a0324",
+    "Coreframe": 205
+  },
+  {
+    "name": "ui-round75-after-boss-cleared-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "b90ed53beff15e308fffd4fe53dd0050ca160e82271980e65a89ba3540ac0256",
+    "Coreframe": 205
+  },
+  {
+    "name": "ui-round75-before-boss-cleared-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "95e0517304200a1b89df159e04da0938129455eddee32e67aab78c08e6501507",
+    "Coreframe": 205
+  },
+  {
+    "name": "ui-round75-after-boss-cleared-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "35b6d7974645f2ff293d725cb6ee7e2bc9e71debfb08d3746e06db563b27ec08",
+    "Coreframe": 205
+  },
+  {
+    "name": "ui-round75-before-boss-cleared-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "bd8ce125746444c2b0e9ddcf686f96c4d6655c9705d288e51e009e311b02328a",
+    "Coreframe": 205
+  },
+  {
+    "name": "ui-round75-after-boss-cleared-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "1ba80a35256a049714cdda86e8de1e9783cdeb81b061e8c18d820ca9c5ed9c3b",
+    "Coreframe": 205
+  }
+]

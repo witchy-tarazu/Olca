@@ -20,6 +20,17 @@ namespace Olca.Tests
         [SetUp] public void Setup(){texture=new Texture2D(8,16);texture.SetPixels(Enumerable.Repeat(Color.white,128).ToArray());texture.Apply();sprite=Sprite.Create(texture,new Rect(0,0,8,16),new Vector2(.5f,.5f),8);host=new GameObject("Body",typeof(SpriteRenderer));body=host.GetComponent<SpriteRenderer>();body.sprite=sprite;body.sortingOrder=3;}
         [TearDown] public void Cleanup(){Object.DestroyImmediate(host);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
         [TestCase(DefensiveFieldKind.Barrier)] [TestCase(DefensiveFieldKind.Aura)]
+        public void 防御外周は足場の上に収まり既存の頭上余白を越えず本体を変えない(DefensiveFieldKind kind)
+        {
+            host.transform.position=new Vector3(3,4,0);host.transform.localScale=Vector3.one*2;var original=body.bounds;
+            using(var view=new DefensiveFieldVisual()){
+                view.Refresh(body,kind==DefensiveFieldKind.Barrier,kind==DefensiveFieldKind.Aura);
+                Assert.GreaterOrEqual(view.Renderer.bounds.min.y,original.min.y,"予兆と足先の下へ防御面を広げない");
+                Assert.LessOrEqual(view.Renderer.bounds.max.y,original.max.y+original.size.y*.1751f,"既存HUDが空ける最大外周内");
+                Assert.AreEqual(original,body.bounds);Assert.AreEqual(new Vector3(3,4,0),host.transform.position);Assert.Less(view.Renderer.sortingOrder,body.sortingOrder);
+            }
+        }
+        [TestCase(DefensiveFieldKind.Barrier)] [TestCase(DefensiveFieldKind.Aura)]
         public void 専用防御素材は中央透明の二百五十六角で共有包装と一致する(DefensiveFieldKind kind)
         {
             var name=kind.ToString().ToLowerInvariant();var bytes=Resources.Load<TextAsset>("OlcaDefensiveFields/"+name);Assert.IsNotNull(bytes);CollectionAssert.AreEqual(File.ReadAllBytes(Path.Combine(UnityEngine.Application.dataPath,"Art/Effects/DefensiveFields",name+".png")),bytes.bytes);
