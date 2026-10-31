@@ -1,0 +1,25 @@
+{
+  "sourceSha256": "19a19712772dc46c85bfb25f9db863677eb9c1eb0fb76ce3b0d85a9771c6797e",
+  "summary": {
+    "total": 203,
+    "passed": 203,
+    "failed": 0
+  },
+  "classes": {
+    "InputBindingEditTests": 14,
+    "FloorSequenceControllerTests": 180,
+    "GamepadGameplayInputTests": 4,
+    "MenuPadScopeTests": 5
+  },
+  "consoleErrors": 0,
+  "consoleWarnings": 58,
+  "conditions": {
+    "observedScreen": [
+      640,
+      360
+    ],
+    "dedicatedTmp": "/workspace/olca-validation-20261024/save/tmp/",
+    "saveGuard": true
+  },
+  "notes": "Timeout on initial resolution script was checked with read-only ScreenState before any tests. Final full preflight additionally checks actual RenderTexture width/height."
+}

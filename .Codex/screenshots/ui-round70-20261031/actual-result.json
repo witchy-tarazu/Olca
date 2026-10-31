@@ -1,0 +1,52 @@
+{
+  "actualEntry": "normal isolated Start/departure/automatic enemy contact/initial custom/PauseButton/KeyboardSettingsButton or GamepadSettingsButton",
+  "pointerPath": "actual EventSystem Raycast + pointer down/up/click, including4:3 narrow-width targets",
+  "keyCapture": "virtual Keyboard StateEvent through normal Update; simultaneous J+K rejected, neutral then Space swaps Attack/Card in candidate only",
+  "padCapture": "virtual Gamepad StateEvent through normal Update; South held swaps Confirm/Decide in candidate only, no implicit apply",
+  "requiredClear": "custom Confirm clear rejected and original Start retained",
+  "discard": "Close/reopen restores applied original keyboard profile",
+  "saveReload": "normal stop/reopen same isolated settings/checkpoint/progress/ContinueCheckpointButton; keyboard Space and pad South loaded as saved",
+  "reset": "actual confirmation cancel then confirm; candidate defaults not applied until Save; both15/37 original binding maps restored",
+  "gameSave": {
+    "files": 6,
+    "unchanged": true,
+    "scope": "capture/swap/discard/settings saves before normal reload"
+  },
+  "cleanup": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [
+      {
+        "name": "EventSystem",
+        "enabled": true,
+        "scene": "Assets/Scenes/DungeonScene.unity",
+        "activeSelf": true
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "currentPlayConsole": {
+    "errors": 0,
+    "warnings": 1,
+    "warningCategory": "UnityAI connection-info read-only environment warning"
+  },
+  "retainedMcpHistoryNotCurrentConsole": {
+    "Editor is already in edit mode": 1,
+    "Could not save connection info: Read-only file system": 2
+  },
+  "physicalKeyboardPadTouchOrBuildVerified": false
+}

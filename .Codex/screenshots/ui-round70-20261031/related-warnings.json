@@ -1,0 +1,12 @@
+{
+  "count": 58,
+  "messages": {
+    "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします": 50,
+    "[WARNING] [DungeonBattleManager] SelectCardReward は CardRewardフェーズ以外では無効": 2,
+    "[WARNING] 使用可能なカードがありません": 2,
+    "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。": 4
+  },
+  "source": "last58 application warning records ending at final targeted suite, matching groundTruth58 before Play reload",
+  "suppressed": false,
+  "classification": "expected isolated test-fixture diagnostics"
+}
