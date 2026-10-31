@@ -1,0 +1,9 @@
+{
+  "codeRequiredUnresolved": 0,
+  "codeReview": "equipment_save_review read source/test/catalog/handoff and spec diff twice; no outstanding findings",
+  "visualRequiredUnresolved": 0,
+  "visualReview": "independent_refactor_review viewed all six native matched PNGs; knife naturally faces left, bolt unchanged; no noticeable drift or size/outline degradation",
+  "limitation": "4:3 projectile temporarily overlaps enemy label in existing path; not worsened or solved by facing fix",
+  "primaryVisualReview": "same scene frame129 default false and opt-in true; original-source reproduction retained separately",
+  "actorHudDataIdentical": true
+}

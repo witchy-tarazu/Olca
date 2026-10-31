@@ -1,0 +1,14 @@
+{
+  "logicalFrame": 129,
+  "effectsIdentical": true,
+  "viewDataIdenticalExceptFlipX": true,
+  "beforeFlip": [
+    false,
+    false
+  ],
+  "afterFlip": [
+    false,
+    true
+  ],
+  "matchedMethod": "same live scene/frame, existing default false versus opt-in true; original pre-edit reproduction retained separately"
+}

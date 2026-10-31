@@ -1,0 +1,21 @@
+{
+  "nativeGroundTruth": {
+    "sampledUtc": "2026-10-31T09:05:39.742827Z",
+    "ageMs": 229,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 1,
+    "consoleLogs": 18,
+    "seeded": true
+  },
+  "cachedPipelineErrors": 2,
+  "currentPipelineErrors": 1,
+  "productRuntimeExceptionsObserved": 0,
+  "currentWarning": "UnityAI could not save connection info: read-only filesystem",
+  "cachedOther": "Editor already in edit mode; prior UnityAI connection warning",
+  "historyKept": true,
+  "originalEditorPid": 137059,
+  "noEditorRestartOrForce": true,
+  "historicalUguiUnresolved": true
+}

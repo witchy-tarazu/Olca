@@ -1,0 +1,50 @@
+{
+  "frame": 129,
+  "actorHudModelAndGeometryIdentical": true,
+  "onlyNameAndHpTextSortingChanged": true,
+  "circlesBarsLinksAndProjectileOrderIdentical": true,
+  "projectilePositionsScalesSpritesLifetimeIdentical": true,
+  "pixelDifferences": [
+    {
+      "output": "fhd",
+      "size": [
+        1920,
+        1080
+      ],
+      "differenceBounds": [
+        938,
+        639,
+        943,
+        640
+      ]
+    },
+    {
+      "output": "4k",
+      "size": [
+        3840,
+        2160
+      ],
+      "differenceBounds": [
+        1875,
+        1279,
+        1886,
+        1281
+      ]
+    },
+    {
+      "output": "4by3",
+      "size": [
+        1440,
+        1080
+      ],
+      "differenceBounds": [
+        674,
+        671,
+        710,
+        683
+      ]
+    }
+  ],
+  "matchedMethod": "same live scene/frame per resolution; two Canvas settles then consecutive legacy3/4 and product8/9 captures",
+  "earlierTrial": "first FHD mixed auxiliary hover tint; not used as final comparison, original receipts kept"
+}

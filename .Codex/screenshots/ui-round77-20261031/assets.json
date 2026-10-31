@@ -1,0 +1,82 @@
+{
+  "newGeneratedImages": 0,
+  "source": "existing non-character OpenAI generated shared props (2026-10-27), untouched PNG/bytes",
+  "resources": [
+    {
+      "resource": "shared_shot_bolt",
+      "canvas": [
+        32,
+        32
+      ],
+      "alphaBounds": [
+        6,
+        13,
+        25,
+        19
+      ],
+      "alphaValues": [
+        0,
+        255
+      ],
+      "bytesMatch": true,
+      "sha256": "8cefd7c1daee5fbd3f15f7cbe4bc3ec92119120b9d25b0328411134a89bce952"
+    },
+    {
+      "resource": "shared_throwing_knife",
+      "canvas": [
+        64,
+        64
+      ],
+      "alphaBounds": [
+        8,
+        26,
+        55,
+        38
+      ],
+      "alphaValues": [
+        0,
+        255
+      ],
+      "bytesMatch": true,
+      "sha256": "d53f90ed1b3f88c3bda1ec2f86904e0366d11500d42eae590b57d3635aa21b71"
+    },
+    {
+      "resource": "shared_bomb",
+      "canvas": [
+        64,
+        64
+      ],
+      "alphaBounds": [
+        18,
+        13,
+        46,
+        51
+      ],
+      "alphaValues": [
+        0,
+        255
+      ],
+      "bytesMatch": true,
+      "sha256": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a"
+    },
+    {
+      "resource": "shared_blast",
+      "canvas": [
+        64,
+        32
+      ],
+      "alphaBounds": [
+        5,
+        12,
+        59,
+        20
+      ],
+      "alphaValues": [
+        0,
+        255
+      ],
+      "bytesMatch": true,
+      "sha256": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd"
+    }
+  ]
+}

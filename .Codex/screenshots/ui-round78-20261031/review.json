@@ -1,0 +1,8 @@
+{
+  "codeRequiredUnresolved": 0,
+  "visualRequiredUnresolved": 0,
+  "codeReview": "equipment_save_review confirmed EnemyView.Initialize text8/9 only; coordinates/layers/circles/bars/lifetimes unchanged",
+  "nativeVisualReview": "independent_refactor_review: exact6 original-size pairs and boss3 reviewed, text legibility improved, no new FHD/4K degradation",
+  "limitations": "projectile parts hidden under text; full non-overlap not solved; boss status icons not shown; animation/hardware not assessed by still review",
+  "comparisonCorrection": "first FHD mixed auxiliary hover tint; replaced by per-resolution consecutive exact captures; prior receipts retained"
+}

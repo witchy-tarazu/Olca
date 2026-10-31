@@ -254,9 +254,10 @@ namespace Olca.Presentation.Battle
             if (enemyNameText != null)
                 enemyNameText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
 
-            // HP/名前テキストをグリッド・敵スプライトより手前に描画
-            SetTextSortingOrder(hpText, 4);
-            SetTextSortingOrder(enemyNameText, 3);
+            // 名前とHP文字は飛翔物(6)・状態表示(7)より手前、被弾数値(20)より後ろ。
+            // 座標や円・バー・接続線は動かさず、交差中も対象情報を読めるようにする。
+            SetTextSortingOrder(hpText, 9);
+            SetTextSortingOrder(enemyNameText, 8);
 
             HideHp(); // ダンジョン探索中は名前・HP非表示
             Refresh();
