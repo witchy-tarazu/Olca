@@ -340,6 +340,7 @@ namespace Olca.Presentation.Dungeon
             float position=readonlyViewportSize==Vector2.zero?1:readonlyScrollPosition;
             readonlyViewportSize=size;
             body.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(size.y,body.preferredHeight+20));
+            if(readonlyDetails!=null&&readonlyDetails.transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,Mathf.Max(0,size.y)+40);
             readonlyScroll.verticalNormalizedPosition=Mathf.Clamp01(position);readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;
         }
         // 上端の既存補助ボタンの間へ文字領域だけを収め、FHDの中央位置は保つ。
@@ -399,9 +400,16 @@ namespace Olca.Presentation.Dungeon
         {
             if(content==null||readonlyDetails!=null)return;var parent=content;var back=menuBackSource;
             readonlyDetails=new GameObject("ReadonlyCardDetails",typeof(RectTransform),typeof(Image));readonlyDetails.transform.SetParent(transform,false);var rect=(RectTransform)readonlyDetails.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;readonlyDetails.GetComponent<Image>().color=UiLook.Surface;var modal=readonlyDetails;
-            content=modal;var title=Text("ReadonlyCardTitle",titleText,0,450,1700,70,36);
+            content=modal;
+            // 図鑑の読取面だけを一覧と同じ水鏡素材へ揃え、背面の文字との競合を抑える。
+            bool collectionReading=parent.name=="CardCollectionContents"||parent.name=="RecipeResultDetails";
+            if(collectionReading){
+                var header=CommerceFace("CollectionReadonlyHeader",0,0,1,1);var hr=header.rectTransform;hr.anchorMin=new Vector2(0,1);hr.anchorMax=Vector2.one;hr.sizeDelta=new Vector2(-180,110);hr.anchoredPosition=new Vector2(0,-90);
+                var reading=CommerceFace("CollectionReadonlyReading",0,0,1,1);var rr=reading.rectTransform;rr.anchorMin=new Vector2(0,1);rr.anchorMax=Vector2.one;rr.pivot=new Vector2(.5f,1);rr.anchoredPosition=new Vector2(0,-160);rr.sizeDelta=new Vector2(-160,1);
+            }
+            var title=Text("ReadonlyCardTitle",titleText,0,450,1700,70,36);
             title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-90);
-            var area=new GameObject("ReadonlyCardScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(modal.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.08f,.2f);ar.anchorMax=new Vector2(.92f,.86f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
+            var area=new GameObject("ReadonlyCardScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(modal.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.08f,.2f);ar.anchorMax=new Vector2(.92f,collectionReading?1:.86f);ar.offsetMin=Vector2.zero;ar.offsetMax=collectionReading?new Vector2(0,-180):Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
             var body=Text("ReadonlyCardPerformance",value,0,0,1500,600,30);body.supportRichText=false;body.alignment=TextAnchor.UpperLeft;body.transform.SetParent(area.transform,false);body.rectTransform.anchorMin=new Vector2(0,1);body.rectTransform.anchorMax=Vector2.one;body.rectTransform.pivot=new Vector2(.5f,1);body.rectTransform.anchoredPosition=Vector2.zero;body.rectTransform.sizeDelta=Vector2.zero;
             decorate?.Invoke(body);
             readonlyScroll=area.GetComponent<ScrollRect>();readonlyScroll.viewport=ar;readonlyScroll.content=body.rectTransform;readonlyScroll.horizontal=false;readonlyScroll.movementType=ScrollRect.MovementType.Clamped;
@@ -429,29 +437,36 @@ namespace Olca.Presentation.Dungeon
             bool updating=isActiveAndEnabled&&content!=null&&content.activeInHierarchy&&content.name=="CardCollectionContents";
             StopMenu();
             CollectionContent("CardCollectionContents");collectionBackAction=pending?null:close;
+            CommerceFace("CollectionHeader",0,405,1760,170);
             Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
             var status=Text("CollectionStatus",error??"永続入手で登録。融合の公開履歴はカード入手と別に保存します。",0,360,1700,80,24);
             AddTrailingTextDetails(status,"CollectionStatusDetails","ズカンのメッセージ");
             Button("CardCollectionTab","カード",-420,265,750,60,()=>{recipesTab=false;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"CardCollectionTab",cardDetails);});
             Button("RecipeCollectionTab","融合レシピ",420,265,750,60,()=>{recipesTab=true;collectionPage=0;RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeCollectionTab",cardDetails);});
             int count=recipesTab?recipes.Length:cards.Length;const int perPage=4;int pages=Math.Max(1,(count+perPage-1)/perPage);collectionPage=Math.Min(collectionPage,pages-1);
+            // 選択カテゴリは移動中のフォーカスと分離し、ページ内の行は同じ左端で読む。
+            var tabMark=new GameObject("CollectionActiveTab",typeof(RectTransform),typeof(Image));tabMark.transform.SetParent(content.transform,false);var mark=tabMark.GetComponent<Image>();mark.color=UiLook.Edge;mark.raycastTarget=false;var mr=(RectTransform)tabMark.transform;mr.anchorMin=mr.anchorMax=new Vector2(.5f,.5f);mr.anchoredPosition=new Vector2(recipesTab?420:-420,228);mr.sizeDelta=new Vector2(730,4);
+            int shown=Math.Min(perPage,Math.Max(0,count-collectionPage*perPage));float top=shown==0?165:215,bottom=shown==0?-65:155-(shown-1)*110-60;CommerceFace("CollectionReading",0,(top+bottom)/2,1760,top-bottom);
             if(count==0)Text("CollectionEmpty",recipesTab?"レシピはありません。":"カードはありません。",0,45,1500,160,30);
             void RowText(string value,int row,int index,float y){
                 var label=Text("CollectionRow_"+row,value,-100,y,1300,100,25);
+                label.alignment=TextAnchor.MiddleLeft;
                 AddTrailingTextDetails(label,"CollectionRow_"+index+"Details","ズカンのジョウホウ");
             }
             for(int n=0;n<perPage&&collectionPage*perPage+n<count;n++){
                 int index=collectionPage*perPage+n;float y=155-n*110;
-                if(!recipesTab){RowText(cards[index],n,index,y);if(cardDetails!=null&&index<cardDetails.Count&&cardDetails[index]!=null){var known=cardDetails[index];Button("CollectionCardDetails_"+index,"詳細",740,y,260,70,()=>OpenCardDetails(known,"CollectionCardDetails_"+index));}continue;}
+                if(!recipesTab){RowText(cards[index],n,index,y);if(cardDetails!=null&&index<cardDetails.Count&&cardDetails[index]!=null){var known=cardDetails[index];CollectionIcon("CollectionCardIcon_"+index,known,-805,y,70,icon);Button("CollectionCardDetails_"+index,"詳細",740,y,260,70,()=>OpenCardDetails(known,"CollectionCardDetails_"+index));}continue;}
                 var row=recipes[index];var result=row.Result;
                 RowText(row.Text,n,index,y);
                 if(result!=null){
                     CollectionIcon("RecipeResultIcon_"+index,result,-805,y,70,icon);
                     Button("RecipeDetails_"+index,"結果の性能",740,y,260,70,()=>{
                         CollectionContent("RecipeResultDetails");
+                        CommerceFace("RecipeDetailsHeader",0,435,1760,130);CommerceFace("RecipeDetailsReading",0,70,1760,590);
                         Text("RecipeDetailsTitle","融合結果の性能",0,430,1500,80,36);
-                        CollectionIcon("RecipeDetailIcon",result,0,245,170,icon);
-                        var performance=Text("RecipePerformance",row.Performance,0,-15,1600,320,30);
+                        CollectionIcon("RecipeDetailIcon",result,-785,435,80,icon);
+                        var performance=Text("RecipePerformance",row.Performance,0,100,1600,500,30);
+                        performance.alignment=TextAnchor.UpperLeft;
                         AddTrailingTextDetails(performance,"RecipePerformanceDetails","レシピのセイノウ");
                         Text("RecipeKnowledgeNotice","レシピの公開情報です。カード本体の入手済み登録とは別です。",0,-250,1650,80,24);
                         Action back=()=>RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeDetails_"+index,cardDetails);

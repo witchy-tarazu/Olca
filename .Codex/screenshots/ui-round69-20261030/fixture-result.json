@@ -1,0 +1,8 @@
+{
+  "sameNameSeparateDefinitions": true,
+  "hiddenThirdNoDetailsOrContent": true,
+  "longRowAndCardAndRecipeReadableToEnd": true,
+  "nineRowsPageEndRoundTrip": true,
+  "emptyBothTabs": true,
+  "progressFilesUnchanged": true
+}

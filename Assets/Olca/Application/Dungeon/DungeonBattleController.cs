@@ -1132,7 +1132,7 @@ namespace Olca.Application.Dungeon
             var details=catalog.Select(c=>CollectionDisplay.IsKnown(p,c,catalog)?c:null).Concat(Enumerable.Repeat<Card>(null,rows.Length-catalog.Length)).ToArray();
             cardCollectionView.RenderCollection(rows,CollectionDisplay.RecipeRows(p,new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes,cards),
                 clearReturnSession.HasPendingSave,clearReturnSession.Error,CloseCardCollection,()=>{clearReturnSession.Retry();ShowCardCollection();},
-                card=>customScreenView!=null?customScreenView.GetCardIcon(card.Id):null,cardDetails:details);
+                card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,cardDetails:details);
             cardCollectionView.transform.SetAsLastSibling();
         }
         private void CloseCardCollection()

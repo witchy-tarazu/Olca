@@ -636,7 +636,7 @@ namespace Olca.Core.Domain
         public static string CardText(ClearReturnProfile profile,Card card,IReadOnlyList<Card> catalog=null)
         {
             if(!IsKnown(profile,card,catalog))return "？？？　未入手";
-            return card.Name+"　"+card.ExceedLevel+"　"+card.Rarity+"　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n"+card.Description;
+            return card.Name+new string('★',(int)card.ExceedLevel)+"\n"+card.Rarity+"　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n"+card.Description;
         }
         public static string[] CardRows(ClearReturnProfile profile,IReadOnlyList<Card> definitions)
         {

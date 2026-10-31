@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "measurement": [
+    {
+      "repeat": 110,
+      "characters": 1002,
+      "fontSize": 30,
+      "width": 1600,
+      "height": 500,
+      "preferred": 492,
+      "hasFullEntry": false
+    },
+    {
+      "repeat": 220,
+      "characters": 1992,
+      "fontSize": 30,
+      "width": 1420,
+      "height": 500,
+      "preferred": 1053,
+      "hasFullEntry": true
+    }
+  ],
+  "method": "MCP ephemeral isolated view; no stored data changed"
+}
