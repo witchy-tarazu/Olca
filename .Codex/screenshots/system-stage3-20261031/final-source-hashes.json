@@ -1,0 +1,12 @@
+{
+  "Assets/Scenes/DungeonScene.unity": "f5d7e163e8210855de97e14f0e132ab12cc7364784a44687b319356c3a72ffd8",
+  "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "da5c703c8b22fae680fe9020ecf2a3ed63424943251987fd528eca5ecb978945",
+  "Assets/Olca/Unity/Management/ResourceManager.cs": "04468f84b780b060b9c242e4df6d59d0fd7068aa856a4f267cf4577d690bacbd",
+  "Assets/Olca/Application/Management/GameSystem.cs": "4c22c6a3f93cfcb2f8d0045f83758ad4777c8a9baacb9e0b996eb2b81f413b61",
+  "Assets/Olca/Application/Management/GameSystemRoot.cs": "e29d200eaec50978c6ac800da423426f8438252df3c3a8363f7463ef0c731d98",
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "d4b7cdf30d5bb5364b995dafab8022e981e80b89081e54f6bb3ee8455aa11882",
+  "Assets/Resources/OlcaSystem/KeyboardSettings.prefab": "df3aa96b1746beedd2e2159681746d69ad728e9195e887a77822cd015a2445ab",
+  "Assets/Resources/OlcaSystem/EventSystem.prefab": "ff2c13154b79500fd3cb90f79628dd3e7e719679f846a765d10bd35206166f9b",
+  "Assets/Resources/OlcaSystem/UIRoot.prefab": "f3b70357baac2ecfd5e456aaa38f7d96d1df81b2a68edc687a6dc9ffc180c1f1",
+  "Assets/Olca/Tests/Application/UIRuntimeManagementTests.cs": "deaea443049db03e56b753545fee55a7bdc2b9d1dc02b3939e7cdf727df73c3b"
+}

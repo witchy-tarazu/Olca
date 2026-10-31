@@ -29,8 +29,8 @@ pauseから操作設定を開くと、ViewManagerがResourceManager経由で必�
 ## 次段階と残る依存
 
 1. 第一段階の通常起動・操作設定・Dialog・保存復帰・音声/入力寿命は検証済み。第二段階でBootstrap入口と互換ホストのロード寿命を分離。
-2. 次は互換ホストからカメラ/EventSystem/UIRootと代表画面をPrefabへ切り出し、Scene leaseからPrefab/View leaseへの縦切りへ移す。Unityのmeta/参照生成は既存リポジトリ規則に従う。既存Scene直起動と検証Sceneを残す。
-3. 他の拠点画面・popupを一群ずつ移行。現在はゲームパッド/音量画面、攻略Canvas、カメラ、EventSystem、battle/field view、checkpoint/floor Store等が旧Controller/Scene依存として残る。
+2. 第三段階でEventSystem/UIRootと操作設定テンプレートをPrefabへ切り出す。残るカメラと攻略表示群を次にScene leaseからPrefab/View leaseへの縦切りへ移す。Unityのmeta/参照生成は既存リポジトリ規則に従う。既存Scene直起動と検証Sceneを残す。
+3. 他の拠点画面・popupを一群ずつ移行。現在はゲームパッド/音量画面、攻略Canvas、カメラ、battle/field view、checkpoint/floor Store等が旧Controller/Scene依存として残る。
 4. 攻略セッションの所有を表示から分離し、後に外界/ダンジョンの退避復元を接続する。外界機能の実装済みを意味しない。
 
 Asset解放は現段階ではRootキャッシュ寿命と生成物leaseで管理し、全既存Resources呼出しの統合や参照計数は未移行。BGMフェードは現行ルーターにないため新しい時間値を追加しない。ビルド起動Scene設定は追跡対象外のProjectSettingsから製品構成を断定しない。
@@ -80,3 +80,25 @@ GameFieldView.fieldCamera、BattleViewとCanvas、既存UIInputModule/action ass
 a163eceのボスラッシュ再開時の保存HP/手札/山札/使用済み/ゲージ復元・自動回復なし、補充後保存、途中ボスは戦闘開始時点復元、通常外界ボスは最後の回復ポイントから復帰という区別も文書として保護し、今回未実装。
 
 第二段階の再入レビューでは、外部Single終了済みleaseの同path即成功を生存判定へ修正し、既存Closeで追跡解除後に再Openする回帰を追加（関連11件）。また旧直Play検証の非active Controller状態がScene snapshotに残る場合も、managed Adapterが注入後に対象Controllerだけを有効化して明示Startする。祖先や他の非表示オブジェクトは変更しない。前版全件3552成功は保存し、最終版の再検証とは区別する。
+
+## 第三段階: 共通UI入力口と表示contentの分離
+
+UIRuntimeManagerがResourceManagerのPrefab leaseで共通Overlay CanvasとEventSystem/InputSystemUIInputModuleをRoot配下に一つ生成する。旧SceneのEventSystemは参照先がないことを確認し、既存action assetの参照を保持したPrefabへ移した。カメラはGameFieldView/背景が保持するためhost所有のまま。Camera/AudioListenerを今回同時に常駐化せず、既存投影・追従・レイヤーを変更しない。
+
+Controllerが借りるのは共通Canvas自体でなく、全画面RectTransformのhost専用content。Session終了ではDialog/View登録解除→contentと選択の解除、共通Canvas/EventSystemはRoot寿命まで再利用する。Controllerが常駐CanvasをDestroyしない。Core/InputProvider/固定時計は引き続きhost所有。
+
+操作設定はResourcesのKeyboardSettings PrefabテンプレートをViewManager factory内でロード・生成し、ResourceManagerの既存leaseへ引き渡す。表示要素・保存callbackの組立は既存Initializeのままであり、全ての画面内容をserialize済みPrefabへ変換した段階ではない。Popupは引き続きDialogManager所有。新しいAddressables依存は追加しない。
+
+Prefabは検証Editorの通常PrefabUtilityで作成し、metaを手書き・ステージしない。Scene自動再保存が補完した無関係な既定値は採用せず、元SceneのEventSystem削除だけを反映した。実ビルド/物理機器/聴感は未検証。検証結果は次項に記録する。
+
+
+### 第三段階の検証記録
+
+- 最終関連4件は4成功（6.86秒）、console error/warning 0。共通PrefabのCanvas/Scaler/既存Input action参照、重複所有拒否、内容/選択の解放・再生成、欠損Prefab/事前取消を確認。
+- 最終全件3557成功（285.35秒）、console error 0。警告59件は既存fixture診断5分類と一致。値の緩和・警告抑制はしていない。
+- 実Playで直Dungeon起動→Bootstrap Single、出撃/戦闘/設定/Dialog/checkpoint、popup表示中のSingle、ホストClose/Open/欠損/取消/同時要求を確認。共通Canvas/EventSystemはDDOL各1でID維持、host終了時content/選択/登録View/Dialogは0。カメラ/Listenerはhostの1→0→1、Sound3はRoot再利用。旧Gameplay Input/Controller購読は解除。共通UI InputModuleの購読はRoot寿命として意図して維持する。
+- 共通Canvasとcontentは実640×360時に論理rect1920×1080、scale約0.333。実Raycastからの設定/初期化確認/取消/保存/ディスク一致/初期値復元を確認。ホスト再生成後に操作設定を開き、旧とは異なるPrefab実体でDialog/戻りが動き、保存byteが不変なことも確認した。
+- 原寸FHD/4K/4:3各3場面計9枚と静的コードの独立再レビューで今回範囲の具体的未解決指摘0。全体無欠陥や全Scene移行の完了保証ではない。
+- 初回関連3失敗はEditModeのEventSystem OnEnable登録不足2件と取消Task派生例外の期待型1件。既存テスト同様の登録/解除手順と取消カテゴリへ修正し、製品の保存ガードやゲーム期待値は緩めていない。寸法観測helperの構造体serialize/Prefab名フィルタも修正し、ゲーム操作を再実行せず現在状態から回収した。
+- 再読込/初回実行で回復したPipeline timeoutとUnityAI接続情報保存警告は履歴として保持し、native期間と最終全件測定を区別。歴史的UGUI未解決、実ビルド/物理機器/OS/聴感未検証を解決済み扱いにしない。全件前後の実640×360・専用TMPDIR/saveguard、仮想機器除去、元project clean/Asset一致を確認。
+- [第三段階の証跡](../.Codex/screenshots/system-stage3-20261031/README.md)。次の対象はカメラ借用/返却とGameplay表示群のPrefab/View切出し、操作設定内部Initializeと他画面のController依存。Core/Input/固定時計・外界状態退避復元はまだ移行していない。

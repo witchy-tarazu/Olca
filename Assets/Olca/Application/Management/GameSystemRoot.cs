@@ -37,7 +37,7 @@ namespace Olca.Application.Management
             if (Services != null) return;
             var resources = new ResourceManager();
             var dialogs = new DialogManager(() => Time.frameCount);
-            Services = new GameSystem(new SaveManager(), resources, new SoundManager(transform), new ViewManager(resources, dialogs), dialogs);
+            Services = new GameSystem(new SaveManager(), resources, new SoundManager(transform), new ViewManager(resources, dialogs), dialogs, new UIRuntimeManager(resources,transform));
         }
         private void LateUpdate() => Services?.Dialogs.Tick();
         private void OnDestroy()

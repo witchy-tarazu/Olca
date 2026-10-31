@@ -1,0 +1,538 @@
+{
+  "commonUI": {
+    "initial": {
+      "rootCanvases": [
+        {
+          "id": -227826784,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -227826794,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": "ConfirmDungeonSelection"
+        }
+      ],
+      "contents": [
+        {
+          "id": -227832414,
+          "rect": [
+            1920,
+            1080
+          ],
+          "parent": "UIRoot(Clone)"
+        }
+      ],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": [
+        {
+          "name": "Main Camera",
+          "orthographic": true,
+          "orthographicSize": 3.15,
+          "cullingMask": -1,
+          "scene": "Assets/Scenes/DungeonScene.unity",
+          "position": [
+            76,
+            1.2750001,
+            -10
+          ]
+        }
+      ]
+    },
+    "closed": {
+      "rootCanvases": [
+        {
+          "id": -227826784,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -227826794,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": null
+        }
+      ],
+      "contents": [],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": []
+    },
+    "reopened": {
+      "rootCanvases": [
+        {
+          "id": -227826784,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -227826794,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": "ContinueCheckpointButton"
+        }
+      ],
+      "contents": [
+        {
+          "id": -227846760,
+          "rect": [
+            1920,
+            1080
+          ],
+          "parent": "UIRoot(Clone)"
+        }
+      ],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": [
+        {
+          "name": "Main Camera",
+          "orthographic": true,
+          "orthographicSize": 3.15,
+          "cullingMask": -1,
+          "scene": "Assets/Scenes/DungeonScene.unity",
+          "position": [
+            -2.4,
+            1.2750001,
+            -10
+          ]
+        }
+      ]
+    },
+    "screenRegeneration": {
+      "oldPanelId": -227838198,
+      "newPanelId": -227852136,
+      "prefabScreenRecreatedAfterHostReopen": true,
+      "settingsMatchDisk": true,
+      "savedBytesUnchanged": true,
+      "ui": {
+        "rootCanvases": [
+          {
+            "id": -227826784,
+            "scene": "DontDestroyOnLoad",
+            "scale": [
+              0.333333343,
+              0.333333343,
+              0.333333343
+            ],
+            "rect": [
+              1920,
+              1080
+            ],
+            "order": 32000
+          }
+        ],
+        "events": [
+          {
+            "id": -227826794,
+            "scene": "DontDestroyOnLoad",
+            "active": true,
+            "selected": "ResumeButton"
+          }
+        ],
+        "contents": [
+          {
+            "id": -227846760,
+            "rect": [
+              1920,
+              1080
+            ],
+            "parent": "UIRoot(Clone)"
+          }
+        ],
+        "screen": [
+          640,
+          360
+        ],
+        "cameras": [
+          {
+            "name": "Main Camera",
+            "orthographic": true,
+            "orthographicSize": 3.15,
+            "cullingMask": -1,
+            "scene": "Assets/Scenes/DungeonScene.unity",
+            "position": [
+              -2.4,
+              1.2750001,
+              -10
+            ]
+          }
+        ]
+      }
+    },
+    "resourceCounterNote": "ownedViews in legacy helper names means all ResourceManager prefab instances: infrastructure2 plus cached keyboard screen1 when created. UI input-module subscriptions persist with Root intentionally; old gameplay Input/Core callbacks were released."
+  },
+  "normalOperations": [
+    "legacy direct Play",
+    "reject second host while direct session exists",
+    "legacy→Bootstrap Single",
+    "destination select/departure/custom/battle",
+    "pause→keyboard settings→reset dialog",
+    "reset cancel restores focus",
+    "held virtual pad East does not cancel parent",
+    "change/save/disk-match/reset/save/defaults",
+    "checkpoint continue",
+    "popup open→Bootstrap Single reentry; old popup/views released",
+    "close host→input and Core subscribers released",
+    "missing Scene rejected; canceled native load recovered/unloaded",
+    "simultaneous reopen requests share one host; checkpoint restored"
+  ],
+  "direct": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/DungeonScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/DungeonScene.unity",
+        "handleHash": 1832907033,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -227826620,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "host": null,
+    "loading": false,
+    "ownedScenes": 0,
+    "ownedViews": 2,
+    "registeredViews": 1,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      703400
+    ],
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -227826626,
+      -227826632,
+      -227826638
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/ui-round76-8302/settings"
+  },
+  "bootstrap": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/DungeonScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/BootstrapScene.unity",
+        "handleHash": 43341167,
+        "isLoaded": true
+      },
+      {
+        "path": "Assets/Scenes/DungeonScene.unity",
+        "handleHash": 547121276,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -227826620,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "host": "Assets/Scenes/DungeonScene.unity",
+    "loading": false,
+    "ownedScenes": 1,
+    "ownedViews": 2,
+    "registeredViews": 1,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      704094
+    ],
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -227826626,
+      -227826632,
+      -227826638
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/system-stage3-8301/settings"
+  },
+  "singleReentry": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": 704094,
+    "newControllerId": 704772,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/DungeonScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1154434391,
+          "isLoaded": true
+        },
+        {
+          "path": "Assets/Scenes/DungeonScene.unity",
+          "handleHash": -1920618218,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -227826620,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "host": "Assets/Scenes/DungeonScene.unity",
+      "loading": false,
+      "ownedScenes": 1,
+      "ownedViews": 2,
+      "registeredViews": 1,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        704772
+      ],
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -227826626,
+        -227826632,
+        -227826638
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage3-8301/settings"
+    }
+  },
+  "closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1154434391,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -227826620,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 2,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -227826626,
+        -227826632,
+        -227826638
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "canceled": {
+    "actualMissingSceneRejected": true,
+    "canceledNativeLoadRecoveredAndUnloaded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1154434391,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -227826620,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 2,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -227826626,
+        -227826632,
+        -227826638
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "reopened": {
+    "duplicateOpenSucceeded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/DungeonScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1154434391,
+          "isLoaded": true
+        },
+        {
+          "path": "Assets/Scenes/DungeonScene.unity",
+          "handleHash": 1346639652,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -227826620,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "host": "Assets/Scenes/DungeonScene.unity",
+      "loading": false,
+      "ownedScenes": 1,
+      "ownedViews": 2,
+      "registeredViews": 1,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        706112
+      ],
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -227826626,
+        -227826632,
+        -227826638
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage3-8301/settings"
+    }
+  },
+  "saveDataUnchangedAcrossSingleCancelAndReopen": true,
+  "devices": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [
+      {
+        "name": "EventSystem(Clone)",
+        "enabled": true,
+        "scene": "DontDestroyOnLoad",
+        "activeSelf": true
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "limitations": [
+    "actual build not run",
+    "physical hardware/OS not tested",
+    "FMOD noaudio: audible playback not verified",
+    "compatibility Scene still owns cameras/Listener/Core/Input/clocks; keyboard inner content still built by Initialize"
+  ],
+  "stop": {
+    "objects": {
+      "playing": false,
+      "roots": 0,
+      "managedScreens": 0,
+      "events": 0
+    },
+    "consoleGroundTruth": {
+      "sampledUtc": "2026-10-31T13:20:07.017091Z",
+      "ageMs": 101,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 3,
+      "consoleWarnings": 1,
+      "consoleLogs": 76,
+      "seeded": true
+    },
+    "observedProductErrors": [],
+    "note": "Pipeline timeout and UnityAI history retained separately; next full-test clear creates a distinct measurement period"
+  }
+}

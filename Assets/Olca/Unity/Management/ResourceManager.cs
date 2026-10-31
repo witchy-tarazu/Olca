@@ -52,6 +52,12 @@ namespace Olca.Unity
             }
             var lease = new InstanceLease(this, instance); instances.Add(lease); return lease;
         }
+        public InstanceLease InstantiatePrefab(string path, Transform parent)
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(ResourceManager));
+            var instance=UnityEngine.Object.Instantiate(GetShared<GameObject>(path),parent);
+            var lease=new InstanceLease(this,instance);instances.Add(lease);return lease;
+        }
         public Task<InstanceLease> InstantiatePrefabAsync(string path, Transform parent, CancellationToken cancellation = default) =>
             CreateAsync(ct => { ct.ThrowIfCancellationRequested(); return Task.FromResult(UnityEngine.Object.Instantiate(GetShared<GameObject>(path), parent)); }, cancellation);
         private static void DestroyOwned(GameObject value)

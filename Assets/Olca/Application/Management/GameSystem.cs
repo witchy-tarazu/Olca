@@ -31,10 +31,11 @@ namespace Olca.Application.Management
         public ViewManager Views { get; }
         public DialogManager Dialogs { get; }
         public GameHostManager Hosts { get; }
+        public UIRuntimeManager UI { get; }
         public Session CurrentSession { get; private set; }
         private bool disposed;
-        public GameSystem(SaveManager saves, ResourceManager resources, SoundManager sounds, ViewManager views, DialogManager dialogs)
-        { Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); }
+        public GameSystem(SaveManager saves, ResourceManager resources, SoundManager sounds, ViewManager views, DialogManager dialogs, UIRuntimeManager ui = null)
+        { UI = ui; Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); }
         public Session BeginSession(object owner, string settings, string checkpoints, string progress)
         {
             if (disposed) throw new ObjectDisposedException(nameof(GameSystem));
@@ -48,14 +49,14 @@ namespace Olca.Application.Management
         private void EndSession(Session session, object owner)
         {
             if (!ReferenceEquals(CurrentSession, session)) return;
-            Views.UnregisterOwner(owner); Sounds.EndSession(owner); CurrentSession = null;
+            Views.UnregisterOwner(owner); UI?.ReleaseContent(owner); Sounds.EndSession(owner); CurrentSession = null;
         }
         public void Dispose()
         {
             if (disposed) return; disposed = true;
             Hosts.Dispose(); CurrentSession?.Dispose();
             // 再生中の音が参照する素材より先に、音声所有物を解放する。
-            Dialogs.Dispose(); Views.Dispose(); Sounds.Dispose(); Resources.Dispose();
+            Dialogs.Dispose(); Views.Dispose(); UI?.Dispose(); Sounds.Dispose(); Resources.Dispose();
         }
     }
 }

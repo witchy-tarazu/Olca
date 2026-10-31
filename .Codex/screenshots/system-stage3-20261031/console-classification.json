@@ -1,0 +1,88 @@
+{
+  "nativeWindow": {
+    "pipelineMainThreadTimeouts": 2,
+    "productExceptionsObserved": 0,
+    "errorGroundTruth": {
+      "sampledUtc": "2026-10-31T13:16:43.216917Z",
+      "ageMs": 91,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 3,
+      "consoleWarnings": 1,
+      "consoleLogs": 73,
+      "seeded": true
+    },
+    "warningEntries": [
+      {
+        "message": "Editor is already in edit mode",
+        "seq": 291740
+      },
+      {
+        "message": "Could not save connection info: Read-only file system",
+        "seq": 291742
+      }
+    ],
+    "note": "Cold-start calls timed out; read actual initialized state and continued without duplicating fixture or Play. These diagnostics are not counted as clean console."
+  },
+  "resolvedObservationAndHarnessIssues": [
+    "Initial EditMode tests lacked EventSystem OnEnable registration; aligned with existing tests and explicit OnDisable cleanup. Cancellation assertion accepts the expected OCE subtype TaskCanceledException. No product rule relaxed.",
+    "Dimension helper initially serialized Unity structs as text and filtered the export root by an obsolete name; changed to primitive arrays and typed parent ownership. Actual gameplay operations were not replayed."
+  ],
+  "preflightHistoryRecords": [
+    "system-stage3-pre-harness-reload-history.json",
+    "system-stage3-pre-related-history.json"
+  ],
+  "historicalUnresolved": [
+    "UGUI reload exception; no unsupported fix or resolution claimed"
+  ],
+  "finalTestWindow": "Separate clear after native history retained; exact result in full-tests.json/warning-classification.json",
+  "preflightHistory": [
+    {
+      "file": "system-stage3-pre-harness-reload-history.json",
+      "groundTruth": {
+        "sampledUtc": "2026-10-31T12:54:58.241669Z",
+        "ageMs": 155,
+        "compilationFailed": false,
+        "compiling": false,
+        "consoleErrors": 2,
+        "consoleWarnings": 2,
+        "consoleLogs": 0,
+        "seeded": true
+      },
+      "recordedErrors": {
+        "Failed to handle /api/exec request: Main thread operation timed out after 60000ms": 2,
+        "Failed to handle /api/exec request: Main thread operation timed out after 120000ms": 2
+      },
+      "recordedWarnings": {
+        "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします": 36,
+        "[WARNING] 使用可能なカードがありません": 2,
+        "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。": 4,
+        "[WorldDamageNumberPool] 最大プールサイズ(20)に達しています。": 1,
+        "Could not save connection info: Read-only file system": 2,
+        "Editor is already in edit mode": 1
+      },
+      "note": "History before clear includes earlier test-fixture and Editor/tool diagnostics; not a new clean-console claim."
+    },
+    {
+      "file": "system-stage3-pre-related-history.json",
+      "groundTruth": {
+        "sampledUtc": "2026-10-31T13:02:43.739793Z",
+        "ageMs": 223,
+        "compilationFailed": false,
+        "compiling": false,
+        "consoleErrors": 1,
+        "consoleWarnings": 2,
+        "consoleLogs": 0,
+        "seeded": true
+      },
+      "recordedErrors": {
+        "Failed to handle /api/exec request: Main thread operation timed out after 120000ms": 1
+      },
+      "recordedWarnings": {
+        "Could not save connection info: Read-only file system": 1,
+        "Editor is already in edit mode": 1
+      },
+      "note": "History before clear includes earlier test-fixture and Editor/tool diagnostics; not a new clean-console claim."
+    }
+  ]
+}

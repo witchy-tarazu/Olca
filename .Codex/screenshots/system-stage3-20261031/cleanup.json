@@ -1,0 +1,52 @@
+{
+  "originalHead": "5c4f7e647f6a8685a954b504e76ca499d25716f6",
+  "originalClean": true,
+  "devices": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "actualRender": {
+    "screen": [
+      640,
+      360
+    ],
+    "textures": [
+      {
+        "name": "GameView.m_RenderTexture",
+        "width": 640,
+        "height": 360
+      },
+      {
+        "name": "PlayModeView.m_TargetTexture",
+        "width": 640,
+        "height": 360
+      }
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "storageGuard": true,
+  "defaultStoreAbsent": true,
+  "trackedAssetComparison": 899,
+  "exceptPrivateURP": [
+    "Assets/Settings/UniversalRP.asset",
+    "Assets/UniversalRenderPipelineGlobalSettings.asset"
+  ],
+  "differences": [],
+  "consoleErrors": 0
+}

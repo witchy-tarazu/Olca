@@ -1,0 +1,196 @@
+{
+  "reviewer": "independent_refactor_review",
+  "scope": "Stage3 common UIRoot/EventSystem ownership migration, representative keyboard settings template and nine native screenshots",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "boundaries": [
+      "UIRuntimeManager owns shared Canvas/EventSystem leases for Root lifetime",
+      "Session content has one owner and is released after managed Views/Dialog",
+      "Existing unmanaged compatibility branch remains",
+      "KeyboardSettings prefab is a root template populated by existing Initialize, not a fully serialized screen",
+      "Camera remains host-owned"
+    ],
+    "executionByReviewer": false,
+    "note": "Initial exported UIRoot scale/pivot concern was a verification item, not a confirmed defect; current native captures render correctly."
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedOriginalImageCount": 9,
+    "images": [
+      {
+        "file": "system-stage3-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "34e816dc7e68c0a14f9060824f9186ae8136940a48fce5f8abecf868de354e77",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-battle-host-fhd.png",
+          "differenceBoundingBox": [
+            0,
+            0,
+            1920,
+            1020
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "cf1bb0ce929de6216b096bdb137364f367c3d1b6a9fceaa994d17dfef6c1b569",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-battle-host-4k.png",
+          "differenceBoundingBox": [
+            0,
+            0,
+            3840,
+            2050
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "942dc8e78005e03f22b6ad501426f9bf0ba92b7ae608ef836f36539149348821",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-battle-host-4by3.png",
+          "differenceBoundingBox": [
+            0,
+            0,
+            1440,
+            1029
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "d70d3a4137518e8f50fcece19f5b03778285aedc1e1166a7cb8adbd5e572c4f7",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-keyboard-settings-fhd.png",
+          "differenceBoundingBox": [
+            18,
+            8,
+            1920,
+            969
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "c137e427749fb396e8ee996b29519e4484fe5cf2d77b402db970a029cf7efca4",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-keyboard-settings-4k.png",
+          "differenceBoundingBox": [
+            38,
+            11,
+            3840,
+            1940
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "b6fc58b51fb3edfb39a82f1cbd7a287bdf2fffdc884ce9c74d69aa96dfe6be9b",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-keyboard-settings-4by3.png",
+          "differenceBoundingBox": [
+            18,
+            8,
+            1440,
+            923
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "b5f9a058ca9d7f20d80103d0f99de7da86d344e642d7babf4164c2d86e4467ae",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-reset-dialog-fhd.png",
+          "differenceBoundingBox": [
+            127,
+            163,
+            1672,
+            963
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "d397c03402be0e918c9e8400058e219a09ce05c0e93aef2e2ec47c04cf478b1a",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-reset-dialog-4k.png",
+          "differenceBoundingBox": [
+            232,
+            197,
+            3201,
+            1937
+          ]
+        }
+      },
+      {
+        "file": "system-stage3-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "d027c26829a605b3403d7b9a36ed9f79775adaf798f2380fcfe9e8d7c6eb13f8",
+        "viewed": "original",
+        "stage2Comparison": {
+          "file": "system-stage2-native-after-reset-dialog-4by3.png",
+          "differenceBoundingBox": [
+            102,
+            130,
+            1372,
+            912
+          ]
+        }
+      }
+    ],
+    "observations": [
+      "No new visible clipping, overlap or typography regression versus Stage2 in battle, settings or reset dialog",
+      "Jiki labels, water-mirror surfaces, three-column settings, footer controls and modal hierarchy remain readable at FHD/4K/4:3",
+      "Battle floor/foreground and actor feet visibility remain consistent in these static views"
+    ],
+    "limits": [
+      "Static image review does not prove input, selected-object lifetime, save integrity, instance counts, Single reentry or close/open behavior",
+      "Native lifecycle and automated test assertions were performed by the main agent, not this reviewer",
+      "Keyboard template internal runtime construction and host-owned camera remain intentional migration limits"
+    ],
+    "comparisonNote": "Stage2 and Stage3 are separate native runs, not exact-frame pixel-equivalence fixtures. Difference bounding boxes are informational only and include underlying game render/ghost-through changes; the conclusion is visual absence of a new required defect, not byte or pixel identity."
+  },
+  "sourceEditsByReviewer": false
+}
