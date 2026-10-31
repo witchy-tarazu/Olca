@@ -1,0 +1,15 @@
+{
+  "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "a50710a7e4fe2fd26c7a48ef65fce3ba6b90c30e4b5d15b4e9fc1440918b699f",
+  "Assets/Olca/Unity/Management/WorldVisualResources.cs": "3f300f1eb77da55b1d57bc6956780e351bca10f974b6f52cac3afa9e1d4a40c6",
+  "Assets/Olca/Unity/Management/ResourceManager.cs": "45f5e1d73345b96844b1a5a4de3294baa353ee2f2d0fd54553e5eadcf5a131a3",
+  "Assets/Olca/Application/Management/BootstrapEntry.cs": "04e6c4ddb801370968d2a910dfc048633490cfefaae36a792c9af10d2645b8c4",
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "3bece41e4b6c43c5ed689ac74167c350e5cf0a5f761c27ca78182a4090663109",
+  "Assets/Olca/Presentation/Field/GameFieldView.cs": "1b7cacc7c1ac31f1f576adfe6fe7aaa8de38eab57a6ab547e07635834a8e5bdd",
+  "Assets/Olca/Tests/Application/WorldPresentationManagementTests.cs": "500b43421b0e3cd39dc60ae5f514878c80908545756fcf7a1b94c2d9e6cd8ab4",
+  "Assets/Resources/OlcaSystem/WorldPresentation.prefab": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+  "Assets/Resources/OlcaSystem/WorldGround.mat": "a2dbcaa952cb14e1b5fd9750c16e7db656d95ef98571c62d4e6c161e27e40f7d",
+  "Assets/Resources/OlcaSystem/WorldDungeonBackground.mat": "b56d9c76d063b56e674aa68d1191fa1d1b204234fa863a8d4b676a143b68c7ca",
+  "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8",
+  "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4",
+  "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "abafb399e7f5e71dee4b9618280d565a137d36d59e520168e8adadc7d8d968de"
+}

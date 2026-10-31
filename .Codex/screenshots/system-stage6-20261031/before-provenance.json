@@ -1,0 +1,30 @@
+{
+  "baseHead": "094cab56400510f9338849a90035fd06046f3a34",
+  "images": {
+    "system-stage6-native-before-custom-fhd.png": {
+      "source": "system-stage5-native-after-custom-fhd.png",
+      "sha256": "339ea88504f33b4496ced692b3b9ebcd716d164d5b63d53fca0bf84bff0583a3"
+    },
+    "system-stage6-native-before-custom-4k.png": {
+      "source": "system-stage5-native-after-custom-4k.png",
+      "sha256": "d5a9e358647615b690adeab66afa92fe617ef877e085424b97b096f31276aac5"
+    },
+    "system-stage6-native-before-custom-4by3.png": {
+      "source": "system-stage5-native-after-custom-4by3.png",
+      "sha256": "b2e75144d83ff00e66206a8f597e4a7ef7209a157dff3dbef001adb77a177898"
+    },
+    "system-stage6-native-before-battle-host-fhd.png": {
+      "source": "system-stage5-native-after-battle-host-fhd.png",
+      "sha256": "487f4cfe7bc9c3dd85b87b91bee1e36943d1a7eaa6e2338acb3c6010ee966f7e"
+    },
+    "system-stage6-native-before-battle-host-4k.png": {
+      "source": "system-stage5-native-after-battle-host-4k.png",
+      "sha256": "4843b5408cfb391ffe327ec69bb06ea623aa4804ea11118d9b8c34732dfbaeb0"
+    },
+    "system-stage6-native-before-battle-host-4by3.png": {
+      "source": "system-stage5-native-after-battle-host-4by3.png",
+      "sha256": "a266666e87c7bda74c105a5d8f703fc58d1994cc5f3b21918d75a0a0ba5465cf"
+    }
+  },
+  "note": "Before reuses Stage5 after captures at same prechange product source; no newbefore capture claimed; same initialTestDungeon seed7, Custom frame0 and closedbattle frame60"
+}

@@ -145,3 +145,47 @@ Core/Input/固定時計・攻略状態、world役者/床/背景、操作設定�
 
 
 第五段階の公開checkは、類似YAML大量削除で不変Materialの`m_LockedProperties`行をGitが追加扱いしたため一度停止した。Assetsは再編集せず、HEAD/index同type・一意fileIDの完全block byte一致と厳密指定行だけを証明しreceiptへ記録する判定を追加。CR/stripped等未対応header/重複ID/新規・変更blockは停止。公開CLIの隔離18テスト成功、独立ゲートレビューの具体的未解決0。Unity最終検証済み8資産/コードのbyteは不変で、再検証結果を別ソースへ流用していない。
+
+
+## 第六段階: World表示と素材取得（今回範囲検証完了）
+
+DungeonRootの7 GameObject/23ブロック（Player/PlayerSprite、背景、Ground、WorldBattleGrid、WorldDamageNumberPool、GameFieldView）をWorldPresentation Prefabへ切り出す。Scene内Material2個は通常Unity資産へ分け、WorldVisualResourcesからResources pathで供給する。Prefab側のScene Camera/Material参照は未割当とし、有効化前に束縛。新Material GUIDへのPrefab依存を作らず、metaの手生成/commitは行わない。材質名は資産role名へ変わるが、shader/keyword/保存値はnative JSON比較で同一。空m_LockedProperties scalarの末尾spaceだけを正規化し、import後の値一致を確認。
+
+WorldPresentationBindingがResourceManagerの実体leaseをViewManager world層に登録し、ControllerへGameFieldViewを供給する。BootstrapはWorld生成→CameraBinding、通常StartはHUD/Battle/input準備後→World有効化→既存Field.Initialize。旧Scene直Playは同じWorldを供給し、互換Scene Cameraを明示注入する。Camera所有は既存Root借用と互換hostに維持し、WorldはCameraを生成しない。
+
+共有import素材はResourceManager/WorldVisualResourcesが取得し、任意素材の未登録nullと必須素材の起動失敗を区別する。今回移す取得口はFieldのbackjump Textureとmarker bytes。生成Sprite/Texture・飛翔体・状態/地形演出は従来Viewが所有。敵はGameFieldが生成するWorld子、床/予兆はWorldBattleGrid、数値はWorldDamageNumberPool（既存10/20）、背景前景はScrollingBackgroundが所有し、個別leaseとの二重所有をしない。
+
+終了はBattle/HUD解除→Camera返却→World非active（既存OnDisableで演出/pool停止）→召喚/被弾購読とmodel/camera/resolver参照解除→World owner登録/lease破棄。前景独立ルート/生成Texture、敵の購読/CTS、poolは各Viewの従来OnDestroyで解放。CoreモデルをDispose/初期化したり、時計/入力/保存順を変えたりしない。
+
+残るSceneは互換Main Camera、GameManager、CardSelectionCanvas。Core/Input/固定時計・攻略状態はController/host session、Camera追従計算は既存Field、UI内部Initializeと既存静的素材Catalog等は残る。外界新機能/ボスラッシュ/未決値は実装しない。安定化完了条件は本番Bootstrapから必要表示の供給、代表画面/Dialog/保存復帰と連打取消、入力/音/Camera寿命、二重生成/購読残留なし、最終関連全件回帰であり、一段階の完了で全体移行完了とはしない。
+
+- 検証途中の記録：初回全件3569は3568成功/1失敗（既存WorldDamageNumberPoolTestsの敵数値と見出しの上下）。直後の単体1/1・同クラス22/22は成功。期待値を維持し座標診断のみ追加。初回原因は未確定、これは途中時点の記録で、最終結果は末尾を参照。
+
+- 再現診断：診断付き全件も3568成功/1失敗。失敗瞬間のCameraは(2.40,1.28,-10)/size3.15、header上端1.5に対し数値1.329/4.285。単体時のCamera(0,0,-10)/size5と異なり、既存Cameraに依存するfixtureが群上端補正と競合した。期待値はそのまま専用Cameraを所有する隔離へ変更し、他Cameraタグをfinallyで復元。製品の数値補正/フレーム処理は変更しない。この時点では最終回帰未確認のため公開を停止した。最終結果は次項。
+
+
+### 第六段階 最終結果
+
+専用Camera隔離後の正規化前検証は関連12/12（11.4秒）、同クラス22/22（2.45秒）、全件3569/3569（287.88秒）成功した。以下の追加修正後の最終結果は末尾を参照。警告59件は従来の意図的fixture診断5種（報酬View未設定50、設定読込失敗4、報酬phase違い2、カードなし2、pool上限1）。期待値・境界テスト・保存ガードは維持。Camera状態を残した具体的な先行呼出しは未特定だが、失敗時Cameraと数値/見出しの相容れない条件は診断再現で確認した。22件の追加回帰はRunner直前の狭いCameraを実測したもので、RunnerによるScene復元を全実行中の同一ambient状態の証明には使わない。検証対象自身の専用Camera identityと、元の全件順序の成功を別に確認した。
+
+実画面/nativeで確認した移行対象11ファイルのうち10ファイルは以後byte不変。WorldPrefabは後述の空文字表記1行のみ正規化しUnity値一致を確認した。追加C#変更はCamera隔離と、後述の検証fixture後片付けである。独立設計/コード/原寸視覚レビューは今回範囲の具体的未解決0であり、全ゲーム無欠陥の保証ではない。実640×360/TMPDIR/保存ガード、原本clean、全追跡Assets一致（検証専用URP2件除外）、一時入力機器なしをcleanupで確認。証跡は[第六段階](../.Codex/screenshots/system-stage6-20261031/README.md)。
+
+明示recompile後のDomain ReloadでCLI unreachable/readyとmain-thread timeoutに時間差があった。PID137059/VM/認証を保持し通常待機・読み取りで復旧、同じテストや未確定の解像度要求は再送しなかった。初回/診断全件の失敗、保存guardが不備のある検証ヘルパー順序を開始前に拒否した記録、Pipeline/UnityAI履歴は別分類で保持。guardは弱めず既存のController非active準備を追加した。歴史的UGUI、実build/物理機器/OS/聴感は今回未解決/未確認。
+
+並行仕様5584371（merge2e6c7bf）、08247c1/99034ffを本文確認して保護した。外界NPC/施設の近接決定・最寄優先・対象/ボタン案内・会話買物pause、地点別商品/恒久通貨/数量制限/支払取得の原子的保存、売却なし・pause消耗品・外界ボス中の全入力経路で使用禁止。今回は文書取得のみで、外界機能の実装検証済みとは扱わない。
+
+次は残るCardSelectionCanvas/互換host組立の切出し候補を調査する。Core/Input/固定時計/攻略状態、UI内部Initialize、静的素材Catalog、Sceneロード互換は継続残件。システム全体の安定化完了とはせず、本番Bootstrap主体の表示供給と保存復帰・入力音声寿命・二重生成なしの各段階回帰を満たしてから追加機能改修へ戻る。
+
+
+### 第六段階 公開check後の追加検証記録
+
+最初の公開checkはWorldPresentation.prefabのAnimator空文字`m_WarningMessage`末尾space1行で停止し、commit/pushへ進まなかった。ゲート例外を増やさず、その1行のみ正規化。native SerializedPropertyは再import前後ともString空値、Animator1/objects7、他のbyteは全て同一。画像はこの表記正規化前で、新撮影やbyte同一とは扱わない。
+
+正規化後の再全件は別の1件（UIRuntimeManagementTests.Content）で失敗。static EventSystem一覧の破棄済みwrapper2件/Scene実体0を確認。既存MenuPadScopeスクロールfixtureは自己生成時OnEnableを手動登録する一方、EditMode finallyで対応OnDisableを呼ばず破棄していた。全件内の厳格検査は前方、解除漏れfixtureは末尾で、Domain Reloadなし次runへの残留と整合する。古い2wrapper IDの生成元への直接対応は未確定だが、コードの解除欠落は確認済み。製品UIRuntimeManagerやAssert.IsNullを変更せず、自己所有時のみOnDisable＋自己非current assert、assert失敗時もEventSystem/UI rootをfinallyで必ず破棄する修正をした。静的一覧全体のclearや他者除去は行わない。この時点では最終反復/全件未確認として停止し、結果は次項に追記した。
+
+
+### 第六段階 最終13ファイルでの再検証
+
+最終明示recompile error0後、関連12/12（10.97秒）、同Editor/Domain ReloadなしでScroll1→UIRuntime4を2周し全10件成功。各ステップ後のCLR/Unity current null、static登録0、Scene実体0を確認した。static一覧全体のclearや他者除去はしていない。そのまま最終全件3569/3569（276.76秒、skip0/error0）成功。全件直後にもCLR/Unity current null・static0・Scene0で、末尾fixtureが次runへ残す状態もないことを確認。警告59件は上記と同じfixture5分類。元の位置/件数/遮蔽/旧購読/assertNull/保存guardは維持し、数値補正や製品UIRuntimeManagerは変更していない。
+
+最終資産/source13のhashはsubmission/project/関連/全件/最終manifestで一致。新しい変更多数の再撮影を装わず、既存のnative/原寸比較画像は1行Prefab正規化前であることを明記し、native SerializedProperty同一と他byte不変で結び付けた。移行対象の残る10ファイルはnative確認時から不変。独立最終レビューとcleanup後、check→commit→pushを分離し、必須失敗時停止を維持して通常公開する。

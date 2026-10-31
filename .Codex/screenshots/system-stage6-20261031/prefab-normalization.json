@@ -1,0 +1,29 @@
+{
+  "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+  "beforeSha256": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+  "afterSha256": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+  "onlyChange": "one Animator empty m_WarningMessage delimiter trailing space removed; all other bytes identical",
+  "changedLines": 1,
+  "gateWasStoppedBeforeCommit": true,
+  "nativePropertyBefore": "String empty",
+  "nativeAfterPending": false,
+  "nativeBefore": {
+    "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+    "imported": false,
+    "property": "m_WarningMessage",
+    "type": "String",
+    "value": "",
+    "animators": 1,
+    "objects": 7
+  },
+  "nativeAfter": {
+    "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+    "imported": true,
+    "property": "m_WarningMessage",
+    "type": "String",
+    "value": "",
+    "animators": 1,
+    "objects": 7
+  },
+  "nativeSerializedValuesEqual": true
+}

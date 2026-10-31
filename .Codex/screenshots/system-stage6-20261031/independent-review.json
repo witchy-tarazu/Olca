@@ -1,0 +1,723 @@
+{
+  "reviewer": "equipment_save_review (design/code), independent_refactor_review (native visual)",
+  "scope": "Stage6 World prefab/material migration: six direct custom/battle views plus nine managed battle/settings/dialog views, FHD/4K/4:3",
+  "beforeProvenance": {
+    "file": "system-stage6-before-provenance.json",
+    "sha256": "03c7ab12c323d41b320e560038129bc0de0abd6a822f8c73bec962c1023d0b3c",
+    "copiedStage5BytesVerifiedCount": 6,
+    "note": "Before files reuse Stage5 after originals at stated prechange HEAD094, not newly captured before scenes."
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedAfterImageCount": 15,
+    "images": [
+      {
+        "file": "system-stage6-native-after-custom-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "d5cc730cab6ba9c7497bbc7c37df8ae9c7bf1728112a25efa33b85538d88126b",
+        "comparisonFile": "system-stage6-native-before-custom-fhd.png",
+        "comparisonSha256": "339ea88504f33b4496ced692b3b9ebcd716d164d5b63d53fca0bf84bff0583a3",
+        "differenceBoundingBox": [
+          102,
+          70,
+          1798,
+          1026
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-custom-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "7bc3df764f2d925dd6e2df3856687d35dffed1cf237770166302de0bfc4f9e6c",
+        "comparisonFile": "system-stage6-native-before-custom-4k.png",
+        "comparisonSha256": "d5a9e358647615b690adeab66afa92fe617ef877e085424b97b096f31276aac5",
+        "differenceBoundingBox": [
+          0,
+          297,
+          1915,
+          1861
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-custom-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "37e55a5d0e478bfaa59b18d9ab88ecb393ec93847032801587b7c325fa274714",
+        "comparisonFile": "system-stage6-native-before-custom-4by3.png",
+        "comparisonSha256": "b2e75144d83ff00e66206a8f597e4a7ef7209a157dff3dbef001adb77a177898",
+        "differenceBoundingBox": [
+          8,
+          58,
+          1308,
+          1021
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "81c76c11cb6f88330a9a0319747728cc0140352b77f6850a937cc485034630d1",
+        "comparisonFile": "system-stage6-native-before-battle-host-fhd.png",
+        "comparisonSha256": "487f4cfe7bc9c3dd85b87b91bee1e36943d1a7eaa6e2338acb3c6010ee966f7e",
+        "differenceBoundingBox": [
+          465,
+          115,
+          1852,
+          1017
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "811bea97d208bad9e92684b435efc7931c7de50fe352cb63f5222b99a94733f3",
+        "comparisonFile": "system-stage6-native-before-battle-host-4k.png",
+        "comparisonSha256": "4843b5408cfb391ffe327ec69bb06ea623aa4804ea11118d9b8c34732dfbaeb0",
+        "differenceBoundingBox": [
+          929,
+          965,
+          1262,
+          1695
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "3d1892a4410144abe6b855a3e38a93019c2653c378b7b596a7370adba196443b",
+        "comparisonFile": "system-stage6-native-before-battle-host-4by3.png",
+        "comparisonSha256": "a266666e87c7bda74c105a5d8f703fc58d1994cc5f3b21918d75a0a0ba5465cf",
+        "differenceBoundingBox": [
+          187,
+          75,
+          1307,
+          925
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-managed-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "e3f601ecd5c577f15a7f1ed1ba0d1b298c81bac08b4d4699ce6c198f5c416916",
+        "comparisonFile": "system-stage5-native-after-managed-battle-host-fhd.png",
+        "comparisonSha256": "2fd66ccc657343de01738a9c67abcaa8a0715227361c21c97e8aaa2ab45aa849",
+        "differenceBoundingBox": [
+          1529,
+          115,
+          1852,
+          1017
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-managed-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "ce83d82c3ae1f6ba2e036e8f5d0038c8aaed23cfd0eb25d9075a56828d967856",
+        "comparisonFile": "system-stage5-native-after-managed-battle-host-4k.png",
+        "comparisonSha256": "ce83d82c3ae1f6ba2e036e8f5d0038c8aaed23cfd0eb25d9075a56828d967856",
+        "differenceBoundingBox": null,
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-managed-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "4e5d722072b10d660c2e0172548f8555ac980114ebd972d68f57b113151bc8d9",
+        "comparisonFile": "system-stage5-native-after-managed-battle-host-4by3.png",
+        "comparisonSha256": "cac046b7840a2d58fca6e432bc2c8296d2c3dd9302a5ca10fb5e83c3e375ed0b",
+        "differenceBoundingBox": [
+          187,
+          75,
+          1307,
+          925
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "591ab4263a9f5b7d59c95dff63893d79b4a538a4fdfe4f0effa73e537eb3d9dd",
+        "comparisonFile": "system-stage5-native-after-keyboard-settings-fhd.png",
+        "comparisonSha256": "2b57a2837c8c858f19be11914ed7e69404659f4c4ff9ace4ac3f90c328896280",
+        "differenceBoundingBox": [
+          186,
+          165,
+          1592,
+          969
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "5c800602f09070d6a605ed7e040ff1270f44e865af264d309088ec37887eb9be",
+        "comparisonFile": "system-stage5-native-after-keyboard-settings-4k.png",
+        "comparisonSha256": "af9345266780682128839be9ab65e6422e07a88f816bec4de031ca83c4770792",
+        "differenceBoundingBox": [
+          377,
+          160,
+          3202,
+          1938
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "954f1b2e07227e524866dc894d0fe6c0d2086e0ef9f0f081c39d56aa079f1d0b",
+        "comparisonFile": "system-stage5-native-after-keyboard-settings-4by3.png",
+        "comparisonSha256": "1bc59674b46c6d6812f52aa84610ca8afdd76367adee896db97fb20a65ed66af",
+        "differenceBoundingBox": [
+          102,
+          140,
+          1361,
+          912
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "d29d3e146f693cf880ecdd8aa52febad99ccc1e4c5049a07a52316d991778450",
+        "comparisonFile": "system-stage5-native-after-reset-dialog-fhd.png",
+        "comparisonSha256": "fc10ffc1ed6d153ce3e2c7b1fe02562390330059c5e170a5b7a841c740047918",
+        "differenceBoundingBox": [
+          208,
+          245,
+          1612,
+          963
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "1fc5f6e1689822eb7594b4a77eb23e67435343abec10a1dc25fc28a70c70a1db",
+        "comparisonFile": "system-stage5-native-after-reset-dialog-4k.png",
+        "comparisonSha256": "3dcab170837d86775eb78c5384bc33104b0ad46121ce536026be1cda4843005e",
+        "differenceBoundingBox": [
+          431,
+          482,
+          3220,
+          1937
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "26489216ced1fea21cae79ec66d58d69d5429ba36440f48da43769c6d3169148",
+        "comparisonFile": "system-stage5-native-after-reset-dialog-4by3.png",
+        "comparisonSha256": "c5854d8a4d91d8f7b0942a962d04e8b31f6c4925ba4657062f6b7545a8a2e72c",
+        "differenceBoundingBox": [
+          101,
+          131,
+          1358,
+          912
+        ],
+        "viewed": "original requested; 4K whole image display downsized by viewer, native feet/floor crop additionally inspected"
+      }
+    ],
+    "observations": [
+      "World background, ground and foreground seam/material appearance remain consistent with the Stage5 before references",
+      "Actor scale, ground contact and camera framing show no new visible regression; slight idle-pose variation is not treated as asset deformation",
+      "Normal enemy HP/name/group connection and managed single-enemy HUD retain their visual positions and contrast",
+      "Custom retains left-edge and left-half composition, five square mini cards, sword artwork, readable body/cost/order/confirm and gauge positions",
+      "Managed keyboard settings and reset dialog remain visually consistent with Stage5: three columns, Jiki text, footer controls and modal hierarchy show no new clipping or overlap"
+    ],
+    "limits": [
+      "Static review does not prove input/raycast regions, focus, repeated lifecycle, save integrity, cancellation, scene reentry, sound or tests",
+      "No Unity commands or behavioral tests executed by reviewer; main-agent assertions are separate evidence",
+      "Initial fifteen-view block does not exercise dense statuses. Actual-boss screenshots are covered separately in additionalActualBossReview; dense boss states/warnings remain unreviewed.",
+      "Original full 4K files were opened but viewer display was resized; a lossless native feet/floor crop was inspected without changing source PNGs",
+      "Exact pixel identity is not claimed: separate runs include idle-pose and glyph/render-state differences",
+      "Identical coincident enemy identification and existing touch-HUD lower edge constraints are not claimed resolved"
+    ]
+  },
+  "sourceReviewPerformedThisTurn": false,
+  "unityExecutionByReviewer": false,
+  "sourceEditsByReviewer": false,
+  "additionalActualBossReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedAfterImageCount": 3,
+    "images": [
+      {
+        "file": "system-stage6-native-after-actual-boss-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "a032a1f92b83092a5e79061d6020265cde565ee34ecf95192ff20d663d6e5fa0",
+        "viewed": "original requested; 4K viewer display downsized, native boss edge/fixed HP 200 crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-actual-boss-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "e16e264d3d5301e32e24c4a7be5f6ca1c5d5147b80aab79848ff79bd26c0bea4",
+        "viewed": "original requested; 4K viewer display downsized, native boss edge/fixed HP 200 crop additionally inspected"
+      },
+      {
+        "file": "system-stage6-native-after-actual-boss-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "9472be3e1ae4493ad119146188df64f00f8b655eb928cd0eb8be97c6ccb0e138",
+        "viewed": "original requested; 4K viewer display downsized, native boss edge/fixed HP 200 crop additionally inspected"
+      }
+    ],
+    "identityEvidence": {
+      "file": "system-stage6-native-actual-boss-identity.json",
+      "sha256": "3cc79104037fec2c90eebec1f9a1d50de9bf9edd0dbc815303da27f7ef3041f5",
+      "readAssertedFields": [
+        "modelId=boss",
+        "IsBossGauge=true",
+        "GaugeVisible=true",
+        "gaugeValue=200",
+        "sprite=boss_512"
+      ],
+      "executionByReviewer": false
+    },
+    "observations": [
+      "Actual crystal boss silhouette and bottom contact remain legible with no newly visible scale distortion or floor/foreground seam",
+      "Right fixed gauge and value200 remain visible within the viewport at FHD/4K/4:3, separated from the left custom gauge",
+      "Left custom artwork/five minis/body text/control composition remains intact beside the boss",
+      "No new visible label clipping, foreground intrusion into boss base or touch HUD overlap beyond the known layout relationship"
+    ],
+    "limits": [
+      "These actual-boss views have no newly supplied matched prechange boss image; assessment is visible consistency, not exact boss before/after equivalence",
+      "Identity JSON assertions were read, not executed by reviewer",
+      "No boss status-density, warning, attack, damage, animation, input or lifecycle test performed by reviewer",
+      "Previously misidentified next-normal-enemy80 captures are not used as actual-boss evidence"
+    ]
+  },
+  "totalViewedAfterImageCount": 18,
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "scope": "WorldPrefab source/material injection/init/release, optionalshared resolver semantics, existingactorpool ownership and3 tests",
+    "sourceHashesRead": {
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "a50710a7e4fe2fd26c7a48ef65fce3ba6b90c30e4b5d15b4e9fc1440918b699f",
+      "Assets/Olca/Unity/Management/WorldVisualResources.cs": "3f300f1eb77da55b1d57bc6956780e351bca10f974b6f52cac3afa9e1d4a40c6",
+      "Assets/Olca/Unity/Management/ResourceManager.cs": "45f5e1d73345b96844b1a5a4de3294baa353ee2f2d0fd54553e5eadcf5a131a3",
+      "Assets/Olca/Application/Management/BootstrapEntry.cs": "04e6c4ddb801370968d2a910dfc048633490cfefaae36a792c9af10d2645b8c4",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "3bece41e4b6c43c5ed689ac74167c350e5cf0a5f761c27ca78182a4090663109",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "1b7cacc7c1ac31f1f576adfe6fe7aaa8de38eab57a6ab547e07635834a8e5bdd",
+      "Assets/Olca/Tests/Application/WorldPresentationManagementTests.cs": "500b43421b0e3cd39dc60ae5f514878c80908545756fcf7a1b94c2d9e6cd8ab4",
+      "Assets/Resources/OlcaSystem/WorldPresentation.prefab": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+      "Assets/Resources/OlcaSystem/WorldGround.mat": "a2dbcaa952cb14e1b5fd9750c16e7db656d95ef98571c62d4e6c161e27e40f7d",
+      "Assets/Resources/OlcaSystem/WorldDungeonBackground.mat": "b56d9c76d063b56e674aa68d1191fa1d1b204234fa863a8d4b676a143b68c7ca",
+      "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8"
+    },
+    "executionByReviewer": false
+  },
+  "diagnosticOnlyFollowup": {
+    "scope": "Stage6: failure diagnostics and camera isolation in the feedback subscription fixture; independent read-only review",
+    "source": {
+      "path": "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs",
+      "sha256": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4"
+    },
+    "unresolvedRequiredFindings": 0,
+    "findings": [],
+    "verifiedChange": "Original count, value, header-relative Y, blindness and old-subscription expectations remain unchanged. The fixture now owns an origin-positioned orthographic size-5 camera with 1920x1080 pixelRect, asserts Camera.main identity, temporarily removes MainCamera tags from existing active cameras and restores those surviving cameras in finally after destroying its own camera.",
+    "limits": [
+      "The concrete preceding operation that changed the ambient camera remains unidentified.",
+      "The camera preset was observed before TestRunner only; no claim is made that it persisted throughout the 22-case run.",
+      "The fixture asserts its own Camera.main identity, retains original expectations and dedicated boundary tests, and passed the final full suite in the original order.",
+      "No Unity operations or tests were executed by this reviewer; result files were independently read.",
+      "This diagnostic review does not guarantee every visual state, physical build or absence of all defects."
+    ],
+    "suggestedAdditionalDiagnostics": [
+      "Per-view viewportOffset and text renderer bounds/font/fontSize/characterSize",
+      "Failure-time camera instance ID, rotation, aspect, pixelRect and projection",
+      "Owner transform position"
+    ],
+    "publicationStatus": "Post-normalization final related/full verification pending; prior finalVerification remains historical pre-normalization evidence.",
+    "observedFailure": {
+      "evidence": "evidence/system-stage6-diagnostic-full-failure.json",
+      "headerTop": 1.5,
+      "numberY": [
+        1.328745,
+        4.285
+      ],
+      "cameraPosition": [
+        2.4,
+        1.28,
+        -10.0
+      ],
+      "orthographicSize": 3.15,
+      "interpretation": "Failure-time camera differs from successful isolated runs; the existing group viewport clamp can lower numbers below the fixture header. Source and observation support a camera-dependent fixture contract conflict, not a new product fix."
+    },
+    "finalVerification": {
+      "full": {
+        "evidence": "evidence/system-stage6-final-test-result.json",
+        "summary": {
+          "total": 3569,
+          "passed": 3569,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 287.88,
+        "consoleErrors": 0,
+        "groundTruthWarnings": 59,
+        "wrapperTimedOut": true,
+        "interpretation": "Completed Unity run result was recovered; wrapper timeout is not treated as test failure."
+      },
+      "related": {
+        "evidence": "evidence/system-stage6-related-test-result.json",
+        "summary": {
+          "total": 12,
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 11.4
+      },
+      "poolClass": {
+        "evidence": "evidence/system-stage6-pool-isolation-regression.json",
+        "summary": {
+          "total": 22,
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 2.45,
+        "limit": "Preset observed immediately before TestRunner; runner scene restoration is not treated as evidence of ambient camera throughout test. Revised test itself asserts unique owned Camera.main and final full retains original suite order."
+      },
+      "sourceHashesSubmissionAndValidationMatchFinal": true,
+      "sourceHashesRelatedAndFullMatch": true,
+      "verifiedSourceFileCount": 12,
+      "sourceHashes": {
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "a50710a7e4fe2fd26c7a48ef65fce3ba6b90c30e4b5d15b4e9fc1440918b699f",
+        "Assets/Olca/Unity/Management/WorldVisualResources.cs": "3f300f1eb77da55b1d57bc6956780e351bca10f974b6f52cac3afa9e1d4a40c6",
+        "Assets/Olca/Unity/Management/ResourceManager.cs": "45f5e1d73345b96844b1a5a4de3294baa353ee2f2d0fd54553e5eadcf5a131a3",
+        "Assets/Olca/Application/Management/BootstrapEntry.cs": "04e6c4ddb801370968d2a910dfc048633490cfefaae36a792c9af10d2645b8c4",
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "3bece41e4b6c43c5ed689ac74167c350e5cf0a5f761c27ca78182a4090663109",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "1b7cacc7c1ac31f1f576adfe6fe7aaa8de38eab57a6ab547e07635834a8e5bdd",
+        "Assets/Olca/Tests/Application/WorldPresentationManagementTests.cs": "500b43421b0e3cd39dc60ae5f514878c80908545756fcf7a1b94c2d9e6cd8ab4",
+        "Assets/Resources/OlcaSystem/WorldPresentation.prefab": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+        "Assets/Resources/OlcaSystem/WorldGround.mat": "a2dbcaa952cb14e1b5fd9750c16e7db656d95ef98571c62d4e6c161e27e40f7d",
+        "Assets/Resources/OlcaSystem/WorldDungeonBackground.mat": "b56d9c76d063b56e674aa68d1191fa1d1b204234fa863a8d4b676a143b68c7ca",
+        "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8",
+        "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4"
+      }
+    },
+    "prefabNormalizationReview": {
+      "exactOneDelimiterSpaceRemoval": true,
+      "beforeSha256": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+      "afterSha256": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+      "nativeBefore": {
+        "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+        "imported": false,
+        "property": "m_WarningMessage",
+        "type": "String",
+        "value": "",
+        "animators": 1,
+        "objects": 7
+      },
+      "nativeAfter": {
+        "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+        "imported": true,
+        "property": "m_WarningMessage",
+        "type": "String",
+        "value": "",
+        "animators": 1,
+        "objects": 7
+      },
+      "nativeEmptyStringAndCountsEqual": true,
+      "interpretation": "Only Animator serialized empty warning-message scalar formatting changed; no authored UI Text, Sprite, controller or motion data changed. Native imported String value remains empty. This is not a generic publication-gate exception.",
+      "limits": "Previous native/visual captures and full/related success describe pre-normalization assets; final tests on the new hash are pending. Native receipts do not directly measure Inspector visibility of the property.",
+      "unresolvedRequiredFindings": 0
+    }
+  },
+  "visualAndNativeSourceBinding": {
+    "originalReviewedFileCount": 11,
+    "allOriginalHashesUnchanged": false,
+    "extraFile": "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs",
+    "extraChange": "assertion diagnostics and owned-camera fixture isolation only; original assertions maintained",
+    "currentHashes": {
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "a50710a7e4fe2fd26c7a48ef65fce3ba6b90c30e4b5d15b4e9fc1440918b699f",
+      "Assets/Olca/Unity/Management/WorldVisualResources.cs": "3f300f1eb77da55b1d57bc6956780e351bca10f974b6f52cac3afa9e1d4a40c6",
+      "Assets/Olca/Unity/Management/ResourceManager.cs": "45f5e1d73345b96844b1a5a4de3294baa353ee2f2d0fd54553e5eadcf5a131a3",
+      "Assets/Olca/Application/Management/BootstrapEntry.cs": "04e6c4ddb801370968d2a910dfc048633490cfefaae36a792c9af10d2645b8c4",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "3bece41e4b6c43c5ed689ac74167c350e5cf0a5f761c27ca78182a4090663109",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "1b7cacc7c1ac31f1f576adfe6fe7aaa8de38eab57a6ab547e07635834a8e5bdd",
+      "Assets/Olca/Tests/Application/WorldPresentationManagementTests.cs": "500b43421b0e3cd39dc60ae5f514878c80908545756fcf7a1b94c2d9e6cd8ab4",
+      "Assets/Resources/OlcaSystem/WorldPresentation.prefab": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+      "Assets/Resources/OlcaSystem/WorldGround.mat": "a2dbcaa952cb14e1b5fd9750c16e7db656d95ef98571c62d4e6c161e27e40f7d",
+      "Assets/Resources/OlcaSystem/WorldDungeonBackground.mat": "b56d9c76d063b56e674aa68d1191fa1d1b204234fa863a8d4b676a143b68c7ca",
+      "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8",
+      "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4",
+      "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "abafb399e7f5e71dee4b9618280d565a137d36d59e520168e8adadc7d8d968de"
+    },
+    "unchangedOriginalFileCount": 10,
+    "normalizedPrefab": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+    "normalizationProof": {
+      "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+      "beforeSha256": "2ff738e58cebd514b606a53f4383313dd87ccefdc1abc4b916f0ec3df8f84a0f",
+      "afterSha256": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+      "onlyChange": "one Animator empty m_WarningMessage delimiter trailing space removed; all other bytes identical",
+      "changedLines": 1,
+      "gateWasStoppedBeforeCommit": true,
+      "nativePropertyBefore": "String empty",
+      "nativeAfterPending": false,
+      "nativeBefore": {
+        "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+        "imported": false,
+        "property": "m_WarningMessage",
+        "type": "String",
+        "value": "",
+        "animators": 1,
+        "objects": 7
+      },
+      "nativeAfter": {
+        "path": "Assets/Resources/OlcaSystem/WorldPresentation.prefab",
+        "imported": true,
+        "property": "m_WarningMessage",
+        "type": "String",
+        "value": "",
+        "animators": 1,
+        "objects": 7
+      },
+      "nativeSerializedValuesEqual": true
+    },
+    "note": "Native images precede one-line formatting normalization; Unity String empty value and every other prefab byte unchanged. Final normalized asset and both fixture changes passed related/full with exact13 hashes.",
+    "extraFilePaths": [
+      "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs",
+      "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs"
+    ]
+  },
+  "eventFixtureFinalReview": {
+    "scope": "Independent read-only review of MenuPadScopeTests scroll fixture EventSystem cleanup, Stage6",
+    "source": {
+      "path": "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs",
+      "sha256": "abafb399e7f5e71dee4b9618280d565a137d36d59e520168e8adadc7d8d968de"
+    },
+    "evidence": "evidence/system-stage6-event-registry-after-failure.json",
+    "confirmedFacts": [
+      "UGUI EventSystem.OnEnable appends to the static registry; OnDisable removes one reference.",
+      "The scroll fixture manually invokes OnEnable for its own EventSystem but previously only destroyed that object.",
+      "Observed registry contains two CLR-non-null / Unity-null wrappers while sceneEvents is empty. This explains strict NUnit null assertion failure.",
+      "The late scroll fixture can contaminate a following no-domain-reload run; its position after the failing early Content case is consistent with this cross-run path."
+    ],
+    "limits": [
+      "The registry receipt alone does not map the two destroyed instance IDs to a captured ScrollEventSystem allocation.",
+      "No Unity operations or tests were executed by this reviewer.",
+      "Product UIRuntimeManager and strict current-null assertion are unchanged."
+    ],
+    "findings": [
+      {
+        "severity": "test-cleanup",
+        "description": "If the new AreNotSame assertion throws, the following DestroyImmediate(root) is skipped. The List/ScrollRect/Button fixture must be destroyed in an outer finally even when unregister/assert fails.",
+        "status": "resolved: nested finally always destroys self-owned EventSystem and outer finally always destroys UI root, including unregister assertion failure"
+      }
+    ],
+    "unresolvedRequiredFindings": 0,
+    "recommendedFix": "Keep the unregister assertion and ensure both self-owned EventSystem and UI root destruction execute via nested finally.",
+    "reReview": "Read final nested cleanup source. Strict null/current assertion and original navigation assertions are unchanged. No product modifications or global registry reset introduced.",
+    "pendingVerification": null,
+    "finalVerification": {
+      "full": {
+        "summary": {
+          "total": 3569,
+          "passed": 3569,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 276.76,
+        "consoleErrors": 0,
+        "groundTruthWarnings": 59,
+        "wrapperTimedOut": true,
+        "completedResultRecovered": true
+      },
+      "related": {
+        "summary": {
+          "total": 12,
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 10.97
+      },
+      "sourceHashesAllFourManifestsAndTwoCopiesMatch": true,
+      "fileCount": 13,
+      "sourceHashes": {
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "a50710a7e4fe2fd26c7a48ef65fce3ba6b90c30e4b5d15b4e9fc1440918b699f",
+        "Assets/Olca/Unity/Management/WorldVisualResources.cs": "3f300f1eb77da55b1d57bc6956780e351bca10f974b6f52cac3afa9e1d4a40c6",
+        "Assets/Olca/Unity/Management/ResourceManager.cs": "45f5e1d73345b96844b1a5a4de3294baa353ee2f2d0fd54553e5eadcf5a131a3",
+        "Assets/Olca/Application/Management/BootstrapEntry.cs": "04e6c4ddb801370968d2a910dfc048633490cfefaae36a792c9af10d2645b8c4",
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "3bece41e4b6c43c5ed689ac74167c350e5cf0a5f761c27ca78182a4090663109",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "1b7cacc7c1ac31f1f576adfe6fe7aaa8de38eab57a6ab547e07635834a8e5bdd",
+        "Assets/Olca/Tests/Application/WorldPresentationManagementTests.cs": "500b43421b0e3cd39dc60ae5f514878c80908545756fcf7a1b94c2d9e6cd8ab4",
+        "Assets/Resources/OlcaSystem/WorldPresentation.prefab": "fa1a87df77c43728d1edb612f360fd131027c7974694976e5d10c66124b9b43c",
+        "Assets/Resources/OlcaSystem/WorldGround.mat": "a2dbcaa952cb14e1b5fd9750c16e7db656d95ef98571c62d4e6c161e27e40f7d",
+        "Assets/Resources/OlcaSystem/WorldDungeonBackground.mat": "b56d9c76d063b56e674aa68d1191fa1d1b204234fa863a8d4b676a143b68c7ca",
+        "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8",
+        "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "80d14a93609d031d509ea05e8721d52005be3fc89b4086cba273a65455b76ff4",
+        "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "abafb399e7f5e71dee4b9618280d565a137d36d59e520168e8adadc7d8d968de"
+      },
+      "sameEditorNoDomainReloadTwoCycles": {
+        "before": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        },
+        "rounds": [
+          [
+            {
+              "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+              "summary": {
+                "total": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0,
+                "inconclusive": 0
+              },
+              "duration": 1.63,
+              "registry": {
+                "playing": false,
+                "currentClrNull": true,
+                "currentUnityNull": true,
+                "registered": [],
+                "sceneEvents": []
+              }
+            },
+            {
+              "filter": "UIRuntimeManagementTests",
+              "summary": {
+                "total": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0,
+                "inconclusive": 0
+              },
+              "duration": 0.05,
+              "registry": {
+                "playing": false,
+                "currentClrNull": true,
+                "currentUnityNull": true,
+                "registered": [],
+                "sceneEvents": []
+              }
+            }
+          ],
+          [
+            {
+              "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+              "summary": {
+                "total": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0,
+                "inconclusive": 0
+              },
+              "duration": 0.02,
+              "registry": {
+                "playing": false,
+                "currentClrNull": true,
+                "currentUnityNull": true,
+                "registered": [],
+                "sceneEvents": []
+              }
+            },
+            {
+              "filter": "UIRuntimeManagementTests",
+              "summary": {
+                "total": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0,
+                "inconclusive": 0
+              },
+              "duration": 0.03,
+              "registry": {
+                "playing": false,
+                "currentClrNull": true,
+                "currentUnityNull": true,
+                "registered": [],
+                "sceneEvents": []
+              }
+            }
+          ]
+        ],
+        "sameEditorNoDomainReloadBetweenRuns": true,
+        "staticListNeverClearedByHarness": true
+      },
+      "postFullRegistry": {
+        "playing": false,
+        "currentClrNull": true,
+        "currentUnityNull": true,
+        "registered": [],
+        "sceneEvents": []
+      }
+    },
+    "preservedContracts": [
+      "Original strict EventSystem.current null assertion retained.",
+      "Navigation, header-position and subscription expectations retained.",
+      "No global registry clear by harness or production change for the event cleanup fix.",
+      "Product gameplay/save/input/clock guards were not relaxed."
+    ],
+    "historyLimits": [
+      "Two initial full failures involved the ambient-camera-dependent damage subscription fixture; fixed by owning the fixture camera without weakening expectations.",
+      "Publication whitespace check stopped before commit; one Animator empty warning-message delimiter space was normalized and native imported String remained empty.",
+      "A normalized-source full run exposed a different strict null failure from stale EventSystem wrappers; manual scroll fixture OnDisable was missing and is now paired with OnEnable.",
+      "The original two destroyed wrapper IDs are not directly mapped to captured allocations, so their exact individual provenance remains unconfirmed.",
+      "Native/visual captures predate the one-line prefab normalization; native property equality and final normalized-source tests are separate evidence.",
+      "No physical build, Unity execution or independent reproduction was performed by this reviewer."
+    ],
+    "result": "Scoped final review: zero unresolved required findings; final verified source and recovered results agree."
+  }
+}

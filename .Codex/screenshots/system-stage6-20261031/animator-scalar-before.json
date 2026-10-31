@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 39,\n  \"executeMs\": 7,\n  \"assemblyName\": \"PipelineRunScript_Stage6YamlScalarProof_092a8998040c41feb08379f4c631b941\",\n  \"success\": true,\n  \"result\": {\n    \"path\": \"Assets/Resources/OlcaSystem/WorldPresentation.prefab\",\n    \"imported\": false,\n    \"property\": \"m_WarningMessage\",\n    \"type\": \"String\",\n    \"value\": \"\",\n    \"animators\": 1,\n    \"objects\": 7\n  }\n}"
+    }
+  ]
+}

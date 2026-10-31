@@ -1,0 +1,9 @@
+[
+  {
+    "FullName": "Olca.Tests.Application.UIRuntimeManagementTests.Content_再取得と所有拒否と解放後再生成を分離する",
+    "Status": "Failed",
+    "Duration": 0.008027,
+    "Message": "  前テストのEventSystem残留を見逃さない\n  Expected: null\n  But was:  <<b>Selected:</b>null\n\n\nNo module\n>\n",
+    "StackTrace": "at Olca.Tests.Application.UIRuntimeManagementTests.Content_再取得と所有拒否と解放後再生成を分離する () [0x00032] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/UIRuntimeManagementTests.cs:30\n"
+  }
+]

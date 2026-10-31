@@ -1,0 +1,97 @@
+{
+  "actualBossVerified": true,
+  "state": {
+    "previewTiles": 0,
+    "frame": 0,
+    "custom": true,
+    "paused": true,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": {
+      "playerHp": 100,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_01_0",
+      "playerRect": [
+        104,
+        226
+      ],
+      "visuals": []
+    },
+    "occlusion": {
+      "frame": 0,
+      "surfaceName": "BattleControlSurface",
+      "surface": true,
+      "surfaceScreen": [
+        "(463.33, 10.00)",
+        "(463.33, 66.67)",
+        "(630.00, 66.67)",
+        "(630.00, 10.00)"
+      ],
+      "foregroundTop": 46.2857132,
+      "bodyFeet": [
+        {
+          "name": "EnemyViewPrerfab(Clone)",
+          "feet": 69.42857
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "size": "(155.00, 74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "size": "(190.00, 60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "views": [
+      {
+        "linkVisible": false,
+        "linkPoints": null,
+        "modelId": "boss",
+        "grid": [
+          4,
+          0
+        ],
+        "modelHp": 200,
+        "gaugeValue": "200",
+        "participates": true,
+        "name": "EnemyViewPrerfab(Clone)",
+        "IsBossGauge": true,
+        "GaugeVisible": true,
+        "sprite": "boss_512",
+        "root": "(156.80, -0.36, 0.00)",
+        "scale": "(0.80, 0.80, 1.00)",
+        "bodyMin": "(342.40, 69.43, 10.00)",
+        "bodyMax": "(572.34, 250.00, 10.00)",
+        "hp": "(617.60, 95.40, 10.00)",
+        "caption": "ボス",
+        "namePosition": "(457.37, 290.74, 9.90)"
+      }
+    ]
+  },
+  "sameView": {
+    "actualNextBattleWithSameView": true,
+    "oldBattleAndCustomSubscriptionsRemoved": true,
+    "state": {
+      "phase": "Battle",
+      "battleIdentity": 979452000,
+      "view": -238874852,
+      "custom": -238874862,
+      "hand": 5,
+      "selected": [],
+      "frame": 0,
+      "currency": 0,
+      "registered": 1,
+      "battleViews": 1,
+      "customViews": 1
+    }
+  },
+  "visitsExited": []
+}

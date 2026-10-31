@@ -300,6 +300,15 @@ namespace Olca.Tests
         [Test]
         public async Task 敵Viewは個別ヒットを購読し接触演出後や毎フレーム更新で二重表示しない()
         {
+            // 位置検証を他fixtureの追従Cameraから隔離する。上端補正自体は専用境界テストで検証する。
+            var otherCameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None)
+                .Where(c => c.CompareTag("MainCamera")).ToArray();
+            foreach (var other in otherCameras) other.tag = "Untagged";
+            var cameraObject = new GameObject("FeedbackSubscriptionCamera", typeof(Camera));
+            var camera = cameraObject.GetComponent<Camera>();
+            camera.tag = "MainCamera"; camera.orthographic = true; camera.orthographicSize = 5;
+            camera.transform.position = new Vector3(0, 0, -10);
+            camera.pixelRect = new Rect(0, 0, 1920, 1080);
             var go = new GameObject("FeedbackEnemy");
             var view = go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();
             var header = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -308,13 +317,15 @@ namespace Olca.Tests
             header.transform.localPosition = new Vector3(0, 1, 0);
             var enemy = new Olca.Core.Domain.Enemy("feedback", "テスト", 100, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(3, 0));
             try {
+                Assert.AreSame(camera, Camera.main, "位置検証専用Cameraだけを参照する");
                 view.SetDamageNumberPool(pool); view.Initialize(enemy, 0);
                 enemy.TakeDamage(3, Olca.Core.Domain.ElementType.None);
                 enemy.TakeDamage(4, Olca.Core.Domain.ElementType.None);
                 Assert.AreEqual(0, Active.Count, "接触ダメージは演出開始まで保留");
                 view.OnBattleStarted(null); view.TriggerPendingDamageEffect(); view.TriggerPendingDamageEffect();
                 view.Refresh(); Assert.AreEqual(2, Active.Count);
-                Assert.IsTrue(Active.All(v => v.transform.position.y > header.GetComponent<Renderer>().bounds.max.y), "名前/HPの表示範囲より上に出す");
+                Assert.IsTrue(Active.All(v => v.transform.position.y > header.GetComponent<Renderer>().bounds.max.y),
+                    $"名前/HPの表示範囲より上に出す: header={header.GetComponent<Renderer>().bounds.max.y}, numbers={string.Join(",", Active.Select(v => v.transform.position.y))}, camera={Camera.main?.transform.position}, size={Camera.main?.orthographicSize}");
                 enemy.TakeDamage(5, Olca.Core.Domain.ElementType.None); view.Refresh();
                 Assert.AreEqual(3, Active.Count);
                 view.SetHiddenByBlindness(true); enemy.TakeDamage(6, Olca.Core.Domain.ElementType.None);
@@ -325,6 +336,8 @@ namespace Olca.Tests
                 Assert.AreEqual(3, Active.Count, "古い敵の購読を解除する");
             } finally {
                 UnityEngine.Object.DestroyImmediate(go); pool.ClearAll();
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                foreach (var other in otherCameras) if (other != null) other.tag = "MainCamera";
             }
             await Task.Delay(100); Assert.AreEqual(0, Active.Count);
         }

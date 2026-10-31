@@ -1,0 +1,139 @@
+{
+  "sourceName": "Sprite-Lit-Default (Instance)",
+  "assetName": "WorldDungeonBackground",
+  "allOtherSerializedPropertiesIdentical": true,
+  "properties": {
+    "serializedVersion": "8",
+    "m_Shader": {
+      "fileID": 4800000,
+      "guid": "e260cfa7296ee7642b167f1eb5be5023",
+      "type": 3
+    },
+    "m_Parent": {
+      "instanceID": 0
+    },
+    "m_ModifiedSerializedProperties": 0,
+    "m_ValidKeywords": [],
+    "m_InvalidKeywords": [
+      "ETC1_EXTERNAL_ALPHA"
+    ],
+    "m_LightmapFlags": 4,
+    "m_EnableInstancingVariants": false,
+    "m_DoubleSidedGI": false,
+    "m_CustomRenderQueue": -1,
+    "stringTagMap": {},
+    "disabledShaderPasses": [],
+    "m_LockedProperties": "",
+    "m_SavedProperties": {
+      "serializedVersion": "3",
+      "m_TexEnvs": [
+        {
+          "first": "_AlphaTex",
+          "second": {
+            "m_Texture": {
+              "instanceID": 0
+            },
+            "m_Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          }
+        },
+        {
+          "first": "_MainTex",
+          "second": {
+            "m_Texture": {
+              "instanceID": 0
+            },
+            "m_Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          }
+        },
+        {
+          "first": "_MaskTex",
+          "second": {
+            "m_Texture": {
+              "instanceID": 0
+            },
+            "m_Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          }
+        },
+        {
+          "first": "_NormalMap",
+          "second": {
+            "m_Texture": {
+              "instanceID": 0
+            },
+            "m_Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "m_Offset": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          }
+        }
+      ],
+      "m_Ints": [],
+      "m_Floats": [
+        {
+          "first": "_EnableExternalAlpha",
+          "second": 0.0
+        },
+        {
+          "first": "_ZWrite",
+          "second": 0.0
+        }
+      ],
+      "m_Colors": [
+        {
+          "first": "_Color",
+          "second": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "first": "_Flip",
+          "second": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "first": "_RendererColor",
+          "second": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ]
+    },
+    "m_BuildTextureStacks": [],
+    "m_AllowLocking": true
+  }
+}
