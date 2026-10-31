@@ -1,0 +1,56 @@
+{
+  "ended": {
+    "playing": true,
+    "normalRootDestroyNotApplicationQuit": true,
+    "generation": 2,
+    "ownedSprites": 16,
+    "ownedTextures": 16,
+    "allDirectReferencesNullBeforeInspect": true,
+    "importAlive": true,
+    "ended": {
+      "generations": 0,
+      "roots": 0,
+      "borrowers": 0,
+      "entries": 0,
+      "pendingNativeDestroy": 0,
+      "caches": []
+    },
+    "roots": 0,
+    "cameras": 0,
+    "listeners": 0,
+    "events": 0,
+    "audio": 0
+  },
+  "recreated": {
+    "recreated": true,
+    "roots": 1,
+    "generation": 3,
+    "cache": {
+      "generations": 1,
+      "roots": 1,
+      "borrowers": 1,
+      "entries": 0,
+      "pendingNativeDestroy": 0,
+      "caches": [
+        {
+          "generation": 3,
+          "roots": 1,
+          "borrowers": 1,
+          "retired": false,
+          "entries": []
+        }
+      ]
+    }
+  },
+  "newGenerationSpriteIds": [
+    -266514962,
+    -266514968,
+    -266514970,
+    -266514974,
+    -266514978,
+    -266514982,
+    -266514986
+  ],
+  "newGeneration": 3,
+  "importAlive": true
+}

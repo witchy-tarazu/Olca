@@ -14,6 +14,10 @@ namespace Olca.Tests
 {
     public class ActorConditionVisualTests
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedScope;
+        [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
+
         private const BindingFlags Hidden=BindingFlags.Instance|BindingFlags.NonPublic;
         private static void Set(object target,string name,object value)=>target.GetType().GetField(name,Hidden).SetValue(target,value);
         private static ActorConditionVisual Visual(object owner,string name)=>(ActorConditionVisual)owner.GetType().GetField(name,Hidden).GetValue(owner);

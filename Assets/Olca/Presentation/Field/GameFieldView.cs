@@ -22,6 +22,7 @@ namespace Olca.Presentation.Field
     /// </summary>
     public class GameFieldView : MonoBehaviour
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedAssets;
         private Olca.Unity.WorldVisualResources visualResources;
         public void ConfigureVisualResources(Olca.Unity.WorldVisualResources resources){visualResources=resources;}
         private T VisualResource<T>(string path) where T:UnityEngine.Object
@@ -534,7 +535,7 @@ namespace Olca.Presentation.Field
             projectilePoseRenderer?.Clear();
             foreach (var root in bombVisuals.Values) {
                 if (root == null) continue;
-                root.SetActive(false);
+                root.SetActive(false);foreach(var image in root.GetComponentsInChildren<SpriteRenderer>(true))image.sprite=null;
                 if (UnityEngine.Application.isPlaying) Destroy(root); else DestroyImmediate(root);
             }
             bombVisuals.Clear();
@@ -552,7 +553,7 @@ namespace Olca.Presentation.Field
                 for (int i=0;i<4;i++) {
                     var part=new GameObject(i==0?"Body":"Blast"+(i-1));part.transform.SetParent(root.transform,false);
                     var renderer=part.AddComponent<SpriteRenderer>();
-                    Sprite prop; bool illustrated = SharedAttackPropCatalog.TryGetSprite(i==0?SharedAttackPropCatalog.Bomb:SharedAttackPropCatalog.Blast, out prop);
+                    Sprite prop; bool illustrated = SharedAttackPropCatalog.TryGetSprite(i==0?SharedAttackPropCatalog.Bomb:SharedAttackPropCatalog.Blast, out prop,generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));
                     renderer.sprite=illustrated?prop:obstacleWhiteSprite;renderer.color=illustrated?Color.white:new Color(.3f,1f,1f,.85f);
                     renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=6;
                 }
@@ -563,7 +564,7 @@ namespace Olca.Presentation.Field
                 long elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
                 bool blast=!flying&&effect.WasExecuted&&elapsed>=0&&elapsed<6;
                 if (!flying&&!blast) {
-                    root.SetActive(false); if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
+                    root.SetActive(false);foreach(var image in root.GetComponentsInChildren<SpriteRenderer>(true))image.sprite=null; if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
                 }
                 var body=root.transform.GetChild(0);body.gameObject.SetActive(flying && projectilePoseRenderer?.Owns(effect) != true);
                 float targetX=battleGridView.GridIndexToWorldX(effect.TargetPosition.X);
@@ -682,6 +683,7 @@ namespace Olca.Presentation.Field
             }
             generatedSomersaultSprites = null;
             ClearTerrainVisuals(); ClearBombVisuals();
+            generatedAssets?.Dispose();generatedAssets=null;
             ClearObstacleVisuals(); ClearVisitVisuals();
             DisposeMarkerSprites();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
@@ -698,6 +700,7 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン初期化。マップ上の全敵スプライトを生成する。</summary>
         public void Initialize(DungeonSystem dungeon)
         {
+            if(generatedAssets==null)generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
             EnsureSomersaultSprites();
             if(outcomePlayerColor.HasValue&&playerSprite!=null)playerSprite.color=outcomePlayerColor.Value;
             outcomePlayerColor=null;

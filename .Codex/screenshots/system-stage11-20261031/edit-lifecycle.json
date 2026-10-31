@@ -1,0 +1,185 @@
+{
+  "prior": {
+    "generations": 0,
+    "roots": 0,
+    "borrowers": 0,
+    "entries": 0,
+    "pendingNativeDestroy": 0,
+    "caches": []
+  },
+  "generation": 1,
+  "ids": [
+    -263743594,
+    -263743600,
+    -263743602,
+    -263743606,
+    -263743610,
+    -263743614,
+    -263743618
+  ],
+  "shared": {
+    "generations": 1,
+    "roots": 1,
+    "borrowers": 2,
+    "entries": 6,
+    "pendingNativeDestroy": 0,
+    "caches": [
+      {
+        "generation": 1,
+        "roots": 1,
+        "borrowers": 2,
+        "retired": false,
+        "entries": [
+          {
+            "key": "prop/shared/bomb",
+            "sprites": [
+              -263743594
+            ],
+            "textures": [
+              -263743592
+            ]
+          },
+          {
+            "key": "status/Poison",
+            "sprites": [
+              -263743600,
+              -263743602
+            ],
+            "textures": [
+              -263743596,
+              -263743598
+            ]
+          },
+          {
+            "key": "attack-property/Sword",
+            "sprites": [
+              -263743606
+            ],
+            "textures": [
+              -263743604
+            ]
+          },
+          {
+            "key": "actor-condition/Guard",
+            "sprites": [
+              -263743610
+            ],
+            "textures": [
+              -263743608
+            ]
+          },
+          {
+            "key": "defensive-field/Barrier",
+            "sprites": [
+              -263743614
+            ],
+            "textures": [
+              -263743612
+            ]
+          },
+          {
+            "key": "transformation/activation",
+            "sprites": [
+              -263743618
+            ],
+            "textures": [
+              -263743616
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "held": {
+    "generations": 1,
+    "roots": 0,
+    "borrowers": 1,
+    "entries": 6,
+    "pendingNativeDestroy": 0,
+    "caches": [
+      {
+        "generation": 1,
+        "roots": 0,
+        "borrowers": 1,
+        "retired": true,
+        "entries": [
+          {
+            "key": "prop/shared/bomb",
+            "sprites": [
+              -263743594
+            ],
+            "textures": [
+              -263743592
+            ]
+          },
+          {
+            "key": "status/Poison",
+            "sprites": [
+              -263743600,
+              -263743602
+            ],
+            "textures": [
+              -263743596,
+              -263743598
+            ]
+          },
+          {
+            "key": "attack-property/Sword",
+            "sprites": [
+              -263743606
+            ],
+            "textures": [
+              -263743604
+            ]
+          },
+          {
+            "key": "actor-condition/Guard",
+            "sprites": [
+              -263743610
+            ],
+            "textures": [
+              -263743608
+            ]
+          },
+          {
+            "key": "defensive-field/Barrier",
+            "sprites": [
+              -263743614
+            ],
+            "textures": [
+              -263743612
+            ]
+          },
+          {
+            "key": "transformation/activation",
+            "sprites": [
+              -263743618
+            ],
+            "textures": [
+              -263743616
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "queued": {
+    "generations": 0,
+    "roots": 0,
+    "borrowers": 0,
+    "entries": 0,
+    "pendingNativeDestroy": 0,
+    "caches": []
+  },
+  "ended": {
+    "generations": 0,
+    "roots": 0,
+    "borrowers": 0,
+    "entries": 0,
+    "pendingNativeDestroy": 0,
+    "caches": []
+  },
+  "spritesAlive": 0,
+  "texturesAlive": 0,
+  "importAlive": true
+}

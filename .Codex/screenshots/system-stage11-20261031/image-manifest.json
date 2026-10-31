@@ -1,0 +1,137 @@
+[
+  {
+    "file": "properties-custom-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "15b59ef5629c074628c76f8f93905f69adea54378d21f44cd7a8915ab7a6f499",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "properties-custom-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "22c0259e54bc7cb424940cba94006cc1cc5e3f55d8ef0ed6ec366e83dc77d663",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "properties-custom-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "f5534c9cd72a840159addf5c65403e21d6ef69791f9165f40a3561282e04d455",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "projectiles-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "eed4b836d5011ece740ee893fabcd9cab12a855747c4587f65e59adf720e92c9",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "projectiles-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "cf6260352677ff363aabaf2d7740d6114cb5aba3790988e6a30905ec17fb721a",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "projectiles-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "540f92b814852c8ba37ca90da9f2e114fb08caacf3358f5b99c5016f9dc47de7",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "guard-defense-status-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "78cdfe99ea774c3b09fd7cb9d4301e81b2547456bafcadff58be3883fef2e56e",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "guard-defense-status-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "f113c7b8508c85061dbca07a7a7245adc5adb9ec574725d12486a118e80a2b68",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "guard-defense-status-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "a0ef03a1d4e3ae813352407c4d5916ec4af2d032fbcd753a2fa88635af2a70db",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "transformation-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "718bbdb98dc14b21bda95b5404b34b3ad92d1eec95ea351627b833bf57dc68ba",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "transformation-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "f5b3b9a2d204e4e91d0165e8419291e2391a689e36b809fe6c5027693163c1b7",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "transformation-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "e4541f2eafea7024652e0b48d7cdb007a9ca84a7ffb5b131b3df30f7bedf47d7",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "transformation-release-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "fa87892a2635a73deed91540bb7787f221990e9893dec293dd123a855737612f",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "transformation-release-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "f05a7fba0bff238442f2d7dcce46e603a4705f020c9b506304ec505eb0344e56",
+    "kind": "actual current native screen, no newly-shot before"
+  },
+  {
+    "file": "transformation-release-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "edc35745e2269f900d55130b7ab8838984de8133edbc88037d75cce68349e003",
+    "kind": "actual current native screen, no newly-shot before"
+  }
+]

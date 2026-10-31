@@ -9,35 +9,28 @@ namespace Olca.Presentation.CustomScreen
     public static class AttackPropertyIconCatalog
     {
         private static readonly AttackProperty[] order = { AttackProperty.Sword, AttackProperty.Break, AttackProperty.Wind };
-        private static readonly Dictionary<AttackProperty, Sprite> sprites = new Dictionary<AttackProperty, Sprite>();
         public static IReadOnlyList<AttackProperty> Resolve(AttackProperty properties)
         {
             var result = new List<AttackProperty>();
             foreach (var property in order) if ((properties & property) != 0) result.Add(property);
             return result;
         }
-        public static Sprite Get(AttackProperty property)
+        public static Sprite Get(AttackProperty property,Olca.Unity.GeneratedSpriteAssets.Lease assets=null)
         {
             if (property != AttackProperty.Sword && property != AttackProperty.Break && property != AttackProperty.Wind) return null;
-            if (sprites.TryGetValue(property, out var shared) && shared != null) return shared;
-            var source = Resources.Load<TextAsset>("OlcaAttackProperties/" + property.ToString().ToLowerInvariant());
-            if (source == null) return null;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (!texture.LoadImage(source.bytes, true)) {
-                if (Application.isPlaying) Object.Destroy(texture); else Object.DestroyImmediate(texture);
-                return null;
-            }
-            texture.name = "attack-property/" + property; texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp; texture.hideFlags = HideFlags.HideAndDontSave;
-            shared = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f, .5f), 100, 0, SpriteMeshType.FullRect);
-            shared.name = texture.name; shared.hideFlags = HideFlags.HideAndDontSave; sprites[property] = shared;
-            return shared;
+            return Olca.Unity.GeneratedSpriteAssets.Get<Sprite>("attack-property/"+property,owned=>{
+                var source=Resources.Load<TextAsset>("OlcaAttackProperties/"+property.ToString().ToLowerInvariant());if(source==null)return null;
+                var texture=owned.CreateTexture(2,2);if(!texture.LoadImage(source.bytes,true))return null;
+                texture.name="attack-property/"+property;texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
+                var result=owned.CreateSprite(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f));result.name=texture.name;result.hideFlags=HideFlags.HideAndDontSave;return result;
+            },assets);
         }
     }
 
     /// <summary>カード詳細のスクロール内容内に専用行を予約する。素材は借用し入力を受けない。</summary>
     public sealed class CardAttackPropertyIcons : MonoBehaviour
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedAssets;
         private readonly List<Image> slots = new List<Image>();
         public int VisibleCount { get; private set; }
         public static void Bind(Text label, Card card, string content)
@@ -70,11 +63,12 @@ namespace Olca.Presentation.CustomScreen
             }
             VisibleCount = 0;
             for (int i = 0; i < slots.Count; i++) {
-                var sprite = i < properties.Count ? AttackPropertyIconCatalog.Get(properties[i]) : null;
+                var sprite = i < properties.Count ? AttackPropertyIconCatalog.Get(properties[i],generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this))) : null;
                 slots[i].sprite = sprite; slots[i].gameObject.SetActive(sprite != null);
                 if (sprite != null) { slots[i].name = "Property_" + properties[i]; VisibleCount++; }
             }
         }
         private void OnDisable() { Show(System.Array.Empty<AttackProperty>()); }
+        private void OnDestroy(){foreach(var image in slots)if(image!=null)image.sprite=null;generatedAssets?.Dispose();generatedAssets=null;}
     }
 }

@@ -14,6 +14,10 @@ namespace Olca.Tests
 {
     public class TransformationEffectVisualTests
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedScope;
+        [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
+
         private const BindingFlags Hidden=BindingFlags.Instance|BindingFlags.NonPublic;
         private GameObject host; private BattleView view; private BattleSystem battle;
         private void Refresh()=>typeof(BattleView).GetMethod("UpdateTransformationVisual",Hidden).Invoke(view,null);

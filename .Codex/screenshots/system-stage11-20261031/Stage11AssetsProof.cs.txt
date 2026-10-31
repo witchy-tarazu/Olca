@@ -1,0 +1,42 @@
+using System;using System.Linq;using System.Threading.Tasks;using UnityEngine;using Olca.Unity;using Olca.Presentation.Field;using Olca.Presentation.Battle;using Olca.Presentation.CustomScreen;using Olca.Presentation.Effects;
+public static class Stage11AssetsProof {
+ public static object State(){
+  var sprites=Resources.FindObjectsOfTypeAll<Sprite>().Where(x=>x!=null&&new[]{"attack-prop/","status/","attack-property/","actor-condition/","defensive-field/","transformation/"}.Any(prefix=>x.name.StartsWith(prefix))).ToArray();
+  var images=UnityEngine.Object.FindObjectsByType<UnityEngine.UI.Image>(FindObjectsInactive.Include,FindObjectsSortMode.None).Where(x=>x.sprite!=null).ToArray();
+  var renderers=UnityEngine.Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include,FindObjectsSortMode.None).Where(x=>x.sprite!=null).ToArray();
+  if(images.Any(x=>x.sprite.texture==null)||renderers.Any(x=>x.sprite.texture==null))throw new Exception("Live sprite refers destroyed texture");
+  return new{cache=GeneratedSpriteAssets.Inspect(),familySprites=sprites.Select(x=>new{name=x.name,id=x.GetInstanceID(),texture=x.texture.GetInstanceID(),width=x.rect.width,height=x.rect.height}).ToArray(),images=images.Length,renderers=renderers.Length,importAlive=Resources.Load<Texture2D>("OlcaUI/window")!=null};
+ }
+ public static async Task<object> LateNativeOwner(){
+  if(!Application.isPlaying)throw new Exception("Play required");var before=GeneratedSpriteAssets.Inspect();
+  if((int)before.GetType().GetProperty("roots").GetValue(before)!=0||(int)before.GetType().GetProperty("borrowers").GetValue(before)!=0)throw new Exception("Exclusive inactive-host boundary required");
+  var owner=new GameObject("LateGeneratedAssetOwner",typeof(SpriteRenderer));var root=GeneratedSpriteAssets.AcquireRoot();var lease=GeneratedSpriteAssets.Acquire(owner.GetComponent<SpriteRenderer>());
+  SharedAttackPropCatalog.TryGetSprite(SharedAttackPropCatalog.Bomb,out var prop,lease);CombatStatusIconCatalog.TryGet(CombatIconId.Poison,out var color,out var gray,lease);
+  var sprites=new[]{prop,color,gray,AttackPropertyIconCatalog.Get(Olca.Core.Domain.AttackProperty.Sword,lease),ActorConditionVisual.GetSprite(ActorConditionKind.Guard,lease),DefensiveFieldVisual.GetSprite(DefensiveFieldKind.Barrier,lease),TransformationEffectSprites.Get(true,lease)};
+  if(sprites.Any(x=>x==null))throw new Exception("Six families missing");var textures=sprites.Select(x=>x.texture).ToArray();owner.GetComponent<SpriteRenderer>().sprite=prop;
+  var imported=Resources.Load<Texture2D>("OlcaUI/window");var importId=imported.GetInstanceID();var loaded=State();float priorScale=Time.timeScale;Time.timeScale=0;root.Dispose();
+  for(int n=0;n<3;n++)await Awaitable.NextFrameAsync();if(sprites.Any(x=>x==null))throw new Exception("Early release while owner alive");var held=State();
+  UnityEngine.Object.Destroy(owner);for(int n=0;n<4;n++)await Awaitable.NextFrameAsync();
+  // InspectのPruneで初めて回収した、と誤認しないようnative参照を先に測定する。
+  if(sprites.Any(x=>x!=null)||textures.Any(x=>x!=null))throw new Exception("Late owner destruction was not collected automatically");
+  if(imported==null||imported.GetInstanceID()!=importId)throw new Exception("Import destroyed");var ended=State();lease.Dispose();root.Dispose();Time.timeScale=priorScale;
+  return new{before,loaded,held,ended,lateOwnerAutoCollected=true,timeScaleZeroDuringCollection=true,importAlive=true,playing=Application.isPlaying};
+ }
+ public static async Task<object> Lifecycle(){
+  var imported=Resources.Load<Texture2D>("OlcaUI/window");if(imported==null)throw new Exception("Import missing");var importedId=imported.GetInstanceID();
+  var prior=GeneratedSpriteAssets.Inspect();var root=GeneratedSpriteAssets.AcquireRoot();var a=GeneratedSpriteAssets.Acquire();var b=GeneratedSpriteAssets.Acquire();
+  SharedAttackPropCatalog.TryGetSprite(SharedAttackPropCatalog.Bomb,out var prop,a);
+  CombatStatusIconCatalog.TryGet((CombatIconId)0,out var color,out var gray,a);
+  var property=AttackPropertyIconCatalog.Get(Olca.Core.Domain.AttackProperty.Sword,a);
+  var condition=ActorConditionVisual.GetSprite(ActorConditionKind.Guard,a);
+  var defense=DefensiveFieldVisual.GetSprite(DefensiveFieldKind.Barrier,a);
+  var transform=TransformationEffectSprites.Get(true,a);
+  var sprites=new[]{prop,color,gray,property,condition,defense,transform};if(sprites.Any(x=>x==null))throw new Exception("Six family fixture load missing");
+  var ids=sprites.Select(x=>x.GetInstanceID()).ToArray();var textures=sprites.Select(x=>x.texture).ToArray();
+  SharedAttackPropCatalog.TryGetSprite(SharedAttackPropCatalog.Bomb,out var same,b);if(same!=prop)throw new Exception("Not shared");
+  var generation=a.Generation;var shared=GeneratedSpriteAssets.Inspect();root.Dispose();a.Dispose();if(sprites.Any(x=>x==null))throw new Exception("Early release");var held=GeneratedSpriteAssets.Inspect();
+  b.Dispose();var queued=GeneratedSpriteAssets.Inspect();await Task.Delay(100);var ended=GeneratedSpriteAssets.Inspect();
+  // 既存Rootがある場合は同世代のRoot pinが残るため破棄を要求しない。
+  return new{prior,generation,ids,shared,held,queued,ended,spritesAlive=sprites.Count(x=>x!=null),texturesAlive=textures.Count(x=>x!=null),importAlive=imported!=null&&imported.GetInstanceID()==importedId};
+ }
+}

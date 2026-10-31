@@ -13,6 +13,10 @@ namespace Olca.Tests
 {
     public class DefensiveFieldVisualTests
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedScope;
+        [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
+
         private const BindingFlags Hidden=BindingFlags.Instance|BindingFlags.NonPublic;
         private static void Set(object target,string name,object value)=>target.GetType().GetField(name,Hidden).SetValue(target,value);
         private static void Call(object target,string name)=>target.GetType().GetMethod(name,Hidden).Invoke(target,null);

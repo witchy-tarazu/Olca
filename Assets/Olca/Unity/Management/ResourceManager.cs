@@ -27,6 +27,11 @@ namespace Olca.Unity
         public int OwnedSceneCount => scenes.OwnedSceneCount;
         public Task<IHostSceneLease> LoadSceneAsync(string path,CancellationToken cancellation) => scenes.LoadSceneAsync(path,cancellation);
         private bool disposed;
+        private GeneratedSpriteAssets.RootLease generatedSprites;
+        /// <summary>GameSystemのRoot寿命を保持。Viewの借用が残ると最終破棄は遅延する。</summary>
+        public void RetainGeneratedSprites()
+        {if(disposed)throw new ObjectDisposedException(nameof(ResourceManager));if(generatedSprites==null)generatedSprites=GeneratedSpriteAssets.AcquireRoot();}
+        public int GeneratedSpriteGeneration=>generatedSprites?.Generation??0;
         public int OwnedInstanceCount => instances.Count;
         public T GetShared<T>(string path) where T : UnityEngine.Object
             => FindShared<T>(path) ?? throw new InvalidOperationException("リソースがありません: " + path);
@@ -73,7 +78,7 @@ namespace Olca.Unity
             if (disposed) return; disposed = true;
             foreach (var value in new List<InstanceLease>(instances)) value.Dispose();
             // 他の既存Catalogも共有するimport素材を勝手にDestroy/Unloadしない。
-            shared.Clear(); scenes.Dispose();
+            shared.Clear(); scenes.Dispose();generatedSprites?.Dispose();generatedSprites=null;
         }
     }
 }

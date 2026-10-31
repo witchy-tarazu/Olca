@@ -39,7 +39,7 @@ namespace Olca.Application.Management
         public Session CurrentSession { get; private set; }
         private bool disposed;
         public GameSystem(SaveManager saves, ResourceManager resources, SoundManager sounds, ViewManager views, DialogManager dialogs, UIRuntimeManager ui = null, CameraRuntimeManager cameras = null)
-        { Cameras = cameras; UI = ui; Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); }
+        { Cameras = cameras; UI = ui; Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); Resources.RetainGeneratedSprites(); }
         public Session BeginSession(object owner, string settings, string checkpoints, string progress)
         {
             if (disposed) throw new ObjectDisposedException(nameof(GameSystem));

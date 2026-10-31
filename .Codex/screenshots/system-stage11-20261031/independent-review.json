@@ -1,0 +1,12 @@
+{
+  "reviewer": "equipment_save_review / independent_refactor_review",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "evidence": "code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "evidence": "visual-review.json"
+  },
+  "scope": "19 final C# files, six generated catalogs/borrowers and scoped native visual review; not whole-project defect guarantee"
+}

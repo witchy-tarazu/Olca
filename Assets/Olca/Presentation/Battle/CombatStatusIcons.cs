@@ -11,7 +11,6 @@ namespace Olca.Presentation.Battle
     public static class CombatStatusIconCatalog
     {
         private sealed class Pair { internal Sprite Color, Gray; }
-        private static readonly Dictionary<CombatIconId, Pair> loaded = new Dictionary<CombatIconId, Pair>();
         public static CombatIconId? ForStatus(StatusEffectType type)
         {
             switch(type) {
@@ -22,26 +21,21 @@ namespace Olca.Presentation.Battle
                 default:return null;
             }
         }
-        public static bool TryGet(CombatIconId id, out Sprite color, out Sprite gray)
+        public static bool TryGet(CombatIconId id, out Sprite color, out Sprite gray,Olca.Unity.GeneratedSpriteAssets.Lease assets=null)
         {
             color=gray=null;
             if(!Enum.IsDefined(typeof(CombatIconId),id))return false;
-            if(loaded.TryGetValue(id,out var pair)&&pair.Color!=null&&pair.Gray!=null){color=pair.Color;gray=pair.Gray;return true;}
-            var source=Resources.Load<TextAsset>("OlcaCombatStatus/"+id.ToString().ToLowerInvariant());
-            if(source==null)return false;
-            var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);
-            if(!texture.LoadImage(source.bytes,false)){DestroyOwned(texture);return false;}
-            var pixels=texture.GetPixels32();
-            for(int n=0;n<pixels.Length;n++){
-                var p=pixels[n];byte l=(byte)((p.r*54+p.g*183+p.b*19)>>8);pixels[n]=new Color32(l,l,l,p.a);
-            }
-            var muted=new Texture2D(texture.width,texture.height,TextureFormat.RGBA32,false);
-            muted.SetPixels32(pixels);muted.Apply(false,true);texture.Apply(false,true);
-            Sprite Make(Texture2D image,string name){image.name=name;image.filterMode=FilterMode.Point;image.wrapMode=TextureWrapMode.Clamp;image.hideFlags=HideFlags.HideAndDontSave;
-                var sprite=Sprite.Create(image,new Rect(0,0,image.width,image.height),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;}
-            color=Make(texture,"status/"+id);gray=Make(muted,"status/"+id+"/gray");loaded[id]=new Pair{Color=color,Gray=gray};return true;
+            var pair=Olca.Unity.GeneratedSpriteAssets.Get<Pair>("status/"+id,owned=>{
+                var source=Resources.Load<TextAsset>("OlcaCombatStatus/"+id.ToString().ToLowerInvariant());if(source==null)return null;
+                var texture=owned.CreateTexture(2,2);if(!texture.LoadImage(source.bytes,false))return null;
+                var pixels=texture.GetPixels32();for(int n=0;n<pixels.Length;n++){var p=pixels[n];byte l=(byte)((p.r*54+p.g*183+p.b*19)>>8);pixels[n]=new Color32(l,l,l,p.a);}
+                var muted=owned.CreateTexture(texture.width,texture.height);muted.SetPixels32(pixels);muted.Apply(false,true);texture.Apply(false,true);
+                Sprite Make(Texture2D image,string name){image.name=name;image.filterMode=FilterMode.Point;image.wrapMode=TextureWrapMode.Clamp;image.hideFlags=HideFlags.HideAndDontSave;var sprite=owned.CreateSprite(image,new Rect(0,0,image.width,image.height),new Vector2(.5f,.5f));sprite.name=name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;}
+                return new Pair{Color=Make(texture,"status/"+id),Gray=Make(muted,"status/"+id+"/gray")};
+            },assets);
+            if(pair==null)return false;color=pair.Color;gray=pair.Gray;return true;
         }
-        private static void DestroyOwned(UnityEngine.Object value){if(UnityEngine.Application.isPlaying)UnityEngine.Object.Destroy(value);else UnityEngine.Object.DestroyImmediate(value);}
+
     }
 
     public sealed class CombatIconEntry

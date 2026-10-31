@@ -1,0 +1,265 @@
+{
+  "reviewer": "independent_refactor_review",
+  "baseline": "89d3054",
+  "scope": "Static material/render-parameter equivalence of six migrated catalogs; not final native visual or complete lifecycle review",
+  "requiredFindings": [],
+  "unresolvedRequiredFindings": 0,
+  "assets": [
+    {
+      "file": "Assets/Resources/OlcaActorConditions/guard.bytes",
+      "sha256": "b98b09febd59a6355fb88009b943fb9ed1d39c64c3cc67737cd1783776da5f8f",
+      "matchesBaseline": true,
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaActorConditions/paralyze.bytes",
+      "sha256": "232c5d51185e7e4b26b6127d512329bd5187d781c3583211cfa4987f87a803cb",
+      "matchesBaseline": true,
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProperties/break.bytes",
+      "sha256": "638f8034d7cba2313179fe72b266357019e73c8a07045a8e529712f2a2704568",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProperties/sword.bytes",
+      "sha256": "5de2011455e5667cbb614ca4331671a7083dfdf48d9eaaed966b3cdbc02829f9",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProperties/wind.bytes",
+      "sha256": "cc2735a4b5aa1cdefa1245f7e33289eece46feacca4d1ee290f2d1d3816003b9",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProps/shared_blast.bytes",
+      "sha256": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProps/shared_bomb.bytes",
+      "sha256": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProps/shared_shot_bolt.bytes",
+      "sha256": "8cefd7c1daee5fbd3f15f7cbe4bc3ec92119120b9d25b0328411134a89bce952",
+      "matchesBaseline": true,
+      "dimensions": [
+        32,
+        32
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProps/shared_sword.bytes",
+      "sha256": "58beba4a351741f8455b242729f9a11bba1923af1251a1400447c2c553cbccdf",
+      "matchesBaseline": true,
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaAttackProps/shared_throwing_knife.bytes",
+      "sha256": "d53f90ed1b3f88c3bda1ec2f86904e0366d11500d42eae590b57d3635aa21b71",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/aura.bytes",
+      "sha256": "7e126cbfe35461a2323e16f1c27794f02ab26503dffa30f6fff2a090597c5b17",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/barrier.bytes",
+      "sha256": "93f18a224fe8774be1a8fe9344eb42e59bbbef9bd2f9e43e834f84526edf38f6",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/blind.bytes",
+      "sha256": "69de308ad5185e8b24bfd11786c082826415c7e7a7e7643dd7d8ca199503d6a7",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/concentrate.bytes",
+      "sha256": "8c4465aef1a9e28686d29ba100719db3d4ef265b8fa84a9ceb3684209c2c0637",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/confusion.bytes",
+      "sha256": "80c40d2a80dc9d1dc82208d60e9df1aff905a978dc13c71eae903be106576353",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/float.bytes",
+      "sha256": "6cf9dabee9b55abfaab74a3e66b19d3459d46cd1315a22f92f35ecea47f780cd",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/guard.bytes",
+      "sha256": "4037ca58be8d2b5d0366ad1b5660a8ef548c1b2ca9555937c064d92da58edaa7",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/paralyze.bytes",
+      "sha256": "42a5f0d75d74fb3d557be5add70c4b6e1238061e122b09b3f088ec8928e0a285",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaCombatStatus/poison.bytes",
+      "sha256": "fcd53979011a609f12b7e88525fd76e5cb62772a28da3b13d866c340c89ff2a4",
+      "matchesBaseline": true,
+      "dimensions": [
+        64,
+        64
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaDefensiveFields/actor-bounds.json",
+      "sha256": "8008b0f19ad2ce36bb46201b88c4409b984452d14433ff46b73a3447a7170713",
+      "matchesBaseline": true
+    },
+    {
+      "file": "Assets/Resources/OlcaDefensiveFields/aura.bytes",
+      "sha256": "29bda9ebc41df240a8e6a97d82ef84e7c9cb04bc868371fb6b39107cc3e3f895",
+      "matchesBaseline": true,
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaDefensiveFields/barrier.bytes",
+      "sha256": "6bc26430018bfd1667759876706f34c68cbe20d35181caa23ebbf428c48cc40c",
+      "matchesBaseline": true,
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaTransformationEffects/activation.bytes",
+      "sha256": "2244c68d90eef54d1bf51c5c2abf8c63526c7b1aef4abedbcddb4ae0cc91ab16",
+      "matchesBaseline": true,
+      "dimensions": [
+        512,
+        160
+      ]
+    },
+    {
+      "file": "Assets/Resources/OlcaTransformationEffects/release.bytes",
+      "sha256": "4a359dc8a90a952e96ad25efc466f64117d24c435f4567ba2803759e9c1a8fdb",
+      "matchesBaseline": true,
+      "dimensions": [
+        512,
+        160
+      ]
+    }
+  ],
+  "assetByteEquality": true,
+  "sources": [
+    {
+      "file": "Assets/Olca/Presentation/Field/SharedAttackPropCatalog.cs",
+      "sha256": "ada4438aa96c2851bfb517db7c624f0c89b2b51717593bd744c73a36ccd7f6d5"
+    },
+    {
+      "file": "Assets/Olca/Presentation/Battle/CombatStatusIcons.cs",
+      "sha256": "7fb4bdc8680c3a20e39973549f51e48fd43096b8a7fe0bbf269da4057469d226"
+    },
+    {
+      "file": "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs",
+      "sha256": "dc2444eb4fe5f43de18afb2fc4bf1cc7568a4b1ca2af87265bf6ca59cd052cc1"
+    },
+    {
+      "file": "Assets/Olca/Presentation/Effects/ActorConditionVisual.cs",
+      "sha256": "c6b2da69ebbccebbb8edc29e9b98159f54bb948aedbf085a1b2d5c3080794903"
+    },
+    {
+      "file": "Assets/Olca/Presentation/Effects/DefensiveFieldVisual.cs",
+      "sha256": "8f9b17395585ffe1b40c373db2b9fe93c440b61260e781a7174fa2bb260e0e03"
+    },
+    {
+      "file": "Assets/Olca/Presentation/Effects/TransformationEffectSprites.cs",
+      "sha256": "2db35030a784b905714d8e6c97d235196bd6400cff45f857a0cecfc22e30079b"
+    },
+    {
+      "file": "Assets/Olca/Unity/Management/GeneratedSpriteAssets.cs",
+      "sha256": "c71e1be94966def9168edaef10429eb46ccaf0c43a51231663427daec17e40a0"
+    }
+  ],
+  "observations": [
+    "Resource path mappings remain unchanged for all six catalogs. Original resource bytes and dimensions match baseline.",
+    "Builder.CreateTexture retains TextureFormat.RGBA32, mipChain false and original initial dimensions; PNG LoadImage calls retain their original markNonReadable arguments.",
+    "Combat status retains LoadImage(false), GetPixels32, luminance (r*54+g*183+b*19)>>8, original alpha, and both Apply(false,true) calls.",
+    "All Sprite rectangles retain complete decoded texture dimensions, PPU100, extrude0 and FullRect. Sword pivot90/256,.5 and other pivots .5,.5 remain unchanged.",
+    "Point filtering, Clamp wrapping and HideAndDontSave are preserved. Shared visible-size constants remain unchanged.",
+    "Static dictionaries now use shared generated-asset ownership; this review confirms factory rendering parameters, not every borrower lifetime/cancellation path."
+  ],
+  "limits": [
+    "No Unity operation, decode/runtime rendering, tests, actual screenshots or listening performed by reviewer in this task.",
+    "Native before/after visual review remains pending.",
+    "Static equivalence does not prove callback, lease teardown or domain reload behavior."
+  ]
+}

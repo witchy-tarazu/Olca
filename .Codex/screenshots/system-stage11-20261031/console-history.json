@@ -1,0 +1,55 @@
+{
+  "preTestTimeouts": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline server returned 400 Bad Request: Internal Server Error. Main thread operation timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    }
+  ],
+  "nativeTimeout": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+      }
+    ],
+    "isError": true
+  },
+  "categories": {
+    "finalTests": "error0; 59 expected diagnostics in five fixture categories",
+    "postReload": "Pipeline main-thread timeouts; same PID137059 ordinary waiting recovered; no duplicate tests/activation",
+    "UnityAI": "connection-info/relay/preferences warnings retained, no authentication/settings changes",
+    "historicalUGUI": "not resolved by this stage"
+  },
+  "verificationHarnessCorrections": [
+    {
+      "action": "old AttackPropertyProof.Finish",
+      "observed": "Sequence contains no matching element; Readonly opening prerequisite had not run",
+      "correction": "entered existing readonly path, then finished/restored original hand"
+    },
+    {
+      "action": "old TransformationProof.Begin x2",
+      "observed": "Activation not caught after15015/15018ms; custom remained open at timeScale0",
+      "correction": "observed pause restores prior0; verification sets timeScale1 AFTER SetUserPaused(false), observes inputBlocked=false, then existing Begin succeeds"
+    },
+    {
+      "action": "extra Bootstrap11Proof.Close without fresh Remember",
+      "observed": "Camera return defaults mismatch because remembered camera was already cleared by Release; host had closed",
+      "correction": "observed host/session absent, did not close twice; normal Root shutdown proceeded from confirmed closed state"
+    }
+  ],
+  "productSourceChangedForHarness": false
+}

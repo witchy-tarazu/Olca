@@ -9,6 +9,10 @@ namespace Olca.Tests
 {
     public class AttackPropertyIconTests
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedScope;
+        [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
+
         private static Card Card(AttackProperty properties,ElementType element=ElementType.None)=>new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,element,CardSeries.Sword,1,"",properties:properties);
         [Test] public void 複合特性は明示フラグだけを安定順で一度ずつ解決する()
         {

@@ -336,3 +336,38 @@ padは既存GameplayKeyboardSettingsView(gamepad=true)を使い、従来keyboard
 FHD/4K/4:3の15組を独立比較し必須視覚指摘0、4K代表3領域を無拡縮で補足。key系の前画像はStage9引用。pad/audioの前は旧commit1e9d718のViewクラスをrenameしたinert-save fixtureであり、旧VM/host全体の再実行ではない。host field未束縛による背面aux差と静止画/idleの限界を明記し、実afterの可読性と階層を別評価した。コード/設計レビュー必須未解決0。[第十段階証跡](../.Codex/screenshots/system-stage10-20261031/README.md)参照。
 
 Domain Reload後のPipeline timeout、CLI名不一致/UnityAI接続情報・relay警告は別履歴として保持。同じVM/Editor PID137059/model/認証を維持し、既存要求の成否回収前にPlay/activation/テストを重複送信しなかった。外界/ボスラッシュ/未決値は未実装のまま、実build/物理機器/聴感/全HotReload/歴史的UGUIの未確認・未解決を保持。未管理UIと生成cache6系統は上記の安定化必須残件で、今回だけで全体移行完了としない。
+
+## 第十一段階: 生成Sprite/Textureの共有所有
+
+Stage10の生成cache6系統をUnity層のGeneratedSpriteAssetsへ接続する。ResourceManagerがGameSystem初期化時にRoot leaseを取得し、管理画面/host切替では世代を共有、ResourceManager最終DisposeでRoot pinを返す。利用中のView/Visualは別の借用leaseを持ち、非表示では返さず、Sprite参照解除と表示実体の終了後に返す。最後のRootと借用がなくなった世代の生成Spriteを先に、続いて生成Textureを破棄する。Play中のDestroy待ちはnative nullになるまで追跡する。旧世代の借用が生存する再起動は新世代と分離する。
+
+|系統|生成/借用先|利用側終了|
+|---|---|---|
+|SharedAttackPropCatalog|PNG bytes→共有Sprite/Texture。GameFieldViewの爆弾/着弾、外部appearance用借用|worldの飛翔表示を解除してlease返却|
+|CombatStatusIconCatalog|PNG bytes→色/灰色の各Sprite/Texture。CombatStatusIconStrip|非表示slotも参照保持。Strip破棄時に両Image参照解除|
+|AttackPropertyIconCatalog|PNG bytes→特性Sprite/Texture。CardAttackPropertyIcons|行の破棄時にImage参照解除|
+|ActorConditionVisual|PNG bytes→Guard/Paralyze。非MonoのVisual|Disposeでrenderer参照解除、実体破棄、lease返却|
+|DefensiveFieldVisual|PNG bytes→Barrier/Aura。非MonoのVisual|同上。boundsのpure DTO cacheはnative生成所有と別|
+|TransformationEffectSprites|PNG bytes→開始/解除。BattleView|Image参照解除後lease返却|
+
+Builderが作成したTextureだけをSprite生成に渡せる。Resourcesのimport素材/TextAssetは借用で、解放対象へ登録しない。既存の個別View所有Gauge/mini/illustration wrapperはこの共有cacheに統合しない。画像byte/サイズ/point/clamp/pivot/ppu/gray計算とゲーム時計は維持。Catalogを直接使う旧検証・外部appearance構築は明示Acquire scopeを保持し、利用終了で返す。Rootを勝手に生成せず、無期限の暗黙static保持へ戻さない。
+
+Unity所有者付きleaseはOnDestroyで返すことを基本とし、EditModeでOnDestroyが来ない破棄済みnative所有者のみPruneで回収する。hidden/disabledの生きた所有者は回収しない。アプリ終了/Assembly Reloadは全managed所有者の終端として既知の生成物だけを解放する。全HotReloadや存続Viewの再注入完了を意味しない。
+
+Stage10の未管理screen/Dialog一覧は引き続き必須残件。今回それらの入力・保存・表示仕様を変更せず、次のまとまりでpause/checkpoint/帰還等を管理寿命へ接続する。生成資産6系統の検証結果と残る限界は以下に記録する。
+
+追加レビューで、非Mono Visualも生成Rendererを借用所有者へ紐付けた。Rendererが外部破棄された再表示は旧借用を返して再取得する。Root/lease返却後はUnityの次描画frame（Core時計ではない）でdead-ownerと遅延Destroyを回収し、timeScale0でもゲーム論理時間を進めない。終了取消tokenで待機を閉じる。新所有テストは外部Root/借用0という隔離前提を明示assertし、正当な他所有者を一括消去して成立させない。
+
+### 第十一段階 検証結果
+
+最終19 C# sourceで明示コンパイルerror0、関連486/486（40.47秒）、全3594/3594（264.11秒）、skip/inconclusive/error0。元の期待値やsave guardを緩めず、新8回帰を追加した。Scroll1/UIRuntime4/生成所有8の同Editor2周26件も成功、各回のEventSystem current CLR/Unity null・登録0/Scene0と生成cache/borrow/pending0を確認。global clearなし。警告59件は従来fixture5分類と一致し抑制しない。最終source hashはsubmission/project/関連/全件/独立コードレビューで一致。
+
+実取得で6系統7Sprite/Textureを共有、Root返却後も借用中は同じnative IDを保持、最終借用返却で直接参照が全てnull、import Textureは生存。PlayのtimeScale0ではRoot返却後3frame生存するRendererを後から破棄し、4frame後のInspectより前に7Sprite/Textureが自動回収された。全系統利用後の実host Close/OpenではRoot pin1で16Sprite/Textureを保持し、borrow0→再取得、全ID再利用と隔離保存10ファイル不変を確認した。
+
+さらにアプリ終了ではなくPlay中に実GameSystemRootを通常Destroyし、登録16Sprite/Textureを直接参照で全null、Root/Camera/Listener/EventSystem/音源0、import生存を確認。Bootstrap再読込で世代2→3と別Root/Sessionを生成し、6系統を再取得した。検証用Scene直起動とBootstrap、Custom/設定/確認Dialog/checkpoint、Single再入、取消/欠損/coalesced openも既存契約どおり確認した。
+
+特性mini・左右の独立飛翔体・guard/麻痺/防御・変身開始/解除の原寸FHD/4K/4:3計15枚と4K等倍局所を独立確認、今回範囲の必須視覚指摘0。画像内容/サイズ/pivot/PPU/Point/Clamp/gray計算は旧24素材と同じ。同条件beforeを新撮影していないので完全画素一致や全美観の完成とは主張しない。検証側の旧詳細cleanup前提とtimeScale復元順の不一致は製品修正とせず、正常条件へ訂正して再実行した。
+
+同じ長期稼働Editorには、新registry外の同名Sprite群2095件が基準IDとして残っている。生成元/漏洩原因は未特定で、旧残留候補と今回の登録生成物を区別する。同名やregistry0だけで全Editorのnative漏れ解消とせず、import/未知利用者を誤破棄しないため一括Destroyしない。今回の回収は登録IDの直接native nullと世代差分で立証する。全HotReload/既存Editor全体の残留解消、歴史的UGUI、実build/物理機器/聴感は未確認/未解決のまま。
+
+第十段階の未管理画面/Dialog一覧は残る。次はpause/checkpointと確認popupを一つの画面群としてViewManager/DialogManagerへ接続し、親遷移時取消・focus/入力解放・保存不変・再生成を閉じる。今回の6系統所有接続だけを基盤全体の安定化完了とはしない。外界/ボスラッシュ/未決D05/S08などは実装していない。

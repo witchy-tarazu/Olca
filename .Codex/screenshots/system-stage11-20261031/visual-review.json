@@ -1,0 +1,213 @@
+{
+  "reviewer": "independent_refactor_review",
+  "scope": "Stage11 generated-sprite lifetime migration final static screenshot review",
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "viewedImageCount": 15,
+  "images": [
+    {
+      "file": "system-stage11-native-after-properties-custom-fhd.png",
+      "sha256": "15b59ef5629c074628c76f8f93905f69adea54378d21f44cd7a8915ab7a6f499",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-properties-custom-4k.png",
+      "sha256": "22c0259e54bc7cb424940cba94006cc1cc5e3f55d8ef0ed6ec366e83dc77d663",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-properties-custom-4by3.png",
+      "sha256": "f5534c9cd72a840159addf5c65403e21d6ef69791f9165f40a3561282e04d455",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-projectiles-fhd.png",
+      "sha256": "eed4b836d5011ece740ee893fabcd9cab12a855747c4587f65e59adf720e92c9",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-projectiles-4k.png",
+      "sha256": "cf6260352677ff363aabaf2d7740d6114cb5aba3790988e6a30905ec17fb721a",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-projectiles-4by3.png",
+      "sha256": "540f92b814852c8ba37ca90da9f2e114fb08caacf3358f5b99c5016f9dc47de7",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-guard-defense-status-fhd.png",
+      "sha256": "78cdfe99ea774c3b09fd7cb9d4301e81b2547456bafcadff58be3883fef2e56e",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-guard-defense-status-4k.png",
+      "sha256": "f113c7b8508c85061dbca07a7a7245adc5adb9ec574725d12486a118e80a2b68",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-guard-defense-status-4by3.png",
+      "sha256": "a0ef03a1d4e3ae813352407c4d5916ec4af2d032fbcd753a2fa88635af2a70db",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-transformation-fhd.png",
+      "sha256": "718bbdb98dc14b21bda95b5404b34b3ad92d1eec95ea351627b833bf57dc68ba",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-transformation-4k.png",
+      "sha256": "f5b3b9a2d204e4e91d0165e8419291e2391a689e36b809fe6c5027693163c1b7",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-transformation-4by3.png",
+      "sha256": "e4541f2eafea7024652e0b48d7cdb007a9ca84a7ffb5b131b3df30f7bedf47d7",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-transformation-release-fhd.png",
+      "sha256": "fa87892a2635a73deed91540bb7787f221990e9893dec293dd123a855737612f",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-transformation-release-4k.png",
+      "sha256": "f05a7fba0bff238442f2d7dcce46e603a4705f020c9b506304ec505eb0344e56",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage11-native-after-transformation-release-4by3.png",
+      "sha256": "edc35745e2269f900d55130b7ab8838984de8133edbc88037d75cce68349e003",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "staticMaterialEvidence": "system-stage11-visual-initial.json",
+  "observations": [
+    "Three attack-property minis are present, separated and legible beside focused card text across all ratios. Native 4K crop shows intact sword/break/wind outlines.",
+    "Bolt points right and throwing knife points left in supplied captures; native knife outline/transparent surround is intact. Still frames alone do not prove travel direction or velocity.",
+    "Player paralysis outline and status tile, boss guard/barrier status tiles and defensive perimeter are visible without missing-texture blocks. Perimeter center is transparent and boss body remains visible.",
+    "Activation and release decorations both render fine distinct arcs/sparkles around the banner; native crops show transparent gaps rather than an opaque image rectangle. The surrounding cyan banner is visible UI, not inferred PNG alpha corruption.",
+    "Existing custom left-half composition, five hand minis, gauge, HP, world body/feet/floor/foreground and lower action panel show no obvious missing assets or newly broken framing in supplied after views.",
+    "4:3 long fixture description is clipped by its scroll viewport; this is not evidence of generated-sprite loss. Large boss/banner overlays remain a visible composition limitation, not a newly proven lifetime regression."
+  ],
+  "native4kSupplement": {
+    "method": "Unscaled lossless crops rendered in memory from original PNGs; originals unchanged. Whole 3840x2160 views were viewer-resized to2048x1152.",
+    "crops": [
+      {
+        "file": "system-stage11-native-after-properties-custom-4k.png",
+        "rect": [
+          680,
+          470,
+          980,
+          560
+        ]
+      },
+      {
+        "file": "system-stage11-native-after-projectiles-4k.png",
+        "rect": [
+          2240,
+          1200,
+          2480,
+          1300
+        ]
+      },
+      {
+        "file": "system-stage11-native-after-guard-defense-status-4k.png",
+        "rect": [
+          3450,
+          410,
+          3590,
+          640
+        ]
+      },
+      {
+        "file": "system-stage11-native-after-transformation-4k.png",
+        "rect": [
+          1750,
+          800,
+          2060,
+          1060
+        ]
+      },
+      {
+        "file": "system-stage11-native-after-transformation-release-4k.png",
+        "rect": [
+          1750,
+          800,
+          2060,
+          1060
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "No newly captured matched before; no pixel equality or complete visual-completion claim. Previous static review confirmed24 source-resource bytes and rendering parameters, not full live state equivalence.",
+    "Static review cannot validate timing, resource teardown/recreation, pause/resume, input, saving, alpha animation or temporal jitter. Parent runtime receipts are separate evidence.",
+    "Transformation six captures were produced after parent corrected helper timeScale restoration order; reviewer did not execute or validate that helper.",
+    "Only representative native4K regions supplemented full-image views; not every4K pixel examined at1:1.",
+    "Physical devices, audio listening, historical UGUI and unsupplied states remain unverified."
+  ],
+  "unityOperationsByReviewer": false,
+  "productEditsByReviewer": false,
+  "testsExecutedByReviewer": false
+}

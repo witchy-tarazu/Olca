@@ -6,7 +6,7 @@ namespace Olca.Presentation.Effects
     /// <summary>確定済みのガード/麻痺だけを描く独立レイヤー。時計や本体姿勢を所有しない。</summary>
     public sealed class ActorConditionVisual : System.IDisposable
     {
-        private static readonly Dictionary<ActorConditionKind, Sprite> sprites = new Dictionary<ActorConditionKind, Sprite>();
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedAssets;
         private readonly ActorConditionKind kind;
         private SpriteRenderer renderer;
         private bool disposed;
@@ -17,25 +17,23 @@ namespace Olca.Presentation.Effects
             if (!System.Enum.IsDefined(typeof(ActorConditionKind), kind)) throw new System.ArgumentOutOfRangeException(nameof(kind));
             this.kind = kind;
         }
-        public static Sprite GetSprite(ActorConditionKind kind)
+        public static Sprite GetSprite(ActorConditionKind kind,Olca.Unity.GeneratedSpriteAssets.Lease assets=null)
         {
             if (!System.Enum.IsDefined(typeof(ActorConditionKind), kind)) return null;
-            if (sprites.TryGetValue(kind, out var sprite) && sprite != null) return sprite;
-            var bytes = Resources.Load<TextAsset>("OlcaActorConditions/" + kind.ToString().ToLowerInvariant());
-            if (bytes == null) return null;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (!texture.LoadImage(bytes.bytes, true)) { DestroyOwned(texture); return null; }
-            texture.name = "actor-condition/" + kind; texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp; texture.hideFlags = HideFlags.HideAndDontSave;
-            sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f, .5f), 100, 0, SpriteMeshType.FullRect);
-            sprite.name = texture.name; sprite.hideFlags = HideFlags.HideAndDontSave; sprites[kind] = sprite; return sprite;
+            return Olca.Unity.GeneratedSpriteAssets.Get<Sprite>("actor-condition/"+kind,owned=>{
+                var bytes=Resources.Load<TextAsset>("OlcaActorConditions/"+kind.ToString().ToLowerInvariant());if(bytes==null)return null;
+                var texture=owned.CreateTexture(2,2);if(!texture.LoadImage(bytes.bytes,true))return null;
+                texture.name="actor-condition/"+kind;texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
+                var sprite=owned.CreateSprite(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f));sprite.name=texture.name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
+            },assets);
         }
         public void Refresh(SpriteRenderer body, bool active)
         {
             if (disposed || !active || body == null || !body.enabled || !body.gameObject.activeInHierarchy || body.forceRenderingOff || body.sprite == null) { Clear(); return; }
-            var sprite = GetSprite(kind); if (sprite == null) { Clear(); return; }
+            if(renderer==null){generatedAssets?.Dispose();generatedAssets=null;}
+            var sprite = GetSprite(kind,generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire())); if (sprite == null) { Clear();ReleaseUnusedBorrow(); return; }
             var bounds = DefensiveFieldVisual.GetBodyBounds(body); var scale = body.transform.lossyScale;
-            if (bounds.size.y <= 0 || Mathf.Abs(scale.x) < .00001f || Mathf.Abs(scale.y) < .00001f) { Clear(); return; }
+            if (bounds.size.y <= 0 || Mathf.Abs(scale.x) < .00001f || Mathf.Abs(scale.y) < .00001f) { Clear();ReleaseUnusedBorrow(); return; }
             if (renderer == null) { var obj = new GameObject("ActorCondition_" + kind, typeof(SpriteRenderer)); obj.transform.SetParent(body.transform, false); renderer = obj.GetComponent<SpriteRenderer>(); }
             else if (renderer.transform.parent != body.transform) renderer.transform.SetParent(body.transform, false);
             renderer.gameObject.layer = body.gameObject.layer; renderer.maskInteraction = body.maskInteraction;
@@ -46,10 +44,12 @@ namespace Olca.Presentation.Effects
             float width = Mathf.Max(bounds.size.x * (kind == ActorConditionKind.Guard ? 1.22f : 1.25f), bounds.size.y * (kind == ActorConditionKind.Guard ? .6f : .62f));
             renderer.transform.position = bounds.center;
             renderer.transform.localScale = new Vector3(width / sprite.bounds.size.x / Mathf.Abs(scale.x), bounds.size.y * 1.35f / sprite.bounds.size.y / Mathf.Abs(scale.y), 1);
+            generatedAssets.BindNativeOwner(renderer);
             renderer.forceRenderingOff = false; renderer.enabled = true;
         }
+        private void ReleaseUnusedBorrow(){if(renderer==null){generatedAssets?.Dispose();generatedAssets=null;}}
         public void Clear() { if (renderer != null) renderer.enabled = false; }
-        public void Dispose() { if (disposed) return; disposed = true; Clear(); if (renderer != null) DestroyOwned(renderer.gameObject); renderer = null; }
+        public void Dispose() { if (disposed) return; disposed = true; Clear(); if (renderer != null) {renderer.sprite=null;DestroyOwned(renderer.gameObject);} renderer = null;generatedAssets?.Dispose();generatedAssets=null; }
         private static void DestroyOwned(Object value) { if (Application.isPlaying) Object.Destroy(value); else Object.DestroyImmediate(value); }
     }
 }
