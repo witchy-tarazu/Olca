@@ -1,0 +1,793 @@
+{
+  "initialized-orders": {
+    "labels": [
+      {
+        "IsBossGauge": false,
+        "GaugeVisible": true,
+        "root": "(-1.60, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "スライム ×2",
+            "position": "(-2.27, 0.63, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "50",
+            "position": "(-1.60, 0.63, -0.10)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyBodyLink",
+            "sortingOrder": 2,
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "IsBossGauge": false,
+        "GaugeVisible": true,
+        "root": "(0.00, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "スライム",
+            "position": "(-0.52, 0.63, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "50",
+            "position": "(0.00, 0.63, -0.10)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          }
+        ]
+      },
+      {
+        "IsBossGauge": false,
+        "GaugeVisible": true,
+        "root": "(-1.60, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "スライム",
+            "position": "(-2.12, 1.15, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "50",
+            "position": "(-1.60, 1.15, -0.10)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyBodyLink",
+            "sortingOrder": 2,
+            "enabled": true
+          }
+        ]
+      }
+    ],
+    "projectiles": [
+      {
+        "name": "shared/throwing-knife",
+        "flipX": true,
+        "sortingOrder": 6,
+        "sortingLayerID": 0,
+        "pos": "(-2.72, 0.74, 0.00)"
+      },
+      {
+        "name": "shared/shot-bolt",
+        "flipX": false,
+        "sortingOrder": 6,
+        "sortingLayerID": 0,
+        "pos": "(-3.57, 0.74, 0.00)"
+      }
+    ]
+  },
+  "normal-lifecycle": {
+    "pauseHeld": true,
+    "disableReleasedOnlyView": true,
+    "reenableRestored": true,
+    "naturalEndCleared": true,
+    "beforeEnemyHp": [
+      50,
+      50,
+      50
+    ],
+    "afterEnemyHp": [
+      49,
+      50,
+      50
+    ],
+    "beforePlayerHp": 100,
+    "afterPlayerHp": 100,
+    "state": {
+      "fixtureOnly": true,
+      "frame": 198,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": [],
+      "views": []
+    }
+  },
+  "reload-projectiles": {
+    "fixtureOnly": true,
+    "frame": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [],
+    "views": []
+  },
+  "reload-orders": {
+    "labels": [
+      {
+        "IsBossGauge": false,
+        "GaugeVisible": true,
+        "root": "(-6.40, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "スライム",
+            "position": "(-6.92, 1.15, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "50",
+            "position": "(-6.40, 1.15, -0.10)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyBodyLink",
+            "sortingOrder": 2,
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "IsBossGauge": false,
+        "GaugeVisible": true,
+        "root": "(-6.40, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "スライム ×2",
+            "position": "(-7.07, 0.63, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "50",
+            "position": "(-6.40, 0.63, -0.10)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyBodyLink",
+            "sortingOrder": 2,
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "IsBossGauge": false,
+        "GaugeVisible": true,
+        "root": "(-4.80, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "スライム",
+            "position": "(-5.32, 0.63, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "50",
+            "position": "(-4.80, 0.63, -0.10)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          }
+        ]
+      }
+    ],
+    "projectiles": []
+  },
+  "boss-orders": {
+    "labels": [
+      {
+        "IsBossGauge": true,
+        "GaugeVisible": true,
+        "root": "(6.40, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "ボス",
+            "position": "(6.40, 3.21, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "200",
+            "position": "(9.21, -0.21, 0.00)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          }
+        ]
+      }
+    ],
+    "projectiles": []
+  },
+  "next-projectiles": {
+    "fixtureOnly": true,
+    "frame": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [],
+    "views": []
+  },
+  "boss-motion": {
+    "existingMovementActionFixture": true,
+    "actualGridPositionChanged": true,
+    "before": {
+      "previewTiles": 0,
+      "frame": 129,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 100,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_03_0",
+        "playerRect": [
+          104,
+          227
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 129,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            4,
+            0
+          ],
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(6.40, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(342.40, 69.43, 10.00)",
+          "bodyMax": "(572.34, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(457.37, 290.74, 9.90)"
+        }
+      ]
+    },
+    "after": {
+      "previewTiles": 0,
+      "frame": 159,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 100,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_05_0",
+        "playerRect": [
+          104,
+          228
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 159,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 200,
+          "gaugeValue": "200",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    }
+  },
+  "moving-projectiles": {
+    "fixtureOnly": true,
+    "frame": 159,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [
+      {
+        "ProjectileVisualKey": "shared/shot-bolt",
+        "RemainingTimeMs": 617,
+        "ElapsedDisplayFrames": 53,
+        "Progress": 0.5886667,
+        "source": "(1, 0)",
+        "target": "(4, 0)"
+      },
+      {
+        "ProjectileVisualKey": "shared/throwing-knife",
+        "RemainingTimeMs": 650,
+        "ElapsedDisplayFrames": 51,
+        "Progress": 0.566666663,
+        "source": "(4, 0)",
+        "target": "(1, 0)"
+      }
+    ],
+    "views": [
+      {
+        "name": "shared/shot-bolt",
+        "flipX": false,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(16.00, 16.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(4.43, 0.74, 0.00)",
+        "min": "(335.18, 140.29, 9.90)",
+        "max": "(353.46, 158.57, 10.10)",
+        "sortingOrder": 6
+      },
+      {
+        "name": "shared/throwing-knife",
+        "flipX": true,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(32.00, 32.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(3.68, 0.74, 0.00)",
+        "min": "(283.43, 131.14, 9.90)",
+        "max": "(320.00, 167.71, 10.10)",
+        "sortingOrder": 6
+      }
+    ]
+  },
+  "moving-paused": {
+    "fixtureOnly": true,
+    "frame": 195,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [
+      {
+        "ProjectileVisualKey": "shared/shot-bolt",
+        "RemainingTimeMs": 17,
+        "ElapsedDisplayFrames": 89,
+        "Progress": 0.988666654,
+        "source": "(1, 0)",
+        "target": "(4, 0)"
+      },
+      {
+        "ProjectileVisualKey": "shared/throwing-knife",
+        "RemainingTimeMs": 50,
+        "ElapsedDisplayFrames": 87,
+        "Progress": 0.966666639,
+        "source": "(4, 0)",
+        "target": "(1, 0)"
+      }
+    ],
+    "views": [
+      {
+        "name": "shared/shot-bolt",
+        "flipX": false,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(16.00, 16.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(6.35, 0.74, 0.00)",
+        "min": "(444.89, 140.29, 9.90)",
+        "max": "(463.18, 158.57, 10.10)",
+        "sortingOrder": 6
+      },
+      {
+        "name": "shared/throwing-knife",
+        "flipX": true,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(32.00, 32.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(1.76, 0.74, 0.00)",
+        "min": "(173.71, 131.14, 9.90)",
+        "max": "(210.29, 167.71, 10.10)",
+        "sortingOrder": 6
+      }
+    ]
+  },
+  "moving-pause-held": {
+    "fixtureOnly": true,
+    "frame": 195,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [
+      {
+        "ProjectileVisualKey": "shared/shot-bolt",
+        "RemainingTimeMs": 17,
+        "ElapsedDisplayFrames": 89,
+        "Progress": 0.988666654,
+        "source": "(1, 0)",
+        "target": "(4, 0)"
+      },
+      {
+        "ProjectileVisualKey": "shared/throwing-knife",
+        "RemainingTimeMs": 50,
+        "ElapsedDisplayFrames": 87,
+        "Progress": 0.966666639,
+        "source": "(4, 0)",
+        "target": "(1, 0)"
+      }
+    ],
+    "views": [
+      {
+        "name": "shared/shot-bolt",
+        "flipX": false,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(16.00, 16.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(6.35, 0.74, 0.00)",
+        "min": "(444.89, 140.29, 9.90)",
+        "max": "(463.18, 158.57, 10.10)",
+        "sortingOrder": 6
+      },
+      {
+        "name": "shared/throwing-knife",
+        "flipX": true,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(32.00, 32.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(1.76, 0.74, 0.00)",
+        "min": "(173.71, 131.14, 9.90)",
+        "max": "(210.29, 167.71, 10.10)",
+        "sortingOrder": 6
+      }
+    ]
+  },
+  "moving-natural-end": {
+    "fixtureOnly": true,
+    "frame": 307,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [],
+    "views": []
+  },
+  "moving-final-orders": {
+    "labels": [
+      {
+        "IsBossGauge": true,
+        "GaugeVisible": true,
+        "root": "(3.20, -0.36, 0.00)",
+        "texts": [
+          {
+            "field": "enemyNameText",
+            "text": "ボス",
+            "position": "(3.20, 3.21, -0.10)",
+            "order": 8,
+            "layer": 0,
+            "enabled": true
+          },
+          {
+            "field": "hpText",
+            "text": "200",
+            "position": "(9.21, -0.21, 0.00)",
+            "order": 9,
+            "layer": 0,
+            "enabled": true
+          }
+        ],
+        "lines": [
+          {
+            "name": "EnemyHpTrack",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyHpFill",
+            "sortingOrder": 3,
+            "enabled": true
+          },
+          {
+            "name": "EnemyPoiseTrack",
+            "sortingOrder": 3,
+            "enabled": false
+          },
+          {
+            "name": "EnemyPoiseFill",
+            "sortingOrder": 3,
+            "enabled": false
+          }
+        ]
+      }
+    ],
+    "projectiles": []
+  }
+}

@@ -1,0 +1,88 @@
+[
+  {
+    "name": "ui-round78-exact-before-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "frame": 129,
+    "sha256": "4f1e4f9ae410a81e0e583e04f597b74e2677ee73c87dffb9ba312cbc75b4c3f9"
+  },
+  {
+    "name": "ui-round78-exact-after-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "frame": 129,
+    "sha256": "963d3593d67c4178f158b9db23e225fbfbe4bdf2eab077d490940aa9e70fed97"
+  },
+  {
+    "name": "ui-round78-native-after-boss-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "role": "boss after validation",
+    "sha256": "f2e9a09efc90f31a877088e423e9fa6183d2dcb90e5232c60c8e0123d4258509"
+  },
+  {
+    "name": "ui-round78-exact-before-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "frame": 129,
+    "sha256": "e4f890c6dc2c7a176916e8cab838e4614a74a85c809b30e873fe676414cc5a42"
+  },
+  {
+    "name": "ui-round78-exact-after-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "frame": 129,
+    "sha256": "924dfc71c98bcf9ff9d54f95fe339b77a0a23d71790363befea3b0d65afaf025"
+  },
+  {
+    "name": "ui-round78-native-after-boss-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "role": "boss after validation",
+    "sha256": "3ec7eafdce4ccf95236e3b5599c6919dd15d7ecb245084d4628f82238698df5a"
+  },
+  {
+    "name": "ui-round78-exact-before-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "frame": 129,
+    "sha256": "45e847da2bbefd95559e5c3adefcbeca2384491b2574f87a0b9dfeb9ef788a89"
+  },
+  {
+    "name": "ui-round78-exact-after-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "frame": 129,
+    "sha256": "d9f903f47e8695b929c5c8bd4dc997738167ad68de6276b0685af0cbe802281d"
+  },
+  {
+    "name": "ui-round78-native-after-boss-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "role": "boss after validation",
+    "sha256": "23b5ecf982b9683a04c8bd258fca835dbccaf1e454b393ecb6a7cd4fe36fae6b"
+  },
+  {
+    "name": "ui-round78-before-directions-4by3.png",
+    "role": "original source0d83f36 reproduction",
+    "sha256": "d2aca4f42a93c425812ab908937f863a056fecc346bea837bc0d8f5accd7267c"
+  }
+]
