@@ -77,7 +77,7 @@ MeshRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 20
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!102 &2008176903145616574
 TextMesh:
@@ -89,7 +89,7 @@ TextMesh:
   m_GameObject: {fileID: 8031682971261270535}
   m_Text: 
   m_OffsetZ: 0
-  m_CharacterSize: 0.05
+  m_CharacterSize: 0.035
   m_LineSpacing: 1
   m_Anchor: 4
   m_Alignment: 1

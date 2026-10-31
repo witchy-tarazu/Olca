@@ -1,0 +1,997 @@
+{
+  "qa-ai-feedback": {
+    "state": {
+      "previewTiles": 0,
+      "frame": 216,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 51,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_05_0",
+        "playerRect": [
+          104,
+          228
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 216,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 176,
+          "gaugeValue": "176",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    },
+    "feedback": [
+      {
+        "text": "7",
+        "pos": "(1.60, 1.82, -0.50)",
+        "min": "(176.56, 201.14, 9.50)",
+        "max": "(189.16, 221.14, 9.50)",
+        "alpha": 1,
+        "order": 20
+      }
+    ]
+  },
+  "qa-actual-basic-eligible": {
+    "state": {
+      "previewTiles": 0,
+      "frame": 2340,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 51,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_09_0",
+        "playerRect": [
+          104,
+          226
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 2340,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 166,
+          "gaugeValue": "166",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    },
+    "feedback": [
+      {
+        "text": "10",
+        "pos": "(3.70, 3.19, -0.50)",
+        "min": "(290.51, 279.29, 9.50)",
+        "max": "(315.51, 299.29, 9.50)",
+        "alpha": 0.482352942,
+        "order": 20
+      }
+    ]
+  },
+  "qa-paused-first": {
+    "state": {
+      "previewTiles": 0,
+      "frame": 2375,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 52,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_05_0",
+        "playerRect": [
+          104,
+          228
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 2375,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 167,
+          "gaugeValue": "167",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    },
+    "feedback": [
+      {
+        "text": "+1",
+        "pos": "(1.60, 2.25, -0.50)",
+        "min": "(170.36, 225.61, 9.50)",
+        "max": "(195.36, 245.61, 9.50)",
+        "alpha": 0.258823544,
+        "order": 20
+      },
+      {
+        "text": "+1",
+        "pos": "(3.20, 4.03, -0.50)",
+        "min": "(262.01, 327.30, 9.50)",
+        "max": "(287.01, 347.30, 9.50)",
+        "alpha": 0.258823544,
+        "order": 20
+      }
+    ]
+  },
+  "qa-paused-last": {
+    "state": {
+      "previewTiles": 0,
+      "frame": 2375,
+      "custom": false,
+      "paused": true,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 52,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_05_0",
+        "playerRect": [
+          104,
+          228
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 2375,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 167,
+          "gaugeValue": "167",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(3.20, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    },
+    "feedback": [
+      {
+        "text": "+1",
+        "pos": "(1.60, 2.25, -0.50)",
+        "min": "(170.36, 225.61, 9.50)",
+        "max": "(195.36, 245.61, 9.50)",
+        "alpha": 0.258823544,
+        "order": 20
+      },
+      {
+        "text": "+1",
+        "pos": "(3.20, 4.03, -0.50)",
+        "min": "(262.01, 327.30, 9.50)",
+        "max": "(287.01, 347.30, 9.50)",
+        "alpha": 0.258823544,
+        "order": 20
+      }
+    ]
+  },
+  "qa-reload-custom": {
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "focus": "LoadCheckpointButton",
+    "hand": 5,
+    "handLimit": 5,
+    "custom": true,
+    "handHashes": [
+      "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+      "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+      "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+      "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+      "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+    ],
+    "deck": 6,
+    "owned": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ],
+    "texts": [
+      {
+        "name": "SelectedCardDescription",
+        "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし"
+      },
+      {
+        "name": "CustomGaugeLabel",
+        "text": "CUSTOM"
+      },
+      {
+        "name": "QueueOrder",
+        "text": "1"
+      },
+      {
+        "name": "BasicAttackLabel",
+        "text": "コユウコウゲキ\n<size=16>[Z]</size>"
+      },
+      {
+        "name": "FocusHeading",
+        "text": "フォーカス"
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "ジブン"
+      },
+      {
+        "name": "CostText",
+        "text": "2"
+      },
+      {
+        "name": "QueueOrder",
+        "text": "2"
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "カコウをモドす"
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  4 / 6"
+      },
+      {
+        "name": "TouchCardUseButtonLabel",
+        "text": "カード\n<size=16>[Space]</size>"
+      },
+      {
+        "name": "QueueOrder",
+        "text": "3"
+      },
+      {
+        "name": "HandHeading",
+        "text": "テフダ　5マイ"
+      },
+      {
+        "name": "SelectionHeading",
+        "text": "シヨウジュン　0 / 5"
+      },
+      {
+        "name": "CostText",
+        "text": "1"
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "ガメンをカクす"
+      },
+      {
+        "name": "QueueOrder",
+        "text": "5"
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0"
+      },
+      {
+        "name": "BasicAttackState",
+        "text": "カスタムチュウ"
+      },
+      {
+        "name": "PlayerHpText",
+        "text": "79"
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 6マイ\nカクトク: 0マイ"
+      },
+      {
+        "name": "BasicAttackKey",
+        "text": "LeftAlt: カスタム / Escape: ポーズ"
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ"
+      },
+      {
+        "name": "CostDisplay",
+        "text": "コスト: 0 / 10"
+      },
+      {
+        "name": "SelectionHint",
+        "text": "さいごの1マイ\nをもどす"
+      },
+      {
+        "name": "InstructionText",
+        "text": "LeftArrow / A: ヒダリ  RightArrow / D: ミギ  UpArrow / W: ウエ  DownArrow / S: シタ\nZ: コユウコウゲキ  Space: カード  LeftAlt / AltGr: カスタム  Escape: ポーズ"
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 79 / 100"
+      },
+      {
+        "name": "CostText",
+        "text": "1"
+      },
+      {
+        "name": "QueueOrder",
+        "text": "4"
+      },
+      {
+        "name": "CostText",
+        "text": "1"
+      },
+      {
+        "name": "Text (Legacy)",
+        "text": "カクテイ"
+      },
+      {
+        "name": "CostText",
+        "text": "1"
+      }
+    ]
+  },
+  "qa-sequential-feedback": {
+    "eventFrames": [
+      120,
+      139,
+      147
+    ],
+    "state": {
+      "state": {
+        "previewTiles": 0,
+        "frame": 155,
+        "custom": false,
+        "paused": false,
+        "screen": [
+          640,
+          360
+        ],
+        "effects": {
+          "playerHp": 75,
+          "playerParalyzed": false,
+          "playerParalysis": 0,
+          "playerSprite": "heroine_idle_05_0",
+          "playerRect": [
+            104,
+            228
+          ],
+          "visuals": []
+        },
+        "occlusion": {
+          "frame": 155,
+          "surfaceName": "BattleControlSurface",
+          "surface": true,
+          "surfaceScreen": [
+            "(463.33, 10.00)",
+            "(463.33, 66.67)",
+            "(630.00, 66.67)",
+            "(630.00, 10.00)"
+          ],
+          "foregroundTop": 46.2857132,
+          "bodyFeet": [
+            {
+              "name": "EnemyViewPrerfab(Clone)",
+              "feet": 68.76177
+            }
+          ],
+          "buttons": [
+            {
+              "name": "BasicAttackButton",
+              "size": "(155.00, 74.00)",
+              "position": "(155.00, -5.00)"
+            },
+            {
+              "name": "TouchCardUseButton",
+              "size": "(190.00, 60.00)",
+              "position": "(-80.00, -5.00)"
+            }
+          ]
+        },
+        "views": [
+          {
+            "linkVisible": false,
+            "linkPoints": null,
+            "modelId": "boss",
+            "grid": [
+              2,
+              0
+            ],
+            "modelHp": 184,
+            "gaugeValue": "184",
+            "participates": true,
+            "name": "EnemyViewPrerfab(Clone)",
+            "IsBossGauge": true,
+            "GaugeVisible": true,
+            "sprite": "boss_512",
+            "root": "(-1.60, -0.36, 0.00)",
+            "scale": "(0.83, 0.83, 1.04)",
+            "bodyMin": "(155.08, 68.76, 10.00)",
+            "bodyMax": "(393.97, 256.36, 10.00)",
+            "hp": "(601.18, 94.98, 10.00)",
+            "caption": "ボス",
+            "namePosition": "(274.52, 298.68, 9.90)"
+          }
+        ]
+      },
+      "feedback": [
+        {
+          "text": "3",
+          "pos": "(-1.99, 3.13, -0.50)",
+          "min": "(245.61, 276.09, 9.50)",
+          "max": "(258.21, 296.09, 9.50)",
+          "alpha": 0.258823544,
+          "order": 20
+        },
+        {
+          "text": "+1",
+          "pos": "(-3.20, 2.25, -0.50)",
+          "min": "(170.36, 225.60, 9.50)",
+          "max": "(195.36, 245.60, 9.50)",
+          "alpha": 0.258823544,
+          "order": 20
+        },
+        {
+          "text": "3",
+          "pos": "(-1.99, 3.67, -0.50)",
+          "min": "(245.61, 306.73, 9.50)",
+          "max": "(258.21, 326.73, 9.50)",
+          "alpha": 0.6392157,
+          "order": 20
+        },
+        {
+          "text": "+1",
+          "pos": "(-3.20, 2.78, -0.50)",
+          "min": "(170.36, 256.23, 9.50)",
+          "max": "(195.36, 276.23, 9.50)",
+          "alpha": 0.6392157,
+          "order": 20
+        },
+        {
+          "text": "3",
+          "pos": "(-1.99, 4.11, -0.50)",
+          "min": "(245.61, 332.00, 9.50)",
+          "max": "(258.21, 352.00, 9.50)",
+          "alpha": 0.807843149,
+          "order": 20
+        },
+        {
+          "text": "+1",
+          "pos": "(-3.20, 3.23, -0.50)",
+          "min": "(170.36, 281.51, 9.50)",
+          "max": "(195.36, 301.51, 9.50)",
+          "alpha": 0.807843149,
+          "order": 20
+        }
+      ]
+    }
+  },
+  "qa-sequential-observed": {
+    "state": {
+      "previewTiles": 0,
+      "frame": 155,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 75,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_05_0",
+        "playerRect": [
+          104,
+          228
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 155,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 68.76177
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 184,
+          "gaugeValue": "184",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.83, 0.83, 1.04)",
+          "bodyMin": "(155.08, 68.76, 10.00)",
+          "bodyMax": "(393.97, 256.36, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.52, 298.68, 9.90)"
+        }
+      ]
+    },
+    "feedback": [
+      {
+        "text": "3",
+        "pos": "(-1.99, 3.13, -0.50)",
+        "min": "(245.61, 276.09, 9.50)",
+        "max": "(258.21, 296.09, 9.50)",
+        "alpha": 0.258823544,
+        "order": 20
+      },
+      {
+        "text": "+1",
+        "pos": "(-3.20, 2.25, -0.50)",
+        "min": "(170.36, 225.60, 9.50)",
+        "max": "(195.36, 245.60, 9.50)",
+        "alpha": 0.258823544,
+        "order": 20
+      },
+      {
+        "text": "3",
+        "pos": "(-1.99, 3.67, -0.50)",
+        "min": "(245.61, 306.73, 9.50)",
+        "max": "(258.21, 326.73, 9.50)",
+        "alpha": 0.6392157,
+        "order": 20
+      },
+      {
+        "text": "+1",
+        "pos": "(-3.20, 2.78, -0.50)",
+        "min": "(170.36, 256.23, 9.50)",
+        "max": "(195.36, 276.23, 9.50)",
+        "alpha": 0.6392157,
+        "order": 20
+      },
+      {
+        "text": "3",
+        "pos": "(-1.99, 4.11, -0.50)",
+        "min": "(245.61, 332.00, 9.50)",
+        "max": "(258.21, 352.00, 9.50)",
+        "alpha": 0.807843149,
+        "order": 20
+      },
+      {
+        "text": "+1",
+        "pos": "(-3.20, 3.23, -0.50)",
+        "min": "(170.36, 281.51, 9.50)",
+        "max": "(195.36, 301.51, 9.50)",
+        "alpha": 0.807843149,
+        "order": 20
+      }
+    ]
+  },
+  "qa-natural-expiry": {
+    "state": {
+      "previewTiles": 0,
+      "frame": 237,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 75,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_09_0",
+        "playerRect": [
+          104,
+          226
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 237,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 184,
+          "gaugeValue": "184",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    },
+    "feedback": []
+  },
+  "qa-registry": {
+    "normal": 0,
+    "bosses": 1,
+    "activeHuds": 1,
+    "state": {
+      "previewTiles": 0,
+      "frame": 237,
+      "custom": false,
+      "paused": false,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": {
+        "playerHp": 75,
+        "playerParalyzed": false,
+        "playerParalysis": 0,
+        "playerSprite": "heroine_idle_09_0",
+        "playerRect": [
+          104,
+          226
+        ],
+        "visuals": []
+      },
+      "occlusion": {
+        "frame": 237,
+        "surfaceName": "BattleControlSurface",
+        "surface": true,
+        "surfaceScreen": [
+          "(463.33, 10.00)",
+          "(463.33, 66.67)",
+          "(630.00, 66.67)",
+          "(630.00, 10.00)"
+        ],
+        "foregroundTop": 46.2857132,
+        "bodyFeet": [
+          {
+            "name": "EnemyViewPrerfab(Clone)",
+            "feet": 69.42857
+          }
+        ],
+        "buttons": [
+          {
+            "name": "BasicAttackButton",
+            "size": "(155.00, 74.00)",
+            "position": "(155.00, -5.00)"
+          },
+          {
+            "name": "TouchCardUseButton",
+            "size": "(190.00, 60.00)",
+            "position": "(-80.00, -5.00)"
+          }
+        ]
+      },
+      "views": [
+        {
+          "linkVisible": false,
+          "linkPoints": null,
+          "modelId": "boss",
+          "grid": [
+            2,
+            0
+          ],
+          "modelHp": 184,
+          "gaugeValue": "184",
+          "participates": true,
+          "name": "EnemyViewPrerfab(Clone)",
+          "IsBossGauge": true,
+          "GaugeVisible": true,
+          "sprite": "boss_512",
+          "root": "(-1.60, -0.36, 0.00)",
+          "scale": "(0.80, 0.80, 1.00)",
+          "bodyMin": "(159.54, 69.43, 10.00)",
+          "bodyMax": "(389.49, 250.00, 10.00)",
+          "hp": "(617.60, 95.40, 10.00)",
+          "caption": "ボス",
+          "namePosition": "(274.51, 290.74, 9.90)"
+        }
+      ]
+    }
+  }
+}

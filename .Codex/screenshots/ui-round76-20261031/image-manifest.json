@@ -1,0 +1,254 @@
+[
+  {
+    "name": "ui-round76-before-dense-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "3e3d7443cb3e92752a9a0f5502788ab995d6c5b66704b156ee96fdc097b94f2b"
+  },
+  {
+    "name": "ui-round76-after-dense-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "3a542ba43bcba0b82efb357be7596518d5bc62f035eef374ed033ae50fcbc233"
+  },
+  {
+    "name": "ui-round76-before-dense-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 90,
+    "sha256": "ca344bf77159f72787699fd5b939825d7d5184d7857ba2be4583d91a16be7d8d"
+  },
+  {
+    "name": "ui-round76-after-dense-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 90,
+    "sha256": "82f77beab7080db472dab8b61a990016fe63c895526662484806b5fc0c555a78"
+  },
+  {
+    "name": "ui-round76-before-dense-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "6036fdf10d049825b3affdd91652e1996f825acdb9c928daab2934c957a9b1b6"
+  },
+  {
+    "name": "ui-round76-after-dense-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "1a04940f1a81921b7da33c1a01bd82dc005bd8568db64e74dae0f369b3f75b49"
+  },
+  {
+    "name": "ui-round76-before-single-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "66569fdf6a91a8a43a6a8fc10730137006eed3b76d3c087024aaddec3552fd4f"
+  },
+  {
+    "name": "ui-round76-after-single-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "a1faaae681b803743fe9b71f2bd6c09799fd7c6741863d23c8a99a9627feeb6c"
+  },
+  {
+    "name": "ui-round76-before-single-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 90,
+    "sha256": "4c5a2212aab8143297f19a78ee3b3dca260579f23ae8d181ed724daa50b8ee0f"
+  },
+  {
+    "name": "ui-round76-after-single-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 90,
+    "sha256": "abae1d7593e141f82a86be6c0909b56ab4c3843eb651d096d71b815ae3e7c9f6"
+  },
+  {
+    "name": "ui-round76-before-single-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "a833fcf276b51a474e45f0cb6a46cc7fa11b090cceb1be8779316dcafd4865ed"
+  },
+  {
+    "name": "ui-round76-after-single-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 90,
+    "sha256": "6971acc66f2bf26fb8dfc5c64395f2b2016f6641305390bf5613a8273725437f"
+  },
+  {
+    "name": "ui-round76-before-boss-dense-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "6b31033ad507e7ac57f0c6a17e022ab41d970a1911c2af3bbd48c3690e95ce5b"
+  },
+  {
+    "name": "ui-round76-after-boss-dense-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "4bee633404d5f07f70afb8e401ab9ec5176afede7268bb16d82274d9ae33cb78"
+  },
+  {
+    "name": "ui-round76-before-boss-dense-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 120,
+    "sha256": "f5703ea6a49054b410884b30f495e6c99a00b07fe1d299dd2108d4b2440e1ebc"
+  },
+  {
+    "name": "ui-round76-after-boss-dense-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 120,
+    "sha256": "072eb1c07e4e3e176bfd79840c8c89b39de9c739e6a94721f3445d556a263272"
+  },
+  {
+    "name": "ui-round76-before-boss-dense-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "41d9ee37d7c8bb27f53bd23243f9065b3fa9d0379a0ae1c9092c588d3fddbc53"
+  },
+  {
+    "name": "ui-round76-after-boss-dense-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "4d4628f927506c20bfef9ffabf6b1bfe847be3e4a3ba3676a1a8e09acc43bc70"
+  },
+  {
+    "name": "ui-round76-before-boss-single-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "6e0846a1ebaa7a4e20c9094338852bdcb3c292988796a66a3073a14978b6a2a5"
+  },
+  {
+    "name": "ui-round76-after-boss-single-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "254ccc87c2a3d8d2ee390b64ea42569a2ccb2bf63eed5db07191f4b98ef8b702"
+  },
+  {
+    "name": "ui-round76-before-boss-single-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 120,
+    "sha256": "d6bedb229f6cfd45538f7424f713e1ace60cb474f3ed922e58b1e09d644ae2b4"
+  },
+  {
+    "name": "ui-round76-after-boss-single-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "Coreframe": 120,
+    "sha256": "b5409140ebe597533c09c9ca942ee16e39093cd1d27ba54655e8fca88ca2ed1c"
+  },
+  {
+    "name": "ui-round76-before-boss-single-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "c3c37db54d552bb430f88d540db7611bf068ad3b29e681e5bffa805222a79e59"
+  },
+  {
+    "name": "ui-round76-after-boss-single-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "Coreframe": 120,
+    "sha256": "20d8feaa8d902c4c83893444385a5d293d134b442fe9be6866a92c50a3cc67c2"
+  },
+  {
+    "name": "ui-round76-after-serial-feedback-4k.png",
+    "comparison": false,
+    "verificationOnly": true,
+    "sha256": "0e9684c45f50a9b154e0d81c9d8205cca5fe52fa2cb59a0bf1a689325c3fb82c"
+  },
+  {
+    "name": "ui-round76-after-serial-feedback-fhd.png",
+    "comparison": false,
+    "verificationOnly": true,
+    "sha256": "25a1e0874c4cf6eb1a0e5879eb1f984ec1052fa7a573d111f25506d651d018f5"
+  },
+  {
+    "name": "ui-round76-after-reload-feedback-4k.png",
+    "comparison": false,
+    "verificationOnly": true,
+    "sha256": "de5e65eba439d4159c8302d552942af744cc6d89be26dd3d6dad2f3fdbbe0058"
+  },
+  {
+    "name": "ui-round76-after-reload-feedback-4by3.png",
+    "comparison": false,
+    "verificationOnly": true,
+    "sha256": "e099af14690d5b6efb41dad43fc3fee4db84e1eb27e4cbe79824039fb9775ec1"
+  },
+  {
+    "name": "ui-round76-after-reload-feedback-fhd.png",
+    "comparison": false,
+    "verificationOnly": true,
+    "sha256": "759435001eef8eefba8d88eba71b1edce4c435c150ea22988cba59b09b431bc6"
+  },
+  {
+    "name": "ui-round76-after-serial-feedback-4by3.png",
+    "comparison": false,
+    "verificationOnly": true,
+    "sha256": "028421e1f3e16fa1fb491a1326370f62548e6b92c9384079cca5175fca991599"
+  }
+]

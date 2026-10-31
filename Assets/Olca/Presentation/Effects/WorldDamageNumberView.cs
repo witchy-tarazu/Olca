@@ -21,6 +21,7 @@ namespace Olca.Presentation.Effects
         internal System.Action AlignViewport;
         private Vector3 viewportOffset;
         private Color originalColor;
+        private TextMesh[] readabilityOutline;
         private CancellationTokenSource animCts;
 
         private void Awake()
@@ -46,6 +47,7 @@ namespace Olca.Presentation.Effects
             transform.position = worldPosition;
             textMesh.text = text;
             textMesh.color = originalColor;
+            RefreshReadabilityOutline();
             gameObject.SetActive(true);
 
             animCts?.Cancel();
@@ -89,8 +91,40 @@ namespace Olca.Presentation.Effects
             }
         }
 
-        // 停止中の解像度変更でも境界だけ追従し、アニメーション時間は進めない。
-        private void LateUpdate(){if(gameObject.activeInHierarchy)KeepBelowViewportTop();}
+        // 貸出前に実際の文字形状を測る。以前の文字や画面端補正を次の段間隔へ持ち越さない。
+        internal Bounds PrepareTextBounds(string text,Vector3 position)
+        {
+            viewportOffset=Vector3.zero;transform.position=position;
+            if(textMesh!=null)textMesh.text=text;
+            return UnclampedTextBounds;
+        }
+        internal Bounds UnclampedTextBounds
+        {
+            get {var renderer=textMesh!=null?textMesh.GetComponent<Renderer>():null;var bounds=renderer!=null?renderer.bounds:new Bounds(transform.position,Vector3.zero);bounds.center-=viewportOffset;return bounds;}
+        }
+
+        // 停止中も配置と縁だけを追従させ、アニメーション時間は進めない。
+        private void LateUpdate(){if(gameObject.activeInHierarchy){KeepBelowViewportTop();RefreshReadabilityOutline();}}
+        private void RefreshReadabilityOutline()
+        {
+            if(textMesh==null)return;
+            if(readabilityOutline==null){
+                readabilityOutline=new TextMesh[4];
+                for(int i=0;i<readabilityOutline.Length;i++){
+                    var obj=new GameObject("ReadabilityOutline",typeof(TextMesh));obj.layer=textMesh.gameObject.layer;obj.transform.SetParent(textMesh.transform,false);
+                    readabilityOutline[i]=obj.GetComponent<TextMesh>();
+                }
+            }
+            var front=textMesh.GetComponent<Renderer>();float edge=textMesh.characterSize*.35f;
+            for(int i=0;i<readabilityOutline.Length;i++){
+                var outline=readabilityOutline[i];if(outline.font!=textMesh.font)outline.font=textMesh.font;if(outline.text!=textMesh.text)outline.text=textMesh.text;
+                if(outline.fontSize!=textMesh.fontSize)outline.fontSize=textMesh.fontSize;if(outline.characterSize!=textMesh.characterSize)outline.characterSize=textMesh.characterSize;if(outline.fontStyle!=textMesh.fontStyle)outline.fontStyle=textMesh.fontStyle;
+                if(outline.anchor!=textMesh.anchor)outline.anchor=textMesh.anchor;if(outline.alignment!=textMesh.alignment)outline.alignment=textMesh.alignment;if(outline.lineSpacing!=textMesh.lineSpacing)outline.lineSpacing=textMesh.lineSpacing;if(outline.tabSize!=textMesh.tabSize)outline.tabSize=textMesh.tabSize;if(outline.richText!=textMesh.richText)outline.richText=textMesh.richText;if(outline.offsetZ!=textMesh.offsetZ)outline.offsetZ=textMesh.offsetZ;
+                outline.color=new Color(.02f,.04f,.06f,textMesh.color.a*.9f);
+                outline.transform.localPosition=new Vector3((i%2==0?-1:1)*edge,(i<2?-1:1)*edge,.001f);
+                var renderer=outline.GetComponent<Renderer>();if(front!=null){renderer.enabled=front.enabled;renderer.forceRenderingOff=front.forceRenderingOff;if(renderer.sharedMaterial!=front.sharedMaterial)renderer.sharedMaterial=front.sharedMaterial;renderer.sortingLayerID=front.sortingLayerID;renderer.sortingOrder=front.sortingOrder==int.MinValue?int.MinValue:front.sortingOrder-1;}
+            }
+        }
 
         // ボス等の高い発生位置でも、上昇中の文字全体を画面上端の内側に保つ。
         // 時計・フェード・元の軌道は変えず、描画位置だけ補正する。

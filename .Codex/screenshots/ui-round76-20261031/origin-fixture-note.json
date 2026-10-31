@@ -1,0 +1,16 @@
+{
+  "observed": {
+    "expected": 1.21,
+    "actual": 1.5845
+  },
+  "cause": "OnBattleStarted also generated real normal-HP arcs in addition to explicit fixture track; fixture assumed only its known line",
+  "fix": "isolate explicit-line boundary test by HideHp on auto-generated HUD, assert explicit track still enabled; exact1.21 assertion unchanged",
+  "productSourceChangedForThisFailure": false,
+  "runtimeGeneratedHudValidation": "covered separately by native actual scene and gauge regressions",
+  "finalMarginDesign": {
+    "knownBodyPadding": 0.32,
+    "explicitTrackExpectedY": 1.33,
+    "tolerance": 0.0001,
+    "note": "fixture correction kept1.21 under old .20 padding; later separately justified visual .32 padding changes exact expected Y to1.33, not tolerance relaxation"
+  }
+}

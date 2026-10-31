@@ -1,0 +1,30 @@
+{
+  "codeRequiredUnresolved": 0,
+  "reviewedFiles": 5,
+  "visualRequiredUnresolved": 0,
+  "independentFinalAfterNativeViews": 12,
+  "independentBeforeRepresentatives": 3,
+  "visualResolved": "4:3 glyph7/HP circle contact removed; individual values readable, target correspondence improved; boss name/fixedHP not obscured",
+  "iterations": [
+    "white columns dominated battlefield",
+    "compact outline/spacing alone left values too distant",
+    "body/realHP geometry origin improves target relation",
+    "4:3 contact addressed with known-body padding.32; no further font shrink"
+  ],
+  "dynamicOwnerChecks": [
+    "existing AI warning/impact",
+    "actual eligible pointer basic attack",
+    "active numeric pause/resume",
+    "checkpoint5 and custom detail return",
+    "normal3 to boss reward flow",
+    "3 sequential event frames and natural expiry"
+  ],
+  "remaining": [
+    "full overlapping bodies identity",
+    "multiple coincident bosses",
+    "physical input/build",
+    "historicalUGUI",
+    "general collisions of extreme distinct-owner groups"
+  ],
+  "assets": "existing JikiTourai/prefab reused; no raster generation or refused content retry"
+}
