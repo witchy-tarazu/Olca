@@ -1,0 +1,278 @@
+[
+  {
+    "state": "dense",
+    "ratio": "fhd",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      -1.6,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "dense",
+    "ratio": "4k",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      -1.6,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "dense",
+    "ratio": "4by3",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      -1.6,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 86,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "single",
+    "ratio": "fhd",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      -1.6,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 79,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "single",
+    "ratio": "4k",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      -1.6,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 79,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "single",
+    "ratio": "4by3",
+    "Coreframe": 90,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      -1.6,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 79,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-dense",
+    "ratio": "fhd",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 65,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-dense",
+    "ratio": "4k",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 65,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-dense",
+    "ratio": "4by3",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 65,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-single",
+    "ratio": "fhd",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 58,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-single",
+    "ratio": "4k",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 58,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  },
+  {
+    "state": "boss-single",
+    "ratio": "4by3",
+    "Coreframe": 120,
+    "previewTiles": 0,
+    "bodyScreenAnchorsModelsAndForegroundUnchanged": true,
+    "worldOriginTranslation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "afterEffects": {
+      "playerHp": 58,
+      "playerParalyzed": false,
+      "playerParalysis": 0,
+      "playerSprite": "heroine_idle_05_0",
+      "playerRect": [
+        104,
+        228
+      ],
+      "visuals": []
+    }
+  }
+]

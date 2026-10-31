@@ -38,11 +38,24 @@ namespace Olca.Presentation.Field
         {
             if(!hiddenByBlindness)
             {
-                // 名前・現在HPの上から積み、既存の常時表示と重ねない。
-                float top=transform.position.y+.4f;
-                foreach(var renderer in GetComponentsInChildren<Renderer>())
-                    if(renderer.enabled&&!(enemyView!=null&&enemyView.IsFixedHudRenderer(renderer)))top=Mathf.Max(top,renderer.bounds.max.y);
-                var position=new Vector3(transform.position.x,top+.2f,transform.position.z-.5f);
+                // 可視本体の近くから出す。名前/HPとの重なりはPoolの群単位の描画補正に任せる。
+                var body=enemyView?.BodyRenderer;float top=transform.position.y+.4f,x=transform.position.x;
+                if(body!=null&&body.sprite!=null){
+                    var bounds=DefensiveFieldVisual.GetBodyBounds(body);top=bounds.max.y;x=bounds.center.x;
+                    // 通常敵は直上のHP群へ寄せる。LineRendererの保守的なboundsで余白を水増ししない。
+                    if(!enemyView.IsBossGauge)foreach(var renderer in GetComponentsInChildren<Renderer>()){
+                        if(!renderer.enabled||renderer.forceRenderingOff)continue;
+                        if(renderer is LineRenderer line){
+                            float halfWidth=Mathf.Max(line.startWidth,line.endWidth)*.5f;
+                            for(int i=0;i<line.positionCount;i++){var point=line.GetPosition(i);if(!line.useWorldSpace)point=line.transform.TransformPoint(point);top=Mathf.Max(top,point.y+halfWidth);}
+                        }else if(renderer.GetComponent<TextMesh>()!=null)top=Mathf.Max(top,renderer.bounds.max.y);
+                    }
+                }
+                else foreach(var renderer in GetComponentsInChildren<Renderer>())
+                    if(renderer.enabled&&!renderer.forceRenderingOff&&!(enemyView!=null&&enemyView.IsFixedHudRenderer(renderer)))top=Mathf.Max(top,renderer.bounds.max.y);
+                // 4:3へ切り替わった際のHP円拡大と文字の縁まで余白を保つ。
+                float padding=body!=null&&body.sprite!=null ? 0.32f : 0.2f;
+                var position=new Vector3(x,top+padding,transform.position.z-.5f);
                 damageNumberPool?.ShowFeedback(feedback,position,CancellationToken.None,this);
             }
             if(feedback.Kind==CombatFeedbackKind.Damage&&feedback.Amount>0)
@@ -292,11 +305,14 @@ namespace Olca.Presentation.Field
 
         private async UniTask FlashEffectAsync(SpriteRenderer bodyRenderer, CancellationToken ct)
         {
+            if(bodyRenderer==null||ct.IsCancellationRequested)return;
             var originalColor = bodyRenderer.color;
             for (int i = 0; i < 2; i++)
             {
+                if(bodyRenderer==null||ct.IsCancellationRequested)return;
                 bodyRenderer.color = Color.white;
                 await Olca.Unity.BattleVisualClock.Delay(50, cancellationToken: ct);
+                if(bodyRenderer==null||ct.IsCancellationRequested)return;
                 bodyRenderer.color = originalColor;
                 await Olca.Unity.BattleVisualClock.Delay(50, cancellationToken: ct);
             }
@@ -304,6 +320,7 @@ namespace Olca.Presentation.Field
 
         private async UniTask ScalePulseEffectAsync(CancellationToken ct)
         {
+            if(this==null||ct.IsCancellationRequested)return;
             var originalScale = transform.localScale;
             var peakScale = originalScale * 1.25f;
             float halfDuration = 0.08f;
@@ -312,6 +329,8 @@ namespace Olca.Presentation.Field
             // 拡大フェーズ
             while (elapsed < halfDuration)
             {
+                // await中の取消/破棄後は、次の描画アクセスへ進まない。
+                if(this==null||ct.IsCancellationRequested)return;
                 elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 transform.localScale = Vector3.Lerp(originalScale, peakScale, elapsed / halfDuration);
                 await Olca.Unity.BattleVisualClock.NextFrame(ct);
@@ -322,12 +341,14 @@ namespace Olca.Presentation.Field
             // 縮小フェーズ
             while (elapsed < halfDuration)
             {
+                // await中の取消/破棄後は、次の描画アクセスへ進まない。
+                if(this==null||ct.IsCancellationRequested)return;
                 elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
                 transform.localScale = Vector3.Lerp(peakScale, originalScale, elapsed / halfDuration);
                 await Olca.Unity.BattleVisualClock.NextFrame(ct);
             }
 
-            transform.localScale = originalScale;
+            if(this!=null&&!ct.IsCancellationRequested)transform.localScale = originalScale;
         }
 
         // ==================== 座標計算 ====================

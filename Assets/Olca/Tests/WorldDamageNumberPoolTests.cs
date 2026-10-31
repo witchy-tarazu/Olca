@@ -55,6 +55,49 @@ namespace Olca.Tests
             UnityEngine.Object.DestroyImmediate(source);
         }
 
+        [Test]
+        public async Task 敵の浮遊表示は高い装飾を起点にせず可視本体へ寄せ購読と値を保つ()
+        {
+            var go=new GameObject("LocalFeedbackOrigin");var texture=new Texture2D(2,2);var sprite=Sprite.Create(texture,new Rect(0,0,2,2),new Vector2(.5f,.5f),2);
+            var body=go.AddComponent<SpriteRenderer>();body.sprite=sprite;
+            var visual=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",Private).SetValue(visual,body);
+            var view=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView",Private).SetValue(view,visual);
+            var decoration=GameObject.CreatePrimitive(PrimitiveType.Quad);decoration.transform.SetParent(go.transform,false);decoration.transform.localPosition=Vector3.up*10;
+            var trackObject=new GameObject("EnemyHpTrack",typeof(LineRenderer));trackObject.transform.SetParent(go.transform,false);var track=trackObject.GetComponent<LineRenderer>();track.useWorldSpace=true;track.positionCount=2;track.SetPositions(new[]{new Vector3(-.1f,1,0),new Vector3(.1f,1,0)});track.startWidth=track.endWidth=.02f;
+            var pauseOwner=new object();Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);
+            try{
+                var enemy=new Olca.Core.Domain.Enemy("local","テスト",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0));view.SetDamageNumberPool(pool);view.Initialize(enemy,0);view.OnBattleStarted(null);
+                // この境界fixtureは下で定義したHP線だけを測る。自動生成された円は分離する。
+                visual.HideHp();Assert.IsTrue(track.enabled);
+                var root=go.transform.position;var scale=go.transform.localScale;var expected=Mathf.Max(Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(body).max.y,1.01f)+.32f;
+                enemy.TakeDamage(3,Olca.Core.Domain.ElementType.None,poiseDamage:0);
+                Assert.AreEqual(1,Active.Count);var number=Active.Single();Assert.AreEqual("3",number.GetComponent<TextMesh>().text);
+                Assert.AreEqual(expected,number.transform.position.y,.0001f,"装飾や保守boundsでなく、本体とHP線の実外周を起点にする");Assert.AreEqual(root,go.transform.position);Assert.AreEqual(scale,go.transform.localScale);
+            }finally{UnityEngine.Object.DestroyImmediate(go);pool.ClearAll();Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(texture);}
+            await Task.Delay(100);Assert.AreEqual(0,Active.Count);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public async Task 個別ヒットは実文字高から余白を空け先頭返却後も残存段へ重ねない(bool firstReturned)
+        {
+            var pauseOwner=new object();Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);
+            var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            foreach(var view in Waiting){var text=view.GetComponent<TextMesh>();text.font=font;text.fontSize=40;text.characterSize=.1f;text.GetComponent<Renderer>().sharedMaterial=font.material;}
+            using var first=new CancellationTokenSource();using var second=new CancellationTokenSource();using var third=new CancellationTokenSource();
+            var owner=new object();
+            Task Feedback(int amount,CancellationToken token)=>((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage,amount),Vector3.zero,token,owner)).AsTask();
+            var a=Feedback(7,first.Token);var b=Feedback(11,second.Token);Task c=Task.CompletedTask;
+            try{
+                if(firstReturned){first.Cancel();await Completed(a);}
+                c=Feedback(3,third.Token);
+                var views=Active.Where(view=>view.gameObject.activeSelf).ToArray();
+                Assert.AreEqual(firstReturned?2:3,views.Length,"ヒットを合算・欠落させない");
+                var bounds=views.Select(view=>view.GetComponent<Renderer>().bounds).OrderBy(value=>value.min.y).ToArray();
+                for(int i=1;i<bounds.Length;i++)Assert.Greater(bounds[i].min.y,bounds[i-1].max.y+.001f,"文字の実外周の間にも余白を保つ");
+                CollectionAssert.AreEquivalent(firstReturned?new[]{"11","3"}:new[]{"7","11","3"},views.Select(view=>view.GetComponent<TextMesh>().text));
+            }finally{first.Cancel();second.Cancel();third.Cancel();Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);await Completed(Task.WhenAll(a,b,c));}
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 浮遊文字は上昇位置を画面上端へ収め通常位置と文字設定を変えない(bool perspective)
         {

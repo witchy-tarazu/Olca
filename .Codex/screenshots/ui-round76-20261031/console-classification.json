@@ -1,0 +1,49 @@
+{
+  "nativeGroundTruth": {
+    "sampledUtc": "2026-10-31T07:52:10.520175Z",
+    "ageMs": 141,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 1,
+    "consoleLogs": 51,
+    "seeded": true
+  },
+  "cachedHistoryCounts": {
+    "error": 1,
+    "warn": 3,
+    "log": 111
+  },
+  "nativeErrorClassification": {
+    "category": "recovered Unity.Pipeline /api/exec main-thread60000ms startup timeout",
+    "entries": [
+      {
+        "seq": 274501,
+        "timestampUtc": "2026-10-31T07:46:06.479159Z",
+        "level": "error",
+        "logType": "Error",
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+        "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+        "seeded": false
+      }
+    ],
+    "productException": false
+  },
+  "nativeCurrentWarning": "UnityAI connection-info save read-only filesystem;1",
+  "cachedWarnings": {
+    "fixturePoolCap": 1,
+    "alreadyEditModeTool": 1,
+    "UnityAIReadOnly": 1
+  },
+  "earlierPipelineSocketTimeoutHistory": "retained in same task evidence; not product completion/failure",
+  "productLifecycleRegression": "initial MissingReferenceException in destroyed pulse continuation retained in lifecycle-regression.json; fixed and same22-case suite passed without LogAssert suppression",
+  "inputVerification": "generic helper omitted eligibleForClick, product correctly rejected; eligible pointer Raycast/down/up/click verified, no product input change",
+  "nativeBasicAttack": {
+    "bossHpBefore": 176,
+    "bossHpAfter": 166,
+    "feedback": [
+      "10"
+    ]
+  },
+  "historicalUGUI": "unresolved; not this MissingReference/pipeline history"
+}

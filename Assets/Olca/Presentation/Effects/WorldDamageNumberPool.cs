@@ -80,9 +80,12 @@ namespace Olca.Presentation.Effects
             var instance = TakeInstance(!perEffect);
             if (instance == null) return;
             if(perEffect&&owner!=null){
-                int count=owners.Count(pair=>ReferenceEquals(pair.Value,owner)&&pair.Key!=null&&pair.Key.gameObject.activeSelf);
-                var renderer=instance.GetComponentInChildren<Renderer>(true);
-                worldPosition.y+=count*Mathf.Max(.1f,renderer!=null?renderer.bounds.size.y:0f);
+                var bounds=instance.PrepareTextBounds(text,worldPosition);
+                float bottom=bounds.min.y,gap=Mathf.Max(.04f,bounds.size.y*.12f);
+                // 残っている数値の実外周から積む。先頭だけ終了した連続表示でも段を重ねない。
+                foreach(var pair in owners)if(ReferenceEquals(pair.Value,owner)&&pair.Key!=null&&pair.Key.gameObject.activeSelf)
+                    bottom=Mathf.Max(bottom,pair.Key.UnclampedTextBounds.max.y+gap);
+                worldPosition.y+=bottom-bounds.min.y;
             }
             owners[instance]=owner;
             // 貸出時に表示中の敵ラベル参照を集める。boundsと可視性は各描画frameで再評価する。
