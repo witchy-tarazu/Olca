@@ -132,6 +132,14 @@ namespace Olca.Presentation.Field
 
         [Header("カメラ")]
         [SerializeField] private Camera fieldCamera;
+        public Camera PresentationCamera=>fieldCamera;
+        public void ConfigurePresentationCamera(Camera camera){fieldCamera=camera;}
+        public void ConfigureDungeonHud(Olca.Presentation.Dungeon.DungeonHudView hud)
+        {
+            dungeonHudCanvasGroup=hud!=null?hud.CanvasGroup:null;
+            debugText=hud!=null?hud.transform.Find("DungeonDebugText")?.GetComponent<Text>():null;
+            debugPhaseText=hud!=null?hud.transform.Find("PlayerStatusText")?.GetComponent<Text>():null;
+        }
         [SerializeField] private float cameraFollowSpeed = 50f;            // 通常時の追従速度
         [SerializeField] private float cameraFollowSpeedDash = 15f;       // ダッシュ時の追従速度（プレイヤーが前に出る演出）
         [SerializeField] private float cameraFollowSpeedTransition = 3f;  // 速度切替のなめらかさ（小さいほどゆっくり）

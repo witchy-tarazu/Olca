@@ -43,6 +43,14 @@ namespace Olca.Presentation.Management
             public ManagedScreenContext Context;
         }
         private readonly ResourceManager resources;
+        private readonly Dictionary<string,ViewManager> layers=new Dictionary<string,ViewManager>();
+        /// <summary>HUDなど非排他的に重ねる表示層。同じManagerの寿命ツリーとして所有する。</summary>
+        public ViewManager GetLayer(string key)
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(ViewManager));
+            if(string.IsNullOrWhiteSpace(key))throw new ArgumentException(nameof(key));
+            if(!layers.TryGetValue(key,out var layer)){layer=new ViewManager(resources,Dialogs);layers.Add(key,layer);}return layer;
+        }
         internal DialogManager Dialogs { get; }
         private readonly Dictionary<string, Entry> entries = new Dictionary<string, Entry>();
         private Entry current, pending;
@@ -136,6 +144,7 @@ namespace Olca.Presentation.Management
         }
         public void UnregisterOwner(object owner)
         {
+            foreach(var layer in layers.Values)layer.UnregisterOwner(owner);
             foreach (var entry in entries.Values.Where(e => ReferenceEquals(e.Owner, owner)).ToArray()) {
                 entry.Valid = false;
                 if (ReferenceEquals(pending, entry)) { ++version; CancelPending(); }
@@ -148,6 +157,8 @@ namespace Olca.Presentation.Management
         public void Dispose()
         {
             if (disposed) return; disposed = true;
+            foreach(var layer in layers.Values)layer.Dispose();
+            layers.Clear();
             CloseCurrent();
             foreach (var owner in entries.Values.Select(e => e.Owner).Distinct().ToArray()) UnregisterOwner(owner);
             disposed = true;

@@ -10,6 +10,14 @@ namespace Olca.Application.Management
     {
         private static GameSystemRoot instance;
         public GameSystem Services { get; private set; }
+        public string StartupError { get; private set; }
+        public async System.Threading.Tasks.Task<HostOpenResult> StartCompatibilityHostAsync(System.Threading.CancellationToken cancellation=default)
+        {
+            Initialize();HostOpenResult result;
+            try { result=await Services.Hosts.OpenAsync(BootstrapEntry.CreateRequest(Services),cancellation); }
+            catch(System.Exception error){result=new HostOpenResult(false,error:error.Message);}
+            StartupError=result.Succeeded||result.Cancelled?null:result.Error;return result;
+        }
         public static GameSystemRoot Ensure()
         {
             if (instance != null) { instance.Initialize(); return instance; }
@@ -29,7 +37,7 @@ namespace Olca.Application.Management
             if (Services != null) return;
             var resources = new ResourceManager();
             var dialogs = new DialogManager(() => Time.frameCount);
-            Services = new GameSystem(new SaveManager(), resources, new SoundManager(transform), new ViewManager(resources, dialogs), dialogs);
+            Services = new GameSystem(new SaveManager(), resources, new SoundManager(transform), new ViewManager(resources, dialogs), dialogs, new UIRuntimeManager(resources,transform), new CameraRuntimeManager(resources,transform));
         }
         private void LateUpdate() => Services?.Dialogs.Tick();
         private void OnDestroy()

@@ -1,0 +1,54 @@
+{
+  "nativeWindow": {
+    "recordedErrorCount": 2,
+    "errors": [
+      {
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+        "seq": 294594
+      },
+      {
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms",
+        "seq": 294596
+      }
+    ],
+    "productExceptionsObserved": 0,
+    "warningEntries": [
+      {
+        "message": "Editor is already in edit mode",
+        "seq": 294593
+      },
+      {
+        "message": "Could not save connection info: Read-only file system",
+        "seq": 294595
+      }
+    ],
+    "errorGroundTruth": {
+      "sampledUtc": "2026-10-31T14:29:20.795041Z",
+      "ageMs": 154,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 3,
+      "consoleWarnings": 1,
+      "consoleLogs": 73,
+      "seeded": true
+    },
+    "recovery": "Initial fixture and readiness calls timed out; actual initialized state read then continued without repeating Play or fixture."
+  },
+  "preflightHistory": "Asset-text read timeout and first cold size operation retained in raw evidence. Pre-test private generator incorrectly changed expected640 to740; actual640 was read, helper restored to required640; no test run occurred under740.",
+  "resolvedReviewFinding": "Root ViewManager did not dispose child layers; fixed recursive disposal/clear and regression for child-only owner plus late creation. Rereview scoped0.",
+  "assetNormalization": "HUD empty scalar removes trailing delimiter space; quoted instruction string serialized to one line from exact Unity Text.text. Import validates all4 text values/fonts/localIDs identical.",
+  "publication": "Separate check/commit/push CLI, receipt-bound tree/evidence/hash. Native Unity empty Name/ClassIdentifier scalar exceptions strictly reported. All other whitespace check errors stop publication.",
+  "historicalUnresolved": [
+    "UGUI reload exception"
+  ],
+  "finalTestPeriod": "Separate clear after retained native history. Full tests and warning classification report exact final counts.",
+  "initialFullSuite": {
+    "passed": 3562,
+    "total": 3564,
+    "failed": 2,
+    "cause": "Existing Scene-only HUD lookups failed after HUD prefab extraction",
+    "fix": "Use actual production Resources prefab in the same test scene; expected values unchanged",
+    "result": "Final rerun3564/3564 pass284.12s; related7/7 pass7.86s; console0"
+  },
+  "fixtureRecompileRecovery": "Explicit recompile succeeded; domain reload temporarily closed7800. Bounded reconnect restored sameEditor. First size/status timed out; actual RenderTexture read confirmed640x360, TMP/guard before one related and one full rerun. No restart or duplicate test."
+}

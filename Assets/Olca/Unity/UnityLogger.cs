@@ -32,7 +32,7 @@ namespace Olca.Unity
     public sealed class ValidationStorageGuard
     {
         public const string ManifestName = ".olca-validation-storage-guard.json";
-        [System.Serializable] public sealed class Configuration { public string Root; public string ForbiddenRoot; }
+        [System.Serializable] public sealed class Configuration { public string Root; public string ForbiddenRoot; public string BootstrapSettings; public string BootstrapCheckpoint; public string BootstrapProgress; }
         private readonly string root, forbidden;
         public ValidationStorageGuard(string root, string forbiddenRoot)
         {
@@ -84,6 +84,20 @@ namespace Olca.Unity
                 var config = UnityEngine.JsonUtility.FromJson<Configuration>(System.IO.File.ReadAllText(manifest));
                 if (config == null) throw new System.IO.IOException("検証保存先設定が不正です");
                 return new ValidationStorageGuard(config.Root, config.ForbiddenRoot);
+            }
+#endif
+            return null;
+        }
+        /// <summary>Bootstrap検証も明示注入だけを許可する。未指定時の保存先自動補完はしない。</summary>
+        public static Configuration ExplicitEditorBootstrap()
+        {
+#if UNITY_EDITOR
+            var guard=FromEditorProject();
+            if(guard!=null){
+                string manifest=System.IO.Path.Combine(System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath),ManifestName);
+                var config=UnityEngine.JsonUtility.FromJson<Configuration>(System.IO.File.ReadAllText(manifest));
+                guard.Require(config?.BootstrapSettings,config?.BootstrapCheckpoint,config?.BootstrapProgress);
+                return config;
             }
 #endif
             return null;

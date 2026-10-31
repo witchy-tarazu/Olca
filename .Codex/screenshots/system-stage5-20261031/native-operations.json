@@ -1,0 +1,564 @@
+{
+  "directLegacy": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/DungeonScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/DungeonScene.unity",
+        "handleHash": -414587107,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -236087832,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "cameraBorrowed": false,
+    "borrowedCameraId": null,
+    "gameplayView": "dungeon-hud",
+    "battleViewKey": "battle-custom",
+    "battleRegistered": 1,
+    "battleViews": 1,
+    "customViews": 1,
+    "gameplayRegistered": 1,
+    "hudCount": 1,
+    "host": null,
+    "loading": false,
+    "ownedScenes": 0,
+    "ownedViews": 4,
+    "registeredViews": 1,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      721690
+    ],
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -236087838,
+      -236087844,
+      -236087850
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/ui-round76-8602/settings"
+  },
+  "managedInitial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/DungeonScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/BootstrapScene.unity",
+        "handleHash": 879797852,
+        "isLoaded": true
+      },
+      {
+        "path": "Assets/Scenes/DungeonScene.unity",
+        "handleHash": -1910991258,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -236087832,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "cameraBorrowed": true,
+    "borrowedCameraId": -236094080,
+    "gameplayView": "dungeon-hud",
+    "battleViewKey": "battle-custom",
+    "battleRegistered": 1,
+    "battleViews": 1,
+    "customViews": 1,
+    "gameplayRegistered": 1,
+    "hudCount": 1,
+    "host": "Assets/Scenes/DungeonScene.unity",
+    "loading": false,
+    "ownedScenes": 1,
+    "ownedViews": 5,
+    "registeredViews": 1,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      722014
+    ],
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -236087838,
+      -236087844,
+      -236087850
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/system-stage5-8601/settings"
+  },
+  "singleReentry": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": 722014,
+    "newControllerId": 722322,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/DungeonScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -245600934,
+          "isLoaded": true
+        },
+        {
+          "path": "Assets/Scenes/DungeonScene.unity",
+          "handleHash": -176804990,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -236087832,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -236094080,
+      "gameplayView": "dungeon-hud",
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "Assets/Scenes/DungeonScene.unity",
+      "loading": false,
+      "ownedScenes": 1,
+      "ownedViews": 5,
+      "registeredViews": 1,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        722322
+      ],
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -236087838,
+        -236087844,
+        -236087850
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage5-8601/settings"
+    }
+  },
+  "closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -245600934,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -236087832,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -236087838,
+        -236087844,
+        -236087850
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "canceled": {
+    "actualMissingSceneRejected": true,
+    "canceledNativeLoadRecoveredAndUnloaded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -245600934,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -236087832,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -236087838,
+        -236087844,
+        -236087850
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "reopened": {
+    "duplicateOpenSucceeded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/DungeonScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -245600934,
+          "isLoaded": true
+        },
+        {
+          "path": "Assets/Scenes/DungeonScene.unity",
+          "handleHash": 1695947389,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -236087832,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -236094080,
+      "gameplayView": "dungeon-hud",
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "Assets/Scenes/DungeonScene.unity",
+      "loading": false,
+      "ownedScenes": 1,
+      "ownedViews": 5,
+      "registeredViews": 1,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        722922
+      ],
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -236087838,
+        -236087844,
+        -236087850
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage5-8601/settings"
+    }
+  },
+  "commonUI": {
+    "initial": {
+      "rootCanvases": [
+        {
+          "id": -236088366,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -236088376,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": "ConfirmDungeonSelection"
+        }
+      ],
+      "contents": [
+        {
+          "id": -236094572,
+          "rect": [
+            1920,
+            1080
+          ],
+          "parent": "UIRoot(Clone)"
+        }
+      ],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": [
+        {
+          "name": "GameplayCamera(Clone)",
+          "orthographic": true,
+          "orthographicSize": 3.15,
+          "cullingMask": -1,
+          "scene": "DontDestroyOnLoad",
+          "position": [
+            76,
+            1.2750001,
+            -10
+          ]
+        }
+      ]
+    },
+    "closed": {
+      "rootCanvases": [
+        {
+          "id": -236088366,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -236088376,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": null
+        }
+      ],
+      "contents": [],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": []
+    },
+    "reopened": {
+      "rootCanvases": [
+        {
+          "id": -236088366,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -236088376,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": "ContinueCheckpointButton"
+        }
+      ],
+      "contents": [
+        {
+          "id": -236109506,
+          "rect": [
+            1920,
+            1080
+          ],
+          "parent": "UIRoot(Clone)"
+        }
+      ],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": [
+        {
+          "name": "GameplayCamera(Clone)",
+          "orthographic": true,
+          "orthographicSize": 3.15,
+          "cullingMask": -1,
+          "scene": "DontDestroyOnLoad",
+          "position": [
+            -2.4,
+            1.2750001,
+            -10
+          ]
+        }
+      ]
+    }
+  },
+  "representativeViewRegeneration": {
+    "oldPanelId": -236100520,
+    "newPanelId": -236115046,
+    "prefabScreenRecreatedAfterHostReopen": true,
+    "settingsMatchDisk": true,
+    "savedBytesUnchanged": true,
+    "ui": {
+      "rootCanvases": [
+        {
+          "id": -236088366,
+          "scene": "DontDestroyOnLoad",
+          "scale": [
+            0.333333343,
+            0.333333343,
+            0.333333343
+          ],
+          "rect": [
+            1920,
+            1080
+          ],
+          "order": 32000
+        }
+      ],
+      "events": [
+        {
+          "id": -236088376,
+          "scene": "DontDestroyOnLoad",
+          "active": true,
+          "selected": "ResumeButton"
+        }
+      ],
+      "contents": [
+        {
+          "id": -236109506,
+          "rect": [
+            1920,
+            1080
+          ],
+          "parent": "UIRoot(Clone)"
+        }
+      ],
+      "screen": [
+        640,
+        360
+      ],
+      "cameras": [
+        {
+          "name": "GameplayCamera(Clone)",
+          "orthographic": true,
+          "orthographicSize": 3.15,
+          "cullingMask": -1,
+          "scene": "DontDestroyOnLoad",
+          "position": [
+            -2.4,
+            1.2750001,
+            -10
+          ]
+        }
+      ]
+    }
+  },
+  "resourceCounterNote": "legacy helper ownedViews means ResourceManager prefab leases: idle3=UIRoot/EventSystem/cached inactive camera, gameplay HUD adds1, Battle/Custom adds1, cached keyboard adds1. Gameplay ViewManager layer is nonexclusive; core/Input/clock remain host-owned.",
+  "saveDataBytesUnchangedOnSingleCancelReopenAndReadOnlyRegeneration": true,
+  "devices": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [
+      {
+        "name": "EventSystem(Clone)",
+        "enabled": true,
+        "scene": "DontDestroyOnLoad",
+        "activeSelf": true
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "limits": [
+    "actual build/OS/physical input not checked",
+    "FMOD noaudio; playback API/state only",
+    "native missing/canceled load checked; unload-failure retry checked by isolated lease regression, not destructive engine failure injection",
+    "legacy Scene camera remains for direct Play, disabled during managed camera use",
+    "camera projection/follow logic remains existing GameFieldView; no exterior mechanics implemented"
+  ]
+}

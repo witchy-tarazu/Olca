@@ -1,0 +1,15 @@
+{
+  "tests": 16,
+  "passed": 16,
+  "failed": 0,
+  "duration": 1.906,
+  "isolatedTemporaryGitRepositoriesOnly": true,
+  "realRepoCommitPushExecutedByTests": false,
+  "sourceHashes": {
+    ".Codex/tools/verified_publish.py": "02d7590ec55e024e1f1138b4c796bbcc4538a023abd9d3c60ce8a92982eae255",
+    ".Codex/tools/test_verified_publish.py": "97239d6ec2d15f0e16d2e05698c331719a4c1d70773953c4a6df5f0f015bc54d",
+    ".Codex/tools/README.md": "5b6c703c6fd76ca15bfdc3d3da4bc18d4703b6184c8143b1232f7264245ac709",
+    ".Codex/skills/olca-git/SKILL.md": "b18d20c714c53f9b8e045634c70f29b9d1a74ff04821c16623138ba36dda5cbc"
+  },
+  "output": "----------------------------------------------------------------------\nRan 16 tests in 1.785s\n\nOK\n"
+}

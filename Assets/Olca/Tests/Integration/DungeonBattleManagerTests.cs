@@ -4324,9 +4324,15 @@ namespace Olca.Tests.Integration
             var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);
             try
             {
-                var hud = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.Dungeon.DungeonHudView>(true)).Single();
+                // HUDはScene直配置ではなく本番Resources Prefabから生成する。
+                var hudPrefab = UnityEngine.Resources.Load<UnityEngine.GameObject>("OlcaSystem/DungeonHud");
+                Assert.IsNotNull(hudPrefab);
+                var hudObject = UnityEngine.Object.Instantiate(hudPrefab);
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(hudObject, scene);
+                var hud = hudObject.GetComponent<Olca.Presentation.Dungeon.DungeonHudView>();
+                Assert.IsNotNull(hud);
                 Assert.IsNull(Get(hud, "hpText"));
-                var custom = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true)).Single();
+                var custom = UnityEngine.Resources.Load<UnityEngine.GameObject>("OlcaSystem/BattlePresentation").GetComponentInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true);
                 var uiFont = custom.GetComponentInChildren<UnityEngine.UI.Text>(true).font;
                 hud.ConfigureMissingStatusFont(uiFont);
                 foreach (var value in new (int hp, int max)[] { (100, 100), (83, 100), (100, 100), (73, 100), (0, 590), (1, 1), (1, 590), (590, 590), (int.MaxValue, int.MaxValue) })
@@ -4379,7 +4385,13 @@ namespace Olca.Tests.Integration
             var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DungeonScene.unity", UnityEditor.SceneManagement.OpenSceneMode.Additive);
             try
             {
-                var hud = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Olca.Presentation.Dungeon.DungeonHudView>(true)).Single();
+                // HUDはScene直配置ではなく本番Resources Prefabから生成する。
+                var hudPrefab = UnityEngine.Resources.Load<UnityEngine.GameObject>("OlcaSystem/DungeonHud");
+                Assert.IsNotNull(hudPrefab);
+                var hudObject = UnityEngine.Object.Instantiate(hudPrefab);
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(hudObject, scene);
+                var hud = hudObject.GetComponent<Olca.Presentation.Dungeon.DungeonHudView>();
+                Assert.IsNotNull(hud);
                 Assert.IsNull(Get(hud, "progressText"));
                 hud.Refresh(new Olca.Presentation.Dungeon.DungeonHudData(100, 100, 0, 6, false, false, 6, 0));
                 Assert.IsNull(Get(hud, "progressText"), "既定単階層の表示を増やさない");

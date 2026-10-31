@@ -1,0 +1,335 @@
+{
+  "reviewer": "equipment_save_review (design/code), independent_refactor_review (native visual)",
+  "scope": "Stage5 initial six matched custom/battle-host views plus nine managed-battle-host/settings/reset views, FHD/4K/4:3",
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedAfterImageCount": 6,
+    "viewedBeforeImageCount": 6,
+    "images": [
+      {
+        "file": "system-stage5-native-after-custom-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "339ea88504f33b4496ced692b3b9ebcd716d164d5b63d53fca0bf84bff0583a3",
+        "beforeFile": "system-stage5-native-before-custom-fhd.png",
+        "beforeSha256": "eb8345c1018172f178af83084157acb400023e190e05ef8b05d6ac50c494e1b3",
+        "differenceBoundingBox": [
+          3,
+          115,
+          1852,
+          1026
+        ],
+        "viewed": "original requested; 4K whole view is viewer-resized; 1:1 custom body-text crop additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-custom-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "d5a9e358647615b690adeab66afa92fe617ef877e085424b97b096f31276aac5",
+        "beforeFile": "system-stage5-native-before-custom-4k.png",
+        "beforeSha256": "203f36e86bdbafc3d8d47759cb86ffbeb5cf09678428ad13c09d0339d4a8f349",
+        "differenceBoundingBox": [
+          224,
+          224,
+          3750,
+          2048
+        ],
+        "viewed": "original requested; 4K whole view is viewer-resized; 1:1 custom body-text crop additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-custom-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "b2e75144d83ff00e66206a8f597e4a7ef7209a157dff3dbef001adb77a177898",
+        "beforeFile": "system-stage5-native-before-custom-4by3.png",
+        "beforeSha256": "94f60222f083199d335bc367379bfe0da0f6ad64c61d8d71fd4b874683325935",
+        "differenceBoundingBox": [
+          8,
+          58,
+          1356,
+          1022
+        ],
+        "viewed": "original requested; 4K whole view is viewer-resized; 1:1 custom body-text crop additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "487f4cfe7bc9c3dd85b87b91bee1e36943d1a7eaa6e2338acb3c6010ee966f7e",
+        "beforeFile": "system-stage5-native-before-battle-host-fhd.png",
+        "beforeSha256": "f4c11f777fadca560430582f5472f492971b83ccf28f397628c70adb952150b4",
+        "differenceBoundingBox": [
+          916,
+          549,
+          1791,
+          1026
+        ],
+        "viewed": "original requested; 4K whole view is viewer-resized; 1:1 custom body-text crop additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "4843b5408cfb391ffe327ec69bb06ea623aa4804ea11118d9b8c34732dfbaeb0",
+        "beforeFile": "system-stage5-native-before-battle-host-4k.png",
+        "beforeSha256": "8cca06c57045bbabe02936cf2a1a7162634a0e3f1f6cf0393b40c10c9bf6bfda",
+        "differenceBoundingBox": [
+          434,
+          224,
+          3750,
+          2050
+        ],
+        "viewed": "original requested; 4K whole view is viewer-resized; 1:1 custom body-text crop additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "a266666e87c7bda74c105a5d8f703fc58d1994cc5f3b21918d75a0a0ba5465cf",
+        "beforeFile": "system-stage5-native-before-battle-host-4by3.png",
+        "beforeSha256": "e70d107c0c3e0ec21d1fe1d0daf376723a7155c56452b2f0157e6c6fd60c81f2",
+        "differenceBoundingBox": [
+          187,
+          53,
+          1364,
+          1031
+        ],
+        "viewed": "original requested; 4K whole view is viewer-resized; 1:1 custom body-text crop additionally inspected"
+      }
+    ],
+    "observations": [
+      "Custom left-edge connection, window plus gauge left-half composition and 4:3 boundary remain visually consistent",
+      "Five square mini cards, focused sword artwork, body text/scrollbar, use-order slots, cost and confirm/undo controls preserve visible hierarchy and spacing",
+      "Closing custom restores left HP/gauge presentation without a newly visible surface residue",
+      "Actor proportions, foot/ground contact, background and foreground framing show no newly visible regression",
+      "Jiki text remains readable within the observed controls; no new visible label clipping or overlapping control frames"
+    ],
+    "limits": [
+      "Initial block covers six custom/direct battle views; the additionalManagedPathReview block records the later nine managed/settings/dialog views separately.",
+      "Static images do not verify actual raycast hit regions, focus restoration, callbacks, selection/LIFO, input blocking, save integrity, resource ownership or repeated open/close behavior",
+      "Same-position identical enemies and the existing lower-right touch HUD relationship remain pre-existing limits; no claim of complete individual identification or all-scene occlusion removal",
+      "Captures may differ in glyph/render phase; difference rectangles are informational and are not a claim of exact pixel identity",
+      "4K full images were display-downscaled by the viewer; native body text was additionally inspected through a lossless unscaled in-memory crop"
+    ]
+  },
+  "sourceReviewPerformedThisTurn": false,
+  "unityExecutionByReviewer": false,
+  "sourceEditsByReviewer": false,
+  "additionalManagedPathReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedAfterImageCount": 9,
+    "images": [
+      {
+        "file": "system-stage5-native-after-managed-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "2fd66ccc657343de01738a9c67abcaa8a0715227361c21c97e8aaa2ab45aa849",
+        "comparisonFile": "system-stage5-native-after-battle-host-fhd.png",
+        "comparisonSha256": "487f4cfe7bc9c3dd85b87b91bee1e36943d1a7eaa6e2338acb3c6010ee966f7e",
+        "differenceBoundingBox": [
+          0,
+          0,
+          1920,
+          975
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-managed-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "ce83d82c3ae1f6ba2e036e8f5d0038c8aaed23cfd0eb25d9075a56828d967856",
+        "comparisonFile": "system-stage5-native-after-battle-host-4k.png",
+        "comparisonSha256": "4843b5408cfb391ffe327ec69bb06ea623aa4804ea11118d9b8c34732dfbaeb0",
+        "differenceBoundingBox": [
+          0,
+          0,
+          3840,
+          1951
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-managed-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "cac046b7840a2d58fca6e432bc2c8296d2c3dd9302a5ca10fb5e83c3e375ed0b",
+        "comparisonFile": "system-stage5-native-after-battle-host-4by3.png",
+        "comparisonSha256": "a266666e87c7bda74c105a5d8f703fc58d1994cc5f3b21918d75a0a0ba5465cf",
+        "differenceBoundingBox": [
+          0,
+          0,
+          1440,
+          933
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "2b57a2837c8c858f19be11914ed7e69404659f4c4ff9ace4ac3f90c328896280",
+        "comparisonFile": "system-stage4-native-after-keyboard-settings-fhd.png",
+        "comparisonSha256": "064c4ae9fe5960d5cfbab02f707b95beb71ca5999b95e7e04940eaeb0bb86a4b",
+        "differenceBoundingBox": [
+          183,
+          47,
+          1827,
+          970
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "af9345266780682128839be9ab65e6422e07a88f816bec4de031ca83c4770792",
+        "comparisonFile": "system-stage4-native-after-keyboard-settings-4k.png",
+        "comparisonSha256": "65790da1e398735d551b48ebb4f8344bb8eb08877c55cc240fd6256477ec01eb",
+        "differenceBoundingBox": [
+          371,
+          142,
+          3168,
+          1938
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "1bc59674b46c6d6812f52aa84610ca8afdd76367adee896db97fb20a65ed66af",
+        "comparisonFile": "system-stage4-native-after-keyboard-settings-4by3.png",
+        "comparisonSha256": "d0b4f7507223fce2c29f3dec1f6876181ef7f6c6b637a34c772f9bf704d41fe6",
+        "differenceBoundingBox": [
+          117,
+          108,
+          1359,
+          912
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "fc10ffc1ed6d153ce3e2c7b1fe02562390330059c5e170a5b7a841c740047918",
+        "comparisonFile": "system-stage4-native-after-reset-dialog-fhd.png",
+        "comparisonSha256": "7b0dcc956996da36b289eebe3683f5bb2b6d7bdb58307d32edacbc612faf25ab",
+        "differenceBoundingBox": [
+          208,
+          241,
+          1562,
+          968
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "3dcab170837d86775eb78c5384bc33104b0ad46121ce536026be1cda4843005e",
+        "comparisonFile": "system-stage4-native-after-reset-dialog-4k.png",
+        "comparisonSha256": "b11dd712c640e8a76137ba2f3241a7c3cbd8af5fd52feef79359b40e3b6c7916",
+        "differenceBoundingBox": [
+          556,
+          197,
+          3201,
+          1902
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      },
+      {
+        "file": "system-stage5-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "c5854d8a4d91d8f7b0942a962d04e8b31f6c4925ba4657062f6b7545a8a2e72c",
+        "comparisonFile": "system-stage4-native-after-reset-dialog-4by3.png",
+        "comparisonSha256": "c8d21d1a0ce5548d553479c814a71d79d7bfedc512382520c45a58f8d465e215",
+        "differenceBoundingBox": [
+          101,
+          131,
+          1360,
+          912
+        ],
+        "viewed": "original requested; 4K viewer display resized, native key/dialog text crops additionally inspected"
+      }
+    ],
+    "observations": [
+      "Managed battle projection, actor proportions, foot position, floor/foreground and closed gauge/touch HUD anchors show no new visible regression",
+      "Managed battle has one slime while the direct reference has three; enemy count/group-label differences are different scene states and are not interpreted as rendering failures",
+      "Keyboard settings preserve Stage4 three-column layout, Jiki text, key/clear controls, header/footer and water-mirror surfaces at all three ratios",
+      "Reset dialog preserves Stage4 legible message, separated actions and visual foreground hierarchy over the subdued settings screen"
+    ],
+    "limits": [
+      "No actual input/raycast blocking, focus, save or resource lifecycle assertions executed by this reviewer",
+      "Main-agent direct/managed/Single/cancelMissing/closeOpen/save assertions are external execution evidence, not reviewer-executed tests",
+      "Different run/glyph/scene states prevent a claim of pixel equivalence; comparison bounding boxes are informational only",
+      "Visible button frames do not establish actual input region alignment; physical device behavior remains outside static review"
+    ]
+  },
+  "totalViewedAfterImageCount": 15,
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "scope": "Stage5 Battle/Custom Prefab,binding,Controller release/init,Custom input/model cleanup,tests and Scene scope",
+    "sourceHashesRead": {
+      "Assets/Olca/Application/Management/BattlePresentationBinding.cs": "e9afdb19be7913368543cb127707f0ce9116a75ea9a62960f2de9b0364b75aad",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "9c4e6f44fa93c8b4c7281000455820008b8f0cc507a2f8186627690fbdfabcb9",
+      "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "96c017244ca68b4d9b21848e9b986a38a2bf9e49a5c02798b7ebb6a400ef6c31",
+      "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs": "e15fd70099f534df0d5f2f86c2b049ab47bcc99ecb51fba336dc4c1e2cd5de31",
+      "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "f9b562e2b1db6d7970296260fae47ae3f5ea999e74c215f1380144a12aecadbf",
+      "Assets/Resources/OlcaSystem/BattlePresentation.prefab": "4946bf4f37e8caa42587721f1eccf9e894a196be6f91d787bf69dc6dfa46a9c6",
+      "Assets/Scenes/DungeonScene.unity": "35005135185d3137e10004b9121ca7c1b9efd8cdffc83d559022dcbc30e38d96",
+      "Assets/Olca/Presentation/Battle/BattleView.cs": "c9d834daca9a2abc8e8c6be16bcadd8d5d769be1e8588fe5cab14ff6154e7fe8"
+    },
+    "resolvedFindings": [
+      "Custom release must not ensure/create inspection UI",
+      "Remove CustomizeMode execute/cancel subscriptions on release",
+      "Battle destruction release must skip normal layout restoration/creation"
+    ],
+    "executionByReviewer": false
+  },
+  "publicationGateReview": {
+    "reviewer": "equipment_save_review",
+    "unresolvedConcreteFindings": 0,
+    "resolvedFinding": "Unsupported stripped header must reject instead of bypassing fileID uniqueness",
+    "scope": "Exact existing m_LockedProperties line, byteidentical uniqueheader block, matched base/index line and blockhash; failclosed for changed/new/duplicate/CR/unknownheader; strict diffcheck retained",
+    "sourceHashes": {
+      ".Codex/tools/verified_publish.py": "28cbded84259d3580d600aa41fb5684f3c8b7092e2137f6bc4e2a0130446ba8d",
+      ".Codex/tools/test_verified_publish.py": "781de57cb97df811e12288744c59671605b7a7f23d5424a0ee2b118cb41c7ce9",
+      ".Codex/tools/README.md": "bc96b348adb61f45ed7edeff9c552f1e3d8e8fff880e0b0535a2cbd4cba0169b",
+      ".Codex/skills/olca-git/SKILL.md": "a8730317ba5d4e700d6b1be9c3e6efc5c242120cd0e97e379fc36724a04da65e"
+    },
+    "executionByReviewer": false
+  }
+}

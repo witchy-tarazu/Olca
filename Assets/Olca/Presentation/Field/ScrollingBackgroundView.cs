@@ -10,6 +10,8 @@ namespace Olca.Presentation.Field
     public class ScrollingBackgroundView : MonoBehaviour
     {
         [SerializeField] private Camera targetCamera;
+        public Camera PresentationCamera=>targetCamera;
+        public void ConfigurePresentationCamera(Camera camera){targetCamera=camera;}
         [SerializeField] private bool fitCamera;
         private SpriteRenderer backgroundRenderer;
 

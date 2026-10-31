@@ -1,12 +1,12 @@
 # GameSystem管理基盤と段階移行
 
-ユーザー指定に基づく段階移行。第一段階は下記範囲で実装・検証済みであり、起動Sceneのみへの全面移行完了ではない。
+ユーザー指定に基づく段階移行。第一・第二段階の範囲と証跡を分け、SceneからViewへの全面移行完了とは扱わない。
 
 ## 現状と第一段階
 
 `DungeonScene`の`DungeonBattleController`が起動・攻略・各UI・入力・音声を束縛している。`BattleSessionController`には既存のAttach/Detach、`MenuPadScope`にはモーダルと入力解放、`GameplayAudioRouter`にはBGM/SE/音量の既存処理がある。これらを再実装せず所有者を段階的に明確化する。Scene切替基盤やAddressables導入を前提にしない。検証用Sceneは保持する。
 
-第一段階の通常起動は既存DungeonSceneを互換ホストとし、Controllerから永続`GameSystemRoot`を一つ取得する。代表画面は既存の操作設定、代表Dialogはその初期化確認。新しい起動専用Scene・全画面Prefab化は後続。
+第一段階では既存DungeonSceneを互換起動ホストとし、Controllerから永続`GameSystemRoot`を一つ取得する。代表画面は既存の操作設定、代表Dialogはその初期化確認。起動専用Sceneは第二段階で導入し、全画面Prefab化はまだ後続。
 
 |責務|所有者と境界|
 |---|---|
@@ -28,9 +28,9 @@ pauseから操作設定を開くと、ViewManagerがResourceManager経由で必�
 
 ## 次段階と残る依存
 
-1. 第一段階の通常起動、操作設定、Dialog、保存再読込、音声/入力の単一所有、失敗/取消/再試行を安定させる。
-2. 既存Scene内参照を棚卸しし、起動専用Sceneから代表画面Prefabをロードする縦切りへ移す。Unityのmeta/参照生成は既存リポジトリ規則に従う。既存Scene直起動と検証Sceneを残す。
-3. 他の拠点画面・popupを一群ずつ移行。現在はゲームパッド/音量画面、攻略Canvas、カメラ、EventSystem、battle/field view、checkpoint/floor Store等が旧Controller/Scene依存として残る。
+1. 第一段階の通常起動・操作設定・Dialog・保存復帰・音声/入力寿命は検証済み。第二段階でBootstrap入口と互換ホストのロード寿命を分離。
+2. 第三段階でEventSystem/UIRootと操作設定テンプレートをPrefabへ切り出す。残るカメラと攻略表示群を次にScene leaseからPrefab/View leaseへの縦切りへ移す。Unityのmeta/参照生成は既存リポジトリ規則に従う。既存Scene直起動と検証Sceneを残す。
+3. 他の拠点画面・popupを一群ずつ移行。現在はゲームパッド/音量画面、攻略Canvas、カメラ、battle/field view、checkpoint/floor Store等が旧Controller/Scene依存として残る。
 4. 攻略セッションの所有を表示から分離し、後に外界/ダンジョンの退避復元を接続する。外界機能の実装済みを意味しない。
 
 Asset解放は現段階ではRootキャッシュ寿命と生成物leaseで管理し、全既存Resources呼出しの統合や参照計数は未移行。BGMフェードは現行ルーターにないため新しい時間値を追加しない。ビルド起動Scene設定は追跡対象外のProjectSettingsから製品構成を断定しない。
@@ -54,3 +54,94 @@ Asset解放は現段階ではRootキャッシュ寿命と生成物leaseで管理
 d00b198までの外界接触ダメージ/通り抜け、追従/固定カメラ、ボス封鎖、初回/未撃破再挑戦演出、撃破済み再戦の復元規則も保護した。再戦入口は別途決定。S08落下閾値/式は未決のままであり、文書取得を外界機能の実装完了とは扱わない。
 
 6a9e1d7までのボスラッシュ間のHP/手札/山札/使用済み/共通ゲージ引継ぎ、敗北時の通常/探索内復帰区別、初回/反復報酬、最後に倒したボスの次から中断再開する規則も取得済み文書として保護。今回これらのゲーム状態・保存機構は実装していない。
+
+## 第二段階: Bootstrapからの明示起動
+
+空のBootstrapSceneを標準ビルド先頭に登録し、対象Scene path限定の起動hookからGameSystemRootを一つ作る。GameSystem配下のGameHostManagerは移行用の互換ホスト寿命だけを扱い、ViewManager/ DialogManagerの画面・popup責務へ混在させない。
+
+ResourceManagerのSceneResourceLoaderはDungeonSceneをadditiveロードし、sceneLoadedでrootを非activeに捕捉する。Awake/OnEnableは通知前に走るため阻止を主張しない。現hostのAwakeはpool/描画素材・UI listener初期化、OnEnableはCanvas/描画の再接続で、保存/Gameplay Input開始はController.Startに残ることを確認した。
+
+ロード完了後に保存先とGameSystemを先に注入し、有効化→StartManagedHostで明示起動する。Unityから後にStartが来ても成功フラグで二重開始しない。取消時は完了した非active Scene leaseを回収してUnloadする。ロード/解除中の別要求は拒否し、同時同一要求は共有する。Unload成功までhandleと所有を保持し、失敗時は新起動を拒否してCloseで再試行する。
+
+Root常駐はGameSystemと共通Manager/Sound3音源。カメラ/AudioListener/EventSystem/GameField/Battle/攻略Core/InputProvider/固定時計は互換host Scene所有を維持する。直DungeonScene起動も残し、その場合にはBootstrapが別hostを自動ロードしない。これは従来Sceneをロードする暫定段階であり、画面Prefabと常駐共通基盤の切出しは未完。
+
+ProjectSettingsはリポジトリで無視されるため、Editor installerがSceneパスからBuildSettingsのBoot先頭とDungeon有効を再現する。既存他Sceneの順序/有効状態は維持し、playModeStartSceneを上書きしない。Sceneの.metaを手書き/ステージせず、Editorの通常自動importで解決する。ビルド自体は未実行。
+
+検証projectにguard manifestがある場合、BootstrapSettings/BootstrapCheckpoint/BootstrapProgressを明示した時だけ起動を許可し、既存Requireによる境界を維持する。未指定を既定保存先へ補完しない。
+
+最終関連11件は11成功（6.63秒、console error/warning 0）。最終全件は3553成功（274.41秒）、console error 0。警告59件は既存fixture診断5分類で、抑制・期待値緩和なし。前版3552成功を最終版の実績として流用していない。
+
+最終ソースの旧Dungeon直Play、直PlayからBootstrap Single、出撃/戦闘/設定/Dialog/checkpoint、popup表示中のBootstrap Single再入、解放/欠損Scene/取消/同時再生成を確認。Root/Sound3は維持し、host camera/Listener/EventSystemは1→0→1。旧入力/Controller購読解除、Dialog/View残留なしとSingle/取消/再生成前後の保存dataファイル一致を確認した。9枚のFHD/4K/4:3原寸再レビューとコード再レビューは今回範囲の具体的未解決0。実ビルド・物理機器/OS・音声聴感は未検証。
+
+native確認前半のPipeline main-thread timeout2件は実初期化完了を読み取って継続し、同じfixture/Playは再実行していない。UnityAI接続情報保存警告と歴史的UGUI未解決は製品側最終全件測定と分けて保持。[第二段階の検証証跡](../.Codex/screenshots/system-stage2-20261031/README.md)。
+
+GameFieldView.fieldCamera、BattleViewとCanvas、既存UIInputModule/action assetのScene参照を壊さず次のPrefab化単位で配線を移すため、カメラ/EventSystemを今回は常駐へ移していない。Core/Input/時計もまだホスト寿命であり、ホストの終了再生成は既存保存checkpointからの復帰を確認したもの。任意の外界メモリ状態の退避復元を完成したとは扱わない。
+
+a163eceのボスラッシュ再開時の保存HP/手札/山札/使用済み/ゲージ復元・自動回復なし、補充後保存、途中ボスは戦闘開始時点復元、通常外界ボスは最後の回復ポイントから復帰という区別も文書として保護し、今回未実装。
+
+第二段階の再入レビューでは、外部Single終了済みleaseの同path即成功を生存判定へ修正し、既存Closeで追跡解除後に再Openする回帰を追加（関連11件）。また旧直Play検証の非active Controller状態がScene snapshotに残る場合も、managed Adapterが注入後に対象Controllerだけを有効化して明示Startする。祖先や他の非表示オブジェクトは変更しない。前版全件3552成功は保存し、最終版の再検証とは区別する。
+
+## 第三段階: 共通UI入力口と表示contentの分離
+
+UIRuntimeManagerがResourceManagerのPrefab leaseで共通Overlay CanvasとEventSystem/InputSystemUIInputModuleをRoot配下に一つ生成する。旧SceneのEventSystemは参照先がないことを確認し、既存action assetの参照を保持したPrefabへ移した。カメラはGameFieldView/背景が保持するためhost所有のまま。Camera/AudioListenerを今回同時に常駐化せず、既存投影・追従・レイヤーを変更しない。
+
+Controllerが借りるのは共通Canvas自体でなく、全画面RectTransformのhost専用content。Session終了ではDialog/View登録解除→contentと選択の解除、共通Canvas/EventSystemはRoot寿命まで再利用する。Controllerが常駐CanvasをDestroyしない。Core/InputProvider/固定時計は引き続きhost所有。
+
+操作設定はResourcesのKeyboardSettings PrefabテンプレートをViewManager factory内でロード・生成し、ResourceManagerの既存leaseへ引き渡す。表示要素・保存callbackの組立は既存Initializeのままであり、全ての画面内容をserialize済みPrefabへ変換した段階ではない。Popupは引き続きDialogManager所有。新しいAddressables依存は追加しない。
+
+Prefabは検証Editorの通常PrefabUtilityで作成し、metaを手書き・ステージしない。Scene自動再保存が補完した無関係な既定値は採用せず、元SceneのEventSystem削除だけを反映した。実ビルド/物理機器/聴感は未検証。検証結果は次項に記録する。
+
+
+### 第三段階の検証記録
+
+- 最終関連4件は4成功（6.86秒）、console error/warning 0。共通PrefabのCanvas/Scaler/既存Input action参照、重複所有拒否、内容/選択の解放・再生成、欠損Prefab/事前取消を確認。
+- 最終全件3557成功（285.35秒）、console error 0。警告59件は既存fixture診断5分類と一致。値の緩和・警告抑制はしていない。
+- 実Playで直Dungeon起動→Bootstrap Single、出撃/戦闘/設定/Dialog/checkpoint、popup表示中のSingle、ホストClose/Open/欠損/取消/同時要求を確認。共通Canvas/EventSystemはDDOL各1でID維持、host終了時content/選択/登録View/Dialogは0。カメラ/Listenerはhostの1→0→1、Sound3はRoot再利用。旧Gameplay Input/Controller購読は解除。共通UI InputModuleの購読はRoot寿命として意図して維持する。
+- 共通Canvasとcontentは実640×360時に論理rect1920×1080、scale約0.333。実Raycastからの設定/初期化確認/取消/保存/ディスク一致/初期値復元を確認。ホスト再生成後に操作設定を開き、旧とは異なるPrefab実体でDialog/戻りが動き、保存byteが不変なことも確認した。
+- 原寸FHD/4K/4:3各3場面計9枚と静的コードの独立再レビューで今回範囲の具体的未解決指摘0。全体無欠陥や全Scene移行の完了保証ではない。
+- 初回関連3失敗はEditModeのEventSystem OnEnable登録不足2件と取消Task派生例外の期待型1件。既存テスト同様の登録/解除手順と取消カテゴリへ修正し、製品の保存ガードやゲーム期待値は緩めていない。寸法観測helperの構造体serialize/Prefab名フィルタも修正し、ゲーム操作を再実行せず現在状態から回収した。
+- 再読込/初回実行で回復したPipeline timeoutとUnityAI接続情報保存警告は履歴として保持し、native期間と最終全件測定を区別。歴史的UGUI未解決、実ビルド/物理機器/OS/聴感未検証を解決済み扱いにしない。全件前後の実640×360・専用TMPDIR/saveguard、仮想機器除去、元project clean/Asset一致を確認。
+- [第三段階の証跡](../.Codex/screenshots/system-stage3-20261031/README.md)。次の対象はカメラ借用/返却とGameplay表示群のPrefab/View切出し、操作設定内部Initializeと他画面のController依存。Core/Input/固定時計・外界状態退避復元はまだ移行していない。
+
+## 第四段階: Camera借用とGameplay HUD View（実装・検証済み）
+
+管理起動はCameraRuntimeManagerからCamera/AudioListener/既存URP設定のPrefab実体を排他的に借りる。GameFieldViewが従来どおり追従と投影サイズを計算し、Managerは位置更新や論理時計を持たない。利用終了時は旧GameField/背景の参照を外してから、Cameraの設定・行列・aspect・RT・Transform/ListenerをPrefab基準へ戻し非activeでキャッシュする。URP追加componentはPrefab設定を維持し、既存Viewは変更しない。
+
+GameplayCameraBindingがホストのScene Camera/Listenerの元enabled状態と既存参照を捕捉し、管理起動時はそれらを無効化して共通CameraをGameField/全ScrollingBackgroundへ明示注入する。終了では参照復元→Rental返却→互換Camera/Listenerの状態復元の順。既に破棄されたUnity wrapperにも純managed setterで共通Camera参照を残さない。旧Scene直Playは従来Scene Cameraを使用し、共通Cameraを追加取得しない。Scene側Cameraは互換用として残る。
+
+Scene内のDungeonCanvasだけを内部Text/CanvasGroup参照を含むDungeonHud Prefabへ切り出した。Controller、GameFieldのHUD/debug参照は起動時に明示注入する。ViewManagerのgameplay層でResourceManager leaseを所有し、設定画面の排他切替とは独立して表示する。各層は同じViewManagerの寿命ツリーで、owner終了と親Disposeで子層/current/pending/後着生成を解放する。戦闘フェード、報酬時枚数欄非表示、フォント・order5は従来どおり。現在のResources同期ロードを前提とし、起動中に未完了Taskになった場合は取消して失敗を返す。新しい非同期基盤/Addressablesは導入しない。
+
+HUD PrefabのUnity出力の空Text scalarと引用符内折返し末尾空白は、安全な表現へ正規化した。Unityが読む4Textの値・Font・local IDが前後一致することをImport後に確認。m_Name/m_EditorClassIdentifierの空scalarのspaceはUnity生成形式として厳密条件付きで保持し、公開receiptへ列挙する。
+
+公開は`.Codex/tools/verified_publish.py`のcheck/commit/pushを別操作とし、必須証跡・最終バイト・tree/base HEAD・空白診断を再確認して失敗時は停止する。コード/文書や非空scalarの空白を一括で許容しない。既存6行も根拠と行番号を記録する。
+
+Core/Input/固定時計・攻略状態は引き続きController/host所有。BattleView/CustomScreen/役者/床・背景等のScene依存、操作設定内部Initialize組立、残るStore接続は次段階。外界/ボスラッシュ仕様・D05/S08の未決を今回の実装完了へ混ぜない。
+
+
+第四段階の初回全件は3564件中3562成功・2失敗。既存HP／階層進行度回帰がScene直配置HUDを検索して取得失敗したため、本番Resources HUD Prefabを生成して同じ検証Sceneで所有・破棄するfixtureへ移行した。HP全範囲・回復・再開値・字体・進行度・一度だけ生成の期待値は変更していない。独立差分レビューで期待値緩和なし、具体的未解決0。最終再検証は3564/3564成功（284.12秒）、関連7/7成功（7.86秒）、error0。警告59件は既知fixture由来5分類で抑制なし。FHD/4K/4:3の戦闘・操作設定・Dialog9枚と実経路でCamera/Listener/EventSystemの各1、返却参照・再利用・HUD再生成・保存byte不変を確認。独立コード／原寸視覚レビューの今回範囲の未解決具体指摘0。原寸確認後の製品14ファイルは同一で、変更は既存fixtureのみ。
+
+
+[第四段階の実経路・原寸比較・テスト証跡](../.Codex/screenshots/system-stage4-20261031/README.md)。最終公開判定とcommit/pushは別操作で実行する。次段階候補はBattle/Customの表示グループのPrefab化と参照束縛、またはCore/Input/時計のhost session境界整理。Scene全コピーや一括所有移行は行わない。実build・物理機器・聴感未確認、歴史的UGUI/Pipeline/UnityAI履歴は継続して区別する。
+
+
+## 第五段階: Battle/Custom表示Prefab（実装・検証済み）
+
+BattleView root配下の50 GameObject/162 Sceneブロックを一つのBattlePresentation Prefabへ切り出す。外部Scene参照はなく、ControllerからのBattleView/CustomScreenViewの2参照を生成時に注入する。役者/床/背景はGameFieldの別寿命のため今回は移さない。
+
+BattlePresentationBindingがResourceManager経由の実体leaseをViewManagerのbattle層に登録し、host開始から終了まで所有する。gameplay HUD層や設定画面層とは非排他的。layer currentは実体の寿命であり、戦闘/探索のactive切替・Customの開閉とCore pause理由・入力判定は既存Controller/Systemに残す。CustomはBattle画面内の操作モードで、設定確認等のポップアップを所有するDialogManagerの置換ではない。Custom内の従来詳細UIのManager移行は残る。
+
+起動時にHUD→Battle/Custom→Inputの確認delegate→BattleSessionの順で準備する。図鑑/店等の素材resolverもCustomを参照するため戦闘開始まで生成を遅らせない。終了はBattleSession.Detach→Battle演出終了→Customの入力/モデル/確認delegate解除→owner登録解除/lease破棄→Controller参照解除。生成Sprite/手札/狭幅素材は各Viewの従来OnDestroyが所有し、ResourceManagerは二重破棄しない。旧Scene直Playも同じPrefab供給を使い、明示Viewを注入する検証fixtureは維持する。
+
+Core/Input/固定時計・攻略状態、world役者/床/背景、操作設定内部Initializeは今回もhost側に残る。Root/UIRoot/EventSystem/カメラ借用/音/保存順・固定フレーム/初手5旧10/LIFO/元映像を変更しない。外界機能・D05/S08等は別件。
+
+
+第五段階の関連9/9成功（8.10秒）、最終全件3566/3566成功（285.71秒）、error0。警告59件は既知fixtureの5分類で抑制なし。独立設計/コードレビューのcleanup指摘3件（破棄時Custom補助UI生成、加工Mode callback残留、Battle通常layout復元の再生成）を修正し、通常EndSessionの見た目は保持。今回の具体的未解決指摘0。
+
+直Play/Bootstrap/Custom選択とLIFO/仮想pad加工取消/確認Dialog/保存復帰/Single/host close-open/missing-cancel/load回復を実経路で確認。closed時Battle/Custom実体0、古い入力/モデル参照と生成Sprite解放、Root UI/EventSystem/Camera/音の再利用。既存damageAPIによる勝利fixtureから実報酬skip/訪問退室/次接触を通し、新Battleモデルへ同じ表示Prefabを再利用、旧購読解除と各1実体を確認した。物理戦闘操作の勝利検証ではない。
+
+原寸Custom/戦闘の前後6組と管理起動の戦闘/設定/Dialog9枚を確認し、独立視覚レビュー15枚の新必須指摘0。検証pad除去の自動pauseと、途中shop/eventの探索停止は既存仕様どおりだったため、実Resume/ExitVisitを通して検証を続けた。製品修正とは区別する。Pipelineのreadiness/timeout/ThreadAbortとUnityAI警告、歴史的UGUI未解決は別履歴に保持。実build/物理機器/OS/聴感は未確認。
+
+[第五段階の証跡・比較・残依存](../.Codex/screenshots/system-stage5-20261031/README.md)。次候補はGameFieldのworld表示依存の切出し、Custom素材resolverと表示の分離による必要時load、内部Initialize組立の段階的Prefab化。Core/Input/固定時計のhost境界は別まとまりで扱い、今回のUI移行を全体Scene依存解消とはしない。
+
+
+第五段階の公開checkは、類似YAML大量削除で不変Materialの`m_LockedProperties`行をGitが追加扱いしたため一度停止した。Assetsは再編集せず、HEAD/index同type・一意fileIDの完全block byte一致と厳密指定行だけを証明しreceiptへ記録する判定を追加。CR/stripped等未対応header/重複ID/新規・変更blockは停止。公開CLIの隔離18テスト成功、独立ゲートレビューの具体的未解決0。Unity最終検証済み8資産/コードのbyteは不変で、再検証結果を別ソースへ流用していない。

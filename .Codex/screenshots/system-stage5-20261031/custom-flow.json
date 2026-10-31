@@ -1,0 +1,566 @@
+{
+  "selectionCounts": [
+    1,
+    2,
+    1,
+    0
+  ],
+  "mode": {
+    "virtualGamepadInputSystemRoute": true,
+    "actualCustomizeEnteredAndCanceled": true,
+    "handUnchanged": 5,
+    "selectionUnchanged": 0,
+    "physicalDeviceNotTested": true
+  },
+  "actualHideDetailsReturn": {
+    "actualHideRestoreAndInspectionReturn": true,
+    "frameHeld": true,
+    "state": {
+      "displayedHand": 5,
+      "hand": 5,
+      "selected": 0,
+      "cost": 0,
+      "maxCost": 10,
+      "frame": 0,
+      "rects": [
+        {
+          "name": "BgCustom",
+          "local": "(580.00, 0.00, 0.00)",
+          "pos": "(100.00, 0.00)",
+          "size": "(1280.00, 1000.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "bg_custom_0"
+        },
+        {
+          "name": "CustomReadingSurface",
+          "local": "(460.00, 0.00, 0.00)",
+          "pos": "(460.00, 0.00)",
+          "size": "(860.00, 900.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "PlayerHpText",
+          "local": "(1185.00, 440.00, 0.00)",
+          "pos": "(225.00, 440.00)",
+          "size": "(200.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "100",
+          "image": null
+        },
+        {
+          "name": "CustomGaugeContainer",
+          "local": "(1035.00, 0.00, 0.00)",
+          "pos": "(1035.00, 0.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "SelectedCardDisplayArea",
+          "local": "(480.00, 250.00, 0.00)",
+          "pos": "(0.00, 250.00)",
+          "size": "(700.00, 300.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "CardDescriptionScroll",
+          "local": "(150.00, -5.00, 0.00)",
+          "pos": "(150.00, -5.00)",
+          "size": "(380.00, 270.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "CursorIndicator",
+          "local": "(355.00, 25.00, 0.00)",
+          "pos": "(-125.00, 25.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "button-selected"
+        },
+        {
+          "name": "HandCardController",
+          "local": "(480.00, -50.00, 0.00)",
+          "pos": "(0.00, -50.00)",
+          "size": "(700.00, 300.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "local": "(-250.00, 75.00, 0.00)",
+          "pos": "(-250.00, 75.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "shieldCustomIcon"
+        },
+        {
+          "name": "CostText",
+          "local": "(0.00, -50.00, 0.00)",
+          "pos": "(0.00, -50.00)",
+          "size": "(100.00, 30.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "1",
+          "image": null
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "local": "(-125.00, 75.00, 0.00)",
+          "pos": "(-125.00, 75.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "SwordCustomIcon"
+        },
+        {
+          "name": "CostText",
+          "local": "(0.00, -50.00, 0.00)",
+          "pos": "(0.00, -50.00)",
+          "size": "(100.00, 30.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "1",
+          "image": null
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "local": "(0.00, 75.00, 0.00)",
+          "pos": "(0.00, 75.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "bombCustomIcon"
+        },
+        {
+          "name": "CostText",
+          "local": "(0.00, -50.00, 0.00)",
+          "pos": "(0.00, -50.00)",
+          "size": "(100.00, 30.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "2",
+          "image": null
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "local": "(125.00, 75.00, 0.00)",
+          "pos": "(125.00, 75.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "healCustomIcon"
+        },
+        {
+          "name": "CostText",
+          "local": "(0.00, -50.00, 0.00)",
+          "pos": "(0.00, -50.00)",
+          "size": "(100.00, 30.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "2",
+          "image": null
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "local": "(250.00, 75.00, 0.00)",
+          "pos": "(250.00, 75.00)",
+          "size": "(100.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "tuningCustomIcon"
+        },
+        {
+          "name": "CostText",
+          "local": "(0.00, -50.00, 0.00)",
+          "pos": "(0.00, -50.00)",
+          "size": "(100.00, 30.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "1",
+          "image": null
+        },
+        {
+          "name": "CostDisplay",
+          "local": "(680.00, -250.00, 0.00)",
+          "pos": "(200.00, -250.00)",
+          "size": "(400.00, 56.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "コスト: 0 / 10",
+          "image": null
+        },
+        {
+          "name": "SelectionIndicator",
+          "local": "(480.00, -300.00, 0.00)",
+          "pos": "(0.00, -300.00)",
+          "size": "(800.00, 50.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "ConfirmButton",
+          "local": "(480.00, -400.00, 0.00)",
+          "pos": "(0.00, -400.00)",
+          "size": "(300.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "button-normal"
+        },
+        {
+          "name": "CustomizeModeOverlay",
+          "local": "(480.00, 0.00, 0.00)",
+          "pos": "(0.00, 0.00)",
+          "size": "(960.00, 1080.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "CustomizeModePanel",
+          "local": "(480.00, -415.00, 0.00)",
+          "pos": "(0.00, -415.00)",
+          "size": "(960.00, 160.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "InspectCombatants",
+          "local": "(403.20, 421.20, 0.00)",
+          "pos": "(0.00, 0.00)",
+          "size": "(220.00, 52.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "button-normal"
+        },
+        {
+          "name": "HideCustomPresentation",
+          "local": "(700.80, 421.20, 0.00)",
+          "pos": "(0.00, 0.00)",
+          "size": "(270.00, 52.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "button-normal"
+        },
+        {
+          "name": "CustomTransformationStatus",
+          "local": "(350.00, 460.00, 0.00)",
+          "pos": "(350.00, -80.00)",
+          "size": "(650.00, 80.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "ヘンシンなし（ノコり0カイ）",
+          "image": null
+        },
+        {
+          "name": "FocusHeading",
+          "local": "(130.00, 416.00, 0.00)",
+          "pos": "(130.00, 416.00)",
+          "size": "(150.00, 30.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "フォーカス",
+          "image": null
+        },
+        {
+          "name": "HandHeading",
+          "local": "(130.00, 87.50, 0.00)",
+          "pos": "(130.00, 87.50)",
+          "size": "(700.00, 24.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "テフダ　5マイ",
+          "image": null
+        },
+        {
+          "name": "SelectionHeading",
+          "local": "(130.00, -250.00, 0.00)",
+          "pos": "(130.00, -250.00)",
+          "size": "(340.00, 56.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "シヨウジュン　0 / 5",
+          "image": null
+        },
+        {
+          "name": "SelectionHint",
+          "local": "(670.00, -300.00, 0.00)",
+          "pos": "(670.00, -300.00)",
+          "size": "(210.00, 50.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": "さいごの1マイ\nをもどす",
+          "image": null
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "local": "(800.00, -400.00, 0.00)",
+          "pos": "(320.00, -400.00)",
+          "size": "(280.00, 100.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "button-normal"
+        },
+        {
+          "name": "CustomPadGuidePanel",
+          "local": "(480.00, 504.90, 0.00)",
+          "pos": "(0.00, 0.00)",
+          "size": "(921.60, 59.40)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "window"
+        },
+        {
+          "name": "HiddenCustomControls",
+          "local": "(480.00, 0.00, 0.00)",
+          "pos": "(0.00, 0.00)",
+          "size": "(960.00, 1080.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": null
+        },
+        {
+          "name": "CustomPadDetails",
+          "local": "(480.00, 0.00, 0.00)",
+          "pos": "(0.00, 0.00)",
+          "size": "(960.00, 1080.00)",
+          "scale": "(0.26, 0.26, 0.33)",
+          "text": null,
+          "image": "description"
+        }
+      ],
+      "state": {
+        "screen": [
+          640,
+          360
+        ],
+        "phase": "Battle",
+        "focus": "CloseCustomPadDetails",
+        "hand": 5,
+        "handLimit": 5,
+        "custom": true,
+        "handHashes": [
+          "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+          "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+          "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+          "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+          "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        ],
+        "deck": 20,
+        "owned": 20,
+        "buttons": [
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "SelectionIndicator",
+            "interactable": true
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "HideCustomPresentation",
+            "interactable": true
+          },
+          {
+            "name": "UndoCustomizationButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseButton",
+            "interactable": true
+          },
+          {
+            "name": "InspectCombatants",
+            "interactable": true
+          },
+          {
+            "name": "TouchCardUseButton",
+            "interactable": false
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "ConfirmButton",
+            "interactable": true
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "BasicAttackButton",
+            "interactable": false
+          }
+        ],
+        "texts": [
+          {
+            "name": "TouchCardUseButtonLabel",
+            "text": "カード\n<size=16>[RB]</size>"
+          },
+          {
+            "name": "QueueOrder",
+            "text": "5"
+          },
+          {
+            "name": "ExplorationHpText",
+            "text": "HP: 100 / 100"
+          },
+          {
+            "name": "CostText",
+            "text": "1"
+          },
+          {
+            "name": "CostText",
+            "text": "2"
+          },
+          {
+            "name": "CurrencyBalance",
+            "text": "ツウカ: 0"
+          },
+          {
+            "name": "SelectionHeading",
+            "text": "シヨウジュン　0 / 5"
+          },
+          {
+            "name": "BasicAttackState",
+            "text": "カスタムチュウ"
+          },
+          {
+            "name": "QueueOrder",
+            "text": "3"
+          },
+          {
+            "name": "Text (Legacy)",
+            "text": "カクテイ"
+          },
+          {
+            "name": "FocusHeading",
+            "text": "フォーカス"
+          },
+          {
+            "name": "QueueOrder",
+            "text": "2"
+          },
+          {
+            "name": "SelectedCardDescription",
+            "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし"
+          },
+          {
+            "name": "Label",
+            "text": "ポーズ"
+          },
+          {
+            "name": "CostText",
+            "text": "1"
+          },
+          {
+            "name": "CostDisplay",
+            "text": "コスト: 0 / 10"
+          },
+          {
+            "name": "PlayerHpText",
+            "text": "100"
+          },
+          {
+            "name": "InstructionText",
+            "text": "Lスティック / ジュウジヒダリ / ジュウジミギ / ジュウジウエ / ジュウジシタ: イドウ\nWest: コユウコウゲキ  RB: カード  North: カスタム  Start: ポーズ"
+          },
+          {
+            "name": "BasicAttackLabel",
+            "text": "コユウコウゲキ\n<size=16>[West]</size>"
+          },
+          {
+            "name": "BasicAttackKey",
+            "text": "North: カスタム / Start: ポーズ"
+          },
+          {
+            "name": "CostText",
+            "text": "2"
+          },
+          {
+            "name": "DungeonCardCounts",
+            "text": "デッキ: 20マイ\nカクトク: 0マイ"
+          },
+          {
+            "name": "Text (Legacy)",
+            "text": "ガメンをカクす"
+          },
+          {
+            "name": "CostText",
+            "text": "1"
+          },
+          {
+            "name": "QueueOrder",
+            "text": "1"
+          },
+          {
+            "name": "HandHeading",
+            "text": "テフダ　5マイ"
+          },
+          {
+            "name": "SelectionHint",
+            "text": "さいごの1マイ\nをもどす"
+          },
+          {
+            "name": "FloorProgressText",
+            "text": "1カイ  49 / 100"
+          },
+          {
+            "name": "CustomGaugeLabel",
+            "text": "CUSTOM"
+          },
+          {
+            "name": "Text (Legacy)",
+            "text": "カコウをモドす"
+          },
+          {
+            "name": "Text (Legacy)",
+            "text": "ジブン"
+          },
+          {
+            "name": "QueueOrder",
+            "text": "4"
+          }
+        ]
+      }
+    }
+  },
+  "readonlySaveBytesInvariant": "asserted before failed Confirm attempt; native full initialSingle/cancel/reopen/readOnly regeneration hashes separately retained",
+  "verificationBoundary": "Removing virtualPad triggered specified autoPause; native raycast read showedPauseOverlay beforeConfirm. Resumed via realResumeButton then confirmed. Nextbattle wait paused at shop/event; exited normally. No product changes.",
+  "nextBattle": {
+    "result": {
+      "actualNextBattleWithSameView": true,
+      "oldBattleAndCustomSubscriptionsRemoved": true,
+      "state": {
+        "phase": "Battle",
+        "battleIdentity": -1945729952,
+        "view": -236109076,
+        "custom": -236109086,
+        "hand": 5,
+        "selected": [],
+        "frame": 0,
+        "currency": 0,
+        "registered": 1,
+        "battleViews": 1,
+        "customViews": 1
+      }
+    },
+    "interveningVisitsExitedNormally": [
+      "ダンジョンショップ",
+      "イベント"
+    ],
+    "waitCorrection": "Initial helper waited for nextbattle while existing shop at52 intentionally paused exploration; normal ExitVisit path used, no product change"
+  },
+  "victoryFixture": "Existing damage API forced victory; actual UI reward skip, exploration visits and next contact; not physical combat"
+}

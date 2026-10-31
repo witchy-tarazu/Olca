@@ -1,0 +1,134 @@
+{
+  "before": {
+    "active": false,
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "objects": 50,
+    "texts": [
+      {
+        "id": "1885860766611171458",
+        "name": "PlayerHpText",
+        "text": "9999",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "8020196595807663656",
+        "name": "CustomGaugeLabel",
+        "text": "Preparing...",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "8703395397784712497",
+        "name": "SelectedCardDescription",
+        "text": "ここにカードのセツメイが\nヒョウジされます",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "7695753072128485090",
+        "name": "CostDisplay",
+        "text": "コスト: 0 / 10",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "2589488534514064715",
+        "name": "Text (Legacy)",
+        "text": "SUBMIT",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "7195231854440455950",
+        "name": "GuideText",
+        "text": "カスタマイズ: カードを選択してください（超越/調律/融合 自動判定）",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "2153165735412949976",
+        "name": "ErrorText",
+        "text": "",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "1178692225512283169",
+        "name": "Label",
+        "text": "実行 (Enter)",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "7903305815852646413",
+        "name": "Label",
+        "text": "キャンセル (ESC)",
+        "font": "Library/unity default resources"
+      }
+    ]
+  },
+  "after": {
+    "active": false,
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "objects": 50,
+    "texts": [
+      {
+        "id": "1885860766611171458",
+        "name": "PlayerHpText",
+        "text": "9999",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "8020196595807663656",
+        "name": "CustomGaugeLabel",
+        "text": "Preparing...",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "8703395397784712497",
+        "name": "SelectedCardDescription",
+        "text": "ここにカードのセツメイが\nヒョウジされます",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "7695753072128485090",
+        "name": "CostDisplay",
+        "text": "コスト: 0 / 10",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "2589488534514064715",
+        "name": "Text (Legacy)",
+        "text": "SUBMIT",
+        "font": "Assets/Font/JikiTourai.ttf"
+      },
+      {
+        "id": "7195231854440455950",
+        "name": "GuideText",
+        "text": "カスタマイズ: カードを選択してください（超越/調律/融合 自動判定）",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "2153165735412949976",
+        "name": "ErrorText",
+        "text": "",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "1178692225512283169",
+        "name": "Label",
+        "text": "実行 (Enter)",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "7903305815852646413",
+        "name": "Label",
+        "text": "キャンセル (ESC)",
+        "font": "Library/unity default resources"
+      }
+    ]
+  },
+  "unityDecodedValuesAndFontsMatch": true,
+  "normalization": "Only empty m_Text trailing delimiter ASCII spaces removed; original9Text/localIDs/fonts unchanged"
+}

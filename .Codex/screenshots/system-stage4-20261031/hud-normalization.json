@@ -1,0 +1,66 @@
+{
+  "changedComponentIds": [
+    "7185438872462666130",
+    "3489432942134508000"
+  ],
+  "beforeHash": "48bad88240dc8235411c2269dffab82123aabf47569845fcc51f4c7cb0726d78",
+  "afterHash": "bc1ffbc5366d8942f6da8887e1cf0865d62fceb8bedcc7de010b143fefe8889f",
+  "method": "Quoted text uses JSON-compatible single-line YAML preserving actual Unity Text.text incl double spaces; empty scalar drops delimiter space only; all other bytes retained",
+  "expectedTexts": {
+    "texts": [
+      {
+        "id": "7185438872462666130",
+        "name": "InstructionText",
+        "text": "← → 自動前進  Space: ジャンプ  Shift: ダッシュ",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "3489432942134508000",
+        "name": "DungeonDebugText",
+        "text": "",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "6757457069204882078",
+        "name": "PlayerStatusText",
+        "text": "Phase",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "219145466649243601",
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 0マイ\nカクトク: 0マイ",
+        "font": "Assets/Font/JikiTourai.ttf"
+      }
+    ]
+  },
+  "unityDecodedValuesAndFontsMatch": true,
+  "actualAfter": {
+    "texts": [
+      {
+        "id": "7185438872462666130",
+        "name": "InstructionText",
+        "text": "← → 自動前進  Space: ジャンプ  Shift: ダッシュ",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "3489432942134508000",
+        "name": "DungeonDebugText",
+        "text": "",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "6757457069204882078",
+        "name": "PlayerStatusText",
+        "text": "Phase",
+        "font": "Library/unity default resources"
+      },
+      {
+        "id": "219145466649243601",
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 0マイ\nカクトク: 0マイ",
+        "font": "Assets/Font/JikiTourai.ttf"
+      }
+    ]
+  }
+}

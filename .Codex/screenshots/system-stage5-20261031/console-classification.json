@@ -1,0 +1,68 @@
+{
+  "nativeWindow": {
+    "errors": [
+      {
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+        "seq": 300243
+      },
+      {
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms",
+        "seq": 300245
+      }
+    ],
+    "productExceptionsObserved": 0,
+    "warnings": [
+      {
+        "message": "Editor is already in edit mode",
+        "seq": 300242
+      },
+      {
+        "message": "Could not save connection info: Read-only file system",
+        "seq": 300244
+      }
+    ],
+    "groundTruth": {
+      "sampledUtc": "2026-10-31T15:31:29.138767Z",
+      "ageMs": 135,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 3,
+      "consoleWarnings": 1,
+      "consoleLogs": 75,
+      "seeded": true
+    }
+  },
+  "compileHistory": "Initial newtest omitted required DialogManager frameFunc argument; fixed then explicit compilation succeeded. Raw receipts retained.",
+  "recovery": "Domain/Play reload timeouts retained. Same PID137059 recovered via supported CLI readiness; actualController manager/input observed before resuming capture without repeating fixture. Dedicated TMPDIR/actual640/guard confirmed before tests.",
+  "resolvedReviewFindings": [
+    "Avoid Custom release creating inspection UI",
+    "Remove Mode execute/cancel subscriptions before delayed destroy",
+    "Battle destruction release skips normal layout recreation"
+  ],
+  "assetNormalization": "Only empty m_Text delimiter spaces normalized; Unity9 Text values/fonts/localIDs before-after identical.",
+  "historicalUnresolved": [
+    "UGUI reload exception"
+  ],
+  "environmentHistory": [
+    "Pipeline timeout recovery",
+    "UnityAI connectioninfo read-only warning",
+    "FMOD noaudio:聴感未確認"
+  ],
+  "publication": "Receipt-bound separated check/commit/push; strict emptyName/ClassIdentifier metadata whitespace exception only",
+  "verificationBoundaries": {
+    "modeCancelConfirm": "Confirm raycast saw PauseOverlay after removing virtual pad; expected autoPause, resumed via actualResumeButton; no product edit",
+    "nextBattleWait": "Existing shop/event stopped exploration; used actual ExitVisit, then nextbattle identity changed while same View retained",
+    "uncertainDestroyProbe": "Diagnostic run_script request timed out before related test execution; no result or success claimed. Play reentry reset transient state; actual hostclose assertions later succeeded",
+    "preFullConsole": "Raw native error entries are2 Pipeline timeout errors; groundTruth counter3 is retained separately, not claimed as clean native console. Final suite uses separateclear after preserving history."
+  },
+  "nativeErrorCounterReconciliation": {
+    "groundTruth": 3,
+    "mcpEnumerated": 2,
+    "boundedEditorLogMessages": [
+      "Failed to handle /api/exec request: Thread was being aborted.",
+      "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+      "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+    ],
+    "classification": "Three Pipeline request errors: one Thread was being aborted, two main-thread timeout. Raw Editor log explains counter delta; no product exception stack observed in this bounded window. Not a native clean-console claim."
+  }
+}

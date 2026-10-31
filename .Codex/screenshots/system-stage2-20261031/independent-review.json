@@ -1,0 +1,117 @@
+{
+  "reviewer": "independent_refactor_review",
+  "scope": "GameSystem stage 2 final static review and nine final-source native screenshots",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "reviewedBoundaries": [
+      "BootstrapEntry preparation -> host activation -> explicit Controller start",
+      "SceneResourceLoader handle ownership until successful unload and failed unload retry",
+      "GameHostManager cancellation, duplicate requests, close completion and release-failure refusal",
+      "Externally unloaded host detection and same-path Bootstrap reentry",
+      "Managed adapter enables only the injected Controller; legacy direct-play path retained"
+    ],
+    "resolvedFindings": [
+      "Unload failure previously discarded ownership; now retained until successful retry",
+      "Externally unloaded scene previously returned same-path success; now closes stale lease before reopening"
+    ],
+    "executionByReviewer": false
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "imageCount": 9,
+    "images": [
+      {
+        "file": "system-stage2-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "0522befcda5c728a821b923463a0d0da1d27c2fe8086918abfc00cf7c4920668",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "ae807d1c1cb688137b9a286fb0ed39fcdf282a615bdec35dbe4c93e8dbd5ed5a",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "2c44f141b282bb7fba67f54eecb7880667609534ef3d1d44a396eed25421df88",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "dbb5d5e2b458f88fcaccfc8614156cd8b6408b9ba97f92fc9b41996dab7c8fca",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "0034582a3eec804843b8b820dd8010ae1e575ad57769ebdfda13df0574d3998b",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "652b5d7be14ec2e696a3a65e65d6f7cda2c0b93a7f720fc56f228fee86eb2e4f",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "b6ca7f0d63b7f4db7dfd6250321752f3d6ab5c56df7a449dfccaa80a1e7ba8b3",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "8ae861dcf15e58cfcc4b0b828eaa2105b5e1492692ba46d50ab51822fb8b88d3",
+        "viewedWith": "view_image detail=original / image detail=original"
+      },
+      {
+        "file": "system-stage2-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "d417acfbd82347f58b66034283e18eca8e146b5f716dcc5fa87cbd60a1e09e17",
+        "viewedWith": "view_image detail=original / image detail=original"
+      }
+    ],
+    "observations": [
+      "Battle background, floor/foreground, actor proportions, feet visibility and HUD show no new visible regression in these captures",
+      "Keyboard settings retains readable Jiki labels, three-column layout, water-mirror surfaces and footer controls at FHD, 4K and 4:3",
+      "Reset dialog text and two actions remain readable, with the existing subdued parent screen and no new clipping or overlap"
+    ],
+    "limits": [
+      "Static screenshots do not establish physical input blocking, focus transitions, save integrity, scene counts or dynamic loading/unloading correctness",
+      "Native flow assertions and automated test outcomes belong to the main reviewer evidence; they were not executed by this reviewer",
+      "No global UI completion or all gameplay states guarantee"
+    ]
+  },
+  "sourceEditsByReviewer": false
+}
