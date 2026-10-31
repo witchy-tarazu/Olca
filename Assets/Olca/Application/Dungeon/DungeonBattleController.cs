@@ -176,11 +176,18 @@ namespace Olca.Application.Dungeon
             basicAttackHud.gameObject.SetActive(visible); if (!visible) return;
             if(manager.CurrentPhase==GamePhase.Dungeon) { basicAttackHud.RenderExploration(ExplorationUiAvailable,GameplayKeyboardProfile); return; }
             var battle = manager.CurrentBattle;
-            string state = IsUserPaused ? "ポーズ中" : battle.IsHitStopped ? "ヒットストップ" : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中" :
-                battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中" :
-                battle.CardUsage.InFlightCard != null ? "カード使用中" : basicAttackInput.CooldownFrames > 0 ? "再使用待ち" :
-                GameplayPause.InputBlocked ? "キーを離してください" : basicAttackInput.IsResumePending ? "再押下でタメ再開" : basicAttackInput.IsCharging ? $"タメ {basicAttackInput.ChargeFrames}/{battle.ResolveBasicChargeFrames(basicAttackChargeFrames)}" : "短押し / 長押しでタメ";
-            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable,GameplayKeyboardProfile);
+            int chargeLimit=battle.ResolveBasicChargeFrames(basicAttackChargeFrames);
+            bool chargeReady=BasicAttackUiAvailable && basicAttackInput.IsCharging && basicAttackInput.ChargeFrames>=chargeLimit;
+            string charge=$"タメ {basicAttackInput.ChargeFrames}/{chargeLimit}";
+            string held=basicAttackInput.ChargeFrames>0?$" / {charge}保持":"";
+            string state = IsUserPaused ? "ポーズ中"+held : battle.IsHitStopped ? "ヒットストップ"+held : battle.CustomScreen.IsOpen || battle.IsPaused ? "カスタム中"+held :
+                battle.Player.IsStaggered ? "のけぞり中" : battle.Player.IsActionPrevented ? "状態異常中" : battle.PlayerMovement.IsNormalMoving ? "移動中"+(basicAttackInput.IsCharging?$" / {charge}":"") :
+                battle.CardUsage.InFlightCard != null ? "カード使用中" :
+                basicAttackInput.CooldownFrames > 0 && !battle.CanCancelPlayerRecovery ? "固有攻撃 再使用待ち" :
+                battle.HasPlayerAction && !battle.CanCancelPlayerRecovery ? "固有攻撃中" :
+                GameplayPause.InputBlocked ? "キーを離してください"+held : basicAttackInput.IsResumePending ? "再押下でタメ再開"+held :
+                chargeReady ? "タメ完了 / 離して攻撃" : basicAttackInput.IsCharging ? charge+" / 離すと通常攻撃" : "短押し: 通常 / 長押し: タメ";
+            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackUiAvailable, TouchCardAvailable,GameplayKeyboardProfile,chargeReady);
         }
         private bool battleFieldReady;
         private GameObject pauseCanvas;

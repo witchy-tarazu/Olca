@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 118,\n  \"executeMs\": 8,\n  \"assemblyName\": \"PipelineRunScript_Hud73Proof_5e22451566e04948aeae49fe57e3c784\",\n  \"success\": true,\n  \"result\": {\n    \"frame\": 1376,\n    \"charge\": 60,\n    \"charging\": false,\n    \"pending\": true,\n    \"cooldown\": 0,\n    \"paused\": false,\n    \"custom\": false,\n    \"device\": \"KeyboardMouse\",\n    \"texts\": [\n      {\n        \"name\": \"BasicAttackKey\",\n        \"text\": \"LeftAlt: \u30ab\u30b9\u30bf\u30e0 / Escape: \u30dd\u30fc\u30ba\",\n        \"size\": 18\n      },\n      {\n        \"name\": \"BasicAttackState\",\n        \"text\": \"\u30b5\u30a4\u30aa\u30a6\u30ab\u3067\u30bf\u30e1\u30b5\u30a4\u30ab\u30a4 / \u30bf\u30e1 60/60\u30db\u30b8\",\n        \"size\": 20\n      },\n      {\n        \"name\": \"BasicAttackLabel\",\n        \"text\": \"\u30b3\u30e6\u30a6\u30b3\u30a6\u30b2\u30ad\\n<size=16>[Z]</size>\",\n        \"size\": 20\n      },\n      {\n        \"name\": \"TouchCardUseButtonLabel\",\n        \"text\": \"\u30ab\u30fc\u30c9\\n<size=16>[Space]</size>\",\n        \"size\": 24\n      }\n    ],\n    \"buttons\": [\n      {\n        \"name\": \"BasicAttackButton\",\n        \"interactable\": true,\n        \"rect\": \"(x:-77.50, y:-37.00, width:155.00, height:74.00)\",\n        \"position\": \"(155.00, -5.00)\"\n      },\n      {\n        \"name\": \"TouchCardUseButton\",\n        \"interactable\": false,\n        \"rect\": \"(x:-95.00, y:-30.00, width:190.00, height:60.00)\",\n        \"position\": \"(-80.00, -5.00)\"\n      }\n    ]\n  }\n}"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "code": {
+    "files": 3,
+    "requiredUnresolved": 0,
+    "scope": "presentation state/hints, optional ready flag, two real integration regressions; no gameplay/input/save changes"
+  },
+  "visual": {
+    "initialNativeViews": 15,
+    "initialRequired": 0,
+    "minorFinding": "4:3 card two-line label slightly dense",
+    "resolvedBy": "cardLabel.lineSpacing=.9; font24 and rect190x60 unchanged",
+    "finalMainNativeViews": 6,
+    "finalSupplementFhd4by3Views": 8,
+    "requiredUnresolved": 0,
+    "extra4kIndependentReview": false,
+    "extra4kOwnerReview": "touch 3840x2160 original viewed; main 4K independently reviewed"
+  },
+  "strictComparison": {
+    "ready": {
+      "frame": 1821,
+      "charge": 60,
+      "ratios": [
+        "1920x1080",
+        "3840x2160",
+        "1440x1080"
+      ]
+    },
+    "partial": {
+      "frame": 125,
+      "charge": 29,
+      "notComparedAsExact30": true
+    }
+  },
+  "remaining": [
+    "identical co-located enemy-body identity",
+    "lower-edge body overlap with fixed touch HUD",
+    "historical UGUI exception unresolved",
+    "physical pad/touch/IME/device build not run"
+  ],
+  "noAestheticFinalApprovalClaim": true
+}

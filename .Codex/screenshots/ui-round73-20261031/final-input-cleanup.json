@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 314,\n  \"executeMs\": 115,\n  \"assemblyName\": \"PipelineRunScript_Hud73Proof_2ab2b457661544e883c27d93ecca78e0\",\n  \"success\": true,\n  \"result\": {\n    \"devices\": [\n      \"Mouse\",\n      \"Keyboard\"\n    ]\n  }\n}"
+    }
+  ]
+}

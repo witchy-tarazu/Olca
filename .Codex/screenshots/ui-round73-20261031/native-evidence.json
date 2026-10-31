@@ -1,0 +1,1127 @@
+{
+  "images": {
+    "ui-round73-before-ready-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "0863fe03e56beecf4b2ef4bc13f9890ddf333e849aa1a347563b118b39cfe8e3"
+    },
+    "ui-round73-before-ready-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "81be14cf70c6a01b9c1022556073582cb029073299777e6d92e7a3989a48afeb"
+    },
+    "ui-round73-before-ready-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "8d253ae0372ebfa54d91de1d0db08648f8f8a82fbdb872a22322b6ba54e1473f"
+    },
+    "ui-round73-final-charge-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "d678947754030dcc01c2153a380dee94e7a1d0aaee3d019f3b23e6a5eb913c3f"
+    },
+    "ui-round73-final-charge-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "b5bfc96f7ca3b5e9cfeeaa124748be0f1cba51cfd17e3e49945713ec7f8987b4"
+    },
+    "ui-round73-final-charge-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "541f7f1bdade57e73a79b034e09b47a084ae886bc4ec497a0b24df8ad1f9b83f"
+    },
+    "ui-round73-final-ready-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "373e7b5adac3468049ff0efdd46a8160f7ddbbaa05b567b04d557c269dc7181a"
+    },
+    "ui-round73-final-ready-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "0986f44c0709219045df3e76b126a29f279d68e80d717318a2e59988c45b4abb"
+    },
+    "ui-round73-final-ready-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "e981b95332c395815834e7e7abb22daff2dcd8a64afa71d275b5fdfb80ac1075"
+    },
+    "ui-round73-final-idle-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "bf0b7dff3042370b73c632467d7753237d0788355fe7bb30f712e0256248721a"
+    },
+    "ui-round73-final-idle-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "93001acfcd1ba82df04f327921559652d5fd3da4dbf87b73c91314ee4fbd40bc"
+    },
+    "ui-round73-final-idle-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "9cb55f64f8fa6b1f32420a18686a38b81fe7d8121ac34dbb8d8f5a5363b1508c"
+    },
+    "ui-round73-final-resume-pending-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "18039157f96edfae2bc450b1f79573cbc847089a0259885fdd51a41a7c5de2ec"
+    },
+    "ui-round73-final-resume-pending-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "4647aacf3d8c1fb9d7016289fd7c68d7be1e8dc6307bb126e8c8f5aaab5abe46"
+    },
+    "ui-round73-final-resume-pending-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "aa455317acd6c26e6b31868768c345d3d224045dde50840c65d0dbbc0b924d9e"
+    },
+    "ui-round73-final-pad-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "67176e3fba2e8f733acf39fff7c5d49830cdd5c3ff5b504f98d14af8e47869a1"
+    },
+    "ui-round73-final-pad-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "bb24e0be28cec9c2cbe65c4ed78ca1c6f99ea2d7ca47fe1fb12c39808862af2e"
+    },
+    "ui-round73-final-pad-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "64885fc1cf6b96509aee6608f039d0fd178834eac7cf86ac32dc5b6a40ae50a0"
+    },
+    "ui-round73-final-touch-fhd.png": {
+      "size": [
+        1920,
+        1080
+      ],
+      "sha256": "624ae23885e80a4e991659b26427a423a72df586d18752f504390005ea4b460a"
+    },
+    "ui-round73-final-touch-4k.png": {
+      "size": [
+        3840,
+        2160
+      ],
+      "sha256": "101849b7183877e9802a45d9e9cffb93d112e4a285c189a43f46bc652afc1ea3"
+    },
+    "ui-round73-final-touch-4by3.png": {
+      "size": [
+        1440,
+        1080
+      ],
+      "sha256": "a30060f645c25c3d1ec9fa9a2101c7f6db44f0ec6b1733f8f42983c596bb420f"
+    }
+  },
+  "states": {
+    "ui-round73-before-ready-fhd.png": {
+      "frame": 1821,
+      "charge": 60,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "コウゲキ [Z]  カード [Space]\nLeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメ 60/60",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コウゲキ",
+          "size": 26
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード",
+          "size": 26
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-before-ready-4k.png": {
+      "frame": 1821,
+      "charge": 60,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "コウゲキ [Z]  カード [Space]\nLeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメ 60/60",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コウゲキ",
+          "size": 26
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード",
+          "size": 26
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-before-ready-4by3.png": {
+      "frame": 1821,
+      "charge": 60,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "コウゲキ [Z]  カード [Space]\nLeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメ 60/60",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コウゲキ",
+          "size": 26
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード",
+          "size": 26
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-charge-fhd.png": {
+      "frame": 125,
+      "charge": 29,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメ 29/60 / ハナすとツウジョウコウゲキ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-charge-4k.png": {
+      "frame": 125,
+      "charge": 29,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメ 29/60 / ハナすとツウジョウコウゲキ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-charge-4by3.png": {
+      "frame": 125,
+      "charge": 29,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメ 29/60 / ハナすとツウジョウコウゲキ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-ready-fhd.png": {
+      "frame": 1821,
+      "charge": 60,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメカンリョウ / ハナしてコウゲキ",
+          "size": 22
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-ready-4k.png": {
+      "frame": 1821,
+      "charge": 60,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメカンリョウ / ハナしてコウゲキ",
+          "size": 22
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-ready-4by3.png": {
+      "frame": 1821,
+      "charge": 60,
+      "charging": true,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タメカンリョウ / ハナしてコウゲキ",
+          "size": 22
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-idle-fhd.png": {
+      "frame": 1866,
+      "charge": 0,
+      "charging": false,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タンオし: ツウジョウ / ナガオし: タメ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-idle-4k.png": {
+      "frame": 1866,
+      "charge": 0,
+      "charging": false,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タンオし: ツウジョウ / ナガオし: タメ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-idle-4by3.png": {
+      "frame": 1866,
+      "charge": 0,
+      "charging": false,
+      "pending": false,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "タンオし: ツウジョウ / ナガオし: タメ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-resume-pending-fhd.png": {
+      "frame": 3425,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-resume-pending-4k.png": {
+      "frame": 3425,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-resume-pending-4by3.png": {
+      "frame": 3425,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "KeyboardMouse",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "LeftAlt: カスタム / Escape: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[Z]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[Space]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-pad-fhd.png": {
+      "frame": 3497,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "Gamepad",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "North: カスタム / Start: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[West]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[RB]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-pad-4k.png": {
+      "frame": 3497,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "Gamepad",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "North: カスタム / Start: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[West]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[RB]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-pad-4by3.png": {
+      "frame": 3497,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "Gamepad",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "North: カスタム / Start: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ\n<size=16>[West]</size>",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード\n<size=16>[RB]</size>",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-touch-fhd.png": {
+      "frame": 3497,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "Touch",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "ミギウエ: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-touch-4k.png": {
+      "frame": 3497,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "Touch",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "ミギウエ: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    },
+    "ui-round73-final-touch-4by3.png": {
+      "frame": 3497,
+      "charge": 60,
+      "charging": false,
+      "pending": true,
+      "cooldown": 0,
+      "paused": false,
+      "custom": false,
+      "device": "Touch",
+      "texts": [
+        {
+          "name": "BasicAttackKey",
+          "text": "ミギウエ: ポーズ",
+          "size": 18
+        },
+        {
+          "name": "BasicAttackState",
+          "text": "サイオウカでタメサイカイ / タメ 60/60ホジ",
+          "size": 20
+        },
+        {
+          "name": "BasicAttackLabel",
+          "text": "コユウコウゲキ",
+          "size": 20
+        },
+        {
+          "name": "TouchCardUseButtonLabel",
+          "text": "カード",
+          "size": 24
+        }
+      ],
+      "buttons": [
+        {
+          "name": "BasicAttackButton",
+          "interactable": true,
+          "rect": "(x:-77.50, y:-37.00, width:155.00, height:74.00)",
+          "position": "(155.00, -5.00)"
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false,
+          "rect": "(x:-95.00, y:-30.00, width:190.00, height:60.00)",
+          "position": "(-80.00, -5.00)"
+        }
+      ]
+    }
+  },
+  "strictComparisonFrames": {
+    "ready": 1821
+  },
+  "partialExample": {
+    "frame": 125,
+    "charge": 29,
+    "notStrictBeforeAfterPair": true
+  }
+}
