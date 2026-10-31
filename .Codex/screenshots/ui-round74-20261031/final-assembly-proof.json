@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 107,\n  \"executeMs\": 0,\n  \"assemblyName\": \"PipelineRunScript_Battle74Proof_eab7c2798c29486b9229b772f240bd23\",\n  \"success\": true,\n  \"result\": {\n    \"groupConnector\": true,\n    \"lowerSurface\": true\n  }\n}"
+    }
+  ]
+}

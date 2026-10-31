@@ -1,0 +1,16 @@
+{
+  "codeRequiredUnresolved": 0,
+  "codeFiles": 3,
+  "independentNativeComparisonViews": 12,
+  "visualRequiredUnresolved": 0,
+  "observed": "common stem/count communicates body group; feet visible; water mirror and text readable; no new foreground seam",
+  "remaining": [
+    "fully coincident individual-body identity not guaranteed",
+    "multiple coincident bosses not visually verified",
+    "physical devices/build not verified",
+    "historical UGUI unresolved"
+  ],
+  "dynamicOwnerChecks": "actual AI move/warning/expiry/victory/nextboss, pause-raycast, checkpoint hand5, custom returns, registrynormal0/boss1/hud1",
+  "newRasterAssets": 0,
+  "reusedResources": "existing Sprite/Default gauge material, JikiTourai, water-mirror window/button sprites"
+}
