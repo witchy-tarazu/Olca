@@ -110,6 +110,29 @@ namespace Olca.Tests
             battle.RunLogicalFrame(() => battle.Enemies.Last().TakeDamage(10000, ElementType.None)); Refresh(); Assert.IsTrue(battle.IsGameOver); Assert.AreEqual(0, renderer.ActiveCount); Assert.AreEqual(0, battle.DelayedEffects.ActiveEffectCount);
         }
         [Test]
+        public void 右向き素材の明示設定だけを表示進行方向へ反転し軌道寿命を変えない()
+        {
+            Use("facing_projectile", true); Tick(2); var effect = battle.DelayedEffects.GetActiveEffects().Single();
+            Vector3 Map(GridPoint p) => new Vector3(-p.X, 0, 0);
+            renderer.Refresh(battle, Map, f => f, 0, 6);
+            var original = root.GetComponentInChildren<SpriteRenderer>();
+            var position = original.transform.position; var scale = original.transform.localScale;
+            int remaining = effect.RemainingTimeMs; long elapsed = effect.ElapsedDisplayFrames;
+            Assert.IsFalse(original.flipX, "既存の未指定素材は反転しない");
+
+            renderer.Configure(new[] { new ProjectileAppearance("shared", new[] { first, second },
+                new[] { new ActionDisplayFrame(0, 1), new ActionDisplayFrame(1, 1) }, .4f, .2f, 1.4f, true, true) });
+            renderer.Refresh(battle, Map, f => f, 0, 6);
+            var view = root.GetComponentInChildren<SpriteRenderer>();
+            Assert.IsTrue(view.flipX); Assert.AreEqual(position, view.transform.position); Assert.AreEqual(scale, view.transform.localScale);
+            Assert.AreSame(second, view.sprite); Assert.AreEqual(remaining, effect.RemainingTimeMs); Assert.AreEqual(elapsed, effect.ElapsedDisplayFrames);
+            Refresh(); Assert.IsFalse(view.flipX, "右向き表示へ戻れば反転も戻る");
+            renderer.Refresh(battle, p => Vector3.zero, f => f, 0, 6);
+            Assert.IsFalse(view.flipX, "横移動がない素材は右向きを維持する");
+            renderer.Clear(); Assert.AreEqual(remaining, effect.RemainingTimeMs); Assert.AreEqual(elapsed, effect.ElapsedDisplayFrames);
+        }
+
+        [Test]
         public void 入力配列を固定し不正なコマと重複登録を拒否する()
         {
             var images = new[] { first, second }; var frames = new[] { new ActionDisplayFrame(0, 2), new ActionDisplayFrame(1, 1) };

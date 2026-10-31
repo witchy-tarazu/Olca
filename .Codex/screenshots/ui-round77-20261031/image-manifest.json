@@ -1,0 +1,74 @@
+[
+  {
+    "name": "ui-round77-matched-before-directions-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "logicalFrame": 129,
+    "sha256": "1d0419c06f557a003db7510561508a6d03dfeabea457468e5aad3fba8c265b0b"
+  },
+  {
+    "name": "ui-round77-after-directions-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "logicalFrame": 129,
+    "sha256": "4b1e23fcf98f67c4a1875182b2f7a4295e1e50b0ec09ffac473b6d5bc5392589"
+  },
+  {
+    "name": "ui-round77-matched-before-directions-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "logicalFrame": 129,
+    "sha256": "ac6071fa6672e5e471420fd142a1f08e1e9c4c5e195231249d3fa55310761c47"
+  },
+  {
+    "name": "ui-round77-after-directions-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "logicalFrame": 129,
+    "sha256": "8540d61f76238f47c39b00266aa5fde68928ecb9d4ab732b3aa45f4eafd26b12"
+  },
+  {
+    "name": "ui-round77-matched-before-directions-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "logicalFrame": 129,
+    "sha256": "f675d2882d7b3a4b07a3bcb6672d6661b47cea38b48022f939082d52d17a5c43"
+  },
+  {
+    "name": "ui-round77-after-directions-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "logicalFrame": 129,
+    "sha256": "828fc2ee29a12b33d701e5e340860d704db0c69cadaab60d52267d04dca31db2"
+  },
+  {
+    "name": "ui-round77-before-directions-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "kind": "original source reproduction",
+    "sha256": "15fa53a7e5d26f57fc11be0c2131cdbc979e6e0e369d42f22a417648776c2356"
+  },
+  {
+    "name": "ui-round77-tail-after-impact-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "kind": "impact/native existing feedback",
+    "sha256": "d4ddd1e1da130cf44c970a6f10d6c9d801eaafba304d510d2798b6459a781c9e"
+  }
+]

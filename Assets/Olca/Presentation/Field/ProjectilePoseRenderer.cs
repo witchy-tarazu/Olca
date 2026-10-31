@@ -17,9 +17,11 @@ namespace Olca.Presentation.Field
         public float EndHeight { get; }
         public float ArcHeight { get; }
         public bool Loop { get; }
+        /// <summary>右向きに描かれた素材だけ、表示上の進行方向へ反転する。</summary>
+        public bool FaceTravelDirection { get; }
         private readonly long duration;
         public ProjectileAppearance(string key, IEnumerable<Sprite> sprites, IEnumerable<ActionDisplayFrame> frames,
-            float startHeight, float endHeight, float arcHeight, bool loop = false)
+            float startHeight, float endHeight, float arcHeight, bool loop = false, bool faceTravelDirection = false)
         {
             if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("飛翔素材参照が必要です");
             var images = sprites?.ToArray() ?? throw new ArgumentNullException(nameof(sprites));
@@ -27,7 +29,7 @@ namespace Olca.Presentation.Field
             if (images.Length == 0 || images.Any(s => s == null) || schedule.Length == 0 || schedule.Any(f => f == null || f.Index >= images.Length) ||
                 new[] { startHeight, endHeight, arcHeight }.Any(f => float.IsNaN(f) || float.IsInfinity(f))) throw new ArgumentException("飛翔素材とコマ配分が不正です");
             Key = key; Sprites = Array.AsReadOnly(images); Frames = Array.AsReadOnly(schedule);
-            StartHeight = startHeight; EndHeight = endHeight; ArcHeight = arcHeight; Loop = loop;
+            StartHeight = startHeight; EndHeight = endHeight; ArcHeight = arcHeight; Loop = loop; FaceTravelDirection = faceTravelDirection;
             duration = schedule.Sum(f => (long)f.Frames);
         }
         public Sprite SelectFrame(long elapsed)
@@ -69,9 +71,13 @@ namespace Olca.Presentation.Field
                     renderer = root.AddComponent<SpriteRenderer>(); instances.Add(effect, renderer);
                 }
                 float t = effect.Progress;
+                var source = world(effect.SourcePosition.Value);
+                var target = world(effect.TargetPosition);
                 renderer.sprite = appearance.SelectFrame(effect.ElapsedDisplayFrames);
                 renderer.sortingLayerID = sortingLayer; renderer.sortingOrder = sortingOrder;
-                renderer.transform.position = Vector3.Lerp(world(effect.SourcePosition.Value), world(effect.TargetPosition), t) + Vector3.up *
+                // 素材の基準向きは明示指定。判定座標・軌道・スケールは変えない。
+                renderer.flipX = appearance.FaceTravelDirection && target.x < source.x;
+                renderer.transform.position = Vector3.Lerp(source, target, t) + Vector3.up *
                     logicalLength(Mathf.Lerp(appearance.StartHeight, appearance.EndHeight, t) + 4f * t * (1f - t) * appearance.ArcHeight);
             }
         }

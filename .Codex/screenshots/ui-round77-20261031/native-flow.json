@@ -1,0 +1,110 @@
+{
+  "actualCustomCloseRaycast": true,
+  "isolatedFixture": true,
+  "notProductCardRegistration": true,
+  "twoIndependentDirections": {
+    "fixtureOnly": true,
+    "frame": 129,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [
+      {
+        "ProjectileVisualKey": "shared/shot-bolt",
+        "RemainingTimeMs": 1117,
+        "ElapsedDisplayFrames": 23,
+        "Progress": 0.255333334,
+        "source": "(1, 0)",
+        "target": "(4, 0)"
+      },
+      {
+        "ProjectileVisualKey": "shared/throwing-knife",
+        "RemainingTimeMs": 1150,
+        "ElapsedDisplayFrames": 21,
+        "Progress": 0.233333334,
+        "source": "(3, 0)",
+        "target": "(0, 0)"
+      }
+    ],
+    "views": [
+      {
+        "name": "shared/shot-bolt",
+        "flipX": false,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(16.00, 16.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(-3.57, 0.74, 0.00)",
+        "min": "(243.75, 140.29, 9.90)",
+        "max": "(262.03, 158.57, 10.10)",
+        "sortingOrder": 6
+      },
+      {
+        "name": "shared/throwing-knife",
+        "flipX": true,
+        "ppu": 100,
+        "filter": "Point",
+        "wrap": "Clamp",
+        "pivot": "(32.00, 32.00)",
+        "scale": "(1.00, 1.00, 1.00)",
+        "position": "(-2.72, 0.74, 0.00)",
+        "min": "(283.43, 131.14, 9.90)",
+        "max": "(320.00, 167.71, 10.10)",
+        "sortingOrder": 6
+      }
+    ]
+  },
+  "lifecycle": {
+    "pauseHeld": true,
+    "disableReleasedOnlyView": true,
+    "reenableRestored": true,
+    "naturalEndCleared": true,
+    "beforeEnemyHp": [
+      50,
+      50,
+      50
+    ],
+    "afterEnemyHp": [
+      49,
+      50,
+      50
+    ],
+    "beforePlayerHp": 100,
+    "afterPlayerHp": 100,
+    "state": {
+      "fixtureOnly": true,
+      "frame": 198,
+      "screen": [
+        640,
+        360
+      ],
+      "effects": [],
+      "views": []
+    }
+  },
+  "reload": {
+    "fixtureOnly": true,
+    "frame": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [],
+    "views": []
+  },
+  "nextBattle": {
+    "fixtureOnly": true,
+    "frame": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "effects": [],
+    "views": []
+  },
+  "nextCustomReturn": "completed after normal opening wait",
+  "prematureHelperOperation": "Returns sent at next battle opening before control ready; Single missing element, actual product ignored premature action; retained failed receipt then waited InitialCustom and reconfirmed",
+  "physicalHardware": false
+}

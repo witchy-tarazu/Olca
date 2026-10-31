@@ -1,0 +1,24 @@
+{
+  "nativeGroundTruth": {
+    "sampledUtc": "2026-10-31T08:27:36.519573Z",
+    "ageMs": 171,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 1,
+    "consoleLogs": 54,
+    "seeded": true
+  },
+  "productRuntimeExceptions": 0,
+  "nativeConsoleErrors": {
+    "count": 1,
+    "category": "recovered Pipeline /api/exec main-thread timeout60s"
+  },
+  "nativeCurrentWarnings": {
+    "count": 1,
+    "category": "UnityAI could not save connection info on read-only file system"
+  },
+  "cachedAdditionalWarning": "Editor already in edit mode; tool no-op",
+  "history": "earlier startup/recompile/sizing timeouts retained in ui-round77-connection-history and Editor log; no Editor restart or forced kill",
+  "notResolved": "historical UGUI / physical hardware / fully coincident actors"
+}
