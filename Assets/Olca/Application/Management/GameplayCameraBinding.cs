@@ -18,10 +18,10 @@ namespace Olca.Application.Management
         private bool disposed;
         public GameplayCameraBinding(object owner,CameraRuntimeManager cameras,GameFieldView field,Camera legacy,ScrollingBackgroundView[] backgrounds)
         {
-            this.field=field??throw new ArgumentNullException(nameof(field));this.legacy=legacy??throw new ArgumentNullException(nameof(legacy));
+            this.field=field??throw new ArgumentNullException(nameof(field));this.legacy=legacy;
             this.backgrounds=backgrounds??Array.Empty<ScrollingBackgroundView>();previousBackgroundCameras=this.backgrounds.Select(x=>x.PresentationCamera).ToArray();previousFieldCamera=field.PresentationCamera;
-            listener=legacy.GetComponent<AudioListener>();cameraEnabled=legacy.enabled;listenerEnabled=listener!=null&&listener.enabled;
-            legacy.enabled=false;if(listener!=null)listener.enabled=false;
+            listener=legacy!=null?legacy.GetComponent<AudioListener>():null;cameraEnabled=legacy!=null&&legacy.enabled;listenerEnabled=listener!=null&&listener.enabled;
+            if(legacy!=null)legacy.enabled=false;if(listener!=null)listener.enabled=false;
             try{rental=cameras.Borrow(owner);field.ConfigurePresentationCamera(rental.Camera);foreach(var background in this.backgrounds)background.ConfigurePresentationCamera(rental.Camera);}
             catch{Dispose();throw;}
         }

@@ -205,6 +205,7 @@ namespace Olca.Application.Dungeon
         private Olca.Application.Management.GameplayCameraBinding managedCameraBinding;
         private Olca.Application.Management.BattlePresentationBinding managedBattlePresentation;
         private Olca.Application.Management.WorldPresentationBinding managedWorldPresentation;
+        private Olca.Application.Management.CardRewardPresentationBinding managedCardRewardPresentation;
         public void PrepareWorldPresentation(Olca.Application.Management.GameSystem services)
         {
             if(gameFieldView!=null)return;
@@ -224,8 +225,19 @@ namespace Olca.Application.Dungeon
             var roots=gameObject.scene.GetRootGameObjects();
             var cameras=roots.SelectMany(x=>x.GetComponentsInChildren<Camera>(true)).ToArray();
             if(cameras.Length!=1||services.Cameras==null)throw new System.InvalidOperationException("互換ホストのカメラ構成が不正です");
+            ConfigureManagedCamera(services,cameras[0]);
+        }
+        public void ConfigureManagedCamera(Olca.Application.Management.GameSystem services,Camera legacyCamera)
+        {
+            if(managedCameraBinding!=null)throw new System.InvalidOperationException("カメラの束縛が重複しています");
             var backgrounds=gameFieldView.GetComponentsInChildren<Olca.Presentation.Field.ScrollingBackgroundView>(true);
-            managedCameraBinding=new Olca.Application.Management.GameplayCameraBinding(this,services.Cameras,gameFieldView,cameras[0],backgrounds);
+            managedCameraBinding=new Olca.Application.Management.GameplayCameraBinding(this,services.Cameras,gameFieldView,legacyCamera,backgrounds);
+        }
+        private void PrepareCardRewardPresentation()
+        {
+            if(!UnityEngine.Application.isPlaying||gameSystem==null||cardSelectionView!=null)return;
+            managedCardRewardPresentation=new Olca.Application.Management.CardRewardPresentationBinding(this,gameSystem.Resources,gameSystem.Views,transform);
+            cardSelectionView=managedCardRewardPresentation.View;
         }
         private void PrepareGameplayHud()
         {
@@ -241,6 +253,7 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
+            if(managedCardRewardPresentation!=null){managedCardRewardPresentation.Dispose();managedCardRewardPresentation=null;cardSelectionView=null;}
             if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
             managedCameraBinding?.Dispose();managedCameraBinding=null;
@@ -1732,6 +1745,7 @@ namespace Olca.Application.Dungeon
 
         public void StartManagedHost(Olca.Application.Management.GameSystem services)
         {
+            if(runtimeReleased)throw new System.InvalidOperationException("終了済みhostは再起動できません");
             if(!UnityEngine.Application.isPlaying||!isActiveAndEnabled)throw new System.InvalidOperationException("ホストを有効にしてから起動してください");
             if(!ReferenceEquals(configuredGameSystem,services))ConfigureGameSystem(services);
             Start();
@@ -1783,6 +1797,7 @@ namespace Olca.Application.Dungeon
             }
             PrepareGameplayHud();
             PrepareBattlePresentation();
+            PrepareCardRewardPresentation();
             clearReturnStore = clearReturnStore ?? gameSystemSession?.Storage.Progress ?? new ClearReturnFileStore(ProgressDirectory);
             clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
             progressStartupBlocked = !clearReturnSession.Ready;
@@ -2627,8 +2642,15 @@ namespace Olca.Application.Dungeon
             target.OnFloorCompleted-=OnFloorCompleted;
         }
 
-        private void OnDestroy()
+        private bool runtimeReleased,runtimeReleasing;
+        /// <summary>host終了をView破棄より先に通知する。OnDestroyとの重複も同じ終了へまとめる。</summary>
+        public void StopManagedHost()
         {
+            if(runtimeReleased||runtimeReleasing)return;
+            runtimeReleasing=true;
+            try {
+            transitionCts?.Cancel();transitionCts?.Dispose();transitionCts=null;
+            if(manager!=null){UnbindManagerEvents(manager);if(runtimeStarted)manager.SuspendForCheckpoint();}
             CancelExplorationResume(); explorationResumeLoop.Dispose();
             gamepadVibration?.Dispose();
             CancelOutcomePresentation();
@@ -2644,14 +2666,10 @@ namespace Olca.Application.Dungeon
             ReleasePresentationBindings();
             gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null;
             if (!managedUiContent && pauseCanvas != null) Destroy(pauseCanvas);
-            transitionCts?.Cancel();
-            transitionCts?.Dispose();
             combatFeedbackAudio?.Bind(null);battleSession?.Detach();
-
-            if (manager != null)
-            {
-                UnbindManagerEvents(manager);
-            }
+            runtimeReleased=true;
+            } finally {runtimeReleasing=false;}
         }
+        private void OnDestroy()=>StopManagedHost();
     }
 }

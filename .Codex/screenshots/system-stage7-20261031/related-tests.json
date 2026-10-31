@@ -1,0 +1,65 @@
+{
+  "summary": {
+    "total": 467,
+    "passed": 467,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 38.92,
+  "groundTruth": {
+    "sampledUtc": "2026-10-31T18:48:37.850868Z",
+    "ageMs": 361,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 10,
+    "seeded": true
+  },
+  "consoleCounts": {
+    "error": 0,
+    "warn": 0,
+    "log": 10
+  },
+  "wrapperTimedOut": false,
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "66cb69137583dc0cb7d8e1088309c4511592cf130c7297fca0981955c44d9c14",
+    "Assets/Olca/Application/Management/BootstrapEntry.cs": "ee7c525e7ea80442eeb71a82f22c013c29e7bb9d89e916c447f1db9ac3033852",
+    "Assets/Olca/Application/Management/CardRewardPresentationBinding.cs": "74d27d4feadc362ee5bb068e91c7016d23416561e908fb1fc4bb35d4c682107d",
+    "Assets/Olca/Application/Management/GameHostManager.cs": "eda79e8b312823e1c35b91453ac540cee43ad24f6431e28348c5356aec350de1",
+    "Assets/Olca/Application/Management/GameSystemRoot.cs": "52dffa18e9b59a9995ddb77cb51ccf59695a952141a167a8c090d84c46804cdd",
+    "Assets/Olca/Application/Management/GameplayCameraBinding.cs": "82e13161aa9d7c652a88baec92621c1637c81ce824b87806488a24497db56132",
+    "Assets/Olca/Application/Management/GameplayPrefabHostLease.cs": "0a4eca383ceb5ad64207901264cc17b8c0112a7f129219c1b38f4ea3cf7588c9",
+    "Assets/Olca/Tests/Application/CameraPresentationManagementTests.cs": "873c15b1026cff836d0ea1585a9d46f49c1f05b49c5bb7d4d07589975a20b117",
+    "Assets/Olca/Tests/Application/PrefabHostManagementTests.cs": "8a411f14872d191f02dd1837da5499a30ad93dccb5a875d893b64167a5148dc0",
+    "Assets/Olca/Unity/Management/SceneResourceLoader.cs": "6112a46468b2173b6e02b6ef1d0d0d9db1841d0731f6386d1d7b0c1ca3a1c0a9",
+    "Assets/Resources/OlcaSystem/CardReward.prefab": "50472bb37f1877ead0d0c140b095c36d854da42cc7a9a5bb6578087115083bce",
+    "Assets/Resources/OlcaSystem/DungeonHost.prefab": "bc91553254efd920b3e556f427356b283ab6d51320a81f7551612561d28b80d7"
+  },
+  "productionSourceHashes": {
+    "Assets/Olca/Presentation/Field/WorldEnemyView.cs": "34922f5d24b1338095ea0ab92285692cb6da7d7df9e123bbb8a35b97211b1ee9",
+    "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs": "3ba1f39a42569aca5073ccfdabb6a20d8b30dad06eb984383f2713968f76985a",
+    "Assets/Olca/Presentation/Effects/WorldDamageNumberPool.cs": "55030f769b5c8c8128f40a9dcfdb6a2f3487c8c67e0c147b41497385ff91f76b",
+    "Assets/Olca/Prefabs/Effects/WorldDamageNumber.prefab": "aa5c6c61a74d6f820b343ec0b6788254ad569096c71442c3f82e85f6f9974f1e",
+    "Assets/Olca/Presentation/Effects/ActorConditionVisual.cs": "dbe883f029f089584e5b311f2979015296e0825a500b106844c0e1d630b35d2f",
+    "Assets/Olca/Presentation/Effects/DefensiveFieldVisual.cs": "45fea96dad0bda27563e1b0e030d263fe55aef9714fc552e22f7422368e7978f",
+    "Assets/Olca/Presentation/Field/WorldBattleGridView.cs": "f1cfb1c810a8814143ab98fc5858e158446f05ba764079833ea41cd27a5b339c",
+    "Assets/Olca/Presentation/Battle/BattleView.cs": "c9d834daca9a2abc8e8c6be16bcadd8d5d769be1e8588fe5cab14ff6154e7fe8",
+    "Assets/Prefabs/EnemyViewPrerfab.prefab": "5278b9d2d626ad1b6e4197af7fbddb9a79492d687435ded7a67040fae888f4af",
+    "Assets/Art/Sprites/AttackProps/shared_blast.png": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+    "Assets/Resources/OlcaAttackProps/shared_blast.bytes": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+    "Assets/Olca/Presentation/Field/SharedAttackPropCatalog.cs": "c33c4bfd0e331a2f5102266f6ca27006fd8b1a370563c457268b28d4c35176d6",
+    "Assets/Olca/Tests/SharedAttackPropCatalogTests.cs": "fcda428e13d29f763be0451c348fa28c432adba7a599cf71142e07e2be65e600",
+    "Assets/Art/Sprites/AttackProps/shared_bomb.png": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+    "Assets/Resources/OlcaAttackProps/shared_bomb.bytes": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+    "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8",
+    "Assets/Olca/Presentation/Dungeon/DungeonHudView.cs": "8a99becf53a81131562ffa98c0b4c596e4c79ea973fe4738f7110431b0d780dd",
+    "Assets/Olca/Presentation/Battle/EnemyView.cs": "ff9b1c4a714f97ffffe48d0eb8899a4c705bce8f2d6ee82082ff6b64b49b2b48",
+    "Assets/Olca/Core/Domain/Deck.cs": "86953ac7d5e2c180484db7bf2e4f02f7db8e25be4745c542e7cd3ef3f21737a8",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "265a4dc9507ad7a4d1d6686e81c900821df9d01bb139f04e8e5a1a1bb366a243",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "66cb69137583dc0cb7d8e1088309c4511592cf130c7297fca0981955c44d9c14",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "96c017244ca68b4d9b21848e9b986a38a2bf9e49a5c02798b7ebb6a400ef6c31",
+    "Assets/Olca/Unity/UnityLogger.cs": "0baca7b7bc9372dbfe39198e944cb25373adb3e31fa91a94ad88db3cdd63b4f9"
+  }
+}

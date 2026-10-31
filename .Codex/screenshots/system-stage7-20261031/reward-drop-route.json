@@ -1,0 +1,48 @@
+{
+  "firstEncounterCardDropAbsent": true,
+  "ordinaryEncountersAdvanced": [
+    {
+      "phase": "Battle",
+      "battleIdentity": 705199392,
+      "view": -252626014,
+      "custom": -252626024,
+      "hand": 5,
+      "selected": [],
+      "frame": 0,
+      "currency": 0,
+      "registered": 1,
+      "battleViews": 1,
+      "customViews": 1
+    }
+  ],
+  "cardRewardVisible": {
+    "phase": "CardReward",
+    "frame": null,
+    "deck": 20,
+    "rewardId": -252626342,
+    "panelActive": true,
+    "alpha": 1,
+    "scene": "Assets/Scenes/BootstrapScene.unity",
+    "fonts": [
+      "JikiTourai"
+    ],
+    "buttons": [
+      {
+        "name": "CardRewardChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "CardRewardChoice_1",
+        "interactable": true
+      },
+      {
+        "name": "CardRewardChoice_2",
+        "interactable": true
+      },
+      {
+        "name": "SkipCardReward",
+        "interactable": true
+      }
+    ]
+  }
+}

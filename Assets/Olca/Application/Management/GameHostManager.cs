@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine.SceneManagement;
+using UnityEngine;
 using Olca.Unity;
 
 namespace Olca.Application.Management
@@ -11,7 +12,17 @@ namespace Olca.Application.Management
         public string Path { get; }
         public Action<Scene> Prepare { get; }
         public Action<Scene> Start { get; }
-        public HostOpenRequest(string path,Action<Scene> prepare,Action<Scene> start) { Path=path;Prepare=prepare??throw new ArgumentNullException(nameof(prepare));Start=start??throw new ArgumentNullException(nameof(start)); }
+        internal string Identity { get; }
+        private Func<CancellationToken,Task<IHostObjectLease>> objectLoader;
+        private Action<GameObject> prepareObject,startObject;
+        public HostOpenRequest(string path,Action<Scene> prepare,Action<Scene> start) { Path=path;Identity="scene:"+path;Prepare=prepare??throw new ArgumentNullException(nameof(prepare));Start=start??throw new ArgumentNullException(nameof(start)); }
+        private HostOpenRequest(string path,Func<CancellationToken,Task<IHostObjectLease>> load,Action<GameObject> prepare,Action<GameObject> start)
+        { Path=path;Identity="prefab:"+path;objectLoader=load??throw new ArgumentNullException(nameof(load));prepareObject=prepare??throw new ArgumentNullException(nameof(prepare));startObject=start??throw new ArgumentNullException(nameof(start)); }
+        public static HostOpenRequest Prefab(string path,Func<CancellationToken,Task<IHostObjectLease>> load,Action<GameObject> prepare,Action<GameObject> start)=>new HostOpenRequest(path,load,prepare,start);
+        internal async Task<IGameHostLease> LoadAsync(IHostSceneLoader scenes,CancellationToken cancellation)
+        { if(objectLoader!=null)return await objectLoader(cancellation);return await scenes.LoadSceneAsync(Path,cancellation); }
+        internal void PrepareHost(IGameHostLease lease){if(objectLoader!=null)prepareObject(((IHostObjectLease)lease).Root);else Prepare(((IHostSceneLease)lease).Scene);}
+        internal void StartHost(IGameHostLease lease){if(objectLoader!=null)startObject(((IHostObjectLease)lease).Root);else Start(((IHostSceneLease)lease).Scene);}
     }
     public sealed class HostOpenResult
     {
@@ -20,13 +31,13 @@ namespace Olca.Application.Management
         public string Error { get; }
         internal HostOpenResult(bool success,bool cancelled=false,string error=null){Succeeded=success;Cancelled=cancelled;Error=error;}
     }
-    /// <summary>SceneからViewへ移行する間の互換ホスト寿命。画面/Popupの管理は行わない。</summary>
+    /// <summary>攻略hostのロード/起動/終了。Scene互換とPrefabで同じ取消・解放契約を使う。</summary>
     public sealed class GameHostManager : IDisposable
     {
         private readonly IHostSceneLoader loader;
         private readonly Func<bool> hasSession;
-        private IHostSceneLease current;
-        private string currentPath,pendingPath;
+        private IGameHostLease current;
+        private string currentPath,currentIdentity,pendingIdentity;
         private CancellationTokenSource pendingCancellation;
         private Task<HostOpenResult> pending;
         private Task closing;
@@ -42,13 +53,13 @@ namespace Olca.Application.Management
             if(committing||closing!=null)return Task.FromResult(new HostOpenResult(false,error:"ホストの切替処理中です"));
             if(current!=null&&releaseFailed)return Task.FromResult(new HostOpenResult(false,error:"ホストの解放を再試行してください"));
             if(current!=null&&!current.IsLoaded)return ReopenReleasedAsync(request,cancellation);
-            if(current!=null)return Task.FromResult(new HostOpenResult(currentPath==request.Path,error:currentPath==request.Path?null:"現在のホストを終了してください"));
+            if(current!=null)return Task.FromResult(new HostOpenResult(currentIdentity==request.Identity,error:currentIdentity==request.Identity?null:"現在のホストを終了してください"));
             if(pendingCancellation!=null&&pendingCancellation.IsCancellationRequested)return Task.FromResult(new HostOpenResult(false,true,error:"取消ロードの解放待ちです"));
-            if(pendingCancellation!=null){if(pendingPath==request.Path)return Observe(pending,cancellation);return Task.FromResult(new HostOpenResult(false,error:"別ホストをロード中です"));}
+            if(pendingCancellation!=null){if(pendingIdentity==request.Identity)return Observe(pending,cancellation);return Task.FromResult(new HostOpenResult(false,error:"別ホストをロード中です"));}
             if(hasSession())return Task.FromResult(new HostOpenResult(false,error:"直起動した攻略が既に動作しています"));
             var completion=new TaskCompletionSource<HostOpenResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             var cts=CancellationTokenSource.CreateLinkedTokenSource(cancellation);long requestVersion=++version;
-            pendingPath=request.Path;pendingCancellation=cts;pending=completion.Task;
+            pendingIdentity=request.Identity;pendingCancellation=cts;pending=completion.Task;
             RunOpen(request,requestVersion,cts,completion);return completion.Task;
         }
         private async Task<HostOpenResult> ReopenReleasedAsync(HostOpenRequest request,CancellationToken cancellation)
@@ -65,26 +76,26 @@ namespace Olca.Application.Management
         }
         private async void RunOpen(HostOpenRequest request,long requestVersion,CancellationTokenSource cts,TaskCompletionSource<HostOpenResult> completion)
         {
-            IHostSceneLease lease=null;HostOpenResult result=new HostOpenResult(false,error:"ホスト起動未完了");
+            IGameHostLease lease=null;HostOpenResult result=new HostOpenResult(false,error:"ホスト起動未完了");
             try {
-                lease=await loader.LoadSceneAsync(request.Path,cts.Token);cts.Token.ThrowIfCancellationRequested();
+                lease=await request.LoadAsync(loader,cts.Token);cts.Token.ThrowIfCancellationRequested();
                 if(disposed||requestVersion!=version)throw new OperationCanceledException();
                 if(hasSession())throw new InvalidOperationException("ロード中に別の攻略が起動しました");
                 committing=true;
                 try {
-                    request.Prepare(lease.Scene);cts.Token.ThrowIfCancellationRequested();
+                    request.PrepareHost(lease);cts.Token.ThrowIfCancellationRequested();
                     if(disposed||requestVersion!=version)throw new OperationCanceledException();
-                    lease.Activate();request.Start(lease.Scene);
+                    lease.Activate();request.StartHost(lease);
                     if(disposed||requestVersion!=version)throw new OperationCanceledException();
                     // 同期起動が完了した時点でcommit。以後の取消は起動済み保存を巻き戻さない。
-                    current=lease;currentPath=request.Path;lease=null;
+                    current=lease;currentPath=request.Path;currentIdentity=request.Identity;lease=null;
                 } finally { committing=false; }
                 result=new HostOpenResult(true);
             } catch(OperationCanceledException){result=new HostOpenResult(false,true);}
             catch(Exception error){result=new HostOpenResult(false,error:error.Message);}
             finally {
-                if(lease!=null){try{await lease.UnloadAsync();}catch(Exception error){current=lease;currentPath=request.Path;releaseFailed=true;result=new HostOpenResult(false,error:(result.Error??"起動取消")+" / 解放失敗: "+error.Message);}}
-                if(ReferenceEquals(pendingCancellation,cts)){pendingCancellation=null;pendingPath=null;pending=null;}
+                if(lease!=null){try{await lease.UnloadAsync();}catch(Exception error){current=lease;currentPath=request.Path;currentIdentity=request.Identity;releaseFailed=true;result=new HostOpenResult(false,error:(result.Error??"起動取消")+" / 解放失敗: "+error.Message);}}
+                if(ReferenceEquals(pendingCancellation,cts)){pendingCancellation=null;pendingIdentity=null;pending=null;}
                 cts.Dispose();
             }
             completion.TrySetResult(result);
@@ -102,7 +113,7 @@ namespace Olca.Application.Management
                 if(priorLoad!=null)await priorLoad;
                 var lease=current;
                 if(lease!=null)await lease.UnloadAsync();
-                current=null;currentPath=null;releaseFailed=false;
+                current=null;currentPath=null;currentIdentity=null;releaseFailed=false;
                 completion.TrySetResult(true);
             } catch(Exception error){releaseFailed=true;completion.TrySetException(error);}
             finally {closing=null;}

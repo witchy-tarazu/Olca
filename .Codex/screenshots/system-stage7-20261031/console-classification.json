@@ -1,0 +1,95 @@
+{
+  "scope": "Recorded MCP reply history; not Unity-console counts or final-suite result",
+  "pipelineTimeoutReceiptCount": 6,
+  "pipelineTimeouts": [
+    {
+      "file": "system-stage7-native-bootstrap-ready-119.json",
+      "message": "Error: Pipeline command 'editor_status' timed out after 60000ms"
+    },
+    {
+      "file": "system-stage7-native-final-direct-fixture.json",
+      "message": "Error: Pipeline command 'run_script' timed out after 60000ms"
+    },
+    {
+      "file": "system-stage7-native-final-direct-start-observed.json",
+      "message": "Error: Pipeline command 'run_script' timed out after 60000ms"
+    },
+    {
+      "file": "system-stage7-related-small-status.json",
+      "message": "Error: Pipeline command 'editor_status' timed out after 60000ms"
+    },
+    {
+      "file": "system-stage7-related-small.json",
+      "message": "Error: Pipeline command 'run_script' timed out after 60000ms"
+    },
+    {
+      "file": "system-stage7-render-state.json",
+      "message": "Error: Pipeline command 'run_script' timed out after 60000ms"
+    }
+  ],
+  "productFailure": "Initial host Close completion check failed before native Destroy; actual failure/retry preserved and one-line phase correction under final native verification",
+  "historicalUGUI": "unresolved; no speculative suppression/fix",
+  "UnityAI": "Editor tool connection/keychain save warnings, independent of product; no credential changes",
+  "audio": "FMOD -noaudio, API/numeric verification only, listening not verified",
+  "finalSuiteConsole": {
+    "errors": 0,
+    "warnings": 59,
+    "fixtureCategories": 5,
+    "receipt": "system-stage7-final-test-result.json"
+  },
+  "preFinalNativeConsole": {
+    "counts": {
+      "error": 2,
+      "warn": 1,
+      "log": 130
+    },
+    "entries": [
+      {
+        "level": "error",
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 60000ms",
+        "source": "Pipeline dispatcher"
+      },
+      {
+        "level": "error",
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms",
+        "source": "Pipeline dispatcher"
+      },
+      {
+        "level": "warn",
+        "message": "Could not save connection info: Read-only file system",
+        "source": "UnityAI ServerDiscovery SaveConnectionInfo"
+      }
+    ],
+    "noProductStackInReturnedErrors": true
+  },
+  "harnessFailures": [
+    {
+      "receipt": "system-stage7-native-reward-visible.json",
+      "reason": "CardReward phase is shared with item/currency; existing stored first encounter has no card drop. Unchanged normal route reached next real card reward and passed pending-close/select/resume."
+    },
+    {
+      "receipt": "system-stage7-event-prepare.json",
+      "reason": "Stopped active scene is now Bootstrap; old helper correctly required DungeonScene. Explicitly opened compatibility scene before retry, no guard/assert weakened; tests had not started."
+    }
+  ],
+  "postSingleNativeConsole": {
+    "counts": {
+      "error": 2,
+      "warn": 44,
+      "log": 1954
+    },
+    "dropped": false,
+    "messages": {
+      "[WARNING] [Controller] CardSelectionView が未設定のためカード報酬をスキップします": 36,
+      "[WARNING] 使用可能なカードがありません": 2,
+      "[WARNING] 操作設定を読み込めません。保存済みデータは変更していません。": 4,
+      "[WorldDamageNumberPool] 最大プールサイズ(20)に達しています。": 1,
+      "Could not save connection info: Read-only file system": 1
+    },
+    "errorClassification": [
+      "Unity CLI discovery fallback sent unavailable editor status name (actual registered name editor_status); tool bridge error, not product stack",
+      "Pipeline dispatcher main-thread wait120s timeout; subsequent actual native proof succeeded"
+    ],
+    "testConsoleSeparate": "Final full3575 has0errors/59fixturewarnings; post-native snapshot counts are a separate collector interval, not copied into full results"
+  }
+}

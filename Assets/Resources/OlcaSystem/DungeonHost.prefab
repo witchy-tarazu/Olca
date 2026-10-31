@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6680577398094772608
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1037874146782478913}
+  - component: {fileID: 5565912830472422692}
+  - component: {fileID: 7197418248799306228}
+  m_Layer: 0
+  m_Name: DungeonHost
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1037874146782478913
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6680577398094772608}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5565912830472422692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6680577398094772608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcf361cdab9a1b7479b54b90514cc98d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  gameFieldView: {fileID: 0}
+  battleView: {fileID: 0}
+  customScreenView: {fileID: 0}
+  dungeonCellCount: 100
+  playerMaxHp: 100
+  playerAttackPower: 10
+  playerPoiseRecoveryFrames: 180
+  dashDistanceCells: 5
+  dashCooldown: 0.1
+  battleStaggerFrames: 18
+  commonHitInvincibilityMs: 600
+  explorationNormalSpeedMilliPerSecond: 8000
+  swordPoiseDamage: 15
+  bombPoiseDamage: 20
+  fireSwordPoiseDamage: 30
+  normalEnemyPoise: 30
+  bossEnemyPoise: 60
+  enemyPoiseRecoveryFrames: 180
+  clearExperience: 100
+  experiencePerLevel: 100
+  maximumPlayerLevel: 99
+  hpGrowthPerLevel: 5
+  attackGrowthPerLevel: 1
+  standardOverflowTokens: 1
+  limitedOverflowTokens: 2
+  ultimateOverflowTokens: 3
+  enemySpacing: 30
+  firstEnemyCell: 50
+  hudFadeDuration: 0.25
+  contactAnimator: {fileID: 7197418248799306228}
+  returnToDungeonDelayMs: 1000
+  dungeonHudView: {fileID: 0}
+  cardSelectionView: {fileID: 0}
+  basicAttackChargeFrames: 60
+  basicAttackChargeMultiplier: 2
+  basicAttackIntervalFrames: 12
+  checkpointDirectoryOverride:
+  validationStorageRequired: 0
+  dungeonBgm: {fileID: 0}
+  battleBgm: {fileID: 0}
+  uiEffect: {fileID: 0}
+  currencyPerEnemy: 10
+--- !u!114 &7197418248799306228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6680577398094772608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c7a336f5291c0a4ba61077aa74d8347, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  normalContactDuration: 0.4
+  dashRushDuration: 0.2
+  dashRollbackDuration: 0.5
+  pauseAfterContactDuration: 0.1
+  normalBumpDistance: 0.15
+  normalKnockbackDistance: 3
+  normalKnockbackDuration: 0.35
+  normalContactGroundY: 0
+  dashRushDistance: 1
+  dashEnemyKnockback: 2
+  rollbackDistance: 1
+  jumpHeight: 0.5

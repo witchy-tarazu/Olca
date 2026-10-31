@@ -189,3 +189,33 @@ WorldPresentationBindingがResourceManagerの実体leaseをViewManager world層�
 最終明示recompile error0後、関連12/12（10.97秒）、同Editor/Domain ReloadなしでScroll1→UIRuntime4を2周し全10件成功。各ステップ後のCLR/Unity current null、static登録0、Scene実体0を確認した。static一覧全体のclearや他者除去はしていない。そのまま最終全件3569/3569（276.76秒、skip0/error0）成功。全件直後にもCLR/Unity current null・static0・Scene0で、末尾fixtureが次runへ残す状態もないことを確認。警告59件は上記と同じfixture5分類。元の位置/件数/遮蔽/旧購読/assertNull/保存guardは維持し、数値補正や製品UIRuntimeManagerは変更していない。
 
 最終資産/source13のhashはsubmission/project/関連/全件/最終manifestで一致。新しい変更多数の再撮影を装わず、既存のnative/原寸比較画像は1行Prefab正規化前であることを明記し、native SerializedProperty同一と他byte不変で結び付けた。移行対象の残る10ファイルはnative確認時から不変。独立最終レビューとcleanup後、check→commit→pushを分離し、必須失敗時停止を維持して通常公開する。
+
+
+## 第七段階: Prefab hostと報酬画面
+
+本番BootstrapはDungeonSceneをロードせず、RootのStartGameplayHostAsync→GameHostManager→ResourceManagerで非active DungeonHost Prefabを取得する。hostはController/ContactAnimatorの1 GameObjectだけで、Camera/Listener/UIRoot/EventSystem/Sound・World/BattleCustom/HUD/操作設定/報酬画面は含めない。hostはBootstrap Sceneへ配置してSingle再入で旧hostが終了する契約。DIと保存先/World/明示legacyなしRoot Camera束縛後にActivate→明示Startする。旧StartCompatibilityHostAsync/Scene lease/旧DungeonScene直起動は検証互換として残す。EditorBuildSettingsは引き続きBootstrapと互換DungeonSceneを有効にするが、本番経路の必要SceneはBootstrapだけ。実buildは未確認。
+
+GameHostManagerは共通IGameHostLeaseの取消/世代/解放retryを共有し、SceneとPrefabはidentity種別を分ける。GameplayPrefabHostLeaseはhostの終了をView破棄と分け、Controller.StopManagedHostで遷移取消・購読/入力/時計を先行停止→ViewとSession返却→非active/Resource lease破棄→次frameのnative破棄完了を待つ。View単体の返却でCoreを終了しない。Core/Input/固定時計/攻略状態の所有自体はhost Controllerに残す。
+
+CardSelectionCanvasは独立CardReward Prefab（26 GameObject）のView layerへ移す。本段階は遅延生成でなく起動時の明示ロードとし、欠損を攻略/保存開始前に検出。表示containerは既存の報酬phaseだけで有効にする。これは必要Viewの個別取得へ進む足場で、全画面lazy化完了ではない。旧Sceneに束縛済みの報酬Viewは互換でそのまま使う。PopupはDialogManagerの既存境界を維持し、本段階はダイアログを画面managerへ統合しない。
+
+新Prefabは通常Unity書出しで作り、Scene依存なしを確認。空scalar末尾空白をテスト前に正規化し、再import前後のString全値一致をnativeで確認。旧Sceneで未記録のC#既定値がPrefabへ明示化されるが、実Controller設定48項目は報酬参照/Prefab管理情報以外でnative一致し、性能値は創作/変更していない。
+
+残件は内部UI Initialize、静的素材Catalog、ControllerのCore/Input/時計のさらなる分離、互換Sceneを製品buildから外す運用判断、報酬View等のphase単位lazy取得。外界/ボスラッシュ/未決値は本段階へ混在させない。第六段階のCamera隔離/スクロールEventSystem解除と反復検証は維持。歴史的UGUI/旧wrapper ID帰属/物理機器/聴感/実buildの限界は引き継ぐ。
+
+
+### 第七段階 最終検証と到達範囲
+
+最終source/資産12ファイルで関連467/467（38.92秒）と全件3575/3575（269.82秒）、skip0/error0。警告59件は既存fixture5分類（報酬View未設定50、設定読込失敗4、phase違い2、使用カードなし2、pool上限1）。同EditorでScroll1/UIRuntime4を2周し全10件成功、各段階と全件直後・最終native後にEventSystemのCLR/Unity current null・登録0/Scene0を確認。一覧全clearや期待値/guardの緩和はしない。明示recompile/関連/全件/最終cleanupのsource hash一致を確認した。
+
+本番Bootstrapのみ・Scene lease0でhost/Viewを供給。直起動互換、設定→Dialog取消/確定→保存読込、Single再入、timeScale0で初回Close、実Prefab生成後の取消と欠損/同時再Openを実確認。稼働時Root/Camera/Listener/EventSystem各1、resource実体8、終了時host/World/背景/役者/pool/Battle/Custom/報酬0、共通cache実体3。旧入力/購読/Camera/モデル/Sprite参照を解除し、Root/audio/Cameraを再利用する。
+
+初回Closeは次Updateがnative Destroy完了より先でstrict検査が失敗した。後観察とretry成功を初回成功に置き換えず保存し、LastPostLateUpdateまで待つ最小修正後にtimeScale0での初回解放と再生成を確認した。ゲーム時間・性能・root-null検査は変えない。Domain Reload後のPipeline/コマンド取得timeoutは同Editor PID137059で通常待機し復旧。Play/テスト/不明な解像度要求を重複再送しなかった。
+
+報酬Prefabは実カード報酬で表示・選択を確認。開いたままhost終了してphase/deck/保存を確定させず、表示とfont/artwork参照を解放。checkpoint再開→実選択→従来どおり最後の通貨確認でデッキ20から21→次接触と実ボスまで同じViewと旧購読解除を確認した。最初のカード待機はカードなし/アイテムありの保存計画を共通CardReward phaseから誤推定した検証側の前提違いで、抽選値を変えず通常経路を進めた。最初のSingle保存比較も別検証directoryの参照が判明し採用せず、実9701保存先6ファイルの非空hashでDialog中Single→checkpoint再開まで再比較し全一致した。停止後のhelperが要求するDungeonSceneも明示的に開き、前提拒否を緩めず復旧した。
+
+FHD/4K/4:3の原寸21枚、独立設計/コード/視覚/最終証跡レビューは今回範囲の必須指摘0。報酬見出し裏へのHUD透けは旧Round50にもあり既存視覚候補として残す。fallbackカード名/借用絵はD05素材完成ではない。比較の前画像はStage6引用、報酬以外の15枚は破棄待機一行修正前で、表示に関わる残る11ファイルのbyte一致と修正後native/全件を区別する。[証跡](../.Codex/screenshots/system-stage7-20261031/README.md)参照。原本clean、実640×360/TMP/save guard、入力機器と追跡Assets一致を最終cleanupで確認。
+
+本番起動の必要SceneはAssets/Scenes/BootstrapScene.unityのみ。Assets/Scenes/DungeonScene.unityは旧直起動/Scene API検証互換として保持し、BuildSettingsでも有効のまま。実buildはユーザー側の未確認。Core/Input/固定時計/攻略状態のController内組立、各UI内部Initialize、静的Catalog、phase単位のlazy取得は残り、全体移行/安定化完了とはしない。次はhost/sessionの論理状態組立と入力/時計寿命の責務分離を小さく進める候補。外界/ボスラッシュ/未決D05/S08等は今回実装せず、歴史的UGUI/物理機器/OS/聴感未確認も維持する。
+
+並行仕様6f84d1c/07fd835/e87c72d/10dc6c1/b30c5fe/5f8f342は本文確認して保護。消耗品ごとの上限/購入不可/自発破棄なし、超過報酬破棄・全受取不可時の宝箱/報告不可・強制イベント例外、無効果消耗品不可と探索カード通常消費の区別。依頼の報告/自動完了設定、現在所持数/受注後行動数、納品・報酬・完了の原子的保存、反復設定/放棄なし/期限なし/時間を止めない達成通知。ストーリー目的を依頼一覧へ統合、未公開地形を開示しない目的地marker、選択1目的への常時ナビ/別map出口案内/非表示、進行分岐あり・複数end未定。これらは文書取得で、今回の機能実装済みとはしない。

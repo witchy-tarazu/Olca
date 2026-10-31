@@ -49,6 +49,12 @@ namespace Olca.Tests.Application
                 binding.Dispose();binding.Dispose();Assert.AreSame(legacy,field.PresentationCamera);Assert.IsNull(background.PresentationCamera);Assert.IsTrue(legacy.enabled);Assert.IsTrue(legacyObject.GetComponent<AudioListener>().enabled);Assert.IsFalse(cameras.IsBorrowed);Assert.AreSame(legacy,Camera.main);
             } finally {UnityEngine.Object.DestroyImmediate(backgroundObject);UnityEngine.Object.DestroyImmediate(fieldObject);UnityEngine.Object.DestroyImmediate(legacyObject);}
         }
+        [Test] public void Binding_PrefabhostはlegacyなしでRootカメラだけを借用返却する()
+        {
+            var fieldObject=new GameObject("PrefabField");var field=fieldObject.AddComponent<GameFieldView>();
+            try{var binding=new GameplayCameraBinding(new object(),cameras,field,null,Array.Empty<ScrollingBackgroundView>());Assert.AreSame(cameras.BorrowedCamera,field.PresentationCamera);Assert.IsTrue(cameras.IsBorrowed);binding.Dispose();binding.Dispose();Assert.IsNull(field.PresentationCamera);Assert.IsFalse(cameras.IsBorrowed);}
+            finally{UnityEngine.Object.DestroyImmediate(fieldObject);}
+        }
         [Test] public void HudPrefab_参照を内包して従来のCanvas設定と字体を保持する()
         {
             var prefab=Resources.Load<GameObject>("OlcaSystem/DungeonHud");Assert.NotNull(prefab);var hud=prefab.GetComponent<DungeonHudView>();Assert.NotNull(hud);Assert.NotNull(hud.CanvasGroup);Assert.AreEqual(5,prefab.GetComponent<Canvas>().sortingOrder);Assert.AreEqual(1,prefab.GetComponent<CanvasScaler>().matchWidthOrHeight);

@@ -8,13 +8,14 @@ using Cysharp.Threading.Tasks;
 
 namespace Olca.Unity
 {
-    public interface IHostSceneLease
+    public interface IGameHostLease
     {
-        Scene Scene { get; }
         bool IsLoaded { get; }
         void Activate();
         Task UnloadAsync();
     }
+    public interface IHostSceneLease : IGameHostLease { Scene Scene { get; } }
+    public interface IHostObjectLease : IGameHostLease { GameObject Root { get; } }
     public interface IHostSceneLoader
     {
         // nativeロード開始後は取消でも結果leaseを回収する。呼出側は有効化前にtokenを再確認し解放する。
