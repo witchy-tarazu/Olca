@@ -1,0 +1,15 @@
+{
+  "reviewer": "independent_refactor_review",
+  "finalNativeViews": [
+    "card-short-fhd",
+    "card-short-4k",
+    "card-short-4by3",
+    "recipe-short-4by3",
+    "card-long-end-4by3",
+    "recipe-full-end-4k"
+  ],
+  "specificRequiredUnresolved": 0,
+  "iteration": "initial compact view exposed underlying list; final backdrop alpha1 removes false operation surface without moving header/footer",
+  "assessment": "short reading surface coherent; long endオワリ and close legible; clipped first line while scrolled is normal; stable footer blank space intentional and not required to change",
+  "limits": "static6view assessment, not all states/dynamic/input/hardware guarantee"
+}

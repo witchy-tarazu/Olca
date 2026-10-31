@@ -288,7 +288,7 @@ namespace Olca.Presentation.Dungeon
         private readonly System.Collections.Generic.Dictionary<string,string> menuFocus=new System.Collections.Generic.Dictionary<string,string>();
         private Func<System.Collections.Generic.IEnumerable<Button>> menuExtras;private Func<OwnedCardCount,Card> resolveOwned;private Func<Card,Sprite> resolveReturnIcon;
         private GameObject readonlyDetails;private ScrollRect readonlyScroll;
-        private Vector2 readonlyViewportSize;private float readonlyScrollPosition=1;
+        private Vector2 readonlyViewportSize,readonlyParentSize;private string readonlyBodyValue;private float readonlyPixelsPerUnit;private float readonlyScrollPosition=1;
         public bool HasMenuModal=>readonlyDetails!=null||(content!=null&&(content.transform.Find("KeepEditingDeparture")!=null||content.transform.Find("ConfirmDeleteDeck")!=null));
         public void ConfigureMenuNavigation(Func<System.Collections.Generic.IEnumerable<Button>> extras,Func<OwnedCardCount,Card> resolveOwned=null,Func<Card,Sprite> resolveReturnIcon=null){menuExtras=extras;this.resolveOwned=resolveOwned;this.resolveReturnIcon=resolveReturnIcon;}
         private bool IsMenuTop()
@@ -333,15 +333,30 @@ namespace Olca.Presentation.Dungeon
         }
         private void RefreshReadonlyLayout()
         {
-            if(readonlyScroll==null||readonlyScroll.viewport==null||readonlyScroll.content==null)return;
-            var size=readonlyScroll.viewport.rect.size;
-            if(size==readonlyViewportSize){readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;return;}
-            var body=readonlyScroll.content.GetComponent<Text>();if(body==null)return;
+            if(readonlyScroll==null||readonlyScroll.viewport==null||readonlyScroll.content==null||readonlyDetails==null)return;
+            var viewport=readonlyScroll.viewport;var body=readonlyScroll.content.GetComponent<Text>();if(body==null)return;
+            var parentSize=((RectTransform)readonlyDetails.transform).rect.size;float pixelsPerUnit=body.pixelsPerUnit;
+            if(viewport.rect.size==readonlyViewportSize&&parentSize==readonlyParentSize&&body.text==readonlyBodyValue&&Mathf.Approximately(pixelsPerUnit,readonlyPixelsPerUnit)){readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;return;}
             float position=readonlyViewportSize==Vector2.zero?1:readonlyScrollPosition;
-            readonlyViewportSize=size;
-            body.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(size.y,body.preferredHeight+20));
-            if(readonlyDetails!=null&&readonlyDetails.transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,Mathf.Max(0,size.y)+40);
+            // 縮めたrectを上限に使わず、元のanchorと親から最大の読み面を復元する。
+            float maximum=Mathf.Max(1,parentSize.y*(viewport.anchorMax.y-viewport.anchorMin.y)+viewport.offsetMax.y);
+            float needed=body.cachedTextGeneratorForLayout.GetPreferredHeight(body.text,body.GetGenerationSettings(new Vector2(viewport.rect.width,0)))/pixelsPerUnit+20;
+            float height=Mathf.Clamp(needed,Mathf.Min(120,maximum),maximum);
+            viewport.offsetMin=new Vector2(viewport.offsetMin.x,maximum-height);
+            var size=viewport.rect.size;readonlyViewportSize=size;readonlyParentSize=parentSize;readonlyBodyValue=body.text;readonlyPixelsPerUnit=pixelsPerUnit;
+            body.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(size.y,needed));
+            if(readonlyDetails.transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,size.y+40);
             readonlyScroll.verticalNormalizedPosition=Mathf.Clamp01(position);readonlyScrollPosition=readonlyScroll.verticalNormalizedPosition;
+        }
+        private void FitRecipeReading()
+        {
+            if(content==null||content.name!="RecipeResultDetails")return;
+            var body=content.transform.Find("RecipePerformance")?.GetComponent<Text>();var reading=content.transform.Find("RecipeDetailsReading") as RectTransform;var notice=content.transform.Find("RecipeKnowledgeNotice") as RectTransform;
+            if(body==null||reading==null||notice==null)return;
+            float height=Mathf.Clamp(body.preferredHeight+20,120,500);
+            body.rectTransform.sizeDelta=new Vector2(body.rectTransform.sizeDelta.x,height);body.rectTransform.anchoredPosition=new Vector2(body.rectTransform.anchoredPosition.x,350-height/2);
+            reading.sizeDelta=new Vector2(1760,height+90);reading.anchoredPosition=new Vector2(0,365-(height+90)/2);
+            notice.anchoredPosition=new Vector2(0,220-height);
         }
         // 上端の既存補助ボタンの間へ文字領域だけを収め、FHDの中央位置は保つ。
         private void FitToolbarTitle()
@@ -388,7 +403,7 @@ namespace Olca.Presentation.Dungeon
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
             Fit("ReturnSummary",270,110,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();RefreshReadonlyLayout();menu?.Tick();}
+        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();menu?.Tick();}
         private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
         private void OpenCardDetails(Card card,string returnFocus)
@@ -399,7 +414,9 @@ namespace Olca.Presentation.Dungeon
         private void OpenReadonlyText(string titleText,string value,string returnFocus,Action<UnityEngine.UI.Text> decorate=null)
         {
             if(content==null||readonlyDetails!=null)return;var parent=content;var back=menuBackSource;
-            readonlyDetails=new GameObject("ReadonlyCardDetails",typeof(RectTransform),typeof(Image));readonlyDetails.transform.SetParent(transform,false);var rect=(RectTransform)readonlyDetails.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;readonlyDetails.GetComponent<Image>().color=UiLook.Surface;var modal=readonlyDetails;
+            readonlyDetails=new GameObject("ReadonlyCardDetails",typeof(RectTransform),typeof(Image));readonlyDetails.transform.SetParent(transform,false);var rect=(RectTransform)readonlyDetails.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            // 読取中の背面一覧を操作面に見せず、前景の水鏡素材はそのまま保つ。
+            var backdrop=UiLook.Surface;backdrop.a=1;readonlyDetails.GetComponent<Image>().color=backdrop;var modal=readonlyDetails;
             content=modal;
             // 図鑑の読取面だけを一覧と同じ水鏡素材へ揃え、背面の文字との競合を抑える。
             bool collectionReading=parent.name=="CardCollectionContents"||parent.name=="RecipeResultDetails";
@@ -468,7 +485,7 @@ namespace Olca.Presentation.Dungeon
                         var performance=Text("RecipePerformance",row.Performance,0,100,1600,500,30);
                         performance.alignment=TextAnchor.UpperLeft;
                         AddTrailingTextDetails(performance,"RecipePerformanceDetails","レシピのセイノウ");
-                        Text("RecipeKnowledgeNotice","レシピの公開情報です。カード本体の入手済み登録とは別です。",0,-250,1650,80,24);
+                        Text("RecipeKnowledgeNotice","レシピの公開情報です。カード本体の入手済み登録とは別です。",0,-250,1650,80,24);FitRecipeReading();
                         Action back=()=>RenderCollection(cards,recipes,pending,error,close,retrySave,icon,"RecipeDetails_"+index,cardDetails);
                         collectionBackAction=back;Button("CloseRecipeDetails","レシピへ戻る（Esc）",0,-430,850,75,back);CollectionFocus("CloseRecipeDetails");
                     });

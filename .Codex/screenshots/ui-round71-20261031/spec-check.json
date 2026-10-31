@@ -1,0 +1,7 @@
+{
+  "head": "2983fed5d8730001a6e632065d72dc806e96eb9d",
+  "remote": "2983fed5d8730001a6e632065d72dc806e96eb9d",
+  "changedFiles": [],
+  "integration": "fetched then ff-only checked without second-fetch race during tests",
+  "localChangesPreserved": true
+}

@@ -1,0 +1,10 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "f6e7469a1791731d76c84aeebc6de9477c469a42d74795128a2570bc689c6f05",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "8c03e34c30042f9d96f7eaebe7fab949ed1c9ab4c7f210dbc7184c89154cdd45"
+  },
+  "reviewer": "equipment_save_review",
+  "specificUnresolved": 0,
+  "scope": "final2C# diffs, adaptive height/cache/explicit width/PPU, unchanged input/save/visibility contracts, opaque backdrop RGB unchanged, bounded fits-vs-overflow test correction",
+  "notGlobalGuarantee": true
+}

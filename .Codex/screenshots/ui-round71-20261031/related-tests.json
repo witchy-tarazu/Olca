@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 459,
+    "passed": 459,
+    "failed": 0
+  },
+  "classes": {
+    "CustomScreenCostViewTests": 382,
+    "DungeonBattleManagerTests": 65,
+    "FusionSystemTests": 12
+  },
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "f6e7469a1791731d76c84aeebc6de9477c469a42d74795128a2570bc689c6f05",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "8c03e34c30042f9d96f7eaebe7fab949ed1c9ab4c7f210dbc7184c89154cdd45"
+  },
+  "consoleErrors": 0,
+  "warnings": {},
+  "warningCount": 0,
+  "suppressed": false
+}
