@@ -16,12 +16,15 @@ namespace Olca.Application.Management
             public SaveManager.Context Storage { get; }
             public DungeonBattleManager Dungeon { get; private set; }
             public IInputProvider Input { get; private set; }
+            public GameplayRuntimeSession Runtime { get; private set; }
+            public void AdoptRuntime(GameplayRuntimeSession runtime)
+            { if(system==null)throw new ObjectDisposedException(nameof(Session));if(runtime==null)throw new ArgumentNullException(nameof(runtime));if(Runtime!=null&&!ReferenceEquals(Runtime,runtime))throw new InvalidOperationException("攻略runtimeが重複しています");runtime.Claim(this);Runtime=runtime; }
             internal Session(GameSystem system, object owner, SaveManager.Context storage) { this.system = system; Owner = owner; Storage = storage; }
             public void Bind(DungeonBattleManager dungeon, IInputProvider input) { if (system == null) throw new ObjectDisposedException(nameof(Session)); Dungeon = dungeon; Input = input; }
             public void Dispose()
             {
                 var prior = system; if (prior == null) return;
-                system = null; Dungeon = null; Input = null;
+                system = null; Runtime?.Dispose(); Runtime=null; Dungeon = null; Input = null;
                 var owner = Owner; Owner = null; prior.EndSession(this, owner);
             }
         }

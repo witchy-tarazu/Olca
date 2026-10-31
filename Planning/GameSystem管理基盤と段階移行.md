@@ -219,3 +219,27 @@ FHD/4K/4:3の原寸21枚、独立設計/コード/視覚/最終証跡レビュ�
 本番起動の必要SceneはAssets/Scenes/BootstrapScene.unityのみ。Assets/Scenes/DungeonScene.unityは旧直起動/Scene API検証互換として保持し、BuildSettingsでも有効のまま。実buildはユーザー側の未確認。Core/Input/固定時計/攻略状態のController内組立、各UI内部Initialize、静的Catalog、phase単位のlazy取得は残り、全体移行/安定化完了とはしない。次はhost/sessionの論理状態組立と入力/時計寿命の責務分離を小さく進める候補。外界/ボスラッシュ/未決D05/S08等は今回実装せず、歴史的UGUI/物理機器/OS/聴感未確認も維持する。
 
 並行仕様6f84d1c/07fd835/e87c72d/10dc6c1/b30c5fe/5f8f342は本文確認して保護。消耗品ごとの上限/購入不可/自発破棄なし、超過報酬破棄・全受取不可時の宝箱/報告不可・強制イベント例外、無効果消耗品不可と探索カード通常消費の区別。依頼の報告/自動完了設定、現在所持数/受注後行動数、納品・報酬・完了の原子的保存、反復設定/放棄なし/期限なし/時間を止めない達成通知。ストーリー目的を依頼一覧へ統合、未公開地形を開示しない目的地marker、選択1目的への常時ナビ/別map出口案内/非表示、進行分岐あり・複数end未定。これらは文書取得で、今回の機能実装済みとはしない。
+
+
+## 第八段階: 攻略Runtimeの所有・入力・主時計
+
+GameSystem.Sessionが普通のGameplayRuntimeSessionを所有する。Input/Random/Loggerの生成、Core factory結果の所有/置換、主UnityLogicalLoopの所有とdriver限定Pumpを表示から分ける。GameSystemはAdopt/Disposeの連携だけで、具体的なゲーム計算やView組立を集めない。既存Loopのctor生成時点とControllerのalias field/更新順は互換維持し、起動時に所有を渡す。Core引数を選ぶfactory lambda、設定/保存復元の組立、入力文脈/phase条件とView接続はControllerに残る。会話/探索再開演出Loopは別寿命を維持する。
+
+起動失敗はRuntimeから主Loop所有を再試行側へ返し、既存StartNewTimelineで初期化する。通常のView再生成はRuntimeを破棄せず、終了時は捕捉Input/文脈callback/driver/Coreを解放する。独立レビューでPump中のDispose後にも残catchupが走る指摘があり、Loop.Disposeを終端化した。予約/入力command後とDrain継続で停止を確認し、後続callback/入力購読/予約参照を返却する。Clock本体と未処理負債はresetせず、通常catchupを描画frameで間引かない。追加5ケースで正常6frame/同観測時刻二重進行なし/別driver・再入拒否、入力捕捉解除、再試行Loop返却、tick内/予約command内停止のFrame1/Pending5保持を確認する。
+
+実経路では旧Scene直起動→Bootstrap、ManagerのHUD破棄/再取得、Custom/pause/設定/Dialog/実仮想pad、checkpoint、Dialog中Single、通常およびtimeScale0終了、取消/欠損/同時reopenを確認した。HUDはnative破棄後1個再生成しRuntime/Core/Input/主Loop参照とframe不変（開始前menu/frame0、World/Battle全ホットリロード機能ではない）。実9801保存先6ファイルはSingle前からcheckpoint再開・Close/cancel/Open後までhash一致。意図的な保存復元だけCoreを既存の取消/timeline境界で置き換える。[第八段階証跡](../.Codex/screenshots/system-stage8-20261031/README.md)へ記録する。
+
+### 安定化までの残る必須境界
+
+1. Controllerに残る起動設定/保存復元/出撃データの組立と入力文脈・phase調停を専用factory/flowサービスへ分ける。Runtimeは生成物と寿命を所有するが、全てのCore起動設定を切り出し済みとはしない。Loop ctor互換を外す場合は旧直起動/テスト注入を明示的に移行する。
+2. CreatePauseControlsのprogrammatic画面（pad/音量設定、checkpoint、Dialogue、ClearReturn、図鑑、装備等）と局所popup（RetreatConfirmation等）はまだhost組立にある。画面単位ViewManagerとpopup専属DialogManagerへ段階移行し、内部Initializeによる表示組立とゲーム判断を分ける。Bootstrap Scene依存がないことだけで全View移行完了とはしない。
+3. SharedAttackPropCatalog.loadedはResources bytesからTexture2D/Spriteを生成してstatic保持する。Root Resource側の明示的な生成資産所有/返却境界が未移行であり、次の資源寿命課題。CoreのPortableBattle/ProcessingCatalogは純C#値DTOで、Unity生成資産と混同してManagerを増やさない。
+
+本番Bootstrap→必要表示供給/画面・popup遷移/保存復帰/単一Runtime更新/入力音声資源の終了再生成/失敗取消retry/最終回帰を、上記境界で継続確認して安定化とする。phase単位lazy取得（報酬等のeager取得を減らす）、内部UI組立の表現整理やimmutable catalogの命名はその後の改善候補。新外界/ボスラッシュ/D05/S08等の未実装・未決、実build/物理機器/OS/聴感、歴史的UGUI/Pipeline/CLI/UnityAI履歴はこの段階で解消済みとしない。
+
+
+### 第八段階 最終検証
+
+修正後の5sourceで明示コンパイル完了/error0、関連472/472（40.24秒）、全3580/3580（278.55秒）成功、skip0/error0。警告59件は既存fixture5分類で、期待値や保存ガードは緩めていない。Source hashはsubmission/project/関連/全件/最終で一致。同Editor Scroll1/UIRuntime4の2周10件と全件後はEventSystem current CLR/Unity null・登録0/Scene0で、global一覧clearはしない。FHD/4K/4:3の15枚を独立原寸比較して今回の新しい必須視覚指摘0。管理起動側は既存boss保存からの再開で旧通常敵画像と状態差があることを明示し、直起動6枚は同testmap6/seed7/frame0・60で比較した。
+
+既存のDomain Reload/Pipeline期限超過とCLI editor status名不一致・UnityAI接続情報保存警告は別履歴で保全。同Editor PID137059/VM/model/認証を維持し、未確定Play/fixture/コンパイル/テストを重複再送せず、実RT640×360/専用TMPDIR/guardを確認してテストした。全体の安定化完了ではなく、上記の必須残境界を次段階に追跡する。

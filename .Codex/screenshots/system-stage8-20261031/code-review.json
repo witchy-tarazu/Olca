@@ -1,0 +1,47 @@
+{
+  "scope": "Stage8 independent static code review: GameplayRuntimeSession, GameSystem.Session adoption, Controller aliases/rollback/replacement, three new tests",
+  "sourceHashes": {
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "9384787c9bb871d70460107d21112f43fe15e40521a72fab7852264e031fcf33",
+    "Assets/Olca/Application/Management/GameSystem.cs": "1f6978827c0e51469de94650840484d23e6659635ad7f6b1496a0052cbd64e06",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "0d2bacc4e967e1fc2f5eedcee12fd1fae87415661d2e9f4d515c1d4d2047750a",
+    "Assets/Olca/Tests/Application/GameplayRuntimeSessionTests.cs": "5e8428a14c4c5085bc3e785d2e57fcf8f5317cabe1679dfc75fede26cb7758e6",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "4c59a24325d35df74c420bef1d7c51cd11c80bb79abb5ef04fcbbad4e1c85f3b"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [
+    {
+      "id": "R8-STOP-IN-PUMP",
+      "severity": "lifetime",
+      "source": "Assets/Olca/Application/Management/GameplayRuntimeSession.cs Pump/Dispose",
+      "description": "stopped is checked only on Pump entry. Dispose invoked by an in-flight tick or scheduled command does not stop remaining catch-up callbacks, because UnityLogicalLoop.Dispose only removes the Editor subscription and passed tick/canAdvance remain unguarded.",
+      "recommendedFix": "Guard advancement and tick delivery on runtime stopped state, without a render-frame guard or discarding normal pending frames; add stop-from-tick and stop-from-command regressions.",
+      "status": "resolved: UnityLogicalLoop final disposed state blocks public advancement/scheduling and stops command/input-command continuations and Drain; queue references released without resetting Clock/debt"
+    }
+  ],
+  "checked": [
+    "Existing UnityLogicalLoop object and pre-Start construction timing retained.",
+    "Runtime creates Input/Random/Logger and receives Core via existing Controller factory arguments.",
+    "Pump restricts driver and rejects re-entry while preserving normal multi-frame catch-up.",
+    "Initialization retry relinquishes loop disposal ownership before managed/local session teardown.",
+    "Manager replacement synchronizes Runtime, Controller alias and GameSystem.Session at the existing timeline boundary.",
+    "UnityInputProvider.Dispose is idempotent for repeated Controller rollback cleanup.",
+    "Dialogue and exploration-resume loops remain outside this runtime cut."
+  ],
+  "limits": [
+    "Final compile, related472 and full3580 are pending at review time; reviewer executed no Unity operations/tests.",
+    "Loop.Dispose is now terminal; legacy integration checks must confirm no legitimate code reuses a disposed loop. Startup retry intentionally avoids disposing it.",
+    "Planned HUD regeneration identity proof is not arbitrary world/battle hot reload support."
+  ],
+  "reReview": {
+    "checked": [
+      "Stop from scheduled command halts remaining same-frame commands and tick.",
+      "Stop from tick prevents subsequent catch-up frames.",
+      "Timestamped input-command continuation checks disposed after each callback.",
+      "Normal undisposed catch-up still uses existing Drain with no render-frame suppression.",
+      "Clock object/frame/pending debt preserved at final Dispose.",
+      "ReturnLoopForInitializationRetry relinquishes disposal ownership, preserving retry loop."
+    ],
+    "newRegression": "Two cases assert tick/command stop, no later callbacks, Frame1/Pending5, and direct Advance remains stopped.",
+    "currentSourceCopiesMatch": true
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "scope": "Stage8 independent read-only design review: runtime construction/ownership separation at current Controller and UnityLogicalLoop boundaries",
+  "unresolvedRequiredFindings": 0,
+  "recommendation": "Introduce a normal GameplayRuntimeSession owning input/providers/core references and the existing injected logical loop. Preserve Controller scheduling and per-frame ordering for this bounded step; do not add an Update or a second clock.",
+  "observedCode": {
+    "controllerLogicalLoop": "DungeonBattleController.cs:102 constructs readonly UnityLogicalLoop(observeEditor:true) before Start. Editor pause subscription begins at construction.",
+    "loopDispose": "UnityTimeProvider.cs:50-65 subscribes/unsubscribes Editor pause events; Dispose does not clear clock, input queues, pending commands or observation timestamp.",
+    "pump": "Controller LateUpdate captures timestamped input, pumps all due logical frames, applies pending floor and refreshes UI in existing order.",
+    "replacement": "ReplaceManager cancels transitions, detaches views/events, resets timeline, replaces manager, binds session, then reconfigures and activates restored state.",
+    "retry": "Startup rollback resets the same loop for retry, while final Stop disposes it."
+  },
+  "boundedSteps": [
+    "Construct the existing gameplay loop at the same lifecycle point, then transfer explicit disposal ownership to Runtime rather than lazily creating a new loop on Start. Keep legacy pre-Start alias usable.",
+    "Runtime creates Input/Random/Logger once per successful attempt via explicit inputs; Controller keeps serialized configuration/Core factory and view binding policy.",
+    "Runtime accepts a constructed DungeonBattleManager through a single replace method. Keep Controller event detach, async cancellation, timeline-reset boundary and new view binding in their current order.",
+    "GameSystem.Session owns Runtime once, while legacy non-managed startup uses the same Runtime with a local owner. Do not maintain two independent owners for the loop/input.",
+    "Use separate attempt rollback and terminal Dispose: failed startup can release newly-created input/Core without disposing the pre-Start loop needed for retry.",
+    "Keep dialogueLoop and explorationResumeLoop in their current presentation-control ownership initially; do not merge their distinct time domains into the gameplay loop."
+  ],
+  "pitfalls": [
+    "Do not use Time.frameCount to skip a second logical step in one render frame. Pending catch-up frames, event timestamps, input generation, queued commands and remainders must survive unchanged.",
+    "Do not reset/recreate loop or RNG when a View is rebuilt or a Core manager is merely rebound.",
+    "Reflection field aliases may be assigned by tests, not only read. Inventory write sites; aliases must not silently diverge from the runtime source of truth.",
+    "Disposal must cancel input subscriptions and pending callbacks before View/host ownership disappears, with idempotent managed/local finalization.",
+    "Loop.Dispose alone is not a queue reset; use existing StartNewTimeline only at the existing rollback/replacement boundaries.",
+    "Runtime must not capture arbitrary UI factories/View delegates; otherwise extracting construction simply moves the giant Controller dependency graph."
+  ],
+  "verificationRequired": [
+    "Pre-Start clock access and Editor pause subscription count",
+    "Partial startup failure then retry without duplicate input capture",
+    "Timestamped catch-up multiple logical frames in one render frame with no frame loss",
+    "Checkpoint/floor replacement and RNG/provider identity preservation",
+    "View reconstruction leaves runtime/Core/input/clock identities unchanged",
+    "Stop/Session.Dispose/OnDestroy permutations release subscriptions once",
+    "Legacy Scene direct startup and injected EditMode helpers"
+  ],
+  "limits": [
+    "No implementation has been reviewed for Stage8 yet.",
+    "No code edits, Unity operations or test execution were performed."
+  ]
+}

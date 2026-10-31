@@ -1,0 +1,28 @@
+{
+  "actualManagerUnloadReload": true,
+  "oldHudDestroyed": true,
+  "runtimeCoreInputClockIdentityHeld": true,
+  "logicalFrameHeld": true,
+  "before": {
+    "runtime": -1672690288,
+    "input": 398245664,
+    "core": 1563366254,
+    "loop": 222297248,
+    "frame": 0,
+    "pending": 0,
+    "IsStopped": false,
+    "stoppedGuardCompiled": true,
+    "storage": "/workspace/olca-validation-20261024/save/system-stage8-9801/settings"
+  },
+  "after": {
+    "runtime": -1672690288,
+    "input": 398245664,
+    "core": 1563366254,
+    "loop": 222297248,
+    "frame": 0,
+    "pending": 0,
+    "IsStopped": false,
+    "stoppedGuardCompiled": true,
+    "storage": "/workspace/olca-validation-20261024/save/system-stage8-9801/settings"
+  }
+}

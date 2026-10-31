@@ -47,6 +47,7 @@ namespace Olca.Unity
     /// <summary>単調時計から経過量を取得する。UnityのmaximumDeltaTimeによる切捨てを受けない。</summary>
     public sealed class UnityLogicalLoop : System.IDisposable
     {
+        private bool disposed;
         public UnityLogicalLoop(bool observeEditor = false)
         {
 #if UNITY_EDITOR
@@ -59,6 +60,8 @@ namespace Olca.Unity
 #endif
         public void Dispose()
         {
+            if(disposed)return;disposed=true;
+            commands.Clear();frameInputCommands.Clear();ReleaseInput();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseChanged;
 #endif
@@ -77,22 +80,25 @@ namespace Olca.Unity
         private Olca.Core.Logic.Integration.LogicalInput previous = new Olca.Core.Logic.Integration.LogicalInput();
         public void QueueTimestampedCommand(long timestamp, System.Action action)
         {
+            if(disposed)return;
             if (action == null) throw new System.ArgumentNullException(nameof(action));
             pendingEvents.Add(new TimestampedLogicalInput(timestamp, null, action));
         }
         public void Schedule(System.Action action, int delayFrames = 1)
         {
+            if(disposed)return;
             long target = Clock.InputFrame + System.Math.Max(0, delayFrames - 1);
             if (!commands.TryGetValue(target, out var list)) commands[target] = list = new System.Collections.Generic.List<System.Action>();
             list.Add(action);
         }
         public void AfterFrames(int frames, System.Action action)
         {
+            if(disposed)return;
             long target = Clock.Frame + System.Math.Max(1, frames);
             if (!commands.TryGetValue(target, out var list)) commands[target] = list = new System.Collections.Generic.List<System.Action>();
             list.Add(action);
         }
-        public void Observe(bool active) => ObserveAt(readTimestamp(), active);
+        public void Observe(bool active) { if(!disposed)ObserveAt(readTimestamp(), active); }
         private void ObserveAt(long now, bool active)
         {
             now = System.Math.Max(now, observed);
@@ -110,6 +116,7 @@ namespace Olca.Unity
             System.Action<long, int, Olca.Core.Logic.Integration.LogicalInput> tick,
             System.Func<bool> canAdvance = null, System.Func<bool> advanceHeldTime = null)
         {
+            if(disposed)return;
             long now = readTimestamp();
             if (!active) { ObserveAt(now, false); ReleaseInput(); return; }
             if (events != null) pendingEvents.AddRange(events);
@@ -134,6 +141,7 @@ namespace Olca.Unity
         // セーブ読込で攻略そのものを置き換える場合だけ使用。通常のポーズには使用しない。
         public void StartNewTimeline()
         {
+            if(disposed)return;
             Clock = new Olca.Core.Logic.Integration.LogicalFrameClock();
             commands.Clear(); ReleaseInput(); wallRemainder = 0; Observe(false);
         }
@@ -149,6 +157,7 @@ namespace Olca.Unity
         public void Advance(long elapsedWallTicks, Olca.Core.Logic.Integration.LogicalInput sample,
             System.Action<long, int, Olca.Core.Logic.Integration.LogicalInput> tick, System.Func<bool> canAdvance = null, int budget = 240, System.Func<bool> advanceHeldTime = null)
         {
+            if(disposed)return;
             Clock.Accumulate(elapsedWallTicks);
             if (sample != null && (sample.Horizontal != previous.Horizontal || sample.Vertical != previous.Vertical ||
                 sample.BasicAttackButton != previous.BasicAttackButton || sample.DashButton != previous.DashButton ||
@@ -160,15 +169,16 @@ namespace Olca.Unity
                 {
                     var iterator = commands.GetEnumerator(); iterator.MoveNext(); var first = iterator.Current; iterator.Dispose();
                     if (first.Key > frame) break;
-                    commands.Remove(first.Key); foreach (var action in first.Value) { action(); if (!ReferenceEquals(timeline, Clock)) return; }
+                    commands.Remove(first.Key); foreach (var action in first.Value) { action(); if (disposed || !ReferenceEquals(timeline, Clock)) return; }
                 }
                 var input = inputs.Take(frame, advanceHeldTime == null || advanceHeldTime());
+                if(disposed)return;
                 if (input.HasInputSample) GameplayPause.UpdateInputBarrier(input.AnyKey);
                 GameplayPause.AdvanceLogicalFrame();
                 var inputCommands = frameInputCommands.ToArray(); frameInputCommands.Clear();
-                foreach (var command in inputCommands) { command(); if (!ReferenceEquals(timeline, Clock)) return; }
+                foreach (var command in inputCommands) { command(); if (disposed || !ReferenceEquals(timeline, Clock)) return; }
                 tick(frame, ms, input);
-            }, budget, () => ReferenceEquals(timeline, Clock) && (canAdvance == null || canAdvance()));
+            }, budget, () => !disposed && ReferenceEquals(timeline, Clock) && (canAdvance == null || canAdvance()));
         }
     }
 }

@@ -100,6 +100,7 @@ namespace Olca.Application.Dungeon
         private UnityLogger logger;
         private UnityInputProvider inputProvider;
         private readonly UnityLogicalLoop logicalLoop = new UnityLogicalLoop(observeEditor: true);
+        private Olca.Application.Management.GameplayRuntimeSession runtimeSession;
         public long LogicalFrame => logicalLoop.Clock.Frame;
         public long PendingLogicalFrames => logicalLoop.Clock.PendingFrames;
         private BattleSessionController battleSession;
@@ -1771,6 +1772,7 @@ namespace Olca.Application.Dungeon
             combatFeedbackAudio?.Dispose(); combatFeedbackAudio = null;
             if (gameSystemSession == null) gameplayAudio?.Dispose();
             ReleasePresentationBindings();
+            runtimeSession?.ReturnLoopForInitializationRetry();runtimeSession=null;
             gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null; gameplayAudio = null;
             if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
             inputProvider?.Dispose(); inputProvider = null;
@@ -1789,6 +1791,8 @@ namespace Olca.Application.Dungeon
             gameSystem = configuredGameSystem ?? (UnityEngine.Application.isPlaying ? Olca.Application.Management.GameSystemRoot.Ensure().Services : null);
             if (gameSystem != null) gameSystemSession = gameSystem.BeginSession(this,
                 gameplaySettingsDirectoryOverride ?? System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"), CheckpointDirectory, ProgressDirectory);
+            runtimeSession = new Olca.Application.Management.GameplayRuntimeSession(this,logicalLoop);
+            gameSystemSession?.AdoptRuntime(runtimeSession);
             if(gameSystem!=null)PrepareWorldPresentation(gameSystem);
             if(managedWorldPresentation!=null&&managedCameraBinding==null){
                 var legacyCameras=gameObject.scene.GetRootGameObjects().SelectMany(x=>x.GetComponentsInChildren<Camera>(true)).ToArray();
@@ -1802,9 +1806,8 @@ namespace Olca.Application.Dungeon
             clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
             progressStartupBlocked = !clearReturnSession.Ready;
             int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
-            randomProvider = simulationSeed.HasValue ? new UnityRandomProvider(simulationSeed.Value) : new UnityRandomProvider();
-            logger = new UnityLogger();
-            inputProvider = new UnityInputProvider();
+            runtimeSession.Initialize(simulationSeed);
+            randomProvider = runtimeSession.Random; logger = runtimeSession.Logger; inputProvider = runtimeSession.Input;
             gamepadVibration=new GamepadVibrationAdapter();
             vibrationSettings=new GamepadVibrationSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             vibrationSettings.TryRead(out gamepadVibrationEnabled,out vibrationSettingsError);gamepadVibration.Enabled=gamepadVibrationEnabled;
@@ -1904,14 +1907,14 @@ namespace Olca.Application.Dungeon
             if(!awaitingCheckpointChoice&&savedPlan==null&&!waitingReturn&&!HasIncompleteReturn&&!progressStartupBlocked){
                 try{ApplyDepartureCustomization(playerCharacter);}catch(System.ArgumentException e){progressStartupBlocked=true;clearReturnError=e.Message;}
             }
-            manager = new DungeonBattleManager(
+            manager = runtimeSession.CreateDungeon(() => new DungeonBattleManager(
                 dungeonConfig, playerCharacter, initialDeck, randomProvider, logger,
                 exceedSystem: exceedSystem,
                 tuningSystem: tuningSystem,
                 fusionSystem: fusionSystem, checkpoints: waitingReturn || initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
                     ? (dungeonConfig.Visits.Count==0 && dungeonConfig.ItemRewards.Count==0?null:DungeonCheckpointSession.CreateDefault(dungeonConfig,initialDeck)) : memoryCheckpoints, cardDatabase: cardFactory,
                 hasNextFloor: !waitingReturn && !awaitingCheckpointChoice && !progressStartupBlocked && !HasIncompleteReturn && clearReturnSession.Snapshot.NextDeparture == null && floorDefinitions != null && floorDefinitions.FloorCount > 1, enemyAIProvider: enemyAIProvider,
-                evaluationRewards: waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null?null:evaluationRewardProvider);
+                evaluationRewards: waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null?null:evaluationRewardProvider));
 
             manager.RequireBattleEndPresentation();
             manager.Dungeon.ConfigureNormalMovementSpeed(explorationNormalSpeedMilliPerSecond);
@@ -1987,7 +1990,7 @@ namespace Olca.Application.Dungeon
             UpdateDialogue();
             UpdateExplorationResume();
             bool active = !DialogueOpen && manager.Dungeon.ActiveVisit==null && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0;
-            logicalLoop.PumpTimestamped(active, inputProvider.CaptureTimestamped(), TickLogicalFrame, () => !DialogueOpen && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
+            runtimeSession.Pump(this,active, TickLogicalFrame, () => !DialogueOpen && !clearReturnVisible && !IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked,
                 () => manager.Dungeon.ActiveVisit==null && (manager.CurrentPhase == GamePhase.Dungeon || (manager.CurrentBattle != null && !manager.CurrentBattle.IsPaused)));
             ApplyPendingFloor();
             RefreshDungeonVisit();
@@ -2601,6 +2604,7 @@ namespace Olca.Application.Dungeon
             gameFieldView?.OnBattleEnded(); battleFieldReady = false;
             battleView?.gameObject.SetActive(false);
             logicalLoop.StartNewTimeline(); basicAttackInput.Reset(); queuedBasicAttackTap = false;
+            runtimeSession?.ReplaceDungeon(restored);
             manager = restored;
             gameSystemSession?.Bind(manager, inputProvider);
             manager.RequireBattleEndPresentation();
@@ -2660,8 +2664,7 @@ namespace Olca.Application.Dungeon
             combatFeedbackAudio?.Dispose();
             if (gameSystemSession == null) gameplayAudio?.Dispose();
             if (inputProvider != null) inputProvider.OnGamepadDisconnected -= OnGamepadDisconnected;
-            inputProvider?.Dispose();
-            logicalLoop.Dispose();
+            if(runtimeSession!=null)runtimeSession.Dispose();else{inputProvider?.Dispose();logicalLoop.Dispose();}
             if (IsUserPaused) ApplyUserPauseImmediate(false);
             ReleasePresentationBindings();
             gameSystemSession?.Dispose(); gameSystemSession = null; gameSystem = null;

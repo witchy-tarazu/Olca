@@ -1,0 +1,114 @@
+{
+  "scope": "Native/tool receipt intervals, separate from final-suite console",
+  "history": [
+    {
+      "file": "system-stage8-pre-final-error-history.json",
+      "counts": {
+        "error": 3,
+        "warn": 1,
+        "log": 132
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_c"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 4000ms"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        }
+      ]
+    },
+    {
+      "file": "system-stage8-pre-final-warn-history.json",
+      "counts": {
+        "error": 3,
+        "warn": 1,
+        "log": 132
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_c"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 4000ms"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        },
+        {
+          "level": "warn",
+          "message": "Could not save connection info: Read-only file system"
+        }
+      ]
+    },
+    {
+      "file": "system-stage8-pre-related-history.json",
+      "counts": {
+        "error": 7,
+        "warn": 1,
+        "log": 0
+      },
+      "dropped": false,
+      "messages": [
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_c"
+        },
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_c"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 4000ms"
+        },
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_c"
+        },
+        {
+          "level": "error",
+          "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_c"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 4000ms"
+        },
+        {
+          "level": "error",
+          "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms"
+        },
+        {
+          "level": "warn",
+          "message": "Could not save connection info: Read-only file system"
+        }
+      ]
+    }
+  ],
+  "classification": {
+    "Pipeline": "main-thread/domain readiness timeouts; sameEditor normal waiting recovered, no test duplication",
+    "CLI": "discovery fallback sent editor status with space while registered command is editor_status; package/tool bridge error",
+    "UnityAI": "Could not save connection info: Read-only file system; no credential change",
+    "historicalUGUI": "unresolved, not diagnosed/fixed speculatively",
+    "audio": "FMOD noaudio; no listening/physical device/OS/build claim"
+  },
+  "productCompile": "final recompile complete error0, latest5source inDLL and native stoppedGuardCompiled true",
+  "tests": {
+    "related": 472,
+    "full": 3580,
+    "errors": 0,
+    "warnings": 59,
+    "warningCategories": 5,
+    "fixtureDiagnosticsUnchanged": true
+  }
+}
