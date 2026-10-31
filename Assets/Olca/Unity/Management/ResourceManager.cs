@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Olca.Unity
 {
     /// <summary>共有Resourcesへの参照と、生成した表示実体の所有を分ける。</summary>
-    public sealed class ResourceManager : IDisposable
+    public sealed class ResourceManager : IDisposable, IHostSceneLoader
     {
         public sealed class InstanceLease : IDisposable
         {
@@ -23,6 +23,9 @@ namespace Olca.Unity
         }
         private readonly HashSet<InstanceLease> instances = new HashSet<InstanceLease>();
         private readonly Dictionary<(Type, string), UnityEngine.Object> shared = new Dictionary<(Type, string), UnityEngine.Object>();
+        private readonly SceneResourceLoader scenes = new SceneResourceLoader();
+        public int OwnedSceneCount => scenes.OwnedSceneCount;
+        public Task<IHostSceneLease> LoadSceneAsync(string path,CancellationToken cancellation) => scenes.LoadSceneAsync(path,cancellation);
         private bool disposed;
         public int OwnedInstanceCount => instances.Count;
         public T GetShared<T>(string path) where T : UnityEngine.Object
@@ -61,7 +64,7 @@ namespace Olca.Unity
             if (disposed) return; disposed = true;
             foreach (var value in new List<InstanceLease>(instances)) value.Dispose();
             // 他の既存Catalogも共有するimport素材を勝手にDestroy/Unloadしない。
-            shared.Clear();
+            shared.Clear(); scenes.Dispose();
         }
     }
 }

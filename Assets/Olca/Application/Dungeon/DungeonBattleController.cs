@@ -1680,6 +1680,12 @@ namespace Olca.Application.Dungeon
                 }
         }
 
+        public void StartManagedHost(Olca.Application.Management.GameSystem services)
+        {
+            if(!UnityEngine.Application.isPlaying||!isActiveAndEnabled)throw new System.InvalidOperationException("ホストを有効にしてから起動してください");
+            if(!ReferenceEquals(configuredGameSystem,services))ConfigureGameSystem(services);
+            Start();
+        }
         private bool runtimeStarting, runtimeStarted;
         private void Start()
         {

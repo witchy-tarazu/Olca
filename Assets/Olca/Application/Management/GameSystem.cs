@@ -30,10 +30,11 @@ namespace Olca.Application.Management
         public SoundManager Sounds { get; }
         public ViewManager Views { get; }
         public DialogManager Dialogs { get; }
+        public GameHostManager Hosts { get; }
         public Session CurrentSession { get; private set; }
         private bool disposed;
         public GameSystem(SaveManager saves, ResourceManager resources, SoundManager sounds, ViewManager views, DialogManager dialogs)
-        { Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; }
+        { Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); }
         public Session BeginSession(object owner, string settings, string checkpoints, string progress)
         {
             if (disposed) throw new ObjectDisposedException(nameof(GameSystem));
@@ -52,7 +53,7 @@ namespace Olca.Application.Management
         public void Dispose()
         {
             if (disposed) return; disposed = true;
-            CurrentSession?.Dispose();
+            Hosts.Dispose(); CurrentSession?.Dispose();
             // 再生中の音が参照する素材より先に、音声所有物を解放する。
             Dialogs.Dispose(); Views.Dispose(); Sounds.Dispose(); Resources.Dispose();
         }

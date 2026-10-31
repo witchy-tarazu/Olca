@@ -1,0 +1,32 @@
+{
+  "nativeWindow": {
+    "pipelineMainThreadTimeouts": 2,
+    "productExceptionsObserved": 0,
+    "errorGroundTruth": {
+      "sampledUtc": "2026-10-31T12:28:16.667935Z",
+      "ageMs": 122,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 2,
+      "consoleWarnings": 1,
+      "consoleLogs": 65,
+      "seeded": true
+    },
+    "warningEntries": [
+      {
+        "message": "Editor is already in edit mode",
+        "seq": 288887
+      },
+      {
+        "message": "Could not save connection info: Read-only file system",
+        "seq": 288889
+      }
+    ],
+    "note": "Cold-start calls timed out; read actual initialized state and continued without duplicating fixture or Play. These diagnostics are not counted as clean console."
+  },
+  "resolvedPreFinalFailure": "Inactive validation Scene snapshot: explicit managed Controller enable after DI; failed host had released Scene/session/UI. Raw failure retained privately. Final Single reentry passed.",
+  "historicalUnresolved": [
+    "UGUI reload exception; no unsupported fix or resolution claimed"
+  ],
+  "finalTestWindow": "Separate clear after native history retained; exact result in full-tests.json/warning-classification.json"
+}
