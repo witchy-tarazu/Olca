@@ -1,0 +1,10 @@
+{
+  "temporaryFixtureFailure": "Default TakeDamage40 also started stagger during stopped shop visit",
+  "savedCheckpointSequenceHeld": 3,
+  "captureGuard": "Unsupported temporary state rejected, persisted valid data preserved",
+  "loadAttempt": "rejected by RestoreMemoryCheckpoint when IsCheckpointBlocked (source2403-2404); no model replacement",
+  "guardOrSaveFormatChanged": false,
+  "manualTemporaryStateReset": false,
+  "resolution": "Normal stop of isolated validation Play, preserve run6300, new run6301 with TakeDamage(40, affectsPoise:false) as HP-only test precondition",
+  "productSourceChanged": false
+}

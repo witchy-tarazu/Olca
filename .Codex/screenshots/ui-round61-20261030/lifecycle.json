@@ -1,0 +1,8 @@
+{
+  "pauseHoldsActualAction": true,
+  "actualActionNaturallyResolves": true,
+  "actualDamageUnchanged": 10,
+  "actualStaggerClearsPreview": true,
+  "actualPauseLoadClearsTemporaryHazards": true,
+  "saveHashesUnchanged": true
+}

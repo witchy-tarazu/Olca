@@ -1,0 +1,18 @@
+{
+  "groundTruth": {
+    "sampledUtc": "2026-10-30T19:34:10.558616Z",
+    "ageMs": 248,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 51,
+    "seeded": true
+  },
+  "streamCounts": {
+    "error": 0,
+    "warn": 2,
+    "log": 63
+  },
+  "currentWarning": "Unity AI connection info read-only write; separate from product/content warning"
+}

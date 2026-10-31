@@ -1,0 +1,17 @@
+{
+  "groundTruth": {
+    "sampledUtc": "2026-10-30T23:27:55.920431Z",
+    "ageMs": 236,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 22,
+    "seeded": true
+  },
+  "retainedMessages": {
+    "Editor is already in edit mode": 1,
+    "Could not save connection info: Read-only file system": 1
+  },
+  "classification": "UnityAI connection-info read-only warning; retained Pipeline redundant-stop warning. Not product failures; not suppressed"
+}

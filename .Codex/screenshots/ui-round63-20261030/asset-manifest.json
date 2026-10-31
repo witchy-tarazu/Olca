@@ -1,0 +1,36 @@
+{
+  "tool": "OpenAI image_gen",
+  "generatedOriginal": "SourceFiles/Visits/recovery_drop_generated.png",
+  "reference": "Assets/Art/UI/Visits/shop_bag.png",
+  "referenceContainsCharacter": false,
+  "originalDimensions": [
+    1254,
+    1254
+  ],
+  "nativeAlphaRange": [
+    0,
+    255
+  ],
+  "exportDimensions": [
+    64,
+    64
+  ],
+  "visibleBounds": [
+    16,
+    10,
+    48,
+    54
+  ],
+  "paletteOpaqueColours": 6,
+  "processing": [
+    "largest connected alpha>=128 component",
+    "aspect-preserving nearest-neighbour fit to height44",
+    "six neutral palette colours",
+    "hard0/255alpha",
+    "fixed64canvas centred with top10"
+  ],
+  "noPoseRotationOrReshaping": true,
+  "sourceSha256": "a1129dfce1db0b3225c38c36fb87d9f1451072ea351ea2d0c7e6db23f981ce67",
+  "exportSha256": "8fd1f8ff274675f587ccdcbe643e0c1b8f466528258bcf50c4673f097becc637",
+  "wrapperMatches": true
+}

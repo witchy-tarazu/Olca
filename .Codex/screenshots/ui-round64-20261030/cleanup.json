@@ -1,0 +1,17 @@
+{
+  "originalClean": true,
+  "actualTestRenderRestored": [
+    640,
+    360
+  ],
+  "controllerInactive": true,
+  "tempGuard": true,
+  "storageGuard": true,
+  "trackedAssetComparison": 878,
+  "exceptPrivateURP": [
+    "Assets/Settings/UniversalRP.asset",
+    "Assets/UniversalRenderPipelineGlobalSettings.asset"
+  ],
+  "differences": [],
+  "consoleErrors": 0
+}

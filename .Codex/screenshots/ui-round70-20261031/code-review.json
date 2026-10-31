@@ -1,0 +1,14 @@
+{
+  "sourceSha256": "19a19712772dc46c85bfb25f9db863677eb9c1eb0fb76ce3b0d85a9771c6797e",
+  "scope": "GameplayKeyboardSettingsView only",
+  "reviewer": "equipment_save_review",
+  "unresolvedSpecificFindings": 0,
+  "notes": [
+    "Core TryAssign called once; diff count only selects status text",
+    "applied/draft/save-first/discard/reset/capture release/assignedFrame unchanged",
+    "non-raycast reading planes; current candidate labels retained while listening",
+    "TrackColumn keeps relative offsets and existing sizes; keyboard centers change only at narrow widths",
+    "Pad refined spacing candidate was not adopted; initial verified pad spacing retained"
+  ],
+  "notCovered": "native visual comfort delegated separately; not a guarantee of global correctness"
+}

@@ -1,0 +1,62 @@
+{
+  "before-warning": {
+    "frame": 6,
+    "hp": 100,
+    "tiles": [
+      1,
+      2,
+      3
+    ],
+    "panels": [
+      "Magma",
+      "Normal",
+      "Normal",
+      "Magma",
+      "Normal",
+      "Normal"
+    ]
+  },
+  "after-warning": {
+    "frame": 6,
+    "hp": 100,
+    "tiles": [
+      1,
+      2,
+      3
+    ],
+    "panels": [
+      "Magma",
+      "Normal",
+      "Normal",
+      "Magma",
+      "Normal",
+      "Normal"
+    ]
+  },
+  "before-magma": {
+    "frame": 1,
+    "hp": 100,
+    "tiles": [],
+    "panels": [
+      "Magma",
+      "Normal",
+      "Normal",
+      "Magma",
+      "Normal",
+      "Normal"
+    ]
+  },
+  "after-magma": {
+    "frame": 1,
+    "hp": 100,
+    "tiles": [],
+    "panels": [
+      "Magma",
+      "Normal",
+      "Normal",
+      "Magma",
+      "Normal",
+      "Normal"
+    ]
+  }
+}

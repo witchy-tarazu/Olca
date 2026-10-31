@@ -1,0 +1,14 @@
+{
+  "code": {
+    "reviewer": "independent equipment_save_review",
+    "finalSource": "GameFieldView only, Frost small3 fragments, surfaceDrop",
+    "unresolved": 0
+  },
+  "visual": {
+    "reviewer": "independent native-size visual review",
+    "scope": "before/after six native FHD/4K/4:3 images",
+    "unresolved": 0,
+    "findingFixed": "large glass-like polygons replaced by small faint fragmented frost",
+    "limits": "static screenshot scope, no aesthetic completion/user-approval guarantee"
+  }
+}

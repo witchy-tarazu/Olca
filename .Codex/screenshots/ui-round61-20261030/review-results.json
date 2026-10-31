@@ -1,0 +1,27 @@
+{
+  "code": {
+    "reviewer": "independent equipment_save_review",
+    "scope": "最終3C#の借用Sprite/階層寿命/再利用/地形変更/Disable Enable/reload guard/Core時間保存不変",
+    "unresolved": 0,
+    "finalSurfacePositionReviewed": true
+  },
+  "visualBattle": {
+    "reviewer": "independent native-size visual review",
+    "scope": "最終戦闘FHD/4K/4:3のマグマと予告併存6画像",
+    "unresolved": 0,
+    "iterations": [
+      "ネオン線を不均一な割れ目と短い明部へ",
+      "穴のように暗い床を原床の石質感が残る色調へ"
+    ]
+  },
+  "visualExploration": {
+    "reviewer": "independent native-size review",
+    "scope": "19:01以降の最終FHD/4K/4:3静止画像",
+    "unresolved": 0,
+    "iterations": [
+      "薄い明色の浮いた板を暗橙半透過と床内亀裂へ",
+      "帯上端を床上端へ一致、亀裂world位置保持"
+    ],
+    "limits": "静止画像レビューであり、物理入力/美的完成保証ではない"
+  }
+}

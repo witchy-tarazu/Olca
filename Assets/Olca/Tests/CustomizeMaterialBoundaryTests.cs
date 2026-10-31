@@ -64,6 +64,22 @@ namespace Olca.Tests
         }
 
         [Test]
+        public void 加工案内はcustomの現在割当と入力機器を使い候補と実行を区別する()
+        {
+            var profile=Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile();var edit=profile.BeginEdit();
+            Assert.IsTrue(edit.TryAssign(("gamepad","custom","Confirm"),"LeftTrigger",out _));Assert.IsTrue(edit.TryAssign(("gamepad","custom","Cancel"),"RightTrigger",out _));profile=edit.Apply();
+            var format=typeof(CustomScreenView).GetMethod("FormatProcessingHint",BindingFlags.Static|BindingFlags.NonPublic);var kindType=format.GetParameters()[0].ParameterType;
+            string Hint(string kind,Olca.Unity.InputGuideDevice device)=>(string)format.Invoke(null,new object[]{System.Enum.Parse(kindType,kind),"融合",device,profile});
+            var pad=Hint("Ready",Olca.Unity.InputGuideDevice.Gamepad);StringAssert.Contains("LT",pad);StringAssert.DoesNotContain("Enter",pad);StringAssert.DoesNotContain("Start",pad);
+            var candidate=Hint("Candidate",Olca.Unity.InputGuideDevice.Gamepad);StringAssert.Contains("South",candidate);StringAssert.Contains("LT",candidate);
+            StringAssert.Contains("Enter",Hint("Ready",Olca.Unity.InputGuideDevice.KeyboardMouse));StringAssert.Contains("Space",Hint("Candidate",Olca.Unity.InputGuideDevice.KeyboardMouse));
+            var touch=Hint("Ready",Olca.Unity.InputGuideDevice.Touch);StringAssert.Contains("タップ",touch);StringAssert.DoesNotContain("Enter",touch);StringAssert.DoesNotContain("LT",touch);
+            var guide=typeof(CustomScreenView).GetMethod("FormatPadGuide",BindingFlags.Static|BindingFlags.NonPublic);
+            var normal=(string)guide.Invoke(null,new object[]{false,false,profile});var processing=(string)guide.Invoke(null,new object[]{true,true,profile});
+            StringAssert.Contains("LT: 決定",normal);StringAssert.Contains("LT: 加工実行",processing);StringAssert.Contains("RT: 取消して戻る",processing);Assert.AreEqual(4,processing.Split('\n').Length);
+            Assert.AreEqual("Start",profile.Bindings[("gamepad","menu","Confirm")]);
+        }
+        [Test]
         public void 三枚融合は候補でも直接実行でも拒否して手札を維持する()
         {
             var a=factory.CreateById(SimpleCardFactory.Sword);var b=factory.CreateById(SimpleCardFactory.Bomb);var c=factory.CreateById(SimpleCardFactory.Heal);var model=Open(a,b,c);
@@ -106,7 +122,8 @@ namespace Olca.Tests
                 view.ConfigureCardVisuals(new[]{new CardVisualEntry{CardId="fire_sword",Illustration=art,CustomIcon=mini},new CardVisualEntry{CardId="sword",CustomIcon=mini},new CardVisualEntry{CardId="bomb",CustomIcon=mini}});selected.Add(a);selected.Add(b);var update=typeof(CustomScreenView).GetMethod("UpdateCustomizationPreview",Flags);update.Invoke(view,new object[]{-1});
                 Assert.AreSame(art,image.sprite);Assert.AreNotSame(mini,image.sprite);Assert.AreEqual(Color.white,image.color);Assert.AreEqual(2,view.GetComponentsInChildren<Image>().Count(i=>i.name=="MaterialIcon"&&i.sprite==mini));StringAssert.Contains("ソード",text.text);StringAssert.Contains("ボム",text.text);StringAssert.Contains("ミジッコウ",text.text);CollectionAssert.AreEqual(before,model.CurrentHand);Assert.AreEqual(0,model.CustomizationUndoCount);Assert.AreEqual(0,model.SelectedCards.Count);
                 mode.Exit();typeof(CustomScreenView).GetMethod("UpdateProcessingControls",Flags).Invoke(view,null);Assert.IsFalse(view.GetComponentsInChildren<Image>().Any(i=>i.name=="MaterialIcon"));Assert.IsNull(image.sprite);mode.Enter();
-                selected.Clear();update.Invoke(view,new object[]{-1});Assert.IsNull(image.sprite);Assert.AreEqual(0,image.color.a);Assert.IsFalse(view.GetComponentsInChildren<Image>().Any(i=>i.name=="MaterialIcon"));CollectionAssert.AreEqual(before,model.CurrentHand);Assert.AreEqual(0,model.CustomizationUndoCount);
+                selected.Clear();update.Invoke(view,new object[]{-1});Assert.IsNull(image.sprite);Assert.AreEqual(0,image.color.a);var frames=view.GetComponentsInChildren<Image>().Where(i=>i.name.StartsWith("ProcessingMaterial_")).ToArray();Assert.AreEqual(2,frames.Length);Assert.IsTrue(frames.All(i=>!i.raycastTarget));
+                var emptyIcons=view.GetComponentsInChildren<Image>().Where(i=>i.name=="MaterialIcon").ToArray();Assert.AreEqual(2,emptyIcons.Length);Assert.IsTrue(emptyIcons.All(i=>!i.enabled&&i.sprite==null&&!i.raycastTarget),"空き2枠は非入力で、前回のminiを描画しない");Assert.IsFalse(button.interactable);CollectionAssert.AreEqual(before,model.CurrentHand);Assert.AreEqual(0,model.CustomizationUndoCount);
             });Assert.IsTrue(art!=null);Assert.IsTrue(mini!=null);}finally{UnityEngine.Object.DestroyImmediate(art);UnityEngine.Object.DestroyImmediate(mini);UnityEngine.Object.DestroyImmediate(texture);}
         }
         [Test]

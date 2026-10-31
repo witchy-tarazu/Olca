@@ -1,0 +1,8 @@
+{
+  "currentPlayErrors": 0,
+  "currentPlayWarnings": 1,
+  "message": "Could not save connection info: Read-only file system",
+  "source": "Unity.AI.MCP.Editor.Helpers.ServerDiscovery.SaveConnectionInfo",
+  "classification": "existing environment/tool warning; product asset warnings not observed",
+  "diagnosticsSuppressed": false
+}

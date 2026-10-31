@@ -1,0 +1,12 @@
+{
+  "readOnlyFilesUnchanged": true,
+  "readOnlyHashes": {
+    "progress.json": "a79756ec3a28e8ab5f577b2dc03ef7d0f06108436d1860f7e6a294326115cae7",
+    "progress.backup.json": "dad85dc9fe35caff6074f1d229b1140cc5d598e5fad1fe056b236bb194172442"
+  },
+  "collectionOwnedTokensUnchangedAfterRetreatAndUIReload": true,
+  "knownCards": 5,
+  "revealedRecipes": [],
+  "unknownCardNoIconsOrDetails": true,
+  "unrevealedRecipeNoIconOrPerformance": true
+}

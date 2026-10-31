@@ -1,0 +1,18 @@
+{
+  "currentGroundTruth": {
+    "sampledUtc": "2026-10-30T21:35:31.534757Z",
+    "ageMs": 124,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 15,
+    "seeded": true
+  },
+  "retainedEntries": {
+    "Editor is already in edit mode": 1,
+    "Could not save connection info: Read-only file system": 2
+  },
+  "classification": "Unity Pipeline redundant editor_stop diagnostic and Unity AI connection-discovery read-only environment diagnostic; no product/content warning observed",
+  "suppressed": false
+}

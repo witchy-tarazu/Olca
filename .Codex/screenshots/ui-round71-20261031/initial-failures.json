@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "total": 382,
+    "passed": 377,
+    "failed": 5,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "failedCases": [
+    {
+      "name": "Olca.Tests.CustomScreenCostViewTests.長い保存デッキ名は業務操作せず全文を読み閉じた後の操作を拒否する(1662.77f,1247.08f,False)",
+      "message": "  Expected: 0.0d +/- 0.0099999997764825821d\n  But was:  1.0d\n"
+    },
+    {
+      "name": "Olca.Tests.CustomScreenCostViewTests.長い保存デッキ名は業務操作せず全文を読み閉じた後の操作を拒否する(1662.77f,1247.08f,True)",
+      "message": "  Expected: 0.0d +/- 0.0099999997764825821d\n  But was:  1.0d\n"
+    },
+    {
+      "name": "Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(1662.77f,1247.08f,0)",
+      "message": "  Expected: 0.0d +/- 0.0099999997764825821d\n  But was:  1.0d\n"
+    },
+    {
+      "name": "Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(1662.77f,1247.08f,4)",
+      "message": "  Expected: 0.0d +/- 0.0099999997764825821d\n  But was:  1.0d\n"
+    },
+    {
+      "name": "Olca.Tests.CustomScreenCostViewTests.長い説明条件エラーは保存や選択をせず全文を読み再表示後の古い操作を拒否する(1662.77f,1247.08f,5)",
+      "message": "  Expected: 0.0d +/- 0.0099999997764825821d\n  But was:  1.0d\n"
+    }
+  ],
+  "diagnosis": "complete text fits with20padding; no-overflow normalized position has no defined0 expectation; measured separately before bounded test correction",
+  "expectedChecksRetained": [
+    "actual overflow requires0",
+    "text preserved",
+    "content height covers preferred height",
+    "fits content bounds stay inside viewport",
+    "old inputs rejected",
+    "no business/save mutation"
+  ]
+}

@@ -89,10 +89,38 @@ namespace Olca.Presentation.CustomScreen
             Olca.Presentation.Dungeon.UiLook.Label(costText);
             if(cardButton!=null)Olca.Presentation.Dungeon.UiLook.Button(cardButton);
             costText.color=Color.white;
+            if(cardButton!=null){var colors=cardButton.colors;colors.normalColor=Color.white;colors.highlightedColor=new Color(.9f,1,1);colors.selectedColor=Color.white;colors.pressedColor=new Color(.7f,.9f,1);cardButton.colors=colors;}
+            SetSelectionOrder(0);
 
             // クリックイベント
             cardButton.onClick.RemoveListener(OnCardClicked);
             cardButton.onClick.AddListener(OnCardClicked);
+        }
+
+        private Image surfaceFrame;
+        private float selectionNarrowAmount;
+        private Text selectionOrder;
+        internal void SetSelectionPresentation(float narrow)
+        {
+            selectionNarrowAmount=narrow;
+            if(cardImage==null||cardButton==null||costText==null||costText.font==null)return;
+            if(surfaceFrame==null){
+                var obj=new GameObject("HandSurface",typeof(RectTransform),typeof(Image));obj.transform.SetParent(transform,false);obj.transform.SetAsFirstSibling();surfaceFrame=obj.GetComponent<Image>();
+                surfaceFrame.sprite=Resources.Load<Sprite>("OlcaUI/button-selected");surfaceFrame.type=Image.Type.Sliced;surfaceFrame.fillCenter=false;surfaceFrame.raycastTarget=false;
+                var rect=surfaceFrame.rectTransform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            }
+            if(selectionOrder==null){
+                var obj=new GameObject("SelectionOrder",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);selectionOrder=obj.GetComponent<Text>();selectionOrder.font=costText.font;selectionOrder.alignment=TextAnchor.MiddleCenter;selectionOrder.raycastTarget=false;
+                var rect=selectionOrder.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,1);rect.pivot=new Vector2(0,1);rect.anchoredPosition=Vector2.zero;
+            }
+            selectionOrder.resizeTextForBestFit=false;
+            selectionOrder.fontSize=Mathf.RoundToInt(Mathf.Lerp(24,34,narrow));selectionOrder.rectTransform.sizeDelta=Vector2.one*Mathf.Lerp(28,40,narrow);
+        }
+        internal void SetSelectionOrder(int order)
+        {
+            SetSelectionPresentation(selectionNarrowAmount);
+            if(selectionOrder!=null){selectionOrder.text=order>0?order.ToString():"";selectionOrder.color=new Color(1,.91f,.58f,1);selectionOrder.gameObject.SetActive(order>0);}
+            if(surfaceFrame!=null)surfaceFrame.color=new Color(.64f,.87f,.94f,.28f);
         }
 
         private void OnCardClicked() => parentView.OnCardClicked(Card);
@@ -109,6 +137,7 @@ namespace Olca.Presentation.CustomScreen
         {
             EnsureInitialized();
             if (destroyed || destroyCts.IsCancellationRequested) return;
+            SetSelectionOrder(isSelected?(parentView?.SelectionOrdinal(Card)??0):0);
 
             // エフェクトが有効な場合はアニメーション実行
             if (cardEffectView != null)
@@ -136,6 +165,7 @@ namespace Olca.Presentation.CustomScreen
         {
             EnsureInitialized();
             if (destroyed || destroyCts.IsCancellationRequested) return;
+            SetSelectionOrder(type==CardHighlightType.Selected?(parentView?.SelectionOrdinal(Card)??0):0);
 
             if (cardEffectView != null)
             {

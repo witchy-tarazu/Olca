@@ -1,0 +1,18 @@
+{
+  "groundTruth": {
+    "sampledUtc": "2026-10-30T22:11:44.744426Z",
+    "ageMs": 151,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 20,
+    "seeded": true
+  },
+  "retainedMessages": {
+    "Editor is already in edit mode": 1,
+    "Could not save connection info: Read-only file system": 2
+  },
+  "classification": "Pipeline already-in-edit-mode + Unity AI read-only connection-discovery diagnostic; no product/content warning observed",
+  "suppressed": false
+}

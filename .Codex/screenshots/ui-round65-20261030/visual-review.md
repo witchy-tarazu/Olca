@@ -1,0 +1,9 @@
+# Round65 independent visual review
+
+Reviewed final `ui-round65-after-initial-five-{fhd,4k,4by3}.png` and `ui-round65-after-legacy-ten-selected-{fhd,4k,4by3}.png` at original size. Earlier before/iteration images were used as visual references; these are static-image observations, not input or lifecycle execution results.
+
+The prior two findings are resolved: the stronger reading plane reduces character interference with hand/queue information, and the queue numbers are readable at 4:3. Focus artwork, hand count, selected order/count, individual costs, total cost, and confirmation have clearer roles. Ten cards remain in a square 5x2 composition, with selected order 1–5 corresponding between hand and queue. No further readability issue was observed in the reviewed states.
+
+The third finding was a local surface-boundary issue: the reading plane's upper-right rectangular corner extended across the original main-window/HP-plate join, approximately x1410–1464, y372–440 in 4K. The owner moved only the plane's right edge inward. The refreshed initial-five FHD/4K/4:3 images (approximately 21:31 UTC) were re-read at original size: the projection is resolved, the HP join is visible, and content readability is retained. No outstanding finding remains in these three initial-five views. The refreshed corner-fixed dense-ten FHD/4K/4:3 images (approximately 21:34–21:35 UTC) were also re-read at original size. The corner is resolved in all three, while hand/queue order 1–5, focus distinction, cost 8/10, and confirmation remain readable. All six final views have now been reviewed; outstanding concrete findings within this static visual scope: 0.
+
+No MCP, tests, source edits, or Git operations were performed for this review. Closed-state residue, interaction, animation, and save behavior require the owner's separate runtime evidence. This review does not assert overall UI completion.

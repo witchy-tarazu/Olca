@@ -1900,12 +1900,30 @@ namespace Olca.Tests.Dungeon
             Assert.IsFalse(CheckpointCodec.TryRestore(bad,session.Definitions,out _,out _));
         }
         [Test]
+        public void 接触回復画像は包装と真透過を保ち複数地点と再表示で共有し所有資源だけ解放する()
+        {
+            var game=Start(60,out _,out _);var root=new UnityEngine.GameObject("PickupAssetTest");var cameraObject=new UnityEngine.GameObject("PickupAssetCamera");
+            try{
+                var camera=cameraObject.AddComponent<UnityEngine.Camera>();camera.orthographic=true;camera.orthographicSize=3;camera.aspect=1;camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);
+                var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;view.GetType().GetField("fieldCamera",flags).SetValue(view,camera);view.Initialize(game.Dungeon);
+                var source=UnityEngine.Resources.Load<UnityEngine.TextAsset>("OlcaPickups/heal_vial");var original=System.IO.File.ReadAllBytes("Assets/Art/UI/Pickups/heal_vial.png");Assert.IsNotNull(source);CollectionAssert.AreEqual(original,source.bytes);
+                var renderer=root.transform.Find("FieldHealCell_1/HealPickupIcon").GetComponent<UnityEngine.SpriteRenderer>();var sprite=renderer.sprite;var texture=sprite.texture;
+                Assert.AreSame(sprite,root.transform.Find("FieldHealCell_2/HealPickupIcon").GetComponent<UnityEngine.SpriteRenderer>().sprite);Assert.IsNull(root.transform.Find("FieldHealCell_1/HealVertical"));
+                Assert.AreEqual(64,texture.width);Assert.AreEqual(64,texture.height);Assert.AreEqual(64,sprite.pixelsPerUnit);Assert.IsFalse(texture.isReadable);Assert.AreEqual(UnityEngine.FilterMode.Point,texture.filterMode);Assert.AreEqual(UnityEngine.TextureWrapMode.Clamp,texture.wrapMode);
+                Assert.That(renderer.bounds.size.x,Is.EqualTo(.4f).Within(.001));Assert.That(renderer.bounds.size.y,Is.EqualTo(.4f).Within(.001));
+                var decoded=new UnityEngine.Texture2D(2,2);try{Assert.IsTrue(UnityEngine.ImageConversion.LoadImage(decoded,original));var pixels=decoded.GetPixels32();Assert.IsTrue(pixels.Any(x=>x.a==0));Assert.IsTrue(pixels.Any(x=>x.a==255));Assert.IsTrue(pixels.All(x=>x.a==0||x.a==255));}finally{UnityEngine.Object.DestroyImmediate(decoded);}
+                view.enabled=false;view.GetType().GetMethod("OnDisable",flags).Invoke(view,null);Assert.IsNotNull(sprite);Assert.IsNotNull(texture);
+                view.enabled=true;view.GetType().GetMethod("OnEnable",flags).Invoke(view,null);Assert.AreSame(sprite,root.transform.Find("FieldHealCell_1/HealPickupIcon").GetComponent<UnityEngine.SpriteRenderer>().sprite);
+                view.GetType().GetMethod("OnDestroy",flags).Invoke(view,null);Assert.IsTrue(sprite==null);Assert.IsTrue(texture==null);Assert.IsNotNull(source);CollectionAssert.AreEqual(original,source.bytes);
+            }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(cameraObject);}
+        }
+        [Test]
         public void 画面内表示は取得後と無効化とモデル交換で消え描画では回復しない()
         {
             var game=Start(60,out _,out _);var root=new UnityEngine.GameObject("FieldItemVisualTest");var cameraObject=new UnityEngine.GameObject("FieldItemCamera");
             try{var camera=cameraObject.AddComponent<UnityEngine.Camera>();camera.orthographic=true;camera.orthographicSize=3;camera.aspect=1;camera.transform.position=new UnityEngine.Vector3(2.5f,0,-10);
                 var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;view.GetType().GetField("fieldCamera",flags).SetValue(view,camera);view.Initialize(game.Dungeon);
-                Assert.IsNotNull(root.transform.Find("FieldHealCell_1"));for(int i=0;i<100;i++)view.RefreshFieldItemVisuals();Assert.AreEqual(60,game.Dungeon.Player.CurrentHp);Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(x=>x.name=="HealVertical"&&x.transform.parent.name=="FieldHealCell_1"));
+                Assert.IsNotNull(root.transform.Find("FieldHealCell_1"));for(int i=0;i<100;i++)view.RefreshFieldItemVisuals();Assert.AreEqual(60,game.Dungeon.Player.CurrentHp);Assert.AreEqual(1,root.GetComponentsInChildren<UnityEngine.SpriteRenderer>().Count(x=>x.name=="HealPickupIcon"&&x.transform.parent.name=="FieldHealCell_1"));
                 game.Dungeon.Tick(1000);view.RefreshFieldItemVisuals();Assert.IsNull(root.transform.Find("FieldHealCell_1"));Assert.IsNull(root.transform.Find("FieldHealCell_2"));
                 var replacement=Start(60,out _,out _);view.Initialize(replacement.Dungeon);Assert.IsNotNull(root.transform.Find("FieldHealCell_1"));view.enabled=false;view.GetType().GetMethod("OnDisable",flags).Invoke(view,null);view.RefreshFieldItemVisuals();Assert.IsNull(root.transform.Find("FieldHealCell_1"));
             }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(cameraObject);}

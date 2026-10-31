@@ -1,0 +1,27 @@
+{
+  "devices": [
+    {
+      "name": "Mouse",
+      "layout": "Mouse",
+      "native": true
+    },
+    {
+      "name": "Keyboard",
+      "layout": "Keyboard",
+      "native": true
+    }
+  ],
+  "events": [
+    {
+      "name": "EventSystem",
+      "enabled": true,
+      "scene": "Assets/Scenes/DungeonScene.unity",
+      "activeSelf": true
+    }
+  ],
+  "screen": [
+    640,
+    360
+  ],
+  "temp": "/workspace/olca-validation-20261024/save/tmp/"
+}

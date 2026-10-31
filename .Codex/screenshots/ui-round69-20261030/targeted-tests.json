@@ -1,0 +1,27 @@
+{
+  "suites": {
+    "CustomScreenCostViewTests": {
+      "total": 380,
+      "passed": 380,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "DungeonBattleManagerTests": {
+      "total": 65,
+      "passed": 65,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "FusionSystemTests": {
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    }
+  },
+  "passed": 457,
+  "failed": 0
+}

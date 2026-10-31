@@ -1,0 +1,13 @@
+{
+  "damage": 10,
+  "state": {
+    "phase": "Dungeon",
+    "position": 12.266,
+    "hp": 90,
+    "types": [
+      "Magma",
+      "Magma"
+    ],
+    "patternCount": 2
+  }
+}

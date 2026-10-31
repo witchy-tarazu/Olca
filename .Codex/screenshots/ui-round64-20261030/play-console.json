@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"entries\": [],\n  \"cursor\": 230764,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 0,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 0,\n    \"warn\": 2,\n    \"log\": 63\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-10-30T20:33:25.246112Z\",\n    \"ageMs\": 27,\n    \"compilationFailed\": false,\n    \"compiling\": false,\n    \"consoleErrors\": 0,\n    \"consoleWarnings\": 1,\n    \"consoleLogs\": 51,\n    \"seeded\": true\n  }\n}"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "deck": true,
+    "mode": 0,
+    "length": 511,
+    "preferred": 294,
+    "viewportHeight": 313.999939,
+    "contentHeight": 314,
+    "normalized": 1
+  },
+  {
+    "deck": false,
+    "mode": 0,
+    "length": 540,
+    "preferred": 327,
+    "viewportHeight": 346.999939,
+    "contentHeight": 347,
+    "normalized": 1
+  },
+  {
+    "deck": false,
+    "mode": 4,
+    "length": 552,
+    "preferred": 360,
+    "viewportHeight": 379.999939,
+    "contentHeight": 380,
+    "normalized": 1
+  },
+  {
+    "deck": false,
+    "mode": 5,
+    "length": 542,
+    "preferred": 327,
+    "viewportHeight": 346.999939,
+    "contentHeight": 347,
+    "normalized": 1
+  }
+]

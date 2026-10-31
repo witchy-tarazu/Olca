@@ -1,0 +1,22 @@
+{
+  "phase": "Dungeon",
+  "position": 8.133,
+  "hp": 100,
+  "types": [
+    "Magma",
+    "Magma"
+  ],
+  "patternCount": 2,
+  "surfaces": [
+    {
+      "name": "ExplorationTerrain_10",
+      "top": -0.3,
+      "ground": -0.3
+    },
+    {
+      "name": "ExplorationTerrain_11",
+      "top": -0.3,
+      "ground": -0.3
+    }
+  ]
+}

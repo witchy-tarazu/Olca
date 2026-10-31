@@ -1,0 +1,19 @@
+{
+  "summary": {
+    "total": 3507,
+    "passed": 3506,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 252.06,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.CustomizeMaterialBoundaryTests.加工プレビューは本絵と専用miniを分け借用し素材とUndoを変更しない",
+      "Status": "Failed",
+      "Duration": 0.0113988,
+      "Message": "  Expected: False\n  But was:  True\n",
+      "StackTrace": "at Olca.Tests.CustomizeMaterialBoundaryTests+<>c__DisplayClass7_0.<加工プレビューは本絵と専用miniを分け借用し素材とUndoを変更しない>b__0 (Olca.Presentation.CustomScreen.CustomScreenView view, Olca.Presentation.CustomScreen.CustomizeMode.CustomizeModeView mode, UnityEngine.UI.Button button, System.Collections.Generic.List`1[T] selected) [0x0032a] in Assets/Olca/Tests/CustomizeMaterialBoundaryTests.cs:109\nat Olca.Tests.CustomizeMaterialBoundaryTests.WithView (Olca.Core.Logic.Battle.CustomScreenSystem model, System.Action`4[T1,T2,T3,T4] check) [0x000e4] in Assets/Olca/Tests/CustomizeMaterialBoundaryTests.cs:139\nat Olca.Tests.CustomizeMaterialBoundaryTests.加工プレビューは本絵と専用miniを分け借用し素材とUndoを変更しない () [0x000f2] in Assets/Olca/Tests/CustomizeMaterialBoundaryTests.cs:103\n"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "render": {
+    "width": 640,
+    "height": 360,
+    "screenWidth": 640,
+    "screenHeight": 360
+  },
+  "temp": {
+    "before": "/workspace/olca-validation-20261024/save/tmp",
+    "after": "/workspace/olca-validation-20261024/save/tmp/",
+    "guard": true
+  },
+  "recompile": {
+    "status": "completed",
+    "failed": false,
+    "errors": [],
+    "compilationFailed": false
+  },
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "f6e7469a1791731d76c84aeebc6de9477c469a42d74795128a2570bc689c6f05",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "8c03e34c30042f9d96f7eaebe7fab949ed1c9ab4c7f210dbc7184c89154cdd45"
+  }
+}

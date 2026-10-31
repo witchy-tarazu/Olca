@@ -16,6 +16,60 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)]
+        public void 詳細の短文と空説明は上端を保ち長文へ再拡張して末尾まで読める(float width,float height)
+        {
+            var root=new GameObject("AdaptiveDetailViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
+            try{
+                var host=new GameObject("AdaptiveDetailView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});
+                var card=new Card("adaptive","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"みじかい説明");v.RenderCollection(new[]{"テスト"},new CollectionRecipeRow[0],false,null,()=>{},()=>{},cardDetails:new[]{card});host.GetComponentsInChildren<Button>().Single(b=>b.name=="CardCollectionTab").onClick.Invoke();host.GetComponentsInChildren<Button>().Single(b=>b.name=="CollectionCardDetails_0").onClick.Invoke();
+                void Fit(){Canvas.ForceUpdateCanvases();typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(v,null);Canvas.ForceUpdateCanvases();}
+                Fit();var body=host.GetComponentsInChildren<Text>().Single(t=>t.name=="ReadonlyCardPerformance");var scroll=host.GetComponentInChildren<ScrollRect>();var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");float top=scroll.viewport.offsetMax.y;var footer=((RectTransform)close.transform).anchoredPosition;
+                body.text="";Fit();float empty=scroll.viewport.rect.height;Assert.Less(empty,200);Assert.AreEqual(top,scroll.viewport.offsetMax.y);Assert.AreEqual(footer,((RectTransform)close.transform).anchoredPosition);
+                string longText=string.Concat(Enumerable.Repeat("ながい説明とセイノウ・",300))+"オワリ";body.text=longText;Fit();Assert.Greater(scroll.viewport.rect.height,empty);Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);Assert.AreEqual(longText,body.text);scroll.verticalNormalizedPosition=0;Fit();Assert.Less(scroll.verticalNormalizedPosition,.01f);
+                body.text="みじかい説明";Fit();Assert.Less(scroll.viewport.rect.height,200);Assert.AreEqual(top,scroll.viewport.offsetMax.y);Assert.AreEqual(footer,((RectTransform)close.transform).anchoredPosition);close.onClick.Invoke();Assert.IsFalse(v.HasMenuModal);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
+        [Test]
+        public void 使用順の番号と枚数は同一IDの別カードを区別し追加表示が入力領域を変えない()
+        {
+            var root=new GameObject("Hierarchy",typeof(RectTransform));root.SetActive(false);
+            try{
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;var view=root.AddComponent<CustomScreenView>();
+                var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");var font=prefab.GetComponentInChildren<Text>(true).font;
+                RectTransform Rect(string name,Transform parent,Vector2 position,Vector2 size){var obj=new GameObject(name,typeof(RectTransform));obj.transform.SetParent(parent,false);var rect=(RectTransform)obj.transform;rect.localPosition=position;rect.sizeDelta=size;return rect;}
+                var bg=Rect("BgCustom",root.transform,new Vector2(580,0),new Vector2(1280,1000));bg.gameObject.AddComponent<Image>();
+                var container=Rect("Hand",root.transform,new Vector2(480,-50),new Vector2(700,300));typeof(CustomScreenView).GetField("handCardContainer",flags).SetValue(view,container);
+                var area=Rect("Details",root.transform,new Vector2(480,250),new Vector2(700,300));var art=Rect("Art",area,Vector2.zero,new Vector2(300,300)).gameObject.AddComponent<Image>();typeof(CustomScreenView).GetField("selectedCardImage",flags).SetValue(view,art);
+                var desc=Rect("Description",area,Vector2.zero,new Vector2(380,270)).gameObject.AddComponent<Text>();desc.font=font;typeof(CustomScreenView).GetField("selectedCardDescription",flags).SetValue(view,desc);
+                var cost=Rect("Cost",root.transform,new Vector2(480,-250),new Vector2(400,56)).gameObject.AddComponent<Text>();cost.font=font;typeof(CustomScreenView).GetField("costDisplay",flags).SetValue(view,cost);
+                var indicator=Rect("SelectionIndicator",root.transform,new Vector2(480,-300),new Vector2(800,50));for(int i=0;i<5;i++)Rect("Slot"+i,indicator,new Vector2(-150+75*i,0),new Vector2(50,50)).gameObject.AddComponent<Image>();
+                var markers=new Transform[10];for(int i=0;i<10;i++)markers[i]=Rect("Marker"+i,container,new Vector2(-250+125*(i%5),75-150*(i/5)),Vector2.zero);typeof(CustomScreenView).GetField("cardPositionMarkers",flags).SetValue(view,markers);
+                var factory=new Olca.Application.Battle.SimpleCardFactory();var model=new CustomScreenSystem(new Deck(Enumerable.Range(0,5).Select(_=>factory.CreateById("sword")).ToList()));model.Open(new Card[0],new MockRandomProvider(0));typeof(CustomScreenView).GetField("customScreen",flags).SetValue(view,model);
+                var input=model.CurrentHand.ToArray();typeof(CustomScreenView).GetField("inputHand",flags).SetValue(view,input.ToList());var hands=(List<HandCardView>)typeof(CustomScreenView).GetField("handCardViews",flags).GetValue(view);foreach(var card in input){var obj=Object.Instantiate(prefab,container);var hand=obj.GetComponent<HandCardView>();hand.Initialize(card,view);hands.Add(hand);}
+                var update=typeof(CustomScreenView).GetMethod("UpdateSelectedCardDisplay",flags);
+                int recordedCost=0;
+                for(int count=0;count<=5;count++){
+                    if(count>0)Assert.IsTrue(model.TrySelectCard(input[count-1]));recordedCost=model.GetTotalUsedCost();update.Invoke(view,null);
+                    Assert.AreEqual("テフダ　5マイ",root.transform.Find("HandHeading").GetComponent<Text>().text);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                    Assert.AreEqual($"シヨウジュン　{count} / 5",root.transform.Find("SelectionHeading").GetComponent<Text>().text);
+                    for(int i=0;i<5;i++){var badge=hands[i].transform.Find("SelectionOrder").GetComponent<Text>();Assert.AreEqual(i<count?(i+1).ToString():"",badge.text);Assert.AreEqual(i<count,badge.gameObject.activeSelf);Assert.AreEqual(new Vector2(100,100),((RectTransform)hands[i].transform).sizeDelta);}
+                }
+                view.ApplyNarrowLayout(1);Assert.AreEqual(28,indicator.Find("Slot0/QueueOrder").GetComponent<Text>().fontSize);Assert.AreEqual(34,hands[0].transform.Find("SelectionOrder").GetComponent<Text>().fontSize);view.ApplyNarrowLayout(0);Assert.AreEqual(24,hands[0].transform.Find("SelectionOrder").GetComponent<Text>().fontSize);
+                Assert.AreEqual(new Vector2(800,50),indicator.sizeDelta);Assert.IsTrue(indicator.GetComponent<Image>().raycastTarget);
+                foreach(var graphic in root.GetComponentsInChildren<Graphic>(true).Where(g=>new[]{"FocusHeading","HandHeading","SelectionHeading","SelectionHint","CustomReadingSurface","HandSurface","SelectionOrder","QueueOrder"}.Contains(g.name))){Assert.IsFalse(graphic.raycastTarget,graphic.name);if(graphic is Text text)Assert.AreSame(font,text.font);}
+                Assert.AreEqual(5,model.SelectedCards.Count);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                var modeObject=Rect("CustomizeMode",root.transform,Vector2.zero,Vector2.one).gameObject;
+                var mode=modeObject.AddComponent<Olca.Presentation.CustomScreen.CustomizeMode.CustomizeModeView>();typeof(CustomScreenView).GetField("customizeModeView",flags).SetValue(view,mode);
+                mode.Enter();view.ApplyNarrowLayout(0);
+                Assert.AreEqual("ケッカ",root.transform.Find("FocusHeading").GetComponent<Text>().text);Assert.AreEqual("ソザイ　0 / 2",root.transform.Find("SelectionHeading").GetComponent<Text>().text);
+                Assert.IsFalse(cost.gameObject.activeSelf);Assert.IsFalse(indicator.gameObject.activeSelf);Assert.IsFalse(root.transform.Find("SelectionHint").gameObject.activeSelf);
+                Assert.AreEqual(5,model.SelectedCards.Count);Assert.AreEqual(recordedCost,model.GetTotalUsedCost());
+                mode.Exit();view.ApplyNarrowLayout(0);Assert.IsTrue(cost.gameObject.activeSelf);Assert.IsTrue(indicator.gameObject.activeSelf);Assert.AreEqual("フォーカス",root.transform.Find("FocusHeading").GetComponent<Text>().text);Assert.AreEqual("シヨウジュン　5 / 5",root.transform.Find("SelectionHeading").GetComponent<Text>().text);
+                model.Close();view.ApplyNarrowLayout(0);Assert.IsFalse(root.transform.Find("CustomReadingSurface").gameObject.activeSelf);Assert.IsFalse(root.transform.Find("FocusHeading").gameObject.activeSelf);
+            }finally{Object.DestroyImmediate(root);}
+        }
         [TestCase(1440f)][TestCase(1920f)][TestCase(2560f)]
         public void カスタムの外周は左半画面に収まり閉じたHUDと開閉途中のリサイズを保つ(float width)
         {
@@ -79,6 +133,17 @@ namespace Olca.Tests
         {
             var corners=new Vector3[4];control.GetWorldCorners(corners);
             foreach(var point in corners){var local=viewport.InverseTransformPoint(point);Assert.That(local.x,Is.InRange(viewport.rect.xMin-.1f,viewport.rect.xMax+.1f),control.name);Assert.That(local.y,Is.InRange(viewport.rect.yMin-.1f,viewport.rect.yMax+.1f),control.name);}
+        }
+        private static void RequireReadingEnd(ScrollRect scroll,Text body)
+        {
+            Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
+            scroll.verticalNormalizedPosition=0;
+            if(scroll.content.rect.height>scroll.viewport.rect.height+.1f)Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);
+            else{
+                // 全文が収まる時のnormalized値は0/1を規定せず、読める範囲そのものを確認する。
+                Assert.LessOrEqual(body.preferredHeight,scroll.viewport.rect.height+.1f);
+                RequireInside(scroll.viewport,scroll.content);
+            }
         }
         [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
         [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
@@ -183,7 +248,7 @@ namespace Olca.Tests
                 StringAssert.Contains(mode>=1&&mode<=3?"サイゴのエラー":"サイゴのジョウケン",body.text);
                 viewport.sizeDelta=new Vector2(width,height);typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
                 if(mode>=1&&mode<=3)Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);
-                scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);
+                RequireReadingEnd(scroll,body);
                 var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");RequireInside(viewport,(RectTransform)close.transform);var staleClose=close.onClick;close.onClick.Invoke();Assert.IsFalse(view.HasMenuModal);Assert.AreEqual(0,calls);
                 trigger.onClick.Invoke();Assert.IsTrue(view.HasMenuModal);Render();Assert.IsFalse(view.HasMenuModal);Assert.DoesNotThrow(()=>staleClose.Invoke());Assert.DoesNotThrow(()=>staleOpen.Invoke());Assert.IsFalse(view.HasMenuModal);Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
@@ -289,7 +354,7 @@ namespace Olca.Tests
                 var host=new GameObject("SavedNameView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");v.Initialize(font,_=>{},()=>{},()=>{},()=>{});int calls=0;System.Action no=()=>calls++;var name=string.Concat(Enumerable.Repeat("ながいデッキのなまえ",50))+"サイゴのナマエ";var p=new ClearReturnProfile{SavedDecks=new[]{new SavedDepartureDeck{Id="long",Name=name},new SavedDepartureDeck{Id="short",Name="テスト"}}};
                 void Render()=>v.RenderSavedDeckMenu(p,null,pending,no,_=>no(),_=>no(),_=>no(),_=>no(),no,no);
                 Render();var trigger=host.GetComponentsInChildren<Button>().Single(b=>b.name=="SavedDeckName_longDetails");Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="SavedDeckName_shortDetails"));RequireSeparateButtons(host);RequireInside(viewport,(RectTransform)trigger.transform);var staleOpen=trigger.onClick;trigger.onClick.Invoke();
-                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();StringAssert.Contains(name,body.text);Assert.AreSame(font,body.font);Assert.IsFalse(body.supportRichText);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);
+                var scroll=host.GetComponentInChildren<ScrollRect>();var body=scroll.content.GetComponent<Text>();StringAssert.Contains(name,body.text);Assert.AreSame(font,body.font);Assert.IsFalse(body.supportRichText);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);RequireReadingEnd(scroll,body);
                 var close=host.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseReadonlyCardDetails");var staleClose=close.onClick;close.onClick.Invoke();Render();staleOpen.Invoke();staleClose.Invoke();Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);Assert.AreEqual(name,p.SavedDecks[0].Name);
             }finally{Object.DestroyImmediate(root);}
         }
@@ -468,10 +533,10 @@ namespace Olca.Tests
         {
             var root=new GameObject("CollectionMessageViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);
             try{
-                var host=new GameObject("CollectionMessageView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;string value="ながいジョウホウ "+string.Concat(Enumerable.Repeat("テストのセツメイ・",110))+"オワリ";var card=new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");CollectionRecipeRow Recipe(string text)=>(CollectionRecipeRow)System.Activator.CreateInstance(typeof(CollectionRecipeRow),BindingFlags.Instance|BindingFlags.NonPublic,null,new object[]{"テストレシピ",card,text},null);
+                var host=new GameObject("CollectionMessageView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var v=host.AddComponent<ClearReturnView>();v.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;string value="ながいジョウホウ "+string.Concat(Enumerable.Repeat("テストのセツメイ・",performance?220:110))+"オワリ";var card=new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"テスト");CollectionRecipeRow Recipe(string text)=>(CollectionRecipeRow)System.Activator.CreateInstance(typeof(CollectionRecipeRow),BindingFlags.Instance|BindingFlags.NonPublic,null,new object[]{"テストレシピ",card,text},null);
                 Button Find(string n)=>host.GetComponentsInChildren<Button>().Single(b=>b.name==n);void Render(string text){v.RenderCollection(Enumerable.Repeat("テスト",5).ToArray(),new[]{Recipe(text)},pending,text,()=>calls++,()=>calls++,cardDetails:Enumerable.Repeat(card,5).ToArray());Find("CardCollectionTab").onClick.Invoke();}
                 for(int repeat=0;repeat<2;repeat++){
-                    Render(value);if(performance){Find("RecipeCollectionTab").onClick.Invoke();Find("RecipeDetails_0").onClick.Invoke();}string name=performance?"RecipePerformanceDetails":"CollectionStatusDetails";var entry=Find(name);var oldEntry=entry.onClick;RequireInside(viewport,(RectTransform)entry.transform);var backing=Find(performance?"CloseRecipeDetails":"RecipeCollectionTab").onClick;var retry=performance?null:Find("RetryCardCollection").onClick;entry.onClick.Invoke();backing.Invoke();retry?.Invoke();Assert.IsTrue(v.HasMenuModal);Assert.AreEqual(0,calls);var text=host.GetComponentsInChildren<Text>().Single(x=>x.name=="ReadonlyCardPerformance");Assert.AreEqual(value,text.text);Assert.IsFalse(text.supportRichText);var scroll=host.GetComponentInChildren<ScrollRect>();Assert.GreaterOrEqual(scroll.content.rect.height,text.preferredHeight);scroll.verticalNormalizedPosition=0;var oldClose=Find("CloseReadonlyCardDetails").onClick;oldClose.Invoke();Assert.AreEqual(name,((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName);entry.onClick.Invoke();Render("みじかい");oldEntry.Invoke();oldClose.Invoke();Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);v.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>calls++,()=>calls++,()=>calls++,false,null,()=>calls++);oldEntry.Invoke();backing.Invoke();Assert.IsNotNull(host.transform.Find("StyleSelectionContents"));Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);
+                    Render(value);if(performance){Find("RecipeCollectionTab").onClick.Invoke();Find("RecipeDetails_0").onClick.Invoke();}var preview=host.GetComponentsInChildren<Text>().Single(t=>t.name==(performance?"RecipePerformance":"CollectionStatus"));Assert.Greater(preview.preferredHeight,preview.rectTransform.rect.height,"全文入口の検証は実際に溢れる本文で行う");string name=performance?"RecipePerformanceDetails":"CollectionStatusDetails";var entry=Find(name);var oldEntry=entry.onClick;RequireInside(viewport,(RectTransform)entry.transform);var backing=Find(performance?"CloseRecipeDetails":"RecipeCollectionTab").onClick;var retry=performance?null:Find("RetryCardCollection").onClick;entry.onClick.Invoke();backing.Invoke();retry?.Invoke();Assert.IsTrue(v.HasMenuModal);Assert.AreEqual(0,calls);var text=host.GetComponentsInChildren<Text>().Single(x=>x.name=="ReadonlyCardPerformance");Assert.AreEqual(value,text.text);Assert.IsFalse(text.supportRichText);var scroll=host.GetComponentInChildren<ScrollRect>();Assert.GreaterOrEqual(scroll.content.rect.height,text.preferredHeight);scroll.verticalNormalizedPosition=0;var oldClose=Find("CloseReadonlyCardDetails").onClick;oldClose.Invoke();Assert.AreEqual(name,((Olca.Unity.MenuPadScope)typeof(ClearReturnView).GetField("menu",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(v)).FocusName);entry.onClick.Invoke();Render("みじかい");oldEntry.Invoke();oldClose.Invoke();Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);v.RenderStyleSelection(new[]{"キホン"},new[]{true},0,_=>calls++,()=>calls++,()=>calls++,false,null,()=>calls++);oldEntry.Invoke();backing.Invoke();Assert.IsNotNull(host.transform.Find("StyleSelectionContents"));Assert.IsFalse(v.HasMenuModal);Assert.AreEqual(0,calls);
                 }
                 Render("みじかい");Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="CollectionStatusDetails"));Assert.AreEqual(1700,host.GetComponentsInChildren<Text>().Single(x=>x.name=="CollectionStatus").rectTransform.sizeDelta.x);Find("RecipeCollectionTab").onClick.Invoke();Find("RecipeDetails_0").onClick.Invoke();Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="RecipePerformanceDetails"));Assert.AreEqual(1600,host.GetComponentsInChildren<Text>().Single(x=>x.name=="RecipePerformance").rectTransform.sizeDelta.x);Assert.AreEqual(0,calls);
             }finally{Object.DestroyImmediate(root);}
@@ -2033,6 +2098,24 @@ namespace Olca.Tests
     [NUnit.Framework.TestFixture]
     public class EnemyTelegraphViewTests
     {
+        [NUnit.Framework.Test]
+        public void マグマ模様と予告は別形状で同居し地形変更と表示寿命へ追従する()
+        {
+            var root=new UnityEngine.GameObject("HazardViewLifetime");
+            try{
+                var grid=root.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                grid.GetType().GetMethod("Awake",flags).Invoke(grid,null);var field=new Olca.Core.Logic.Battle.BattleField();var position=new Olca.Core.Domain.Vector2Int(1,0);
+                var floor=root.transform.Find("GridPanel_1").GetComponent<UnityEngine.SpriteRenderer>().sprite;
+                field.ChangePanelType(position,Olca.Core.Domain.PanelType.Magma);grid.Show(field,0);grid.ShowTelegraphs(new[]{position,position});
+                var magma=root.transform.Find("PanelMagma_1");var warning=root.transform.Find("EnemyAttackTelegraph_1");NUnit.Framework.Assert.IsTrue(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsTrue(warning.gameObject.activeSelf);
+                NUnit.Framework.Assert.IsNotNull(magma.Find("Fissure1Core"));NUnit.Framework.Assert.IsNotNull(warning.Find("Fill/WarningStem"));
+                NUnit.Framework.Assert.AreSame(floor,root.transform.Find("GridPanel_1").GetComponent<UnityEngine.SpriteRenderer>().sprite,"共有床の絵は差し替えない");
+                int count=root.transform.childCount;for(int n=0;n<3;n++)grid.Refresh();NUnit.Framework.Assert.AreSame(magma,root.transform.Find("PanelMagma_1"));NUnit.Framework.Assert.AreEqual(count,root.transform.childCount);
+                field.ChangePanelType(position,Olca.Core.Domain.PanelType.Normal);grid.Refresh();NUnit.Framework.Assert.IsFalse(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsTrue(warning.gameObject.activeSelf,"地形解除は予告を消さない");
+                field.ChangePanelType(position,Olca.Core.Domain.PanelType.Magma);grid.Refresh();grid.GetType().GetMethod("OnDisable",flags).Invoke(grid,null);NUnit.Framework.Assert.IsFalse(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsFalse(warning.gameObject.activeSelf);grid.GetType().GetMethod("OnEnable",flags).Invoke(grid,null);NUnit.Framework.Assert.IsTrue(magma.gameObject.activeSelf);
+                grid.Hide();NUnit.Framework.Assert.IsFalse(magma.gameObject.activeSelf);NUnit.Framework.Assert.IsFalse(warning.gameObject.activeSelf);NUnit.Framework.Assert.AreEqual(Olca.Core.Domain.PanelType.Magma,field.GetPanelType(position),"表示解除で地形を変更しない");
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
         [NUnit.Framework.Test]
         public void 予告描画は同一マスで一つ床より前キャラより後で戦闘切替時に解除する()
         {

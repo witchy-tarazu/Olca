@@ -1,0 +1,22 @@
+{
+  "VisitMarkerLifecycleTests": {
+    "summary": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 1.83
+  },
+  "DungeonVisitFlowTests": {
+    "summary": {
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 0.8
+  }
+}

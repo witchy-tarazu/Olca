@@ -1,0 +1,20 @@
+{
+  "render": {
+    "width": 640,
+    "height": 360,
+    "screenWidth": 640,
+    "screenHeight": 360
+  },
+  "temp": {
+    "before": "/workspace/olca-validation-20261024/save/tmp",
+    "after": "/workspace/olca-validation-20261024/save/tmp/",
+    "guard": true
+  },
+  "recompile": {
+    "status": "completed",
+    "failed": false,
+    "errors": [],
+    "compilationFailed": false
+  },
+  "sourceSha256": "19a19712772dc46c85bfb25f9db863677eb9c1eb0fb76ce3b0d85a9771c6797e"
+}

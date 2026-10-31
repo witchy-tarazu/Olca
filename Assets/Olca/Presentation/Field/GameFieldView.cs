@@ -245,7 +245,12 @@ namespace Olca.Presentation.Field
                 if(obstacleWhiteSprite==null){obstacleWhiteSprite=CreateWhiteSprite();obstacleWhiteSprite.name="ExplorationPrimitive";}
                 var root=new GameObject("FieldHealCell_"+i);root.transform.SetParent(transform,false);root.transform.position=new Vector3(x,CharacterDisplayOffsetY+LogicalToWorld(.45f),0);fieldItemVisuals.Add(i,root);
                 void Part(string name,float px,float py,float w,float h,float alpha){var go=new GameObject(name);go.transform.SetParent(root.transform,false);go.transform.localPosition=new Vector3(LogicalToWorld(px),LogicalToWorld(py),0);go.transform.localScale=new Vector3(LogicalToWorld(w),LogicalToWorld(h),1);var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.color=new Color(.35f,1f,.7f,alpha);renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;}
-                Part("Face",0,0,.34f,.34f,.08f);Part("Top",0,.17f,.34f,.014f,.6f);Part("Bottom",0,-.17f,.34f,.014f,.6f);Part("Left",-.17f,0,.014f,.34f,.6f);Part("Right",.17f,0,.014f,.34f,.6f);Part("HealHorizontal",0,0,.24f,.055f,1);Part("HealVertical",0,0,.055f,.24f,1);
+                var sprite=GetFieldHealSprite();
+                if(sprite!=null){Part("HealPickupIcon",0,0,.4f,.4f,1);root.transform.Find("HealPickupIcon").GetComponent<SpriteRenderer>().sprite=sprite;}
+                else{
+                    // 専用素材がない場合は従来の接触回復表示を保つ。
+                    Part("Face",0,0,.34f,.34f,.08f);Part("Top",0,.17f,.34f,.014f,.6f);Part("Bottom",0,-.17f,.34f,.014f,.6f);Part("Left",-.17f,0,.014f,.34f,.6f);Part("Right",.17f,0,.014f,.34f,.6f);Part("HealHorizontal",0,0,.24f,.055f,1);Part("HealVertical",0,0,.055f,.24f,1);
+                }
             }
             foreach(var cell in new List<int>(fieldItemVisuals.Keys))if(!retained.Contains(cell))RemoveFieldItemVisual(cell);
         }
@@ -256,26 +261,30 @@ namespace Olca.Presentation.Field
             public readonly List<(SpriteRenderer Renderer,float Alpha)> Parts=new List<(SpriteRenderer,float)>();
         }
         private readonly Dictionary<int,VisitVisual> visitVisuals=new Dictionary<int,VisitVisual>();
-        private Sprite visitShopSprite;
+        private Sprite visitShopSprite,visitRecoverySprite,fieldHealSprite;
         // bytes包装から生成したSprite/TextureだけをこのViewが所有する。
-        private Sprite GetVisitShopSprite()
+        private Sprite GetVisitShopSprite()=>GetMarkerSprite("OlcaVisits/shop_bag","VisitShopIcon",ref visitShopSprite);
+        private Sprite GetVisitRecoverySprite()=>GetMarkerSprite("OlcaVisits/recovery_drop","VisitRecoveryIcon",ref visitRecoverySprite);
+        private Sprite GetFieldHealSprite()=>GetMarkerSprite("OlcaPickups/heal_vial","FieldHealIcon",ref fieldHealSprite);
+        private Sprite GetMarkerSprite(string key,string name,ref Sprite cached)
         {
-            if(visitShopSprite!=null)return visitShopSprite;
-            var source=Resources.Load<TextAsset>("OlcaVisits/shop_bag");if(source==null)return null;
+            if(cached!=null)return cached;
+            var source=Resources.Load<TextAsset>(key);if(source==null)return null;
             var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);
             if(!texture.LoadImage(source.bytes,true)){
                 if(UnityEngine.Application.isPlaying)Destroy(texture);else DestroyImmediate(texture);return null;
             }
-            texture.name="VisitShopIcon";texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
-            visitShopSprite=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),64,0,SpriteMeshType.FullRect);
-            visitShopSprite.name="VisitShopIcon";visitShopSprite.hideFlags=HideFlags.HideAndDontSave;
-            return visitShopSprite;
+            texture.name=name;texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
+            cached=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),64,0,SpriteMeshType.FullRect);
+            cached.name=name;cached.hideFlags=HideFlags.HideAndDontSave;return cached;
         }
-        private void DisposeVisitShopSprite()
+        private void DisposeMarkerSprites()
         {
-            if(visitShopSprite==null)return;var texture=visitShopSprite.texture;
-            if(UnityEngine.Application.isPlaying){Destroy(visitShopSprite);Destroy(texture);}else{DestroyImmediate(visitShopSprite);DestroyImmediate(texture);}
-            visitShopSprite=null;
+            void Release(Sprite sprite){
+                if(sprite==null)return;var texture=sprite.texture;
+                if(UnityEngine.Application.isPlaying){Destroy(sprite);Destroy(texture);}else{DestroyImmediate(sprite);DestroyImmediate(texture);}
+            }
+            Release(visitShopSprite);Release(visitRecoverySprite);Release(fieldHealSprite);visitShopSprite=null;visitRecoverySprite=null;fieldHealSprite=null;
         }
 
         private void RemoveVisitVisual(int cell)
@@ -296,17 +305,23 @@ namespace Olca.Presentation.Field
                 var renderer=go.AddComponent<SpriteRenderer>();renderer.sprite=obstacleWhiteSprite;renderer.sortingLayerID=playerSprite!=null?playerSprite.sortingLayerID:0;
                 renderer.sortingOrder=playerSprite!=null?playerSprite.sortingOrder-1:2;visual.Parts.Add((renderer,alpha));
             }
-            Part("Face",0,0,.46f,.4f,.08f);Part("Top",0,.2f,.46f,.014f,.9f);Part("Bottom",0,-.2f,.46f,.014f,.9f);
-            Part("Left",-.23f,0,.014f,.4f,.9f);Part("Right",.23f,0,.014f,.4f,.9f);
-            if(definition.IsShop){
-                var sprite=GetVisitShopSprite();
-                if(sprite!=null){Part("ShopIcon",0,0,.4f,.4f,1);visual.Parts[visual.Parts.Count-1].Renderer.sprite=sprite;}
-                else{
-                    // 包装がない場合だけ従来の識別図形を保つ。
-                    Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
-                    Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
-                }
-            }else{Part("RecoveryHorizontal",0,0,.25f,.055f,1);Part("RecoveryVertical",0,0,.055f,.25f,1);}
+            // 回復だけの停止地点は専用のしずくで識別し、他の訪問は従来表示を保つ。
+            var recoverySprite=!definition.IsShop&&definition.Options.All(option=>option.Heal>0)?GetVisitRecoverySprite():null;
+            if(recoverySprite!=null){
+                Part("RecoveryIcon",0,0,.5f,.5f,1);visual.Parts[visual.Parts.Count-1].Renderer.sprite=recoverySprite;
+            }else{
+                Part("Face",0,0,.46f,.4f,.08f);Part("Top",0,.2f,.46f,.014f,.9f);Part("Bottom",0,-.2f,.46f,.014f,.9f);
+                Part("Left",-.23f,0,.014f,.4f,.9f);Part("Right",.23f,0,.014f,.4f,.9f);
+                if(definition.IsShop){
+                    var sprite=GetVisitShopSprite();
+                    if(sprite!=null){Part("ShopIcon",0,0,.4f,.4f,1);visual.Parts[visual.Parts.Count-1].Renderer.sprite=sprite;}
+                    else{
+                        // 包装がない場合だけ従来の識別図形を保つ。
+                        Part("BagBase",0,-.07f,.24f,.018f,1);Part("BagLeft",-.12f,.01f,.018f,.17f,1);Part("BagRight",.12f,.01f,.018f,.17f,1);
+                        Part("BagHandle",0,.12f,.12f,.018f,1);Part("HandleLeft",-.06f,.09f,.018f,.06f,1);Part("HandleRight",.06f,.09f,.018f,.06f,1);
+                    }
+                }else{Part("RecoveryHorizontal",0,0,.25f,.055f,1);Part("RecoveryVertical",0,0,.055f,.25f,1);}
+            }
             visual.Near=new GameObject("Near");visual.Near.transform.SetParent(visual.Root.transform,false);
             Part("ArrowLeft",-.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,-35);Part("ArrowRight",.04f,-.29f,.11f,.018f,.95f,visual.Near.transform,35);
             visual.Check=new GameObject("Check");visual.Check.transform.SetParent(visual.Root.transform,false);
@@ -433,6 +448,25 @@ namespace Olca.Presentation.Field
         {
             foreach(var go in terrainVisuals.Values){if(go==null)continue;go.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(go);else DestroyImmediate(go);}terrainVisuals.Clear();
         }
+        // 元の床の模様を透かす氷面。Spriteは呼出元から借用し、rootだけを既存地形表示が所有する。
+        private static GameObject CreateIcePattern(Transform parent,Sprite sprite,int sortingLayer)
+        {
+            var root=new GameObject("IcePattern");root.transform.SetParent(parent,false);
+            void Part(string name,Vector2 at,Vector2 size,Color color,float angle=0)
+            {
+                var part=new GameObject(name);part.transform.SetParent(root.transform,false);part.transform.localPosition=new Vector3(at.x,at.y,-.001f);part.transform.localScale=new Vector3(size.x,size.y,1);part.transform.localRotation=Quaternion.Euler(0,0,angle);
+                var renderer=part.AddComponent<SpriteRenderer>();renderer.sprite=sprite;renderer.color=color;renderer.sortingLayerID=sortingLayer;renderer.sortingOrder=1;
+            }
+            Part("FrostLeft",new Vector2(-.28f,.13f),new Vector2(.16f,.12f),new Color(.46f,.8f,.94f,.08f),8);
+            Part("FrostRight",new Vector2(.2f,-.06f),new Vector2(.18f,.1f),new Color(.65f,.87f,.96f,.07f),-12);
+            Part("FrostMiddle",new Vector2(-.02f,-.13f),new Vector2(.13f,.075f),new Color(.58f,.84f,.94f,.075f),20);
+            Part("SurfaceEdge",new Vector2(0,.48f),new Vector2(.98f,.025f),new Color(.73f,.92f,1,.65f));
+            var points=new[]{new Vector2(-.43f,.12f),new Vector2(-.17f,-.04f),new Vector2(-.03f,.11f),new Vector2(.14f,.03f),new Vector2(.39f,-.17f)};
+            void Crack(Vector2 a,Vector2 b,int index){var delta=b-a;Part("IceCrack"+index,(a+b)*.5f,new Vector2(delta.magnitude,.016f),new Color(.68f,.88f,.96f,.7f),Mathf.Atan2(delta.y,delta.x)*Mathf.Rad2Deg);}
+            for(int i=1;i<points.Length;i++)Crack(points[i-1],points[i],i);
+            Crack(points[2],new Vector2(.05f,.29f),5);return root;
+        }
+
         private void RefreshTerrainVisuals()
         {
             if(!isActiveAndEnabled||dungeonSystem==null){ClearTerrainVisuals();return;}
@@ -451,6 +485,24 @@ namespace Olca.Presentation.Field
                 var renderer=root.GetComponent<SpriteRenderer>();
                 renderer.color=type==PanelType.Hole?new Color(.02f,.04f,.08f,.95f):type==PanelType.Cracked?new Color(1f,.7f,.2f,.8f):type==PanelType.Magma?new Color(1f,.3f,.12f,.6f):type==PanelType.Ice?new Color(.3f,.8f,1f,.5f):new Color(.2f,1f,.5f,.5f);
                 root.transform.localScale=new Vector3(LogicalToWorld(.92f),LogicalToWorld(type==PanelType.Hole?.16f:.06f),1);
+                // 接地帯の上端を床上端へ合わせ、元の亀裂位置は保持する。
+                float surfaceDrop=.02f+LogicalToWorld(.03f);
+                root.transform.position=new Vector3(LogicalToWorld(terrain.Cell+.5f),(battleGridView!=null?battleGridView.GroundY:-.25f)+.02f-(type==PanelType.Magma||type==PanelType.Ice?surfaceDrop:0),0);
+                var magma=root.transform.Find("MagmaPattern");
+                if(type==PanelType.Magma){
+                    // 帯の上へ張り出さず、元の床面の内側へ亀裂を表示する。
+                    renderer.color=new Color(.55f,.23f,.09f,.5f);
+                    if(magma==null)magma=WorldBattleGridView.CreateMagmaPattern(root.transform,obstacleWhiteSprite,renderer.sortingLayerID).transform;
+                    magma.localScale=new Vector3(1,4,1);magma.localPosition=new Vector3(0,-1.1f+surfaceDrop/LogicalToWorld(.06f),-.001f);
+                }
+                if(magma!=null)magma.gameObject.SetActive(type==PanelType.Magma);
+                var ice=root.transform.Find("IcePattern");
+                if(type==PanelType.Ice){
+                    renderer.color=new Color(.28f,.66f,.85f,.27f);
+                    if(ice==null)ice=CreateIcePattern(root.transform,obstacleWhiteSprite,renderer.sortingLayerID).transform;
+                    ice.localScale=new Vector3(1,4,1);ice.localPosition=new Vector3(0,-1.5f,-.001f);
+                }
+                if(ice!=null)ice.gameObject.SetActive(type==PanelType.Ice);
                 root.SetActive(visible);
             }
         }
@@ -609,7 +661,7 @@ namespace Olca.Presentation.Field
             generatedSomersaultSprites = null;
             ClearTerrainVisuals(); ClearBombVisuals();
             ClearObstacleVisuals(); ClearVisitVisuals();
-            DisposeVisitShopSprite();
+            DisposeMarkerSprites();
             if(obstacleWhiteSprite!=null){var texture=obstacleWhiteSprite.texture;if(UnityEngine.Application.isPlaying){Destroy(obstacleWhiteSprite);Destroy(texture);}else{DestroyImmediate(obstacleWhiteSprite);DestroyImmediate(texture);}}
             UnbindPlayerDamage();
             if (currentBattle != null)
@@ -1235,6 +1287,28 @@ namespace Olca.Presentation.Field
     public sealed class GameplayKeyboardSettingsView : MonoBehaviour
     {
         private bool gamepad;private string captureTopology;
+        private readonly List<(RectTransform Rect,int Column,float Offset)> settingsColumns=new List<(RectTransform,int,float)>();
+        private RectTransform settingsHeader,settingsReading,titleRect,statusRect,resetReading;
+        private float layoutWidth=-1;
+        private void OnRectTransformDimensionsChange()=>FitSettingsLayout();
+        private void FitSettingsLayout(){
+            float width=((RectTransform)transform).rect.width;if(width<=0||Mathf.Approximately(width,layoutWidth))return;layoutWidth=width;
+            if(settingsHeader!=null)settingsHeader.sizeDelta=new Vector2(Mathf.Min(1760,width-60),170);
+            if(settingsReading!=null)settingsReading.sizeDelta=new Vector2(Mathf.Min(gamepad?1840:1760,width-(gamepad?20:60)),625);
+            if(titleRect!=null)titleRect.sizeDelta=new Vector2(Mathf.Min(1700,width-120),75);
+            if(statusRect!=null)statusRect.sizeDelta=new Vector2(Mathf.Min(1740,width-120),80);
+            if(resetReading!=null)resetReading.sizeDelta=new Vector2(Mathf.Min(1600,width-80),210);
+            float step=gamepad?Mathf.Min(450,(width-60)/4):Mathf.Min(560,width/2-320);foreach(var item in settingsColumns){var pos=item.Rect.anchoredPosition;pos.x=(item.Column-(gamepad?1.5f:1))*step+item.Offset;item.Rect.anchoredPosition=pos;}
+        }
+        private RectTransform ReadingFace(string name,Transform parent,Vector2 position,Vector2 size){
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();image.sprite=Resources.Load<Sprite>("OlcaUI/window");image.type=Image.Type.Sliced;image.color=Color.white;image.raycastTarget=false;var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=position;rect.sizeDelta=size;return rect;
+        }
+        private void TrackColumn(RectTransform rect,int column,float offset){settingsColumns.Add((rect,column,offset));}
+        private string ActionLabel(string action){
+            if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
+            string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
+        }
+        private static string ContextLabel(string context)=>context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
         private InputBindingProfile Defaults()=>gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
         private InputBindingProfile applied;
         private InputBindingEdit edit;
@@ -1250,7 +1324,7 @@ namespace Olca.Presentation.Field
         private Olca.Unity.MenuPadScope menu;private bool navigationDirty;private int assignedFrame=-1;private string normalFocus="CloseKeyboardSettings";
         private void InvalidateNavigation(){var name=menu?.FocusName;if(name!=null&&name!="CancelCapture"&&name!="ConfirmKeyboardReset"&&name!="CancelKeyboardReset")normalFocus=name;menu?.Suspend();navigationDirty=true;}
         private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
-        private void LateUpdate(){if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
+        private void LateUpdate(){FitSettingsLayout();if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;Transform root=resetConfirmation.activeSelf?resetConfirmation.transform:listening.HasValue?transform.Find("CancelCapture"):transform;menu.Bind(root,resetConfirmation.activeSelf?"CancelKeyboardReset":listening.HasValue?"CancelCapture":normalFocus,()=>{if(resetConfirmation.activeSelf){resetConfirmation.SetActive(false);Refresh("初期化を取り消しました。");}else if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
         private void OnDisable(){menu?.Suspend();}
         private void OnDestroy(){menu?.Dispose();}
 
@@ -1260,29 +1334,32 @@ namespace Olca.Presentation.Field
             var root = (RectTransform)transform;
             root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
             gameObject.AddComponent<UnityEngine.UI.Image>().color = Olca.Presentation.Dungeon.UiLook.Surface;
-            MakeText("Title", gamepad?"パッド設定（キーボードと独立保存）":"キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38);
-            status = MakeText("Status", "", transform, new Vector2(0, 360), new Vector2(1740, 100), 26);
+            settingsHeader=ReadingFace("SettingsHeader",transform,new Vector2(0,410),new Vector2(1760,170));
+            settingsReading=ReadingFace("SettingsReading",transform,new Vector2(0,-2.5f),new Vector2(1760,625));
+            titleRect=MakeText("Title", gamepad?"パッド設定（キーボードと独立保存）":"キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38).rectTransform;
+            status = MakeText("Status", "", transform, new Vector2(0, 365), new Vector2(1740, 80), 26);statusRect=status.rectTransform;
             var defaults = Defaults();
             int[] rows = { 0, 0, 0, 0 };
-            if(gamepad){string[] names={"探索","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++)MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);}
+            if(gamepad){string[] names={"探索","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
             else {
-            MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28);
-            MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28);
-            MakeText("ActionTitle", "戦闘：行動", transform, new Vector2(560, 285), new Vector2(520, 50), 28);
+            TrackColumn(MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
+            TrackColumn(MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28).rectTransform,1,0);
+            TrackColumn(MakeText("ActionTitle", "戦闘：行動", transform, new Vector2(560, 285), new Vector2(520, 50), 28).rectTransform,2,0);
             }
             foreach (var slot in defaults.Bindings.Keys)
             {
                 int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context):slot.Context == "exploration" ? 0 :
                     (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
                 float x = gamepad?(column-1.5f)*450:(column-1)*560, y = 215 - rows[column]++ * (gamepad?40:70);
-                MakeText("Action_" + slot.Action, Label(slot.Action), transform, new Vector2(x - (gamepad?145:165), y), new Vector2(gamepad?150:180, gamepad?38:55), gamepad?20:24);
-                var button = MakeButton("Bind_" + slot.Context + "_" + slot.Action, "", transform, new Vector2(x + 15, y), new Vector2(gamepad?155:175, gamepad?38:54));
-                labels.Add(slot, button.GetComponentInChildren<UnityEngine.UI.Text>());
+                var action=MakeText("Action_" + slot.Action, ActionLabel(slot.Action), transform, new Vector2(x - (gamepad?192:165), y), new Vector2(gamepad?145:180, gamepad?38:55), gamepad?22:24);
+                if(gamepad){action.rectTransform.anchoredPosition=new Vector2(x-119.5f,y);action.alignment=TextAnchor.MiddleLeft;action.resizeTextForBestFit=true;action.resizeTextMinSize=20;action.resizeTextMaxSize=22;}TrackColumn(action.rectTransform,column,gamepad?-119.5f:-165);
+                var button = MakeButton("Bind_" + slot.Context + "_" + slot.Action, "", transform, new Vector2(x + (gamepad?32.5f:15), y), new Vector2(gamepad?155:175, gamepad?38:54));
+                TrackColumn((RectTransform)button.transform,column,gamepad?32.5f:15);labels.Add(slot, button.GetComponentInChildren<UnityEngine.UI.Text>());
                 button.onClick.AddListener(() => BeginCapture(slot));
-                MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + (gamepad?155:195), y), new Vector2(gamepad?85:100, gamepad?38:54))
-                    .onClick.AddListener(() => { listening = null; Assign(slot, null); });
+                var clear=MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + (gamepad?154.5f:195), y), new Vector2(gamepad?85:100, gamepad?38:54));TrackColumn((RectTransform)clear.transform,column,gamepad?154.5f:195);
+                clear.onClick.AddListener(() => { listening = null; Assign(slot, null); });
             }
-            MakeButton("CancelCapture", gamepad?"ボタン入力を取消":"キー入力を取消", transform, new Vector2(-560, gamepad?-345:-175), new Vector2(400, 55))
+            MakeButton("CancelCapture", gamepad?"ボタン入力を取消":"キー入力を取消", transform, new Vector2(0,-350), new Vector2(600,50))
                 .onClick.AddListener(() => { listening = null; Refresh("キー入力を取り消しました。"); });
             saveButton = MakeButton("SaveKeyboardSettings", "保存・適用", transform, new Vector2(-560, -420), new Vector2(400, 70));
             saveButton.onClick.AddListener(Save);
@@ -1295,6 +1372,7 @@ namespace Olca.Presentation.Field
             var rect = (RectTransform)resetConfirmation.transform;
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
             resetConfirmation.GetComponent<UnityEngine.UI.Image>().color = Olca.Presentation.Dungeon.UiLook.Surface;
+            resetReading=ReadingFace("ResetReading",resetConfirmation.transform,new Vector2(0,100),new Vector2(1600,210));
             MakeText("ResetQuestion", "初期配置へ戻しますか？\n保存・適用するまでは変更を破棄できます。", resetConfirmation.transform,
                 new Vector2(0, 100), new Vector2(1500, 150), 34);
             MakeButton("ConfirmKeyboardReset", "初期配置へ戻す", resetConfirmation.transform, new Vector2(-280, -80), new Vector2(450, 75))
@@ -1304,7 +1382,7 @@ namespace Olca.Presentation.Field
                 });
             MakeButton("CancelKeyboardReset", "やめる", resetConfirmation.transform, new Vector2(280, -80), new Vector2(450, 75))
                 .onClick.AddListener(() => { resetConfirmation.SetActive(false); Refresh("初期化を取り消しました。"); });
-            resetConfirmation.SetActive(false); gameObject.SetActive(false);
+            layoutWidth=-1;FitSettingsLayout();resetConfirmation.SetActive(false); gameObject.SetActive(false);
         }
 
         public void Open(InputBindingProfile profile)
@@ -1328,19 +1406,21 @@ namespace Olca.Presentation.Field
             if(gamepad&&captureTopology!=Olca.Unity.UnityInputProvider.GamepadTopology()){captureTopology=Olca.Unity.UnityInputProvider.GamepadTopology();awaitRelease=true;return;}
             if (awaitRelease) { if (keys.HeldCount == 0) awaitRelease = false; return; }
             if (keys.HeldCount == 0) return;
-            if (keys.HeldCount != 1) { awaitRelease = true; Refresh("新しいキーを1つだけ押してください。"); return; }
+            if (keys.HeldCount != 1) { awaitRelease = true; Refresh("新しいキーを1つだけ押してください。",true); return; }
             var slot = listening.Value; listening = null;assignedFrame=Time.frameCount; Assign(slot, keys.Key);
         }
         private void Assign((string Device, string Context, string Action) slot, string key)
         {
-            Refresh(edit.TryAssign(slot, key, out var error) ? "変更しました。保存・適用で確定します。" : error);
+            var before=edit.Draft.ToDictionary(p=>p.Key,p=>p.Value);bool accepted=edit.TryAssign(slot,key,out var error);
+            bool exchanged=accepted&&edit.Draft.Count(p=>before[p.Key]!=p.Value)>1;
+            Refresh(accepted?(exchanged?"割当を交換しました。保存・適用で確定します。":"変更しました。保存・適用で確定します。"):error,!accepted);
         }
         private void Save()
         {
             if (listening.HasValue) return;
             var candidate = edit.Preview();
             string error = save(candidate);
-            if (error != null) { Refresh("保存できませんでした。変更はまだ適用されていません。\n再試行するか、破棄して戻ってください。"); return; }
+            if (error != null) { Refresh("保存できませんでした。変更はまだ適用されていません。\n再試行するか、破棄して戻ってください。",true); return; }
             applied = candidate; edit = candidate.BeginEdit(); Refresh("保存・適用しました。");
         }
         public void DiscardAndClose()
@@ -1348,10 +1428,22 @@ namespace Olca.Presentation.Field
             listening = null; if (applied != null) edit = applied.BeginEdit();
             gameObject.SetActive(false);
         }
-        private void Refresh(string message)
+        private void Refresh(string message,bool error=false)
         {
-            foreach (var pair in labels) pair.Value.text = gamepad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(edit.Draft[pair.Key]):edit.Draft[pair.Key] ?? "未割当";
-            status.text = message; saveButton.interactable = !listening.HasValue;InvalidateNavigation();
+            // 値欄は現在の候補を保ち、待機と未保存差分は描画だけで示す。
+            bool pending=false;
+            foreach(var pair in labels){
+                string key=edit.Draft[pair.Key];bool changed=applied!=null&&applied.Bindings.TryGetValue(pair.Key,out var previous)&&previous!=key;pending|=changed;
+                bool waiting=listening.HasValue&&listening.Value==pair.Key;
+                pair.Value.text=gamepad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(key):key??"未割当";
+                pair.Value.color=key==null?new Color(.43f,.24f,.12f):Olca.Presentation.Dungeon.UiLook.Ink;
+                var image=pair.Value.transform.parent.GetComponent<Image>();image.color=waiting?Olca.Presentation.Dungeon.UiLook.Chosen:changed?new Color(.78f,.94f,.98f):Color.white;
+                var outline=image.GetComponent<Outline>();if(outline!=null){outline.enabled=waiting;outline.effectColor=Olca.Presentation.Dungeon.UiLook.Edge;outline.effectDistance=new Vector2(1,-1);}
+            }
+            string state=listening.HasValue?"入力待機: "+ContextLabel(listening.Value.Context)+" / "+ActionLabel(listening.Value.Action):pending?"ミホゾンのコウホ":"テキヨウチュウのワリアテ";
+            status.text=state+" / "+message;status.color=error?new Color(.50f,.20f,.12f):Olca.Presentation.Dungeon.UiLook.Ink;
+            transform.Find("CancelCapture").gameObject.SetActive(listening.HasValue);
+            saveButton.interactable = !listening.HasValue;InvalidateNavigation();
         }
         private static string Label(string action)
         {

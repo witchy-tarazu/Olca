@@ -1,0 +1,15 @@
+{
+  "scope": "既存Round61抜粋、Editor log offset、Package Selectable.cs:519、Testsと私有AgentScriptsの検索",
+  "recordedExceptions": 16,
+  "firstLogByte": 1662118906,
+  "lastLogByte": 1662161287,
+  "stack": "Selectable.OnEnable登録配列書込、一部Slider.OnEnable、UiProof.Prepare/OpenScene",
+  "productStackFramesSeen": false,
+  "productInvolvementRuledOut": false,
+  "staticRegistryWritesFoundInTestsOrAgentScripts": false,
+  "cause": "未確定。当時の登録数/配列長等が未採取",
+  "finalTwoSuiteSegmentsSameException": 0,
+  "safeNextCheck": "通常のScene再表示/必要な通常compile前後の登録数/配列長の読取。リセット/抑制/再現目的の繰返しreloadなし",
+  "independentReviewer": "equipment_save_review",
+  "productOrPackageEdits": false
+}

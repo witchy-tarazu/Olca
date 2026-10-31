@@ -1,0 +1,1724 @@
+{
+  "entry": {
+    "mode": true,
+    "materials": [],
+    "regular": [],
+    "description": "",
+    "art": null,
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "source1": {
+    "mode": true,
+    "materials": [
+      "bomb"
+    ],
+    "regular": [],
+    "description": "1: ボム（センタクチュウ）",
+    "art": null,
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "hover": {
+    "mode": true,
+    "materials": [
+      "bomb"
+    ],
+    "regular": [],
+    "description": "ユウゴウ / ジッコウフカ\nこのケイトウとレギュレーションのツウジョウユウゴウレシピがミトウロクです\n\n1: ボム（センタクチュウ）\n2: シールド（カーソル）",
+    "art": null,
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "hover2": {
+    "mode": true,
+    "materials": [
+      "bomb"
+    ],
+    "regular": [],
+    "description": "ユウゴウ（ミジッコウ）\nファイアソード\nソザイ2マイ → ケッカ1マイ\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし\n\n1: ボム（センタクチュウ）\n2: ソード（カーソル）",
+    "art": "OlcaCardArt_fire_sword",
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "source2": {
+    "mode": true,
+    "materials": [
+      "bomb",
+      "sword"
+    ],
+    "regular": [],
+    "description": "ユウゴウ（ミジッコウ）\nファイアソード\nソザイ2マイ → ケッカ1マイ\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし\n\n1: ボム（センタクチュウ）\n2: ソード（センタクチュウ）",
+    "art": "OlcaCardArt_fire_sword",
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": true
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "execute": {
+    "mode": false,
+    "materials": [],
+    "regular": [],
+    "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+    "art": "OlcaCardArt_fire_sword",
+    "undo": 1,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "fire_sword",
+        "Name": "ファイアソード",
+        "cost": 2,
+        "power": 60,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "FireSwordCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "repeat-old": {
+    "mode": false,
+    "materials": [],
+    "regular": [],
+    "description": "ファイアソード\nコスト: 2 / イリョク: 60\nゾクセイ ヒ / リミテッド / ソード / ツウジョウ\n\nゼンポウ1マスホノオゾクセイコウゲキ（ソード＋ボムのユウゴウ）\n\nカードホセイ (ゴウケイ)\nなし",
+    "art": "OlcaCardArt_fire_sword",
+    "undo": 1,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "fire_sword",
+        "Name": "ファイアソード",
+        "cost": 2,
+        "power": 60,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "FireSwordCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "undo-state": {
+    "mode": false,
+    "materials": [],
+    "regular": [],
+    "description": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "art": "OlcaCardArt_bomb",
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "normal-return": {
+    "mode": false,
+    "materials": [],
+    "regular": [],
+    "description": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "art": "OlcaCardArt_bomb",
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "cost": 1,
+        "power": 30,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "SwordCustomIcon"
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "cost": 1,
+        "power": 0,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "tuningCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      }
+    ]
+  },
+  "five-undefined-state": {
+    "mode": true,
+    "materials": [
+      "bomb",
+      "bomb"
+    ],
+    "regular": [],
+    "description": "チョウエツ / ミテイギ\nジョウイカードのセイノウがミテイギです\n\n1: ボム（センタクチュウ）\n2: ボム（センタクチュウ）",
+    "art": null,
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      }
+    ]
+  },
+  "five-disabled-repeat": {
+    "mode": true,
+    "materials": [
+      "bomb",
+      "bomb"
+    ],
+    "regular": [],
+    "description": "チョウエツ / ミテイギ\nジョウイカードのセイノウがミテイギです\n\n1: ボム（センタクチュウ）\n2: ボム（センタクチュウ）",
+    "art": null,
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ExecuteButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      }
+    ]
+  },
+  "five-cancel-state": {
+    "mode": false,
+    "materials": [],
+    "regular": [],
+    "description": "ボム\nコスト: 2 / イリョク: 40\nゾクセイ ムゾクセイ / スタンダード / ボム / ツウジョウ\n\nハンイコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "art": "OlcaCardArt_bomb",
+    "undo": 0,
+    "frame": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      }
+    ],
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "cost": 1,
+        "power": 15,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "shieldCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "cost": 2,
+        "power": 20,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "healCustomIcon"
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "cost": 2,
+        "power": 40,
+        "tuning": 0,
+        "level": "Normal",
+        "sprite": "bombCustomIcon"
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "normalStartHand": 5,
+  "legacyRestoredHand": 10,
+  "legacyCardHashesMatchBefore": true,
+  "selectionCountsVerified": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "cap6thRejected": true,
+  "blankAreaLIFO": true,
+  "emptyUndo": true,
+  "hideRestoreAndSelfDetailReturn": true,
+  "longDescriptionViewFixture": true,
+  "lowCostApiFixture": true,
+  "emptySelectionConfirm": true,
+  "physicalHardwareTested": false,
+  "finalCornerSourceOperationsRepeated": true
+}

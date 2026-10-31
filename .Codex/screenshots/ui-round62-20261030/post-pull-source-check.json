@@ -1,0 +1,9 @@
+{
+  "masterBase": "e16e8e16757f84215d5f9d34c18344b3b5c5d2a2",
+  "remote": "e16e8e16757f84215d5f9d34c18344b3b5c5d2a2",
+  "noNewSpecDifference": true,
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "c6d48f47af7e0992a3321977f6e6e078c552ca5348c3722fbbed30a94f1c3635"
+  },
+  "validatedSourceUnchanged": true
+}

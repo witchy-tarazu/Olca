@@ -1,0 +1,139 @@
+{
+  "save": {
+    "unchangedFiles": 6,
+    "progressCheckpointHashesUnchanged": true,
+    "fixtureDoesNotRegisterDefinitionsOrReveals": true,
+    "actualCollectionReturnAndCategoryRoundTrip": true,
+    "scrollPath": "ScrollRect receives PointerEvent scrollHandler; update frames then end read",
+    "physicalInputVerified": false
+  },
+  "measurementsAfterFramesAndScrollHandler": {
+    "empty-description-bottom": {
+      "screen": [
+        640,
+        360
+      ],
+      "fixture": true,
+      "length": 56,
+      "visible": 56,
+      "preferred": 129,
+      "bodyRect": "(1612.80, 149.00)",
+      "viewport": "(1612.80, 149.00)",
+      "content": "(1612.80, 149.00)",
+      "position": 1,
+      "close": "(320.00, 33.33, 0.00)",
+      "focus": "CloseReadonlyCardDetails"
+    },
+    "card-long-bottom": {
+      "screen": [
+        640,
+        360
+      ],
+      "fixture": true,
+      "length": 1589,
+      "visible": 1589,
+      "preferred": 3099,
+      "bodyRect": "(1612.80, 3119.00)",
+      "viewport": "(1612.80, 684.00)",
+      "content": "(1612.80, 3119.00)",
+      "position": -5.01315469e-08,
+      "close": "(320.00, 33.33, 0.00)",
+      "focus": "CloseReadonlyCardDetails"
+    },
+    "long-name-bottom": {
+      "screen": [
+        640,
+        360
+      ],
+      "fixture": true,
+      "length": 1117,
+      "visible": 1117,
+      "preferred": 624,
+      "bodyRect": "(1612.80, 644.00)",
+      "viewport": "(1612.80, 644.00)",
+      "content": "(1612.80, 644.00)",
+      "position": 0,
+      "close": "(320.00, 33.33, 0.00)",
+      "focus": "CloseReadonlyCardDetails"
+    },
+    "recipe-full-bottom": {
+      "screen": [
+        640,
+        360
+      ],
+      "fixture": true,
+      "length": 1589,
+      "visible": 1589,
+      "preferred": 3099,
+      "bodyRect": "(1612.80, 3119.00)",
+      "viewport": "(1612.80, 684.00)",
+      "content": "(1612.80, 3119.00)",
+      "position": -5.01315469e-08,
+      "close": "(320.00, 36.67, 0.00)",
+      "focus": "CloseReadonlyCardDetails"
+    },
+    "card-long-reopened-state": {
+      "screen": [
+        640,
+        360
+      ],
+      "fixture": true,
+      "length": 1589,
+      "visible": 1589,
+      "preferred": 3099,
+      "bodyRect": "(1612.80, 3119.00)",
+      "viewport": "(1612.80, 684.00)",
+      "content": "(1612.80, 3119.00)",
+      "position": 1,
+      "close": "(320.00, 33.33, 0.00)",
+      "focus": "CloseReadonlyCardDetails"
+    }
+  },
+  "wholeContext": {
+    "mode": "existing HideCustomPresentation/RestoreCustomPresentation; custom logical clock remains stopped, not dynamic combat proof",
+    "frameBeforeAfter": [
+      0,
+      0
+    ],
+    "handBeforeAfter": [
+      5,
+      5
+    ],
+    "selectedBeforeAfter": [
+      0,
+      0
+    ]
+  },
+  "cleanup": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [
+      {
+        "name": "EventSystem",
+        "enabled": true,
+        "scene": "Assets/Scenes/DungeonScene.unity",
+        "activeSelf": true
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "playConsole": {
+    "errors": 0,
+    "warnings": 1,
+    "warning": "UnityAI connection info read-only; retained MCP history is not current console count"
+  }
+}

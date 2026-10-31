@@ -1,0 +1,24 @@
+{
+  "beforeEditPlay": {
+    "count": 3,
+    "capacity": 160,
+    "live": 186
+  },
+  "normalEditRecompile": {
+    "count": 4,
+    "capacity": 10,
+    "live": 7
+  },
+  "finalSavedReload": {
+    "count": 3,
+    "capacity": 160,
+    "live": 186
+  },
+  "finalNextContact": {
+    "count": 15,
+    "capacity": 160,
+    "live": 186
+  },
+  "deliberateRepeatedReload": false,
+  "causeNotEstablished": true
+}
