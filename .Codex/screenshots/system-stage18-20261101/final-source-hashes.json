@@ -1,0 +1,6 @@
+{
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "1d615a3288cea3e0634e70bfda6a75509380f2e3416578db4fae84cea6fbb363",
+  "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "7031b93b6cd26a7d5f9b5a56ad5e8071e8e590e737553bf913e2aa848900deb8",
+  "Assets/Olca/Presentation/Management/DialogManager.cs": "7f45b7f82d56a0a2a9e1870a5cedbb5cfa95714edd3bfdec5a0288990a4d7de7",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "68af40694f84fc9b5bb52478be9a6cbce1f54a1aebe7e7b3db956671dfae3233"
+}

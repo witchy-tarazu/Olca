@@ -1,0 +1,184 @@
+{
+  "receipts": {
+    "system-stage18-menu-null-ready-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Cannot connect to Unity Editor Pipeline server at 127.0.0.1:7800. Make sure Unity Editor is running with the Pipeline package installed."
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-menu-null-after-deadline-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 34,\n  \"executeMs\": 0,\n  \"assemblyName\": \"PipelineRunScript_Stage18CompileProof_94ecf516483941239f351d578296e1ef\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"compiling\": false,\n    \"screen\": [\n      640,\n      360\n    ],\n    \"presentation\": \"eb9cf3ff-0988-49ba-a38c-dec0c694463e\",\n    \"application\": \"5cd451eb-392e-4882-bfdd-33074cb4f1b4\",\n    \"managedDetails\": true,\n    \"pauseHandoff\": true,\n    \"noticeParameters\": 7\n  }\n}"
+        }
+      ]
+    },
+    "system-stage18-final-ready-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 37,\n  \"executeMs\": 0,\n  \"assemblyName\": \"PipelineRunScript_Stage18CompileProof_c3f6481b613d4ed19fc13b8ee7b4fec5\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"compiling\": false,\n    \"screen\": [\n      640,\n      360\n    ],\n    \"presentation\": \"c8c1a9cc-11b0-4410-b87e-ec015733cce6\",\n    \"application\": \"f09d59f8-c671-4e0d-b25c-e07504e4c900\",\n    \"managedDetails\": true,\n    \"noticeParameters\": 7\n  }\n}"
+        }
+      ]
+    },
+    "system-stage18-terminal-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage18-terminal-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-menu-null-after-relay-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-native-wait-started.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Failed to execute command 'run_script': Network error: socket hang up"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-final-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'recompile' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-cli-live-status.json": {
+      "success": true,
+      "command": "status",
+      "data": {
+        "count": 1,
+        "instances": [
+          {
+            "port": 7800,
+            "project": "/workspace/olca-validation-20261024/project",
+            "projectPath": "/workspace/olca-validation-20261024/project",
+            "version": "6000.3.26f1",
+            "editorVersion": "6000.3.26f1",
+            "pid": 137059,
+            "state": "ready",
+            "batchmode": true
+          }
+        ]
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "system-stage18-pause-fix-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage18-menu-null-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage18-actual-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage18-native-fresh-minimal-read.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 34,\n  \"executeMs\": 1,\n  \"assemblyName\": \"PipelineRunScript_Stage18CompileProof_48c66e489c434121961acbefa945487d\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": true,\n    \"compiling\": false,\n    \"screen\": [\n      640,\n      360\n    ],\n    \"presentation\": \"c8c1a9cc-11b0-4410-b87e-ec015733cce6\",\n    \"application\": \"f09d59f8-c671-4e0d-b25c-e07504e4c900\",\n    \"managedDetails\": true,\n    \"noticeParameters\": 7\n  }\n}"
+        }
+      ]
+    },
+    "system-stage18-pause-fix-live-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Failed to get available commands: Request timeout after 10000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-native-wait-recovered.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Cannot connect to Unity Editor Pipeline server at 127.0.0.1:7800. Make sure Unity Editor is running with the Pipeline package installed."
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-final-native-live-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-pause-fix-ready-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage18-native-after-refresh.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    }
+  },
+  "normalRecovery": "Same VM/Editor137059/model/credentials retained. Ordinary compile/Play DomainReload completed; delayed read failures and successful fresh reads retained. No duplicate tests or uncertain mutation repeated.",
+  "pauseRegression": "Actual touch detail → PauseButton → RetreatButton left Custom ticket active before correction; see pause-regression-reproduced.json.",
+  "fullWrapperTimedOut": true,
+  "sameJobRecovered": true
+}

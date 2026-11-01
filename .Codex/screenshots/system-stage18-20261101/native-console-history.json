@@ -1,0 +1,95 @@
+{
+  "errors": {
+    "entries": [
+      {
+        "seq": 375562,
+        "timestampUtc": "2026-11-01T11:42:42.522931Z",
+        "level": "error",
+        "logType": "Error",
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms",
+        "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+        "seeded": false
+      },
+      {
+        "seq": 375574,
+        "timestampUtc": "2026-11-01T11:44:16.961743Z",
+        "level": "error",
+        "logType": "Error",
+        "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_clip, create_gameobjects, get_audio_settings, set_runtime_pipeline_settings, get_timeline, editor_stop, set_tag, save_scene, set_import_settings, wait_cancel, search, bake_lighting, set_physics_settings, get_lighting_settings, add_animator_state, move_asset, find_gameobjects, get_material_properties, editor_pause, set_input_settings, bake_navmesh_surfaces, build, list_tests, get_performance_stats, get_import_settings, remove_animation_curve, create_gameobject, copy_asset, instantiate_prefab, batch, write_text_file, read_text_file, add_component, get_shader_properties, lighting_bake_status, rename_gameobject, add_animator_transition, get_animator_controller, get_time_settings, create_timeline, get_input_settings, list_open_scenes, unpack_prefab, get_graphics_settings, switch_build_target_status, add_animator_parameter, set_time_settings, revert_prefab_overrides, set_quality_settings, set_serialized_field, occlusion_bake_status, save_prefab_contents, editor_status, add_timeline_clip, package_resolve, add_animator_layer, get_navmesh_settings, get_player_settings, get_quality_settings, set_build_settings, run_script, remove_component, set_parent, get_physics_settings, create_script, create_prefab_variant, save_all, cancel_lighting_bake, create_scene, audit, navmesh_bake_status, get_component_properties, bake_navmesh, package_remove, list_build_profiles, rename_asset, set_active_scene, editor_play, delete_gameobject, delete_asset, get_selection, create_animation_clip, capture_scene_view, package_search, apply_prefab_overrides, list_shaders, clear_baked_lighting, set_graphics_settings, set_material_properties, editor_focus, cancel_occlusion_bake, create_asset, create_prefab, recompile_status, set_animation_curve, get_tags_layers, package_status, cancel_tests, remove_scene_from_build, create_folder, list_build_targets, clear_navmesh, set_player_settings, clear_occlusion_culling, add_timeline_track, set_navmesh_settings, get_scene_hierarchy, get_runtime_pipeline_settings, set_autotick, get_build_settings, get_authoring_root, run_tests, get_serialized_fields, set_selection, set_active, wait_status, build_status, create_animator_controller, set_transform, find_assets, open_scene, set_lighting_settings, switch_build_target, menu, set_authoring_root, reload_file_player_interpreter, screenshot, attach_script, capture_game_view, add_scene_to_build, wait_for, set_audio_settings, recompile, package_list, bake_occlusion_culling, set_component_properties, cancel_navmesh_bake, set_layer, set_tags_layers, simulate_pointer, log, set_target_framerate, simulate_key, quit, report_evals, eval, set_timescale, reload_file_editor_interpreter, eval_file, runtime_status, clear_console, reload_file, console_status, cleanup_codereload, codereload_status, console]",
+        "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer:ResolveCommand (string) (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2622)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2085)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)\nUnity.Pipeline.MaxLengthStream/<ReadAsync>d__6:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/MaxLengthStream.cs:46)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+        "seeded": false
+      }
+    ],
+    "cursor": 375677,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 2,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 2,
+      "warn": 1,
+      "log": 132
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T11:47:14.810116Z",
+      "ageMs": 145,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 2,
+      "consoleWarnings": 1,
+      "consoleLogs": 116,
+      "seeded": true
+    }
+  },
+  "warnings": {
+    "entries": [
+      {
+        "seq": 375562,
+        "timestampUtc": "2026-11-01T11:42:42.522931Z",
+        "level": "error",
+        "logType": "Error",
+        "message": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms",
+        "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+        "seeded": false
+      },
+      {
+        "seq": 375563,
+        "timestampUtc": "2026-11-01T11:43:55.434512Z",
+        "level": "warn",
+        "logType": "Warning",
+        "message": "Could not save connection info: Read-only file system",
+        "stackTrace": "UnityEngine.Debug:LogWarning (object)\nUnity.AI.Tracing.ConsoleSink:LogToConsole (string,string,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceSinks.cs:310)\nUnity.AI.Tracing.ConsoleSink:Write (Unity.AI.Tracing.TraceEvent) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceSinks.cs:277)\nUnity.AI.Tracing.TraceWriter:WriteEventInternal (string,string,Unity.AI.Tracing.TraceEventOptions,string,System.Nullable`1<int>) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceWriter.cs:373)\nUnity.AI.Tracing.TraceWriter:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceWriter.cs:297)\nUnity.AI.Tracing.TraceLogger:Emit (string,string,string,string,Unity.AI.Tracing.TraceEventOptions,object,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceLogger.cs:105)\nUnity.AI.Tracing.TraceLogger:Warn (string,string,string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceLogger.cs:39)\nUnity.AI.MCP.Editor.Helpers.McpLog:Warning (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Helpers/McpLog.cs:16)\nUnity.AI.MCP.Editor.Helpers.ServerDiscovery:SaveConnectionInfo (string) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Connection/ServerDiscovery.cs:136)\nUnity.AI.MCP.Editor.Bridge:Start () (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Bridge.cs:297)\nUnity.AI.MCP.Editor.Bridge:EnsureStartedOnEditorIdle () (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Bridge.cs:454)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions () (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)\n",
+        "seeded": false
+      },
+      {
+        "seq": 375574,
+        "timestampUtc": "2026-11-01T11:44:16.961743Z",
+        "level": "error",
+        "logType": "Error",
+        "message": "ExecuteCommandByName: No command named 'editor status' is available. Available: [audit_status, package_add, import_asset, test_status, get_animation_clip, create_gameobjects, get_audio_settings, set_runtime_pipeline_settings, get_timeline, editor_stop, set_tag, save_scene, set_import_settings, wait_cancel, search, bake_lighting, set_physics_settings, get_lighting_settings, add_animator_state, move_asset, find_gameobjects, get_material_properties, editor_pause, set_input_settings, bake_navmesh_surfaces, build, list_tests, get_performance_stats, get_import_settings, remove_animation_curve, create_gameobject, copy_asset, instantiate_prefab, batch, write_text_file, read_text_file, add_component, get_shader_properties, lighting_bake_status, rename_gameobject, add_animator_transition, get_animator_controller, get_time_settings, create_timeline, get_input_settings, list_open_scenes, unpack_prefab, get_graphics_settings, switch_build_target_status, add_animator_parameter, set_time_settings, revert_prefab_overrides, set_quality_settings, set_serialized_field, occlusion_bake_status, save_prefab_contents, editor_status, add_timeline_clip, package_resolve, add_animator_layer, get_navmesh_settings, get_player_settings, get_quality_settings, set_build_settings, run_script, remove_component, set_parent, get_physics_settings, create_script, create_prefab_variant, save_all, cancel_lighting_bake, create_scene, audit, navmesh_bake_status, get_component_properties, bake_navmesh, package_remove, list_build_profiles, rename_asset, set_active_scene, editor_play, delete_gameobject, delete_asset, get_selection, create_animation_clip, capture_scene_view, package_search, apply_prefab_overrides, list_shaders, clear_baked_lighting, set_graphics_settings, set_material_properties, editor_focus, cancel_occlusion_bake, create_asset, create_prefab, recompile_status, set_animation_curve, get_tags_layers, package_status, cancel_tests, remove_scene_from_build, create_folder, list_build_targets, clear_navmesh, set_player_settings, clear_occlusion_culling, add_timeline_track, set_navmesh_settings, get_scene_hierarchy, get_runtime_pipeline_settings, set_autotick, get_build_settings, get_authoring_root, run_tests, get_serialized_fields, set_selection, set_active, wait_status, build_status, create_animator_controller, set_transform, find_assets, open_scene, set_lighting_settings, switch_build_target, menu, set_authoring_root, reload_file_player_interpreter, screenshot, attach_script, capture_game_view, add_scene_to_build, wait_for, set_audio_settings, recompile, package_list, bake_occlusion_culling, set_component_properties, cancel_navmesh_bake, set_layer, set_tags_layers, simulate_pointer, log, set_target_framerate, simulate_key, quit, report_evals, eval, set_timescale, reload_file_editor_interpreter, eval_file, runtime_status, clear_console, reload_file, console_status, cleanup_codereload, codereload_status, console]",
+        "stackTrace": "UnityEngine.Debug:LogError (object)\nUnity.Pipeline.BasePipelineServer:ResolveCommand (string) (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2622)\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2085)\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)\nUnity.Pipeline.MaxLengthStream/<ReadAsync>d__6:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/MaxLengthStream.cs:46)\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\n",
+        "seeded": false
+      }
+    ],
+    "cursor": 375677,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 3,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 2,
+      "warn": 1,
+      "log": 132
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T11:47:15.074002Z",
+      "ageMs": 164,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 2,
+      "consoleWarnings": 1,
+      "consoleLogs": 116,
+      "seeded": true
+    }
+  }
+}

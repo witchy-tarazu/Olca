@@ -27,7 +27,7 @@ namespace Olca.Presentation.Management
         private sealed class Ticket
         {
             public IDialogOwner Owner;
-            public Func<bool> ConfirmAttempt;
+            public Func<bool> ConfirmAttempt, InputAllowed;
             public ScrollRect Scroll;
             public bool DirectionScroll;
             public bool Attempting, HasAttempted;
@@ -59,15 +59,15 @@ namespace Olca.Presentation.Management
         public Task<DialogResult> ShowPersistent(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed)
             =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,attempt??throw new ArgumentNullException(nameof(attempt)),completed,null);
         /// <summary>読取専用Popupは閉じる操作一つを持ち、スクロールをDialogの入力所有へ渡す。</summary>
-        public Task<DialogResult> ShowNotice(IDialogOwner owner,GameObject panel,Button close,ScrollRect scroll,Action<DialogResult> completed)
-            =>ShowCore(owner,panel,null,close,null,completed,scroll);
-        private Task<DialogResult> ShowCore(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll,bool directionScroll=true)
+        public Task<DialogResult> ShowNotice(IDialogOwner owner,GameObject panel,Button close,ScrollRect scroll,Action<DialogResult> completed,bool manageMenu=true,Func<bool> inputAllowed=null)
+            =>ShowCore(owner,panel,null,close,null,completed,scroll,true,manageMenu,inputAllowed);
+        private Task<DialogResult> ShowCore(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll,bool directionScroll=true,bool manageMenu=true,Func<bool> inputAllowed=null)
         {
             if (disposed || owner == null || !owner.IsCurrent || panel == null || cancel == null)
                 return Task.FromResult(DialogResult.ParentClosed);
             if (current != null) return ReferenceEquals(current.Owner, owner) && current.Panel == panel ? current.Result.Task : Task.FromResult(DialogResult.Busy);
             var ticket = new Ticket { Owner = owner, Panel = panel, Confirm = confirm, Cancel = cancel, Completed = completed,
-                PreviousFocus = EventSystem.current?.currentSelectedGameObject, ConfirmAttempt=attempt, Scroll=scroll, DirectionScroll=directionScroll };
+                PreviousFocus = EventSystem.current?.currentSelectedGameObject, ConfirmAttempt=attempt, InputAllowed=inputAllowed, Scroll=scroll, DirectionScroll=directionScroll };
             // 閉じたticketを捕捉した旧クリックは、次のDialogを確定できない。
             ticket.ConfirmAction = () => Confirm(ticket);
             ticket.CancelAction = () => {if(CanOperate(ticket,ticket.Cancel))Close(ticket,DialogResult.Cancelled);};
@@ -75,11 +75,11 @@ namespace Olca.Presentation.Management
             if(confirm!=null)confirm.onClick.AddListener(ticket.ConfirmAction); cancel.onClick.AddListener(ticket.CancelAction);
             EventSystem.current?.SetSelectedGameObject(null);
             panel.SetActive(true); panel.transform.SetAsLastSibling();
-            ticket.Menu = new MenuPadScope(() => !ticket.Closed && ticket.Owner.IsCurrent && MenuPadScope.IsTopmost(panel.transform));
-            ticket.Menu.Bind(panel.transform, cancel.name, ticket.CancelAction.Invoke,scroll,directionScroll:directionScroll);
+            if(manageMenu){ticket.Menu = new MenuPadScope(() => !ticket.Closed && ticket.Owner.IsCurrent && (ticket.InputAllowed?.Invoke()??true) && MenuPadScope.IsTopmost(panel.transform));
+                ticket.Menu.Bind(panel.transform, cancel.name, ticket.CancelAction.Invoke,scroll,directionScroll:directionScroll);}
             return ticket.Result.Task;
         }
-        private bool CanOperate(Ticket ticket,Button button)=>!ticket.Closed&&!ticket.Attempting&&ReferenceEquals(current,ticket)&&ticket.Owner.IsCurrent&&button!=null&&button.isActiveAndEnabled&&button.IsInteractable();
+        private bool CanOperate(Ticket ticket,Button button)=>!ticket.Closed&&!ticket.Attempting&&ReferenceEquals(current,ticket)&&ticket.Owner.IsCurrent&&(ticket.InputAllowed?.Invoke()??true)&&button!=null&&button.isActiveAndEnabled&&button.IsInteractable();
         private void Confirm(Ticket ticket)
         {
             if(!CanOperate(ticket,ticket.Confirm))return;
@@ -102,7 +102,7 @@ namespace Olca.Presentation.Management
             if (ticket.Cancel != null) ticket.Cancel.onClick.RemoveListener(ticket.CancelAction);
             ticket.Menu?.Dispose(); ticket.Menu = null;ticket.Scroll=null;
             if (ticket.Panel != null) ticket.Panel.SetActive(false);
-            var callback = ticket.Completed; ticket.Completed = null; ticket.ConfirmAttempt=null;
+            var callback = ticket.Completed; ticket.Completed = null; ticket.ConfirmAttempt=null;ticket.InputAllowed=null;
             bool restore = result != DialogResult.ParentClosed && ticket.Owner.IsCurrent;
             var focus = ticket.PreviousFocus; ticket.PreviousFocus = null;
             if (restore && focus != null && focus.activeInHierarchy && focus.GetComponent<Selectable>()?.IsInteractable() == true)
@@ -129,7 +129,7 @@ namespace Olca.Presentation.Management
             if (disposed) return;
             if (closedOwner != null && closedFrame != frame()) closedOwner = null;
             if (current != null && (!current.Owner.IsCurrent || current.Panel == null || !current.Panel.activeInHierarchy)) Close(current, DialogResult.ParentClosed);
-            current?.Menu.Tick();
+            current?.Menu?.Tick();
         }
         public void Dispose()
         {

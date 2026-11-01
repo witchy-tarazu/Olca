@@ -1,0 +1,1004 @@
+{
+  "initial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 373,
+    "custom": false,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -1253916572
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -831505900
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 401714708
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 36019240
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "reference": 223150612
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 25,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "ConfirmButton",
+    "focusId": -287876146,
+    "paused": false,
+    "root": -287875798,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "BasicAttackButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "firstClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1260423933,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -287875798,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -287875804,
+        -287875810,
+        -287875816
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "firstReleased": {
+    "oldViewAndPanelDestroyed": true,
+    "ownerDisposed": true,
+    "managerRefCleared": true,
+    "importedSpriteSurvives": true,
+    "dialogs": 0,
+    "resources": 3
+  },
+  "reopened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "custom": null,
+    "confirming": null,
+    "hand": null,
+    "selected": null,
+    "cost": null,
+    "hidden": false,
+    "detailsVersion": 1,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": null,
+    "normalized": null,
+    "content": null,
+    "viewport": null,
+    "focus": "ContinueCheckpointButton",
+    "focusId": -287881500,
+    "paused": false,
+    "root": -287875798,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": null,
+    "buttons": [
+      {
+        "name": "ContinueCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      }
+    ]
+  },
+  "restoredTouch": {
+    "actualInputModuleTouch": true,
+    "physicalTouchNotRun": true,
+    "elapsed": 0.5255340700095985,
+    "required": 0.5,
+    "clickCanceled": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "reference": 1650028584
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "reference": -1288980480
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "reference": -2020371416
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": -176423384
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": -542118852
+        }
+      ],
+      "selected": [],
+      "cost": 0,
+      "hidden": false,
+      "detailsVersion": 10,
+      "modal": true,
+      "dialogs": 1,
+      "owner": true,
+      "blocked": true,
+      "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "normalized": 1,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": null,
+      "focusId": null,
+      "paused": false,
+      "root": -287875798,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "CloseCustomPadDetails",
+          "interactable": true
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -287879922,
+    "newControllerId": -287883522,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1726781080,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -287875798,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -287875876,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -287883522
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -287875804,
+        -287875810,
+        -287875816
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage18-18001/settings"
+    }
+  },
+  "singleMenu": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "custom": null,
+    "confirming": null,
+    "hand": null,
+    "selected": null,
+    "cost": null,
+    "hidden": false,
+    "detailsVersion": 1,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": null,
+    "normalized": null,
+    "content": null,
+    "viewport": null,
+    "focus": "ContinueCheckpointButton",
+    "focusId": -287885100,
+    "paused": false,
+    "root": -287875798,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": null,
+    "buttons": [
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ContinueCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      }
+    ]
+  },
+  "singleTouch": {
+    "actualInputModuleTouch": true,
+    "physicalTouchNotRun": true,
+    "elapsed": 0.5222329599782825,
+    "required": 0.5,
+    "clickCanceled": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "sword",
+          "Name": "ソード",
+          "reference": -140116624
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "reference": 2107362752
+        },
+        {
+          "Id": "shield",
+          "Name": "シールド",
+          "reference": 1234736496
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 1512997744
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 1147302276
+        }
+      ],
+      "selected": [],
+      "cost": 0,
+      "hidden": false,
+      "detailsVersion": 10,
+      "modal": true,
+      "dialogs": 1,
+      "owner": true,
+      "blocked": true,
+      "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+      "normalized": 0,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": null,
+      "focusId": null,
+      "paused": false,
+      "root": -287875798,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CloseCustomPadDetails",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "oldSingleTicketRejected": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "reference": -140116624
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": 2107362752
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": 1234736496
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 1512997744
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 1147302276
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 10,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": null,
+    "focusId": null,
+    "paused": false,
+    "root": -287875798,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "finalResumeState": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "reference": -140116624
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": 2107362752
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": 1234736496
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 1512997744
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 1147302276
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 10,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": null,
+    "focusId": null,
+    "paused": false,
+    "root": -287875798,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "beforeFinalHostSuspend": {
+    "progress/progress.json": "12c2c94b54fba412410959cb6a604bb817d3cddc37b21f63bde35c8cd6f57e38",
+    "progress/progress.backup.json": "4b5cfb42055ebbbe8bd45df1573a9a029be9215cd69a57a32c3d634ab523f556",
+    "checkpoints/runs/ee656b6ac9814f188f45de7c023a688b/active.json": "aa31c46f196b97ab892f20d2e771e9a61474f6251b8566e13c7efd581e9fa9f9",
+    "checkpoints/runs/ee656b6ac9814f188f45de7c023a688b/active.backup.json": "43e0f58b56980152e60b361605d6916eb05c48c6191e9ce590498f3d79c5bf84"
+  },
+  "afterFinalHostSuspend": {
+    "progress/progress.json": "12c2c94b54fba412410959cb6a604bb817d3cddc37b21f63bde35c8cd6f57e38",
+    "progress/progress.backup.json": "4b5cfb42055ebbbe8bd45df1573a9a029be9215cd69a57a32c3d634ab523f556",
+    "checkpoints/runs/ee656b6ac9814f188f45de7c023a688b/active.json": "aa31c46f196b97ab892f20d2e771e9a61474f6251b8566e13c7efd581e9fa9f9",
+    "checkpoints/runs/ee656b6ac9814f188f45de7c023a688b/active.backup.json": "43e0f58b56980152e60b361605d6916eb05c48c6191e9ce590498f3d79c5bf84"
+  },
+  "finalClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1726781080,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -287875798,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -287875804,
+        -287875810,
+        -287875816
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "finalReleased": {
+    "oldViewAndPanelDestroyed": true,
+    "ownerDisposed": true,
+    "managerRefCleared": true,
+    "importedSpriteSurvives": true,
+    "dialogs": 0,
+    "resources": 3
+  },
+  "finalMissingCancel": {
+    "actualMissingPrefabRejected": true,
+    "canceledAfterRealPrefabCreatedBeforePreparation": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1726781080,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -287875798,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -287875804,
+        -287875810,
+        -287875816
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "finalMissingCancelBytesUnchanged": true,
+  "saveHashesAfter": {
+    "progress/progress.json": "12c2c94b54fba412410959cb6a604bb817d3cddc37b21f63bde35c8cd6f57e38",
+    "progress/progress.backup.json": "4b5cfb42055ebbbe8bd45df1573a9a029be9215cd69a57a32c3d634ab523f556",
+    "checkpoints/runs/ee656b6ac9814f188f45de7c023a688b/active.json": "aa31c46f196b97ab892f20d2e771e9a61474f6251b8566e13c7efd581e9fa9f9",
+    "checkpoints/runs/ee656b6ac9814f188f45de7c023a688b/active.backup.json": "43e0f58b56980152e60b361605d6916eb05c48c6191e9ce590498f3d79c5bf84"
+  },
+  "finalConsole": {
+    "sampledUtc": "2026-11-01T11:48:27.868667Z",
+    "ageMs": 71,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 1,
+    "seeded": true
+  },
+  "normalStopOnce": true,
+  "recoveryNote": "Prior helper stopped at strict console guard after all first CloseOpen/Single operations. CLI alias error classified from actual Pipeline stack. Only final cleanup resumed; no uncertain writes duplicated. Initial helper before/after first-suspend local hashes were not persisted; no reconstructed digest claimed. Final suspension and canceled/missing loads measured explicitly.",
+  "boundaryNote": "Reading-only bytes verified in native-details; intentional confirm/host suspension retain existing save timing."
+}

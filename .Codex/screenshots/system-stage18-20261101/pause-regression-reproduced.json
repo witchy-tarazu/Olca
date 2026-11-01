@@ -1,0 +1,167 @@
+{
+  "actualTouchEntry": true,
+  "actualPauseButton": true,
+  "actualRetreatButton": true,
+  "result": "Retreat confirmation did not open; Custom details retains singleton ticket",
+  "state": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "reference": -315229452
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -1567807796
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": 1995768564
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 968844532
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 603149064
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 10,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "ソード\nコスト: 1 / イリョク: 30\nゾクセイ ムゾクセイ / スタンダード / ソード / ツウジョウ\n\nゼンポウ1マスコウゲキ\n\nカードホセイ (ゴウケイ)\nなし",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "RetreatButton",
+    "focusId": -287067080,
+    "paused": true,
+    "root": -287065588,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": false
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": false
+      }
+    ]
+  }
+}
