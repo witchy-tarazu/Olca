@@ -280,12 +280,12 @@ namespace Olca.Tests.Application
         {
             var parent=Panel("checkpoint-parent");var prompt=parent.AddComponent<CheckpointPromptView>();prompt.Initialize(()=>true);var layer=views.GetLayer("checkpoint");
             layer.Register(owner,"checkpoint",ct=>Task.FromResult(parent),(go,context)=>prompt.Show(context),go=>prompt.Hide());await layer.ShowAsync("checkpoint");
-            var popup=Panel("progress-popup");var confirm=Button(popup,"ConfirmNewGame");var cancel=Button(popup,"CancelProgressAction");
+            var popup=Panel("progress-popup");var dialog=popup.AddComponent<ProgressActionDialog>();dialog.Initialize(new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{}));var cancel=dialog.CancelButton;
             var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
             void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
-            Set("gameSystem",system);Set("managedCheckpointView",prompt);Set("progressActionOverlay",popup);Set("progressConfirmButton",confirm);Set("progressCancelButton",cancel);Set("progressDialogOpen",true);
-            type.GetMethod("OpenManagedProgressDialog",flags).Invoke(controller,null);Assert.AreEqual(1,dialogs.ActiveCount);
-            cancel.onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse((bool)type.GetField("progressDialogOpen",flags).GetValue(controller));Assert.IsTrue(prompt.Context.DialogBlocksInput);
+            Set("gameSystem",system);Set("managedCheckpointView",prompt);Set("progressActionDialog",dialog);
+            type.GetMethod("ShowProgressAction",flags).Invoke(controller,new object[]{"fixture",false,true});Assert.AreEqual(1,dialogs.ActiveCount);
+            cancel.onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(dialog.IsOpen);Assert.IsTrue(prompt.Context.DialogBlocksInput);
             frame++;dialogs.Tick();Assert.IsFalse(prompt.Context.DialogBlocksInput);
             // 未起動fixtureに所有サービスを残してOnDestroyへ流さない。
             Set("gameSystem",null);UnityEngine.Object.DestroyImmediate(controller);
@@ -293,12 +293,12 @@ namespace Olca.Tests.Application
         [Test] public void 未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する()
         {
             var parent=Panel("hub-parent");parent.SetActive(true);var hub=parent.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();
-            var popup=Panel("progress-popup");var confirm=Button(popup,"ConfirmNewGame");var cancel=Button(popup,"CancelProgressAction");
+            var popup=Panel("progress-popup");var dialog=popup.AddComponent<ProgressActionDialog>();dialog.Initialize(new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{}));var cancel=dialog.CancelButton;
             var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
             void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
-            Set("gameSystem",system);Set("clearReturnView",hub);Set("progressActionOverlay",popup);Set("progressConfirmButton",confirm);Set("progressCancelButton",cancel);Set("progressDialogOpen",true);
-            type.GetMethod("OpenManagedProgressDialog",flags).Invoke(controller,null);Assert.AreEqual(1,dialogs.ActiveCount);
-            var scope=(IDialogOwner)type.GetField("managedProgressOwner",flags).GetValue(controller);Assert.IsTrue(scope.IsCurrent);
+            Set("gameSystem",system);Set("clearReturnView",hub);Set("progressActionDialog",dialog);
+            type.GetMethod("ShowProgressAction",flags).Invoke(controller,new object[]{"fixture",false,true});Assert.AreEqual(1,dialogs.ActiveCount);
+            var scope=dialog.Owner;Assert.IsTrue(scope.IsCurrent);
             controller.StopManagedHost();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(scope.IsCurrent);Assert.IsFalse(popup.activeSelf);
             // TickやUnity側のDestroyを待つ前に終了境界が成立している。
             UnityEngine.Object.DestroyImmediate(controller);
@@ -435,7 +435,7 @@ namespace Olca.Tests.Application
             if(registered)Set("customizationCatalog",new Olca.Core.Logic.Customization.CustomizationCatalog("chrome20",new Olca.Core.Logic.Customization.PartsBoardDefinition(1,1,new[]{new Olca.Core.Domain.Vector2Int(0,0)}),Array.Empty<string>(),new Dictionary<string,Olca.Core.Logic.Customization.PartShape>(),null));
             type.GetMethod("RefreshProgressActions",flags).Invoke(controller,null);
             foreach(var button in new[]{chrome.Loadout,chrome.Unlock,chrome.Acquisition}){Assert.IsTrue(button.gameObject.activeSelf);Assert.AreEqual(registered,button.interactable);Assert.Greater(button.transform.GetSiblingIndex(),view.transform.GetSiblingIndex());}
-            Set("progressDialogOpen",true);Set("progressActionOverlay",Panel("progress-overlay"));type.GetMethod("RefreshProgressActions",flags).Invoke(controller,null);
+            var popup=Panel("progress-overlay");var dialog=popup.AddComponent<ProgressActionDialog>();dialog.Initialize(factory);Set("progressActionDialog",dialog);dialog.OpenNotice("fixture",false,true,null,null,()=>true);type.GetMethod("RefreshProgressActions",flags).Invoke(controller,null);
             foreach(var button in new[]{chrome.Loadout,chrome.Unlock,chrome.Acquisition})Assert.IsFalse(button.gameObject.activeSelf);
         }
         private sealed class EquipmentSourceProbe:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
@@ -526,6 +526,66 @@ namespace Olca.Tests.Application
             layer.CloseCurrent();Assert.AreNotSame(beforeHide,next.onClick);stalePopup.Invoke();var oldSession=session;long oldVersion=oldSession.Version;
             session=new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript("dialogue-reopen",new[]{new Olca.Core.Domain.DialogueLine("フッキ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);frame++;Assert.IsTrue((await layer.ShowAsync("dialogue")).Succeeded);oldNormal.Invoke();stalePopup.Invoke();Assert.AreEqual(0,session.Index);Assert.AreEqual(oldVersion,oldSession.Version);Find("DialogueNext").onClick.Invoke();Assert.AreEqual(1,session.Index);layer.CloseCurrent();views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [Test] public void 旧SceneのCheckpoint親でも帰還Viewなしで進行Popupを開閉できる()
+        {
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+            var checkpoint=Panel("legacy-checkpoint");checkpoint.SetActive(true);var popup=ProgressPopup();type.GetField("checkpointOverlay",flags).SetValue(controller,checkpoint);type.GetField("progressActionDialog",flags).SetValue(controller,popup);
+            type.GetMethod("ShowProgressAction",flags).Invoke(controller,new object[]{"checkpoint legacy",false,true});Assert.IsTrue(popup.IsOpen);Assert.AreEqual("checkpoint legacy",popup.Message.text);popup.CancelButton.onClick.Invoke();Assert.IsFalse(popup.IsOpen);Assert.IsTrue(checkpoint.activeSelf);
+        }
+        private sealed class ProgressOperationsProbe : IProgressActionOperations
+        {
+            public long Revision=>47;public bool Pending {get;private set;}public ProgressPendingAction PendingAction {get;private set;}public string Error=>"fixture-write-failure";public bool CanStartNewGame=>true;
+            public int Saves,Starts,Retries;public long ConfirmedRevision;public bool RetrySucceeds;
+            public bool ManualSave(){Saves++;Pending=true;PendingAction=ProgressPendingAction.ManualSave;return false;}
+            public bool StartNewGame(long revision){Starts++;ConfirmedRevision=revision;Pending=true;PendingAction=ProgressPendingAction.NewGame;return false;}
+            public bool Retry(){Retries++;if(!RetrySucceeds)return false;Pending=false;PendingAction=ProgressPendingAction.None;return true;}
+        }
+        private ProgressActionDialog ProgressPopup(string name="progress-owned")
+        {
+            var popup=Panel(name);var value=popup.AddComponent<ProgressActionDialog>();value.Initialize(new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{}));return value;
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 個別進行Dialogは失敗と同計画再試行を所有し同frame二重実行を拒否する(bool newGame)
+        {
+            var parent=Panel("progress-parent");parent.SetActive(true);var focus=Button(parent,"origin");EventSystem.current.SetSelectedGameObject(focus.gameObject);
+            using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=ProgressPopup();var service=new ProgressOperationsProbe();int results=0;ProgressActionOutcome outcome=ProgressActionOutcome.Closed;popup.Completed+=r=>{results++;outcome=r.Outcome;};
+                if(newGame){popup.OpenNewGame(service,dialogs,scope,()=>true);Assert.AreEqual(0,service.Starts);popup.ConfirmButton.onClick.Invoke();Assert.AreEqual(47,service.ConfirmedRevision);}
+                else popup.OpenManualSave(service,dialogs,scope,()=>true);
+                Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(popup.CancelButton.interactable);popup.CancelButton.onClick.Invoke();Assert.IsTrue(popup.IsOpen);
+                var old=popup.ConfirmButton.onClick;frame++;old.Invoke();old.Invoke();Assert.AreEqual(1,service.Retries);Assert.AreEqual(1,dialogs.ActiveCount);
+                service.RetrySucceeds=true;frame++;old.Invoke();Assert.AreEqual(2,service.Retries);Assert.AreEqual(newGame?1:0,service.Starts);Assert.AreEqual(newGame?0:1,service.Saves);
+                if(newGame){Assert.IsFalse(popup.IsOpen);Assert.AreEqual(ProgressActionOutcome.NewGameStarted,outcome);}
+                else{Assert.IsTrue(popup.IsOpen);Assert.IsFalse(popup.ConfirmButton.gameObject.activeSelf);Assert.IsTrue(popup.CancelButton.interactable);popup.CancelButton.onClick.Invoke();}
+                Assert.AreEqual(1,results);Assert.IsTrue(dialogs.Blocks(scope));old.Invoke();Assert.AreEqual(2,service.Retries);Assert.AreSame(focus.gameObject,EventSystem.current.currentSelectedGameObject);
+            }
+        }
+        [Test] public void 進行Dialogの再生成は既知の未保存計画を新規保存せず引き継ぐ()
+        {
+            var service=new ProgressOperationsProbe();var popup=ProgressPopup();popup.OpenManualSave(service,dialogs,null,()=>true);var old=popup.ConfirmButton.onClick;popup.Abort();UnityEngine.Object.DestroyImmediate(popup.gameObject);
+            var next=ProgressPopup("recreated");next.OpenManualSave(service,dialogs,null,()=>true);old.Invoke();Assert.AreEqual(1,service.Saves);Assert.AreEqual(0,service.Retries);Assert.IsFalse(next.CancelButton.interactable);
+            service.RetrySucceeds=true;next.ConfirmButton.onClick.Invoke();Assert.AreEqual(1,service.Retries);Assert.AreEqual(1,service.Saves);next.CancelButton.onClick.Invoke();Assert.IsFalse(next.IsOpen);
+        }
+        [Test] public void 進行DialogのSuspendResumeと親終了は旧callbackを失効させる()
+        {
+            bool live=true;var service=new ProgressOperationsProbe();var popup=ProgressPopup();popup.OpenManualSave(service,dialogs,null,()=>live);var old=popup.ConfirmButton.onClick;popup.Suspend();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsTrue(popup.IsOpen);
+            popup.Resume(dialogs,null,()=>live);old.Invoke();Assert.AreEqual(0,service.Retries);Assert.AreEqual(1,service.Saves);Assert.AreEqual(1,dialogs.ActiveCount);
+            var current=popup.ConfirmButton.onClick;live=false;popup.RefreshLifetime();current.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreEqual(0,service.Retries);Assert.IsFalse(popup.IsOpen);Assert.IsTrue(service.Pending);
+        }
+        [Test] public void 他Dialogが占有中の進行要求は保存前に拒否する()
+        {
+            var panel=Panel("other");using(var scope=dialogs.CreateOwner(()=>true)){dialogs.ShowPersistent(scope,panel,Button(panel,"confirm"),Button(panel,"cancel"),()=>true,_=>{});var service=new ProgressOperationsProbe();var popup=ProgressPopup();popup.OpenManualSave(service,dialogs,null,()=>true);Assert.AreEqual(0,service.Saves);Assert.IsFalse(popup.IsOpen);Assert.AreEqual(1,dialogs.ActiveCount);}
+        }
+        [Test] public void 撤退Dialogは最新可否で判断し取消後の旧確定は次世代へ作用しない()
+        {
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var pause=Panel("legacy-pause");pause.SetActive(true);var origin=Button(pause,"RetreatButton");EventSystem.current.SetSelectedGameObject(origin.gameObject);
+            var root=factory.Panel("retreat-owned",true);var popup=root.AddComponent<RetreatConfirmationDialog>();popup.Initialize(factory);bool paused=true,live=true;int effects=0;popup.Confirmed+=()=>effects++;
+            RetreatDialogState State()=>new RetreatDialogState(paused,false,false,false,false,false);
+            popup.Open(State,null,null,pause,()=>live);Assert.IsFalse(pause.activeSelf);var old=popup.ConfirmButton.onClick;paused=false;old.Invoke();Assert.AreEqual(0,effects);Assert.IsTrue(popup.IsOpen);
+            paused=true;popup.CancelButton.onClick.Invoke();Assert.AreEqual(0,effects);Assert.IsTrue(pause.activeSelf);Assert.AreSame(origin.gameObject,EventSystem.current.currentSelectedGameObject);
+            popup.Open(State,null,null,pause,()=>live);old.Invoke();Assert.AreEqual(0,effects);popup.ConfirmButton.onClick.Invoke();Assert.AreEqual(1,effects);Assert.IsFalse(popup.IsOpen);
+            popup.Open(State,null,null,pause,()=>live);var stale=popup.ConfirmButton.onClick;live=false;popup.RefreshLifetime();stale.Invoke();Assert.AreEqual(1,effects);Assert.IsFalse(popup.IsOpen);
+        }
         [TestCase(false)][TestCase(true)]
         public void Host表示は初回要求だけ生成し再表示とPopupを共有して終了後に返す(bool managed)
         {
@@ -537,7 +597,7 @@ namespace Olca.Tests.Application
             var first=bindings.Show("pause");Assert.AreEqual(1,generated);if(!managed)first.SetActive(true);var old=first.GetComponentsInChildren<Button>(true).Single(b=>b.name=="ResumeButton").onClick;
             Assert.AreSame(first,bindings.Show("pause"));Assert.AreEqual(1,generated);
             if(managed){old.Invoke();Assert.AreEqual(1,actions);views.GetLayer("fixture-host-ui").CloseCurrent();old.Invoke();Assert.AreEqual(1,actions);frame++;bindings.Show("pause");old.Invoke();Assert.AreEqual(1,actions);}
-            int prompts=0;GameObject CreatePrompt(){prompts++;return factory.Progress(out _,out _,out _);}
+            int prompts=0;GameObject CreatePrompt(){prompts++;var panel=factory.Panel("ProgressActionOverlay",true);panel.AddComponent<ProgressActionDialog>().Initialize(factory);return panel;}
             var popup=bindings.Popup("prompt",CreatePrompt);Assert.AreSame(popup,bindings.Popup("prompt",CreatePrompt));Assert.AreEqual(1,prompts);
             Assert.AreEqual(managed?2:0,resources.OwnedInstanceCount);bindings.Dispose();bindings.Dispose();Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.IsTrue(first==null);Assert.IsTrue(popup==null);Assert.IsTrue(font!=null);Assert.Throws<ObjectDisposedException>(()=>bindings.Show("pause"));int beforeOld=actions;using(var replacement=new HostPanelBindings(owner,content.transform,managed?resources:null,managed?views:null)){Assert.DoesNotThrow(()=>old.Invoke());Assert.AreEqual(beforeOld,actions,"旧bindingの入力は新binding生成後も作用しない");}
             UnityEngine.Object.DestroyImmediate(content);

@@ -1,0 +1,37 @@
+{
+  "stage": 21,
+  "reviewType": "independent static source review",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "90da3a8dcf7422a2db14c0c17efc80d40a52f67d630a0bf69d8cf9cff8e2fa6d",
+    "Assets/Olca/Application/Management/BattlePresentationBinding.cs": "8e5866a6c60dbfd0b232ca0822121f8d11f8f191e14615d6f821e416ed01761f",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "19427be244aa4f757527b852f2c4b9d52aee6807a2cd8e534c3b20c6a8f5c862",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ee37f86f7ea46f602eee59b5ffcdce845a1670e82b2464555b383995a467675d",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "ea2a9b65885bcf231133f600956f33008d9b07d11cb34d40825716bf4037414d"
+  },
+  "submissionProjectMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "scope": [
+    "ProgressActionDialog/RetreatConfirmationDialog/OwnedPopup ownership and generation",
+    "ProgressActionOperations existing Session operation adapter",
+    "Controller request/state projection and successful new-game transition",
+    "legacy checkpoint parent without ClearReturnView",
+    "five changed source/test files"
+  ],
+  "checked": [
+    "Progress dialog owns purpose, confirmation revision, retry UI, focus and ticket/legacy menu lifecycle; adapter delegates existing Session writes without new rules.",
+    "Known pending plans are retried rather than new starter/save plan creation; host/generation guards reject stale events.",
+    "Retreat dialog owns warning, latest state query, pause cover/restore and result; controller retains EndRunWithoutRewards.",
+    "ProgressLifetime now admits active legacy checkpointOverlay while preserving host and binding liveness guards; no managed-parent widening.",
+    "DialogManager remains generic and unchanged; additional individual Dialog migrations remain separate work."
+  ],
+  "findings": [],
+  "validation": {
+    "dynamicResultsIndependentlyVerified": false,
+    "status": "Final compile request being tracked by parent; no final test/native result verified in this review."
+  },
+  "limits": [
+    "Static scoped review is not a guarantee of all branches or runtime correctness.",
+    "Pending retry across disable/enable and recreation, checkpoint focus/same-frame fence, retreat cancellation and once-only successful transition require dynamic verification.",
+    "No Unity commands, tests, source edits or publication performed by reviewer."
+  ]
+}

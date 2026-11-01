@@ -1015,7 +1015,7 @@ namespace Olca.Tests.Integration
             var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
             var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var type=controller.GetType();
             void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
-            object Get(string name)=>type.GetField(name,flags).GetValue(controller);
+            object Get(string name){var field=type.GetField(name,flags);return field!=null?field.GetValue(controller):type.GetProperty(name,flags).GetValue(controller);}
             void Call(string name,params object[] args)=>type.GetMethod(name,flags).Invoke(controller,args);
             var progress=new ClearReturnSession(new MemoryClearReturnStore(new ClearReturnProfile()));
             Set("manager",manager);Set("clearReturnSession",progress);
@@ -2587,7 +2587,7 @@ namespace Olca.Tests.Integration
                 base.Replace(temporary, destination, backup);
             }
         }
-        private static object Get(object target, string name) => target.GetType().GetField(name, Hidden).GetValue(target);
+        private static object Get(object target, string name){var field=target.GetType().GetField(name,Hidden);return field!=null?field.GetValue(target):target.GetType().GetProperty(name,Hidden).GetValue(target);}
         private static void Set(object target, string name, object value) {var type=target.GetType();System.Reflection.FieldInfo field=null;while(type!=null&&field==null){field=type.GetField(name,Hidden);type=type.BaseType;}if(field==null)throw new System.MissingFieldException(name);field.SetValue(target,value);}
         private static void Call(object target, string name, params object[] args) => target.GetType().GetMethod(name, Hidden).Invoke(target, args);
         private static DungeonBattleManager Model(Olca.Application.Dungeon.DungeonBattleController controller) => (DungeonBattleManager)Get(controller, "manager");

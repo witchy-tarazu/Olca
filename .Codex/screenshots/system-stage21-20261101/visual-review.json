@@ -1,0 +1,355 @@
+{
+  "stage": 21,
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-01T18:45:32.951754+00:00",
+  "scope": "ProgressActionDialog/RetreatConfirmationDialog responsibility migration static native visual regression review",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "90da3a8dcf7422a2db14c0c17efc80d40a52f67d630a0bf69d8cf9cff8e2fa6d",
+    "Assets/Olca/Application/Management/BattlePresentationBinding.cs": "8e5866a6c60dbfd0b232ca0822121f8d11f8f191e14615d6f821e416ed01761f",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "19427be244aa4f757527b852f2c4b9d52aee6807a2cd8e534c3b20c6a8f5c862",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ee37f86f7ea46f602eee59b5ffcdce845a1670e82b2464555b383995a467675d",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "ea2a9b65885bcf231133f600956f33008d9b07d11cb34d40825716bf4037414d"
+  },
+  "viewedImageCount": 21,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "return-hub-fhd.png",
+      "sha256": "b6c06d0435a2b4c7823a0c16116d391aad18a086bf0af057d17567d28e7b4e3f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-return-hub-fhd.png"
+    },
+    {
+      "file": "return-hub-4k.png",
+      "sha256": "e8aa133733fa9187f24b10a59d25efc2b1a3e5c2c8ff5b0cedd9655fb1b62c4a",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-return-hub-4k.png"
+    },
+    {
+      "file": "return-hub-4by3.png",
+      "sha256": "59c214a051f4f7cfc9d8e1b2afeb0909a7c6f206278352acb2b57cf11b1d193d",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-return-hub-4by3.png"
+    },
+    {
+      "file": "progress-confirm-fhd.png",
+      "sha256": "2bd24802e2b89ebbda1f87f95987ad1662b717287a3e13b03f720aba7595621d",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-progress-confirm-fhd.png"
+    },
+    {
+      "file": "progress-confirm-4k.png",
+      "sha256": "c29c852dd854528725260ade30f004cce7dd3c42f81160e7d25ef48b0023f2de",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-progress-confirm-4k.png"
+    },
+    {
+      "file": "progress-confirm-4by3.png",
+      "sha256": "5dda188a0df933e8892b07bb0f063783deaf640e0c6db1b573c10d7204c3ee85",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-progress-confirm-4by3.png"
+    },
+    {
+      "file": "save-retry-fhd.png",
+      "sha256": "9457ae5243acf66c86db75622f6c2ed78a8ad791219b083f980ff6ace886fb49",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-save-retry-fhd.png"
+    },
+    {
+      "file": "save-retry-4k.png",
+      "sha256": "624f70a095c33d6f79dc0c3e0a43dc56a2e728c105b6ccd457fa414684facea8",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-save-retry-4k.png"
+    },
+    {
+      "file": "save-retry-4by3.png",
+      "sha256": "1bfd062c0e81f8260c18e873a27bbbf8840c17b03669d4def11c00dcce70c849",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-save-retry-4by3.png"
+    },
+    {
+      "file": "newgame-retry-fhd.png",
+      "sha256": "1a6facb73365b433ef961e16a84d71794c21dfc5e325f5d4531c5fb117d6835c",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-newgame-retry-fhd.png"
+    },
+    {
+      "file": "newgame-retry-4k.png",
+      "sha256": "8aa9481532d4bacef9cee9a319ca1015cec8a99db5c87bca65a89f1bb919d287",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-newgame-retry-4k.png"
+    },
+    {
+      "file": "newgame-retry-4by3.png",
+      "sha256": "625b80913ca4375ef1dbd64a6eaeed65372253f5e6425d27a08c83cc544409a6",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-newgame-retry-4by3.png"
+    },
+    {
+      "file": "pause-fhd.png",
+      "sha256": "0e8dcbab187ae00fefe6077422f343fff4140edec24cf700fd75715f1da7a8d4",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-pause-fhd.png"
+    },
+    {
+      "file": "pause-4k.png",
+      "sha256": "13092078a8c89dab5c4e1bac6805652f3c8687eb4c51ef8031e0ad67d2b2337b",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-pause-4k.png"
+    },
+    {
+      "file": "pause-4by3.png",
+      "sha256": "a8e34a06046fef53b1afa244100b04652726b9f6bf655ee8642dbddb31db7bdb",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-pause-4by3.png"
+    },
+    {
+      "file": "retreat-confirm-fhd.png",
+      "sha256": "9bd2e035de5e2570b4674111285c33f3dc4c8501afc825b4945e89d2dac7ecea",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-retreat-confirm-fhd.png"
+    },
+    {
+      "file": "retreat-confirm-4k.png",
+      "sha256": "1bd42026e7ba894ef851d442938d479cde200cc110668f8d9557237bd28e5b17",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-retreat-confirm-4k.png"
+    },
+    {
+      "file": "retreat-confirm-4by3.png",
+      "sha256": "00beb2b9827779a43095b835ae676b9ae8e8c080041e1e1321b0235299cc1c49",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-retreat-confirm-4by3.png"
+    },
+    {
+      "file": "checkpoint-fhd.png",
+      "sha256": "f9199c9f0f09a1cf58972b8112ec9f5a93257856a567b6d1ce99e74a8e700869",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "captureSourceName": "system-stage21-checkpoint-fhd.png"
+    },
+    {
+      "file": "checkpoint-4k.png",
+      "sha256": "bdab5a9c026b25a7eec0bde0e31bcfc1befdd8aa46890d186ea6f63cb98a07bc",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "captureSourceName": "system-stage21-checkpoint-4k.png"
+    },
+    {
+      "file": "checkpoint-4by3.png",
+      "sha256": "37047b552fe61931377cc9211b4cd1d6efc959d6c9193aefc22fe24e9624a335",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "captureSourceName": "system-stage21-checkpoint-4by3.png"
+    }
+  ],
+  "stage20References": [
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/return-hub-fhd.png",
+      "sha256": "ea9f4830e595af2488e28037abf50216bebe218844dbc5f877410e9e82765bc4",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/return-hub-4k.png",
+      "sha256": "0858c8e87080a527a8417bba52b3899780dbeb99824dca38808f3ee25bfd2108",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/return-hub-4by3.png",
+      "sha256": "9c8c782d43f34c5a277c1a756d00a54676c78b5d942fe42b3565a54784c5a5b1",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/progress-confirm-fhd.png",
+      "sha256": "6ce3ea10ddd45c171effcc7c8cc36b06dfb22b991cc2505f75fcca199b368544",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/progress-confirm-4k.png",
+      "sha256": "8ff535c8c91300bf48354592acbbd6b78619edf4b2ec92c7a3d31b055a9cef64",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/progress-confirm-4by3.png",
+      "sha256": "b291fd77deead20c415464a5d78283d7f582f274fe4a121023dc8743d4ac3607",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/save-retry-fhd.png",
+      "sha256": "c89b08a4f380aeab0e48b5d0c366e8f547712815ed33d6990a8286ee7d45bc85",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/save-retry-4k.png",
+      "sha256": "f2c4aeeff7857ae94ae0b8dc73af608d09c6f18c24a0a806a4ae43ef4e9defb0",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/save-retry-4by3.png",
+      "sha256": "5af0c6f9642b372cf24f386473cb6fe9cff85ff28953386952f0fbd5b359333d",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/pause-fhd.png",
+      "sha256": "8f255db02e6e79d3b1f3e8a1a56673465ed5fdf90abcb83b7bcbb6316c59beea",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/pause-4k.png",
+      "sha256": "3ff5c5155a2cc1ff18a80b4ae593e4420ccef42f87b701104cbbcb52bea60adb",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/pause-4by3.png",
+      "sha256": "564a53b05bb3055272b15cc4b861fdf87bd4e6f90df9a779dd918cc18b306ac7",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/checkpoint-fhd.png",
+      "sha256": "c9415747afb086a71d41fe750aa1efe45c65255a9ec73df710bd4830cd11bf1c",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/checkpoint-4k.png",
+      "sha256": "0bf083c01aba0775d07b1c2bf95cd72979bc8cbcbace6d66e2d1978b97268a05",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    },
+    {
+      "file": "submission/.Codex/screenshots/system-stage20-20261101/checkpoint-4by3.png",
+      "sha256": "182d32e4e0a167bacd77d95147756d21c69e5efa7794395b28144608634a06b3",
+      "comparison": "Previously actually viewed Stage20 final reference; compared composition and legibility with new Stage21 image, no pixel identity claim."
+    }
+  ],
+  "observations": [
+    "Return equipment/unlock remain visible at established top-right positions in all ratios; absent-catalog disabled state and no-provider acquisition absence are consistent with supplied context.",
+    "Progress confirmation explanatory text and confirm/cancel labels remain legible and separated. Save retry/newgame retry distinguish enabled retry and disabled cancel/Close without clipped controls.",
+    "Pause composition, water-mirror material and two-line settings/retreat text preserve the Stage20 visual hierarchy. Existing dimmed TouchHUD remains behind pause.",
+    "Retreat warning and explicit return/cancel buttons are readable in all three ratios; highlighted cancel is distinct, with no competing active parent menu labels.",
+    "Checkpoint text/Continue remain readable and there is no bright foreground Jump/Dash HUD in any ratio.",
+    "Stage20 five shared states (15 references) show no required visual regression by composition/readability comparison. Newgame retry and retreat confirmation are additional inspected states without newly matched Stage20 captures.",
+    "Raw injected prewrite failure message includes kanji 隔/書; it is a validation exception string, not treated as a product kana conversion regression."
+  ],
+  "native4kSupplement": {
+    "method": "All original whole PNGs actually viewed; viewer reduces 3840x2160 to 2048x1152. Representative lossless, unscaled in-memory crops inspected separately; original files unchanged.",
+    "crops": [
+      {
+        "file": "system-stage21-progress-confirm-4k.png",
+        "box": [
+          1400,
+          680,
+          2450,
+          930
+        ],
+        "observation": "Confirmation glyphs and line spacing clear; diagnostic crop boundaries only."
+      },
+      {
+        "file": "system-stage21-newgame-retry-4k.png",
+        "box": [
+          820,
+          780,
+          1800,
+          930
+        ],
+        "observation": "Retry explanation and raw injected message glyphs clear."
+      },
+      {
+        "file": "system-stage21-retreat-confirm-4k.png",
+        "box": [
+          2050,
+          1210,
+          2890,
+          1350
+        ],
+        "observation": "Cancel/return button label and water-mirror border clearly legible."
+      }
+    ]
+  },
+  "limits": [
+    "Static images establish displayed legibility/composition only, not input, raycast, focus, callback ownership, writes, rollback, pause timing or lifetime success. Parent native input verification was still ongoing at request.",
+    "No exact pixel identity/global aesthetic completion claim; state/idle phase differences are not migration defects by themselves.",
+    "Representative 4K 1:1 crops supplement resized whole-image viewing; not every pixel inspected at native size.",
+    "Physical devices, audio, historical UGUI and conditions outside these seven captured states not verified. No Unity operations, tests or product edits performed."
+  ]
+}

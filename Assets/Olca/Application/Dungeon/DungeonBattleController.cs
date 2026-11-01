@@ -209,7 +209,7 @@ namespace Olca.Application.Dungeon
         private Olca.Presentation.Management.ViewManager pauseViews;
         private Olca.Presentation.Management.GameplayPauseView managedPauseView;
         private const string ManagedPauseScreen="gameplay-pause";
-        private Button managedRetreatConfirm,managedRetreatCancel;
+        private Olca.Presentation.Management.RetreatConfirmationDialog retreatDialog;
         private bool pauseViewRegistered;
         private void SetPausePanelVisible(bool visible)
         {
@@ -510,9 +510,10 @@ namespace Olca.Application.Dungeon
             gameplayAudio?.SetPaused(true);
             combatFeedbackAudio?.Bind(null);
             CancelExplorationResume();
-            progressDialogScope?.Dispose();progressDialogScope=null;managedProgressOwner=null;progressDialogRequest=null;
+            if(progressActionDialog!=null)progressActionDialog.Suspend();
+            if(retreatDialog!=null)retreatDialog.Abort();
             checkpointViews?.CloseCurrent();
-            if(gameSystem!=null&&progressActionOverlay!=null)progressActionOverlay.SetActive(false);
+
             if(pauseViewRegistered)pauseViews.CloseCurrent();else if (pauseOverlay != null) SetPausePanelVisible(IsUserPaused);
             StopGamepadVibration();
             if(!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen)return;
@@ -525,7 +526,7 @@ namespace Olca.Application.Dungeon
             gameplayAudio?.SetPaused(IsUserPaused);
             if(pauseViewRegistered&&IsUserPaused)SetPausePanelVisible(true);
             if(hostPanels?.IsAlive==true)ShowCheckpointStatus(checkpointStatusOverride);
-            if(gameSystem!=null&&progressDialogOpen&&progressActionOverlay!=null)ShowProgressAction(progressActionMessage.text,progressConfirmButton.gameObject.activeSelf,progressCancelButton.interactable);
+            if(progressActionDialog!=null)progressActionDialog.Resume(gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
             if(manager!=null&&!manager.IsSuspended)BindBattleFeedback(manager.CurrentBattle);
             if(!customizationEditorInterrupted||clearReturnSession?.Ready!=true)return;
             customizationEditorInterrupted=false;
@@ -1062,16 +1063,19 @@ namespace Olca.Application.Dungeon
         }
         private void EnsureRetreatPanel()
         {
-            var binding=hostPanels;retreatConfirmation=binding.Popup("retreat",()=>{
-                var panel=panelFactory.Retreat(out managedRetreatConfirm,out managedRetreatCancel);
-                if(gameSystem==null){managedRetreatConfirm.onClick.AddListener(()=>{if(this!=null&&binding.IsAlive)ConfirmRetreat();});managedRetreatCancel.onClick.AddListener(()=>{if(this==null||!binding.IsAlive)return;retreatConfirmation.SetActive(false);SetPausePanelVisible(true);});}return panel;
+            if(retreatDialog!=null)return;
+            hostPanels.Popup("retreat",()=>{
+                var panel=panelFactory.Panel("RetreatConfirmation",true);retreatDialog=panel.AddComponent<Olca.Presentation.Management.RetreatConfirmationDialog>();retreatDialog.Initialize(panelFactory);
+                retreatDialog.Confirmed+=()=>{if(this!=null&&!runtimeReleased&&!runtimeReleasing&&IsUserPaused&&!clearReturnVisible)EndRunWithoutRewards(RunReturnOutcome.Retreated);};return panel;
             });
         }
         private void EnsureProgressPanel()
         {
-            var binding=hostPanels;progressActionOverlay=binding.Popup("progress",()=>{
-                var panel=panelFactory.Progress(out progressActionMessage,out progressConfirmButton,out progressCancelButton);
-                if(gameSystem==null){progressConfirmButton.onClick.AddListener(()=>{if(this!=null&&binding.IsAlive)ConfirmNewGame();});progressCancelButton.onClick.AddListener(()=>{if(this==null||!binding.IsAlive||newGameSavePending||manualSavePending)return;CloseProgressAction();});}return panel;
+            if(progressActionDialog!=null)return;
+            hostPanels.Popup("progress",()=>{
+                var panel=panelFactory.Panel("ProgressActionOverlay",true);progressActionDialog=panel.AddComponent<Olca.Presentation.Management.ProgressActionDialog>();progressActionDialog.Initialize(panelFactory);
+                progressActionDialog.VisibilityChanged+=()=>{if(this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing)RefreshProgressActions();};
+                progressActionDialog.Completed+=OnProgressActionCompleted;return panel;
             });
         }
         private void EnsureReturnView(bool collection=false)=>hostPanels.Show(collection?"card-collection":"return-hub");
@@ -1098,46 +1102,30 @@ namespace Olca.Application.Dungeon
             }
         }
 
-        private Button manualSaveButton,newGameButton,progressConfirmButton,progressCancelButton;
-        private GameObject progressActionOverlay;
-        private Text progressActionMessage;
-        private bool progressDialogOpen,newGameConfirmation,newGameSavePending,manualSavePending;
-        private GameObject progressActionFocus;
+        private Button manualSaveButton,newGameButton;
+        private Olca.Presentation.Management.ProgressActionDialog progressActionDialog;
+        private Olca.Application.Management.ProgressActionOperations progressOperations;
+        // 旧Scene検証の読取投影。表示/入力状態の所有は各Dialogに一意に置く。
+        private bool progressDialogOpen=>progressActionDialog!=null&&progressActionDialog.IsOpen;
+        private GameObject progressActionOverlay=>progressActionDialog!=null?progressActionDialog.gameObject:null;
+        private Text progressActionMessage=>progressActionDialog!=null?progressActionDialog.Message:null;
+        private Button progressConfirmButton=>progressActionDialog!=null?progressActionDialog.ConfirmButton:null;
+        private Button progressCancelButton=>progressActionDialog!=null?progressActionDialog.CancelButton:null;
+        private Olca.Presentation.Management.IDialogOwner managedProgressOwner=>progressActionDialog!=null?progressActionDialog.Owner:null;
         private string checkpointReturnFocus;
-        private Olca.Presentation.Management.IDialogOwner managedProgressOwner;
-        private Olca.Presentation.Management.DialogOwnerScope progressDialogScope;
-        private System.Threading.Tasks.Task<Olca.Presentation.Management.DialogResult> progressDialogRequest;
-        private void CloseProgressAction(bool cancelOwnedDialog=true)
+        private Olca.Presentation.Management.IDialogOwner ProgressOwner=>managedCheckpointView?.Context?.IsCurrent==true?managedCheckpointView.Context:clearReturnView?.ManagementContext?.IsCurrent==true?clearReturnView.ManagementContext:null;
+        private System.Func<bool> ProgressLifetime()
         {
-            progressDialogOpen=false;progressDialogScope?.Dispose();progressDialogScope=null;
-            if(cancelOwnedDialog&&managedProgressOwner!=null)gameSystem?.Dialogs.CancelOwner(managedProgressOwner);
-            managedProgressOwner=null;progressDialogRequest=null;if(progressActionOverlay!=null)progressActionOverlay.SetActive(false);
-            var focus=progressActionFocus;progressActionFocus=null;
-            if(isActiveAndEnabled){RefreshProgressActions();if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(focus);if(checkpointViews?.CurrentKey==ManagedCheckpointScreen)checkpointReturnFocus=focus.name;}}
+            var binding=hostPanels;var parent=clearReturnView!=null?clearReturnView.gameObject:null;var checkpoint=checkpointOverlay;bool hasContext=ProgressOwner!=null,legacy=gameSystem==null;
+            return ()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&(binding==null||binding.IsAlive)&&(hasContext||parent!=null&&parent.activeInHierarchy||legacy&&checkpoint!=null&&checkpoint.activeInHierarchy);
         }
-        private void OpenManagedProgressDialog()
+        private void CloseProgressAction(bool cancelOwnedDialog=true){if(progressActionDialog!=null)progressActionDialog.Abort();}
+        private void OnProgressActionCompleted(Olca.Presentation.Management.ProgressActionResult result)
         {
-            if(progressDialogRequest!=null&&!progressDialogRequest.IsCompleted&&managedProgressOwner?.IsCurrent==true)return;
-            progressDialogScope?.Dispose();progressDialogScope=null;
-            var checkpoint=managedCheckpointView?.Context;
-            if(checkpoint?.IsCurrent==true)managedProgressOwner=checkpoint;
-            else if(clearReturnView?.ManagementContext?.IsCurrent==true)managedProgressOwner=clearReturnView.ManagementContext;
-            else{
-                var parent=clearReturnView!=null?clearReturnView.gameObject:null;
-                progressDialogScope=gameSystem.Dialogs.CreateOwner(()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&progressDialogOpen&&parent!=null&&parent.activeInHierarchy);
-                managedProgressOwner=progressDialogScope;
-            }
-            var owner=managedProgressOwner;
-            progressDialogRequest=gameSystem.Dialogs.ShowPersistent(owner,progressActionOverlay,progressConfirmButton,progressCancelButton,()=>{
-                if(this==null||!isActiveAndEnabled||!ReferenceEquals(managedProgressOwner,owner)||!owner.IsCurrent)return false;
-                ConfirmNewGame();return !progressDialogOpen;
-            },result=>{
-                if(this==null||!isActiveAndEnabled||!ReferenceEquals(managedProgressOwner,owner))return;
-                if(result==Olca.Presentation.Management.DialogResult.Cancelled)CloseProgressAction(false);
-            });
-            if(progressDialogRequest.IsCompleted&&(progressDialogRequest.Result==Olca.Presentation.Management.DialogResult.ParentClosed||progressDialogRequest.Result==Olca.Presentation.Management.DialogResult.Busy))CloseProgressAction(false);
+            if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
+            if(checkpointViews?.CurrentKey==ManagedCheckpointScreen&&result.FocusName!=null)checkpointReturnFocus=result.FocusName;
+            if(result.Outcome==Olca.Presentation.Management.ProgressActionOutcome.NewGameStarted)ApplyNewGameResult();
         }
-        private long confirmedProgressRevision;
         private bool IsProgressHub => !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
@@ -1146,11 +1134,13 @@ namespace Olca.Application.Dungeon
             (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
         private void RefreshProgressActions()
         {
+            if(progressActionDialog!=null)progressActionDialog.RefreshLifetime();
+            if(retreatDialog!=null)retreatDialog.RefreshLifetime();
             if(manualSaveButton==null)return;
             bool allowProgressActions=!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
-            manualSaveButton.interactable=IsProgressHub&&!clearReturnSession.HasPendingSave;
-            newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame;
+            manualSaveButton.interactable=IsProgressHub&&(!clearReturnSession.HasPendingSave||CanResumeProgressAction);
+            newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
             manualSaveButton.transform.SetAsLastSibling();newGameButton.transform.SetAsLastSibling();
             if(customizationEditorButton!=null){
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
@@ -1166,49 +1156,35 @@ namespace Olca.Application.Dungeon
             if(clearReturnView!=null&&clearReturnView.gameObject.activeInHierarchy)
                 foreach(var button in new[]{customizationEditorButton,customizationUnlockButton,customizationAcquisitionButton})
                     if(button!=null&&button.gameObject.activeSelf&&button.transform.GetSiblingIndex()<clearReturnView.transform.GetSiblingIndex())button.transform.SetAsLastSibling();
-            if(progressDialogOpen&&managedProgressOwner!=null&&!managedProgressOwner.IsCurrent&&isActiveAndEnabled)CloseProgressAction();
-            if(progressDialogOpen)progressActionOverlay.transform.SetAsLastSibling();
+
         }
         private void ShowProgressAction(string message,bool confirm,bool canClose=true)
         {
-            if(!progressDialogOpen)progressActionFocus=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
-            EnsureProgressPanel();
-            progressDialogOpen=true;progressActionMessage.text=message;progressActionOverlay.SetActive(true);progressActionOverlay.transform.SetAsLastSibling();
-            progressConfirmButton.gameObject.SetActive(confirm);progressCancelButton.interactable=canClose;
-            progressCancelButton.GetComponentInChildren<Text>().text=newGameConfirmation?"取消して戻る":"閉じる";
-            progressCancelButton.navigation=confirm?new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=progressConfirmButton,selectOnRight=progressConfirmButton}:new Navigation{mode=Navigation.Mode.None};
-            progressConfirmButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=progressCancelButton,selectOnRight=progressCancelButton};
-            if(gameSystem!=null){OpenManagedProgressDialog();if(!progressDialogOpen)return;}
-            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(canClose?progressCancelButton.gameObject:progressConfirmButton.gameObject);RefreshProgressActions();
+            EnsureProgressPanel();progressActionDialog.OpenNotice(message,confirm,canClose,gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
+        }
+        private bool CanResumeProgressAction=>progressOperations!=null&&progressOperations.PendingAction!=Olca.Presentation.Management.ProgressPendingAction.None&&(IsProgressHub||awaitingCheckpointChoice);
+        private bool CanResumeNewGame=>CanResumeProgressAction&&progressOperations.PendingAction==Olca.Presentation.Management.ProgressPendingAction.NewGame;
+        private Olca.Application.Management.ProgressActionOperations ProgressOperations()
+        {
+            if(progressOperations!=null)return progressOperations;
+            var binding=hostPanels;var session=clearReturnSession;
+            return progressOperations=new Olca.Application.Management.ProgressActionOperations(session,()=>CanStartNewGame,()=>CreateCardFactory().CreateStarterDeck().GetAllCards(),()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&binding.IsAlive&&ReferenceEquals(clearReturnSession,session));
         }
         private void SaveProgressFromUi()
         {
             if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
-            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!IsProgressHub||clearReturnSession.HasPendingSave)return;
-            newGameConfirmation=false;
-            bool saved=clearReturnSession.ManualSave();
-            manualSavePending=!saved&&clearReturnSession.HasPendingSave;
-            ShowProgressAction(saved?"スロット1に保存しました。\n拠点の所持・成長・編成・図鑑を保存しました。\nダンジョンの途中状態は保存していません。":"保存できませんでした。スロット1の元データを保持しています。\n"+clearReturnSession.Error+"\n同じ内容で再試行してください。",manualSavePending,!manualSavePending);
-            if(!saved)progressConfirmButton.GetComponentInChildren<Text>().text="同じ保存を再試行";
+            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!IsProgressHub||clearReturnSession.HasPendingSave&&!CanResumeProgressAction)return;
+            EnsureProgressPanel();progressActionDialog.OpenManualSave(ProgressOperations(),gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
         }
         private void RequestNewGame()
         {
             if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
-            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!CanStartNewGame)return;
-            EnsureProgressPanel();
-            newGameConfirmation=true;confirmedProgressRevision=clearReturnSession.Snapshot.Revision;
-            progressConfirmButton.GetComponentInChildren<Text>().text="進行を初期化して開始";
-            ShowProgressAction("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で拠点から開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true);
+            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!(CanStartNewGame||CanResumeNewGame))return;
+            EnsureProgressPanel();progressActionDialog.OpenNewGame(ProgressOperations(),gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
         }
-        private void ConfirmNewGame()
+        private void ConfirmNewGame(){if(progressActionDialog!=null)progressActionDialog.ConfirmFromCompatibilityApi();}
+        private void ApplyNewGameResult()
         {
-            if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
-            if(!progressDialogOpen)return;
-            if(manualSavePending){if(clearReturnSession.Retry()){manualSavePending=false;ShowProgressAction("スロット1に保存しました。",false);}else ShowProgressAction("保存を再試行できませんでした。\n"+clearReturnSession.Error,true,false);return;}
-            if(!newGameConfirmation)return;
-            bool saved=newGameSavePending?clearReturnSession.Retry():CanStartNewGame&&clearReturnSession.StartNewGame(confirmedProgressRevision,CreateCardFactory().CreateStarterDeck().GetAllCards());
-            if(!saved){newGameSavePending=clearReturnSession.HasPendingSave;ShowProgressAction("新規開始の保存が完了していません。元の進行と同じ再試行計画を保持しています。\n"+clearReturnSession.Error,true,!newGameSavePending);progressConfirmButton.GetComponentInChildren<Text>().text="同じ新規開始を再試行";return;}
-            newGameSavePending=false;newGameConfirmation=false;CloseProgressAction();
             manager.SuspendForCheckpoint();combatFeedbackAudio?.Bind(null);battleSession?.Detach();transitionCts?.Cancel();battleView?.gameObject.SetActive(false);gameFieldView?.OnBattleEnded();
             awaitingCheckpointChoice=false;SetCheckpointPanelVisible(false);SetPausePanelVisible(false);initialHub=true;clearReturnVisible=true;
             dungeonSelectionOpen=false;selectedDungeon=selectionBeforeOpen=0;floorSwapPending=false;clearReturnError=null;nonClearReturnRequest=null;
@@ -1420,7 +1396,7 @@ namespace Olca.Application.Dungeon
 
         private bool endingRun;
         private RunReturnOutcome? nonClearReturnRequest;
-        private GameObject retreatConfirmation;
+        private GameObject retreatConfirmation=>retreatDialog!=null?retreatDialog.gameObject:null;
         private bool TryReadCurrentSavedRun(out RestoredCheckpoint source, out string key, out string error)
         {
             source = null; key = null; error = null;
@@ -1433,30 +1409,14 @@ namespace Olca.Application.Dungeon
             if (dto == null) { error = "攻略保存を読み込めません"; return false; }
             key = dto.DungeonId; return CheckpointCodec.TryRestore(dto, memoryCheckpoints.Definitions, out source, out error);
         }
+        private Olca.Presentation.Management.RetreatDialogState CaptureRetreatState()=>new Olca.Presentation.Management.RetreatDialogState(IsUserPaused,clearReturnVisible,endingRun,manager==null||manager.IsSuspended,manager==null||manager.Dungeon.IsCheckpointBlocked,manager==null||manager.CurrentPhase==GamePhase.GameOver||manager.CurrentPhase==GamePhase.DungeonCleared);
         private void RequestRetreat()
         {
-            if (!IsUserPaused || clearReturnVisible || endingRun || manager.IsSuspended || manager.Dungeon.IsCheckpointBlocked ||
-                manager.CurrentPhase == GamePhase.GameOver || manager.CurrentPhase == GamePhase.DungeonCleared) return;
-            if(gameSystem!=null){
-                var context=managedPauseView?.Context;if(context?.IsCurrent!=true||context.DialogBlocksInput)return;
-                EnsureRetreatPanel();
-                managedPauseView.CoverForDialog();
-                var request=context.ShowDialog(retreatConfirmation,managedRetreatConfirm,managedRetreatCancel,result=>{
-                    if(this==null||!isActiveAndEnabled||managedPauseView==null||!context.IsCurrent)return;
-                    managedPauseView.RestoreAfterDialog();
-                    if(result==Olca.Presentation.Management.DialogResult.Confirmed&&IsUserPaused&&!clearReturnVisible)EndRunWithoutRewards(RunReturnOutcome.Retreated);
-                });
-                // Busy/親終了の即時拒否では入力のない覆いを残さない。
-                if(request.IsCompleted&&request.Result!=Olca.Presentation.Management.DialogResult.Confirmed&&retreatConfirmation.activeSelf==false)managedPauseView.RestoreAfterDialog();
-                return;
-            }
-            EnsureRetreatPanel();SetPausePanelVisible(false); retreatConfirmation.SetActive(true);
+            if(manager==null||!Olca.Presentation.Management.RetreatConfirmationDialog.CanRequest(CaptureRetreatState(),gameSystem?.Dialogs,managedPauseView))return;
+            EnsureRetreatPanel();var binding=hostPanels;var runtime=manager;bool managed=gameSystem!=null;
+            retreatDialog.Open(CaptureRetreatState,gameSystem?.Dialogs,managedPauseView,pauseOverlay,()=>this!=null&&binding.IsAlive&&!runtimeReleased&&!runtimeReleasing&&ReferenceEquals(manager,runtime)&&(!managed||isActiveAndEnabled));
         }
-        private void ConfirmRetreat()
-        {
-            if (gameSystem!=null||!IsUserPaused || retreatConfirmation == null || !retreatConfirmation.activeSelf || clearReturnVisible) return;
-            EndRunWithoutRewards(RunReturnOutcome.Retreated);
-        }
+        private void ConfirmRetreat(){if(retreatDialog!=null)retreatDialog.ConfirmFromCompatibilityApi();}
         private void EndRunWithoutRewards(RunReturnOutcome outcome)
         {
             StopGamepadVibration();
@@ -1516,7 +1476,7 @@ namespace Olca.Application.Dungeon
             if (exchangeOpen) { ShowTokenExchange(); return; }
             if (styleSelectionOpen) { ShowStyleSelection(); return; }
             if (initialHub) { ShowDungeonSelection(); return; }
-            clearReturnVisible = true; transitionCts?.Cancel(); retreatConfirmation?.SetActive(false);
+            clearReturnVisible = true; transitionCts?.Cancel(); if(retreatDialog!=null)retreatDialog.Abort();
             SetCheckpointPanelVisible(false); SetPausePanelVisible(false); keyboardSettingsView?.DiscardAndClose();
             EnsureReturnView();
             clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.DisplayFlow,
@@ -1669,10 +1629,7 @@ namespace Olca.Application.Dungeon
             if(gameSystem!=null&&progressDialogOpen){systemMenu?.Suspend();systemMenuRoot=null;return;}
             if(gameSystem!=null&&managedPauseView?.BlocksInput==true){if(systemMenuRoot==pauseOverlay?.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=null;return;}
             GameObject root=null;string preferred=null;System.Action cancel=null;
-            Button Find(GameObject panel,string name)=>panel.transform.Find(name)?.GetComponent<Button>();
-            if(gameSystem==null&&progressDialogOpen&&progressActionOverlay.activeInHierarchy){root=progressActionOverlay;preferred=progressCancelButton.IsInteractable()?"CancelProgressAction":"ConfirmNewGame";cancel=()=>{if(progressCancelButton.IsInteractable())progressCancelButton.onClick.Invoke();};}
-            else if(gameSystem==null&&retreatConfirmation!=null&&retreatConfirmation.activeInHierarchy){root=retreatConfirmation;preferred="CancelRetreat";cancel=()=>Find(root,"CancelRetreat").onClick.Invoke();}
-            else if(checkpointOverlay!=null&&checkpointOverlay.activeInHierarchy){root=checkpointOverlay;preferred=checkpointReturnFocus??(manager.Dungeon.IsCheckpointBlocked?"RetryCheckpointButton":"ContinueCheckpointButton");checkpointReturnFocus=null;}
+            if(checkpointOverlay!=null&&checkpointOverlay.activeInHierarchy){root=checkpointOverlay;preferred=checkpointReturnFocus??(manager.Dungeon.IsCheckpointBlocked?"RetryCheckpointButton":"ContinueCheckpointButton");checkpointReturnFocus=null;}
             else if(pauseOverlay!=null&&pauseOverlay.activeInHierarchy&&IsUserPaused){root=pauseOverlay;preferred=managedPauseView?.TakeRestoredFocus()??pauseFocus;pauseFocus=preferred;cancel=()=>SetUserPaused(false);}
             var next=root!=null?root.transform:null;
             if(next!=systemMenuRoot){if(pauseOverlay!=null&&systemMenuRoot==pauseOverlay.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=next;if(next!=null){if(systemMenu==null)systemMenu=new MenuPadScope(()=>MenuPadScope.IsTopmost(systemMenuRoot),()=>systemMenuRoot==checkpointOverlay?.transform?new[]{newGameButton}:System.Array.Empty<Button>());systemMenu.Bind(next,preferred,cancel);}}
@@ -1838,8 +1795,8 @@ namespace Olca.Application.Dungeon
             inputProvider?.Dispose(); inputProvider = null;
             gamepadVibration?.Dispose(); gamepadVibration = null;
             if (!managedUiContent && pauseCanvas != null) { pauseCanvas.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(pauseCanvas); else DestroyImmediate(pauseCanvas); }
-            progressDialogScope?.Dispose();progressDialogScope=null;managedProgressOwner=null;progressDialogRequest=null;checkpointViews=null;managedCheckpointView=null;
-            pauseViewRegistered=false;pauseViews=null;managedPauseView=null;managedRetreatConfirm=managedRetreatCancel=null;
+            if(progressActionDialog!=null)progressActionDialog.Abort();if(retreatDialog!=null)retreatDialog.Abort();progressActionDialog=null;progressOperations=null;retreatDialog=null;checkpointViews=null;managedCheckpointView=null;
+            pauseViewRegistered=false;pauseViews=null;managedPauseView=null;
             pauseCanvas = null; manager = null; memoryCheckpoints = null; floorSession = null; floorStore = null; clearReturnSession = null;
             pendingCardChoices = null; automaticPauseOwner = null; logicalLoop.StartNewTimeline();
         }
@@ -2682,9 +2639,7 @@ namespace Olca.Application.Dungeon
             runtimeReleasing=true;
             try {
             // UnityのDestroy完了を待たずに、host終了時点で未移行親のDialog寿命も切る。
-            progressDialogScope?.Dispose();progressDialogScope=null;
-            if(managedProgressOwner!=null)gameSystem?.Dialogs.CancelOwner(managedProgressOwner);
-            managedProgressOwner=null;progressDialogRequest=null;if(progressActionOverlay!=null)progressActionOverlay.SetActive(false);
+            if(progressActionDialog!=null)progressActionDialog.Abort();if(retreatDialog!=null)retreatDialog.Abort();
             transitionCts?.Cancel();transitionCts?.Dispose();transitionCts=null;
             if(manager!=null){UnbindManagerEvents(manager);if(runtimeStarted)manager.SuspendForCheckpoint();}
             CancelExplorationResume(); explorationResumeLoop.Dispose();

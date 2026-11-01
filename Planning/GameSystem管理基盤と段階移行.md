@@ -691,12 +691,12 @@ Popupの実体leaseはbindingが保持し、表示ticketと結果・入力はDia
 
 第一回nativeのBootstrap初期状態は帰還Viewだけ生成され、他13表示は未生成だった。拠点の実raycast図鑑入口では、内部の時間停止が一度Pause表示も要求し、描画されないPauseを作ってから隠す経路を再現（所有実体9→11）。位置0/HP100/revision1と保存bytesは不変。図鑑が表示入力を所有する間はPause表示要求だけを抑え、既存SetUserPaused・時間停止/復帰・保存は変えない最小修正を加える。修正前関連519/同Editor96成功は原hash付きで保持し、最終版の成績に流用しない。
 
-### 個別Dialogの分離先（設計済み・まだ未実装）
+### 個別Dialogの分離先（第21段階で2機能を実装、残7機能）
 
 |現在の固有処理|分離先クラス|
 |---|---|
-|Controllerの進行確認/保存結果/再試行表示|`ProgressActionDialog`|
-|Controllerの撤退警告/確認結果|`RetreatConfirmationDialog`|
+|Controllerの進行確認/保存結果/再試行表示|`ProgressActionDialog`（第21段階で実装・検証）|
+|Controllerの撤退警告/確認結果|`RetreatConfirmationDialog`（第21段階で実装・検証）|
 |ClearReturnViewの編成破棄|`DeckDiscardDialog`|
 |ClearReturnViewの保存デッキ削除|`SavedDeckDeleteDialog`|
 |ClearReturnViewのカード/レシピ等読取詳細|`ReadOnlyDetailsDialog`（内容データを注入し同一の閲覧機能を共有）|
@@ -750,3 +750,24 @@ nativeのSingle再入自体はRoot/Camera/Listener/EventSystem各1・音源3、�
 FHD/4K/4:3の最終15枚を再取得し、独立code/visual必須指摘0。実操作時のconsole error0、UnityAIの接続情報保存read-only環境警告1件は製品問題と分離。ヘルパーcompileの長時間化・通常reloadの接続拒否/待機・120秒予算timeoutは履歴として保持し、同要求結果を回収してサイズ/Play/テストの不明な重複を避けた。環境/Editor137059/認証/モデルは維持、原因の推測や歴史的UGUI全般の解決扱いをしない。最終テスト前後は両RTの実640×360と専用TMPDIR/saveguardを確認。
 
 この結果は第20段階のfactory/binding単位の検証であり、個別Dialog9機能の実装完了ではない。上記5単位の必須移行と既存の未確認範囲を残す。
+
+### 第二十一段階: 個別進行・撤退Dialog（検証済み）
+
+`ProgressActionDialog`が進行確認/保存結果/失敗再試行の本文、ボタン可否、確認revision、表示modeと結果を所有する。`RetreatConfirmationDialog`が撤退警告、最新可否の照会、Pauseの覆い/復帰と確認結果を所有する。共通の小さな`OwnedPopup`はmanaged ticketと旧Scene用Menuの排他的な接続、世代無効化、開閉中の寿命だけを扱う。`DialogManager`へ種別switchや固有widget/保存依存は追加しない。
+
+Controllerは個別Dialogを必要時に取得し、型付き操作口/親寿命を渡して開始し、結果に応じて既存の新規開始・撤退フローを継続する。旧フィールド名の読取投影は同じDialogの状態だけを参照し、第二の状態/入力所有を持たない。`ProgressActionOperations`は既存`ClearReturnSession`への操作口であり、write plan・原子的保存・適用順序は引き続きSessionが所有する。既知pending操作の種類だけをhost寿命内で保持し、Dialog再生成で同じ計画をRetryできる。別機能由来の未知pendingは引き受けない。スターター生成や新規開始の保存を再試行のたびに作り直さない。
+
+この閉じた2機能の移行は検証済み。残必須は`DeckDiscardDialog`、`SavedDeckDeleteDialog`、`ReadOnlyDetailsDialog`、`BindingResetDialog`、`DialogueSkipDialog`、`DialogueBacklogDialog`、`CustomCardDetailsDialog`の7機能で、基盤必須完了とは判定しない。既存の実build/物理入力/聴感/全HotReload、製品データ登録、歴史的UGUI/Pipeline/CLI/UnityAI、登録外Sprite2095群の未確認は別に保持する。
+
+第21段階の安全fetchで`50ec65c`/`1dbb418`/`eb7e934753b5bddc7c5d2e5da9b8d940388fe09e`を保護。探索率へ回復/FT地点発見を含め、100%専用報酬なし・達成表示のみ、総件数非公開・整数切捨て・全対象解放時のみ100%。実績導入は候補で未確定。水中は左右移動/ジャンプを基本に速度/重力等が変わり、自由遊泳は基本としない。呼吸ゲージ枯渇は継続ダメージでなく死亡、対応style/特殊itemで無制限化可能。具体値等は順次決定。いずれも文書取得であり、第21段階で外界機能を実装しない。
+
+第21段階公開前のfetchで`d6ec493`/`bc3650b`/`fce65ea`/`713bb03c2917cadf5daaa96deedd81251b31d88b`の文書16行を保護。呼吸は水外で即全回復、無制限style解除時は満タン開始、探索停止中は減少せず制限あり水中のみ表示。水中攻撃は共通を基本に個別例外、着水で落下距離をリセットし水中着地も落下損害なし、接地中は通常dash可能。速度/重力/jumpの補正はstyle/装備で変更し、具体値は調整仮値と確定balanceを分けて記録。複数拠点の回復/編成/shop/NPC/依頼とFT、鍵/story/能力解放の貴重品枠（売却/破棄不可・通常非消費、event消滅例外）、クリア後世界/未完依頼継続を本文確認。文書取得のみで今回未実装、最終テスト後のcode/Asset差分はなし。
+
+
+第21段階最終版はApplication 528/528（59.63秒）、Integration 605/605（58.49秒）、同Editor2周 46/46、全件3640/3640（246.91秒）成功。skip/inconclusive/compile/error0、source5件の検証前後hash一致。全件警告は既存fixture診断として実メッセージ単位で分類し、抑制なし。FHD/4K/4:3の21枚と既存15参照で独立視覚必須指摘0、独立コード必須指摘0。
+
+隔離root21001のBootstrap実入口で、新規開始取消/同frame旧保存入力拒否、手動保存失敗→Disable/Enable→同一計画Retry、NewGame同ticket失敗/Retry、無効取消と旧確定、撤退取消/focus/再開、実撤退確定の進行保存失敗→通常帰還画面Retryと旧確定拒否を確認。進行保存失敗前後のbytes不変と、既存の撤退checkpoint書込みは別に保存。撤退でカード/通貨/経験値を重複付与せず、各故障storeはWrites2で元storeへ戻した。checkpoint確認取消の同frame旧Continue拒否、host Close/Open、Single再入、timeScale0終了、欠損/取消、旧bindingと入力/購読解放を実測。Root/Camera/Listener/EventSystem各1・音源3、終了後slot/Popup/Dialog0。
+
+Playは1回だけ要求。通常reloadでread-only WaitStarted jobが消失したことをAPIで確認してから同じPlayの状態だけ読取。compile要求/状態照会のPipeline timeoutとMCPのeditor_status名変換エラーは履歴保持し、最終compile完了/実640×360/専用TMPDIR/saveguardを照合してからテストした。旧失敗を消したりtimeoutだけで製品不具合と判定しない。最終cleanupは原本clean、既定保存先未生成、既存private URP2件を除く追跡Asset比較一致、機器/注入/proof/lease/既知生成資産/EventSystem解放、Native保存bytesはstopとテスト後も不変。
+
+通常push前のgateがremote進展で停止し、push未実行を確認。`d59495e68df5107fd542e92fe9af2c042a6a5e12`の文書1行（当面NG+周回引継ぎなし、将来第二部への一部引継ぎは後続企画）を保護。既存の進行初期化「はじめから」とは別仕様。未公開commitをbackupに保全して文書へrebaseし、検証済みSource/Asset byte不変を再照合、新baseでcheck/commit/pushを別々にやり直す。新機能実装なし。

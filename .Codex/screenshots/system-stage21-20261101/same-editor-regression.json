@@ -1,0 +1,413 @@
+{
+  "before": {
+    "playing": false,
+    "currentClrNull": true,
+    "currentUnityNull": true,
+    "registered": [],
+    "sceneEvents": []
+  },
+  "rounds": [
+    [
+      {
+        "filter": "個別進行Dialogは失敗と同計画再試行を所有し同frame二重実行を拒否する",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 8.52,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "進行Dialogの再生成は既知の未保存計画を新規保存せず引き継ぐ",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "進行DialogのSuspendResumeと親終了は旧callbackを失効させる",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "他Dialogが占有中の進行要求は保存前に拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "撤退Dialogは最新可否で判断し取消後の旧確定は次世代へ作用しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Checkpointの進行確認取消は同frameの親クリック遮断を解除しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "撤退確認中の古い図鑑操作を拒否し取消後に同じ停止状態で図鑑へ戻れる",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.36,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "UIRuntimeManagementTests",
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 2.1,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "GeneratedSpriteAssetsTests",
+        "summary": {
+          "total": 8,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 8.55,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      }
+    ],
+    [
+      {
+        "filter": "個別進行Dialogは失敗と同計画再試行を所有し同frame二重実行を拒否する",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "進行Dialogの再生成は既知の未保存計画を新規保存せず引き継ぐ",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "進行DialogのSuspendResumeと親終了は旧callbackを失効させる",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "他Dialogが占有中の進行要求は保存前に拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "撤退Dialogは最新可否で判断し取消後の旧確定は次世代へ作用しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Checkpointの進行確認取消は同frameの親クリック遮断を解除しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "撤退確認中の古い図鑑操作を拒否し取消後に同じ停止状態で図鑑へ戻れる",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.12,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "UIRuntimeManagementTests",
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "GeneratedSpriteAssetsTests",
+        "summary": {
+          "total": 8,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      }
+    ]
+  ],
+  "sameEditorNoDomainReloadBetweenRuns": true,
+  "staticListNeverClearedByHarness": true
+}
