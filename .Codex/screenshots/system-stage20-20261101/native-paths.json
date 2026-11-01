@@ -1,0 +1,2956 @@
+{
+  "initial": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": false,
+    "progress": false,
+    "owned": 9,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "gallery": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": true
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": false,
+    "progress": false,
+    "owned": 10,
+    "dialogs": 0,
+    "focus": "CardCollectionTab",
+    "paused": true,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CollectionCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "NextCollectionPage",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionTab",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "RecipeCollectionTab",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "PreviousCollectionPage",
+        "interactable": false
+      },
+      {
+        "name": "CloseCardCollection",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_1",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "galleryBack": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": false,
+    "progress": false,
+    "owned": 10,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "galleryReused": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": true
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": false,
+    "progress": false,
+    "owned": 10,
+    "dialogs": 0,
+    "focus": "CloseCardCollection",
+    "paused": true,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CollectionCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "RecipeCollectionTab",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "PreviousCollectionPage",
+        "interactable": false
+      },
+      {
+        "name": "CollectionCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CloseCardCollection",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "NextCollectionPage",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionTab",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "newGame": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": true,
+        "id": -295886450,
+        "active": true
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": false,
+    "progress": true,
+    "owned": 11,
+    "dialogs": 1,
+    "focus": "CancelProgressAction",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmNewGame",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "CancelProgressAction",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "newGameCancel": {
+    "sameFrameOldSaveRejected": true,
+    "sameFrame": {
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "bindings": [
+        {
+          "name": "pauseOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "checkpointOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "retreatConfirmation",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "progressActionOverlay",
+          "exists": true,
+          "id": -295886450,
+          "active": false
+        },
+        {
+          "name": "clearReturnView",
+          "exists": true,
+          "id": -295885100,
+          "active": true
+        },
+        {
+          "name": "cardCollectionView",
+          "exists": true,
+          "id": -295885588,
+          "active": false
+        },
+        {
+          "name": "customizationEditorView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationUnlockView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationAcquisitionView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "dialogueView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "basicAttackHud",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "explorationResumeLabel",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "currencyOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "itemRewardOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        }
+      ],
+      "revision": 1,
+      "pending": false,
+      "progress": false,
+      "owned": 11,
+      "dialogs": 0,
+      "focus": "NewGameButton",
+      "paused": false,
+      "views": null,
+      "buttons": [
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        }
+      ],
+      "rootId": -295883848,
+      "camera": 1,
+      "listeners": 1,
+      "events": 1,
+      "audio": 3,
+      "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+      "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+    },
+    "after": {
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "bindings": [
+        {
+          "name": "pauseOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "checkpointOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "retreatConfirmation",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "progressActionOverlay",
+          "exists": true,
+          "id": -295886450,
+          "active": false
+        },
+        {
+          "name": "clearReturnView",
+          "exists": true,
+          "id": -295885100,
+          "active": true
+        },
+        {
+          "name": "cardCollectionView",
+          "exists": true,
+          "id": -295885588,
+          "active": false
+        },
+        {
+          "name": "customizationEditorView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationUnlockView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationAcquisitionView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "dialogueView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "basicAttackHud",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "explorationResumeLabel",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "currencyOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "itemRewardOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        }
+      ],
+      "revision": 1,
+      "pending": false,
+      "progress": false,
+      "owned": 11,
+      "dialogs": 0,
+      "focus": "NewGameButton",
+      "paused": false,
+      "views": null,
+      "buttons": [
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        }
+      ],
+      "rootId": -295883848,
+      "camera": 1,
+      "listeners": 1,
+      "events": 1,
+      "audio": 3,
+      "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+      "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+    }
+  },
+  "saveFailed": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": true,
+        "id": -295886450,
+        "active": true
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": true,
+    "progress": true,
+    "owned": 11,
+    "dialogs": 1,
+    "focus": "ConfirmNewGame",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmNewGame",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "CancelProgressAction",
+        "interactable": false
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "disabledCancel": {
+    "disabledPointerPath": true,
+    "sameFrame": {
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "bindings": [
+        {
+          "name": "pauseOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "checkpointOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "retreatConfirmation",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "progressActionOverlay",
+          "exists": true,
+          "id": -295886450,
+          "active": true
+        },
+        {
+          "name": "clearReturnView",
+          "exists": true,
+          "id": -295885100,
+          "active": true
+        },
+        {
+          "name": "cardCollectionView",
+          "exists": true,
+          "id": -295885588,
+          "active": false
+        },
+        {
+          "name": "customizationEditorView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationUnlockView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationAcquisitionView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "dialogueView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "basicAttackHud",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "explorationResumeLabel",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "currencyOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "itemRewardOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        }
+      ],
+      "revision": 1,
+      "pending": true,
+      "progress": true,
+      "owned": 11,
+      "dialogs": 1,
+      "focus": "ConfirmNewGame",
+      "paused": false,
+      "views": null,
+      "buttons": [
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmNewGame",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelProgressAction",
+          "interactable": false
+        }
+      ],
+      "rootId": -295883848,
+      "camera": 1,
+      "listeners": 1,
+      "events": 1,
+      "audio": 3,
+      "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+      "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+    },
+    "after": {
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "bindings": [
+        {
+          "name": "pauseOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "checkpointOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "retreatConfirmation",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "progressActionOverlay",
+          "exists": true,
+          "id": -295886450,
+          "active": true
+        },
+        {
+          "name": "clearReturnView",
+          "exists": true,
+          "id": -295885100,
+          "active": true
+        },
+        {
+          "name": "cardCollectionView",
+          "exists": true,
+          "id": -295885588,
+          "active": false
+        },
+        {
+          "name": "customizationEditorView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationUnlockView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationAcquisitionView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "dialogueView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "basicAttackHud",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "explorationResumeLabel",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "currencyOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "itemRewardOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        }
+      ],
+      "revision": 1,
+      "pending": true,
+      "progress": true,
+      "owned": 11,
+      "dialogs": 1,
+      "focus": "ConfirmNewGame",
+      "paused": false,
+      "views": null,
+      "buttons": [
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmNewGame",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelProgressAction",
+          "interactable": false
+        }
+      ],
+      "rootId": -295883848,
+      "camera": 1,
+      "listeners": 1,
+      "events": 1,
+      "audio": 3,
+      "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+      "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+    }
+  },
+  "saveRetried": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": true,
+        "id": -295886450,
+        "active": true
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 2,
+    "pending": false,
+    "progress": true,
+    "owned": 11,
+    "dialogs": 1,
+    "focus": "CancelProgressAction",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "CancelProgressAction",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "restoredStore": {
+    "writes": 2,
+    "state": {
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "bindings": [
+        {
+          "name": "pauseOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "checkpointOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "retreatConfirmation",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "progressActionOverlay",
+          "exists": true,
+          "id": -295886450,
+          "active": false
+        },
+        {
+          "name": "clearReturnView",
+          "exists": true,
+          "id": -295885100,
+          "active": true
+        },
+        {
+          "name": "cardCollectionView",
+          "exists": true,
+          "id": -295885588,
+          "active": false
+        },
+        {
+          "name": "customizationEditorView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationUnlockView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "customizationAcquisitionView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "dialogueView",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "basicAttackHud",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "explorationResumeLabel",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "currencyOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        },
+        {
+          "name": "itemRewardOverlay",
+          "exists": false,
+          "id": 0,
+          "active": false
+        }
+      ],
+      "revision": 2,
+      "pending": false,
+      "progress": false,
+      "owned": 11,
+      "dialogs": 0,
+      "focus": "ManualSaveButton",
+      "paused": false,
+      "views": null,
+      "buttons": [
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        }
+      ],
+      "rootId": -295883848,
+      "camera": 1,
+      "listeners": 1,
+      "events": 1,
+      "audio": 3,
+      "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+      "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+    }
+  },
+  "explicitPause": {
+    "phase": "Dungeon",
+    "position": 3.733,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": true,
+        "id": -295887128,
+        "active": true
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": true,
+        "id": -295886450,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": false
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -295886958,
+        "active": true
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 13,
+    "dialogs": 0,
+    "focus": "ResumeButton",
+    "paused": true,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "retreat": {
+    "phase": "Dungeon",
+    "position": 3.733,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": true,
+        "id": -295887128,
+        "active": true
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": true,
+        "id": -295887514,
+        "active": true
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": true,
+        "id": -295886450,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": false
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -295886958,
+        "active": true
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 14,
+    "dialogs": 1,
+    "focus": "CancelRetreat",
+    "paused": true,
+    "views": null,
+    "buttons": [
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "CancelRetreat",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmRetreat",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "dialogueCreated": {
+    "phase": "Dungeon",
+    "position": 14.8,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": true,
+        "id": -295887128,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": true,
+        "id": -295887514,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": true,
+        "id": -295886450,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -295885100,
+        "active": false
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": true,
+        "id": -295885588,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": true,
+        "id": -295887608,
+        "active": true
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -295886958,
+        "active": true
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": true,
+        "id": -295887596,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 15,
+    "dialogs": 0,
+    "focus": "DialogueNext",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "DialogueSkip",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      },
+      {
+        "name": "DialogueHistory",
+        "interactable": true
+      },
+      {
+        "name": "DialogueFast",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "DialoguePause",
+        "interactable": true
+      },
+      {
+        "name": "DialogueNext",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "dialogueEnded": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "battleFieldReady": false,
+    "managerSuspended": false,
+    "checkpointBlocked": false,
+    "awaitingCheckpoint": false,
+    "visit": false,
+    "worldFrame": 121,
+    "battleFrame": null,
+    "position": 16.133,
+    "hp": 100,
+    "currency": 0,
+    "deck": 20,
+    "dialogue": false,
+    "open": null,
+    "index": null,
+    "version": null,
+    "visible": null,
+    "choices": null,
+    "backlog": null,
+    "skip": null,
+    "history": null,
+    "sessionPaused": null,
+    "userPaused": false,
+    "dialogs": 0,
+    "popup": false,
+    "context": false,
+    "view": false,
+    "layer": null,
+    "ownerBound": false,
+    "text": "このカイワをシュウリョウしますか？",
+    "normalized": 1,
+    "content": 420,
+    "viewport": 440,
+    "focus": null,
+    "focusId": null,
+    "finished": 1,
+    "reason": "Skipped",
+    "root": -295883848,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      }
+    ]
+  },
+  "closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 922462134,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -295883848,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -295883854,
+        -295883860,
+        -295883866
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "closedBinding": {
+    "bindingAlive": false,
+    "slots": 0,
+    "popups": 0,
+    "session": false,
+    "dialogs": 0,
+    "owned": 3
+  },
+  "opened": {
+    "duplicateOpenSucceeded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 922462134,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -295883848,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -295883926,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -295887800
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -295883854,
+        -295883860,
+        -295883866
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage20-20003/settings"
+    }
+  },
+  "checkpoint": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": true,
+        "id": -295888986,
+        "active": true
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 9,
+    "dialogs": 0,
+    "focus": "ContinueCheckpointButton",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ContinueCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "continued": {
+    "phase": "Dungeon",
+    "position": 1.466,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": true,
+        "id": -295888986,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -295889328,
+        "active": true
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 10,
+    "dialogs": 0,
+    "focus": "ContinueCheckpointButton",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -295883848,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "c0e2e09a-fbd7-4f94-8396-21f1343d9d6f",
+    "presentation": "a2515ff8-d08c-4ad2-b3e7-051e2a6b5e2e"
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -295887800,
+    "newControllerId": -295889502,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 598033123,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -295883848,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -295883926,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -295889502
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -295883854,
+        -295883860,
+        -295883866
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage20-20003/settings"
+    }
+  },
+  "initialSaveHashes": {
+    "progress/progress.json": "e8f47d960986f9b6a4f91fcdc01345bd6fb6a8890d189fae67b112adfc153cf6"
+  },
+  "manualSaveHashes": {
+    "progress/progress.json": "1caaedca48febcd4bc8285ffe90b619be26707a78753df3401fa0b9def5bfb7a",
+    "progress/progress.backup.json": "e8f47d960986f9b6a4f91fcdc01345bd6fb6a8890d189fae67b112adfc153cf6"
+  },
+  "checkpointBeforeIntentionalSuspend": {
+    "progress/progress.json": "bbdd7c7defcd7a6577d0a382055f6b8d1ac51a339a344e581d828603c80816cc",
+    "progress/progress.backup.json": "1caaedca48febcd4bc8285ffe90b619be26707a78753df3401fa0b9def5bfb7a",
+    "checkpoints/runs/a829f13828114f8aa7a9fd19911a4017/active.json": "2fa93d3294cd25c6bb579422e7b250cd61f82be20ea5c8b2d2ad7bb5c843352a"
+  },
+  "checkpointSaveHashes": {
+    "progress/progress.json": "bbdd7c7defcd7a6577d0a382055f6b8d1ac51a339a344e581d828603c80816cc",
+    "progress/progress.backup.json": "1caaedca48febcd4bc8285ffe90b619be26707a78753df3401fa0b9def5bfb7a",
+    "checkpoints/runs/a829f13828114f8aa7a9fd19911a4017/active.json": "2fa93d3294cd25c6bb579422e7b250cd61f82be20ea5c8b2d2ad7bb5c843352a"
+  },
+  "beforeSingle": {
+    "progress/progress.json": "bbdd7c7defcd7a6577d0a382055f6b8d1ac51a339a344e581d828603c80816cc",
+    "progress/progress.backup.json": "1caaedca48febcd4bc8285ffe90b619be26707a78753df3401fa0b9def5bfb7a",
+    "checkpoints/runs/a829f13828114f8aa7a9fd19911a4017/active.json": "2fa93d3294cd25c6bb579422e7b250cd61f82be20ea5c8b2d2ad7bb5c843352a"
+  },
+  "afterSingle": {
+    "progress/progress.json": "bbdd7c7defcd7a6577d0a382055f6b8d1ac51a339a344e581d828603c80816cc",
+    "progress/progress.backup.json": "1caaedca48febcd4bc8285ffe90b619be26707a78753df3401fa0b9def5bfb7a",
+    "checkpoints/runs/a829f13828114f8aa7a9fd19911a4017/active.json": "2fa93d3294cd25c6bb579422e7b250cd61f82be20ea5c8b2d2ad7bb5c843352a"
+  },
+  "missingCancel": {
+    "actualMissingPrefabRejected": true,
+    "canceledAfterRealPrefabCreatedBeforePreparation": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 922462134,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -295883848,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -295883854,
+        -295883860,
+        -295883866
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "boundaryNote": "Read/cancel/failure bytes invariance separate from existing intentional checkpoint suspension write; observed byte differences retained, no new save rule.",
+  "finalSaveHashes": {
+    "progress/progress.json": "bbdd7c7defcd7a6577d0a382055f6b8d1ac51a339a344e581d828603c80816cc",
+    "progress/progress.backup.json": "1caaedca48febcd4bc8285ffe90b619be26707a78753df3401fa0b9def5bfb7a",
+    "checkpoints/runs/a829f13828114f8aa7a9fd19911a4017/active.json": "2fa93d3294cd25c6bb579422e7b250cd61f82be20ea5c8b2d2ad7bb5c843352a"
+  },
+  "physicalInputNotRun": true
+}

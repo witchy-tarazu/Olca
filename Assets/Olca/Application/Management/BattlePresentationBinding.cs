@@ -56,3 +56,78 @@ namespace Olca.Application.Management
         }
     }
 }
+
+namespace Olca.Application.Management
+{
+    /// <summary>hostの必要時表示とPopup資源を束縛する。ゲーム状態と保存処理を所有しない。</summary>
+    public sealed class HostPanelBindings : IDisposable
+    {
+        private sealed class Slot
+        {
+            public ViewManager Layer;
+            public Func<GameObject> Factory;
+            public GameObject Instance;
+        }
+        private readonly System.Collections.Generic.Dictionary<string,Slot> slots=new System.Collections.Generic.Dictionary<string,Slot>();
+        private readonly System.Collections.Generic.Dictionary<string,ResourceManager.InstanceLease> popups=new System.Collections.Generic.Dictionary<string,ResourceManager.InstanceLease>();
+        private readonly ResourceManager resources;
+        private readonly ViewManager views;
+        private readonly object owner;
+        private bool disposed;
+        public bool IsAlive=>!disposed;
+        public HostPanelBindings(object owner,Transform parent,ResourceManager resources,ViewManager views){this.owner=owner??throw new ArgumentNullException(nameof(owner));this.resources=resources;this.views=views;parent.gameObject.AddComponent<HostPanelLifetime>().Bind(this);}
+        public void Register(string key,string layer,Func<GameObject> factory,Action<GameObject,ManagedScreenContext> show,Action<GameObject> hide)
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(HostPanelBindings));
+            var slot=new Slot{Factory=factory,Layer=views?.GetLayer(layer)};slots.Add(key,slot);
+            if(slot.Layer!=null)slot.Layer.Register(owner,key,ct=>{
+                ct.ThrowIfCancellationRequested();if(disposed)throw new OperationCanceledException();
+                return Task.FromResult(slot.Instance=factory());
+            },show,hide);
+        }
+        /// <summary>既存の同期Render前に生成とcontextを確定する。表示しない先行生成は行わない。</summary>
+        public GameObject Show(string key)
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(HostPanelBindings));
+            var slot=slots[key];
+            if(slot.Layer==null){if(slot.Instance==null)slot.Instance=slot.Factory();return slot.Instance;}
+            using(var cancellation=new CancellationTokenSource()){
+                var task=slot.Layer.ShowAsync(key,cancellation.Token);
+                if(!task.IsCompleted){cancellation.Cancel();throw new InvalidOperationException("同期表示factoryの完了を待てません: "+key);}
+                var result=task.GetAwaiter().GetResult();if(!result.Succeeded)throw new InvalidOperationException(result.Error??"表示が取り消されました: "+key);
+            }
+            return slot.Instance;
+        }
+        public GameObject Popup(string key,Func<GameObject> factory)
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(HostPanelBindings));
+            if(popups.TryGetValue(key,out var prior)&&prior.Instance!=null)return prior.Instance;
+            prior?.Dispose();
+            if(resources==null){if(slots.TryGetValue(key,out var cached)&&cached.Instance!=null)return cached.Instance;var instance=factory();slots[key]=new Slot{Instance=instance};return instance;}
+            // factoryはUnityの同期組立のみ。非同期ロードをブロックして待たない。
+            var task=resources.CreateAsync(ct=>Task.FromResult(factory()),CancellationToken.None);
+            if(!task.IsCompleted)throw new InvalidOperationException("同期Popup factoryが完了していません");
+            var lease=task.GetAwaiter().GetResult();popups[key]=lease;return lease.Instance;
+        }
+        public void Dispose()
+        {
+            if(disposed)return;disposed=true;
+            // Popupの親context/callbackを先に返し、その後に借用部品を破棄する。
+            foreach(var slot in slots.Values)slot.Layer?.UnregisterOwner(owner);
+            foreach(var lease in popups.Values)lease.Dispose();popups.Clear();
+            if(views==null)foreach(var slot in slots.Values)if(slot.Instance!=null){slot.Instance.SetActive(false);if(UnityEngine.Application.isPlaying)UnityEngine.Object.Destroy(slot.Instance);else UnityEngine.Object.DestroyImmediate(slot.Instance);}
+            foreach(var slot in slots.Values){slot.Factory=null;slot.Instance=null;slot.Layer=null;}slots.Clear();
+        }
+    }
+}
+
+namespace Olca.Application.Management
+{
+    /// <summary>Sessionのcontent破棄からも生成leaseを返す。ゲーム状態には触れない。</summary>
+    public sealed class HostPanelLifetime:MonoBehaviour
+    {
+        private HostPanelBindings binding;
+        public void Bind(HostPanelBindings value){binding=value;}
+        private void OnDestroy(){var value=binding;binding=null;value?.Dispose();}
+    }
+}

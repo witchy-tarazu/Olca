@@ -1,0 +1,191 @@
+[
+  {
+    "file": "return-hub-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "ea9f4830e595af2488e28037abf50216bebe218844dbc5f877410e9e82765bc4",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "return-hub-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "0858c8e87080a527a8417bba52b3899780dbeb99824dca38808f3ee25bfd2108",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "return-hub-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "9c8c782d43f34c5a277c1a756d00a54676c78b5d942fe42b3565a54784c5a5b1",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "progress-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "6ce3ea10ddd45c171effcc7c8cc36b06dfb22b991cc2505f75fcca199b368544",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "progress-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "8ff535c8c91300bf48354592acbbd6b78619edf4b2ec92c7a3d31b055a9cef64",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "progress-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b291fd77deead20c415464a5d78283d7f582f274fe4a121023dc8743d4ac3607",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "c89b08a4f380aeab0e48b5d0c366e8f547712815ed33d6990a8286ee7d45bc85",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f2c4aeeff7857ae94ae0b8dc73af608d09c6f18c24a0a806a4ae43ef4e9defb0",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "5af0c6f9642b372cf24f386473cb6fe9cff85ff28953386952f0fbd5b359333d",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "pause-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "8f255db02e6e79d3b1f3e8a1a56673465ed5fdf90abcb83b7bcbb6316c59beea",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "pause-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "3ff5c5155a2cc1ff18a80b4ae593e4420ccef42f87b701104cbbcb52bea60adb",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "pause-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "564a53b05bb3055272b15cc4b861fdf87bd4e6f90df9a779dd918cc18b306ac7",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "checkpoint-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "c9415747afb086a71d41fe750aa1efe45c65255a9ec73df710bd4830cd11bf1c",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "checkpoint-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "0bf083c01aba0775d07b1c2bf95cd72979bc8cbcbace6d66e2d1978b97268a05",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "checkpoint-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "182d32e4e0a167bacd77d95147756d21c69e5efa7794395b28144608634a06b3",
+    "kind": "actual isolated Bootstrap entry, held logical frame during ratio capture, forcedCanvas, actual RenderTexture verified"
+  },
+  {
+    "file": "before-return-hub-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "4cf35c5f941a20fd90870e10c9cc7885db1b1e6d7816e6370d481761e9f90530",
+    "kind": "preserved actual before z-order fix; same Dungeon/position0/HP100 and hub revision1 or checkpoint revision3; no cross-run global-frame equality claim"
+  },
+  {
+    "file": "before-return-hub-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "80ba2d33fd884ad8d646b11116194fcebf7f2f3dcb950aa4dae371b60c5a7d29",
+    "kind": "preserved actual before z-order fix; same Dungeon/position0/HP100 and hub revision1 or checkpoint revision3; no cross-run global-frame equality claim"
+  },
+  {
+    "file": "before-return-hub-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "2b3bb662659f2bb2488e921d9f8036be6f779b9d0c87793a5a2d084ec8c2a927",
+    "kind": "preserved actual before z-order fix; same Dungeon/position0/HP100 and hub revision1 or checkpoint revision3; no cross-run global-frame equality claim"
+  },
+  {
+    "file": "before-checkpoint-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "c966e8bbca502531938d96c1bd986071cf3e48c080df359344bbab42639e230b",
+    "kind": "preserved actual before z-order fix; same Dungeon/position0/HP100 and hub revision1 or checkpoint revision3; no cross-run global-frame equality claim"
+  },
+  {
+    "file": "before-checkpoint-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "0cd3df71ab09567d2e7427ddba5a52802147a45918fad3e115a8079a9c388096",
+    "kind": "preserved actual before z-order fix; same Dungeon/position0/HP100 and hub revision1 or checkpoint revision3; no cross-run global-frame equality claim"
+  },
+  {
+    "file": "before-checkpoint-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "d7d743dc05e42a4f4cce872c0e6f4c478a19790ff8757927bd1e0b47a14f69e6",
+    "kind": "preserved actual before z-order fix; same Dungeon/position0/HP100 and hub revision1 or checkpoint revision3; no cross-run global-frame equality claim"
+  }
+]

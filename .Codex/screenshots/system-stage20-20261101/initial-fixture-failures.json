@@ -1,0 +1,130 @@
+{
+  "failures": {
+    "zorder-initial-fixture-failure": {
+      "summary": {
+        "total": 521,
+        "passed": 519,
+        "failed": 2,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "failedResults": [
+        {
+          "FullName": "Olca.Tests.Application.GameSystemManagementTests.帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる(False)",
+          "Status": "Failed",
+          "Duration": 0.0058785,
+          "Message": "  Expected: True\n  But was:  False\n",
+          "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる (System.Boolean registered) [0x00014] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:428\n"
+        },
+        {
+          "FullName": "Olca.Tests.Application.GameSystemManagementTests.帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる(True)",
+          "Status": "Failed",
+          "Duration": 0.0013433,
+          "Message": "  Expected: True\n  But was:  False\n",
+          "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる (System.Boolean registered) [0x00014] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:428\n"
+        }
+      ]
+    },
+    "checkpoint-inactive-fixture-failure": {
+      "summary": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "failedResults": [
+        {
+          "FullName": "Olca.Tests.Integration.CheckpointFlowTests.Checkpoint選択待ちでは未生成の操作HUDが案内の前に生成されない",
+          "Status": "Failed",
+          "Duration": 0.1249473,
+          "Message": "System.Reflection.TargetInvocationException : Exception has been thrown by the target of an invocation.\n  ----> System.NullReferenceException : Object reference not set to an instance of an object",
+          "StackTrace": "  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <1d26c8856bcb48938402e0be7f5cc174>:0 \n  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <1d26c8856bcb48938402e0be7f5cc174>:0 \n  at Olca.Tests.Integration.CheckpointFlowTests.<Checkpoint選択待ちでは未生成の操作HUDが案内の前に生成されない>g__Call|6_2 (System.String n, Olca.Tests.Integration.CheckpointFlowTests+<>c__DisplayClass6_0& ) [0x00000] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:1056 \n  at Olca.Tests.Integration.CheckpointFlowTests.Checkpoint選択待ちでは未生成の操作HUDが案内の前に生成されない () [0x0006e] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:1058 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 \n--NullReferenceException\n  at Olca.Application.Dungeon.DungeonBattleController.ShowCheckpointStatus (System.String message) [0x0003a] in /workspace/olca-validation-20261024/project/Assets/Olca/Application/Dungeon/DungeonBattleController.cs:756 \n  at Olca.Application.Dungeon.DungeonBattleController.CreatePauseControls () [0x004d7] in /workspace/olca-validation-20261024/project/Assets/Olca/Application/Dungeon/DungeonBattleController.cs:1041 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+        }
+      ]
+    }
+  },
+  "corrections": [
+    "Read-loaded MemoryClearReturnStore is not INewClearReturnStore: use Ready profile for chrome fixture without unrelated starter distribution",
+    "Checkpoint fixture host active like real entry before CreatePauseControls; unchanged awaiting choice and no-HUD assertions"
+  ],
+  "productConditionsOrExpectedBehaviorWeakened": false,
+  "criticalCaseSubsetBeforeLastFixtureOnlyEdit": {
+    "results": [
+      {
+        "status": "completed",
+        "duration": 10.13,
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "results": [
+          {
+            "FullName": "Olca.Tests.Application.GameSystemManagementTests.帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる(False)",
+            "Status": "Passed",
+            "Duration": 4.1924365,
+            "Message": null,
+            "StackTrace": null
+          },
+          {
+            "FullName": "Olca.Tests.Application.GameSystemManagementTests.帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる(True)",
+            "Status": "Passed",
+            "Duration": 0.0108982,
+            "Message": null,
+            "StackTrace": null
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "duration": 0.14,
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "results": [
+          {
+            "FullName": "Olca.Tests.Integration.CheckpointFlowTests.Checkpoint選択待ちでは未生成の操作HUDが案内の前に生成されない(False)",
+            "Status": "Passed",
+            "Duration": 0.1166762,
+            "Message": null,
+            "StackTrace": null
+          },
+          {
+            "FullName": "Olca.Tests.Integration.CheckpointFlowTests.Checkpoint選択待ちでは未生成の操作HUDが案内の前に生成されない(True)",
+            "Status": "Passed",
+            "Duration": 0.0072757,
+            "Message": null,
+            "StackTrace": null
+          }
+        ]
+      }
+    ],
+    "actualRender": {
+      "screen": [
+        640,
+        360
+      ],
+      "textures": [
+        {
+          "name": "GameView.m_RenderTexture",
+          "width": 640,
+          "height": 360
+        },
+        {
+          "name": "PlayModeView.m_TargetTexture",
+          "width": 640,
+          "height": 360
+        }
+      ],
+      "temp": "/workspace/olca-validation-20261024/save/tmp/",
+      "playing": false
+    }
+  }
+}

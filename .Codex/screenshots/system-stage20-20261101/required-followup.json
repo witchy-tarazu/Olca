@@ -1,0 +1,20 @@
+{
+  "systemMigrationAllComplete": false,
+  "dialogManagerGeneric": true,
+  "individualDialogClassesNotImplemented": [
+    "ProgressActionDialog",
+    "RetreatConfirmationDialog",
+    "DeckDiscardDialog",
+    "SavedDeckDeleteDialog",
+    "ReadOnlyDetailsDialog",
+    "BindingResetDialog",
+    "DialogueSkipDialog",
+    "DialogueBacklogDialog",
+    "CustomCardDetailsDialog"
+  ],
+  "nextBoundedScope": "ProgressActionDialog and RetreatConfirmationDialog, keep existing flow/save domain services",
+  "optionalNotMandatory": [
+    "Serialize every internal widget as a prefab",
+    "Rename already managed factories purely for abstraction"
+  ]
+}

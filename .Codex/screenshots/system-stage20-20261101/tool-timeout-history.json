@@ -1,0 +1,17 @@
+{
+  "source": "Observed tracked CLI job result in worker tool output at 2026-11-01T15:49:08Z; historical job fetch later reported pruned after domain reload",
+  "jobId": "b4de74a74aea4e598b6a743be33db9fb",
+  "targetPid": 137059,
+  "command": "run_script FlowAspectProof.Small",
+  "compileMs": 206464,
+  "executeMs": 32,
+  "executionTimeMs": 206507,
+  "success": false,
+  "error": "Timeout",
+  "errorDetails": "The entry point's Task did not complete within the 120000ms budget (0ms remained after the synchronous part). The task keeps running detached and its effects may still land; raise timeout_ms if it legitimately needs longer.",
+  "operationNotResent": true,
+  "actualEffectsVerifiedSeparately": "system-stage20-critical-after-detached-render.json",
+  "actualTextures640x360": true,
+  "futureHelperTimeoutMs": 300000,
+  "gameTimingChanged": false
+}

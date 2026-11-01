@@ -1,0 +1,10 @@
+{
+  "sameVmEditorPid": 137059,
+  "modelCredentialsAndOriginalPreserved": true,
+  "playRequests": "One per explicit validation epoch; stop before source fixes; final isolated epoch20002",
+  "uncertainOperationsNotResent": true,
+  "oldNativeCollectionStop": "Single reentry succeeded; helper assumed unwrapped result instead of nested state. Saved receipt recovered, no reentry resend.",
+  "coldRenderTimeout": "tool-timeout-history.json",
+  "initialFixtureFailures": "initial-fixture-failures.json",
+  "historicalUGUIPipelineCLIUnityAIUnresolvedOrUntestedPreserved": true
+}
