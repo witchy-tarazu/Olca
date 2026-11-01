@@ -1,0 +1,19 @@
+{
+  "pulled": {
+    "HEAD": "aafdecba163ff615cd7a320896204c261efca345",
+    "ac9f6be": "ac9f6be5ec8ccc5be149936e4b28854772080946"
+  },
+  "changedFiles": [
+    "Planning/ゲーム全体仕様.md"
+  ],
+  "confirmed": [
+    "メインストーリー分岐は攻略順変更。会話選択肢で進行先を決める方式ではない",
+    "最終的には全主要エリア・ボスを攻略",
+    "外界敵の強さはレベル連動なし、エリア・敵ごとの固定設定",
+    "主要対象と別に寄り道エリア・任意ボス",
+    "複数エンディングは未決のまま"
+  ],
+  "implementation": "documentation acquired only; no exploration/story mechanics implemented in Stage18",
+  "codeImpact": false,
+  "localStage18WorkPreserved": true
+}

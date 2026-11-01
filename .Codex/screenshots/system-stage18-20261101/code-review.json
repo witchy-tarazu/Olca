@@ -1,0 +1,269 @@
+{
+  "scope": "Stage18 initial independent static review: Custom details borrowed popup under DialogManager; custom-specific input remains sole custom menu owner",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "1d615a3288cea3e0634e70bfda6a75509380f2e3416578db4fae84cea6fbb363",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "7031b93b6cd26a7d5f9b5a56ad5e8071e8e590e737553bf913e2aa848900deb8",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "7f45b7f82d56a0a2a9e1870a5cedbb5cfa95714edd3bfdec5a0288990a4d7de7",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "68af40694f84fc9b5bb52478be9a6cbce1f54a1aebe7e7b3db956671dfae3233"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "ShowNotice optional manageMenu=false avoids new MenuPadScope ownership; all existing callers retain manageMenu=true/inputAllowed default.",
+    "Ticket callback checks owner/current/button native active/interactable and optional custom inputAllowed; legacy popup path retains version-guarded close.",
+    "Details owner predicate follows live active Custom/model open/not confirming; OnDisable/model close/reset cancel active ticket and clear popup; explicit terminal release disposes owner before model/resource teardown.",
+    "Ticket open/close advances padViewVersion, invalidating previously queued custom confirmation/selection callbacks; pointer/background/LIFO/Undo/customize/logical confirm entries reject details and closing frame.",
+    "Cycle buttons are rebuilt with detailsVersion/current visibility/input-active guards; close callback belongs to ticket identity and cannot close next ticket after reopen.",
+    "Existing custom keyboard/pad close routes to managed close button, not a second independent close handler; scroll remains existing custom direction path.",
+    "Generated detail property icons clear from text when closing; popup background sprite remains borrowed import, not destroyed.",
+    "No hand count, selected-order/LIFO, cost calculation, fixed logical frame or save logic changed."
+  ],
+  "testsRead": [
+    "Two parameter cases: actual Custom prefab/model, queued confirmation before details, modal background operations model invariant, scroll overflow/text retained, manageMenu null",
+    "Close and next ticket stale callback rejection, parent release/model close, imported background survival and resource owner disposal"
+  ],
+  "limits": [
+    "Final4 source matches related511,Custom382,material22,full3619 success and76 same-Editor; native/visual complete; cleanup complete and reviewed.",
+    "Read-only source review; no Unity/MCP/test invocation or product edits.",
+    "Native remapped custom pad vs menu profile, actual touch close/cycle, focus and held-close same-frame behavior need dynamic validation.",
+    "No claim all Custom lifetime/visual states or physical input paths are defect-free."
+  ],
+  "initialSourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "2dbaecfce73086663153f04da7d86f979efdcd2481e2aa734117a61d38d4b858",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "87e457bb030346bb84288f32d1f687443c93cd860ec578dfff05ff762353d69c",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "aceaabf78cc4b251a793233d0b3fed36e3212171917e30ba17ce10d08918a23a",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "8181c07b8427e96b8df0be5e9ebc133395b5e83f1a42004e796c6c740f553fbb"
+  },
+  "cancelCustomizationRereview": {
+    "unresolvedRequiredFindings": 0,
+    "correction": "OnCustomizeModeCancelled now rejects DetailsInputBlocked before clearing material selection or issuing model command; regression retains selected-material list under background cancel.",
+    "changedFiles": [
+      "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs"
+    ],
+    "allFourMirrored": true,
+    "limits": [
+      "Initial compile success predates this extra guard/assert.",
+      "Final explicit recompile pending normal DomainReload recovery; tests not started."
+    ]
+  },
+  "reviewHistory": [
+    {
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "2dbaecfce73086663153f04da7d86f979efdcd2481e2aa734117a61d38d4b858",
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "30dc82bb4acc982f0e17a983b926b34a806d451832b0cf3f830111d805a5e9a2",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "aceaabf78cc4b251a793233d0b3fed36e3212171917e30ba17ce10d08918a23a",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "5e17b4de80547040f7cf42902e47b15378873f49e08d23eb5a2681cdd01a9bcb"
+      },
+      "stage": "before terminal customScreen-null guard"
+    },
+    {
+      "findings": [
+        {
+          "id": "S18-SYSTEM-PAUSE-TICKET",
+          "description": "Custom details owner stays current while system pause is active; only inputAllowed becomes false. Controller ApplyUserPauseImmediate does not release details. The global DialogManager single ticket therefore rejects managed pause Retreat confirmation and settings Reset with Busy while the Custom details panel is behind pause. Prior unmanaged details did not reserve this ticket.",
+          "sourceEvidence": [
+            "CustomScreenView.ShowDetailsValue owner predicate excludes system pause; IsCustomPadUiActive used only as inputAllowed",
+            "DungeonBattleController.RequestAutomaticPause/OnGamepadDisconnected -> SetUserPaused -> ApplyUserPauseImmediate",
+            "RequestRetreat -> pauseContext.ShowDialog -> DialogManager.ShowCore current-other-owner returnsBusy"
+          ],
+          "recommendation": "Explicitly release Custom details ticket when entering system pause, preserving model/selection. If visual reopen preservation is required, define scoped suspend/resume separately rather than retaining an exclusive inactive ticket.",
+          "boundary": "Static reachable-path finding; actual native sequence not independently executed."
+        }
+      ],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "2dbaecfce73086663153f04da7d86f979efdcd2481e2aa734117a61d38d4b858",
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "bd6c3ee129efcd0a78af2b596422c253423eb3855a2a86590f5f436bddb3472c",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "aceaabf78cc4b251a793233d0b3fed36e3212171917e30ba17ce10d08918a23a",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "d0d4eda5cdd7df0eaf05b7981fcf6919b0660f6ea8481871d49deb7a18a13776"
+      }
+    },
+    {
+      "findings": [
+        {
+          "id": "S18-TEST-NOTICE-SIGNATURE",
+          "description": "New pauseOwner ShowNotice test call omits required ScrollRect argument before completed callback; add null scroll. Static precompile finding."
+        },
+        {
+          "id": "S18-TEST-REOPEN-FOCUS",
+          "description": "Added pause notice selects then clears its own close focus. Direct ShowDetailsValue reopen therefore captures null origin, contradicting preserved final origin-focus assertion. Select the fixture origin before reopen to retain original focus contract assertion."
+        }
+      ],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "1d615a3288cea3e0634e70bfda6a75509380f2e3416578db4fae84cea6fbb363",
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "7031b93b6cd26a7d5f9b5a56ad5e8071e8e590e737553bf913e2aa848900deb8",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "aceaabf78cc4b251a793233d0b3fed36e3212171917e30ba17ce10d08918a23a",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "e8f8a07906896ad4597bd5178c711966c2df91a6d554e25cbc1c8d0af3b6f851"
+      }
+    },
+    {
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "1d615a3288cea3e0634e70bfda6a75509380f2e3416578db4fae84cea6fbb363",
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "7031b93b6cd26a7d5f9b5a56ad5e8071e8e590e737553bf913e2aa848900deb8",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "aceaabf78cc4b251a793233d0b3fed36e3212171917e30ba17ce10d08918a23a",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "e8f8a07906896ad4597bd5178c711966c2df91a6d554e25cbc1c8d0af3b6f851"
+      },
+      "issue": "Runtime manageMenu=false ticket had Menu=null; Tick used current?.Menu.Tick and threw NRE. Initial independent review missed this nullable member dereference."
+    }
+  ],
+  "terminalCallbackRereview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "DetailsInputBlocked rejects customScreen==null before any old callback can dereference model.",
+      "Parent-release regression invokes old card/confirm/customize-cancel while native View may still exist and expects no throw.",
+      "Guard affects model-less/uninitialized or terminal views only; initialized current Custom logic unchanged."
+    ],
+    "allFourMirrored": true,
+    "limits": [
+      "Tests not started; final compile pending previous assembly-request terminal status.",
+      "Outer timeout does not establish previous request completion; reviewer issued no Unity calls."
+    ]
+  },
+  "relatedReceiptReview": {
+    "receipt": "system-stage18-related-test-result.json",
+    "summary": {
+      "total": 511,
+      "passed": 511,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 54.29,
+    "consoleErrors": 0,
+    "finalFourHashesMatchSubmissionProject": true,
+    "includes": [
+      "Menu-null Tick correction",
+      "System-pause detail ticket handoff",
+      "Final source fixtures"
+    ],
+    "unresolvedRequiredFindings": 0,
+    "pending": []
+  },
+  "pausePrioritySupplement": {
+    "findings": [
+      {
+        "id": "S18-SYSTEM-PAUSE-TICKET",
+        "description": "Custom details owner stays current while system pause is active; only inputAllowed becomes false. Controller ApplyUserPauseImmediate does not release details. The global DialogManager single ticket therefore rejects managed pause Retreat confirmation and settings Reset with Busy while the Custom details panel is behind pause. Prior unmanaged details did not reserve this ticket.",
+        "sourceEvidence": [
+          "CustomScreenView.ShowDetailsValue owner predicate excludes system pause; IsCustomPadUiActive used only as inputAllowed",
+          "DungeonBattleController.RequestAutomaticPause/OnGamepadDisconnected -> SetUserPaused -> ApplyUserPauseImmediate",
+          "RequestRetreat -> pauseContext.ShowDialog -> DialogManager.ShowCore current-other-owner returnsBusy"
+        ],
+        "recommendation": "Explicitly release Custom details ticket when entering system pause, preserving model/selection. If visual reopen preservation is required, define scoped suspend/resume separately rather than retaining an exclusive inactive ticket.",
+        "boundary": "Static reachable-path finding; actual native sequence not independently executed."
+      }
+    ],
+    "sourceHashesUnchanged": true,
+    "additionalRegressionParentReport": "Custom382/382 and material22/22 passed; does not cover this multi-owner pause competition."
+  },
+  "pauseHandoffRereview": {
+    "productRequiredFindings": 0,
+    "resolved": "Controller closes only managed Custom detail ticket after manager pause succeeds; legacy unmanaged detail unchanged, model/selection unchanged, ParentClosed path does not restore underlying focus.",
+    "limits": [
+      "Latest4 hashes submission-only; project still old Play candidate, not mirrored/compiled/tested.",
+      "Earlier511+382+22 results apply to pre-handoff source only.",
+      "Native old-source reproduction pending; no Unity actions by reviewer."
+    ]
+  },
+  "pauseHandoffFinalStatic": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "Required null ScrollRect argument added to Notice fixture call.",
+      "Origin selected immediately before direct detail reopen; original focus-restore assertion retained.",
+      "Controller handoff occurs after manager.SetUserPaused(true) and before pause UI reveal; early unchanged/blocked pause return does not release unrelated details.",
+      "CloseDetailsForSystemPause is a no-op when detailsDialogs null, preserving unmanaged direct Scene/test behavior.",
+      "Managed ParentClosed release invalidates old ticket with no underlying focus restore; model/hand/selection not modified."
+    ],
+    "limits": [
+      "Latest submission not mirrored/compiled/tested.",
+      "511+382+22 passed receipts are pre-handoff source; retained as history, not final validation.",
+      "Read-only reviewer issued no Unity calls."
+    ]
+  },
+  "nullMenuRuntimeCorrection": {
+    "unresolvedRequiredFindings": 0,
+    "runtimeFailureReceipt": "system-stage18-reproduced-menu-null-error-history.json",
+    "correction": "DialogManager.Tick now current?.Menu?.Tick(); both parameter cases explicitly assert Tick does not throw while ticket Menu null.",
+    "reviewAccountability": "Initial static review confirmed no second Menu owner but missed Tick dereferencing null Menu. This was a product exception, not an environment warning or permitted diagnostic.",
+    "otherMenuReferences": "ShowCore Bind is inside manageMenu allocation; ConfirmAttempt retry Bind is reachable only for persistent tickets, whose public API uses default manageMenu=true. Close already null-conditional.",
+    "limits": [
+      "Latest4 source mirrored, explicit recompile running.",
+      "No post-fix tests yet; prior successful suites do not validate this correction.",
+      "Reviewer performed no Unity operations or source changes.",
+      "Post-fix latest511/511 related result now verified in relatedReceiptReview; prior no-test statements describe earlier review time only."
+    ]
+  },
+  "nativeReceiptReview": {
+    "unresolvedRequiredFindings": 0,
+    "sourceFourUnchangedSubmissionProject": true,
+    "receipts": [
+      "system-stage18-native-details-result.json",
+      "system-stage18-native-lifetime-result.json",
+      "system-stage18-native-console-classification.json"
+    ],
+    "confirmed": [
+      "Native virtual TouchHold/details/focus and oldconfirm rejection retain selected1/hand4/cost1/frame0 from initial5",
+      "Long-text scroll tail at3 ratios; self/enemy cycle stale callback rejected",
+      "Pause releases Custom ticket; retreat dialog opens/cancels and Custom resumes; old detail close cannot cancel retreat ticket",
+      "Reading bytes invariant before intentional deselect/confirm; explicit confirm alone advances logical frame",
+      "Close/Open/checkpoint/Single release old owner/view/manager refs and preserve borrowed import; final missing/cancel byte comparison measured"
+    ],
+    "consoleBoundary": "Strict console guard stopped on actual Pipeline command resolution/status alias/tool timeout history, productErrors0 for that classified capture; cleanup only resumed, prior completed host operations not replayed. Initial product NRE remains separate failure history.",
+    "limits": [
+      "First-suspend before/after local hashes were not persisted; no reconstructed hash claimed. Final suspension explicitly measured.",
+      "Physical touch not run; native evidence uses virtual TouchState.",
+      "76 same-Editor pass and9 images/3 native4K crops0 are parent/separate-review reports; full3619 currently running, not counted passed."
+    ]
+  },
+  "finalValidationReview": {
+    "unresolvedRequiredFindings": 0,
+    "finalFourHashesMatchSubmissionProjectRelatedFull": true,
+    "full": {
+      "receipt": "system-stage18-final-test-result.json",
+      "summary": {
+        "total": 3619,
+        "passed": 3619,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 306.43,
+      "consoleErrors": 0,
+      "consoleWarnings": 59
+    },
+    "sameEditor": {
+      "receipt": "system-stage18-event-regression.json",
+      "passed": 76
+    },
+    "warningReceipt": "system-stage18-warnings.json",
+    "warningCategoriesParentSummary": {
+      "cardRewardViewMissing": 50,
+      "settingsLoadNegativeCases": 4,
+      "invalidPhaseRewardSelection": 2,
+      "noCards": 2,
+      "damagePoolLimit": 1
+    },
+    "nativeAndVisual": "Separate native details/lifetime and9images+3crops reviewed previously; not inferred from test suite",
+    "pending": [],
+    "limits": [
+      "Initial product Menu-null NRE and missed static finding retained in reviewHistory/nullMenuRuntimeCorrection.",
+      "CLI status alias/timeout diagnostic and helper recovery separate from product exception.",
+      "Physical touch/devices/build/audio remain unverified; first-suspend local hashes not reconstructed."
+    ]
+  },
+  "cleanupFinalization": {
+    "receipt": "system-stage18-cleanup.json",
+    "unresolvedRequiredFindings": 0,
+    "confirmed": [
+      "Original clean;928 asset comparison matches except existing2 private URP settings",
+      "640x360 both RT/TMP/storage guard restored; native Mouse/Keyboard only",
+      "EventSystem/generated registry/proof/fault keys cleared",
+      "Unknown2095 historical Sprite baseline retained",
+      "Native4 save file bytes unchanged after full tests"
+    ],
+    "specUpdateReceipt": "system-stage18-spec-update.json",
+    "scope": "Latest remote specification document only incorporated; final4 source hashes still match tested source; no added mechanic implementation.",
+    "publication": "Not yet published",
+    "frozen": true
+  }
+}

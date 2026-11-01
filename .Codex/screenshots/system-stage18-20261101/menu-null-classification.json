@@ -1,0 +1,15 @@
+{
+  "classification": "Stage18 product regression, not historical UGUI or environment: optional standard Menu is null but Tick dereferenced it",
+  "sampleReturned": 99,
+  "firstSampleUtc": "2026-11-01T11:11:02.045129Z",
+  "lastSampleUtc": "2026-11-01T11:11:04.573985Z",
+  "historicalCounts": {
+    "error": 749,
+    "warn": 2,
+    "log": 42
+  },
+  "samplesTailOnly": true,
+  "fix": "current?.Menu?.Tick(); targeted regression explicitly calls Tick while Custom ticket Menu=null",
+  "verification": "Final4source related511/511, full3619/3619, sameEditor76 and actual native dialog paths pass. Final native console productErrors0; fresh final full consoleErrors0. Initial failure remains archived.",
+  "notSuppressed": true
+}

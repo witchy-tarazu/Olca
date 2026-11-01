@@ -1,0 +1,36 @@
+{
+  "results": [
+    {
+      "filter": "Olca.Tests.CustomScreenCostViewTests",
+      "summary": {
+        "total": 382,
+        "passed": 382,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 31.01
+    },
+    {
+      "filter": "Olca.Tests.CustomizeMaterialBoundaryTests",
+      "summary": {
+        "total": 22,
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.13
+    }
+  ],
+  "groundTruth": {
+    "sampledUtc": "2026-11-01T11:35:05.695728Z",
+    "ageMs": 101,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 16,
+    "seeded": true
+  }
+}

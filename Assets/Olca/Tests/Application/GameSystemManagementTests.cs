@@ -464,5 +464,29 @@ namespace Olca.Tests.Application
                 Call("ReleasePresentationBindings");Assert.IsNull(type.GetField("resourceRewardMenu",flags).GetValue(controller));Assert.IsNull(type.GetField("resourceRewardViews",flags).GetValue(controller));views.UnregisterOwner(controller);Assert.AreEqual(0,resources.OwnedInstanceCount);
             }finally{UnityEngine.Object.DestroyImmediate(controller);GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
         }
+        [TestCase(false)][TestCase(true)]
+        public void Custom詳細はDialog世代と親終了を守り閲覧で手札と選択を変更しない(bool parentClose)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var pause=typeof(GameplayPause);var release=pause.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var frames=pause.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);bool wasPaused=GameplayPause.IsPaused;var wasRelease=release.GetValue(null);var wasFrames=frames.GetValue(null);
+            var binding=new BattlePresentationBinding(owner,resources,views,host.transform);var v=binding.Custom;var type=v.GetType();
+            object Call(string n,params object[] args)=>type.GetMethod(n,flags).Invoke(v,args);
+            try{
+                GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();
+                binding.Battle.gameObject.SetActive(true);v.gameObject.SetActive(true);v.ConfigureDetailsManagement(dialogs);
+                var f=new Olca.Application.Battle.SimpleCardFactory();var model=new Olca.Core.Logic.Battle.CustomScreenSystem(new Olca.Core.Domain.Deck(Enumerable.Range(0,5).Select(_=>f.CreateById("sword")).ToList()));model.Open(Array.Empty<Olca.Core.Domain.Card>(),new Olca.Tests.Mocks.MockRandomProvider());v.Initialize(model);
+                var hand=model.CurrentHand.ToArray();var cost=model.GetTotalUsedCost();var origin=Button(host,"detail-origin");EventSystem.current.SetSelectedGameObject(origin.gameObject);Action queued=null;v.ConfigureLogicalConfirmation((_,action)=>queued=action,()=>0L);Call("OnConfirmClicked");Assert.NotNull(queued);
+                Call("ShowDetailsValue","セイノウ\n"+string.Concat(Enumerable.Repeat("ナガイ セツメイ\n",80))+"オワリ");Assert.AreEqual(1,dialogs.ActiveCount);var panel=v.transform.Find("CustomPadDetails").gameObject;var text=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="CustomPadDetailsText");var scroll=panel.GetComponentInChildren<ScrollRect>();Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);StringAssert.EndsWith("オワリ",text.text);
+                var ticket=typeof(DialogManager).GetField("current",flags).GetValue(dialogs);var stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("CancelAction").GetValue(ticket);Assert.IsNull(ticket.GetType().GetField("Menu").GetValue(ticket),"Custom割当と標準menuの二重入力は作らない");Assert.DoesNotThrow(()=>dialogs.Tick(),"Custom固有入力のticketもRootの更新を通す");
+                var materials=(List<Olca.Core.Domain.Card>)type.GetField("customizeSelectedCards",flags).GetValue(v);materials.Add(hand[0]);queued();v.OnCardClicked(hand[0]);Call("CancelSelection");Call("OnCustomizeModeCancelled");Assert.AreEqual(1,materials.Count);Call("OnConfirmClicked");Assert.IsFalse(model.IsConfirming);CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(0,model.SelectedCards.Count);Assert.AreEqual(cost,model.GetTotalUsedCost());
+                var imported=panel.GetComponent<Image>().sprite;Assert.NotNull(imported);
+                // pause側の確認が同じDialogManagerを使えるよう、Customのモデルを維持して所有を返す。
+                v.CloseDetailsForSystemPause();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);Assert.IsTrue(model.IsOpen);Assert.IsFalse(model.IsConfirming);CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(cost,model.GetTotalUsedCost());
+                using(var pauseOwner=dialogs.CreateOwner(()=>true)){var pausePanel=Panel("pause-detail-handoff");var pauseClose=Button(pausePanel,"pause-close");var pauseRequest=dialogs.ShowNotice(pauseOwner,pausePanel,pauseClose,null,_=>{});Assert.AreEqual(1,dialogs.ActiveCount);stale();Assert.AreEqual(1,dialogs.ActiveCount);pauseClose.onClick.Invoke();Assert.IsTrue(pauseRequest.IsCompleted);}
+                frame++;EventSystem.current.SetSelectedGameObject(origin.gameObject);Call("ShowDetailsValue","ポーズ カラ フッキ");Assert.AreEqual(1,dialogs.ActiveCount);ticket=typeof(DialogManager).GetField("current",flags).GetValue(dialogs);stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("CancelAction").GetValue(ticket);
+                if(parentClose){v.ReleaseSessionPresentation();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);Assert.IsNull(type.GetField("detailsOwner",flags).GetValue(v));stale();Assert.DoesNotThrow(()=>v.OnCardClicked(hand[0]));Assert.DoesNotThrow(()=>Call("OnConfirmClicked"));Assert.DoesNotThrow(()=>Call("OnCustomizeModeCancelled"));Assert.IsFalse(model.IsConfirming);}
+                else{stale();Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreSame(origin.gameObject,EventSystem.current.currentSelectedGameObject);queued();v.OnCardClicked(hand[0]);Call("OnConfirmClicked");Assert.IsFalse(model.IsConfirming);Assert.AreEqual(0,model.SelectedCards.Count);frame++;Call("ShowDetailsValue","ミジカイ セツメイ");Assert.AreEqual(1,dialogs.ActiveCount);stale();Assert.AreEqual(1,dialogs.ActiveCount);model.Close();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);}
+                CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(cost,model.GetTotalUsedCost());binding.Dispose();Assert.IsTrue(imported!=null);Assert.AreEqual(0,resources.OwnedInstanceCount);
+            }finally{binding.Dispose();GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
+        }
     }
 }

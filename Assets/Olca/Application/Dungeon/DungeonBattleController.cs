@@ -282,7 +282,7 @@ namespace Olca.Application.Dungeon
         {
             if(!UnityEngine.Application.isPlaying||gameSystem==null||gameFieldView==null||battleView!=null||customScreenView!=null)return;
             managedBattlePresentation=new Olca.Application.Management.BattlePresentationBinding(this,gameSystem.Resources,gameSystem.Views,gameFieldView.transform);
-            battleView=managedBattlePresentation.Battle;customScreenView=managedBattlePresentation.Custom;
+            battleView=managedBattlePresentation.Battle;customScreenView=managedBattlePresentation.Custom;customScreenView.ConfigureDetailsManagement(gameSystem.Dialogs);
         }
         public void ConfigureManagedCamera(Olca.Application.Management.GameSystem services)
         {
@@ -962,6 +962,7 @@ namespace Olca.Application.Dungeon
             logicalLoop.Observe(!DialogueOpen && !manager.IsUserPaused && !awaitingCheckpointChoice && !manager.Dungeon.IsCheckpointBlocked && Time.timeScale > 0);
             ResetTouchInput(preserveCharge: true);
             manager.SetUserPaused(paused);
+            if(paused&&customScreenView!=null)customScreenView.CloseDetailsForSystemPause();
             if(dialogue!=null)dialogue.IsPaused=paused;
             dialogueLoop.Observe(false);
             gameplayAudio?.SetPaused(paused||!isActiveAndEnabled);

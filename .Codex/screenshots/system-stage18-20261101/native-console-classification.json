@@ -1,0 +1,26 @@
+{
+  "productErrors": 0,
+  "counts": {
+    "error": 2,
+    "warn": 1,
+    "log": 132
+  },
+  "groundTruth": {
+    "sampledUtc": "2026-11-01T11:47:14.810116Z",
+    "ageMs": 145,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 2,
+    "consoleWarnings": 1,
+    "consoleLogs": 116,
+    "seeded": true
+  },
+  "toolHistory": [
+    "Pipeline MainThread120000 timeout",
+    "Unity CLI status probes unavailable editor status alias; actual available command is editor_status"
+  ],
+  "warningsRetained": true,
+  "notSuppressed": true,
+  "guardStoppedBeforeCleanup": true,
+  "resumeScope": "finish remaining final close/cleanup only; previous CloseOpen/Single not rerun"
+}
