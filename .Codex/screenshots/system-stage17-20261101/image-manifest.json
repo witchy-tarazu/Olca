@@ -1,0 +1,83 @@
+[
+  {
+    "file": "item-reward-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "07ca12f23c609a205ed7a8adfff58d971804d92ed221f1c6001ef67ee82e4b9b",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "item-reward-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "4b6eb56197a27ab6c0d2866771da254ad452784792b3d5d9b757069ed98316b8",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "item-reward-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "d7b0716b969a0d5b510a0bb9fb4bae2c25269a1423a884ce327145cd22aac7b7",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "currency-reward-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "c7b32129e5fb8d7df14f338d6ffbd5fe4694bb09667ecd37210a9caa650e6edc",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "currency-reward-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "76312a54867b85c107d064f536cbff3d0ce74f7a745bd3012a06e281ae11f7d9",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "currency-reward-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "5dcb237aa30fafef8bc8924456b2fb5f6dd0ba9c6da6157b98aa7243eb4ee6aa",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "reward-checkpoint-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "32c6a8abd417c328c9b2ff7b26b19abd8050f67d434d66c53892d71bd6535536",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "reward-checkpoint-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "165d956cba250a6e285e83c514a701e169ca76112c72ed3ea38e6b77ae49569c",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  },
+  {
+    "file": "reward-checkpoint-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "e9029f2aa3229db3bcd6ae2f718d0b3c00910cec9970067735f7f6f9ce4a219a",
+    "kind": "actual standard Bootstrap/reward UI; held logical frame/forcedCanvas, unchanged existing reward plan, no matched-before"
+  }
+]

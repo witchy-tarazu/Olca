@@ -1,0 +1,121 @@
+{
+  "scope": "Stage17 independent static code/design review: existing currency/item reward panels managed under resource-reward ViewManager layer; no reward calculation/save changes",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "6b2f7e6c25e02818e6f4ff4ba97c7597dc16648116d5e1ce0ac3f04ed603eaeb",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "54ce8c467c13c588a18e1d72184ce9a6a67e2721fc9a9996a6c77ae4b0ff1908"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "correctedFindings": [
+    {
+      "id": "S17-DISABLE-PENDING",
+      "initial": "New OnDisable cancellation terminated HandleBattleEndAsync without OnEnable re-presentation, leaving pending reward without UI.",
+      "correction": "Removed new OnDisable reward cancellation, preserving existing pending choice across Disable/Enable. Explicit host release still cancels."
+    },
+    {
+      "id": "S17-CROSS-PANEL-CONTEXT",
+      "initial": "new.Show overwrote shared context before old.Hide, which could NotifyHidden on new context.",
+      "correction": "Panel-keyed context dictionary; Show records per-panel context only, old.Hide notifies its own context. Bind assigns active root/context/choice after successful show."
+    }
+  ],
+  "checked": [
+    "Hide clears active choice/menu/root before canceling previous source, avoiding synchronous finally reentry closing a new waiting view.",
+    "CloseResourceReward optional choice identity rejects stale finally cleanup; per-field completion source reset uses ReferenceEquals.",
+    "Bind moved inside wait try/finally so failed/cancelled show still clears field.",
+    "Each rebind replaces button UnityEvent capturing original choice/context/token; old events cannot select next waiter; blocked/disabled checks remain.",
+    "Reward model selection remains scheduled after GameplayPause.WaitAsync with original manager identity; no amount/heal/save timing change found.",
+    "Terminal release cancels waits, hides panels, disposes shared menu, clears contexts and layer ref before Session teardown.",
+    "Parameterized2 regressions cover old events/dialog block, parent close, Disable/Enable pending retention, both cross-panel switch directions and explicit release/unregister."
+  ],
+  "limits": [
+    "Final2 source matches509 related and3617 final full results;72 same-Editor and cleanup complete.",
+    "Actual assembly verified by parent; native connection wait has ended and recorded operations completed.",
+    "No Unity/MCP/test invocation or product modifications by reviewer.",
+    "No physical device/build or all asynchronous interleavings guarantee."
+  ],
+  "relatedReceiptReview": {
+    "receipt": "system-stage17-related-test-result.json",
+    "summary": {
+      "total": 509,
+      "passed": 509,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 53.6,
+    "consoleErrors": 0,
+    "finalTwoHashesMatchSubmissionProject": true,
+    "assemblyProofParentReport": {
+      "mvid": "5428a283-0453-4ea5-a882-11fb40195c74",
+      "panelContexts": true
+    },
+    "unresolvedRequiredFindings": 0,
+    "pending": []
+  },
+  "nativeReceiptReview": {
+    "unresolvedRequiredFindings": 0,
+    "sourceTwoUnchanged": true,
+    "receipts": [
+      "system-stage17-native-rewards-result.json",
+      "system-stage17-native-lifetime-result.json"
+    ],
+    "confirmed": [
+      "Item existing heal20 changes HP79->99; item pending survives Disable/Enable; paused/stale events rejected",
+      "Currency checkpoint failure retains currency0/uncommitted result; same session retry yields currency10 and RewardCompleted disk snapshot HP99/currency10; fault attempts2 then real store restored",
+      "Pending unaccepted item Close/restore retains reward; old events do not consume new waiter",
+      "Close/Open and Single reuse Root/audio, release old input/panels/bindings, restore one active Camera/Listener/EventSystem",
+      "Host-stop save comparison honors existing SuspendForCheckpoint boundary, not a blanket no-write promise",
+      "Native final console errors0/warnings0"
+    ],
+    "helperHistoryBoundary": [
+      "Helper compile argument error is compile-only/no execution",
+      "Global behind-visit PauseButton is correctly occluded/rejected; actual PauseVisit used, no product input bypass"
+    ],
+    "visual": "9 native images reviewed0 by separate reviewer (parent report)",
+    "pending": [],
+    "limits": [
+      "Native receipts operated by parent, read-only independent review here.",
+      "Virtual input is not physical device verification.",
+      "No new product reward amounts or fabricated plan definitions; fixture only accelerates battle victory using existing API."
+    ]
+  },
+  "finalValidationReview": {
+    "unresolvedRequiredFindings": 0,
+    "frozen": true,
+    "finalFull": {
+      "receipt": "system-stage17-final-test-result.json",
+      "summary": {
+        "total": 3617,
+        "passed": 3617,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 276.78,
+      "consoleErrors": 0,
+      "consoleWarnings": 59
+    },
+    "sameEditor": {
+      "receipt": "system-stage17-event-regression.json",
+      "passed": 72,
+      "failed": 0
+    },
+    "finalTwoHashesMatchSubmissionProjectFull": true,
+    "cleanup": {
+      "receipt": "system-stage17-cleanup.json",
+      "confirmed": [
+        "Original clean;928 assets match excluding existing2 private URP settings",
+        "Native4 saved file bytes unchanged after stop/tests",
+        "640/TMP/storage guard restored; native devices only",
+        "Event registry and generated cache/leases cleared; proof/fault keys absent",
+        "Historical2095 named Sprites retained, not claimed resolved"
+      ]
+    },
+    "publication": "Not yet published",
+    "limits": [
+      "59 existing fixture warnings remain; no zero-warning claim.",
+      "Physical build/device/audio and historical Editor issues outside scope.",
+      "No Unity/test/product edits by independent reviewer."
+    ]
+  }
+}

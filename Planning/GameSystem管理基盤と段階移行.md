@@ -528,3 +528,38 @@ CustomizationLoadoutView（編集草稿と配置）、CustomizationUnlockView（
 [第十六段階証跡](../.Codex/screenshots/system-stage16-20261101/README.md)
 
 停止後cleanupは実640×360/両RT・専用TMPDIR/saveguard・原本clean・928対象Asset一致（従来private URP2例外）を確認。native Mouse/Keyboardのみ、EventSystem登録0、生成registry/root/borrow/pending0、fault/proof捕捉参照なし、最終隔離progress2ファイルbytesは全件後も不変。登録外Sprite2095基準群は未特定のまま保持。GameplayPauseはIsPaused=false/awaitRelease=true/resumeFrames=2の既存neutral待ちを記録し、強制解除していない。
+
+
+## 第十七段階: 通貨/アイテム報酬overlay
+
+CurrencyRewardPanel/ItemRewardPanelは報酬待機の画面であり、確認Popupとは分けてViewManagerのresource-reward層へ登録する。既存panelの実体はResourceManager.InstanceLeaseが追跡し、表示/Close/親終了/host終端で管理contextを通す。計算・上限・SelectItemReward/SelectCurrencyReward・論理Schedule・checkpoint保存順は既存Controller/Coreへ残す。受取/スキップは現在のchoiceへ一度だけ応答し、Popupが必要ならそのcontextを親とするDialogManagerへ委譲する。
+
+表示ごとにbuttonのUnityEventを新しくし、旧eventは旧choiceとcontextを捕捉する。背面Dialog・pause/解除入力barrier・閉鎖世代からの操作は次の報酬へ届かない。共有menuは現在root/contextを動的に確認し、閉鎖でSuspend、終端でDisposeする。ViewManagerのnew.Show→old.Hide順へ合わせcontextはpanel別に追跡し、旧Hideが新contextを解除しない。choice/rootを先に外して取消し、同期finally再入も新画面へ作用させない。
+
+Controllerの一時Disable→Enableでは、既存報酬choice待機を維持する。OnDisableで取消すと再提示経路がなくCardRewardへ残るため、その変更は採用しない。host終了/管理Close/取消は既存待機を取消し、受取判断を実行しない。Bind失敗もtry/finallyで待機fieldを返す。内部Initializeのpanel組立/必要時Prefab分解は未完で、登録だけで全画面移行完了とはしない。
+
+検証完了後に実績を記録する。残必須はCustomPadDetails、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。前段階の製品stat実値・極端な長名末尾、2095基準Sprite、歴史的UGUI/Pipeline/CLI/UnityAI、実build/物理入力/聴感/全HotReloadの未確認を保持し、新外界機能や未決値は混ぜない。
+
+
+### 第十七段階の実操作確認
+
+最終2sourceで関連509/509（53.6秒）成功。実Bootstrapの通常出撃/接敵/Custom確定から既存報酬計画を提示した。勝利だけを従来の被害API fixtureで進め、UI受取は実raycast入口を使用。未受取Itemでhostを終了し、保存bytesと未確定報酬を変えず、checkpoint再開後に再提示した。Disable→Enableの同じchoice待機、pause中の旧受取拒否、再開後の既存heal20によるHP79→99、Item旧eventが次のCurrency待機へ作用しないことを確認した。HP差分用の被害21は隔離検証のみで、製品値を登録/変更していない。
+
+通貨受取の実checkpoint保存境界で一度だけ書込前失敗を注入し、disk bytes/確定通貨0を保持、既存RetryCheckpointButtonで失敗1+成功1の2試行、RewardCompletedのdisk/Last HP99・通貨10を確認した。PendingCurrencyは既存Coreが未保存checkpoint計画へ移すため0になり得るが、その計画を再試行して確定する。選択処理や保留の定義をUI移行に合わせて変えていない。以後の探索/訪問を含むlive HP100と、報酬境界の保存HP99は異なる時点として区別する。host停止時の既存Suspend処理が常に新checkpointを書けるとは仮定しない。
+
+Close/Open、欠損/取消/重複要求、Single再入で旧2panel/menu/choice参照を解放し、Root/音源を再利用、活動中Camera/Listener/EventSystem各1・音源3、host終了で共通Resource3を保持した。FHD/4K/4:3の原寸9画像を独立視覚確認し必須0。matched-before未撮影、画像だけで入力/保存/寿命や物理機器を証明したとはしない。Itemの実スキップ操作など未実施経路は、両種の選択/取消を含む管理回帰と既存Core回帰と区別する。
+
+最初の実操作helperはPlayer.TakeDamageの引数型を誤り、実行0で修正した。終了時には訪問画面の背後のPauseButtonが実raycastで遮断されたため、表示中のPauseVisitを使った。遮断を迂回せず、helper誤りと製品不具合を分けて証跡へ保存する。初回静的レビューのDisable取消とnew.Show/old.Hide順の問題は動的検証前に修正した。
+
+compile/Play開始時の通常DomainReloadとPipeline timeoutを保持。同じEditorで待機し、DLL時刻・Refresh完了・新relay・fresh groundTruthを照合して復帰後に実操作を再開した。VM/Editor/モデル/認証の変更、同じテストやPlay要求の重複はない。全件/同Editor/cleanupの結果は完了後に追記する。
+
+
+### 第十七段階の最終検証と残件
+
+同Editor2周72件、最終全3617/3617（276.78秒）成功。失敗/skip/inconclusive0、console error0、warning59は既知負条件fixture5分類と一致し抑制なし。実640×360/両RT・専用TMPDIR/saveguardで実行し、最終2sourceはsubmission/project/関連/全件/レビューのhashが一致。外側待機期限後も同一jobを回収し、重複TestRunnerなし。
+
+停止後cleanupは原本clean、928対象Asset一致（既存private URP2例外）、実640×360/両RT/TMP、禁止default保存先なし、native Mouse/Keyboardのみ、EventSystem登録0、生成registry/root/borrow/pending0、proof/fault参照なしを確認。実隔離4保存ファイルのbytesは最終Close/Single/stop以後、全件後も不変。登録外Sprite2095基準群は未特定として保持し、GameplayPauseのIsPaused=false/awaitRelease=true/resumeFrames=2の既存neutral待ちを強制解除しない。
+
+今回で報酬overlay2種の管理寿命を閉じた。残必須はCustomPadDetails（カード/変身/戦闘個体詳細）、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。各対象の実生成/入力/親終了/資源返却を本番Bootstrapの管理経路へ揃え、関係回帰を通すことを安定化条件とする。次はCustom詳細PopupのDialogManager移行が適切。任意の見た目改善、新外界/依頼/ボスラッシュの実装や未決値の決定は別範囲。
+
+[第十七段階証跡](../.Codex/screenshots/system-stage17-20261101/README.md)

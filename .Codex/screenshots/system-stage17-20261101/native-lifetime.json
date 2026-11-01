@@ -1,0 +1,359 @@
+{
+  "initial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "hp": 100,
+    "maxHp": 100,
+    "currency": 10,
+    "pendingCurrency": 0,
+    "pendingItem": null,
+    "deck": 20,
+    "key": null,
+    "registered": 2,
+    "current": false,
+    "blocked": false,
+    "choice": null,
+    "currencyVisible": false,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "VisitOption_0",
+    "root": -283464182,
+    "resources": 13,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "VisitOption_0",
+        "interactable": true
+      },
+      {
+        "name": "VisitOption_2",
+        "interactable": true
+      },
+      {
+        "name": "ExitVisit",
+        "interactable": true
+      },
+      {
+        "name": "CancelVisit",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "VisitOption_1",
+        "interactable": true
+      },
+      {
+        "name": "PauseVisit",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmVisit",
+        "interactable": false
+      }
+    ]
+  },
+  "closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1056511939,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -283464182,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -283464188,
+        -283464194,
+        -283464200
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "released": {
+    "viewsDestroyed": true,
+    "refsReleased": true,
+    "pendingUnchanged": true
+  },
+  "beforeNormalHostSuspend": {
+    "progress/progress.json": "94fedb17d58c50d0c57417e31e33d6dca88f5748a9c487534a19152c7f3b75af",
+    "progress/progress.backup.json": "3498c641c1087209c2209c1b08d1d1b9d2d8b65c59e96a82a85d3f8aa16ebf55",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.json": "38b3cd1c6d6d7b726810c0fa8163cacf8599ae852258710b0831dc1640171b1e",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.backup.json": "aca5cbe2622f31721a67a26b5f487af73beb814f21fbc417ea0781363d756bee"
+  },
+  "afterNormalHostSuspend": {
+    "progress/progress.json": "94fedb17d58c50d0c57417e31e33d6dca88f5748a9c487534a19152c7f3b75af",
+    "progress/progress.backup.json": "3498c641c1087209c2209c1b08d1d1b9d2d8b65c59e96a82a85d3f8aa16ebf55",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.json": "38b3cd1c6d6d7b726810c0fa8163cacf8599ae852258710b0831dc1640171b1e",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.backup.json": "aca5cbe2622f31721a67a26b5f487af73beb814f21fbc417ea0781363d756bee"
+  },
+  "saveBoundary": "Host stop preserves established SuspendForCheckpoint; compare later stable bytes to post-stop result, not assume live Dungeon stop makes no save",
+  "reopened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "hp": 100,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": null,
+    "deck": 6,
+    "key": null,
+    "registered": 2,
+    "current": false,
+    "blocked": false,
+    "choice": null,
+    "currencyVisible": false,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": true,
+    "focus": "ContinueCheckpointButton",
+    "root": -283464182,
+    "resources": 9,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ContinueCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      },
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      }
+    ]
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -283472752,
+    "newControllerId": -283475258,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 309446622,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -283464182,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -283464260,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -283475258
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -283464188,
+        -283464194,
+        -283464200
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage17-17001/settings"
+    }
+  },
+  "finalClosed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 309446622,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -283464182,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -283464188,
+        -283464194,
+        -283464200
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "saveHashesAfter": {
+    "progress/progress.json": "94fedb17d58c50d0c57417e31e33d6dca88f5748a9c487534a19152c7f3b75af",
+    "progress/progress.backup.json": "3498c641c1087209c2209c1b08d1d1b9d2d8b65c59e96a82a85d3f8aa16ebf55",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.json": "38b3cd1c6d6d7b726810c0fa8163cacf8599ae852258710b0831dc1640171b1e",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.backup.json": "aca5cbe2622f31721a67a26b5f487af73beb814f21fbc417ea0781363d756bee"
+  },
+  "finalConsole": {
+    "sampledUtc": "2026-11-01T10:03:50.961622Z",
+    "ageMs": 156,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 1,
+    "seeded": true
+  },
+  "normalPlayStopOnce": true
+}

@@ -1,0 +1,154 @@
+{
+  "compileAndConnectionReceipts": {
+    "recompile": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "initial-compile-console": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Cannot connect to Unity Editor Pipeline server at 127.0.0.1:7800. Make sure Unity Editor is running with the Pipeline package installed."
+        }
+      ],
+      "isError": true
+    },
+    "reconnect-status": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Cannot connect to Unity Editor Pipeline server at 127.0.0.1:7800. Make sure Unity Editor is running with the Pipeline package installed."
+        }
+      ],
+      "isError": true
+    },
+    "final-compile-console": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"entries\": [],\n  \"cursor\": 369684,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 0,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 0,\n    \"warn\": 44,\n    \"log\": 1956\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-01T09:38:48.853747Z\",\n    \"ageMs\": 14228,\n    \"compilationFailed\": false,\n    \"compiling\": false,\n    \"consoleErrors\": 0,\n    \"consoleWarnings\": 0,\n    \"consoleLogs\": 0,\n    \"seeded\": true\n  }\n}"
+        }
+      ]
+    },
+    "final-recompile": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'recompile' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "final-assembly": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "final-assembly-recovered": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "actual-final-assembly": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 82,\n  \"executeMs\": 1,\n  \"assemblyName\": \"PipelineRunScript_Stage17CompileProof_b060a65912034db88f6f072fcf2ce7e3\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"compiling\": false,\n    \"assembly\": \"5428a283-0453-4ea5-a882-11fb40195c74\",\n    \"screen\": [\n      640,\n      360\n    ],\n    \"panelContexts\": true,\n    \"bindParameters\": 4\n  }\n}"
+        }
+      ]
+    },
+    "post-relay-console": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"entries\": [\n    {\n      \"seq\": 369685,\n      \"timestampUtc\": \"2026-11-01T09:46:18.207307Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Failed to handle /api/exec request: Main thread operation timed out after 120000ms\",\n      \"stackTrace\": \"UnityEngine.Debug:LogError (object)\\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\\n\",\n      \"seeded\": false\n    }\n  ],\n  \"cursor\": 369686,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 1,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 1,\n    \"warn\": 45,\n    \"log\": 1954\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-01T09:48:58.921399Z\",\n    \"ageMs\": 51,\n    \"compilationFailed\": false,\n    \"compiling\": false,\n    \"consoleErrors\": 1,\n    \"consoleWarnings\": 1,\n    \"consoleLogs\": 0,\n    \"seeded\": true\n  }\n}"
+        }
+      ]
+    },
+    "native-started": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Cannot connect to Unity Editor Pipeline server at 127.0.0.1:7800. Make sure Unity Editor is running with the Pipeline package installed."
+        }
+      ],
+      "isError": true
+    },
+    "native-play-console": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Failed to get available commands: Request timeout after 10000ms"
+        }
+      ],
+      "isError": true
+    },
+    "native-post-scene-console": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"entries\": [],\n  \"cursor\": 369714,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 0,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 0,\n    \"warn\": 0,\n    \"log\": 28\n  },\n  \"groundTruth\": null\n}"
+        }
+      ]
+    },
+    "native-wait-started": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "native-startup-terminal-console": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"entries\": [\n    {\n      \"seq\": 369716,\n      \"timestampUtc\": \"2026-11-01T09:58:24.725839Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Failed to handle /api/exec request: Main thread operation timed out after 120000ms\",\n      \"stackTrace\": \"UnityEngine.Debug:LogError (object)\\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\\n\",\n      \"seeded\": false\n    }\n  ],\n  \"cursor\": 369716,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 1,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 1,\n    \"warn\": 1,\n    \"log\": 28\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-01T09:56:28.205655Z\",\n    \"ageMs\": 153963,\n    \"compilationFailed\": false,\n    \"compiling\": false,\n    \"consoleErrors\": 0,\n    \"consoleWarnings\": 1,\n    \"consoleLogs\": 3,\n    \"seeded\": true\n  }\n}"
+        }
+      ]
+    },
+    "native-started-recovered": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 172,\n  \"executeMs\": 3,\n  \"assemblyName\": \"PipelineRunScript_Bootstrap17Proof_add25f0cccbf4e79bf7824d8330c910b\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": true,\n    \"scene\": \"Assets/Scenes/BootstrapScene.unity\",\n    \"active\": true,\n    \"settings\": \"/workspace/olca-validation-20261024/save/system-stage17-17001/settings\",\n    \"manager\": true,\n    \"input\": true\n  }\n}"
+        }
+      ]
+    }
+  },
+  "privateHelperFailures": {
+    "pause-behind-visit-rejected-before-event.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 96,\n  \"executeMs\": 69,\n  \"assemblyName\": \"PipelineRunScript_Stage17Proof_7906045a065d461ebdc466002111539d\",\n  \"success\": false,\n  \"error\": \"Runtime Error\",\n  \"errorDetails\": \"Exception: Occluded PauseButton\\n  at Stage17Proof.Tap (System.String name) [0x001e3] in /workspace/olca-validation-20261024/project/AgentScripts/Stage17Proof.cs:9 \\n  at Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand.RunEphemeral (System.String file, System.String entry, Newtonsoft.Json.Linq.JArray args, System.String[] references, System.String[] defines, System.Boolean pdb, System.Boolean dryRun, System.Int32 timeoutMs, System.Diagnostics.Stopwatch total) [0x00492] in ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:252 \"\n}"
+        }
+      ]
+    },
+    "initial-proof-compile-only-no-execution.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [\n    {\n      \"severity\": \"error\",\n      \"message\": \"Argument 2: cannot convert from 'Olca.Core.Domain.ElementType' to 'bool'\",\n      \"line\": 9,\n      \"column\": 320,\n      \"id\": \"CS1503\",\n      \"source\": \"public static object DamageFixture(){var b=M().CurrentBattle;var heal=new Olca.Application.Battle.SimpleCardFactory().CreateById(\\\"heal\\\");int before=b.Player.CurrentHp;int damage=Math.Min(heal.Power+1,before-1);if(damage<=0)throw new Exception(\\\"Player must remain alive\\\");b.RunLogicalFrame(()=>b.Player.TakeDamage(damage,Olca.Core.Domain.ElementType.None,poiseDamage:0));return new{isolatedDamageFixture=true,productValuesUnchanged=true,before,after=b.Player.CurrentHp,expectedHeal=heal.Power};}\"\n    }\n  ],\n  \"compileMs\": 7242,\n  \"executeMs\": 0,\n  \"assemblyName\": \"PipelineRunScript_Stage17Proof_ad342b59fcf5414292df9bd1fe901535\",\n  \"success\": false,\n  \"error\": \"Compilation Failed\",\n  \"errorDetails\": \"The script failed to compile. See diagnostics for line/column details.\"\n}"
+        }
+      ]
+    }
+  },
+  "finalCompileProof": "actual-final-assembly successful; source frozen through related/full",
+  "normalRecovery": "Same VM/Editor137059/model/credentials retained; slow ordinary DomainReload/scene load completed, relay/fresh groundTruth verified. No duplicate tests, Play, host close or uncertain save reissue.",
+  "fullWrapperTimedOut": true,
+  "sameJobRecovered": true
+}

@@ -443,5 +443,26 @@ namespace Olca.Tests.Application
                 UnityEngine.Object.DestroyImmediate(controller);
             }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
         }
+        [TestCase(false)][TestCase(true)]
+        public void 資源報酬画面は旧選択を次の待機へ渡さず親終了で取消す(bool item)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var pause=typeof(GameplayPause);var release=pause.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var frames=pause.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);bool wasPaused=GameplayPause.IsPaused;var wasRelease=release.GetValue(null);var wasFrames=frames.GetValue(null);
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();
+            void Set(string n,object v)=>type.GetField(n,flags).SetValue(controller,v);
+            object Call(string n,params object[] args)=>type.GetMethod(n,flags).Invoke(controller,args);
+            try{
+                GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();Assert.IsFalse(GameplayPause.InputBlocked);
+                var currency=Panel("CurrencyRewardPanel");var items=Panel("ItemRewardPanel");Set("gameSystem",system);Set("currencyOverlay",currency);Set("itemRewardOverlay",items);
+                var root=item?items:currency;var yes=Button(root,item?"ReceiveItemReward":"ReceiveCurrencyButton");var no=Button(root,item?"SkipItemReward":"SkipCurrencyButton");Call("RegisterResourceRewardViews");
+                var first=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,first,CancellationToken.None);var old=yes.onClick;var context=(ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller);Assert.IsTrue(context.IsCurrent);
+                var popup=Panel("reward-popup");var confirm=Button(popup,"confirm");var cancel=Button(popup,"cancel");dialogs.Show(context,popup,confirm,cancel,_=>{});old.Invoke();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,first.Task.Status);
+                views.GetLayer("resource-reward").CloseCurrent();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,first.Task.Status);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
+                frame++;var next=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,next,CancellationToken.None);old.Invoke();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,next.Task.Status);
+                yes.onClick.Invoke();no.onClick.Invoke();Assert.IsTrue(next.Task.GetAwaiter().GetResult());Call("CloseResourceReward",root,next);Assert.IsFalse(root.activeSelf);Assert.IsNull(type.GetField("activeResourceRewardChoice",flags).GetValue(controller));
+                frame++;var final=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,final,CancellationToken.None);Call("OnDisable");Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,final.Task.Status);Call("OnEnable");Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,final.Task.Status);views.GetLayer("resource-reward").CloseCurrent();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,final.Task.Status);Assert.IsNull(type.GetField("resourceRewardRoot",flags).GetValue(controller));
+                var crossOld=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,crossOld,CancellationToken.None);var other=item?currency:items;var otherNo=Button(other,item?"SkipCurrencyButton":"SkipItemReward");var crossNext=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",other,otherNo.name,crossNext,CancellationToken.None);Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,crossOld.Task.Status);Assert.IsTrue(((ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller)).IsCurrent);otherNo.onClick.Invoke();Assert.IsFalse(crossNext.Task.GetAwaiter().GetResult());Call("CloseResourceReward",other,crossNext);
+                Call("ReleasePresentationBindings");Assert.IsNull(type.GetField("resourceRewardMenu",flags).GetValue(controller));Assert.IsNull(type.GetField("resourceRewardViews",flags).GetValue(controller));views.UnregisterOwner(controller);Assert.AreEqual(0,resources.OwnedInstanceCount);
+            }finally{UnityEngine.Object.DestroyImmediate(controller);GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
+        }
     }
 }

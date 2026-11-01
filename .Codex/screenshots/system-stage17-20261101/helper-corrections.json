@@ -1,0 +1,21 @@
+{
+  "sourceUnchanged": true,
+  "events": [
+    {
+      "step": "initial private proof compilation",
+      "result": "CS1503 Player.TakeDamage second argument type incorrect",
+      "executeMs": 0,
+      "correction": "use existing player API named poiseDamage; no product edit or native action before retry"
+    },
+    {
+      "step": "normal lifetime pause",
+      "result": "PauseButton behind active visit correctly raycast-occluded, no click executed",
+      "correction": "inspect current visible controls and use PauseVisit; no input bypass or duplicate host close"
+    },
+    {
+      "scope": "currentHP times",
+      "result": "actual reward heal79->99 and accepted RewardCompleted HP99/currency10; subsequent exploration/visit live100 recorded separately",
+      "note": "do not claim current post-progress HP equals earlier checkpoint snapshot at every later time"
+    }
+  ]
+}
