@@ -371,3 +371,39 @@ Stage10の未管理screen/Dialog一覧は引き続き必須残件。今回それ
 同じ長期稼働Editorには、新registry外の同名Sprite群2095件が基準IDとして残っている。生成元/漏洩原因は未特定で、旧残留候補と今回の登録生成物を区別する。同名やregistry0だけで全Editorのnative漏れ解消とせず、import/未知利用者を誤破棄しないため一括Destroyしない。今回の回収は登録IDの直接native nullと世代差分で立証する。全HotReload/既存Editor全体の残留解消、歴史的UGUI、実build/物理機器/聴感は未確認/未解決のまま。
 
 第十段階の未管理画面/Dialog一覧は残る。次はpause/checkpointと確認popupを一つの画面群としてViewManager/DialogManagerへ接続し、親遷移時取消・focus/入力解放・保存不変・再生成を閉じる。今回の6系統所有接続だけを基盤全体の安定化完了とはしない。外界/ボスラッシュ/未決D05/S08などは実装していない。
+
+## 第十二段階: pause Viewと撤退確認Dialog
+
+最初の縦切りはController-built PauseOverlayのViewManager system-pause層への登録と、RetreatConfirmationのDialogManager接続。checkpoint案内/保存再試行、帰還本体/保存失敗・保留報酬の画面群は別の状態を持つため今回は変更せず、Stage10の正確な残一覧を継続する。
+
+GameplayPauseViewは表示寿命/context世代とボタンcallbackの生存確認だけを担当する。時間停止/探索再開countdown/切断pause/保存/撤退計算はControllerの既存処理に残す。Showごとにcontextを捕捉したクリックを作り直し、閉じた世代や破棄後の旧クリックは実行しない。設定画面は既存primary View層のまま、pauseは独立層で従来の重なりを維持する。通常hideは時間を解除せず、ホスト終了はowner解除で破棄する。
+
+撤退Dialog中はCanvasGroupでpauseの表示とraycastを隠すがcontext/GOは維持し、同一Viewの再要求でDialogを消さない。実際の親Disable/遷移/終了はNotifyHidden/CancelOwnerへ進む。取消は起点focusを復元し同frame入力を遮断、確定は既存EndRunWithoutRewardsを一度だけ呼び、保存失敗時の既存保留/再試行契約を変えない。legacy gameSystemなしの導線は従来listenerを保持する。
+
+この段階ではpause部品のInitialize内組立はControllerに残る。Sceneそのものを改名した移行でも全UI移行完了でもなく、既存panelの生成実体をResourceManager lease/ ViewManagerへ渡す寿命接続である。後続の必要時Prefab化/画面組立分離と、checkpoint/帰還/会話/装備/詳細等の残りを明示して継続する。新しいManager・外界機能・未決値・新アートは追加しない。生成6系統の借用、旧登録外Sprite2095基準群、原本/保存/固定frame/見た目を保護する。
+
+
+### 第十二段階の検証と残対象
+
+実Pointer取消の初回確認では、Dialog自身の起点選択復元の後、Controllerの次frame MenuPadScope再BindがResumeButtonへ上書きする問題を再現した。取消元の名前をViewから一度だけ受け渡し、親menuの再Bind時に優先する。直接選択した瞬間だけの成功で済ませず、150ms後の実Pointer確認を最終条件にする。最初の未修正版の全件成功と取消失敗記録を保持し、修正版の関連488/488（48.71秒）・全3596/3596（269.42秒）を別source hashで収集。同Editor2周30件も成功し、各回のEventSystem登録/Scene登録0と生成cache0を確認した。警告59件は従来fixture5分類と一致、抑制なし。
+
+今回閉じるのはPauseOverlayとRetreatConfirmationの管理寿命のみ。第十段階一覧のうち、以下は安定化必須の具体的な未移行対象として残す。
+
+- Controller-built checkpointOverlay（続行、保存blocked時の再試行）。
+- ClearReturnViewとその画面variant/second instance（帰還、所持、編成、出撃先、style、交換等の既存共有画面）。
+- CustomizationLoadoutView / CustomizationUnlockView / CustomizationAcquisitionView。
+- Controller progressActionOverlay（新規開始等の確認・保留保存状態）とreward overlays。
+- ClearReturnView readonly popup、saved-deck削除確認。
+- CustomScreenView detail/inspection。
+- DialogueViewとDialogueSessionのskip確認/backlog。
+
+checkpoint/帰還の成功・保留報酬・保存失敗時の既存計算/write planを今回の寿命接続で変更しない。次はcheckpoint案内とprogressAction確認を独立のまとまりで管理化し、その後ClearReturnView群へ進む。全画面の必要時Prefabロード・内部Initialize分離は今回で完了としない。
+
+
+最終実Playでは従来Scene直起動とBootstrapを通し、設定確認/保存/復元、checkpoint再開、Dialog中Single再入、timeScale0終了、欠損/取消ロード、Close/Openを確認。初回再検証のCustom待ちは再利用した隔離保存先のcheckpoint案内によるため、実ContinueCheckpointButtonから再開し、初手5枚を確認した。製品の起動/保存条件は変更していない。
+
+撤退確認は実RaycastのPointerDown/Up/Clickで起点選択を作り、取消150ms後もRetreatButtonを維持。Dialog中の背面Resume、旧世代Resume、取消後/帰還後の旧確定callbackは拒否。実確定後の保存に二重書込みなし。次の実出撃から撤退Dialog中にホストを終了し、旧確定無効/保存不変/再入後単一Root・Camera・Listener・EventSystemを確認した。設定の閲覧/取消往復も隔離10ファイル不変。ヘルパーの誤ったCloseAudioSettings名は実在CancelAudioSettingsへ訂正し、Root共有3実体を0とした検証側の誤前提も前段階/所有境界と照合して訂正した。製品コードの条件緩和はしていない。設定操作用の既存helperはtimeScaleを明示設定するため、物理入力や全設定中timeScale不変の証拠とは扱わない。
+
+最終Pause/撤退確認のFHD/4K/4:3計6枚を独立原寸レビューし、必須指摘0。新たな同条件before撮影はなく完全画素一致とはしない。コードレビューも最終3source/全件結果hash一致・必須指摘0。Play再入時のPipeline main-thread timeout2件は同PIDの通常待機で復帰した履歴として保持し、最終全件error0と混同しない。UnityAIの接続情報保存警告も別履歴。clear後の最終host終了窓と停止後cleanupはerror0。
+
+停止後は実640×360のScreen/2RT・専用TMPDIR/save guard・native機器のみ・EventSystem静的登録0・生成registryのroot/borrow/pending0、原本clean・submission/project全対象一致（既存private URP2例外）を確認した。登録外2095 Sprite基準群はそのまま保持し未特定。checkpoint/帰還の保存失敗・保留報酬は既存の関連/全件回帰に留まり、その未移行画面を今回実Playで全て検証したとはしない。実build/物理機器/聴感/全HotReloadと歴史的UGUI/CLI等の未確認・未解決を継続する。

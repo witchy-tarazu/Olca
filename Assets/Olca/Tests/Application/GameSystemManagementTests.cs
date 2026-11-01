@@ -216,5 +216,31 @@ namespace Olca.Tests.Application
             } finally { root.Services?.Dispose();field.SetValue(null,prior);UnityEngine.Object.DestroyImmediate(go); }
         }
 
+        [Test] public async Task Pause画面は閉じた世代のクリックを再表示後も実行しない()
+        {
+            int calls=0;bool allowed=true;var panel=Panel("pause");var resume=Button(panel,"Resume");resume.onClick.AddListener(()=>calls++);
+            var pause=panel.AddComponent<GameplayPauseView>();pause.Initialize(()=>allowed);var layer=views.GetLayer("pause-test");
+            layer.Register(owner,"pause",ct=>Task.FromResult(panel),(go,context)=>pause.Show(context),go=>pause.Hide());
+            Assert.IsTrue((await layer.ShowAsync("pause")).Succeeded);var old=resume.onClick;old.Invoke();Assert.AreEqual(1,calls);
+            allowed=false;old.Invoke();Assert.AreEqual(1,calls);allowed=true;layer.CloseCurrent();old.Invoke();Assert.AreEqual(1,calls);
+            Assert.IsTrue((await layer.ShowAsync("pause")).Succeeded);old.Invoke();Assert.AreEqual(1,calls);resume.onClick.Invoke();Assert.AreEqual(2,calls);
+            views.UnregisterOwner(owner);old.Invoke();Assert.AreEqual(2,calls);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [Test] public async Task Pauseを覆う確認は取消で戻り親終了では旧確定を実行しない()
+        {
+            int confirms=0;var panel=Panel("pause");var source=Button(panel,"Retreat");var pause=panel.AddComponent<GameplayPauseView>();pause.Initialize(()=>true);
+            var popup=Panel("retreat");var confirm=Button(popup,"ConfirmRetreat");var cancel=Button(popup,"CancelRetreat");
+            var layer=views.GetLayer("pause-dialog-test");layer.Register(owner,"pause",ct=>Task.FromResult(panel),(go,context)=>pause.Show(context),go=>pause.Hide());
+            await layer.ShowAsync("pause");var context=pause.Context;EventSystem.current.SetSelectedGameObject(source.gameObject);
+            pause.CoverForDialog();var request=context.ShowDialog(popup,confirm,cancel,result=>{pause.RestoreAfterDialog();if(result==DialogResult.Confirmed)confirms++;});
+            Assert.IsTrue(context.IsCurrent);Assert.IsTrue(panel.activeSelf);Assert.AreEqual(0,panel.GetComponent<CanvasGroup>().alpha);
+            Assert.IsTrue((await layer.ShowAsync("pause")).Succeeded);Assert.AreEqual(1,dialogs.ActiveCount);
+            cancel.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await request);
+            Assert.IsTrue(panel.activeSelf);Assert.AreSame(source.gameObject,EventSystem.current.currentSelectedGameObject);
+            Assert.AreEqual("Retreat",pause.TakeRestoredFocus());Assert.IsNull(pause.TakeRestoredFocus());
+            frame++;pause.CoverForDialog();request=context.ShowDialog(popup,confirm,cancel,result=>{pause.RestoreAfterDialog();if(result==DialogResult.Confirmed)confirms++;});
+            var stale=confirm.onClick;layer.CloseCurrent();Assert.AreEqual(DialogResult.ParentClosed,await request);stale.Invoke();Assert.AreEqual(0,confirms);Assert.IsFalse(panel.activeSelf);Assert.AreEqual(0,dialogs.ActiveCount);
+            UnityEngine.Object.DestroyImmediate(popup);
+        }
     }
 }

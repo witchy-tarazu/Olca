@@ -1,0 +1,122 @@
+{
+  "scope": "Stage12 first vertical slice: managed pause layer and retreat dialog; independent read-only static review",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "530e18eb9d9cedce3232e72b2b5225e58ce762cf367718923ecc12c297be594c",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "bcfefb08dfc2322a7ce032035c399122be6dddd20544ecb4fbef68a3967bd4c7",
+    "Assets/Olca/Presentation/Management/ViewManager.cs": "565a97f808b1ce120cf899d81548c8b9948238211693c83fbd296edb85e1f7de",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "279b728adf4ef624a60d6a9794dbb2773cb9d7ada21479555abf851babf82165",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "4cf1709b12b1ccc489e420736a6599293b7dac043b3c5726c2441ec2d88fe0e5"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Pause button wrappers capture ManagedScreenContext identity/epoch and reject stale contexts, managed dialog blocking and nonpaused input.",
+    "Managed retreat does not attach legacy confirm listeners; confirmation retains Controller-owned EndRunWithoutRewards path.",
+    "CoverForDialog deliberately suppresses NotifyHidden while inactive; ordinary Hide/parent teardown invalidates context and cancels owner dialog.",
+    "Audio settings close the pause-layer current; subsequent reopening gets a fresh context. Keyboard/pad can retain the underlying pause layer while root ViewManager owns settings.",
+    "SetPausePanelVisible avoids ShowAsync(current inactive) while a covered context remains current; this avoids the existing generic manager same-entry inactive edge in this call path.",
+    "No Core, fixed-clock, currency or save-write rule changes in the reviewed patch."
+  ],
+  "limits": [
+    "Unverified first-stage patch: no compile/test/Unity commands executed by reviewer.",
+    "Checkpoint and clear-return/progress dialogs remain follow-up scope, not migrated by this verdict.",
+    "No exhaustive guarantee for arbitrary external direct onClick references or generic ViewManager inactive same-entry requests.",
+    "Added tests exercise View/context/dialog behavior; Controller RefreshSystemMenu next-frame focus preservation is statically reviewed here and still needs actual managed pause/retreat/settings native validation. Initial compile pending; no test success inferred."
+  ],
+  "priorFindings": [
+    {
+      "id": "S12-CANCEL-FOCUS",
+      "file": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "method": "RefreshSystemMenu",
+      "description": "The managed dialog BlocksInput early return suspends the system menu and clears systemMenuRoot without capturing its pause FocusName. On dialog cancel GameplayPauseView restores the retreat button, but on the next frame the parent menu rebinds with stale pauseFocus, commonly ResumeButton, overriding the restored selection.",
+      "recommendation": "Preserve the pause menu focus when entering managed dialog blocking, or explicitly prefer the restored selection at rebind; retain same-frame dialog-close input blocking.",
+      "status": "Static control-flow finding; native reproduction/test pending"
+    }
+  ],
+  "resolution": "RefreshSystemMenu now preserves current pause FocusName in the BlocksInput branch before suspension/root reset, matching ordinary menu switch preservation. Dialog restore and next-frame rebind now use the same retained focus.",
+  "addedTestsRead": [
+    "Pause close/reopen/unregister stale event and inputAllowed rejection",
+    "Covered pause dialog cancel restores focus; parent CloseCurrent cancels and prevents confirm effect"
+  ],
+  "canvasGroupRereview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "Covered pause retains active GameObject/context: duplicate ShowAsync follows already-active fast path and does not replace context or cancel dialog.",
+      "CanvasGroup alpha0 and blocksRaycasts=false hide presentation/pointer targets; interactability retained so parent focus restoration remains valid.",
+      "Parent OnDisable always calls NotifyHidden; no covered exception can retain modal ownership after actual parent deactivation.",
+      "Hide and Show restore CanvasGroup visibility/raycast flags; normal Controller clock/save behavior unchanged.",
+      "Updated regression explicitly asserts duplicate managed Show succeeds and active dialog count remains1."
+    ],
+    "limits": [
+      "CanvasGroup variant is submission-only at review time; parent reports not yet mirrored/compiled.",
+      "Native keyboard/pad/pointer blocking and parent-disable behavior still require actual validation; static verdict is scoped."
+    ]
+  },
+  "actualFocusCorrectionRereview": {
+    "unresolvedRequiredFindings": 0,
+    "history": "Initial FocusName preservation alone was insufficient: parent native Pointer validation reproduced EventSystem origin differing from cached menu FocusName. Previous static verdict did not establish native focus behavior.",
+    "checked": [
+      "RestoreAfterDialog records only a live/interactable actual captured origin name after restoring selection.",
+      "TakeRestoredFocus consumes the hint once; Show/Hide clear it across context lifetime changes.",
+      "Controller pause preferred focus uses the one-shot origin before stale pauseFocus; same-frame DialogBlocksInput guard remains ahead of consumption.",
+      "New existing test assertions verify actual captured Retreat name and one-shot consumption; epoch stale-click/parent-close assertions remain."
+    ],
+    "limits": [
+      "Final three-file version still awaiting recompile/related/full/native reruns at review time.",
+      "Controller next-frame Pointer restore must be checked dynamically; static review adds no new concrete required finding."
+    ]
+  },
+  "finalTestMatchedRereview": {
+    "sourceHashes": {
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "530e18eb9d9cedce3232e72b2b5225e58ce762cf367718923ecc12c297be594c",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "4cf1709b12b1ccc489e420736a6599293b7dac043b3c5726c2441ec2d88fe0e5",
+      "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "bcfefb08dfc2322a7ce032035c399122be6dddd20544ecb4fbef68a3967bd4c7"
+    },
+    "submissionAndValidationMatchAllThree": true,
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "One-shot actual origin focus handoff still precedes stale pauseFocus and follows dialog same-frame blocking.",
+      "Context identity/IsCurrent/inputAllowed/DialogBlocksInput guard still protects captured pause events after hide/reopen/destroy.",
+      "Managed dialog listener ownership remains exclusively DialogManager; legacy direct confirm listeners are omitted for managed path.",
+      "CanvasGroup cover keeps View active so duplicate Show uses existing active entry; actual parent deactivation notifies manager and cancels owner.",
+      "ViewManager layer lifetime remains under GameSystem and owner unregister, with no independent resource manager/clock/save ownership added."
+    ],
+    "observedParentResults": {
+      "full": {
+        "total": 3596,
+        "passed": 3596,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 269.42,
+      "related": "488/488,48.71s (parent report)",
+      "sameEditor": "30/30 (parent report)"
+    },
+    "openVerificationItems": [],
+    "limits": [
+      "No Unity commands/tests independently executed; checked supplied final full result hashes against all three submission/project files.",
+      "Checkpoint/clear-return/progress dialog migration is outside this pause/retreat slice."
+    ]
+  },
+  "finalNativeEvidenceReview": {
+    "unresolvedRequiredFindings": 0,
+    "evidence": [
+      "system-stage12-native-retreat-cancel.json",
+      "system-stage12-pause-native-summary.json"
+    ],
+    "confirmed": [
+      "Actual cancel result retains RetreatButton after delayed observation, live managed pause/context restored, dialog0 and no cover/input block.",
+      "Old epoch Resume and old dialog after Cancel return rejected.",
+      "Settings read/cancel preserve saved hashes; real retreat updates progress and stale confirm produces no second write.",
+      "Host summary retains one Root/Camera/Listener/EventSystem, three audio sources and no owned scenes."
+    ],
+    "sourceUnchangedAgainstFinalFullThree": true,
+    "historyPreserved": "Initial native focus failure and insufficient FocusName-only fix remain in actualFocusCorrectionRereview.",
+    "limits": [
+      "Evidence read only; no independent Unity execution.",
+      "Checkpoint and clear-return main view migration remains explicitly pending.",
+      "Private harness used the wrong CloseAudioSettings lookup once; correction to actual CancelAudioSettings is harness-only and does not establish a product regression."
+    ]
+  }
+}

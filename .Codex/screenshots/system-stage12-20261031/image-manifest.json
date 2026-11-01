@@ -1,0 +1,56 @@
+[
+  {
+    "file": "pause-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "038b922c7f7f6783177d161ff8e18414802da68cd24f7df200b7d39c91c6c5cb",
+    "kind": "final-source actual native screen; lifetime refactor, no new matched before capture"
+  },
+  {
+    "file": "pause-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "0626ebe33b4d250dea22496e2427b2d2b298602032e33c4c3d344181e3370def",
+    "kind": "final-source actual native screen; lifetime refactor, no new matched before capture"
+  },
+  {
+    "file": "pause-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "9e6d5add67026eed3349d69a129c916da53c3d767ae5b02607562279cd1a8934",
+    "kind": "final-source actual native screen; lifetime refactor, no new matched before capture"
+  },
+  {
+    "file": "retreat-confirmation-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "5c533e27c9ad249a8073d400979b510a5b059a40f4d1327762d99ee2a13e4cce",
+    "kind": "final-source actual native screen; lifetime refactor, no new matched before capture"
+  },
+  {
+    "file": "retreat-confirmation-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "2640dec9a185a4f66caf1e2d4733de36f6f886c4a91279a18a94585277c9d8e1",
+    "kind": "final-source actual native screen; lifetime refactor, no new matched before capture"
+  },
+  {
+    "file": "retreat-confirmation-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "a939203bd48604254d8fe95ef808c5da228c4c305b55a07203614c07c4ba0d19",
+    "kind": "final-source actual native screen; lifetime refactor, no new matched before capture"
+  }
+]

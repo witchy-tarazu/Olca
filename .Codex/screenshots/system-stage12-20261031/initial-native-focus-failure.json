@@ -1,0 +1,31 @@
+{
+  "paused": true,
+  "scale": 0,
+  "view": true,
+  "visible": true,
+  "alpha": 1,
+  "context": true,
+  "covered": false,
+  "blocks": false,
+  "dialogs": 0,
+  "layer": "gameplay-pause",
+  "registered": 1,
+  "primary": null,
+  "focus": "ResumeButton",
+  "generated": {
+    "generations": 1,
+    "roots": 1,
+    "borrowers": 1,
+    "entries": 0,
+    "pendingNativeDestroy": 0,
+    "caches": [
+      {
+        "generation": 1,
+        "roots": 1,
+        "borrowers": 1,
+        "retired": false,
+        "entries": []
+      }
+    ]
+  }
+}
