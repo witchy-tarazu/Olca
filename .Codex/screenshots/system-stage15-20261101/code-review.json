@@ -1,0 +1,137 @@
+{
+  "scope": "Stage15 independent static design/code review: managed owned-deck discard and saved-deck delete confirmation popups; legacy full-content confirmation remains compatible",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "fdf51f1243fea486ccf01c5da52e420ac86edff93257cf6cd5ab6d35e7ed455d",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "bec55e74485eaf2d1904af10513bb0df8a7795642b95736269863c1229d65ffd",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "3a39d17fd8b91429c03674c3df397a09965524fd3e7d22a64c6c39c7a7d667c0",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "a216542daa1214209f3f9afffec2a07f9df9aa9d8b03fa84070dd48abae067b7"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Managed branches preserve inactive parent content and context; modal controls are built with temporary content substitution always restored in finally.",
+    "DialogManager exclusively owns confirm/cancel/scroll input; delete uses directionScroll=false to preserve directional selection and PageUp/Down reading.",
+    "Completion validates context/modal/parent identity, releases modal before invoking existing business callback, then resolves cancel origin in newly rendered content.",
+    "Parent termination cancels ticket without business callback or focus restore; stale ticket callbacks cannot act after cancellation/reopen.",
+    "CancelActiveOwner cancels active tickets only, preserving closedOwner same-frame fence during StopMenu/render; full CancelOwner remains parent-termination path.",
+    "Header ManualSave/NewGame entry guards include live return-context closing-frame fence.",
+    "Existing delete-confirm callback governs failures and pending-list rendering; no new retry transaction semantics.",
+    "Popup copies original Outline effectColor/effectDistance/useGraphicAlpha/enabled while root image is clear; restores captured root image color on release.",
+    "New file-backed fence regression asserts IsProgressHub true before testing blocked save, preventing vacuous pass."
+  ],
+  "testsRead": [
+    "Discard parent retention, duplicate open coalescing, cancel rerender focus/fence, stale confirm and repeated confirm once",
+    "Saved-deck cancel focus, scroll direction setting, stale confirm identity across reopen and confirm once",
+    "Parent close cancels discard/delete business callbacks",
+    "File-backed live hub save entry blocked by retained same-frame fence"
+  ],
+  "limits": [
+    "Latest4 C# files not yet mirrored/compiled or dynamically tested at review request.",
+    "No Unity/MCP/test invocation or product edits by reviewer.",
+    "Native pad/pointer held-input, next-frame focus, scroll behavior and original-size popup geometry/Outline appearance remain dynamic validation requirements.",
+    "Static review is scoped; not a guarantee of all legacy callers, all popup layouts or unrelated pending features."
+  ],
+  "initialSourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "fdf51f1243fea486ccf01c5da52e420ac86edff93257cf6cd5ab6d35e7ed455d",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "bec55e74485eaf2d1904af10513bb0df8a7795642b95736269863c1229d65ffd",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "3a39d17fd8b91429c03674c3df397a09965524fd3e7d22a64c6c39c7a7d667c0",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "eac4649662f86ce761415fecdeaa81392ffbcc45db4b93de25f8b433a25b9869"
+  },
+  "compileCorrectionReview": {
+    "unresolvedRequiredFindings": 0,
+    "correction": "Added using System.Linq in GameSystemManagementTests for new Single calls; only test file hash changed. Production3 hashes unchanged; submission/project4 hashes match.",
+    "history": "Initial Unity compile reported2 CS1061; archived in initial-compile-errors/recompile evidence, not counted as test failure or final compile success.",
+    "pending": "Corrected recompile running; tests not started."
+  },
+  "sourceHistory": [
+    {
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "fdf51f1243fea486ccf01c5da52e420ac86edff93257cf6cd5ab6d35e7ed455d",
+      "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "bec55e74485eaf2d1904af10513bb0df8a7795642b95736269863c1229d65ffd",
+      "Assets/Olca/Presentation/Management/DialogManager.cs": "3a39d17fd8b91429c03674c3df397a09965524fd3e7d22a64c6c39c7a7d667c0",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "e94f6935691f67ccf9269f9b976294b41bb64384f6d595b932a41ad1c185c9b4"
+    }
+  ],
+  "overflowFixtureCorrectionReview": {
+    "unresolvedRequiredFindings": 0,
+    "diagnosis": "DeleteDeckName intentionally returns no ScrollRect for short fitting text. Initial test used short name while asserting non-null Scroll, so500/501 is a fixture-precondition failure.",
+    "correction": "Fixture name changed to300 long characters to exercise existing overflow scroll; original non-null Scroll/directional-mode/callback/focus assertions remain. Production3 file hashes unchanged.",
+    "history": "Initial500/501 retained in system-stage15-initial-related-failure; using System.Linq compile correction is a separate earlier event.",
+    "pending": "Corrected compile/related rerun and native/full validation not completed."
+  },
+  "reviewer": "equipment_save_review",
+  "finalRelatedNativeReview": {
+    "unresolvedRequiredFindings": 0,
+    "sourceHashesMatchSubmissionProjectAndRelatedFour": true,
+    "related": {
+      "summary": {
+        "total": 501,
+        "passed": 501,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 50.64
+    },
+    "evidence": [
+      "system-stage15-native-discard-result.json",
+      "system-stage15-native-delete-result.json",
+      "system-stage15-native-lifetime-result.json",
+      "system-stage15-native-lifetime-resume.py read to confirm chronology: Single before final isolatedB deletion"
+    ],
+    "confirmed": [
+      "Discard cancel/confirm retain saved bytes and same-frame stale source rejection",
+      "Delete FailOnce retains bytes; retryWrites2; oldA cannot close new ticketB; only isolated fixture decks deleted",
+      "Virtual pad PageDown changes scroll1 to.800000131 and Left selects ConfirmDeleteDeck; disconnect autopause handled by real resume helper",
+      "Parent close/hostClose/cancel/missing/doubleReopen/Single end old callbacks and retain lifecycle invariants",
+      "Never-active Custom resolver owned6Sprite/5Texture destroyed; imported Texture survives",
+      "Final native console errors0/warnings0"
+    ],
+    "fixtureCorrections": [
+      "Private helper old button name corrected to actual source name",
+      "Fixture IDs corrected to legal GUID identifiers",
+      "Native long-name display fixture300 characters fit;1000 used to establish actual overflow; no product rule change"
+    ],
+    "pending": [],
+    "limits": [
+      "Read-only independent source/evidence review; no tests/Unity operations initiated.",
+      "Virtual pad is not physical-device verification.",
+      "No whole-project migration/defect-free claim.",
+      "Original compile using omission and initial related500/501 fixture-precondition failure remain archived separately from final501/501."
+    ]
+  },
+  "finalValidationReview": {
+    "unresolvedRequiredFindings": 0,
+    "finalSourceHashesUnchangedAndMatchFull": true,
+    "full": {
+      "summary": {
+        "total": 3609,
+        "passed": 3609,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 271.89,
+      "consoleErrors": 0,
+      "consoleWarnings": 59,
+      "wrapperTimedOut": true
+    },
+    "fullReceipt": "system-stage15-final-test-result.json",
+    "cleanupReceipt": "system-stage15-cleanup.json",
+    "cleanupConfirmed": [
+      "Original clean;928 tracked Assets match except2 existing private URP configuration exceptions",
+      "Screen and2 render textures640x360; TMP/storage guard preserved; default store absent",
+      "Generated registry roots/borrowers/entries/pending0; EventSystem current CLR/Unity null and static/scene registry0",
+      "All recorded proof/fault keys absent; native Mouse/Keyboard only",
+      "Four native save file bytes unchanged after Play stop and tests",
+      "Neutral-release guard intentionally retained: isPausedfalse,awaitReleasetrue,resumeFrames2; not misreported as input guard disabled"
+    ],
+    "sameEditorRepeat": "56/56 passed (parent report; not independently rerun)",
+    "limits": [
+      "Full wrapper timed out but final test result explicitly records3609/3609; do not equate wrapper timeout with test failure.",
+      "59 warnings remain; existing5fixture-category classification is parent-provided and not recounted in this final two-receipt review.",
+      "Historical2095 unmanaged named Sprites remain origin-undetermined baseline, not claimed fixed or forcibly deleted.",
+      "Physical devices/build/subjective audio and whole-project defect-freedom remain unverified.",
+      "Reviewer performed read-only source/receipt checks; no Unity operations or product changes."
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "initialCompileErrors": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"entries\": [\n    {\n      \"seq\": 360044,\n      \"timestampUtc\": \"2026-11-01T07:14:10.070694Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Assets/Olca/Tests/Application/GameSystemManagementTests.cs(367,52): error CS1061: 'Button[]' does not contain a definition for 'Single' and no accessible extension method 'Single' accepting a first argument of type 'Button[]' could be found (are you missing a using directive or an assembly reference?)\",\n      \"stackTrace\": \"\",\n      \"seeded\": false\n    },\n    {\n      \"seq\": 360045,\n      \"timestampUtc\": \"2026-11-01T07:14:10.073975Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Assets/Olca/Tests/Application/GameSystemManagementTests.cs(378,52): error CS1061: 'Button[]' does not contain a definition for 'Single' and no accessible extension method 'Single' accepting a first argument of type 'Button[]' could be found (are you missing a using directive or an assembly reference?)\",\n      \"stackTrace\": \"\",\n      \"seeded\": false\n    }\n  ],\n  \"cursor\": 360045,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 2,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 2,\n    \"warn\": 21,\n    \"log\": 1977\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-01T07:17:20.808102Z\",\n    \"ageMs\": 120,\n    \"compilationFailed\": true,\n    \"compiling\": false,\n    \"consoleErrors\": 2,\n    \"consoleWarnings\": 0,\n    \"consoleLogs\": 0,\n    \"seeded\": true\n  }\n}"
+      }
+    ]
+  },
+  "correctedCompile": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": true\n}"
+      }
+    ]
+  },
+  "terminalReadTimeout": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+      }
+    ],
+    "isError": true
+  },
+  "actualRecoveredAssembly": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 62,\n  \"executeMs\": 4,\n  \"assemblyName\": \"PipelineRunScript_Stage15CompileProof_8804103b07ce4e57a7409f267c99accc\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"compiling\": false,\n    \"assemblyId\": \"50fb955f-1b01-4d76-b2e9-f49ab90313e1\",\n    \"confirmationField\": true,\n    \"cancelActiveOwner\": true,\n    \"discardTest\": true,\n    \"deleteTest\": true,\n    \"screen\": [\n      640,\n      360\n    ]\n  }\n}"
+      }
+    ]
+  },
+  "longnameFixtureCompile": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+      }
+    ]
+  },
+  "noDuplicateTestsOrRestart": true,
+  "initialRelatedFailure": "initial-related-failure.json",
+  "nativeConsole": "native-console-history.json",
+  "allHistoricalIssuesRetained": [
+    "UGUI",
+    "Pipeline/CLI",
+    "UnityAI connection info",
+    "unattributed2095Sprites",
+    "allHotReload/actualbuild/physicalinput/hearing"
+  ],
+  "nativeRecovery": {
+    "stateReadAfterTerminal": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 115,\n  \"executeMs\": 13,\n  \"assemblyName\": \"PipelineRunScript_Stage15Proof_47068e8921e54ed38ce559710e004855\",\n  \"success\": true,\n  \"result\": {\n    \"modal\": null,\n    \"modalActive\": false,\n    \"parent\": null,\n    \"parentActive\": false,\n    \"decks\": [\n      {\n        \"Id\": \"f673349192db4e389e573fada7cc5f5f\",\n        \"Name\": \"スターター\",\n        \"cards\": 20\n      }\n    ],\n    \"editing\": null,\n    \"dirty\": false,\n    \"draft\": 0,\n    \"pending\": false,\n    \"revision\": 1,\n    \"owned\": 20,\n    \"tokens\": 0,\n    \"playing\": true,\n    \"scale\": 1,\n    \"screen\": [\n      640,\n      360\n    ],\n    \"main\": true,\n    \"mainContext\": true,\n    \"collection\": false,\n    \"collectionContext\": false,\n    \"mainKey\": \"return-hub\",\n    \"collectionKey\": null,\n    \"dialogs\": 0,\n    \"focus\": \"DungeonChoice_0\",\n    \"root\": -277678140,\n    \"resources\": 9,\n    \"events\": 1,\n    \"cameras\": 1,\n    \"listeners\": 1,\n    \"audio\": 3,\n    \"buttons\": [\n      {\n        \"name\": \"CancelDungeonSelection\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"OpenCustomizationUnlocks\",\n        \"interactable\": false\n      },\n      {\n        \"name\": \"SelectDepartureStyle\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"NewGameButton\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"OpenTokenExchange\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"PauseButton\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"OpenCustomizationEditor\",\n        \"interactable\": false\n      },\n      {\n        \"name\": \"ConfirmDungeonSelection\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"DungeonChoice_0\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"CardCollectionButton\",\n        \"interactable\": true\n      },\n      {\n        \"name\": \"ManualSaveButton\",\n        \"interactable\": true\n      }\n    ]\n  }\n}"
+        }
+      ]
+    },
+    "consoleBeforeRecovery": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"entries\": [\n    {\n      \"seq\": 360103,\n      \"timestampUtc\": \"2026-11-01T07:44:41.784934Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Failed to handle /api/exec request: Main thread operation timed out after 60000ms\",\n      \"stackTrace\": \"UnityEngine.Debug:LogError (object)\\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\\n\",\n      \"seeded\": false\n    },\n    {\n      \"seq\": 360134,\n      \"timestampUtc\": \"2026-11-01T07:47:28.120588Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Failed to handle /api/exec request: Main thread operation timed out after 120000ms\",\n      \"stackTrace\": \"UnityEngine.Debug:LogError (object)\\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\\n\",\n      \"seeded\": false\n    }\n  ],\n  \"cursor\": 360134,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 2,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 2,\n    \"warn\": 1,\n    \"log\": 57\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-01T07:45:26.406876Z\",\n    \"ageMs\": 131584,\n    \"compilationFailed\": false,\n    \"compiling\": false,\n    \"consoleErrors\": 1,\n    \"consoleWarnings\": 1,\n    \"consoleLogs\": 32,\n    \"seeded\": true\n  }\n}"
+        }
+      ]
+    },
+    "nativeTimeouts": "Native console history includes Pipeline60s/120s error2, UnityAI read-only connection-info warning1; final native console0/0 separately measured.",
+    "privateHelperCorrections": [
+      "Old AddOwned_0 was not a current button; failure before click; retried from current editor UI using AddDepartureCard_0, not re-running departure/retreat.",
+      "Fixture deck id s15-a was rejected by existing Guid N profile validation before write; inspected no pending/partial fixture; set up two valid fixed GUID test decks only.",
+      "300ナ fits native Jiki layout and intentionally had no ScrollRect; used1000ナ presentation-only overflow, preserving stored name; removed virtual pad in finally and resumed observed automatic disconnect pause through actual ResumeButton."
+    ],
+    "originalFailedHelperReceipts": "Some per-step labels were reused by successful corrected checks, so these summaries do not claim original failed helper JSON receipts remain available; initial compile/test archives and Pipeline error history are retained.",
+    "productSourceChangedForHelpers": false
+  }
+}

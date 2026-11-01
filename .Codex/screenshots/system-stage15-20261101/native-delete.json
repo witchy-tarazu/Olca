@@ -1,0 +1,438 @@
+{
+  "opening": {
+    "modal": "SavedDeckConfirmationContentsDialog",
+    "modalActive": true,
+    "parent": "SavedDeckContents",
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000015a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000015b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 0,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 1,
+    "focus": "CancelDeleteDeck",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "CancelDeleteDeck",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDeleteDeck",
+        "interactable": true
+      }
+    ]
+  },
+  "cancel": {
+    "modal": null,
+    "modalActive": false,
+    "parent": null,
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000015a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000015b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 0,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "DeleteDeck_000000000000400080000000000015a1",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "NewSavedDeck",
+        "interactable": true
+      },
+      {
+        "name": "PreviousSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "EquipDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000015a1",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000015a1",
+        "interactable": true
+      },
+      {
+        "name": "NextSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000015a1",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "CloseSavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ReloadSavedDecks",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "EquipDeck_000000000000400080000000000015a1",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "EquipDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      }
+    ]
+  },
+  "failed": {
+    "modal": null,
+    "modalActive": false,
+    "parent": null,
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000015a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000015b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 0,
+    "pending": true,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "RetrySavedDeckSave",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "NewSavedDeck",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000015a1",
+        "interactable": false
+      },
+      {
+        "name": "EquipDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "EquipDeck_000000000000400080000000000015a1",
+        "interactable": false
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000015b2",
+        "interactable": false
+      },
+      {
+        "name": "EquipDeck_000000000000400080000000000015b2",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000015b2",
+        "interactable": false
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000015a1",
+        "interactable": false
+      },
+      {
+        "name": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "CloneDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "CloseSavedDeckMenu",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "NextSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "RetrySavedDeckSave",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000015b2",
+        "interactable": false
+      },
+      {
+        "name": "PreviousSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000015a1",
+        "interactable": false
+      }
+    ]
+  },
+  "retry": {
+    "modal": null,
+    "modalActive": false,
+    "parent": null,
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000015b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 6,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "ReloadSavedDecks",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "EquipDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "NewSavedDeck",
+        "interactable": true
+      },
+      {
+        "name": "PreviousSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "NextSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "ReloadSavedDecks",
+        "interactable": true
+      },
+      {
+        "name": "CloseSavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "EquipDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      }
+    ]
+  },
+  "writes": 2,
+  "oldConfirmCannotCloseNewTicket": true,
+  "failedBytesUnchanged": true,
+  "postRetryBytes": {
+    "progress/progress.json": "37478188441bf80df9f0b4a3f546dcd70fc5336b9f12571ccf90cbac1ac6337f",
+    "progress/progress.backup.json": "0b6b9c92e7ae42cb872850d7688aae61bfde8101487e8a287698d372cc4a71c0",
+    "checkpoints/runs/15db588fdcdc470ea333b6c1bc8e24be/active.json": "332aabf5990d197f6c08ee692c101fdcfd53aa9643c21ace6e262a3b7840cd62",
+    "checkpoints/runs/15db588fdcdc470ea333b6c1bc8e24be/active.backup.json": "93133e61510d44516b62e606bf42fb714dc49c196968573fc4026e20f7d8d4df"
+  }
+}

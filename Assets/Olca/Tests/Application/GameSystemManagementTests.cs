@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -346,6 +347,59 @@ namespace Olca.Tests.Application
             layer.CloseCurrent();Assert.IsFalse(first.IsCurrent);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);
             Render();Assert.IsTrue(view.ManagementContext.IsCurrent);Assert.AreNotSame(first,view.ManagementContext);
             views.UnregisterOwner(owner);Assert.AreEqual(0,layer.RegisteredCount);Assert.AreEqual(0,dialogs.ActiveCount);
+        }
+        private Olca.Presentation.Dungeon.ClearReturnView ReturnView()
+        {
+            var panel=Panel("return15");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+            var layer=views.GetLayer("return15");layer.Register(owner,"return15",ct=>Task.FromResult(panel),(go,ctx)=>view.ShowManaged(ctx),go=>view.HideManaged());
+            view.ConfigureManagement(()=>{var request=layer.ShowAsync("return15");Assert.IsTrue(request.IsCompleted&&request.Result.Succeeded);},layer.CloseCurrent,dialogs);return view;
+        }
+        private UnityEngine.Events.UnityAction CurrentConfirm()
+        {
+            var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+            return (UnityEngine.Events.UnityAction)ticket.GetType().GetField("ConfirmAction").GetValue(ticket);
+        }
+        [Test] public void 編成破棄Dialogは親を保持し取消再描画後のframe遮断と旧確定を守る()
+        {
+            var view=ReturnView();int resumes=0,discards=0;var profile=new Olca.Core.Domain.ClearReturnProfile();var draft=new List<Olca.Core.Domain.Card>();
+            void Render(bool discard=false)=>view.RenderOwnedDeparture(profile,new Olca.Core.Domain.Card[0],draft,null,false,(_,__)=>{},()=>{},_=>discards++,()=>{resumes++;Render();},discard);
+            Render();var parent=view.transform.Find("DepartureContents").gameObject;Render(true);var old=CurrentConfirm();Render(true);
+            Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(parent.activeSelf);Assert.AreSame(parent,view.transform.Find("DepartureContents").gameObject);
+            view.GetComponentsInChildren<Button>().Single(x=>x.name=="KeepEditingDeparture").onClick.Invoke();
+            Assert.AreEqual(1,resumes);Assert.AreEqual(0,discards);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+            Assert.AreEqual("CloseOwnedDeparture",EventSystem.current.currentSelectedGameObject.name);old();Assert.AreEqual(0,discards);
+            frame++;dialogs.Tick();Render(true);var confirm=CurrentConfirm();confirm();confirm();Assert.AreEqual(1,discards);
+        }
+        [Test] public void 保存デッキ削除Dialogは取消focusと左右選択を保ち旧確定を再使用しない()
+        {
+            var view=ReturnView();int deletes=0;var profile=new Olca.Core.Domain.ClearReturnProfile{SavedDecks=new[]{new Olca.Core.Domain.SavedDepartureDeck{Id="isolated",Name=new string('長',300),Cards=new Olca.Core.Domain.SavedDeckCard[0]}}};
+            void Render(string deleting=null)=>view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},_=>{},_=>{},id=>Render(id),()=>{},()=>{},deleting,()=>{deletes++;Render();});
+            Render();Render("isolated");var old=CurrentConfirm();var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+            Assert.IsFalse((bool)ticket.GetType().GetField("DirectionScroll").GetValue(ticket));Assert.NotNull(ticket.GetType().GetField("Scroll").GetValue(ticket));
+            view.GetComponentsInChildren<Button>().Single(x=>x.name=="CancelDeleteDeck").onClick.Invoke();Assert.AreEqual(0,deletes);Assert.AreEqual("DeleteDeck_isolated",EventSystem.current.currentSelectedGameObject.name);Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+            old();Assert.AreEqual(0,deletes);frame++;dialogs.Tick();Render("isolated");var next=CurrentConfirm();old();Assert.AreEqual(1,dialogs.ActiveCount);next();next();Assert.AreEqual(1,deletes);Assert.AreEqual(0,dialogs.ActiveCount);
+        }
+        [Test] public void 親終了で編成削除Dialogの業務callbackと後着確定を破棄する()
+        {
+            var view=ReturnView();int effects=0;var profile=new Olca.Core.Domain.ClearReturnProfile();
+            view.RenderOwnedDeparture(profile,new Olca.Core.Domain.Card[0],new List<Olca.Core.Domain.Card>(),null,false,(_,__)=>{},()=>{},_=>effects++,()=>effects++,true);
+            var old=CurrentConfirm();views.GetLayer("return15").CloseCurrent();Assert.AreEqual(0,dialogs.ActiveCount);old();Assert.AreEqual(0,effects);Assert.IsFalse(view.gameObject.activeSelf);Assert.IsNull(view.ManagementContext);
+        }
+        [Test] public void Dialog取消後の再描画で閉鎖frameを消さず新拠点の保存入口も遮断する()
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-stage15-frame-"+Guid.NewGuid().ToString("N"));
+            try{
+                var store=new ClearReturnFileStore(directory);var progress=new Olca.Core.Domain.ClearReturnSession(store);Assert.IsTrue(progress.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+                var view=ReturnView();view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null);
+                var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+                void Set(string n,object v)=>type.GetField(n,flags).SetValue(controller,v);
+                Set("gameSystem",system);Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);Set("clearReturnView",view);
+                Assert.IsTrue((bool)type.GetProperty("IsProgressHub",flags).GetValue(controller),"保存入口自体が有効な拠点で遮断を検証する");
+                var popup=Panel("frame-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");dialogs.Show(view.ManagementContext,popup,yes,no,_=>view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null));
+                var bytes=File.ReadAllBytes(store.ActivePath);no.onClick.Invoke();Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+                Assert.DoesNotThrow(()=>type.GetMethod("SaveProgressFromUi",flags).Invoke(controller,null));CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));
+                UnityEngine.Object.DestroyImmediate(controller);
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
         }
     }
 }

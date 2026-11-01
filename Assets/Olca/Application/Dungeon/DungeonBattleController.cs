@@ -1326,7 +1326,7 @@ namespace Olca.Application.Dungeon
         private void SaveProgressFromUi()
         {
             if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
-            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||!IsProgressHub||clearReturnSession.HasPendingSave)return;
+            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!IsProgressHub||clearReturnSession.HasPendingSave)return;
             newGameConfirmation=false;
             bool saved=clearReturnSession.ManualSave();
             manualSavePending=!saved&&clearReturnSession.HasPendingSave;
@@ -1336,7 +1336,7 @@ namespace Olca.Application.Dungeon
         private void RequestNewGame()
         {
             if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
-            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||!CanStartNewGame)return;
+            if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!CanStartNewGame)return;
             newGameConfirmation=true;confirmedProgressRevision=clearReturnSession.Snapshot.Revision;
             progressConfirmButton.GetComponentInChildren<Text>().text="進行を初期化して開始";
             ShowProgressAction("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で拠点から開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true);

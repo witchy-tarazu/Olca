@@ -1,0 +1,748 @@
+{
+  "initial": {
+    "modal": null,
+    "modalActive": false,
+    "parent": null,
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000015b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 6,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "DeleteDeck_000000000000400080000000000015b2",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "EquipDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "EquipDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "CloseSavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "NextSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "PreviousSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "CloneDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "NewSavedDeck",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000015b2",
+        "interactable": true
+      },
+      {
+        "name": "ReloadSavedDecks",
+        "interactable": true
+      }
+    ]
+  },
+  "virtualPad": {
+    "virtualPadOnly": true,
+    "before": 1,
+    "after": 0.800000131,
+    "left": "ConfirmDeleteDeck",
+    "state": {
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "f673349192db4e389e573fada7cc5f5f",
+          "Name": "スターター",
+          "cards": 20
+        },
+        {
+          "Id": "000000000000400080000000000015b2",
+          "Name": "ケンショウB",
+          "cards": 0
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 6,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": true,
+      "mainContext": true,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": "return-hub",
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "DeleteDeck_000000000000400080000000000015b2",
+      "root": -277678140,
+      "resources": 10,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "PreviousSavedDeckPage",
+          "interactable": false
+        },
+        {
+          "name": "EquipDeck_000000000000400080000000000015b2",
+          "interactable": true
+        },
+        {
+          "name": "CloneDeck_000000000000400080000000000015b2",
+          "interactable": true
+        },
+        {
+          "name": "DeleteDeck_f673349192db4e389e573fada7cc5f5f",
+          "interactable": true
+        },
+        {
+          "name": "EquipDeck_f673349192db4e389e573fada7cc5f5f",
+          "interactable": true
+        },
+        {
+          "name": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+          "interactable": true
+        },
+        {
+          "name": "CloneDeck_f673349192db4e389e573fada7cc5f5f",
+          "interactable": true
+        },
+        {
+          "name": "EditDeck_000000000000400080000000000015b2",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "SavedDeckName_000000000000400080000000000015b2Details",
+          "interactable": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "interactable": false
+        },
+        {
+          "name": "DeleteDeck_000000000000400080000000000015b2",
+          "interactable": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "interactable": true
+        },
+        {
+          "name": "NewSavedDeck",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "parentClosed": {
+    "dialogs": 0
+  },
+  "closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 182084041,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -277678140,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -277678146,
+        -277678152,
+        -277678158
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "released": {
+    "oldViewsDestroyed": true,
+    "oldBindingsReleased": true,
+    "dialogs": 0,
+    "resources": 3
+  },
+  "reopened": {
+    "duplicateOpenSucceeded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 182084041,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -277678140,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -277678218,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 10,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -277701462
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -277678146,
+        -277678152,
+        -277678158
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage15-15001/settings"
+    }
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -277701462,
+    "newControllerId": -277705188,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1354128447,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -277678140,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -277678218,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 10,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -277705188
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -277678146,
+        -277678152,
+        -277678158
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage15-15001/settings"
+    }
+  },
+  "finalDelete": {
+    "modal": null,
+    "modalActive": false,
+    "parent": null,
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 7,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EquipDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": false
+      },
+      {
+        "name": "CloneDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "NextSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "CloseSavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "PreviousSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "EditDeck_f673349192db4e389e573fada7cc5f5f",
+        "interactable": true
+      },
+      {
+        "name": "NewSavedDeck",
+        "interactable": true
+      },
+      {
+        "name": "ReloadSavedDecks",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      }
+    ]
+  },
+  "postSingle": {
+    "modal": null,
+    "modalActive": false,
+    "parent": null,
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "f673349192db4e389e573fada7cc5f5f",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000015b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 6,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "SavedDeckMenu",
+    "root": -277678140,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      }
+    ]
+  },
+  "finalClosed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1354128447,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -277678140,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -277678146,
+        -277678152,
+        -277678158
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "saveHashesBeforeLifecycle": {
+    "progress/progress.json": "37478188441bf80df9f0b4a3f546dcd70fc5336b9f12571ccf90cbac1ac6337f",
+    "progress/progress.backup.json": "0b6b9c92e7ae42cb872850d7688aae61bfde8101487e8a287698d372cc4a71c0",
+    "checkpoints/runs/15db588fdcdc470ea333b6c1bc8e24be/active.json": "332aabf5990d197f6c08ee692c101fdcfd53aa9643c21ace6e262a3b7840cd62",
+    "checkpoints/runs/15db588fdcdc470ea333b6c1bc8e24be/active.backup.json": "93133e61510d44516b62e606bf42fb714dc49c196968573fc4026e20f7d8d4df"
+  },
+  "saveHashesAfterFixtureDelete": {
+    "progress/progress.json": "b12a79c70a043316e0650b622be03553b3b7232514314b383cbc2cc9a4753343",
+    "progress/progress.backup.json": "37478188441bf80df9f0b4a3f546dcd70fc5336b9f12571ccf90cbac1ac6337f",
+    "checkpoints/runs/15db588fdcdc470ea333b6c1bc8e24be/active.json": "332aabf5990d197f6c08ee692c101fdcfd53aa9643c21ace6e262a3b7840cd62",
+    "checkpoints/runs/15db588fdcdc470ea333b6c1bc8e24be/active.backup.json": "93133e61510d44516b62e606bf42fb714dc49c196968573fc4026e20f7d8d4df"
+  },
+  "finalConsole": {
+    "sampledUtc": "2026-11-01T07:53:54.149871Z",
+    "ageMs": 17,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 2,
+    "seeded": true
+  },
+  "missingCanceledActualPrefab": true,
+  "oldConfirmRejected": true,
+  "releaseProofKeysDone": true,
+  "normalPlayStopSentOnce": true,
+  "inactiveArtworkBefore": {
+    "inactive": true,
+    "mini": 5,
+    "illustrations": 1,
+    "sprites": 6,
+    "ownedTextures": 5,
+    "importedTextureAlive": true
+  },
+  "inactiveArtworkAfter": {
+    "oldViewDestroyed": true,
+    "ownedSpritesDestroyed": 6,
+    "ownedTexturesDestroyed": 5,
+    "importedTextureSurvives": true
+  }
+}
