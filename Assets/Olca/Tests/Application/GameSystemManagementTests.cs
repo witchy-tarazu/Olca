@@ -488,5 +488,24 @@ namespace Olca.Tests.Application
                 CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(cost,model.GetTotalUsedCost());binding.Dispose();Assert.IsTrue(imported!=null);Assert.AreEqual(0,resources.OwnedInstanceCount);
             }finally{binding.Dispose();GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
         }
+        [TestCase(false)][TestCase(true)]
+        public async Task 会話Popupは元ViewとSessionを保持し世代入力とpause親終了を管理する(bool skipMode)
+        {
+            var root=Panel("managed-dialogue");var v=root.AddComponent<Olca.Presentation.Field.DialogueView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),()=>{});
+            var session=new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript("dialogue-owner",new[]{new Olca.Core.Domain.DialogueLine(string.Concat(Enumerable.Repeat("ナガイ カイワ\n",80))+"オワリ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);
+            var layer=views.GetLayer("dialogue");layer.Register(owner,"dialogue",_=>Task.FromResult(root),(panel,ctx)=>v.BindManaged(session,ctx,dialogs),panel=>v.HideManaged());
+            Assert.IsTrue((await layer.ShowAsync("dialogue")).Succeeded);
+            Button Find(string name)=>root.GetComponentsInChildren<Button>(true).Single(b=>b.name==name);
+            var next=Find("DialogueNext");var history=Find("DialogueHistory");var entry=Find(skipMode?"DialogueSkip":"DialogueHistory");var oldNormal=next.onClick;EventSystem.current.SetSelectedGameObject(entry.gameObject);int index=session.Index;long initialVersion=session.Version;
+            entry.onClick.Invoke();v.Refresh();Assert.AreEqual(1,dialogs.ActiveCount);Assert.AreEqual(skipMode,session.SkipConfirmationOpen);Assert.AreEqual(!skipMode,session.BacklogOpen);var oldClose=history.onClick;oldNormal.Invoke();Assert.AreEqual(index,session.Index);Assert.DoesNotThrow(()=>dialogs.Tick());
+            session.IsPaused=true;v.SetPresentationPaused(true);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsTrue(root.activeSelf);Assert.AreEqual(skipMode,session.SkipConfirmationOpen);Assert.AreEqual(!skipMode,session.BacklogOpen);
+            using(var other=dialogs.CreateOwner(()=>true)){var panel=Panel("pause-dialogue-confirm");var close=Button(panel,"close-pause-dialogue");var otherRequest=dialogs.ShowNotice(other,panel,close,null,_=>{});Assert.AreEqual(1,dialogs.ActiveCount);close.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await otherRequest);}
+            frame++;session.IsPaused=false;v.SetPresentationPaused(false);Assert.AreEqual(1,dialogs.ActiveCount);oldClose.Invoke();Assert.AreEqual(1,dialogs.ActiveCount);history.onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(session.SkipConfirmationOpen);Assert.IsFalse(session.BacklogOpen);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);long afterClose=session.Version;oldNormal.Invoke();next.onClick.Invoke();Assert.AreEqual(afterClose,session.Version);Assert.AreEqual(index,session.Index);
+            frame++;entry.onClick.Invoke();v.Refresh();Assert.AreEqual(1,dialogs.ActiveCount);var stalePopup=history.onClick;var beforeHide=next.onClick;
+            if(skipMode){var confirm=next.onClick;confirm.Invoke();Assert.IsFalse(session.IsOpen);long ended=session.Version;confirm.Invoke();Assert.AreEqual(ended,session.Version);Assert.AreEqual(0,dialogs.ActiveCount);}
+            else{var scroll=root.GetComponentInChildren<ScrollRect>();Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);layer.CloseCurrent();Assert.IsTrue(session.IsOpen);Assert.IsTrue(session.BacklogOpen);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(root.activeSelf);}
+            layer.CloseCurrent();Assert.AreNotSame(beforeHide,next.onClick);stalePopup.Invoke();var oldSession=session;long oldVersion=oldSession.Version;
+            session=new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript("dialogue-reopen",new[]{new Olca.Core.Domain.DialogueLine("フッキ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);frame++;Assert.IsTrue((await layer.ShowAsync("dialogue")).Succeeded);oldNormal.Invoke();stalePopup.Invoke();Assert.AreEqual(0,session.Index);Assert.AreEqual(oldVersion,oldSession.Version);Find("DialogueNext").onClick.Invoke();Assert.AreEqual(1,session.Index);layer.CloseCurrent();views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
     }
 }

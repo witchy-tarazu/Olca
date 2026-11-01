@@ -1,0 +1,68 @@
+{
+  "receipts": {
+    "system-stage19-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage19-final-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage19-focus-live-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage19-final-live-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    "system-stage19-initial-live-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Cannot connect to Unity Editor Pipeline server at 127.0.0.1:7800. Make sure Unity Editor is running with the Pipeline package installed."
+        }
+      ],
+      "isError": true
+    },
+    "system-stage19-focus-recompile.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    "system-stage19-native-live-assembly.json": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    }
+  },
+  "normalRecovery": "Same VM/Editor137059/model/credentials retained. Ordinary compile/Play DomainReload completed; delayed read failures and successful fresh reads retained. No duplicate tests or uncertain mutation repeated.",
+  "initialFocusFailure": "Critical2/2 failed on original focus restoration; exact expectations preserved, selection-only fix applied while retaining input fence.",
+  "fullWrapperTimedOut": true,
+  "sameJobRecovered": true
+}

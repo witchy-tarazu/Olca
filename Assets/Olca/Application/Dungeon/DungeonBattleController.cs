@@ -318,6 +318,7 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
+            if(dialogueViews!=null&&dialogueView!=null)dialogueView.HideManaged();dialogueViews=null;
             currencyChoice?.TrySetCanceled();itemRewardChoice?.TrySetCanceled();CloseResourceReward(currencyOverlay);CloseResourceReward(itemRewardOverlay);
             resourceRewardMenu?.Dispose();resourceRewardMenu=null;resourceRewardViews=null;resourceRewardContexts.Clear();currencyChoice=itemRewardChoice=null;
             // Customの素材を借りる帰還画面を先に閉じ、生成物の終端解放より後に表示を残さない。
@@ -767,6 +768,7 @@ namespace Olca.Application.Dungeon
             }
         }
 
+        private Olca.Presentation.Management.ViewManager dialogueViews;
         private DialogueSession dialogue;private DialogueView dialogueView;private System.Action<DialogueEndReason> dialogueFinished;private bool finishingDialogue;
         private readonly UnityLogicalLoop dialogueLoop=new UnityLogicalLoop(observeEditor:true);
         private DialogueTextSettingsStore dialogueSettings;private DialogueTextSpeed dialogueSpeed=DialogueTextSpeed.Normal;private string dialogueSettingsError;
@@ -775,20 +777,24 @@ namespace Olca.Application.Dungeon
         {
             if(script==null||DialogueOpen||finishingDialogue||manager==null||IsUserPaused||clearReturnVisible||awaitingCheckpointChoice||manager.IsSuspended||manager.Dungeon.IsCheckpointBlocked||manager.Dungeon.ActiveVisit!=null||
                 (manager.CurrentPhase!=GamePhase.Dungeon&&manager.CurrentPhase!=GamePhase.Battle)||manager.CurrentPhase==GamePhase.Battle&&!battleFieldReady)return false;
-            logicalLoop.Observe(false);logicalLoop.ReleaseInput();ResetTouchInput();dialogue=new DialogueSession(script,dialogueSpeed);dialogueFinished=finished;dialogueLoop.StartNewTimeline();GameplayPause.SetPaused(true);inputProvider.QueueSnapshot();dialogueView.Bind(dialogue);return true;
+            logicalLoop.Observe(false);logicalLoop.ReleaseInput();ResetTouchInput();dialogue=new DialogueSession(script,dialogueSpeed);dialogueFinished=finished;dialogueLoop.StartNewTimeline();GameplayPause.SetPaused(true);inputProvider.QueueSnapshot();
+            if(dialogueViews==null)dialogueView.Bind(dialogue);
+            else {var opened=dialogueViews.ShowAsync("dialogue");if(opened.IsCompleted&&!opened.Result.Succeeded){dialogueFinished=null;FinishDialogue(interrupt:true);return false;}}
+            return true;
         }
         private void FinishDialogue(bool interrupt=false)
         {
             if(dialogue==null)return;var current=dialogue;if(interrupt)current.Interrupt();if(current.IsOpen)return;
-            dialogue=null;if(dialogueView!=null)dialogueView.Bind(null);var callback=dialogueFinished;dialogueFinished=null;logicalLoop.Observe(false);ResetTouchInput();GameplayPause.SetPaused(IsUserPaused);inputProvider?.QueueSnapshot();
+            dialogue=null;if(dialogueViews!=null)dialogueViews.CloseCurrent();else if(dialogueView!=null)dialogueView.Bind(null);var callback=dialogueFinished;dialogueFinished=null;logicalLoop.Observe(false);ResetTouchInput();GameplayPause.SetPaused(IsUserPaused);inputProvider?.QueueSnapshot();
             finishingDialogue=true;try{callback?.Invoke(current.EndReason);}finally{finishingDialogue=false;}
         }
         private void UpdateDialogue()
         {
+            if(DialogueOpen&&dialogueViews!=null&&dialogueViews.CurrentKey!="dialogue"){FinishDialogue(interrupt:true);return;}
             bool active=DialogueOpen&&!IsUserPaused&&!dialogue.BacklogOpen&&!dialogue.SkipConfirmationOpen;
             dialogueLoop.PumpTimestamped(active,null,(frame,ms,input)=>dialogue?.AdvanceFrame(),()=>DialogueOpen&&dialogue.IsOpen&&!IsUserPaused&&!dialogue.BacklogOpen&&!dialogue.SkipConfirmationOpen);
             if(!DialogueOpen)return;if(!dialogue.IsOpen){FinishDialogue();return;}
-            if(dialogueView!=null){dialogueView.gameObject.SetActive(!IsUserPaused);if(!IsUserPaused){dialogueView.Refresh();dialogueView.transform.SetAsLastSibling();}}
+            if(dialogueView!=null){if(dialogueViews!=null)dialogueView.SetPresentationPaused(IsUserPaused);else dialogueView.gameObject.SetActive(!IsUserPaused);if(!IsUserPaused){dialogueView.Refresh();dialogueView.transform.SetAsLastSibling();}}
         }
         public bool IsUserPaused => manager != null && manager.IsUserPaused;
         [SerializeField, HideInInspector] private bool validationStorageRequired;
@@ -964,6 +970,7 @@ namespace Olca.Application.Dungeon
             manager.SetUserPaused(paused);
             if(paused&&customScreenView!=null)customScreenView.CloseDetailsForSystemPause();
             if(dialogue!=null)dialogue.IsPaused=paused;
+            if(dialogueViews!=null&&dialogueView!=null&&DialogueOpen)dialogueView.SetPresentationPaused(paused);
             dialogueLoop.Observe(false);
             gameplayAudio?.SetPaused(paused||!isActiveAndEnabled);
             GameplayPause.SetPaused(paused||DialogueOpen);
@@ -1175,6 +1182,8 @@ namespace Olca.Application.Dungeon
             RegisterReturnViews();
             RegisterCustomizationViews();
             RegisterResourceRewardViews();
+            if(gameSystem!=null){dialogueViews=gameSystem.Views.GetLayer("dialogue");dialogueViews.Register(this,"dialogue",ct=>{ct.ThrowIfCancellationRequested();if(dialogueView==null)throw new System.InvalidOperationException("会話画面がありません");return System.Threading.Tasks.Task.FromResult(dialogueView.gameObject);},
+                (panel,context)=>{if(dialogue==null||!dialogue.IsOpen)throw new System.OperationCanceledException();panel.GetComponent<DialogueView>().BindManaged(dialogue,context,gameSystem.Dialogs);},panel=>{if(panel!=null)panel.GetComponent<DialogueView>().HideManaged();});}
         }
         private void OpenKeyboardSettings()
         {

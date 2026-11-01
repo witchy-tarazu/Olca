@@ -1,0 +1,38 @@
+{
+  "inheritedSpecification": "ac9f6be5ec8ccc5be149936e4b28854772080946",
+  "inheritedMerge": "aafdecba163ff615cd7a320896204c261efca345",
+  "stage19Base": "266f612440b2c8eb19fff39dfa10d9c2fea9addf",
+  "confirmed": [
+    "Main branching means changing completion order, not choosing progression destination through dialogue",
+    "All major areas/bosses eventually required",
+    "Outside-dungeon enemies use fixed area/enemy values without player-level scaling",
+    "Optional detour areas and optional bosses",
+    "Multiple endings remain undecided"
+  ],
+  "implementation": "All acquired as documentation only; no outside exploration implementation or product values added in Stage19",
+  "periodicCheck": "Safe fast-forward266f612→667cd4b at publication boundary; only game-wide specification changed",
+  "prePublicationPull": {
+    "1a9bc09": "1a9bc09621f41472684596bc44155290d96f8a9d",
+    "68ab3fb": "68ab3fba42a73357e8e7e67ee3c64d8c3b14a252",
+    "90f92cd": "90f92cdd13cc83e95adcc6af9808ab2c9507c72e",
+    "7b89508": "7b89508d85049e09ca8ca319fca443ec9efbec98",
+    "39d3e50": "39d3e50f10f50973f3cd46fcf934b7b848a21946",
+    "667cd4b": "667cd4b552f45fe126ab9a8091f0421758d8d2d3"
+  },
+  "newChangedFiles": [
+    "Planning/ゲーム全体仕様.md"
+  ],
+  "newConfirmed": [
+    "任意エリア報酬へ装飾品/parts/cardや新style解放を設定可能",
+    "外界style切替はpauseから随時、基本はZX/ZXA型shortcut。選択中は探索時間停止",
+    "地上/空中/壁滑り中に切替可、速度/落下を保持。攻撃motion中/のけぞり/麻痺等操作不能中は不可",
+    "style切替で探索deck/手札/共有gauge保持。外界にbattle一時変身なし",
+    "style能力やcard属性/攻撃特性で仕掛け突破、解法/補充再挑戦/永続解除か再訪resetは個別設定",
+    "探索deck20枚へ同名/レギュレーション制限適用、回復/reload専用/拠点で複数deck切替",
+    "探索は永続所持cardを使い、battleの融合/調律/超越なし。共通所持を両deckへ重複登録可、deck間合算消費なし",
+    "共通cardの威力/範囲/動作は探索別設定可能、マス→距離互換時は元動作をできるだけ保持、cost共通",
+    "探索攻撃motion開始でcard/gauge消費。開始前中断は未消費、開始後中断は返却なし、発射済み弾は残留"
+  ],
+  "codeImpact": false,
+  "localWorkPreserved": true
+}

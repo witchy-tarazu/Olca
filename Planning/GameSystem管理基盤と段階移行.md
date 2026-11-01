@@ -609,3 +609,49 @@ Close/Open・checkpoint再開・Single Bootstrap再入・旧ticket/巡回callbac
 [第十八段階証跡](../.Codex/screenshots/system-stage18-20261101/README.md)
 
 公開前の安全pullでac9f6be/merge aafdecbの`ゲーム全体仕様.md`更新を保護した。メイン分岐は会話選択による進行先決定ではなく攻略順の変更、最終的に全主要エリア/ボス攻略、外界敵はレベル連動なしのエリア/敵別固定強さ、寄り道エリア/任意ボスありへ訂正・追加。複数エンドは未決のまま。文書取得のみで、今回のCustom詳細管理へ外界/ストーリー機能を実装していない。変更は文書だけで最終4source/資産hashは検証済み状態と一致し、ローカル修正を保持してfast-forwardした。
+
+## 第十九段階: 会話Viewとskip/backlog Popup（実装・検証中）
+
+DialogueViewはGameFieldView.cs末尾にあり、Controller.CreatePauseControlsがDialoguePanelを生成し、同じtitle/body/buttonsを通常会話・skip確認・backlogで切り替える。Core.DialogueSessionとdialogueLoop、完了/中断通知と保存境界はControllerへ維持。既存選択肢・既読/skip条件・履歴・進行値を変更しない。
+
+会話本体はViewManagerのdialogue層にResourceManager実体leaseとして登録し、ShowでSession/context/DialogManagerを注入、Hide/host終了で旧menu/callback/owner参照を返す。Popupは同じ座標系のDialoguePopup子へ既存表示部品を借用し、DialogManagerの実ticketへ渡す。標準Menuを二重生成せず既存会話Menuのページ/取消割当を維持。skipの確定/取消・backlog閉鎖だけが既存Core操作へ届き、ParentClosedはCoreを操作しない。中断は既存Controller.FinishDialogueが一度だけ判断する。
+
+pauseは本体View/contextを維持して表示だけを隠し、Popup ticketをParentClosedとして返す。Sessionの確認/履歴フラグを保持し復帰時は新ticketで再提示。旧close/confirm/buttonはSession参照・Version・View世代/ticket世代で拒否。閉鎖同frameは親context入力fenceを保持し、元の会話へfocus復帰。部品の親/sibling順、長文scroll/座標を維持する。実入口・回帰・3比率・独立レビュー・cleanup/公開完了後に結果を追記する。
+
+ac9f6beは攻略順によるメイン分岐（会話選択で進行先決定ではない）、全主要エリア/ボス攻略、外界敵の固定強さ、寄り道/任意ボスを文書で確定。複数エンドは未決。文書取得済みと新外界/ストーリー機能実装を混同せず、既存DialogueScript選択肢契約は変更しない。
+
+### 第十九段階の初回回帰と修正
+
+新規2caseの先行実行は両方focus=nullで失敗した。DialogManagerがPopupを非active化した後はPopup内へ借用した起点Buttonを復元できず、同frame fence中はMenuPadScope.Bindもfocusしないためである。元のHistory/Skip期待を維持し、部品復元/既存Core操作/Refresh後、同じ有効Session/contextとactive/interactableな起点へ選択表示だけを返す最小修正を行った。CanAct/DialogBlocksInputは緩めていない。テストのShowNotice Task受取/awaitで新規CS4014も解消し、初回失敗と旧レビュー/hashを証跡へ保持。
+
+最終4sourceの関連513/513（58.83秒）、既存DialogueSession6/レイアウト2/旧会話入口1/checkpoint復帰1の計10件に成功。console error0、submission/project/関連/hash一致。現在native/全件等は未完で、完了後に記録する。会話本体はResourceManager追跡lease/ViewManager層、PopupはDialogManager ticket、既存会話Menuは唯一の操作経路。Hideは現在Buttonイベントを返し旧Session参照を保持せず、外部に残った旧Eventは世代/ownerで拒否する。View閉鎖はController.UpdateDialogueが既存FinishDialogue(interrupt:true)へ渡し、ViewがCore中断/保存を直接判断しない。
+
+### host表示組立を閉じる次の範囲
+
+残る必須は`DungeonBattleController.CreatePauseControls`と`CreateProgressActions`の表示生成経路である。現在はRoot.UI.AcquireContent配下にControllerがpause/checkpoint/retreat/progress prompt/return family/装備/reward/dialogue等のGOとButtonを前もって組み立て、各ViewManager factoryがその既存実体を借用する経路がある。単にManagerへ登録したことを、必要時の画面生成まで完了したとは扱わない。
+
+次の縦切りは、まず会話等の一画面で「ResourceManager factoryが必要時にRootと既存Initializeを組む→ViewManagerが表示context注入→返却/再生成」を通し、ControllerはSession/保存/進行delegateを渡すだけにする。その共通組立と各画面builderを通常のfactory/bindingへ分け、`CreatePauseControls`は共通UI受け口と登録/参照注入だけへ縮小する。`CreateProgressActions`の文面/ボタン構築をprompt builderへ分け、進行判定/write plan実行はController/既存Flowに残す。新Managerを機械的に増やさず、既存生成資源leaseと元見た目/参照名/入力順を保つ。
+
+本番Bootstrapから必要なView/Popupを供給し、factory生成失敗/取消/破棄後再生成、host終了と旧直Scene互換、保存復帰・入力/音/Camera寿命を関係回帰で保証した時が一区切り。全Widgetをserialize済Prefabへ変えること、単なるView内部Label/Button組立やoptional phase-lazy最適化までを終わりのない必須抽象化へ増やさない。外界/ボスラッシュ/依頼等新機能と未決値、実build/物理入力/聴感/全HotReloadや歴史的UGUI/CLI/Pipeline/UnityAI/2095基準Sprite等の限界は別に保持する。
+
+### 第十九段階の実操作とhelper境界
+
+本番Bootstrapの既存TryStartDialogue入口へ隔離台本を渡し、実EventSystem raycast Button/ScrollRect経路を通した。明示全文表示後を比較基準に、backlog閲覧/末尾到達とskip取消でindex/visible/choices/履歴/ゲーム状態・実保存bytes不変、History/Skip focus復帰、同frame旧Next遮断を確認。skip確定と旧confirm再実行で通知1回、外部View閉鎖はControllerのInterrupted通知1回。選択肢付き台本はskip不可表示とChoice1→指定行への遷移/完了を確認。製品NPC/ストーリー登録や物理入力とは区別する。
+
+pauseはticketを返し、別の撤退確認を開く→取消→会話へ戻る→新ticketへ旧closeが作用しないことを確認。初手5枚/旧10枚保存などの既存ゲーム契約を変えていない。長文台本80行の末尾印は各resize/Canvas更新後に照合し、FHD/4K/4:3の9画像と4K局所を独立視覚レビューして必須指摘0。matched-before同一性は主張しない。
+
+host Close/Open・checkpoint再開・Single再入で旧View/owner/context/DialogManager/menu/借用部品参照を返し、import font生存、Camera/Listener/EventSystem各1・音源3とRoot再利用を確認。各終了の中断通知は一回で旧callbackは新Sessionへ作用しない。最初のhelperはContinue直後の会話開始が既存条件に拒否され停止した。拒否時の単一guard値は未採取なので原因を断定せず、後のBattle/表示ready等を観測し、既存準備条件を待つ手順で残りだけ再開。完了済みClose/Openは繰り返さず製品開始条件を緩めない。初回Suspend前後のhelper local hashは未保存だったため再構成したふりをせず、最終Suspendと欠損/取消ロード後のbytesを明示測定した。
+
+正常終了窓はconsole error0。終了時にproof/callback参照を返しPlayを一度停止した。全件/cleanupは完了後に追記する。UnityAI/Pipeline/CLI等の環境診断、初回focus失敗やhelper拒否はそれぞれ履歴へ保持し、製品不具合と混同しない。
+
+### 第十九段階の最終検証
+
+同Editor2周80件と最終全3621/3621（286.42秒）成功。失敗/skip/inconclusive0、console error0、warning59は既存負条件fixture5分類に厳密一致し抑制なし。関連513/既存会話10/native/9画像独立視覚・コードレビューと最終4sourceのsubmission/project/hashが一致。外側待機期限後も同一TestRunnerのrunning→completedを回収し重複起動しない。
+
+cleanupは原本clean、928対象Asset一致（既存private URP2例外）、実640×360/両RT/TMP/saveguard、禁止default保存先なし、native Mouse/Keyboardのみ、EventSystem current CLR/Unity null・登録0/Scene0、生成registry/root/borrow/pending0、proof/fault/旧callback捕捉参照なしを確認。最終隔離保存bytesはstop/反復/全件後も不変。登録外Sprite2095基準群は未特定として保持し、既存GameplayPause neutral待ち（false/awaitRelease=true/resumeFrames=2）は強制解除しない。
+
+本段階で会話本体/skip/backlogの管理寿命を閉じる。残必須は上記host表示組立の具体的factory/binding分離であり、会話管理完了を全システム移行完了とはしない。Itemスキップnative/製品装備stat実値/極端な旧デッキ長名末尾/実build/物理入力/聴感/全HotReload、歴史的UGUI/Pipeline/CLI/UnityAI・従来の同位置表示限界は別に保持する。
+
+[第十九段階証跡](../.Codex/screenshots/system-stage19-20261101/README.md)
+
+公開前safe pullで1a9bc09/90f92cd/7b89508/39d3e50/667cd4b等のゲーム全体仕様20行を保護。任意報酬でstyle解放可、外界style切替はpause/shortcutで選択中時間停止・空中/壁可・速度落下保持・攻撃/操作不能中不可・手札/deck/gauge保持/一時変身なし、style/card属性特性による仕掛け突破と個別永続/reset、探索deckの同名/レギュレーション制限・複数保存・共通所持重複登録（deck間合算消費なし）・battle加工なし、探索別動作/威力/範囲と共通cost、攻撃motion開始時消費/開始前中断未消費/開始後返却なし/発射済み弾残留を実本文で確認した。個別値・未決事項は決定せず、文書取得のみで今回に探索機能を実装していない。差分はPlanning文書だけ、検証済み4source/hash/資産は不変でローカル作業を保持してfast-forwardした。

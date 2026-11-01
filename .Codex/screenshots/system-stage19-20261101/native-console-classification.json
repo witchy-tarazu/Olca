@@ -1,0 +1,21 @@
+{
+  "productErrors": 0,
+  "counts": {
+    "error": 1,
+    "warn": 1,
+    "log": 109
+  },
+  "groundTruth": {
+    "sampledUtc": "2026-11-01T12:58:52.708736Z",
+    "ageMs": 136,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 1,
+    "consoleLogs": 61,
+    "seeded": true
+  },
+  "toolHistory": "Exact known Pipeline/UnityAI/CLI diagnostics only; retained",
+  "helperFailure": "Established dialogue entry rejected after checkpoint continue; rejection guard not bypassed, current phase Battle/ready state observed and waited. Exact guard at failure not captured; no cause claim.",
+  "suppressed": false
+}

@@ -1,0 +1,58 @@
+{
+  "results": [
+    {
+      "filter": "DialogueSessionTests",
+      "summary": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.05
+    },
+    {
+      "filter": "DialogueLayoutRefactorTests",
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.07
+    },
+    {
+      "filter": "会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない",
+      "summary": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.16
+    },
+    {
+      "filter": "会話中のチェックポイント再開は会話とバックログを復元せず既存保存を保持する",
+      "summary": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 0.16
+    }
+  ],
+  "groundTruth": {
+    "sampledUtc": "2026-11-01T12:44:05.561342Z",
+    "ageMs": 149,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 48,
+    "seeded": true
+  }
+}
