@@ -1,0 +1,13 @@
+{
+  "checkedUtc": "2026-11-01T21:05:33.243726+00:00",
+  "head": "023c95321c09b9f44f46df7a83e65bd1445be19a",
+  "remote": "023c95321c09b9f44f46df7a83e65bd1445be19a",
+  "protected": {
+    "9a548c1539020bfd083cc4117b50eb5233b9976a": true,
+    "06cae0db243a9af2b2151b12feb0362104a65b50": true,
+    "023c95321c09b9f44f46df7a83e65bd1445be19a": true,
+    "526bd97f3148464d113005a4cd2abaf24eb99ffa": true
+  },
+  "scope": "Documentation only; no attributes, resistances, traits or style/transformation implementation changed.",
+  "prePublicationFetch": "HEAD and origin/master023c953 match; no additional changes"
+}

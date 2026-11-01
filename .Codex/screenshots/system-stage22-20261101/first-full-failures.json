@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "total": 3649,
+    "passed": 3638,
+    "failed": 11,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 240.71,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.デッキ削除確認は長い対象名と警告を分離し取消後の古い操作を拒否する(1662.77f,1247.08f,False)",
+      "Status": "Failed",
+      "Duration": 0.0182534,
+      "Message": "  DeleteDeckWarning\n  Expected: in range (-831.485,831.485)\n  But was:  -850.0f\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.RequireInside (UnityEngine.RectTransform viewport, UnityEngine.RectTransform control) [0x00026] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:135\nat Olca.Tests.CustomScreenCostViewTests.デッキ削除確認は長い対象名と警告を分離し取消後の古い操作を拒否する (System.Single width, System.Single height, System.Boolean longName) [0x00223] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:292\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.デッキ削除確認は長い対象名と警告を分離し取消後の古い操作を拒否する(1662.77f,1247.08f,True)",
+      "Status": "Failed",
+      "Duration": 0.0135025,
+      "Message": "  DeleteDeckWarning\n  Expected: in range (-831.485,831.485)\n  But was:  -850.0f\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.RequireInside (UnityEngine.RectTransform viewport, UnityEngine.RectTransform control) [0x00026] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:135\nat Olca.Tests.CustomScreenCostViewTests.デッキ削除確認は長い対象名と警告を分離し取消後の古い操作を拒否する (System.Single width, System.Single height, System.Boolean longName) [0x00223] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:292\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(1920.0f,1080.0f,False)",
+      "Status": "Failed",
+      "Duration": 0.0477722,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する (System.Single width, System.Single height, System.Boolean named) [0x002c2] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:448\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(1662.77f,1247.08f,False)",
+      "Status": "Failed",
+      "Duration": 0.0343828,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する (System.Single width, System.Single height, System.Boolean named) [0x002c2] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:448\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(2199.64f,942.7f,False)",
+      "Status": "Failed",
+      "Duration": 0.0397497,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する (System.Single width, System.Single height, System.Boolean named) [0x002c2] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:448\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(1920.0f,1080.0f,True)",
+      "Status": "Failed",
+      "Duration": 0.0412325,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する (System.Single width, System.Single height, System.Boolean named) [0x002c2] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:448\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(1662.77f,1247.08f,True)",
+      "Status": "Failed",
+      "Duration": 0.0402455,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する (System.Single width, System.Single height, System.Boolean named) [0x002c2] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:448\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する(2199.64f,942.7f,True)",
+      "Status": "Failed",
+      "Duration": 0.0323003,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.編成のページ端と取消確認の焦点を保ち全文の背面や古い操作を拒否する (System.Single width, System.Single height, System.Boolean named) [0x002c2] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:448\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない(1920.0f,1080.0f,2)",
+      "Status": "Failed",
+      "Duration": 0.0808239,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.CustomScreenCostViewTests.編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない (System.Single width, System.Single height, System.Int32 mode) [0x0052e] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:690 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない(1662.77f,1247.08f,2)",
+      "Status": "Failed",
+      "Duration": 0.1866704,
+      "Message": "  DepartureTitle\n  Expected: in range (-831.485,831.485)\n  But was:  -850.0f\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.RequireInside (UnityEngine.RectTransform viewport, UnityEngine.RectTransform control) [0x00026] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:135\nat Olca.Tests.CustomScreenCostViewTests.編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない (System.Single width, System.Single height, System.Int32 mode) [0x002ea] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:687\n"
+    },
+    {
+      "FullName": "Olca.Tests.CustomScreenCostViewTests.編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない(2199.64f,942.7f,2)",
+      "Status": "Failed",
+      "Duration": 0.0254046,
+      "Message": "  DepartureTitle\n  Expected: in range (-471.45,471.45)\n  But was:  485.0f\n",
+      "StackTrace": "at Olca.Tests.CustomScreenCostViewTests.RequireInside (UnityEngine.RectTransform viewport, UnityEngine.RectTransform control) [0x00075] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:135\nat Olca.Tests.CustomScreenCostViewTests.編成は確認と保存待ちを含め操作部が欠けず名前欄と説明が重ならない (System.Single width, System.Single height, System.Int32 mode) [0x002ea] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/CustomScreenCostViewTests.cs:687\n"
+    }
+  ]
+}

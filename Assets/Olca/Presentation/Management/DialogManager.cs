@@ -56,8 +56,8 @@ namespace Olca.Presentation.Management
         public Task<DialogResult> Show(IDialogOwner owner, GameObject panel, Button confirm, Button cancel, Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true,bool manageMenu=true,Func<bool> inputAllowed=null)
             =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,null,completed,scroll,directionScroll,manageMenu,inputAllowed);
         /// <summary>保存の再試行は同ticket内で実行する。true時だけ閉じ、falseなら更新済み表示を保つ。</summary>
-        public Task<DialogResult> ShowPersistent(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed)
-            =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,attempt??throw new ArgumentNullException(nameof(attempt)),completed,null);
+        public Task<DialogResult> ShowPersistent(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true)
+            =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,attempt??throw new ArgumentNullException(nameof(attempt)),completed,scroll,directionScroll);
         /// <summary>読取専用Popupは閉じる操作一つを持ち、スクロールをDialogの入力所有へ渡す。</summary>
         public Task<DialogResult> ShowNotice(IDialogOwner owner,GameObject panel,Button close,ScrollRect scroll,Action<DialogResult> completed,bool manageMenu=true,Func<bool> inputAllowed=null)
             =>ShowCore(owner,panel,null,close,null,completed,scroll,true,manageMenu,inputAllowed);

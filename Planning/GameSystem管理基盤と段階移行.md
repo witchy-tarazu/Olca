@@ -771,3 +771,21 @@ Controllerは個別Dialogを必要時に取得し、型付き操作口/親寿命
 Playは1回だけ要求。通常reloadでread-only WaitStarted jobが消失したことをAPIで確認してから同じPlayの状態だけ読取。compile要求/状態照会のPipeline timeoutとMCPのeditor_status名変換エラーは履歴保持し、最終compile完了/実640×360/専用TMPDIR/saveguardを照合してからテストした。旧失敗を消したりtimeoutだけで製品不具合と判定しない。最終cleanupは原本clean、既定保存先未生成、既存private URP2件を除く追跡Asset比較一致、機器/注入/proof/lease/既知生成資産/EventSystem解放、Native保存bytesはstopとテスト後も不変。
 
 通常push前のgateがremote進展で停止し、push未実行を確認。`d59495e68df5107fd542e92fe9af2c042a6a5e12`の文書1行（当面NG+周回引継ぎなし、将来第二部への一部引継ぎは後続企画）を保護。既存の進行初期化「はじめから」とは別仕様。未公開commitをbackupに保全して文書へrebaseし、検証済みSource/Asset byte不変を再照合、新baseでcheck/commit/pushを別々にやり直す。新機能実装なし。
+
+### 第22段階と最新の共通確認方針（実装中・未検証）
+
+ユーザー19:07の「テキスト出してはい/いいえだけのダイアログは共通化、文言とボタン挙動だけ渡す」を適用する。上記第20/21段階の「各用途ごとに9専用class」という数ベースの残件定義は更新し、**固有状態/表示を適切なDialogへ収め、単純確認を共通化する**ことを必須完了条件とする。保存や計算をDialogへ移す意味ではない。
+
+第22段階では編成破棄と保存デッキ削除に同じ`ConfirmationDialog`を使用。親は`ConfirmationContent`の文言、既存button識別名、確定可否、結果callbackを渡す。対象名の長文scrollは任意のsubject読取欄として共通化し、削除/保存といった業務modeを設けない。`ReadOnlyDetailsDialog`は本文/装飾/短長文layout/scroll/閉鎖を所有。共通`ReturnDialog`はView内の覆い/復元、既存`OwnedPopup`はticket/世代/legacy入力接続、DialogManagerは共通管理を担う。
+
+ProgressActionはrevision/pending/同計画Retry/成功通知という固有状態があり、現行の個別Dialogを維持する。Retreatも最新可否とPause覆い/復元の固有責務を持つが、単純警告・二択の描画部は共用対象として追跡。割当初期化・会話skipの単純確認は共通Confirmationを優先し、backlogとCustom詳細は固有表示/入力境界を適切なDialogへ移す。これらの未移行機能と共通描画の整合を閉じるまで基盤完了とはしない。不要な専用class・用途switch・過剰な継承を増やさない。
+
+`d59495e`は当面NG+周回引継ぎなし、将来第二部の一部資源引継ぎは後続企画という文書であり、既存の進行消去「はじめから」と区別する。第22段階の安全fetchでは`9a548c1`/`06cae0d`/`526bd97`/`023c95321c09b9f44f46df7a83e65bd1445be19a`まで保護。火水金木土陰陽無の8属性、斬撃/衝撃/風圧/射撃/回復/支援の6特性、五行の相克と陰陽相互有利を基本耐性へ反映する。弱点−50、プレイヤー有利側+50、同属性/無関係0、通常敵の有利側は原則0で例外個別、無属性キャラ全基本耐性0・無属性攻撃専用耐性なし。旧スタイル=神依(カムイ)、一時変身=神憑(カンガカリ)。追加特性の固有效果など未決は推測せず、文書取得のみで本Dialog改修には属性enum/計算/名称変更を実装しない。水中/拠点/クリア後等の途中文書もancestorとして保持する。
+
+
+第22段階の初回全3649件は3638成功11失敗。同期初期表示でreference bodyの等比補正がLateUpdateまで未適用という4ケースは、共通ReturnDialogのRedrawでも既存補正を適用して修正した。残7ケースは子Dialogへ移したbodyを親直下で探す旧fixture前提で、実ConfirmationDialogとモーダル選択を参照する3行の変更とする。画面内・等比・focus・旧入力拒否の期待値は維持する。初回537件の5失敗、UnityAI RelayのIntegration時エラー1、通常reload/Pipeline待機も最終検証と分けて記録し、成功した単体だけで全件成功扱いしない。
+
+
+第22段階の最終検証はUI382、Application537、Integration605、同Editor反復76、全3649件が成功。全件247.08秒、console error0、警告59は既存fixture診断5分類と一致。v4最終ソースで新しい隔離保存先22002の通常Bootstrapから破棄取消/確定、削除書込前失敗→同計画再試行(試行2回・Aのみ削除)、読取詳細の実scroll末尾、同frame背面入力・旧ticket、自然Destroy/親終了/timeScale0 host終了/CloseOpen/Single再入を確認。FHD/4K/4:3の最終18枚と独立code/visual reviewの必須指摘0。元保存・原本・import資産は保護し、生成lease/EventSystem/注入/仮想機器/検証参照のcleanupと640復元を確認した。[検証/比較/残件](../.Codex/screenshots/system-stage22-20261101/README.md)。
+
+次の必須まとまりは割当初期化と会話skipの単純確認を共通Confirmationへ揃え、会話backlogとCustom詳細は固有内容/操作を各Dialogへ移すこと。Retreatの最新可否/覆い復帰は現行責務を守り、単純二択の描画共用を整合する。ProgressActionの固有write-plan再試行状態を汎用DialogManagerへ移さない。Prefab全widget化や名称変更だけの抽象化は必須に追加しない。基盤全体の必須完了ではなく、この段階で共通確認2入口と帰還読取詳細の責務を閉じた。

@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "total": 537,
+    "passed": 532,
+    "failed": 5,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "results": [
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.個別読取Dialogは長文末尾とresizeを保持し閉じた世代を拒否する(False)",
+      "Status": "Failed",
+      "Duration": 2.3366834,
+      "Message": "UnityEngine.MissingReferenceException : The object of type 'UnityEngine.GameObject' has been destroyed but you are still trying to access it.\nYour script should either check if it is null or you should not destroy the object.",
+      "StackTrace": "  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x00064] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:1071 \n  at UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/BindingsHelpers.cs:61 \n  at UnityEngine.Object.GetName () [0x00006] in <08b76a262c874da0853d4cdc5b748adc>:0 \n  at UnityEngine.Object.get_name () [0x00001] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:419 \n  at Olca.Presentation.Management.OwnedPopup.Finish (Olca.Presentation.Management.DialogResult result) [0x000b2] in /workspace/olca-validation-20261024/project/Assets/Olca/Presentation/Management/GameplayPauseView.cs:295 \n  at Olca.Presentation.Management.OwnedPopup+<>c__DisplayClass28_0.<Attach>b__3 () [0x00025] in /workspace/olca-validation-20261024/project/Assets/Olca/Presentation/Management/GameplayPauseView.cs:261 \n  at UnityEngine.Events.InvokableCall.Invoke () [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/UnityEvent/UnityEvent.cs:178 \n  at UnityEngine.Events.UnityEvent.Invoke () [0x00022] in /home/bokken/build/output/unity/unity/artifacts/generated/UnityEvent/UnityEvent_0.cs:57 \n  at Olca.Tests.Application.GameSystemManagementTests.個別読取Dialogは長文末尾とresizeを保持し閉じた世代を拒否する (System.Boolean managed) [0x00297] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:566 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.共通確認Dialogの削除用途は対象Idと長名を保持し旧確定を別対象へ渡さない(False)",
+      "Status": "Failed",
+      "Duration": 4.8998928,
+      "Message": "UnityEngine.MissingReferenceException : The object of type 'UnityEngine.GameObject' has been destroyed but you are still trying to access it.\nYour script should either check if it is null or you should not destroy the object.",
+      "StackTrace": "  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x00064] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:1071 \n  at UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/BindingsHelpers.cs:61 \n  at UnityEngine.Object.GetName () [0x00006] in <08b76a262c874da0853d4cdc5b748adc>:0 \n  at UnityEngine.Object.get_name () [0x00001] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:419 \n  at Olca.Presentation.Management.OwnedPopup.Finish (Olca.Presentation.Management.DialogResult result) [0x000b2] in /workspace/olca-validation-20261024/project/Assets/Olca/Presentation/Management/GameplayPauseView.cs:295 \n  at Olca.Presentation.Management.OwnedPopup+<>c__DisplayClass28_0.<Attach>b__2 () [0x0007a] in /workspace/olca-validation-20261024/project/Assets/Olca/Presentation/Management/GameplayPauseView.cs:260 \n  at UnityEngine.Events.InvokableCall.Invoke () [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/UnityEvent/UnityEvent.cs:178 \n  at UnityEngine.Events.UnityEvent.Invoke () [0x00022] in /home/bokken/build/output/unity/unity/artifacts/generated/UnityEvent/UnityEvent_0.cs:57 \n  at Olca.Tests.Application.GameSystemManagementTests.共通確認Dialogの削除用途は対象Idと長名を保持し旧確定を別対象へ渡さない (System.Boolean managed) [0x001c7] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:552 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.共通確認Dialogの編成破棄用途は取消確定と旧世代を自分で所有する(False)",
+      "Status": "Failed",
+      "Duration": 0.0106575,
+      "Message": "UnityEngine.MissingReferenceException : The object of type 'UnityEngine.GameObject' has been destroyed but you are still trying to access it.\nYour script should either check if it is null or you should not destroy the object.",
+      "StackTrace": "  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x00064] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:1071 \n  at UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/BindingsHelpers.cs:61 \n  at UnityEngine.Object.GetName () [0x00006] in <08b76a262c874da0853d4cdc5b748adc>:0 \n  at UnityEngine.Object.get_name () [0x00001] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:419 \n  at Olca.Presentation.Management.OwnedPopup.Finish (Olca.Presentation.Management.DialogResult result) [0x000b2] in /workspace/olca-validation-20261024/project/Assets/Olca/Presentation/Management/GameplayPauseView.cs:295 \n  at Olca.Presentation.Management.OwnedPopup+<>c__DisplayClass28_0.<Attach>b__2 () [0x0007a] in /workspace/olca-validation-20261024/project/Assets/Olca/Presentation/Management/GameplayPauseView.cs:260 \n  at UnityEngine.Events.InvokableCall.Invoke () [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/UnityEvent/UnityEvent.cs:178 \n  at UnityEngine.Events.UnityEvent.Invoke () [0x00022] in /home/bokken/build/output/unity/unity/artifacts/generated/UnityEvent/UnityEvent_0.cs:57 \n  at Olca.Tests.Application.GameSystemManagementTests.共通確認Dialogの編成破棄用途は取消確定と旧世代を自分で所有する (System.Boolean managed) [0x001cd] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:543 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.共通確認の直接破棄と拒否終了はcallbackと描画参照を返す(False)",
+      "Status": "Failed",
+      "Duration": 0.011197,
+      "Message": "  Expected: null\n  But was:  <System.Action>\n",
+      "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.共通確認の直接破棄と拒否終了はcallbackと描画参照を返す (System.Boolean managed) [0x00159] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:574\n"
+    },
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.共通確認の直接破棄と拒否終了はcallbackと描画参照を返す(True)",
+      "Status": "Failed",
+      "Duration": 0.0037586,
+      "Message": "  Expected: 0\n  But was:  1\n",
+      "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.共通確認の直接破棄と拒否終了はcallbackと描画参照を返す (System.Boolean managed) [0x0013e] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:574\n"
+    }
+  ]
+}

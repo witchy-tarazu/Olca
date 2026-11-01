@@ -532,6 +532,50 @@ namespace Olca.Tests.Application
             var checkpoint=Panel("legacy-checkpoint");checkpoint.SetActive(true);var popup=ProgressPopup();type.GetField("checkpointOverlay",flags).SetValue(controller,checkpoint);type.GetField("progressActionDialog",flags).SetValue(controller,popup);
             type.GetMethod("ShowProgressAction",flags).Invoke(controller,new object[]{"checkpoint legacy",false,true});Assert.IsTrue(popup.IsOpen);Assert.AreEqual("checkpoint legacy",popup.Message.text);popup.CancelButton.onClick.Invoke();Assert.IsFalse(popup.IsOpen);Assert.IsTrue(checkpoint.activeSelf);
         }
+        private ConfirmationDialog DiscardPopup()=>ConfirmationDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),new ConfirmationContent{Title="編成",Message="破棄しますか",ConfirmName="DiscardDepartureDraft",CancelName="KeepEditingDeparture"});
+        private ConfirmationDialog DeletePopup(string name,bool pending=false)=>ConfirmationDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),new ConfirmationContent{Title="削除",Subject=name,Message="削除しますか",ConfirmName="ConfirmDeleteDeck",CancelName="CancelDeleteDeck",ConfirmEnabled=!pending});
+        [TestCase(false)][TestCase(true)]
+        public void 共通確認Dialogの編成破棄用途は取消確定と旧世代を自分で所有する(bool managed)
+        {
+            var parent=Panel("deck-parent");parent.SetActive(true);int discarded=0,kept=0;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=DiscardPopup();popup.Completed+=yes=>{if(yes)discarded++;else kept++;};Assert.IsTrue(popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true));Assert.IsFalse(parent.activeSelf);
+                var old=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick;popup.GetComponentsInChildren<Button>().Single(b=>b.name=="KeepEditingDeparture").onClick.Invoke();Assert.AreEqual(1,kept);Assert.IsTrue(parent.activeSelf);if(managed)Assert.IsTrue(dialogs.Blocks(scope));frame++;
+                var next=DiscardPopup();next.Completed+=yes=>{if(yes)discarded++;};Assert.IsTrue(next.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true));old.Invoke();Assert.AreEqual(0,discarded);next.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick.Invoke();Assert.AreEqual(1,discarded);Assert.IsTrue(parent.activeSelf);Assert.AreEqual(0,dialogs.ActiveCount);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 共通確認Dialogの削除用途は対象Idと長名を保持し旧確定を別対象へ渡さない(bool managed)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(1920,1080);var parent=Panel("saved-parent");parent.SetActive(true);string deleted=null;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=DeletePopup(new string('名',2000));popup.Completed+=accepted=>{if(accepted)deleted="first";};Assert.IsTrue(popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true));Assert.NotNull(popup.GetComponentInChildren<ScrollRect>());
+                var old=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck").onClick;popup.GetComponentsInChildren<Button>().Single(b=>b.name=="CancelDeleteDeck").onClick.Invoke();Assert.IsNull(deleted);frame++;
+                var next=DeletePopup("別の保存名");next.Completed+=accepted=>{if(accepted)deleted="second";};next.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true);old.Invoke();Assert.IsNull(deleted);next.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck").onClick.Invoke();Assert.AreEqual("second",deleted);Assert.IsTrue(parent.activeSelf);
+            }
+        }
+        [Test] public void 削除待機Dialogの無効確定と親終了は業務結果を返さない()
+        {
+            var parent=Panel("pending-parent");parent.SetActive(true);bool live=true;int results=0;using(var scope=dialogs.CreateOwner(()=>live)){
+                var popup=DeletePopup("保存名",true);popup.Completed+=r=>results++;popup.Open(parent,dialogs,scope,()=>live,true);var button=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck");Assert.IsFalse(button.interactable);var old=button.onClick;old.Invoke();Assert.AreEqual(0,results);live=false;popup.RefreshLifetime();old.Invoke();Assert.AreEqual(0,results);Assert.AreEqual(0,dialogs.ActiveCount);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 個別読取Dialogは長文末尾とresizeを保持し閉じた世代を拒否する(bool managed)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(1920,1080);var parent=Panel("read-parent");parent.SetActive(true);int closes=0;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=ReadOnlyDetailsDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),"詳細",string.Join("\n",Enumerable.Repeat("長文の検証",200))+"\nオワリシルシ",true);popup.Closed+=()=>closes++;popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,false);Canvas.ForceUpdateCanvases();popup.RefreshLayout();Assert.Greater(popup.Scroll.content.rect.height,popup.Scroll.viewport.rect.height);popup.Scroll.verticalNormalizedPosition=0;popup.RefreshLayout();((RectTransform)host.transform).sizeDelta=new Vector2(1440,1080);Canvas.ForceUpdateCanvases();popup.RefreshLayout();Assert.AreEqual(0,popup.Scroll.verticalNormalizedPosition,.001);Assert.IsTrue(popup.Scroll.content.GetComponent<Text>().text.EndsWith("オワリシルシ"));
+                var old=popup.GetComponentInChildren<Button>().onClick;old.Invoke();Assert.AreEqual(1,closes);frame++;var next=ReadOnlyDetailsDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),"短文","短い説明",false);next.Closed+=()=>closes++;next.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,false);old.Invoke();Assert.AreEqual(1,closes);next.GetComponentInChildren<Button>().onClick.Invoke();Assert.AreEqual(2,closes);Assert.IsTrue(parent.activeSelf);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 共通確認の直接破棄と拒否終了はcallbackと描画参照を返す(bool managed)
+        {
+            var parent=Panel("destroy-parent");parent.SetActive(true);int results=0;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=DiscardPopup();popup.Completed+=_=>results++;popup.Terminated+=()=>{};popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true);var old=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick;
+                // EditMode fixtureではMonoBehaviourの破棄messageを明示し、実Playでの自然な破棄も別途確認する。
+                Assert.DoesNotThrow(()=>typeof(ConfirmationDialog).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(popup,null));Assert.DoesNotThrow(()=>UnityEngine.Object.DestroyImmediate(popup.gameObject));old.Invoke();Assert.AreEqual(0,results);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsNull(typeof(ReturnDialog).GetField("Terminated",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(popup));Assert.IsNull(typeof(ReturnDialog).GetField("widgets",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(popup));
+                if(managed){frame++;var other=Panel("busy-other");dialogs.ShowPersistent(scope,other,Button(other,"yes"),Button(other,"no"),()=>true,_=>{});var rejected=DiscardPopup();rejected.Completed+=_=>results++;rejected.Terminated+=()=>{};Assert.IsFalse(rejected.Open(parent,dialogs,scope,()=>true,true));Assert.IsNull(typeof(ReturnDialog).GetField("Terminated",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(rejected));Assert.AreEqual(0,results);Assert.AreEqual(1,dialogs.ActiveCount);}
+            }
+        }
         private sealed class ProgressOperationsProbe : IProgressActionOperations
         {
             public long Revision=>47;public bool Pending {get;private set;}public ProgressPendingAction PendingAction {get;private set;}public string Error=>"fixture-write-failure";public bool CanStartNewGame=>true;

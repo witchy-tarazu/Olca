@@ -1,0 +1,31 @@
+{
+  "summary": {
+    "total": 605,
+    "passed": 605,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 52.05,
+  "groundTruth": {
+    "sampledUtc": "2026-11-01T19:58:39.627133Z",
+    "ageMs": 701,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 1,
+    "consoleWarnings": 58,
+    "consoleLogs": 2698,
+    "seeded": true
+  },
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "dd42fa28934ea0746730c23acec08331eb98bec37ef0d22a796395ffb0871c37",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "1012808c90fc18efb662a3ce68da6166e8519d2fb5962d32d9a25bcbe6488065",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "1109e6c36652f8e9599d55782438fa87b370e49d6dd647c62958da560f83e4e0",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "50ff04469a4367ffc238a5cf02a164255fbdb32a6d58ce658d91037e4922e389"
+  },
+  "consoleErrors": 1,
+  "productConsoleErrors": 0,
+  "environmentError": "Unity.AI Relay Process exited unexpectedly code0; exact stack retained",
+  "consoleGateFailed": true,
+  "fullSuiteCleanConsoleStillRequired": true
+}

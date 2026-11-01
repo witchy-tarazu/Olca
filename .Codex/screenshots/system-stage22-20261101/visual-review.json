@@ -1,0 +1,519 @@
+{
+  "stage": 22,
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-01T20:55:11.645308+00:00",
+  "scope": "ConfirmationDialog and ReadOnlyDetailsDialog migration static visual review",
+  "viewedImageCount": 18,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage22-discard-confirm-fhd.png",
+      "sha256": "711f41c13a3ee5c25e1c18c34595fce875d0d578b8d8f73e5dd3a515c7db0863",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "priorReviewedSha256": "b2c8b2aa8c0c9dc90e29f6a299f9f723c1af05d6025575bab5acb9ccb0eb5c94",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-discard-confirm-4k.png",
+      "sha256": "1bc21e954276b7506b5faeb74a1b95ce13d0fe6e919e8e569eb6eec04cdb659a",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "priorReviewedSha256": "4fafb7637d0303c183c9b9dc4875ce70eb996381e5524ec1018c663d417999d3",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-discard-confirm-4by3.png",
+      "sha256": "13c7dc60d0d1bea8a80c91387d19c2bcba19502c0b073f69837f79a8fe92c6ad",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "priorReviewedSha256": "fa3260cc6b4fc280238859ccb8669f775d3a89164b5f3f87d9793652fdf20a71",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-confirm-fhd.png",
+      "sha256": "d0389b78c9f17c4b25f72fc3c68659b44f1b85a9bcf9d0fe65e3d82232fa6739",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "priorReviewedSha256": "6590ca971edba8ee80b28b8779660ade3faa80305053e0515feb30eaf4faf022",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-confirm-4k.png",
+      "sha256": "aa32a4037f226d923932bdabf7913b900ccead1fb1d0f4590c744e910fbdf0c5",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "priorReviewedSha256": "e9b80e492f0e361d5ac6f0fc0d35653543741a1c67e3b6f1a6a6f8086a2cb7b0",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-confirm-4by3.png",
+      "sha256": "13190fc6c3dc5340331f85fd90329cea7f7e8b7939d37368a02ec6c57172e845",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "priorReviewedSha256": "a72d19de0da8a4695d5b4054d903b724bba2128d85d5caed5907d28b522f67fc",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-save-retry-fhd.png",
+      "sha256": "b109fdc7b6c3de77633023c2be5d4259d820ba50cceb9697005f95a11d4dab01",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "priorReviewedSha256": "405c526f6cb2e8b5c3912189620dcb56234f24bff8cfcb846b1a950c2b02689f",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-save-retry-4k.png",
+      "sha256": "6f0468ec53774cb85e82abfd1ebe2f8feb9d4739941f8296173c2c4e0e3e07b7",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "priorReviewedSha256": "83127803d714d43b57afe0d3cd0490b91009a9c332079641d6cbd821a96bea0e",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-save-retry-4by3.png",
+      "sha256": "3cffb3609efd9e18464400403f00a074fd8e18420852dd3154446aa59c298551",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "priorReviewedSha256": "8c5ca5d01952ea3bb797ec9c3e1588c8d95b6b9d76a3162c53c89ce1a39c9df3",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-long-name-fhd.png",
+      "sha256": "68f4d328d243b5caf7d5189d573476661f5b161f3a72c6f8932c8249537f4589",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "priorReviewedSha256": "eb2104929ee34ee3e027f76ce9f17289c7c652cb60356c2b0fa361145d662901",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-long-name-4k.png",
+      "sha256": "5b2510a00150adf658eb2b73e19e27b1924a5ca9c3d77e0e9abc684a333db481",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "priorReviewedSha256": "d80de13f9b913b789bb6dea70aa7d9b86841194e7f84774e4a27423e6f7d0009",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-delete-long-name-4by3.png",
+      "sha256": "b81444eb08cab43f7fec6046bf5f73b3e0b22895f49e35843cc1f98332e1ee36",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "priorReviewedSha256": "1b7c9b240c0dbf337890c3f8c22121693db075bfa413a54044c4e103f75e36ad",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-owned-detail-fhd.png",
+      "sha256": "e31237605f812ddd51dbbca317a0800b3155c061d8d704485213a22fb3c6049c",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "priorReviewedSha256": "9b97dae59f2ba34b13acea49bdfa2be7fff900c3e4013c12a47fdf5d0cd4d3d4",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-owned-detail-4k.png",
+      "sha256": "d486702d234cba383301b8f078f286c3a1bddea51c210eb149366a3a8db07e28",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "priorReviewedSha256": "8c5b4dbf748524d4f7adf2e8caebf979d1fb9d8e011c1c433200249757191a04",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-owned-detail-4by3.png",
+      "sha256": "9688a4441bcc4b6be49a89cddc60c2cdaec8a66f395b3602282e71f948c3670a",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "priorReviewedSha256": "2c4cb5987e8554e65e0e1c97eb697da6164fd37db21c1d6e77a64c97d0c2482d",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-long-reader-end-fhd.png",
+      "sha256": "a217c74c1d2b82001ee868ed4710c3dbe4a8f7decbe8bc44b27cae34ca484032",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "priorReviewedSha256": "9148e239875351926faa90a20787f4f98ba8247f434f5f281d651aa33705f7b9",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-long-reader-end-4k.png",
+      "sha256": "2e09e18dcd873a1a8516d435f689dea9cc2de0e340e3828c8b2dd135196311be",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "priorReviewedSha256": "5aa693dd7b7b35176e0deac1a725f7f45888df58ba8f5b507e5d599b35b9b964",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    },
+    {
+      "file": "system-stage22-long-reader-end-4by3.png",
+      "sha256": "8f6f78a965bd165a8b50cc66ac95e35b804b6c8804057e85a494b13c81baf4c7",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "priorReviewedSha256": "9c99593d1ae4c6b9defade61d04997cd02d033a7de92e0283787259c7f5f1104",
+      "reViewedFinalV4": true,
+      "exactByteEquivalentToV3": false
+    }
+  ],
+  "observations": [
+    "Discard question and edit-return/discard controls remain readable and isolated from the parent composition in all ratios.",
+    "Delete title, target name, fixed two-line warning and cancel/delete buttons are separated. Long-name scroll viewport clips its continuation at the lower edge, while the complete fixed warning and buttons remain unobstructed.",
+    "Final v4 long-name block remains in the same lower dedicated region as v3, with clear fixed-warning separation at all ratios. Compared with Stage15 the visible block is lower; no exact geometry/pixel identity is claimed. No newly required visual issue was found.",
+    "Delete-save-retry preserves readable error plus disabled list controls and distinct bottom retry. Raw injected error wording differs from Stage15; not a kana-rendering regression.",
+    "Owned details text and Back footer remain legible. Large short-text blank space is retained as a fixed reading composition, not claimed an aesthetic redesign.",
+    "Long-reader end marker オワリシルシ is clearly visible in all three ratios above the reading surface lower boundary and separated from Back. Partial first row is scroll clipping, not a damaged header.",
+    "No required new structural/readability regression found against previously viewed Stage15 confirmation/list and Stage14 reader references. Stage15 discard/long-name/retry FHD references additionally re-opened during this review.",
+    "All 18 final v4 hashes differ from the prior v3 review; all 18 current full images were actually re-opened, not inferred from old hashes. Long-reader marker and delete warning also rechecked at native 4K crops."
+  ],
+  "native4kSupplement": {
+    "method": "All full PNGs actually viewed at original request; viewer resized 3840x2160 to 2048x1152. Representative lossless unscaled in-memory crops viewed separately; original files unchanged.",
+    "crops": [
+      {
+        "file": "system-stage22-long-reader-end-4k.png",
+        "box": [
+          280,
+          1600,
+          800,
+          1710
+        ],
+        "observation": "オワリシルシ fully legible."
+      },
+      {
+        "file": "system-stage22-delete-long-name-4k.png",
+        "box": [
+          1440,
+          1000,
+          2400,
+          1200
+        ],
+        "observation": "Fixed delete warning readable and separate from scroll."
+      }
+    ],
+    "previousCaptureCrops": [
+      {
+        "file": "system-stage22-long-reader-end-4k.png",
+        "box": [
+          280,
+          1600,
+          800,
+          1710
+        ],
+        "observation": "オワリシルシ fully legible."
+      },
+      {
+        "file": "system-stage22-delete-long-name-4k.png",
+        "box": [
+          1440,
+          1000,
+          2400,
+          1200
+        ],
+        "observation": "Fixed delete warning readable and separate from scroll."
+      },
+      {
+        "file": "system-stage22-owned-detail-4k.png",
+        "box": [
+          280,
+          290,
+          1150,
+          550
+        ],
+        "observation": "Representative card statistics have legible glyphs/line spacing."
+      }
+    ],
+    "finalV4CropsReViewed": true
+  },
+  "limits": [
+    "This is bounded visual regression inspection, not common-dialog implementation proof, pixel identity or global aesthetic completion.",
+    "Long-name and long-reader content are validation presentation fixtures, not new product definitions or proof of actual persisted long-name mutation.",
+    "Input, focus, scroll trajectory, exact write count, rollback, persistence and lifecycle are separate parent assertions; lifetime verification was still running at request.",
+    "Representative native 4K crops only; physical devices/audio/historical UGUI and unpictured conditions not verified. No Unity commands, tests or product/source edits performed."
+  ],
+  "reviewHistory": [
+    {
+      "version": "v3",
+      "reviewedAtUtc": "2026-11-01T20:14:16.101015+00:00",
+      "images": [
+        {
+          "file": "system-stage22-discard-confirm-fhd.png",
+          "sha256": "b2c8b2aa8c0c9dc90e29f6a299f9f723c1af05d6025575bab5acb9ccb0eb5c94",
+          "viewed": true,
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-discard-confirm-4k.png",
+          "sha256": "4fafb7637d0303c183c9b9dc4875ce70eb996381e5524ec1018c663d417999d3",
+          "viewed": true,
+          "dimensions": [
+            3840,
+            2160
+          ]
+        },
+        {
+          "file": "system-stage22-discard-confirm-4by3.png",
+          "sha256": "fa3260cc6b4fc280238859ccb8669f775d3a89164b5f3f87d9793652fdf20a71",
+          "viewed": true,
+          "dimensions": [
+            1440,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-delete-confirm-fhd.png",
+          "sha256": "6590ca971edba8ee80b28b8779660ade3faa80305053e0515feb30eaf4faf022",
+          "viewed": true,
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-delete-confirm-4k.png",
+          "sha256": "e9b80e492f0e361d5ac6f0fc0d35653543741a1c67e3b6f1a6a6f8086a2cb7b0",
+          "viewed": true,
+          "dimensions": [
+            3840,
+            2160
+          ]
+        },
+        {
+          "file": "system-stage22-delete-confirm-4by3.png",
+          "sha256": "a72d19de0da8a4695d5b4054d903b724bba2128d85d5caed5907d28b522f67fc",
+          "viewed": true,
+          "dimensions": [
+            1440,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-delete-save-retry-fhd.png",
+          "sha256": "405c526f6cb2e8b5c3912189620dcb56234f24bff8cfcb846b1a950c2b02689f",
+          "viewed": true,
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-delete-save-retry-4k.png",
+          "sha256": "83127803d714d43b57afe0d3cd0490b91009a9c332079641d6cbd821a96bea0e",
+          "viewed": true,
+          "dimensions": [
+            3840,
+            2160
+          ]
+        },
+        {
+          "file": "system-stage22-delete-save-retry-4by3.png",
+          "sha256": "8c5ca5d01952ea3bb797ec9c3e1588c8d95b6b9d76a3162c53c89ce1a39c9df3",
+          "viewed": true,
+          "dimensions": [
+            1440,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-delete-long-name-fhd.png",
+          "sha256": "eb2104929ee34ee3e027f76ce9f17289c7c652cb60356c2b0fa361145d662901",
+          "viewed": true,
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-delete-long-name-4k.png",
+          "sha256": "d80de13f9b913b789bb6dea70aa7d9b86841194e7f84774e4a27423e6f7d0009",
+          "viewed": true,
+          "dimensions": [
+            3840,
+            2160
+          ]
+        },
+        {
+          "file": "system-stage22-delete-long-name-4by3.png",
+          "sha256": "1b7c9b240c0dbf337890c3f8c22121693db075bfa413a54044c4e103f75e36ad",
+          "viewed": true,
+          "dimensions": [
+            1440,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-owned-detail-fhd.png",
+          "sha256": "9b97dae59f2ba34b13acea49bdfa2be7fff900c3e4013c12a47fdf5d0cd4d3d4",
+          "viewed": true,
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-owned-detail-4k.png",
+          "sha256": "8c5b4dbf748524d4f7adf2e8caebf979d1fb9d8e011c1c433200249757191a04",
+          "viewed": true,
+          "dimensions": [
+            3840,
+            2160
+          ]
+        },
+        {
+          "file": "system-stage22-owned-detail-4by3.png",
+          "sha256": "2c4cb5987e8554e65e0e1c97eb697da6164fd37db21c1d6e77a64c97d0c2482d",
+          "viewed": true,
+          "dimensions": [
+            1440,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-long-reader-end-fhd.png",
+          "sha256": "9148e239875351926faa90a20787f4f98ba8247f434f5f281d651aa33705f7b9",
+          "viewed": true,
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "file": "system-stage22-long-reader-end-4k.png",
+          "sha256": "5aa693dd7b7b35176e0deac1a725f7f45888df58ba8f5b507e5d599b35b9b964",
+          "viewed": true,
+          "dimensions": [
+            3840,
+            2160
+          ]
+        },
+        {
+          "file": "system-stage22-long-reader-end-4by3.png",
+          "sha256": "9c99593d1ae4c6b9defade61d04997cd02d033a7de92e0283787259c7f5f1104",
+          "viewed": true,
+          "dimensions": [
+            1440,
+            1080
+          ]
+        }
+      ],
+      "observations": [
+        "Discard question and edit-return/discard controls remain readable and isolated from the parent composition in all ratios.",
+        "Delete title, target name, fixed two-line warning and cancel/delete buttons are separated. Long-name scroll viewport clips its continuation at the lower edge, while the complete fixed warning and buttons remain unobstructed.",
+        "The Stage22 long-name capture places the visible name block lower than the Stage15 reference; it still stays within its dedicated area with clear warning separation. Therefore no exact geometry/pixel identity is claimed.",
+        "Delete-save-retry preserves readable error plus disabled list controls and distinct bottom retry. Raw injected error wording differs from Stage15; not a kana-rendering regression.",
+        "Owned details text and Back footer remain legible. Large short-text blank space is retained as a fixed reading composition, not claimed an aesthetic redesign.",
+        "Long-reader end marker オワリシルシ is clearly visible in all three ratios above the reading surface lower boundary and separated from Back. Partial first row is scroll clipping, not a damaged header.",
+        "No required new structural/readability regression found against previously viewed Stage15 confirmation/list and Stage14 reader references. Stage15 discard/long-name/retry FHD references additionally re-opened during this review."
+      ],
+      "native4kSupplement": {
+        "method": "All full PNGs actually viewed at original request; viewer resized 3840x2160 to 2048x1152. Representative lossless unscaled in-memory crops viewed separately; original files unchanged.",
+        "crops": [
+          {
+            "file": "system-stage22-long-reader-end-4k.png",
+            "box": [
+              280,
+              1600,
+              800,
+              1710
+            ],
+            "observation": "オワリシルシ fully legible."
+          },
+          {
+            "file": "system-stage22-delete-long-name-4k.png",
+            "box": [
+              1440,
+              1000,
+              2400,
+              1200
+            ],
+            "observation": "Fixed delete warning readable and separate from scroll."
+          },
+          {
+            "file": "system-stage22-owned-detail-4k.png",
+            "box": [
+              280,
+              290,
+              1150,
+              550
+            ],
+            "observation": "Representative card statistics have legible glyphs/line spacing."
+          }
+        ]
+      },
+      "preservedCaptureDirectory": "system-stage22-v3-native-preserved"
+    }
+  ],
+  "captureVersion": "final v4 fresh save22002 (parent supplied)",
+  "changedImageCount": 18,
+  "finalRecaptureReViewedImageCount": 18
+}

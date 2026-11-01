@@ -1,0 +1,154 @@
+{
+  "sameFrameAndFocus": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "ReturnContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000022b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 6,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": true,
+    "collectionContext": true,
+    "mainKey": "return-hub",
+    "collectionKey": "card-collection",
+    "dialogs": 0,
+    "focus": "CardCollectionTab",
+    "root": -301740108,
+    "resources": 13,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "CardCollectionTab",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "CloseCardCollection",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "NextCollectionPage",
+        "interactable": true
+      },
+      {
+        "name": "CollectionCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "RecipeCollectionTab",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "PreviousCollectionPage",
+        "interactable": false
+      }
+    ]
+  },
+  "actualTail": {
+    "actualScrollEvent": true,
+    "state": {
+      "dialogs": 1,
+      "text": "シールド　コスト 1　イリョク 15\nブンルイ Defense　Normal\nゾクセイ None　シリーズ なし\nボウギョ\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nオワリシルシ",
+      "normalized": -4.36277041e-08,
+      "content": 3482,
+      "viewport": 684,
+      "focus": "CloseReadonlyCardDetails"
+    }
+  },
+  "saveBytesUnchanged": true,
+  "longTextFixture": "display-only; actual entry then actual scroll event; no game data modified"
+}

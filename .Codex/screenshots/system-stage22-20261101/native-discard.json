@@ -1,0 +1,792 @@
+{
+  "initial": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "DungeonSelectionContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 1,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "root": -301740108,
+    "resources": 9,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      }
+    ]
+  },
+  "hub": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "ReturnContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 3,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "SavedDeckMenu",
+    "root": -301740108,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      }
+    ]
+  },
+  "fixtures": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "ReturnContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000022a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000022b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": false,
+    "draft": 0,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "SavedDeckMenu",
+    "root": -301740108,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      }
+    ]
+  },
+  "opening": {
+    "modal": "DepartureDiscardContentsDialog",
+    "modalActive": true,
+    "parent": "DepartureContents",
+    "parentActive": false,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000022a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000022b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 1,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 1,
+    "focus": "KeepEditingDeparture",
+    "root": -301740108,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "KeepEditingDeparture",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "DiscardDepartureDraft",
+        "interactable": true
+      }
+    ]
+  },
+  "cancel": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "DepartureContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000022a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000022b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 1,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "CloseOwnedDeparture",
+    "root": -301740108,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ConfirmOwnedDeparture",
+        "interactable": false
+      },
+      {
+        "name": "DepartureDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "AddDepartureCard_2",
+        "interactable": true
+      },
+      {
+        "name": "AddDepartureCard_3",
+        "interactable": true
+      },
+      {
+        "name": "DepartureDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "DepartureDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "RemoveDepartureCard_3",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "DepartureDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "RemoveDepartureCard_0",
+        "interactable": true
+      },
+      {
+        "name": "RemoveDepartureCard_2",
+        "interactable": false
+      },
+      {
+        "name": "AddDepartureCard_4",
+        "interactable": true
+      },
+      {
+        "name": "RemoveDepartureCard_4",
+        "interactable": false
+      },
+      {
+        "name": "AddDepartureCard_1",
+        "interactable": true
+      },
+      {
+        "name": "AddDepartureCard_0",
+        "interactable": true
+      },
+      {
+        "name": "DepartureDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "PreviousDeparturePage",
+        "interactable": false
+      },
+      {
+        "name": "CloseOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparturePage",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "RemoveDepartureCard_1",
+        "interactable": false
+      }
+    ]
+  },
+  "discard": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "ReturnContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000022a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000022b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 0,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "EditOwnedDeparture",
+    "root": -301740108,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      }
+    ]
+  },
+  "savedDraftDiscard": {
+    "modal": null,
+    "modalActive": false,
+    "parent": "SavedDeckContents",
+    "parentActive": true,
+    "decks": [
+      {
+        "Id": "644ccef60438413e89cbea2711ae8cb9",
+        "Name": "スターター",
+        "cards": 20
+      },
+      {
+        "Id": "000000000000400080000000000022a1",
+        "Name": "ケンショウA",
+        "cards": 0
+      },
+      {
+        "Id": "000000000000400080000000000022b2",
+        "Name": "ケンショウB",
+        "cards": 0
+      }
+    ],
+    "editing": null,
+    "dirty": true,
+    "draft": 0,
+    "pending": false,
+    "revision": 5,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "EditDeck_000000000000400080000000000022a1",
+    "root": -301740108,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "EquipDeck_000000000000400080000000000022a1",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000022b2",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_000000000000400080000000000022a1",
+        "interactable": true
+      },
+      {
+        "name": "EquipDeck_000000000000400080000000000022b2",
+        "interactable": true
+      },
+      {
+        "name": "NewSavedDeck",
+        "interactable": true
+      },
+      {
+        "name": "PreviousSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000022b2",
+        "interactable": true
+      },
+      {
+        "name": "CloseSavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "EditDeck_644ccef60438413e89cbea2711ae8cb9",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000022b2",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_000000000000400080000000000022a1",
+        "interactable": true
+      },
+      {
+        "name": "DeleteDeck_644ccef60438413e89cbea2711ae8cb9",
+        "interactable": false
+      },
+      {
+        "name": "DeleteDeck_000000000000400080000000000022a1",
+        "interactable": true
+      },
+      {
+        "name": "CloneDeck_644ccef60438413e89cbea2711ae8cb9",
+        "interactable": true
+      },
+      {
+        "name": "ReloadSavedDecks",
+        "interactable": true
+      },
+      {
+        "name": "NextSavedDeckPage",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "EquipDeck_644ccef60438413e89cbea2711ae8cb9",
+        "interactable": false
+      }
+    ]
+  },
+  "saveBytesUnchanged": true,
+  "sameFrameOldSaveBlocked": true
+}

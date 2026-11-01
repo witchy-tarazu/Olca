@@ -1,0 +1,12 @@
+{
+  "reviewer": "equipment_save_review / independent_refactor_review",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "evidence": "code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "evidence": "visual-review.json"
+  },
+  "scope": "Simple confirmations share text/button-behavior ConfirmationDialog; ReadOnlyDetailsDialog owns reader; Manager generic; domain saves remain existing services"
+}

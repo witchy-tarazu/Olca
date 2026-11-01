@@ -219,6 +219,7 @@ namespace Olca.Presentation.Management
     public abstract class OwnedPopup : MonoBehaviour
     {
         protected Button confirm,cancel;
+        protected ScrollRect inputScroll;protected bool directionScroll=true;
         private DialogManager manager;
         private IDialogOwner owner;
         private DialogOwnerScope scope;
@@ -232,7 +233,7 @@ namespace Olca.Presentation.Management
         public bool IsOpen {get;private set;}
         public IDialogOwner Owner=>owner;
         public event Action VisibilityChanged;
-        protected void CaptureFeedback(){confirmFeedback=confirm.onClick;cancelFeedback=cancel.onClick;}
+        protected void CaptureFeedback(){confirmFeedback=confirm!=null?confirm.onClick:null;cancelFeedback=cancel.onClick;}
         protected void CompleteAccepted()=>Finish(DialogResult.Confirmed);
         protected bool Begin(DialogManager service,IDialogOwner parent,Func<bool> live)
         {
@@ -247,23 +248,24 @@ namespace Olca.Presentation.Management
             if(manager!=null&&manager.ActiveCount!=0)return false;
             var token=generation=new object();
             gameObject.SetActive(true);transform.SetAsLastSibling();
-            confirm.onClick=new Button.ButtonClickedEvent();cancel.onClick=new Button.ButtonClickedEvent();
-            confirm.onClick.AddListener(()=>{if(Live(token)&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});
+            if(confirm!=null){confirm.onClick=new Button.ButtonClickedEvent();confirm.onClick.AddListener(()=>{if(Live(token)&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});}
+            cancel.onClick=new Button.ButtonClickedEvent();
             cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())cancelFeedback?.Invoke();});
             if(manager!=null){
                 if(owner==null){scope=manager.CreateOwner(()=>IsOpen&&!suspended&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false));owner=scope;}
-                request=manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),result=>{if(Live(token))Finish(result);});
+                Action<DialogResult> completed=result=>{if(Live(token))Finish(result);};
+                request=confirm==null?manager.ShowNotice(owner,gameObject,cancel,inputScroll,completed):manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),completed,inputScroll,directionScroll);
                 if(request.IsCompleted){if(request.Result==DialogResult.ParentClosed||request.Result==DialogResult.Busy){Finish(DialogResult.ParentClosed);return false;}}
             }else{
-                confirm.onClick.AddListener(()=>{if(!Live(token)||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
+                if(confirm!=null)confirm.onClick.AddListener(()=>{if(!Live(token)||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
                 cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
                 legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&Olca.Unity.MenuPadScope.IsTopmost(transform));
-                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke());
+                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke(),inputScroll,directionScroll:directionScroll);
             }
             return true;
         }
         private bool Live(object token)=>this!=null&&IsOpen&&!suspended&&!attempting&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false)&&(owner==null||owner.IsCurrent);
-        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);transform.SetAsLastSibling();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm.gameObject);}
+        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);transform.SetAsLastSibling();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm!=null?confirm.gameObject:null);}
         public void RefreshLifetime()
         {
             if(!IsOpen)return;
@@ -287,16 +289,17 @@ namespace Olca.Presentation.Management
         private void Finish(DialogResult result)
         {
             if(!IsOpen)return;
-            bool restore=result!=DialogResult.ParentClosed&&(valid?.Invoke()??false);var focus=origin;
+            bool restore=result!=DialogResult.ParentClosed&&(valid?.Invoke()??false);var focus=origin;string focusName=restore&&focus!=null?focus.name:null;
             IsOpen=false;suspended=false;Detach();origin=null;if(this!=null)gameObject.SetActive(false);VisibilityChanged?.Invoke();
             if(restore&&focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(focus);
-            valid=null;manager=null;OnResult(result,restore?focus?.name:null);
+            if(EventSystem.current!=null){var selected=EventSystem.current.currentSelectedGameObject;if(selected!=null&&selected.transform.IsChildOf(transform))EventSystem.current.SetSelectedGameObject(null);}
+            valid=null;manager=null;OnResult(result,focusName);
         }
         public void Abort()=>Finish(DialogResult.ParentClosed);
         protected abstract bool Attempt();
         protected abstract void Redraw();
         protected abstract void OnResult(DialogResult result,string focusName);
-        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;}
+        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;confirmFeedback=cancelFeedback=null;confirm=cancel=null;inputScroll=null;}
     }
     public enum ProgressPendingAction { None,ManualSave,NewGame }
     public interface IProgressActionOperations
