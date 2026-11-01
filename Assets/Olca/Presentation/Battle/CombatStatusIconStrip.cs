@@ -9,6 +9,7 @@ namespace Olca.Presentation.Battle
     public sealed class CombatStatusIconStrip : MonoBehaviour
     {
         private sealed class Slot { internal GameObject Root; internal Image Gray,Color; }
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedAssets;
         private readonly List<Slot> slots=new List<Slot>();
         private int columns=5;private float size=48,gap=6;
         public int VisibleCount { get; private set; }
@@ -24,7 +25,7 @@ namespace Olca.Presentation.Battle
                 var slot=slots[n];
                 if(n>=entries.Count){slot.Root.SetActive(false);continue;}
                 var entry=entries[n];
-                if(!CombatStatusIconCatalog.TryGet(entry.Icon,out var color,out var gray)){slot.Root.SetActive(false);continue;}
+                if(!CombatStatusIconCatalog.TryGet(entry.Icon,out var color,out var gray,generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)))){slot.Root.SetActive(false);continue;}
                 slot.Root.SetActive(true);VisibleCount++;
                 slot.Root.name="CombatStatus_"+entry.Id;var rect=(RectTransform)slot.Root.transform;
                 rect.anchoredPosition=new Vector2(n%columns*(size+gap),-(n/columns)*(size+gap));rect.sizeDelta=new Vector2(size,size);
@@ -46,5 +47,6 @@ namespace Olca.Presentation.Battle
         }
         public void Clear(){foreach(var slot in slots)if(slot.Root!=null)slot.Root.SetActive(false);VisibleCount=0;((RectTransform)transform).sizeDelta=Vector2.zero;}
         private void OnDisable()=>Clear();
+        private void OnDestroy(){foreach(var slot in slots){if(slot.Gray!=null)slot.Gray.sprite=null;if(slot.Color!=null)slot.Color.sprite=null;}generatedAssets?.Dispose();generatedAssets=null;}
     }
 }

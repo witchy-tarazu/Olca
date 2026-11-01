@@ -189,3 +189,377 @@ WorldPresentationBindingがResourceManagerの実体leaseをViewManager world層�
 最終明示recompile error0後、関連12/12（10.97秒）、同Editor/Domain ReloadなしでScroll1→UIRuntime4を2周し全10件成功。各ステップ後のCLR/Unity current null、static登録0、Scene実体0を確認した。static一覧全体のclearや他者除去はしていない。そのまま最終全件3569/3569（276.76秒、skip0/error0）成功。全件直後にもCLR/Unity current null・static0・Scene0で、末尾fixtureが次runへ残す状態もないことを確認。警告59件は上記と同じfixture5分類。元の位置/件数/遮蔽/旧購読/assertNull/保存guardは維持し、数値補正や製品UIRuntimeManagerは変更していない。
 
 最終資産/source13のhashはsubmission/project/関連/全件/最終manifestで一致。新しい変更多数の再撮影を装わず、既存のnative/原寸比較画像は1行Prefab正規化前であることを明記し、native SerializedProperty同一と他byte不変で結び付けた。移行対象の残る10ファイルはnative確認時から不変。独立最終レビューとcleanup後、check→commit→pushを分離し、必須失敗時停止を維持して通常公開する。
+
+
+## 第七段階: Prefab hostと報酬画面
+
+本番BootstrapはDungeonSceneをロードせず、RootのStartGameplayHostAsync→GameHostManager→ResourceManagerで非active DungeonHost Prefabを取得する。hostはController/ContactAnimatorの1 GameObjectだけで、Camera/Listener/UIRoot/EventSystem/Sound・World/BattleCustom/HUD/操作設定/報酬画面は含めない。hostはBootstrap Sceneへ配置してSingle再入で旧hostが終了する契約。DIと保存先/World/明示legacyなしRoot Camera束縛後にActivate→明示Startする。旧StartCompatibilityHostAsync/Scene lease/旧DungeonScene直起動は検証互換として残す。EditorBuildSettingsは引き続きBootstrapと互換DungeonSceneを有効にするが、本番経路の必要SceneはBootstrapだけ。実buildは未確認。
+
+GameHostManagerは共通IGameHostLeaseの取消/世代/解放retryを共有し、SceneとPrefabはidentity種別を分ける。GameplayPrefabHostLeaseはhostの終了をView破棄と分け、Controller.StopManagedHostで遷移取消・購読/入力/時計を先行停止→ViewとSession返却→非active/Resource lease破棄→次frameのnative破棄完了を待つ。View単体の返却でCoreを終了しない。Core/Input/固定時計/攻略状態の所有自体はhost Controllerに残す。
+
+CardSelectionCanvasは独立CardReward Prefab（26 GameObject）のView layerへ移す。本段階は遅延生成でなく起動時の明示ロードとし、欠損を攻略/保存開始前に検出。表示containerは既存の報酬phaseだけで有効にする。これは必要Viewの個別取得へ進む足場で、全画面lazy化完了ではない。旧Sceneに束縛済みの報酬Viewは互換でそのまま使う。PopupはDialogManagerの既存境界を維持し、本段階はダイアログを画面managerへ統合しない。
+
+新Prefabは通常Unity書出しで作り、Scene依存なしを確認。空scalar末尾空白をテスト前に正規化し、再import前後のString全値一致をnativeで確認。旧Sceneで未記録のC#既定値がPrefabへ明示化されるが、実Controller設定48項目は報酬参照/Prefab管理情報以外でnative一致し、性能値は創作/変更していない。
+
+残件は内部UI Initialize、静的素材Catalog、ControllerのCore/Input/時計のさらなる分離、互換Sceneを製品buildから外す運用判断、報酬View等のphase単位lazy取得。外界/ボスラッシュ/未決値は本段階へ混在させない。第六段階のCamera隔離/スクロールEventSystem解除と反復検証は維持。歴史的UGUI/旧wrapper ID帰属/物理機器/聴感/実buildの限界は引き継ぐ。
+
+
+### 第七段階 最終検証と到達範囲
+
+最終source/資産12ファイルで関連467/467（38.92秒）と全件3575/3575（269.82秒）、skip0/error0。警告59件は既存fixture5分類（報酬View未設定50、設定読込失敗4、phase違い2、使用カードなし2、pool上限1）。同EditorでScroll1/UIRuntime4を2周し全10件成功、各段階と全件直後・最終native後にEventSystemのCLR/Unity current null・登録0/Scene0を確認。一覧全clearや期待値/guardの緩和はしない。明示recompile/関連/全件/最終cleanupのsource hash一致を確認した。
+
+本番Bootstrapのみ・Scene lease0でhost/Viewを供給。直起動互換、設定→Dialog取消/確定→保存読込、Single再入、timeScale0で初回Close、実Prefab生成後の取消と欠損/同時再Openを実確認。稼働時Root/Camera/Listener/EventSystem各1、resource実体8、終了時host/World/背景/役者/pool/Battle/Custom/報酬0、共通cache実体3。旧入力/購読/Camera/モデル/Sprite参照を解除し、Root/audio/Cameraを再利用する。
+
+初回Closeは次Updateがnative Destroy完了より先でstrict検査が失敗した。後観察とretry成功を初回成功に置き換えず保存し、LastPostLateUpdateまで待つ最小修正後にtimeScale0での初回解放と再生成を確認した。ゲーム時間・性能・root-null検査は変えない。Domain Reload後のPipeline/コマンド取得timeoutは同Editor PID137059で通常待機し復旧。Play/テスト/不明な解像度要求を重複再送しなかった。
+
+報酬Prefabは実カード報酬で表示・選択を確認。開いたままhost終了してphase/deck/保存を確定させず、表示とfont/artwork参照を解放。checkpoint再開→実選択→従来どおり最後の通貨確認でデッキ20から21→次接触と実ボスまで同じViewと旧購読解除を確認した。最初のカード待機はカードなし/アイテムありの保存計画を共通CardReward phaseから誤推定した検証側の前提違いで、抽選値を変えず通常経路を進めた。最初のSingle保存比較も別検証directoryの参照が判明し採用せず、実9701保存先6ファイルの非空hashでDialog中Single→checkpoint再開まで再比較し全一致した。停止後のhelperが要求するDungeonSceneも明示的に開き、前提拒否を緩めず復旧した。
+
+FHD/4K/4:3の原寸21枚、独立設計/コード/視覚/最終証跡レビューは今回範囲の必須指摘0。報酬見出し裏へのHUD透けは旧Round50にもあり既存視覚候補として残す。fallbackカード名/借用絵はD05素材完成ではない。比較の前画像はStage6引用、報酬以外の15枚は破棄待機一行修正前で、表示に関わる残る11ファイルのbyte一致と修正後native/全件を区別する。[証跡](../.Codex/screenshots/system-stage7-20261031/README.md)参照。原本clean、実640×360/TMP/save guard、入力機器と追跡Assets一致を最終cleanupで確認。
+
+本番起動の必要SceneはAssets/Scenes/BootstrapScene.unityのみ。Assets/Scenes/DungeonScene.unityは旧直起動/Scene API検証互換として保持し、BuildSettingsでも有効のまま。実buildはユーザー側の未確認。Core/Input/固定時計/攻略状態のController内組立、各UI内部Initialize、静的Catalog、phase単位のlazy取得は残り、全体移行/安定化完了とはしない。次はhost/sessionの論理状態組立と入力/時計寿命の責務分離を小さく進める候補。外界/ボスラッシュ/未決D05/S08等は今回実装せず、歴史的UGUI/物理機器/OS/聴感未確認も維持する。
+
+並行仕様6f84d1c/07fd835/e87c72d/10dc6c1/b30c5fe/5f8f342は本文確認して保護。消耗品ごとの上限/購入不可/自発破棄なし、超過報酬破棄・全受取不可時の宝箱/報告不可・強制イベント例外、無効果消耗品不可と探索カード通常消費の区別。依頼の報告/自動完了設定、現在所持数/受注後行動数、納品・報酬・完了の原子的保存、反復設定/放棄なし/期限なし/時間を止めない達成通知。ストーリー目的を依頼一覧へ統合、未公開地形を開示しない目的地marker、選択1目的への常時ナビ/別map出口案内/非表示、進行分岐あり・複数end未定。これらは文書取得で、今回の機能実装済みとはしない。
+
+
+## 第八段階: 攻略Runtimeの所有・入力・主時計
+
+GameSystem.Sessionが普通のGameplayRuntimeSessionを所有する。Input/Random/Loggerの生成、Core factory結果の所有/置換、主UnityLogicalLoopの所有とdriver限定Pumpを表示から分ける。GameSystemはAdopt/Disposeの連携だけで、具体的なゲーム計算やView組立を集めない。既存Loopのctor生成時点とControllerのalias field/更新順は互換維持し、起動時に所有を渡す。Core引数を選ぶfactory lambda、設定/保存復元の組立、入力文脈/phase条件とView接続はControllerに残る。会話/探索再開演出Loopは別寿命を維持する。
+
+起動失敗はRuntimeから主Loop所有を再試行側へ返し、既存StartNewTimelineで初期化する。通常のView再生成はRuntimeを破棄せず、終了時は捕捉Input/文脈callback/driver/Coreを解放する。独立レビューでPump中のDispose後にも残catchupが走る指摘があり、Loop.Disposeを終端化した。予約/入力command後とDrain継続で停止を確認し、後続callback/入力購読/予約参照を返却する。Clock本体と未処理負債はresetせず、通常catchupを描画frameで間引かない。追加5ケースで正常6frame/同観測時刻二重進行なし/別driver・再入拒否、入力捕捉解除、再試行Loop返却、tick内/予約command内停止のFrame1/Pending5保持を確認する。
+
+実経路では旧Scene直起動→Bootstrap、ManagerのHUD破棄/再取得、Custom/pause/設定/Dialog/実仮想pad、checkpoint、Dialog中Single、通常およびtimeScale0終了、取消/欠損/同時reopenを確認した。HUDはnative破棄後1個再生成しRuntime/Core/Input/主Loop参照とframe不変（開始前menu/frame0、World/Battle全ホットリロード機能ではない）。実9801保存先6ファイルはSingle前からcheckpoint再開・Close/cancel/Open後までhash一致。意図的な保存復元だけCoreを既存の取消/timeline境界で置き換える。[第八段階証跡](../.Codex/screenshots/system-stage8-20261031/README.md)へ記録する。
+
+### 安定化までの残る必須境界
+
+1. Controllerに残る起動設定/保存復元/出撃データの組立と入力文脈・phase調停を専用factory/flowサービスへ分ける。Runtimeは生成物と寿命を所有するが、全てのCore起動設定を切り出し済みとはしない。Loop ctor互換を外す場合は旧直起動/テスト注入を明示的に移行する。
+2. CreatePauseControlsのprogrammatic画面（pad/音量設定、checkpoint、Dialogue、ClearReturn、図鑑、装備等）と局所popup（RetreatConfirmation等）はまだhost組立にある。画面単位ViewManagerとpopup専属DialogManagerへ段階移行し、内部Initializeによる表示組立とゲーム判断を分ける。Bootstrap Scene依存がないことだけで全View移行完了とはしない。
+3. SharedAttackPropCatalog.loadedはResources bytesからTexture2D/Spriteを生成してstatic保持する。Root Resource側の明示的な生成資産所有/返却境界が未移行であり、次の資源寿命課題。CoreのPortableBattle/ProcessingCatalogは純C#値DTOで、Unity生成資産と混同してManagerを増やさない。
+
+本番Bootstrap→必要表示供給/画面・popup遷移/保存復帰/単一Runtime更新/入力音声資源の終了再生成/失敗取消retry/最終回帰を、上記境界で継続確認して安定化とする。phase単位lazy取得（報酬等のeager取得を減らす）、内部UI組立の表現整理やimmutable catalogの命名はその後の改善候補。新外界/ボスラッシュ/D05/S08等の未実装・未決、実build/物理機器/OS/聴感、歴史的UGUI/Pipeline/CLI/UnityAI履歴はこの段階で解消済みとしない。
+
+
+### 第八段階 最終検証
+
+修正後の5sourceで明示コンパイル完了/error0、関連472/472（40.24秒）、全3580/3580（278.55秒）成功、skip0/error0。警告59件は既存fixture5分類で、期待値や保存ガードは緩めていない。Source hashはsubmission/project/関連/全件/最終で一致。同Editor Scroll1/UIRuntime4の2周10件と全件後はEventSystem current CLR/Unity null・登録0/Scene0で、global一覧clearはしない。FHD/4K/4:3の15枚を独立原寸比較して今回の新しい必須視覚指摘0。管理起動側は既存boss保存からの再開で旧通常敵画像と状態差があることを明示し、直起動6枚は同testmap6/seed7/frame0・60で比較した。
+
+既存のDomain Reload/Pipeline期限超過とCLI editor status名不一致・UnityAI接続情報保存警告は別履歴で保全。同Editor PID137059/VM/model/認証を維持し、未確定Play/fixture/コンパイル/テストを重複再送せず、実RT640×360/専用TMPDIR/guardを確認してテストした。全体の安定化完了ではなく、上記の必須残境界を次段階に追跡する。
+
+
+## 第九段階: Core組立factoryと復帰候補flow
+
+DungeonCoreFactoryはPlayerの既存HP/攻撃成長、加工System、通常Core、出撃計画の凍結preview、単独checkpointと階層Coreの組立を担当する普通のサービス。Core/Input/主時計の所有は引き続きGameSystem.Session.Runtimeで、factoryは生成物を返すだけ。previewは従来どおり加工Systemなしで、通常Coreと不用意に共通化しない。評価報酬抑制・次階層・既存初期デッキ・旧保存定義の条件は維持する。
+
+DungeonCheckpointFlowは保存から復帰候補とcheckpoint/routeを読み、終了済み・敗北撤退確定の再開を拒否する。現在Coreは受け取らず、停止/採用・時計・View・保存確定を所有しない。Controllerは候補検証成功後にだけ既存順の旧Core停止→route束縛→旧演出・購読・表示解除→timeline/入力reset→Runtimeとmanager置換→新View束縛を行う。例外時の観測点/finally入力解放、次出撃のwrite planとrun ID/定義検証/原子的保存順は変更しない。工場の生成結果を採用した後の寿命はRuntime、拒否候補の停止はflowが担う。
+
+### 入力文脈と別時計の実在用途
+
+- 主Loop: 60Hzの攻略更新と時刻付き入力command。Runtimeが所有しhostだけがdriver。View再生成で新時計を作らない。
+- GamepadContext: 現在Dungeonならexploration、それ以外はbattle。GameplayActive/PauseAvailableは訪問、会話、保存選択、custom、pauseなどの既存条件を束ねる。タッチの探索/戦闘可用性も同様にhostがUnity入力とphaseを調停している。将来この判定を小さな入力文脈adapterへ移す場合も、純粋な条件の抽出に限定し、InputProviderや主時計を増やさない。
+- dialogueLoop: 攻略停止中にも文字送りする会話専用。backlog/skip確認/ユーザーpauseでは進めず、終了で主Loopへ戻す。攻略時計へ統合すると停止契約が変わるため、この別時計は残してよい。
+- explorationResumeLoop: 探索明示再開の3→2→1各30frameを進める表示/再開flow。攻略停止中の専用時計として必要。再停止、画面終了で取消す契約を維持し、攻略の速度/時間へ加算しない。
+
+### 安定化必須残件と終点
+
+1. host組立のpad/音量設定、checkpoint選択、Dialogue、ClearReturnと所持カード、出撃先・編成・スタイル・交換・図鑑、装備/パーツ・unlock・acquisition等の画面を、既存の画面単位ViewManagerへ整理する。まず一画面群ずつPrefab/Resource leaseで取得し、close/reopenで旧入力/参照0、通常操作と保存不変、旧直起動互換を完了条件にする。内部Initializeで表示を組むこと自体と寿命の未管理を区別する。
+2. RetreatConfirmationなど局所popup、上記画面内の確認/詳細をDialogManager専属へ移す。親遷移時に閉鎖、結果/取消一回、モーダルlock/選択復帰/購読解放を完了条件にし、画面Managerへ二重所有しない。
+3. SharedAttackPropCatalog.loadedの生成Texture2D/Spriteの資産所有をRoot Resource側へ接続する。利用中に破棄せず、最終所有者解放でgenerated Unity objectを返却、再取得/ホスト再入で残留/重複しないことを完了条件にする。PortableBattle/ProcessingCatalogの純C# DTOは対象外。
+
+本段階はCore生成と復帰候補読取の境界を閉じる。表示接続、既存の保存write plan、入力phase調停はhostに残り、全Controllerロジックの移動を安定化条件にはしない。上記の画面/popup/生成資源境界を閉じ、Bootstrap単独起動・失敗取消・保存復帰・単一更新・終了再生成・全回帰を満たしたら、追加仕様/機能改修へ戻れる状態とする。phase別lazy取得や内部UI組立の表現整理は後続改善で、無限の抽象化を必須としない。新外界/ボスラッシュ/D05/S08は今回実装しない。
+
+### 第九段階 最終検証
+
+最終4sourceで明示コンパイル完了/error0、関連476/476（40.41秒）、全3584/3584（265.43秒）、skip0/error0。追加4ケースは通常加工System/加工なしpreviewの差と、復帰候補作成/敗北確定拒否時の現Core・保存不変を確認した。source hashはsubmission/project/関連/全件/最終一致。同Editor Scroll1/UIRuntime4を2周して10件成功、各回と全件後はEventSystem current CLR/Unity null・static0/Scene0で、一覧全clearなし。警告59件は従来のfixture5分類と完全一致。
+
+旧Scene新規開始→Bootstrap既存boss保存復帰、HUDのManager破棄/再生成、Custom/設定/Dialog・実仮想pad取消・割当変更と既定保存復元、checkpoint、Dialog中Single、timeScale0終了、実Prefab生成後取消/欠損/同時reOpenを実確認した。HUD再生成は開始前menu/frame0でRuntime/Core/Input/主Loop参照とframe不変、全Worldホットリロードではない。入力文脈はCustomで攻略無効、閉Battleで有効、pauseで無効。同一戦闘内のCustom→閉BattleではCore/Input/Loop参照を維持した。実9901保存先6ファイルはSingle前からClose/cancel/Open後までhash一致。報酬保留UIに実経路で入り、終了でphase/deckを確定せず、checkpoint復帰後も保留開始時の6保存hash不変を確認。勝利生成は既存damage API fixtureで、物理操作の全攻略ではない。
+
+FHD/4K/4:3の15枚をStage8同場面と独立比較、4Kの文字/mini/Dialog代表領域も無拡縮で補足し、新たな必須視覚指摘0。コード/設計の必須未解決0。文書のtimeline順序表現1件は実コードに合わせて訂正した。詳細と出所は[第九段階証跡](../.Codex/screenshots/system-stage9-20261031/README.md)へ記録する。
+
+同Editor PID137059のrecompile/Play Domain Reload後にPipeline main-thread timeoutが発生し、通常待機で回復した。ready表示だけで成功とせず、期限超過したfixtureの起動済みをreadonly観察して確認し、Play/fixture/テストを重複再送しなかった。CLI editor status名不一致とUnityAI接続情報保存警告は履歴として分離し、製品console0と混同しない。VM/model/認証と元プロジェクトを保持。全HotReload/実build/物理機器/OS/聴感、歴史的UGUIの未確認/未解決を維持。基盤全体の安定化完了ではなく、上記の画面/popup/生成資源所有を次段階で閉じる。
+
+
+## 第十段階: pad・音量設定の画面寿命と初期化Dialog
+
+既存keyboard-settingsにgamepad-settings/audio-settingsを加え、3画面を同じViewManagerへ登録する。既存OlcaSystem/KeyboardSettings PrefabはRectTransformだけの空画面shellであり、名前に反してキーボード固有画像を持たない。同じshellをResourceManager経由で借用し、既存Initializeへfont/保存delegateを注入する。新Manager/依存/Prefab複製は増やさない。gameSystemなしの旧テスト導線は従来の直組を維持。
+
+Closeではcached leaseを保持し、OnDisableでContextへ非表示通知。次回Openは新Context/現在保存値で再表示する。切替成功まで旧画面を手動破棄せず、ロード失敗/取消は旧画面を維持。親pause終了で各画面を閉じ、生成待ちのShowはpauseが終わっていれば取消。host終了/Singleではowner登録を解除し実体・入力購読・delegate・Contextを返す。閉じた/破棄済みの捕捉・保存・取消/Sliderのcallbackは受け付けない。
+
+padは既存GameplayKeyboardSettingsView(gamepad=true)を使い、従来keyboardと同じResetKeyboardConfirmationをDialogManagerへ委譲する。確認は編集案の初期化だけ、保存・適用までは未確定。取消/ParentClosed/多重要求で保存やreset確定を混在させず、起点へのfocus復帰と閉じた同frameの入力遮断は既存契約を使う。音量画面に存在しない確認/初期化機能は増やさない。
+
+音量の保存成功→Controller値更新→既存SoundManager共有Router適用の順序は不変。0..100/全体×系統×元音量、保存まで適用しない/試聴しない、保存形式はそのまま。設定ViewはAudioSourceや生成Texture/Spriteを所有せず、font/既存UI素材を借用する。Root音源とsessionの寿命を画面Closeへ移さない。GameSystem/Session/Factory/CheckpointFlow、攻略write plan・主時計・計算は変更しない。
+
+### Stage10後の未管理UI残一覧
+
+以下は管理APIへの未接続であり、現状にcleanupが全くないという断定ではない。単なるInitialize内の表示組立、すでに管理された画面の非モーダル子表示は別扱いにする。
+
+|区分|対象|現所有者|
+|---|---|---|
+|unmanaged-screen|Controller-built pause UI|Controller/pauseCanvas|
+|unmanaged-screen|Controller-built checkpoint UI|Controller|
+|unmanaged-screen|DialogueView|Controller + DialogueSession/dialogueLoop|
+|unmanaged-screen|ClearReturnView|Controller + ClearReturnView content/MenuPadScope|
+|unmanaged-screen-variants|ClearReturnView render family|Controller flags/callbacks + shared ClearReturnView|
+|unmanaged-screen|ClearReturnView second instance|Controller + ClearReturnView|
+|unmanaged-screen|CustomizationLoadoutView|Controller|
+|unmanaged-screen|CustomizationUnlockView|Controller|
+|unmanaged-screen|CustomizationAcquisitionView|Controller|
+|unmanaged-dialog|Controller-built confirmation|Controller local buttons/flags|
+|unmanaged-dialog|Controller progress action overlay|Controller progressDialogOpen/pending state|
+|unmanaged-dialog|ClearReturnView readonly popup|ClearReturnView content swap/readonlyDetails/MenuPadScope|
+|unmanaged-dialog-state|ClearReturnView saved-deck confirmation|RenderSavedDeckMenu deleting branch|
+|unmanaged-dialog|CustomScreenView detail/inspection|CustomScreenView own menu/input/presentation-hide state|
+|unmanaged-dialog-state|DialogueView session states|DialogueView + DialogueSession.SkipConfirmationOpen/BacklogOpen|
+|host-owned-reward-overlays|Controller reward overlays|Controller async choice + resourceRewardMenu|
+
+具体的な生成名/参照と分類は第十段階証跡のunmanaged-ui-inventory.jsonへ保存する。次段階は一つの画面群とそのpopupを実View/Dialog寿命へ移し、親遷移時取消・結果一回・focus/入力解除・保存不変・終了再生成を満たして閉じる。全メソッド移動や機械的Manager追加を終点にしない。
+
+### 生成資源の必須残件
+
+既知のSharedAttackPropCatalogだけでなく、以下6系統のstatic生成cacheに最終解放のRoot所有境界が残る。設定画面の新規生成物ではなく、今回広く資産整理しない。既存View所有で解放するGauge/mini/illustration wrapper等と区別し、借用元Textureを誤破棄しない。pure C# DTO catalogは対象外。
+
+- Presentation/Field/SharedAttackPropCatalog.cs：static loaded per shared key。
+- Presentation/Battle/CombatStatusIcons.cs：CombatStatusIconCatalog static loaded dictionary。
+- Presentation/CustomScreen/CardAttackPropertyIcons.cs：AttackPropertyIconCatalog static sprites。
+- Presentation/Effects/ActorConditionVisual.cs：static sprites by Guard/Paralyze。
+- Presentation/Effects/DefensiveFieldVisual.cs：static sprites by Barrier/Aura。
+- Presentation/Effects/TransformationEffectSprites.cs：static activation/release。
+
+必要な利用中leaseを保ち、最後の所有者でgenerated Sprite/Textureを返却し、再取得/host再入で重複しないことを次の完了条件にする。詳細はgenerated-assets-inventory.jsonに記録する。画面/popup/生成資産所有を閉じ、Bootstrap本番/保存復帰/失敗取消/入力音声/単一更新/回帰を満たすまで基盤安定化を継続。外界/ボスラッシュ/未決値の実装は混ぜない。
+
+### 第十段階 最終検証
+
+最終3sourceで明示コンパイルerror0、関連478/478（40.50秒）、全3586/3586（258.93秒）、skip/error0。初回は477/478で既存の管理画面登録数1の期待が新3画面と不一致。厳密3と正確な3キーをassertし、失敗/終了時0、sameSession、購読やguardを緩めず再検証した。製品2fileは初回から不変。初回失敗と修正根拠を証跡へ保持。Source hashはsubmission/project/関連/全件/最終で一致。
+
+同EditorでScroll1/UIRuntime4を2周し全10件成功、各回と全件後はEventSystem current CLR/Unity null・static登録0/Scene0。global一覧clearなし。警告59件は既存fixture5分類と完全一致。
+
+新規直起動→Bootstrap保存復帰、HUD再生成/keyboard/Dialog/設定復元、SingleとtimeScale0終了・欠損取消・同時再Openの基本導線で元6ファイル不変。pad/audio管理UIでは実Raycast/Sliderと仮想pad捕捉・競合交換・未保存破棄/未割当保存/初期化、Dialog held-cancel/focus、親pause終了、実shell生成後取消/欠損・同時要求を確認。音量非既定50/75/25/0の保存と既存Router音量式、Single/checkpoint/CloseOpen再読込が一致。親遷移/終了前の実8保存ファイルhashは不変。最後はUI経由でpad/音量を既定へ戻し、backup追加を含む最終10ファイルを記録した。設定保存は意図した隔離書込みで、常に全ファイル不変とはしない。破棄後旧Save/Cancel/Slider/入力取消callbackは保存/例外を起こさず、delegate/Contextを返却。Root/全AudioSourceはともに3、Root source identityを再利用。一時機器を除去し、AudioClose後のfocusは有効なResumeButtonへ戻る。音を聴いたとはしない。
+
+FHD/4K/4:3の15組を独立比較し必須視覚指摘0、4K代表3領域を無拡縮で補足。key系の前画像はStage9引用。pad/audioの前は旧commit1e9d718のViewクラスをrenameしたinert-save fixtureであり、旧VM/host全体の再実行ではない。host field未束縛による背面aux差と静止画/idleの限界を明記し、実afterの可読性と階層を別評価した。コード/設計レビュー必須未解決0。[第十段階証跡](../.Codex/screenshots/system-stage10-20261031/README.md)参照。
+
+Domain Reload後のPipeline timeout、CLI名不一致/UnityAI接続情報・relay警告は別履歴として保持。同じVM/Editor PID137059/model/認証を維持し、既存要求の成否回収前にPlay/activation/テストを重複送信しなかった。外界/ボスラッシュ/未決値は未実装のまま、実build/物理機器/聴感/全HotReload/歴史的UGUIの未確認・未解決を保持。未管理UIと生成cache6系統は上記の安定化必須残件で、今回だけで全体移行完了としない。
+
+## 第十一段階: 生成Sprite/Textureの共有所有
+
+Stage10の生成cache6系統をUnity層のGeneratedSpriteAssetsへ接続する。ResourceManagerがGameSystem初期化時にRoot leaseを取得し、管理画面/host切替では世代を共有、ResourceManager最終DisposeでRoot pinを返す。利用中のView/Visualは別の借用leaseを持ち、非表示では返さず、Sprite参照解除と表示実体の終了後に返す。最後のRootと借用がなくなった世代の生成Spriteを先に、続いて生成Textureを破棄する。Play中のDestroy待ちはnative nullになるまで追跡する。旧世代の借用が生存する再起動は新世代と分離する。
+
+|系統|生成/借用先|利用側終了|
+|---|---|---|
+|SharedAttackPropCatalog|PNG bytes→共有Sprite/Texture。GameFieldViewの爆弾/着弾、外部appearance用借用|worldの飛翔表示を解除してlease返却|
+|CombatStatusIconCatalog|PNG bytes→色/灰色の各Sprite/Texture。CombatStatusIconStrip|非表示slotも参照保持。Strip破棄時に両Image参照解除|
+|AttackPropertyIconCatalog|PNG bytes→特性Sprite/Texture。CardAttackPropertyIcons|行の破棄時にImage参照解除|
+|ActorConditionVisual|PNG bytes→Guard/Paralyze。非MonoのVisual|Disposeでrenderer参照解除、実体破棄、lease返却|
+|DefensiveFieldVisual|PNG bytes→Barrier/Aura。非MonoのVisual|同上。boundsのpure DTO cacheはnative生成所有と別|
+|TransformationEffectSprites|PNG bytes→開始/解除。BattleView|Image参照解除後lease返却|
+
+Builderが作成したTextureだけをSprite生成に渡せる。Resourcesのimport素材/TextAssetは借用で、解放対象へ登録しない。既存の個別View所有Gauge/mini/illustration wrapperはこの共有cacheに統合しない。画像byte/サイズ/point/clamp/pivot/ppu/gray計算とゲーム時計は維持。Catalogを直接使う旧検証・外部appearance構築は明示Acquire scopeを保持し、利用終了で返す。Rootを勝手に生成せず、無期限の暗黙static保持へ戻さない。
+
+Unity所有者付きleaseはOnDestroyで返すことを基本とし、EditModeでOnDestroyが来ない破棄済みnative所有者のみPruneで回収する。hidden/disabledの生きた所有者は回収しない。アプリ終了/Assembly Reloadは全managed所有者の終端として既知の生成物だけを解放する。全HotReloadや存続Viewの再注入完了を意味しない。
+
+Stage10の未管理screen/Dialog一覧は引き続き必須残件。今回それらの入力・保存・表示仕様を変更せず、次のまとまりでpause/checkpoint/帰還等を管理寿命へ接続する。生成資産6系統の検証結果と残る限界は以下に記録する。
+
+追加レビューで、非Mono Visualも生成Rendererを借用所有者へ紐付けた。Rendererが外部破棄された再表示は旧借用を返して再取得する。Root/lease返却後はUnityの次描画frame（Core時計ではない）でdead-ownerと遅延Destroyを回収し、timeScale0でもゲーム論理時間を進めない。終了取消tokenで待機を閉じる。新所有テストは外部Root/借用0という隔離前提を明示assertし、正当な他所有者を一括消去して成立させない。
+
+### 第十一段階 検証結果
+
+最終19 C# sourceで明示コンパイルerror0、関連486/486（40.47秒）、全3594/3594（264.11秒）、skip/inconclusive/error0。元の期待値やsave guardを緩めず、新8回帰を追加した。Scroll1/UIRuntime4/生成所有8の同Editor2周26件も成功、各回のEventSystem current CLR/Unity null・登録0/Scene0と生成cache/borrow/pending0を確認。global clearなし。警告59件は従来fixture5分類と一致し抑制しない。最終source hashはsubmission/project/関連/全件/独立コードレビューで一致。
+
+実取得で6系統7Sprite/Textureを共有、Root返却後も借用中は同じnative IDを保持、最終借用返却で直接参照が全てnull、import Textureは生存。PlayのtimeScale0ではRoot返却後3frame生存するRendererを後から破棄し、4frame後のInspectより前に7Sprite/Textureが自動回収された。全系統利用後の実host Close/OpenではRoot pin1で16Sprite/Textureを保持し、borrow0→再取得、全ID再利用と隔離保存10ファイル不変を確認した。
+
+さらにアプリ終了ではなくPlay中に実GameSystemRootを通常Destroyし、登録16Sprite/Textureを直接参照で全null、Root/Camera/Listener/EventSystem/音源0、import生存を確認。Bootstrap再読込で世代2→3と別Root/Sessionを生成し、6系統を再取得した。検証用Scene直起動とBootstrap、Custom/設定/確認Dialog/checkpoint、Single再入、取消/欠損/coalesced openも既存契約どおり確認した。
+
+特性mini・左右の独立飛翔体・guard/麻痺/防御・変身開始/解除の原寸FHD/4K/4:3計15枚と4K等倍局所を独立確認、今回範囲の必須視覚指摘0。画像内容/サイズ/pivot/PPU/Point/Clamp/gray計算は旧24素材と同じ。同条件beforeを新撮影していないので完全画素一致や全美観の完成とは主張しない。検証側の旧詳細cleanup前提とtimeScale復元順の不一致は製品修正とせず、正常条件へ訂正して再実行した。
+
+同じ長期稼働Editorには、新registry外の同名Sprite群2095件が基準IDとして残っている。生成元/漏洩原因は未特定で、旧残留候補と今回の登録生成物を区別する。同名やregistry0だけで全Editorのnative漏れ解消とせず、import/未知利用者を誤破棄しないため一括Destroyしない。今回の回収は登録IDの直接native nullと世代差分で立証する。全HotReload/既存Editor全体の残留解消、歴史的UGUI、実build/物理機器/聴感は未確認/未解決のまま。
+
+第十段階の未管理画面/Dialog一覧は残る。次はpause/checkpointと確認popupを一つの画面群としてViewManager/DialogManagerへ接続し、親遷移時取消・focus/入力解放・保存不変・再生成を閉じる。今回の6系統所有接続だけを基盤全体の安定化完了とはしない。外界/ボスラッシュ/未決D05/S08などは実装していない。
+
+## 第十二段階: pause Viewと撤退確認Dialog
+
+最初の縦切りはController-built PauseOverlayのViewManager system-pause層への登録と、RetreatConfirmationのDialogManager接続。checkpoint案内/保存再試行、帰還本体/保存失敗・保留報酬の画面群は別の状態を持つため今回は変更せず、Stage10の正確な残一覧を継続する。
+
+GameplayPauseViewは表示寿命/context世代とボタンcallbackの生存確認だけを担当する。時間停止/探索再開countdown/切断pause/保存/撤退計算はControllerの既存処理に残す。Showごとにcontextを捕捉したクリックを作り直し、閉じた世代や破棄後の旧クリックは実行しない。設定画面は既存primary View層のまま、pauseは独立層で従来の重なりを維持する。通常hideは時間を解除せず、ホスト終了はowner解除で破棄する。
+
+撤退Dialog中はCanvasGroupでpauseの表示とraycastを隠すがcontext/GOは維持し、同一Viewの再要求でDialogを消さない。実際の親Disable/遷移/終了はNotifyHidden/CancelOwnerへ進む。取消は起点focusを復元し同frame入力を遮断、確定は既存EndRunWithoutRewardsを一度だけ呼び、保存失敗時の既存保留/再試行契約を変えない。legacy gameSystemなしの導線は従来listenerを保持する。
+
+この段階ではpause部品のInitialize内組立はControllerに残る。Sceneそのものを改名した移行でも全UI移行完了でもなく、既存panelの生成実体をResourceManager lease/ ViewManagerへ渡す寿命接続である。後続の必要時Prefab化/画面組立分離と、checkpoint/帰還/会話/装備/詳細等の残りを明示して継続する。新しいManager・外界機能・未決値・新アートは追加しない。生成6系統の借用、旧登録外Sprite2095基準群、原本/保存/固定frame/見た目を保護する。
+
+
+### 第十二段階の検証と残対象
+
+実Pointer取消の初回確認では、Dialog自身の起点選択復元の後、Controllerの次frame MenuPadScope再BindがResumeButtonへ上書きする問題を再現した。取消元の名前をViewから一度だけ受け渡し、親menuの再Bind時に優先する。直接選択した瞬間だけの成功で済ませず、150ms後の実Pointer確認を最終条件にする。最初の未修正版の全件成功と取消失敗記録を保持し、修正版の関連488/488（48.71秒）・全3596/3596（269.42秒）を別source hashで収集。同Editor2周30件も成功し、各回のEventSystem登録/Scene登録0と生成cache0を確認した。警告59件は従来fixture5分類と一致、抑制なし。
+
+今回閉じるのはPauseOverlayとRetreatConfirmationの管理寿命のみ。第十段階一覧のうち、以下は安定化必須の具体的な未移行対象として残す。
+
+- Controller-built checkpointOverlay（続行、保存blocked時の再試行）。
+- ClearReturnViewとその画面variant/second instance（帰還、所持、編成、出撃先、style、交換等の既存共有画面）。
+- CustomizationLoadoutView / CustomizationUnlockView / CustomizationAcquisitionView。
+- Controller progressActionOverlay（新規開始等の確認・保留保存状態）とreward overlays。
+- ClearReturnView readonly popup、saved-deck削除確認。
+- CustomScreenView detail/inspection。
+- DialogueViewとDialogueSessionのskip確認/backlog。
+
+checkpoint/帰還の成功・保留報酬・保存失敗時の既存計算/write planを今回の寿命接続で変更しない。次はcheckpoint案内とprogressAction確認を独立のまとまりで管理化し、その後ClearReturnView群へ進む。全画面の必要時Prefabロード・内部Initialize分離は今回で完了としない。
+
+
+最終実Playでは従来Scene直起動とBootstrapを通し、設定確認/保存/復元、checkpoint再開、Dialog中Single再入、timeScale0終了、欠損/取消ロード、Close/Openを確認。初回再検証のCustom待ちは再利用した隔離保存先のcheckpoint案内によるため、実ContinueCheckpointButtonから再開し、初手5枚を確認した。製品の起動/保存条件は変更していない。
+
+撤退確認は実RaycastのPointerDown/Up/Clickで起点選択を作り、取消150ms後もRetreatButtonを維持。Dialog中の背面Resume、旧世代Resume、取消後/帰還後の旧確定callbackは拒否。実確定後の保存に二重書込みなし。次の実出撃から撤退Dialog中にホストを終了し、旧確定無効/保存不変/再入後単一Root・Camera・Listener・EventSystemを確認した。設定の閲覧/取消往復も隔離10ファイル不変。ヘルパーの誤ったCloseAudioSettings名は実在CancelAudioSettingsへ訂正し、Root共有3実体を0とした検証側の誤前提も前段階/所有境界と照合して訂正した。製品コードの条件緩和はしていない。設定操作用の既存helperはtimeScaleを明示設定するため、物理入力や全設定中timeScale不変の証拠とは扱わない。
+
+最終Pause/撤退確認のFHD/4K/4:3計6枚を独立原寸レビューし、必須指摘0。新たな同条件before撮影はなく完全画素一致とはしない。コードレビューも最終3source/全件結果hash一致・必須指摘0。Play再入時のPipeline main-thread timeout2件は同PIDの通常待機で復帰した履歴として保持し、最終全件error0と混同しない。UnityAIの接続情報保存警告も別履歴。clear後の最終host終了窓と停止後cleanupはerror0。
+
+停止後は実640×360のScreen/2RT・専用TMPDIR/save guard・native機器のみ・EventSystem静的登録0・生成registryのroot/borrow/pending0、原本clean・submission/project全対象一致（既存private URP2例外）を確認した。登録外2095 Sprite基準群はそのまま保持し未特定。checkpoint/帰還の保存失敗・保留報酬は既存の関連/全件回帰に留まり、その未移行画面を今回実Playで全て検証したとはしない。実build/物理機器/聴感/全HotReloadと歴史的UGUI/CLI等の未確認・未解決を継続する。
+
+
+## 第十三段階: checkpoint案内ViewとprogressAction Dialog
+
+CheckpointOverlayをViewManagerのcheckpoint層へ登録し、案内内容を更新しても同じ表示contextを保持する。復元/再試行の可否・保存順・Core交換はController/CheckpointFlowに残す。表示世代、現在のボタン有効状態、同frame重複を確認して操作を通し、再表示後の旧Continue/Retryイベントは実行しない。内部のController組立は残り、必要時Prefab化を今回完了としない。
+
+ProgressActionOverlayはDialogManagerのPopup専属管理へ移す。checkpointからは管理Viewのcontext、まだ未移行のhubからは実ClearReturnViewの表示寿命に結び付くDialogOwnerScopeを使う。偽の画面Viewを登録せず、帰還全画面の移行と区別する。IDialogOwnerは親の有効性だけを伝え、計算や保存の所有をDialogManagerへ移さない。
+
+保存確認/再試行はShowPersistentでticket有効中に既存のConfirmNewGame/ManualSave pending計画を試行する。失敗や保存完了通知では同ticketを維持し、表示が変わった有効操作へ再Bindする。同frame連打・実行中再入・非表示/無効な取消をManagerで拒否する。新規開始の成功では既存の親遷移順が先にownerを終了し、TaskがParentClosedになる場合があるが、結果から重ねて進行するconsumerはなく、既存保存後適用順は変えない。
+
+Busy/ParentClosedでticketを取得できなかった要求は表示だけを戻し、同ownerの別Dialogを取消さない。保存前に別Dialog存在を拒否する。取消では隠れていた起点操作を再表示してからfocusを戻し、checkpoint側のmenu再Bindへ一度だけ渡す。拒否後に非表示Popupへ選択を戻さない。親Disable/host終了はscope/画面contextを取消し、旧callbackを実行しない。
+
+帰還共有ClearReturnView群、CustomizationLoadout/Unlock/Acquisition、reward overlays、readonly/保存deck削除確認、CustomScreen detail/inspection、Dialogue/skip/backlogは具体的な安定化必須残件として継続する。新外界機能/依頼/ボスラッシュ/未決値は追加しない。生成6系統lease、登録外Sprite2095基準群、既存UI/入力/保存/固定frameと元VMを保護する。
+
+
+静的レビューで、取得失敗時の別Dialog取消、拒否後の非表示ボタンfocus、取消直後のcheckpoint同frame遮断消去を検出して修正した。既に閉じたticketのCancelled completionでは再度CancelOwnerしない。実ControllerのOpenManagedProgressDialog→取消を通す回帰で、親contextの遮断が同frameに残り、次frameに解除される条件を追加する。UIの入力遮断はpadのneutral待ちやLegacy Escapeの重複防止だけに依存しない。
+
+
+未移行hubのscopeはUnityのDestroy待ちだけにせず、StopManagedHostで同期解除し、runtimeReleasing/releasedでも無効にする。Popup ticketだけでなく旧手動保存/NewGame元ボタンのcallbackが残る場合も、保存・新規開始の3入口でUnity生存/active/host終了を先に検査する。元データを書いた後で表示を拒否する順にはしない。実Controllerと専用ファイルstoreの回帰で、Stop後・Destroy前の旧イベントから保存bytes/revision/pendingを変えない条件を追加した。
+
+
+### 第十三段階の実検証と限界
+
+最終関連494/494（33.48秒）、修正対象の旧初期化失敗回帰1/1を確認。最初の関連493/494失敗は、fixtureがCanvasを先に破棄した後のStopManagedHostで、新規追加のC# null条件演算子がUnity native-nullを認識しなかったことによる。新3か所のSetActiveをUnityの生存判定へ修正し、既存の期待値は変えていない。失敗と当時のhash/stackを別証跡へ保存し、修正後を区別する。
+
+実Playは検証用旧Scene→Bootstrap、設定/確認Dialog、checkpoint再開、Single再入、timeScale0のClose/Open、欠損/取消ロードを通した。checkpointのView lease追加を実体数に含め、ホスト終了でRoot共有3実体へ戻り、Camera/Listener/EventSystem/Soundの重複がないことを測定した。新規開始取消はNewGameButtonへfocus復帰し、同frameの旧Continueクリックを遮断。仮想padの保持取消後も保存bytes不変、機器は後で除去した。
+
+checkpoint保存失敗の最初の手順はCustom確定を保存境界と仮定しており、実際は書込0だった。製品をその仮定へ合わせず、隔離戦闘の結果fixture→既存報酬選択/skip→通常の保存境界を通した。書込前に一度だけ失敗するICheckpointStore wrapperで元bytes不変と案内/再試行を確認し、2回目の同計画書込で復帰、実storeを元へ戻した。撃破の成立自体は隔離fixtureの直接damageであり、物理入力による通常撃破の検証とは区別する。
+
+新規開始は既存starter20枚を一度だけ確定し、旧ticketから二重保存なし。手動保存も書込前一度失敗する専用wrapperで元bytes保持、取消無効、同ticketの再試行/保存完了案内、閉鎖後ManualSaveButtonへのfocus復帰を確認した。wrapperのwrite countは失敗1+成功1で2回、両store/撮影hold/捕捉callbackは最終検査で残留なし。Dialog中のSingle再入/host終了、背景に残る旧ManualSaveイベントと旧確定callbackからの保存・進行も拒否し、隔離保存先の全対象hash不変を確認した。
+
+FHD/4K/4:3の15枚と4K等倍局所を独立確認し必須視覚指摘0。同条件beforeの新撮影はなく、完全なpixel一致とはしない。保存失敗・保留報酬・revision競合の全組合せは既存回帰に留まるものを含み、実Playで全てを確認したとはしない。実build/物理機器/聴感/全HotReloadは未確認、歴史的UGUI/Pipeline/CLI/UnityAIの履歴は別管理。登録外2095 Sprite群は生成元未特定のまま保持する。
+
+
+最終全3602/3602（271.49秒、skip/inconclusive/error0）を同じ最終5sourceで確認した。関連494件/単体修正回帰/全件のhashはsubmission/projectと一致。警告59件は従来のfixture5分類と一致し、診断を抑制していない。再開時に障害注入store/捕捉callback/撮影holdのAppDomainキーが全null、入力機器がnative Mouse/Keyboardのみ、EventSystem一つであることを読み取ってから終了/再生成を継続した。
+
+実Play中のconsole GroundTruth error1は、長期カメラlogでリングから消えたため、保存したEditorログの対象offset以後を照合し、Play復帰時Pipeline main-thread timeout120秒の1件と確認した。UnityAI接続情報保存のreadonly警告/keychain接続履歴と分けて保存し、製品の最終終了窓/停止後cleanup/fulltestはいずれもerror0。環境や認証の設定変更はしていない。
+
+同EditorでScroll/UIRuntime/生成資産/今回6回帰を2周42件成功し、各回のEventSystem current CLR/Unity null・登録/Scene登録0、生成cache root/borrow/pending0を確認した。global clearは呼んでいない。最終cleanupで実640×360/両RT、専用TMPDIR/save guard、native機器のみ、原本clean、submission/projectの全対象一致（既存private URP2例外）を確認した。次段階はClearReturnViewの帰還・所持・編成/出撃等の画面群と、その詳細/保存deck削除確認を明確なView/Dialog寿命へ揃える。今回だけで基盤全体安定化完了とはしない。
+
+## 第十四段階: 帰還共有画面と読取専用詳細Popup
+
+ClearReturnViewの主instanceは帰還、所持、編成、保存デッキ、出撃先、style、交換、ダンジョン訪問/削除選択という既存render familyを共有する。第二instanceの図鑑は主画面を保持したまま重なるため、ViewManager内のreturn-hub/card-collection別層へ登録する。既存Controller内組立の実panelをResourceManager.InstanceLeaseが所有し、表示前に有効contextを取得、HideでDialog取消/入力解除、Session終了のUnregisterでpanelと参照を解放する。内部contentの再組立とページ・選択状態は引き続きView所有で、必要時Prefab化と画面variantの独立ロードは未完である。
+
+共通ReadonlyCardDetailsはDialogManager.ShowNoticeの一ボタンPopupとし、戻る、pad、scrollの所有を一本化する。親contentの更新/終了は旧ticketを取消し、旧contentの参照検査と管理context検査を両方維持する。通常取消は親の起点focusへ戻すが、Busy/ParentClosed拒否は作成途中のmodalだけを破棄し、既存Dialogのfocusを奪わない。進行確認はStage13の暫定hub scopeより実return contextを優先する。保存/報酬/計算/選択規則はController/Coreへ残す。
+
+今回とは別の安定化必須対象は、ClearReturnView内KeepEditingDeparture（編成破棄/継続）とConfirmDeleteDeck（保存デッキ削除）の確認、CustomizationLoadoutView/CustomizationUnlockView/CustomizationAcquisitionView、報酬関連overlay、CustomScreenのdetail/inspection、DialogueViewとskip/backlog Popupである。Controller内部Initializeと必要時Prefabロードの残りも追跡する。登録外Sprite2095基準群、歴史的UGUI/Pipeline/CLI/UnityAI、全HotReload/実build/物理入力/聴感未確認はこの移行で解決扱いにしない。
+
+帰還だけを表示したSingle再入後の終了検証で、未表示CustomViewを所持カードのmini resolverとして利用すると、View本体破棄後も所有mini Sprite5個/Texture5個が生存することを再現した。ホストCloseは既に完了しており、検証失敗をClose未実行と取り違えて再送しない。既存Artwork辞書の解放をOnDestroy専用から明示的なReleaseSessionPresentationへ移し、帰還/図鑑を先にHideして利用側とDialogを停止する。生成Illustration Spriteだけを返し、そのimport Textureやassigned Spriteは破棄しない。未表示resolverの新回帰と、修正後の遅延Destroyをまたぐ実Play確認を行う。登録外2095基準群を一括削除する修正ではない。
+
+残対象の表示名は、CurrencyRewardPanel / ItemRewardPanel、CustomPadDetails（カード/変身詳細・combatant inspection）、DialoguePanel（DialogueView）とDialogueSessionのSkipConfirmationOpen / BacklogOpen状態。会話の確認/履歴は現状で別Popup実体を持たず、次の移行で画面とDialogの責務を分類する必要がある。CardSelectionViewのカード報酬Prefab管理は既存移行済みであり、これら未管理overlayと混同しない。
+
+### 第十四段階の最終検証と限界
+
+最終6sourceで関連497/497（49.25秒）、全3605/3605（280.09秒）成功、失敗/skip/inconclusive 0、console error 0。全件のクライアント待機期限後も同一ジョブのstatusで結果を回収し、重複実行していない。同EditorでScroll/UI/生成資産と今回回帰を2周48件成功、各回EventSystem登録と生成registry/lease残留0、global clear未使用。元の期待値・保存guardは緩めていない。
+
+最終Playで実敵接触→Custom→pause→撤退、進行store書込前失敗→再試行、帰還contextを親とする手動保存Dialogの同ticket再試行/取消focus、所持/図鑑/カテゴリ/ページ/詳細往復を確認。書込前失敗時は進行ファイルの元bytes保持、撤退の正規checkpoint保存とは分けて比較した。両wrapperとも失敗1+成功1の2回で実storeへ復元。UI往復、旧callback、Close/Open/Single再入で隔離4ファイルのhash不変。旧世代・同frame背面入力・親終了後の旧手動保存を拒否した。報酬保留等の全境界は既存回帰であり、今回の実Playで全て実行したとはしない。
+
+主画面/図鑑の独立context、Dialog中host終了・同時再Open・実Prefab欠損/取消・Single再入後の新しい詳細操作を確認。Root/Camera/Listener/EventSystem各1、音源3を保持し、host終了時は共通Resource3実体だけを残してHost/World/Battle/Custom等を返却。未表示Customは最終resolver検証で既存APIからart Sprite1も取得し、所有Sprite計6/Texture5のnative破棄・空辞書・import Texture生存を確認した。初回のmini5/Texture5残留とClose実行済みの証拠は保持している。
+
+最終15画像をFHD/4K/4:3、同じ保持frame/Canvas更新済みで取得し独立視覚レビュー必須0。長文80行は表示専用fixtureの実全文入口/scroll/取消後live復元を確認し、写真だけで末尾到達を推定しない。matched-before未撮影でpixel同一の主張はしない。停止helper由来のtimeScale0を含むため通常pause復帰の全条件はこの実Playだけで証明せず、固定frame/pause契約の全件回帰と区別する。
+
+全件中warning59は既知の負条件fixture 5分類と一致し、抑制なし。Native履歴のPipeline timeout1/UnityAI接続情報保存warning1、再読込/CLI応答待ちの履歴は製品テストと分ける。Editor/VM/認証/モデルの交換なし。停止後は実640×360/両RT・専用TMPDIR/saveguard、原本clean、全対象Asset一致（既存private URP2例外）、EventSystem登録0、生成registry/lease0、捕捉参照/注入fixtureなし、native Mouse/Keyboardのみを確認。GameplayPauseはIsPaused=false、awaitRelease=true、resumeFrames=2を記録し、既存neutral待ちを強制解除しない。登録外Sprite2095基準群、歴史的UGUI/CLI、全HotReload/実build/物理入力/聴感は未特定・未確認として保持する。
+
+## 第十五段階: 編成破棄と保存デッキ削除確認
+
+管理起動ではDepartureDiscard / saved-deck delete確認をClearReturnViewの実contextを親とするDialogManagerのPopupへ移す。親contentと編成データは保持し、表示だけ一時停止する。旧Scene/単体Viewの直接呼出しは既存分岐を残す。Popupは従来の文言・配置・基準倍率・面材/外枠を使い、Viewが生成/後片付け、DialogManagerがticket・入力・結果/取消・親終了を所有する。新Managerや保存形式は追加しない。
+
+確定/取消は既存業務callbackへ戻す。削除確定時の保存が失敗した場合は、従来どおり確認を閉じてpending一覧の再試行へ戻し、確認Dialog内の保存再試行へ仕様変更しない。長い旧デッキ名はScrollRectをDialogへ渡し、左右の確認選択とPageUp/Downの読取を維持する。取消後は再Renderされた新contentから起点focusを解決する。
+
+内容更新用CancelActiveOwnerは進行中ticketだけを取消し、直前の閉鎖frameの背面入力遮断を消さない。親終了用CancelOwnerは維持する。編成破棄後に拠点へ戻る同frameも手動保存/新規開始のUI入口はownerの遮断に従い、業務callbackと混同しない。構築失敗時のcontent参照はfinallyで戻し、親終了は業務callbackやfocus復帰を実行しない。
+
+今回に必須の確認は、両確認の反復/確定取消/旧ticket/親終了/再生成/同frame入力、隔離検証用デッキだけの削除と書込前失敗/再試行、保存bytes・機器・注入・lease/生成資源の後片付け。全て検証後に実績を追記する。残る必須対象はCustomizationLoadout/Unlock/Acquisition、CurrencyRewardPanel/ItemRewardPanel、CustomPadDetails、DialoguePanelのskip/backlogと内部組立・必要時Prefab化。任意の見た目調整や未実装外界機能はこの移行へ混ぜない。
+
+### 第十五段階の検証・残範囲
+
+関連501/501・最終全3609/3609（271.89秒）・同Editor反復56件が成功。実640×360/両RT・専用TMPDIR/saveguard、最終source hash一致、最終テストerror0。warning59は既存負条件fixture5分類で抑制なし。原寸FHD/4K/4:3の15画像と4K等倍局所を独立レビューし必須0、コードレビューも必須0。
+
+実Bootstrapから出撃/敵接触/Custom/pause/撤退を経て、未保存編成と保存デッキ草稿の取消/破棄、起点focus、同frame旧保存入口を確認。削除は隔離先の有効GUIDのA/Bのみ。書込前失敗時は実在4保存ファイルbytes不変、既存一覧retryを含む試行2回、旧ticketは新Dialogへ作用しない。parent CloseCurrent、host Close/Open、欠損取消、同時再開、Single再入を確認し、Root/Camera/Listener/EventSystem各1/音源3を維持。帰還だけで使った非表示Customの所有Sprite6/Texture5を解放、import Texture生存。1000文字は保存を書き換えない表示fixtureで実入口を押し、仮想pad左右/RB PageDown/取消を確認。機器除去の自動pauseは既存ResumeButtonで戻した。末尾到達や物理padの実確認とはしない。
+
+初回compileは新規testのLinq using漏れ2件を修正。初回関連500/501は短名fixtureに任意Scrollの存在を要求した前提誤りで、長名へ直しassertと製品3sourceを維持。実操作helperの旧ボタン名/無効ID/実フォントで収まる300文字も製品修正と分け、現行ボタン/有効GUID/1000文字overflowへ直して検証し直した。コンパイル/Play再読込後のPipeline timeoutは内部期限・既存要求を確認し、通常接続回復後に続行。Editor/VM/モデル/認証の変更や重複TestRunnerなし。
+
+終了時は原本clean、928対象Asset一致（既存private URP2例外）、実640×360/両RT/TMP、禁止default保存先なし、EventSystem登録0、生成registry/lease0、proof/fault参照なし、native Mouse/Keyboardのみ、実保存4ファイルはstop/最終test後も不変。GameplayPauseはIsPaused=false、awaitRelease=true、resumeFrames=2の既存neutral待ちを維持する。登録外Sprite2095基準群、UGUI/Pipeline/CLI/UnityAI履歴、全HotReload/実build/物理入力/聴感は未解決/未確認として残す。
+
+このまとまりでKeepEditingDeparture/DiscardDepartureDraftとConfirmDeleteDeck/CancelDeleteDeckの管理移行を閉じる。必須残件はCustomizationLoadoutView/CustomizationUnlockView/CustomizationAcquisitionView、CurrencyRewardPanel/ItemRewardPanel、CustomPadDetails、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。これらの実生成・入力・親終了・資源返却が管理経路を通り、本番Bootstrapで回帰を通すことを安定化の完了条件として追跡する。任意の見た目調整や新外界/依頼等の機能追加、未決D05/S08の判断は別範囲。今回も取得済み文書を実装済みとはしない。
+
+[第十五段階証跡](../.Codex/screenshots/system-stage15-20261101/README.md)
+
+## 第十六段階: 装備3Viewの実寿命
+
+CustomizationLoadoutView（編集草稿と配置）、CustomizationUnlockView（固定領域の解放）、CustomizationAcquisitionView（保存済み候補の受領）の3画面を、customization層のequipment-loadout/equipment-unlock/equipment-acquisitionへ別キーで登録する。実panelの生成追跡はResourceManager.InstanceLease、表示/切替/Close/親終了はViewManagerとManagedScreenContextを通す。閉鎖時は既存モデルを捨て、次Openで新contextとcontentを組み立てる。host終端では一度も開かなかったViewも明示ReleaseManagementしてmenu購読・モデル・Controller callback・管理参照を解放する。OnDestroyだけに依存しない。
+
+画面内の盤面、候補プレビュー、名前の読取領域はinlineとして維持し、不要なPopupを作らない。既存3画面に独立確認Popupはなく、将来のPopupはcontext経由のDialogManagerへ渡す。Dialog中は3画面の操作を止め、親終了時はPopupをParentClosedで閉鎖する。装備3画面の内部Initializeによる組立は残り、今回を全Prefab切出し完了とはしない。
+
+編集はrevision照合→既存保存成功→Close、解放は保存成功→Applied、取得は既存候補準備保存→選択→claim保存成功→Savedの順を維持する。失敗時は現在のpending計画のRetryだけを許可し、通常取消を有効化しない。Controllerの保存/適用/claim/retryには実行中host・対象View/contextの条件を置き、Button/hover/focus/menu backは元contextとcontentを捕捉して旧入力を拒否する。帰還確認の終了同frameには、3つのOpen入口も既存の帰還Dialog遮断に従い、草稿や取得候補の準備保存を始めない。
+
+今回の検証対象は3Viewの通常/反復/取消、旧世代callback、Dialog併用と親終了、未表示の終端解放、保存失敗時のdisk/snapshot/効果供給元整合と同計画再試行、host再生成、3比率の既存外観。定義未登録のdefault起動と安全な登録済みfixtureを区別し、製品の装備定義や性能を創作しない。検証後に実績を追記する。必須残件はCurrencyRewardPanel/ItemRewardPanel、CustomPadDetails、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。第十五段階の極端な長名末尾未確認・登録外Sprite2095・歴史的UGUI等と実build/物理/聴感/全HotReload未確認は保持し、任意の見た目改善や新外界機能とは分ける。
+
+
+### 第十六段階の実操作・寿命確認
+
+最終5sourceで関連507件と装備処理84件を確認。独立レビューで帰還元の同frame遮断、Close時の自分の選択だけの解除、Open前のfocus捕捉順を見直し、PrepareManagedOpen（モデル/Renderなしの管理取得）→帰還Hide→既存Openの順へ揃えた。先に通った507/84件は最終修正の証拠へ流用せず、修正後に再コンパイルして両方を再実行した。
+
+実Bootstrapは製品装備定義未登録のdisabled表示を確認し、登録済み挙動は既存Stage55の明示catalog/providerを隔離hostへ注入した。装備編集の取消と仮想pad取消、パーツ追加/装飾品解除、解放、候補受領を実入口から操作した。3保存境界すべてで書込前失敗時のdisk bytesとsnapshot不変、無効取消/旧callbackの拒否、同計画Retryで失敗1+成功1の2試行を確認。保存snapshotと効果供給元の装備/partsを照合した。fixtureは製品の性能値/能力を定義しないため、実製品stat反映まで確認したとはしない。性能計算は既存84件の回帰と区別する。
+
+拠点取得providerは再Openで再解決される既存仕様であり、保存済み同context計画は再Stageされずrevision/候補を保持する。検証helperのprovider一回限定/focus header必須という過剰な前提は、実行済みOpenの状態とコードを確認して取り下げ、製品を変更せず継続した。既存帰還RenderによるConfirmDungeonSelectionへのfocus fallbackと起点cache保持を区別し、常にheaderへ戻るという新契約は作らない。
+
+3画面のactive/未表示双方の明示終端、host Close/Open、Single再入、欠損/取消/重複Openを確認。旧モデル/Controller callback/menu入力/contextを解放し、Root/Camera/Listener/EventSystem各1/音源3を保持、host終了で共通Resource3だけを残す。実隔離progress2ファイルは最終Close/Open/stopで不変。今回は非表示Custom resolverの所有Sprite1/Texture0を取得/解放してimport Texture生存を確認した。過去のmini5を作っていない状態へ旧6/5期待を流用しない。6/5回帰は既存専用テストとして別に維持する。
+
+原寸FHD/4K/4:3の18画像を独立視覚レビューし必須0。静止画/fixture/保持frameの証拠であり、matched-beforeのpixel同一や物理機器動作とはしない。長名の末尾到達未確認は第十五段階から保持する。コンパイル後の通常接続復帰に伴うPipeline timeout1とUnityAI接続情報保存warning1は履歴として保存し、正常終了窓のconsole error0/warning0と分ける。Editor/VM/モデル/認証の変更や重複要求の強制再送はしていない。
+
+
+### 第十六段階の最終検証・必須残件
+
+最終5sourceの関連507/507、装備処理84/84、全3615/3615（347.61秒）に成功。失敗/skip/inconclusive0、console error0、warning59は既存負条件fixture5分類と一致し抑制なし。同Editor2周68件でEventSystem登録と生成cache/lease残留0を確認し、global clear未使用。全件外側の待機期限後も同一jobのrunning/completedを回収し、重複実行していない。最終sourceはsubmission/projectと結果hashが一致。
+
+この段階で3装備画面の実context・入力・閉鎖・終端解放を管理経路へ揃えた。安定化必須の次対象はCurrencyRewardPanel/ItemRewardPanel（既存CardSelectionView管理とは別）、CustomPadDetails（カード/変身/戦闘個体詳細）、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。各対象の実生成/入力/親終了/資源返却が本番Bootstrapで管理され、関係回帰を通ることを完了条件とする。未登録D05/工場拡張や新外界/依頼/ボスラッシュ、未決値、任意の見た目改修は別範囲であり、この段階を全体安定化完了とはしない。
+
+[第十六段階証跡](../.Codex/screenshots/system-stage16-20261101/README.md)
+
+停止後cleanupは実640×360/両RT・専用TMPDIR/saveguard・原本clean・928対象Asset一致（従来private URP2例外）を確認。native Mouse/Keyboardのみ、EventSystem登録0、生成registry/root/borrow/pending0、fault/proof捕捉参照なし、最終隔離progress2ファイルbytesは全件後も不変。登録外Sprite2095基準群は未特定のまま保持。GameplayPauseはIsPaused=false/awaitRelease=true/resumeFrames=2の既存neutral待ちを記録し、強制解除していない。
+
+
+## 第十七段階: 通貨/アイテム報酬overlay
+
+CurrencyRewardPanel/ItemRewardPanelは報酬待機の画面であり、確認Popupとは分けてViewManagerのresource-reward層へ登録する。既存panelの実体はResourceManager.InstanceLeaseが追跡し、表示/Close/親終了/host終端で管理contextを通す。計算・上限・SelectItemReward/SelectCurrencyReward・論理Schedule・checkpoint保存順は既存Controller/Coreへ残す。受取/スキップは現在のchoiceへ一度だけ応答し、Popupが必要ならそのcontextを親とするDialogManagerへ委譲する。
+
+表示ごとにbuttonのUnityEventを新しくし、旧eventは旧choiceとcontextを捕捉する。背面Dialog・pause/解除入力barrier・閉鎖世代からの操作は次の報酬へ届かない。共有menuは現在root/contextを動的に確認し、閉鎖でSuspend、終端でDisposeする。ViewManagerのnew.Show→old.Hide順へ合わせcontextはpanel別に追跡し、旧Hideが新contextを解除しない。choice/rootを先に外して取消し、同期finally再入も新画面へ作用させない。
+
+Controllerの一時Disable→Enableでは、既存報酬choice待機を維持する。OnDisableで取消すと再提示経路がなくCardRewardへ残るため、その変更は採用しない。host終了/管理Close/取消は既存待機を取消し、受取判断を実行しない。Bind失敗もtry/finallyで待機fieldを返す。内部Initializeのpanel組立/必要時Prefab分解は未完で、登録だけで全画面移行完了とはしない。
+
+検証完了後に実績を記録する。残必須はCustomPadDetails、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。前段階の製品stat実値・極端な長名末尾、2095基準Sprite、歴史的UGUI/Pipeline/CLI/UnityAI、実build/物理入力/聴感/全HotReloadの未確認を保持し、新外界機能や未決値は混ぜない。
+
+
+### 第十七段階の実操作確認
+
+最終2sourceで関連509/509（53.6秒）成功。実Bootstrapの通常出撃/接敵/Custom確定から既存報酬計画を提示した。勝利だけを従来の被害API fixtureで進め、UI受取は実raycast入口を使用。未受取Itemでhostを終了し、保存bytesと未確定報酬を変えず、checkpoint再開後に再提示した。Disable→Enableの同じchoice待機、pause中の旧受取拒否、再開後の既存heal20によるHP79→99、Item旧eventが次のCurrency待機へ作用しないことを確認した。HP差分用の被害21は隔離検証のみで、製品値を登録/変更していない。
+
+通貨受取の実checkpoint保存境界で一度だけ書込前失敗を注入し、disk bytes/確定通貨0を保持、既存RetryCheckpointButtonで失敗1+成功1の2試行、RewardCompletedのdisk/Last HP99・通貨10を確認した。PendingCurrencyは既存Coreが未保存checkpoint計画へ移すため0になり得るが、その計画を再試行して確定する。選択処理や保留の定義をUI移行に合わせて変えていない。以後の探索/訪問を含むlive HP100と、報酬境界の保存HP99は異なる時点として区別する。host停止時の既存Suspend処理が常に新checkpointを書けるとは仮定しない。
+
+Close/Open、欠損/取消/重複要求、Single再入で旧2panel/menu/choice参照を解放し、Root/音源を再利用、活動中Camera/Listener/EventSystem各1・音源3、host終了で共通Resource3を保持した。FHD/4K/4:3の原寸9画像を独立視覚確認し必須0。matched-before未撮影、画像だけで入力/保存/寿命や物理機器を証明したとはしない。Itemの実スキップ操作など未実施経路は、両種の選択/取消を含む管理回帰と既存Core回帰と区別する。
+
+最初の実操作helperはPlayer.TakeDamageの引数型を誤り、実行0で修正した。終了時には訪問画面の背後のPauseButtonが実raycastで遮断されたため、表示中のPauseVisitを使った。遮断を迂回せず、helper誤りと製品不具合を分けて証跡へ保存する。初回静的レビューのDisable取消とnew.Show/old.Hide順の問題は動的検証前に修正した。
+
+compile/Play開始時の通常DomainReloadとPipeline timeoutを保持。同じEditorで待機し、DLL時刻・Refresh完了・新relay・fresh groundTruthを照合して復帰後に実操作を再開した。VM/Editor/モデル/認証の変更、同じテストやPlay要求の重複はない。全件/同Editor/cleanupの結果は完了後に追記する。
+
+
+### 第十七段階の最終検証と残件
+
+同Editor2周72件、最終全3617/3617（276.78秒）成功。失敗/skip/inconclusive0、console error0、warning59は既知負条件fixture5分類と一致し抑制なし。実640×360/両RT・専用TMPDIR/saveguardで実行し、最終2sourceはsubmission/project/関連/全件/レビューのhashが一致。外側待機期限後も同一jobを回収し、重複TestRunnerなし。
+
+停止後cleanupは原本clean、928対象Asset一致（既存private URP2例外）、実640×360/両RT/TMP、禁止default保存先なし、native Mouse/Keyboardのみ、EventSystem登録0、生成registry/root/borrow/pending0、proof/fault参照なしを確認。実隔離4保存ファイルのbytesは最終Close/Single/stop以後、全件後も不変。登録外Sprite2095基準群は未特定として保持し、GameplayPauseのIsPaused=false/awaitRelease=true/resumeFrames=2の既存neutral待ちを強制解除しない。
+
+今回で報酬overlay2種の管理寿命を閉じた。残必須はCustomPadDetails（カード/変身/戦闘個体詳細）、DialoguePanelとskip/backlog、Controller内部Initialize/必要時Prefab分解。各対象の実生成/入力/親終了/資源返却を本番Bootstrapの管理経路へ揃え、関係回帰を通すことを安定化条件とする。次はCustom詳細PopupのDialogManager移行が適切。任意の見た目改善、新外界/依頼/ボスラッシュの実装や未決値の決定は別範囲。
+
+[第十七段階証跡](../.Codex/screenshots/system-stage17-20261101/README.md)

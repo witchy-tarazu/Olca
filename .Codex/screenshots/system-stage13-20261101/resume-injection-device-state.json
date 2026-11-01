@@ -1,0 +1,60 @@
+{
+  "faultKeys": [
+    {
+      "key": "Stage13Store",
+      "present": false
+    },
+    {
+      "key": "Stage13Session",
+      "present": false
+    },
+    {
+      "key": "Stage13Fault",
+      "present": false
+    },
+    {
+      "key": "Stage13CheckpointSession",
+      "present": false
+    },
+    {
+      "key": "Stage13CheckpointStore",
+      "present": false
+    },
+    {
+      "key": "Stage13CheckpointFault",
+      "present": false
+    },
+    {
+      "key": "Stage13Confirm",
+      "present": false
+    },
+    {
+      "key": "Stage13OldManualSave",
+      "present": false
+    },
+    {
+      "key": "Stage13Hold",
+      "present": false
+    }
+  ],
+  "devices": [
+    {
+      "name": "Mouse",
+      "native": true
+    },
+    {
+      "name": "Keyboard",
+      "native": true
+    }
+  ],
+  "events": [
+    {
+      "name": "EventSystem(Clone)",
+      "enabled": true
+    }
+  ],
+  "screen": [
+    640,
+    360
+  ]
+}

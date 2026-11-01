@@ -43,5 +43,25 @@ namespace Olca.Tests.Application
                 var fresh=UnityEngine.Object.Instantiate(prefab);try{var untouched=fresh.GetComponentInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true);int count=untouched.GetComponentsInChildren<Transform>(true).Length;fresh.GetComponent<Olca.Presentation.Battle.BattleView>().ReleaseSessionPresentation();untouched.ReleaseSessionPresentation();Assert.AreEqual(count,untouched.GetComponentsInChildren<Transform>(true).Length,"未初期化Viewの返却で子UIを生成しない");}finally{UnityEngine.Object.DestroyImmediate(fresh);}
             } finally {UnityEngine.Object.DestroyImmediate(root);}
         }
+        [Test] public void Release_未表示Customを帰還の素材resolverとして使っても終端で所有Spriteを返す()
+        {
+            var root=new GameObject("InactiveResolverHost");root.SetActive(false);
+            var resources=new ResourceManager();var dialogs=new DialogManager(()=>Time.frameCount);var views=new ViewManager(resources,dialogs);
+            try {
+                var binding=new BattlePresentationBinding(new object(),resources,views,root.transform);var custom=binding.Custom;
+                Assert.IsFalse(custom.gameObject.activeInHierarchy);
+                var mini=custom.GetCardIcon("heal");var miniTexture=mini.texture;
+                var art=custom.GetCardIllustration("sword");var importedTexture=art.texture;
+                Assert.IsTrue(mini!=null&&miniTexture!=null&&art!=null&&importedTexture!=null);
+                Assert.Greater(((System.Collections.IDictionary)Get(custom,"generatedMiniIcons")).Count,0);
+                Assert.Greater(((System.Collections.IDictionary)Get(custom,"registeredIllustrations")).Count,0);
+                binding.Dispose();binding.Dispose();
+                Assert.AreEqual(0,((System.Collections.IDictionary)Get(custom,"generatedMiniIcons")).Count);
+                Assert.AreEqual(0,((System.Collections.IDictionary)Get(custom,"registeredIllustrations")).Count);
+                Assert.IsTrue(mini==null&&miniTexture==null&&art==null,"所有生成物だけを返す");
+                Assert.IsTrue(importedTexture!=null,"借用したimport Textureを破棄しない");
+                Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,views.GetLayer("battle").RegisteredCount);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
+        }
     }
 }

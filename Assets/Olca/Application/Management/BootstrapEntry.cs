@@ -23,8 +23,23 @@ namespace Olca.Application.Management
         private static async void Launch()
         {
             observed=true;
-            try {var result=await GameSystemRoot.Ensure().StartCompatibilityHostAsync();if(!result.Succeeded&&!result.Cancelled)Debug.LogWarning("[Bootstrap] "+result.Error);}
+            try {var result=await GameSystemRoot.Ensure().StartGameplayHostAsync();if(!result.Succeeded&&!result.Cancelled)Debug.LogWarning("[Bootstrap] "+result.Error);}
             catch(Exception error){Debug.LogException(error);}
+        }
+        public const string GameplayHostPrefabPath="OlcaSystem/DungeonHost";
+        public static HostOpenRequest CreateGameplayRequest(GameSystem services)
+        {
+            var scene=SceneManager.GetSceneByPath(BootstrapScenePath);
+            if(!scene.IsValid()||!scene.isLoaded)throw new InvalidOperationException("本番hostはBootstrapSceneへ配置してください");
+            var storage=ValidationStorageGuard.ExplicitEditorBootstrap();
+            DungeonBattleController Controller(GameObject root) {
+                var values=root.GetComponentsInChildren<DungeonBattleController>(true);
+                if(values.Length!=1)throw new InvalidOperationException("hostのControllerは1つ必要です");return values[0];
+            }
+            return HostOpenRequest.Prefab(GameplayHostPrefabPath,ct=>GameplayPrefabHostLease.LoadAsync(services.Resources,GameplayHostPrefabPath,scene,ct),root=>{
+                var controller=Controller(root);controller.ConfigureGameSystem(services);controller.PrepareWorldPresentation(services);controller.ConfigureManagedCamera(services,null);
+                if(storage!=null){controller.ConfigureGameplaySettingsDirectory(storage.BootstrapSettings);controller.ConfigureCheckpointDirectory(storage.BootstrapCheckpoint);controller.ConfigureProgressDirectory(storage.BootstrapProgress);controller.RequireValidationStorageGuard();}
+            },root=>Controller(root).StartManagedHost(services));
         }
         public static HostOpenRequest CreateRequest(GameSystem services)
         {

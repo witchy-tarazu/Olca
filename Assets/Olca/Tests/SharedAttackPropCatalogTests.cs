@@ -7,6 +7,10 @@ namespace Olca.Tests
 {
     public class SharedAttackPropCatalogTests
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedScope;
+        [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
+
         [TestCase(SharedAttackPropCatalog.Sword, "shared_sword", 256, 256)]
         [TestCase(SharedAttackPropCatalog.ThrowingKnife, "shared_throwing_knife", 64, 64)]
         [TestCase(SharedAttackPropCatalog.ShotBolt, "shared_shot_bolt", 32, 32)]

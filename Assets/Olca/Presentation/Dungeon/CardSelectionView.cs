@@ -263,6 +263,20 @@ namespace Olca.Presentation.Dungeon
     // 通常クリアの選択・経験値反映・帰還確認。保存判断はController/Coreへ委譲する。
     public sealed class ClearReturnView : MonoBehaviour
     {
+        private Action ensureManagedVisible,hideManaged;
+        private GameObject confirmationPanel,confirmationParent;
+        private RectTransform confirmationBody;
+        private string confirmationKey;
+        private Color confirmationSurface;
+        private bool confirmationSurfaceCaptured;
+        private Olca.Presentation.Management.DialogManager dialogs;
+        public Olca.Presentation.Management.ManagedScreenContext ManagementContext {get;private set;}
+        public void ConfigureManagement(Action show,Action hide,Olca.Presentation.Management.DialogManager dialogs){ensureManagedVisible=show;hideManaged=hide;this.dialogs=dialogs;}
+        public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){ManagementContext=context;gameObject.SetActive(true);}
+        public void HideManaged(){StopMenu();ManagementContext=null;gameObject.SetActive(false);}
+        public void Hide(){if(hideManaged!=null)hideManaged();else gameObject.SetActive(false);}
+        private void BeginRender(){if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
+        private bool CanOperateView=>this!=null&&gameObject.activeInHierarchy&&(ensureManagedVisible==null||ManagementContext?.IsCurrent==true&&!ManagementContext.DialogBlocksInput);
         private Font font;
         private Action<int> toggle;
         private Action confirm, finish, retry, depart, closeCollection, editOwnedDeparture, savedDeckMenu, selectDungeon, selectStyle, openExchange;
@@ -289,19 +303,19 @@ namespace Olca.Presentation.Dungeon
         private Func<System.Collections.Generic.IEnumerable<Button>> menuExtras;private Func<OwnedCardCount,Card> resolveOwned;private Func<Card,Sprite> resolveReturnIcon;
         private GameObject readonlyDetails;private ScrollRect readonlyScroll;
         private Vector2 readonlyViewportSize,readonlyParentSize;private string readonlyBodyValue;private float readonlyPixelsPerUnit;private float readonlyScrollPosition=1;
-        public bool HasMenuModal=>readonlyDetails!=null||(content!=null&&(content.transform.Find("KeepEditingDeparture")!=null||content.transform.Find("ConfirmDeleteDeck")!=null));
+        public bool HasMenuModal=>confirmationPanel!=null||readonlyDetails!=null||(content!=null&&(content.transform.Find("KeepEditingDeparture")!=null||content.transform.Find("ConfirmDeleteDeck")!=null));
         public void ConfigureMenuNavigation(Func<System.Collections.Generic.IEnumerable<Button>> extras,Func<OwnedCardCount,Card> resolveOwned=null,Func<Card,Sprite> resolveReturnIcon=null){menuExtras=extras;this.resolveOwned=resolveOwned;this.resolveReturnIcon=resolveReturnIcon;}
         private bool IsMenuTop()
         {
-            if(!gameObject.activeInHierarchy||menuRoot==null||!menuRoot.gameObject.activeInHierarchy)return false;
+            if(!CanOperateView||menuRoot==null||!menuRoot.gameObject.activeInHierarchy)return false;
             var es=UnityEngine.EventSystems.EventSystem.current;if(es==null)return true;
             var hits=new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();es.RaycastAll(new UnityEngine.EventSystems.PointerEventData(es){position=new Vector2(Screen.width/2f,Screen.height/2f)},hits);
             return hits.Count==0||hits[0].gameObject.transform==transform||hits[0].gameObject.transform.IsChildOf(transform);
         }
         private void SaveMenuFocus(){if(menuRoot==null)return;var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;var name=selected!=null&&selected.GetComponent<Button>()!=null?selected.name:menu?.FocusName;if(name!=null)menuFocus[menuRoot.name]=name;}
-        private void StopMenu(){var surface=GetComponent<Image>();if(surface!=null)surface.color=UiLook.Surface;SaveMenuFocus();menu?.Suspend();menuRoot=null;menuBack=null;menuBackSource=null;if(readonlyDetails!=null){readonlyDetails.SetActive(false);if(Application.isPlaying)Destroy(readonlyDetails);else DestroyImmediate(readonlyDetails);readonlyDetails=null;}readonlyScroll=null;}
+        private void StopMenu(){if(ManagementContext?.IsCurrent==true)dialogs?.CancelActiveOwner(ManagementContext);ReleaseConfirmation(false);var surface=GetComponent<Image>();if(surface!=null)surface.color=UiLook.Surface;SaveMenuFocus();menu?.Suspend();menuRoot=null;menuBack=null;menuBackSource=null;if(readonlyDetails!=null){readonlyDetails.SetActive(false);if(Application.isPlaying)Destroy(readonlyDetails);else DestroyImmediate(readonlyDetails);readonlyDetails=null;}readonlyScroll=null;}
         // 現在の画面か、その画面を覆う読取専用モーダルだけが入力を所有する。
-        private bool OwnsContent(GameObject owner)=>this!=null&&owner!=null&&owner.activeInHierarchy&&(readonlyDetails!=null?readonlyDetails==owner:content==owner);
+        private bool OwnsContent(GameObject owner)=>CanOperateView&&owner!=null&&owner.activeInHierarchy&&(readonlyDetails!=null?readonlyDetails==owner:content==owner);
         private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true,bool resetMissing=false)
         {
             var owner=root.gameObject;Action guardedBack=back==null?null:(Action)(()=>{if(OwnsContent(owner))back();});
@@ -403,9 +417,54 @@ namespace Olca.Presentation.Dungeon
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
             Fit("ReturnSummary",270,110,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();menu?.Tick();}
-        private void OnDisable(){SaveMenuFocus();menu?.Suspend();}
-        private void OnDestroy(){menu?.Dispose();}
+        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(confirmationPanel!=null){if(!confirmationPanel.activeSelf)ReleaseConfirmation(true);else FitConfirmation();}if(CanOperateView)menu?.Tick();}
+        private void OnDisable(){if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
+        private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;ReleaseConfirmation(false);menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
+        private void ReleaseConfirmation(bool restoreParent)
+        {
+            var modal=confirmationPanel;var parent=confirmationParent;
+            confirmationPanel=confirmationParent=null;confirmationBody=null;confirmationKey=null;
+            if(confirmationSurfaceCaptured){if(this!=null){var surface=GetComponent<Image>();if(surface!=null)surface.color=confirmationSurface;}confirmationSurfaceCaptured=false;}
+            if(restoreParent&&this!=null&&gameObject.activeInHierarchy&&parent!=null&&content==parent)parent.SetActive(true);
+            if(modal!=null){modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);}
+        }
+        private void FitConfirmation()
+        {
+            if(confirmationBody==null)return;var size=((RectTransform)transform).rect.size;
+            if(size.x>0&&size.y>0){float scale=Mathf.Min(1,size.x/1920f,size.y/1080f);confirmationBody.localScale=new Vector3(scale,scale,1);}
+            var parent=content;try{content=confirmationBody.gameObject;FitToolbarTitle();}finally{content=parent;}
+        }
+        private void FocusCurrentContent(string name)
+        {
+            if(this==null||content==null||ManagementContext?.IsCurrent!=true)return;
+            var target=content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name==name&&b.IsInteractable());
+            if(target!=null)UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(target.gameObject);
+        }
+        private void OpenConfirmation(string key,string bodyName,string returnFocus,Func<(Button Confirm,Button Cancel,ScrollRect Scroll)> build,Action confirm,Action cancel)
+        {
+            var captured=ManagementContext;var parent=content;
+            if(captured?.IsCurrent!=true||parent==null)return;
+            if(confirmationPanel!=null&&confirmationKey==key&&confirmationPanel.activeInHierarchy)return;
+            if(dialogs.ActiveCount>0)return;
+            ReleaseConfirmation(true);
+            var modal=new GameObject(bodyName+"Dialog",typeof(RectTransform),typeof(Image));modal.transform.SetParent(transform,false);
+            var rect=(RectTransform)modal.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;modal.GetComponent<Image>().color=UiLook.Surface;
+            var originalOutline=GetComponent<Outline>();if(originalOutline!=null){var edge=modal.AddComponent<Outline>();edge.effectColor=originalOutline.effectColor;edge.effectDistance=originalOutline.effectDistance;edge.useGraphicAlpha=originalOutline.useGraphicAlpha;edge.enabled=originalOutline.enabled;}
+            var body=new GameObject(bodyName,typeof(RectTransform));body.transform.SetParent(modal.transform,false);var frame=(RectTransform)body.transform;frame.anchorMin=frame.anchorMax=new Vector2(.5f,.5f);frame.sizeDelta=new Vector2(1920,1080);
+            confirmationPanel=modal;confirmationParent=parent;confirmationBody=frame;confirmationKey=key;
+            (Button Confirm,Button Cancel,ScrollRect Scroll) controls;
+            try{content=body;controls=build();}catch{ReleaseConfirmation(true);throw;}finally{content=parent;}
+            SaveMenuFocus();
+            var surface=GetComponent<Image>();if(surface!=null){confirmationSurface=surface.color;confirmationSurfaceCaptured=true;surface.color=Color.clear;}
+            parent.SetActive(false);FitConfirmation();
+            var request=dialogs.Show(captured,modal,controls.Confirm,controls.Cancel,result=>{
+                if(this==null||confirmationPanel!=modal||parent==null||content!=parent||!ReferenceEquals(ManagementContext,captured)||!captured.IsCurrent)return;
+                ReleaseConfirmation(true);
+                if(result==Olca.Presentation.Management.DialogResult.Confirmed)confirm?.Invoke();else if(result==Olca.Presentation.Management.DialogResult.Cancelled){cancel?.Invoke();FocusCurrentContent(returnFocus);}
+            },controls.Scroll,directionScroll:false);
+            if(request.IsCompleted&&(request.Result==Olca.Presentation.Management.DialogResult.Busy||request.Result==Olca.Presentation.Management.DialogResult.ParentClosed))ReleaseConfirmation(true);
+            else menu?.Suspend();
+        }
         private void OpenCardDetails(Card card,string returnFocus)
         {
             if(card==null)return;var value=CollectionDisplay.PerformanceText(card);
@@ -430,13 +489,22 @@ namespace Olca.Presentation.Dungeon
             var body=Text("ReadonlyCardPerformance",value,0,0,1500,600,30);body.supportRichText=false;body.alignment=TextAnchor.UpperLeft;body.transform.SetParent(area.transform,false);body.rectTransform.anchorMin=new Vector2(0,1);body.rectTransform.anchorMax=Vector2.one;body.rectTransform.pivot=new Vector2(.5f,1);body.rectTransform.anchoredPosition=Vector2.zero;body.rectTransform.sizeDelta=Vector2.zero;
             decorate?.Invoke(body);
             readonlyScroll=area.GetComponent<ScrollRect>();readonlyScroll.viewport=ar;readonlyScroll.content=body.rectTransform;readonlyScroll.horizontal=false;readonlyScroll.movementType=ScrollRect.MovementType.Clamped;
-            Action close=()=>{if(this==null||modal==null||parent==null||readonlyDetails!=modal)return;modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);readonlyDetails=null;readonlyScroll=null;SetMenu(parent.transform,back,returnFocus,true);};
-            var closeButton=Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75,close);
-            var closeRect=(RectTransform)closeButton.transform;closeRect.anchorMin=closeRect.anchorMax=new Vector2(.5f,0);closeRect.anchoredPosition=new Vector2(0,100);content=parent;Canvas.ForceUpdateCanvases();readonlyViewportSize=Vector2.zero;readonlyScrollPosition=1;RefreshReadonlyLayout();SetMenu(modal.transform,close,"CloseReadonlyCardDetails",true,readonlyScroll);
+            var captured=ManagementContext;
+            Action close=()=>{if(this==null||modal==null||parent==null||readonlyDetails!=modal||content!=parent||captured!=null&&(!ReferenceEquals(ManagementContext,captured)||!captured.IsCurrent))return;modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);readonlyDetails=null;readonlyScroll=null;SetMenu(parent.transform,back,returnFocus,true);
+                var target=parent.GetComponentsInChildren<Button>().FirstOrDefault(button=>button.name==returnFocus&&button.IsInteractable());if(target!=null)UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(target.gameObject);};
+            var closeButton=Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75,captured!=null?null:close);
+            var closeRect=(RectTransform)closeButton.transform;closeRect.anchorMin=closeRect.anchorMax=new Vector2(.5f,0);closeRect.anchoredPosition=new Vector2(0,100);content=parent;Canvas.ForceUpdateCanvases();readonlyViewportSize=Vector2.zero;readonlyScrollPosition=1;RefreshReadonlyLayout();
+            if(captured!=null){
+                SaveMenuFocus();
+                var request=dialogs.ShowNotice(captured,modal,closeButton,readonlyScroll,_=>close());
+                if(request.IsCompleted&&(request.Result==Olca.Presentation.Management.DialogResult.Busy||request.Result==Olca.Presentation.Management.DialogResult.ParentClosed)){
+                    modal.SetActive(false);if(Application.isPlaying)Destroy(modal);else DestroyImmediate(modal);readonlyDetails=null;readonlyScroll=null;
+                }else menu?.Suspend();
+            }else SetMenu(modal.transform,close,"CloseReadonlyCardDetails",true,readonlyScroll);
         }
         private void CollectionContent(string name)
         {
-            StopMenu();
+            BeginRender();
             if(content!=null){content.SetActive(false);if(Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject(name,typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);UseReferenceLayout();
@@ -452,7 +520,7 @@ namespace Olca.Presentation.Dungeon
         public void RenderCollection(string[] cards,CollectionRecipeRow[] recipes,bool pending,string error,Action close,Action retrySave,Func<Card,Sprite> icon=null,string focus=null,IReadOnlyList<Card> cardDetails=null)
         {
             bool updating=isActiveAndEnabled&&content!=null&&content.activeInHierarchy&&content.name=="CardCollectionContents";
-            StopMenu();
+            BeginRender();
             CollectionContent("CardCollectionContents");collectionBackAction=pending?null:close;
             CommerceFace("CollectionHeader",0,405,1760,170);
             Text("CollectionTitle","カード図鑑",0,455,1500,70,36);
@@ -511,7 +579,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
-            StopMenu();
+            BeginRender();
             collectionBackAction=null;
             if (lastRun != flow?.RunId || lastStage != flow?.Stage) page = 0;
             lastRun = flow?.RunId; lastStage = flow?.Stage;
@@ -663,7 +731,7 @@ namespace Olca.Presentation.Dungeon
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
                 throw new ArgumentException("ダンジョン一覧の表示情報が一致しません");
-            StopMenu();
+            BeginRender();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
@@ -710,7 +778,7 @@ namespace Olca.Presentation.Dungeon
             Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true,
             IReadOnlyList<DungeonVisitOption> details=null,IReadOnlyList<bool> purchased=null,long? balance=null,Func<Card,Sprite> icon=null)
         {
-            StopMenu();
+            BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("DungeonVisitContents",typeof(RectTransform));content.transform.SetParent(transform,false);UseReferenceLayout();gameObject.SetActive(true);CommerceSurface();
             CommerceFace("VisitHeader",-140,430,1480,150,true);
@@ -764,7 +832,7 @@ namespace Olca.Presentation.Dungeon
         public void RenderVisitRemoval(string title,string[] names,bool[] selected,int needed,long price,bool blocked,bool canConfirm,
             Action<int> choose,Action confirm,Action cancel,Action pause,IReadOnlyList<Card> cards=null,IReadOnlyList<bool> obtained=null,Func<Card,Sprite> icon=null)
         {
-            StopMenu();if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
+            BeginRender();if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("VisitRemovalContents",typeof(RectTransform));content.transform.SetParent(transform,false);UseReferenceLayout();gameObject.SetActive(true);CommerceSurface();CommerceFace("RemovalHeader",-140,450,1480,120,true);var body=CommerceFace("RemovalBody",0,-4,1760,628);
             Text("RemovalTitle",title,-140,450,1400,80,32).color=Color.white;Button("PauseVisit","ポーズ",780,480,260,60,pause);
             var summary=Text("RemovalSummary",$"削除対象 {System.Array.FindAll(selected,x=>x).Length}/{needed}枚 / 支払 {price} 通貨",0,350,1720,56,26);summary.color=Color.white;
@@ -794,7 +862,7 @@ namespace Olca.Presentation.Dungeon
         public void RenderTokenExchange(ClearReturnProfile profile, string selected, bool blocked, string error,
             Action<string> choose, Action buy, Action cancel, Action close, Action retrySave)
         {
-            StopMenu();
+            BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("TokenExchangeContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             UseReferenceLayout();
@@ -846,7 +914,7 @@ namespace Olca.Presentation.Dungeon
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, int current = -1)
         {
             if(names==null||unlocked==null||names.Length!=unlocked.Length)throw new ArgumentException("スタイル一覧の表示情報が一致しません");
-            StopMenu();
+            BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("StyleSelectionContents",typeof(RectTransform));content.transform.SetParent(transform,false);UseReferenceLayout();gameObject.SetActive(true);CommerceSurface();CommerceFace("StyleHeader",-140,440,1480,145,true);CommerceFace("StyleFooter",0,-420,1760,230,true);
             Text("StyleSelectionTitle","出撃スタイル",-220,465,1300,60,36).color=Color.white;
@@ -885,13 +953,23 @@ namespace Olca.Presentation.Dungeon
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
             string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null, string persistedDeckName=null)
         {
-            StopMenu();
+            if(confirmDiscard&&ensureManagedVisible!=null){
+                if(ManagementContext?.IsCurrent!=true||content==null||content.name!="DepartureContents")RenderOwnedDeparture(profile,options,draft,error,valid,change,confirm,close,resume,false,save,deckName,rename,pending,retrySave,draftKeys,persistedDeckName);
+                OpenConfirmation("discard","DepartureDiscardContents","CloseOwnedDeparture",()=>{
+                    Text("DepartureTitle","所持から出撃デッキを編成",0,455,1750,60,36);
+                    Text("DiscardDepartureHelp","未確定の編成を破棄して帰還画面へ戻りますか？",0,100,1700,130,30);
+                    var keep=Button("KeepEditingDeparture","編集に戻る",-420,-150,750,80,null);
+                    var discard=Button("DiscardDepartureDraft","変更を破棄",420,-150,750,80,null);
+                    return(discard,keep,null);
+                },()=>close(true),resume);return;
+            }
+            BeginRender();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject(confirmDiscard?"DepartureDiscardContents":"DepartureContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
             gameObject.SetActive(true);
             var owner=content;
-            Action Live(Action action,bool allowPending=false)=>()=>{if(this!=null&&owner!=null&&content==owner&&owner.activeInHierarchy&&(allowPending||!pending)&&readonlyDetails==null)action?.Invoke();};
+            Action Live(Action action,bool allowPending=false)=>()=>{if(CanOperateView&&owner!=null&&content==owner&&owner.activeInHierarchy&&(allowPending||!pending)&&readonlyDetails==null)action?.Invoke();};
             Text("DepartureTitle", "所持から出撃デッキを編成", 0, 455, 1750, 60, 36);
             if (confirmDiscard) {
                 Text("DiscardDepartureHelp", "未確定の編成を破棄して帰還画面へ戻りますか？", 0, 100, 1700, 130, 30);
@@ -996,7 +1074,18 @@ namespace Olca.Presentation.Dungeon
 
         public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
         {
-            StopMenu();
+            if(deleting!=null&&ensureManagedVisible!=null){
+                if(ManagementContext?.IsCurrent!=true||content==null||content.name!="SavedDeckContents")RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);
+                OpenConfirmation("delete:"+deleting,"SavedDeckConfirmationContents","DeleteDeck_"+deleting,()=>{
+                    var title=Text("SavedDeckTitle","保存デッキ・装備",0,455,1700,70,36);title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-85);
+                    var status=Text("SavedDeckError",error??"",0,365,1750,100,25);status.rectTransform.anchorMin=new Vector2(0,1);status.rectTransform.anchorMax=Vector2.one;status.rectTransform.sizeDelta=new Vector2(-170,100);status.rectTransform.anchoredPosition=new Vector2(0,-175);
+                    var scroll=DeleteDeckName((profile.SavedDecks??new SavedDepartureDeck[0]).SingleOrDefault(d=>d.Id==deleting)?.Name);
+                    Text("DeleteDeckWarning","このデッキを削除しますか？\n所持カードは減りません。",0,-25,1700,90,30);
+                    var yes=Button("ConfirmDeleteDeck","削除する",-400,-150,700,75,null);yes.interactable=!pending;
+                    var no=Button("CancelDeleteDeck","取消し",400,-150,700,75,null);return(yes,no,scroll);
+                },confirmDelete,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload));return;
+            }
+            BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("SavedDeckContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);

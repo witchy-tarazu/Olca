@@ -1,0 +1,124 @@
+{
+  "scope": "Static inventory of presentation generated Texture/Sprite ownership near Stage10; not runtime object-count proof",
+  "requiredRootOwnershipCatalogCount": 6,
+  "entries": [
+    {
+      "file": "Presentation/Field/SharedAttackPropCatalog.cs",
+      "generation": "PNG bytes -> Texture2D + Sprite",
+      "holding": "static loaded per shared key",
+      "release": "Only LoadImage-failure Texture cleanup; no final cache release",
+      "classification": "required-root-ownership",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Battle/CombatStatusIcons.cs",
+      "generation": "PNG -> color/gray Texture2D + Sprite pairs",
+      "holding": "CombatStatusIconCatalog static loaded dictionary",
+      "release": "Only failed initial decode cleanup; no final pair release",
+      "classification": "required-root-ownership",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/CustomScreen/CardAttackPropertyIcons.cs",
+      "generation": "PNG -> Texture2D + Sprite",
+      "holding": "AttackPropertyIconCatalog static sprites",
+      "release": "Failed decode cleanup only; display slots borrow sprite",
+      "classification": "required-root-ownership",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Effects/ActorConditionVisual.cs",
+      "generation": "PNG -> Texture2D + Sprite",
+      "holding": "static sprites by Guard/Paralyze",
+      "release": "Instance Dispose releases renderer GameObject only, not shared sprites/textures",
+      "classification": "required-root-ownership",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Effects/DefensiveFieldVisual.cs",
+      "generation": "PNG -> Texture2D + Sprite",
+      "holding": "static sprites by Barrier/Aura",
+      "release": "Instance Dispose releases field GameObject only, not shared sprites/textures; contentBounds is managed metadata",
+      "classification": "required-root-ownership",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Effects/TransformationEffectSprites.cs",
+      "generation": "PNG -> Texture2D + Sprite",
+      "holding": "static activation/release",
+      "release": "No shared cache release; BattleView borrows sprite",
+      "classification": "required-root-ownership",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Battle/BattleView.cs",
+      "generation": "GaugeSpriteSet procedural textures + sprites",
+      "holding": "Instance-owned list",
+      "release": "BattleView.OnDestroy -> GaugeSpriteSet.Dispose destroys Sprite and owned Texture",
+      "classification": "existing-instance-owner",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/CustomScreen/CustomScreenView.cs",
+      "generation": "Illustration Sprite wrappers; mini Texture/Sprite; narrow sliced Sprite",
+      "holding": "Instance dictionaries / NarrowCustomLayout.Frame",
+      "release": "OnDestroy destroys illustration wrappers only, mini sprite+texture; Frame.Dispose destroys slice but borrows original texture",
+      "classification": "existing-instance-owner",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/CustomScreen/HandCardView.cs",
+      "generation": "SwordMiniIcon/SupportMiniIcon static Create methods generate Texture/Sprite",
+      "holding": "No static cache in helpers; returned to CustomScreen generatedMiniIcons",
+      "release": "CustomScreenView owns returned mini textures/sprites",
+      "classification": "factory-not-static-cache",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Field/GameFieldView.cs",
+      "generation": "Backjump Sprite wrappers; marker textures/sprites; white sprite",
+      "holding": "Instance fields",
+      "release": "OnDestroy releases generated wrappers, marker sprites/textures, white sprite/texture; imported source textures borrowed",
+      "classification": "existing-instance-owner",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Field/WorldBattleGridView.cs",
+      "generation": "floor Sprite wrapper and white texture/sprite",
+      "holding": "Instance fields",
+      "release": "OnDestroy releases wrapper only for borrowed floor texture, plus owned white sprite/texture",
+      "classification": "existing-instance-owner",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Field/ScrollingBackgroundView.cs",
+      "generation": "fill Texture2D/Sprite and foreground GameObjects",
+      "holding": "Instance fields",
+      "release": "OnDestroy releases owned foreground root, fill sprite and fill texture",
+      "classification": "existing-instance-owner",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Presentation/Battle/EnemyView.cs",
+      "generation": "Sprites/Default gauge Material",
+      "holding": "Instance gaugeMaterial",
+      "release": "OnDestroy destroys owned Material and renderer helper instances",
+      "classification": "existing-instance-owner-nontexture",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    },
+    {
+      "file": "Unity/Management/ResourceManager.cs",
+      "generation": "Loads imported shared resources; instantiates leased GameObjects",
+      "holding": "Shared reference dictionary / InstanceLease set",
+      "release": "Disposes generated GameObjects, clears imported references without destroying shared import assets",
+      "classification": "existing-root-owner-imports-only",
+      "stage10Relation": "Not created by settings screen changes; existing shared/generated presentation lifetime boundary."
+    }
+  ],
+  "conclusion": "SharedAttackPropCatalog is not the only unbounded static generated cache. Six shared catalogs lack final generated Texture/Sprite release. They require explicit root lifetime/acquisition coordination while preserving live borrowers and legacy/test fallback. Existing per-instance cleanup should not be moved merely because helper methods are static.",
+  "limits": [
+    "No Unity operations/object counts or asset generation performed.",
+    "Inventory focuses generated Texture/Sprite/Material ownership in inspected presentation paths; not a guarantee of every Unity native allocation in the project.",
+    "Stage10 settings screens add UI GameObjects/Graphics but do not themselves create Texture2D/Sprite caches."
+  ]
+}

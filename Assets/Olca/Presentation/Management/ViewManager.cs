@@ -17,7 +17,7 @@ namespace Olca.Presentation.Management
         internal ScreenOpenResult(bool success, bool cancelled = false, string error = null) { Succeeded = success; Cancelled = cancelled; Error = error; }
     }
     /// <summary>Viewに渡す寿命境界。保存・素材管理・ゲーム進行への参照は渡さない。</summary>
-    public sealed class ManagedScreenContext
+    public sealed class ManagedScreenContext : IDialogOwner
     {
         private readonly ViewManager manager;
         internal readonly string Key;

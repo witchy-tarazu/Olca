@@ -1,0 +1,428 @@
+{
+  "before": {
+    "generations": 1,
+    "roots": 1,
+    "borrowers": 9,
+    "entries": 13,
+    "pendingNativeDestroy": 0,
+    "caches": [
+      {
+        "generation": 2,
+        "roots": 1,
+        "borrowers": 9,
+        "retired": false,
+        "entries": [
+          {
+            "key": "attack-property/Sword",
+            "sprites": [
+              -266505664
+            ],
+            "textures": [
+              -266505662
+            ]
+          },
+          {
+            "key": "attack-property/Break",
+            "sprites": [
+              -266505668
+            ],
+            "textures": [
+              -266505666
+            ]
+          },
+          {
+            "key": "attack-property/Wind",
+            "sprites": [
+              -266505672
+            ],
+            "textures": [
+              -266505670
+            ]
+          },
+          {
+            "key": "prop/shared/shot-bolt",
+            "sprites": [
+              -266506664
+            ],
+            "textures": [
+              -266506662
+            ]
+          },
+          {
+            "key": "prop/shared/throwing-knife",
+            "sprites": [
+              -266506668
+            ],
+            "textures": [
+              -266506666
+            ]
+          },
+          {
+            "key": "status/Guard",
+            "sprites": [
+              -266506910,
+              -266506912
+            ],
+            "textures": [
+              -266506906,
+              -266506908
+            ]
+          },
+          {
+            "key": "status/Barrier",
+            "sprites": [
+              -266506918,
+              -266506920
+            ],
+            "textures": [
+              -266506914,
+              -266506916
+            ]
+          },
+          {
+            "key": "defensive-field/Barrier",
+            "sprites": [
+              -266506924
+            ],
+            "textures": [
+              -266506922
+            ]
+          },
+          {
+            "key": "actor-condition/Guard",
+            "sprites": [
+              -266506934
+            ],
+            "textures": [
+              -266506932
+            ]
+          },
+          {
+            "key": "status/Paralyze",
+            "sprites": [
+              -266506984,
+              -266506986
+            ],
+            "textures": [
+              -266506980,
+              -266506982
+            ]
+          },
+          {
+            "key": "actor-condition/Paralyze",
+            "sprites": [
+              -266506990
+            ],
+            "textures": [
+              -266506988
+            ]
+          },
+          {
+            "key": "transformation/activation",
+            "sprites": [
+              -266507864
+            ],
+            "textures": [
+              -266507862
+            ]
+          },
+          {
+            "key": "transformation/release",
+            "sprites": [
+              -266507952
+            ],
+            "textures": [
+              -266507950
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "closed": {
+    "generations": 1,
+    "roots": 1,
+    "borrowers": 0,
+    "entries": 13,
+    "pendingNativeDestroy": 0,
+    "caches": [
+      {
+        "generation": 2,
+        "roots": 1,
+        "borrowers": 0,
+        "retired": false,
+        "entries": [
+          {
+            "key": "attack-property/Sword",
+            "sprites": [
+              -266505664
+            ],
+            "textures": [
+              -266505662
+            ]
+          },
+          {
+            "key": "attack-property/Break",
+            "sprites": [
+              -266505668
+            ],
+            "textures": [
+              -266505666
+            ]
+          },
+          {
+            "key": "attack-property/Wind",
+            "sprites": [
+              -266505672
+            ],
+            "textures": [
+              -266505670
+            ]
+          },
+          {
+            "key": "prop/shared/shot-bolt",
+            "sprites": [
+              -266506664
+            ],
+            "textures": [
+              -266506662
+            ]
+          },
+          {
+            "key": "prop/shared/throwing-knife",
+            "sprites": [
+              -266506668
+            ],
+            "textures": [
+              -266506666
+            ]
+          },
+          {
+            "key": "status/Guard",
+            "sprites": [
+              -266506910,
+              -266506912
+            ],
+            "textures": [
+              -266506906,
+              -266506908
+            ]
+          },
+          {
+            "key": "status/Barrier",
+            "sprites": [
+              -266506918,
+              -266506920
+            ],
+            "textures": [
+              -266506914,
+              -266506916
+            ]
+          },
+          {
+            "key": "defensive-field/Barrier",
+            "sprites": [
+              -266506924
+            ],
+            "textures": [
+              -266506922
+            ]
+          },
+          {
+            "key": "actor-condition/Guard",
+            "sprites": [
+              -266506934
+            ],
+            "textures": [
+              -266506932
+            ]
+          },
+          {
+            "key": "status/Paralyze",
+            "sprites": [
+              -266506984,
+              -266506986
+            ],
+            "textures": [
+              -266506980,
+              -266506982
+            ]
+          },
+          {
+            "key": "actor-condition/Paralyze",
+            "sprites": [
+              -266506990
+            ],
+            "textures": [
+              -266506988
+            ]
+          },
+          {
+            "key": "transformation/activation",
+            "sprites": [
+              -266507864
+            ],
+            "textures": [
+              -266507862
+            ]
+          },
+          {
+            "key": "transformation/release",
+            "sprites": [
+              -266507952
+            ],
+            "textures": [
+              -266507950
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reopened": {
+    "generations": 1,
+    "roots": 1,
+    "borrowers": 1,
+    "entries": 13,
+    "pendingNativeDestroy": 0,
+    "caches": [
+      {
+        "generation": 2,
+        "roots": 1,
+        "borrowers": 1,
+        "retired": false,
+        "entries": [
+          {
+            "key": "attack-property/Sword",
+            "sprites": [
+              -266505664
+            ],
+            "textures": [
+              -266505662
+            ]
+          },
+          {
+            "key": "attack-property/Break",
+            "sprites": [
+              -266505668
+            ],
+            "textures": [
+              -266505666
+            ]
+          },
+          {
+            "key": "attack-property/Wind",
+            "sprites": [
+              -266505672
+            ],
+            "textures": [
+              -266505670
+            ]
+          },
+          {
+            "key": "prop/shared/shot-bolt",
+            "sprites": [
+              -266506664
+            ],
+            "textures": [
+              -266506662
+            ]
+          },
+          {
+            "key": "prop/shared/throwing-knife",
+            "sprites": [
+              -266506668
+            ],
+            "textures": [
+              -266506666
+            ]
+          },
+          {
+            "key": "status/Guard",
+            "sprites": [
+              -266506910,
+              -266506912
+            ],
+            "textures": [
+              -266506906,
+              -266506908
+            ]
+          },
+          {
+            "key": "status/Barrier",
+            "sprites": [
+              -266506918,
+              -266506920
+            ],
+            "textures": [
+              -266506914,
+              -266506916
+            ]
+          },
+          {
+            "key": "defensive-field/Barrier",
+            "sprites": [
+              -266506924
+            ],
+            "textures": [
+              -266506922
+            ]
+          },
+          {
+            "key": "actor-condition/Guard",
+            "sprites": [
+              -266506934
+            ],
+            "textures": [
+              -266506932
+            ]
+          },
+          {
+            "key": "status/Paralyze",
+            "sprites": [
+              -266506984,
+              -266506986
+            ],
+            "textures": [
+              -266506980,
+              -266506982
+            ]
+          },
+          {
+            "key": "actor-condition/Paralyze",
+            "sprites": [
+              -266506990
+            ],
+            "textures": [
+              -266506988
+            ]
+          },
+          {
+            "key": "transformation/activation",
+            "sprites": [
+              -266507864
+            ],
+            "textures": [
+              -266507862
+            ]
+          },
+          {
+            "key": "transformation/release",
+            "sprites": [
+              -266507952
+            ],
+            "textures": [
+              -266507950
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sharedNativeIdsPreserved": true,
+  "savedFiles": 10,
+  "saveHashesUnchanged": true,
+  "historicalNamedBaselineCount": 2095,
+  "historicalBaselineRetained": true,
+  "noForcedLegacyDestruction": true
+}

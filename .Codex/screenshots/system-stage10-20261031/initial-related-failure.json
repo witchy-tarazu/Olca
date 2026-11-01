@@ -1,0 +1,25 @@
+{
+  "summary": {
+    "total": 478,
+    "passed": 477,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 41.17,
+  "failures": [
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.初期化途中の失敗で攻略所有を戻し再試行と二重開始を区別する",
+      "Status": "Failed",
+      "Duration": 1.8209557,
+      "Message": "  Expected: 1\n  But was:  3\n",
+      "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.初期化途中の失敗で攻略所有を戻し再試行と二重開始を区別する () [0x002d4] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:196\n"
+    }
+  ],
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "7b1e5e2207ada8188e7f38e0957ee2e203e74d06d8e42a9ec87c9c7172304569",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "4ce0d2f3605208bcf3952b5c757587d59e5eb952397b54fa6c3288dd0a5bc353",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "02ac30cc0f80c65570bd7cd2608bcf671d6b4aafc952a79d750fd46bcf065f31"
+  },
+  "resolution": "Only old registration count1 updated to exact3 plus exact keyboard/gamepad/audio key set. Failed/finished cleanup0, sameSession and subscription assertions unchanged. Product2files unchanged."
+}

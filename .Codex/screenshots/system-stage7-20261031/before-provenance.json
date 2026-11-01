@@ -1,0 +1,44 @@
+[
+  {
+    "source": ".Codex/screenshots/system-stage6-20261031/after-custom-fhd.png",
+    "target": "before-custom-fhd.png",
+    "sha256": "d5cc730cab6ba9c7497bbc7c37df8ae9c7bf1728112a25efa33b85538d88126b",
+    "sourceCommit": "ca144101ae6ff483c9b0ebbb5ee6a21a6ace22c2",
+    "note": "引用したStage6後画像。今回新しいbefore撮影ではない。Custom frame0/closed battle frame60、別run idle差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage6-20261031/after-custom-4k.png",
+    "target": "before-custom-4k.png",
+    "sha256": "7bc3df764f2d925dd6e2df3856687d35dffed1cf237770166302de0bfc4f9e6c",
+    "sourceCommit": "ca144101ae6ff483c9b0ebbb5ee6a21a6ace22c2",
+    "note": "引用したStage6後画像。今回新しいbefore撮影ではない。Custom frame0/closed battle frame60、別run idle差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage6-20261031/after-custom-4by3.png",
+    "target": "before-custom-4by3.png",
+    "sha256": "37e55a5d0e478bfaa59b18d9ab88ecb393ec93847032801587b7c325fa274714",
+    "sourceCommit": "ca144101ae6ff483c9b0ebbb5ee6a21a6ace22c2",
+    "note": "引用したStage6後画像。今回新しいbefore撮影ではない。Custom frame0/closed battle frame60、別run idle差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage6-20261031/after-battle-host-fhd.png",
+    "target": "before-battle-host-fhd.png",
+    "sha256": "81c76c11cb6f88330a9a0319747728cc0140352b77f6850a937cc485034630d1",
+    "sourceCommit": "ca144101ae6ff483c9b0ebbb5ee6a21a6ace22c2",
+    "note": "引用したStage6後画像。今回新しいbefore撮影ではない。Custom frame0/closed battle frame60、別run idle差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage6-20261031/after-battle-host-4k.png",
+    "target": "before-battle-host-4k.png",
+    "sha256": "811bea97d208bad9e92684b435efc7931c7de50fe352cb63f5222b99a94733f3",
+    "sourceCommit": "ca144101ae6ff483c9b0ebbb5ee6a21a6ace22c2",
+    "note": "引用したStage6後画像。今回新しいbefore撮影ではない。Custom frame0/closed battle frame60、別run idle差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage6-20261031/after-battle-host-4by3.png",
+    "target": "before-battle-host-4by3.png",
+    "sha256": "3d1892a4410144abe6b855a3e38a93019c2653c378b7b596a7370adba196443b",
+    "sourceCommit": "ca144101ae6ff483c9b0ebbb5ee6a21a6ace22c2",
+    "note": "引用したStage6後画像。今回新しいbefore撮影ではない。Custom frame0/closed battle frame60、別run idle差あり。"
+  }
+]

@@ -4,13 +4,20 @@ using Olca.Presentation.Management;
 
 namespace Olca.Application.Management
 {
-    /// <summary>既存起動Sceneとの互換入口。Sceneの内容を巨大なRootクラスへ移さない。</summary>
+    /// <summary>常駐Managerの起点。hostの組立と終了を委譲し、画面や攻略処理を集めない。</summary>
     [DefaultExecutionOrder(-500)]
     public sealed class GameSystemRoot : MonoBehaviour
     {
         private static GameSystemRoot instance;
         public GameSystem Services { get; private set; }
         public string StartupError { get; private set; }
+        public async System.Threading.Tasks.Task<HostOpenResult> StartGameplayHostAsync(System.Threading.CancellationToken cancellation=default)
+        {
+            Initialize();HostOpenResult result;
+            try { result=await Services.Hosts.OpenAsync(BootstrapEntry.CreateGameplayRequest(Services),cancellation); }
+            catch(System.Exception error){result=new HostOpenResult(false,error:error.Message);}
+            StartupError=result.Succeeded||result.Cancelled?null:result.Error;return result;
+        }
         public async System.Threading.Tasks.Task<HostOpenResult> StartCompatibilityHostAsync(System.Threading.CancellationToken cancellation=default)
         {
             Initialize();HostOpenResult result;

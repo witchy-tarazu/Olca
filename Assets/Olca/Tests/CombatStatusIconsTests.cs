@@ -15,6 +15,10 @@ namespace Olca.Tests
 {
     public class CombatStatusIconsTests
     {
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedScope;
+        [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
+
         private BattleSystem Battle(out PlayerCharacter player,out Enemy enemy)
         {
             player=new PlayerCharacter(500,new Olca.Core.Domain.Vector2Int(0,0));enemy=new Enemy("boss","テスト",500,ElementType.None,new Olca.Core.Domain.Vector2Int(5,0));

@@ -1,0 +1,15 @@
+{
+  "finalTests": "error0;59 expected fixture warnings in5 categories, warning-classification.json",
+  "timeouts": "same PID137059 Play/recompile domain-reload main-thread delays and final full wrapper timeout; existing result recovered without duplicate test or activation",
+  "priorHistory": [
+    "UGUI unresolved historical exception",
+    "Pipeline timeout recovered previously",
+    "CLI/UnityAI connection/preferences/relay history retained"
+  ],
+  "verificationCorrections": [
+    "Reused isolated checkpoint required actual Continue before Custom wait",
+    "Nonexistent helper CloseAudioSettings corrected to real CancelAudioSettings",
+    "Root shared resources3 retained after host close, previous-stage baseline3; not expected0"
+  ],
+  "firstNativeFocusFailure": "Direct pointer cancel restored focus then next-frame parent menu overwrote Resume; once-handoff fix verified on final source; old result retained separately"
+}

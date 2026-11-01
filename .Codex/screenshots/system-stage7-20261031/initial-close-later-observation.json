@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 123,\n  \"executeMs\": 10,\n  \"assemblyName\": \"PipelineRunScript_Bootstrap7Proof_a375ca2c6a744888b24e5221574f2269\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": true,\n    \"screen\": [\n      640,\n      360\n    ],\n    \"activeScene\": \"Assets/Scenes/BootstrapScene.unity\",\n    \"scenes\": [\n      {\n        \"path\": \"Assets/Scenes/BootstrapScene.unity\",\n        \"handleHash\": -1917904851,\n        \"isLoaded\": true\n      }\n    ],\n    \"roots\": 1,\n    \"rootId\": -252585908,\n    \"rootScene\": \"DontDestroyOnLoad\",\n    \"rootStartupError\": null,\n    \"cameraBorrowed\": false,\n    \"borrowedCameraId\": null,\n    \"gameplayView\": null,\n    \"worldViewKey\": null,\n    \"worldRegistered\": 0,\n    \"worldFields\": 0,\n    \"backgroundViews\": 0,\n    \"numberPools\": 0,\n    \"battleViewKey\": null,\n    \"battleRegistered\": 0,\n    \"battleViews\": 0,\n    \"customViews\": 0,\n    \"gameplayRegistered\": 0,\n    \"hudCount\": 0,\n    \"host\": \"OlcaSystem/DungeonHost\",\n    \"loading\": false,\n    \"ownedScenes\": 0,\n    \"ownedViews\": 3,\n    \"registeredViews\": 0,\n    \"dialogs\": 0,\n    \"session\": false,\n    \"controllerIds\": [],\n    \"controllerScenes\": [],\n    \"rewardViews\": 0,\n    \"rewardRegistered\": 0,\n    \"rewardViewKey\": null,\n    \"cameras\": 0,\n    \"listeners\": 0,\n    \"events\": 1,\n    \"audioIds\": [\n      -252585914,\n      -252585920,\n      -252585926\n    ],\n    \"defaultStoreExists\": false,\n    \"store\": null\n  }\n}"
+    }
+  ]
+}

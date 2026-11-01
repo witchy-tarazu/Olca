@@ -1,0 +1,37 @@
+{
+  "scope": "Stage7 initial independent source/design review and limited native-destruction timing correction",
+  "source": {
+    "path": "Assets/Olca/Application/Management/GameplayPrefabHostLease.cs",
+    "sha256": "0a4eca383ceb5ad64207901264cc17b8c0112a7f129219c1b38f4ea3cf7588c9"
+  },
+  "initialReview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "Inactive prefab contract before DI/Activate/Start",
+      "Scene-prefab identity separation and legacy Scene API",
+      "Bootstrap-scene ownership and Single re-entry lifetime",
+      "Explicit legacy-null camera path",
+      "Transition cancellation before reward Hide/disposal",
+      "Stop/deactivate/lease destruction before host ownership return"
+    ],
+    "designDifference": "CardReward is generated at startup, not lazily on reward demand; visibility and model ownership remain separate."
+  },
+  "observedFailure": {
+    "evidence": "evidence/system-stage7-native-host-closed.json",
+    "result": "Initial Close reported host destruction not yet complete after NextFrame(Update).",
+    "laterObservation": "evidence/system-stage7-native-close-failure-observed.json shows controller/world/pool/reward absent, camera returned, session absent, infrastructure instances3.",
+    "retryEvidence": "evidence/system-stage7-native-close-retry-before-fix.json verifies released input/subscriptions/camera and destroyed presentation instances after retry.",
+    "interpretation": "Observed delayed native destruction is consistent with an early completion check, not proof that first Close completed successfully."
+  },
+  "limitedCorrection": {
+    "change": "Await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate) instead of default Update, retaining strict root-null completion assertion and failure/retry tracking.",
+    "assessment": "Moves the completion check to a later native frame phase without changing gameplay timing or weakening destruction validation.",
+    "unresolvedRequiredFindings": 0
+  },
+  "limits": [
+    "Post-correction native Close, timeScale0, cancellation and regeneration verification is pending.",
+    "LastPostLateUpdate is a PlayerLoop phase; this review does not claim a universal end-of-frame/native-destruction guarantee across all platforms.",
+    "Initial native success/close retry records describe the pre-correction source.",
+    "No code edits, Unity operations or test execution were performed by this reviewer."
+  ]
+}

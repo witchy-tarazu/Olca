@@ -1,0 +1,759 @@
+{
+  "initial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "hp": 100,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": null,
+    "deck": 20,
+    "key": null,
+    "registered": 2,
+    "current": false,
+    "blocked": false,
+    "choice": null,
+    "currencyVisible": false,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "DungeonChoice_0",
+    "root": -283464182,
+    "resources": 9,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      }
+    ]
+  },
+  "pendingClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -1056511939,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -283464182,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -283464188,
+        -283464194,
+        -283464200
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "pendingRelease": {
+    "viewsDestroyed": true,
+    "refsReleased": true,
+    "pendingUnchanged": true
+  },
+  "pendingCloseBytes": {
+    "progress/progress.json": "94fedb17d58c50d0c57417e31e33d6dca88f5748a9c487534a19152c7f3b75af",
+    "progress/progress.backup.json": "3498c641c1087209c2209c1b08d1d1b9d2d8b65c59e96a82a85d3f8aa16ebf55",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.json": "aca5cbe2622f31721a67a26b5f487af73beb814f21fbc417ea0781363d756bee",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.backup.json": "8d19df5e32847ce65ea6e201d80615f6fc3254d03ccdb0c391b05a4530d6582e"
+  },
+  "restoredCheckpointMenu": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "hp": 100,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": null,
+    "deck": 6,
+    "key": null,
+    "registered": 2,
+    "current": false,
+    "blocked": false,
+    "choice": null,
+    "currencyVisible": false,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "ContinueCheckpointButton",
+    "root": -283464182,
+    "resources": 9,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ExplorationDashButton",
+        "interactable": false
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "ContinueCheckpointButton",
+        "interactable": true
+      }
+    ]
+  },
+  "firstReward": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "CardReward",
+    "frame": null,
+    "hp": 79,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": "heal",
+    "deck": 20,
+    "key": "item",
+    "registered": 2,
+    "current": true,
+    "blocked": false,
+    "choice": "Pending",
+    "currencyVisible": false,
+    "itemVisible": true,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "SkipItemReward",
+    "root": -283464182,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseItemReward",
+        "interactable": true
+      },
+      {
+        "name": "ReceiveItemReward",
+        "interactable": true
+      },
+      {
+        "name": "SkipItemReward",
+        "interactable": true
+      }
+    ]
+  },
+  "itemDisableEnable": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "CardReward",
+    "frame": null,
+    "hp": 79,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": "heal",
+    "deck": 20,
+    "key": "item",
+    "registered": 2,
+    "current": true,
+    "blocked": false,
+    "choice": "Pending",
+    "currencyVisible": false,
+    "itemVisible": true,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "SkipItemReward",
+    "root": -283464182,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseItemReward",
+        "interactable": true
+      },
+      {
+        "name": "ReceiveItemReward",
+        "interactable": true
+      },
+      {
+        "name": "SkipItemReward",
+        "interactable": true
+      }
+    ]
+  },
+  "itemPausedOldRejected": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "CardReward",
+    "frame": null,
+    "hp": 79,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": "heal",
+    "deck": 20,
+    "key": "item",
+    "registered": 2,
+    "current": true,
+    "blocked": false,
+    "choice": "Pending",
+    "currencyVisible": false,
+    "itemVisible": true,
+    "checkpointBlocked": false,
+    "paused": true,
+    "inputBlocked": true,
+    "focus": "ResumeButton",
+    "root": -283464182,
+    "resources": 11,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseItemReward",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "ReceiveItemReward",
+        "interactable": true
+      },
+      {
+        "name": "SkipItemReward",
+        "interactable": true
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      }
+    ]
+  },
+  "itemDamageFixture": {
+    "isolatedDamageFixture": true,
+    "productValuesUnchanged": true,
+    "before": 100,
+    "after": 79,
+    "expectedHeal": 20
+  },
+  "itemAccepted": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "CardReward",
+    "frame": null,
+    "hp": 99,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 10,
+    "pendingItem": null,
+    "deck": 20,
+    "key": "currency",
+    "registered": 2,
+    "current": true,
+    "blocked": false,
+    "choice": "Pending",
+    "currencyVisible": true,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "SkipCurrencyButton",
+    "root": -283464182,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ReceiveCurrencyButton",
+        "interactable": true
+      },
+      {
+        "name": "SkipCurrencyButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseCurrencyReward",
+        "interactable": true
+      }
+    ]
+  },
+  "itemOldVsCurrency": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "CardReward",
+    "frame": null,
+    "hp": 99,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 10,
+    "pendingItem": null,
+    "deck": 20,
+    "key": "currency",
+    "registered": 2,
+    "current": true,
+    "blocked": false,
+    "choice": "Pending",
+    "currencyVisible": true,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "SkipCurrencyButton",
+    "root": -283464182,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ReceiveCurrencyButton",
+        "interactable": true
+      },
+      {
+        "name": "SkipCurrencyButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseCurrencyReward",
+        "interactable": true
+      }
+    ]
+  },
+  "beforeSaveFailure": {
+    "progress/progress.json": "94fedb17d58c50d0c57417e31e33d6dca88f5748a9c487534a19152c7f3b75af",
+    "progress/progress.backup.json": "3498c641c1087209c2209c1b08d1d1b9d2d8b65c59e96a82a85d3f8aa16ebf55",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.json": "aca5cbe2622f31721a67a26b5f487af73beb814f21fbc417ea0781363d756bee",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.backup.json": "8d19df5e32847ce65ea6e201d80615f6fc3254d03ccdb0c391b05a4530d6582e"
+  },
+  "failedSave": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "CardReward",
+    "frame": null,
+    "hp": 99,
+    "maxHp": 100,
+    "currency": 0,
+    "pendingCurrency": 0,
+    "pendingItem": null,
+    "deck": 20,
+    "key": null,
+    "registered": 2,
+    "current": false,
+    "blocked": false,
+    "choice": null,
+    "currencyVisible": false,
+    "itemVisible": false,
+    "checkpointBlocked": true,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "RetryCheckpointButton",
+    "root": -283464182,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "RetryCheckpointButton",
+        "interactable": true
+      }
+    ]
+  },
+  "faultObserved": {
+    "writes": 1,
+    "sameSession": true,
+    "inputBlocked": false,
+    "suspended": false,
+    "customOpen": null,
+    "state": {
+      "playing": true,
+      "paused": false,
+      "scale": 1,
+      "checkpoint": true,
+      "checkpointBlocked": true,
+      "checkpointContext": true,
+      "checkpointKey": "checkpoint-prompt",
+      "checkpointRegistered": 1,
+      "progress": false,
+      "popup": false,
+      "dialogs": 0,
+      "pending": false,
+      "revision": 2,
+      "owned": 20,
+      "focus": "RetryCheckpointButton",
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "RetryCheckpointButton",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "retry": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "frame": null,
+    "hp": 99,
+    "maxHp": 100,
+    "currency": 10,
+    "pendingCurrency": 0,
+    "pendingItem": null,
+    "deck": 20,
+    "key": null,
+    "registered": 2,
+    "current": false,
+    "blocked": false,
+    "choice": null,
+    "currencyVisible": false,
+    "itemVisible": false,
+    "checkpointBlocked": false,
+    "paused": false,
+    "inputBlocked": false,
+    "focus": "RetryCheckpointButton",
+    "root": -283464182,
+    "resources": 12,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "ExplorationDashButton",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationJumpButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      }
+    ]
+  },
+  "faultRestored": {
+    "writes": 2,
+    "restored": true,
+    "state": {
+      "playing": true,
+      "paused": false,
+      "scale": 1,
+      "checkpoint": false,
+      "checkpointBlocked": false,
+      "checkpointContext": false,
+      "checkpointKey": null,
+      "checkpointRegistered": 1,
+      "progress": false,
+      "popup": false,
+      "dialogs": 0,
+      "pending": false,
+      "revision": 2,
+      "owned": 20,
+      "focus": "RetryCheckpointButton",
+      "buttons": [
+        {
+          "name": "ExplorationDashButton",
+          "interactable": true
+        },
+        {
+          "name": "ExplorationJumpButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "persisted": {
+    "boundary": "RewardCompleted",
+    "hp": 99,
+    "currency": 10,
+    "sequence": 3,
+    "lastHp": 99,
+    "lastCurrency": 10,
+    "live": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Dungeon",
+      "frame": null,
+      "hp": 100,
+      "maxHp": 100,
+      "currency": 10,
+      "pendingCurrency": 0,
+      "pendingItem": null,
+      "deck": 20,
+      "key": null,
+      "registered": 2,
+      "current": false,
+      "blocked": false,
+      "choice": null,
+      "currencyVisible": false,
+      "itemVisible": false,
+      "checkpointBlocked": false,
+      "paused": false,
+      "inputBlocked": false,
+      "focus": "VisitOption_0",
+      "root": -283464182,
+      "resources": 13,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "VisitOption_0",
+          "interactable": true
+        },
+        {
+          "name": "VisitOption_2",
+          "interactable": true
+        },
+        {
+          "name": "ExitVisit",
+          "interactable": true
+        },
+        {
+          "name": "CancelVisit",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "VisitOption_1",
+          "interactable": true
+        },
+        {
+          "name": "PauseVisit",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmVisit",
+          "interactable": false
+        }
+      ]
+    }
+  },
+  "afterSave": {
+    "progress/progress.json": "94fedb17d58c50d0c57417e31e33d6dca88f5748a9c487534a19152c7f3b75af",
+    "progress/progress.backup.json": "3498c641c1087209c2209c1b08d1d1b9d2d8b65c59e96a82a85d3f8aa16ebf55",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.json": "38b3cd1c6d6d7b726810c0fa8163cacf8599ae852258710b0831dc1640171b1e",
+    "checkpoints/runs/097faee1231b43d58843930c9a99d34a/active.backup.json": "aca5cbe2622f31721a67a26b5f487af73beb814f21fbc417ea0781363d756bee"
+  },
+  "sameCapturedOldEventsNoDuplicates": true,
+  "fixtureVictoryOnly": "existing Battle76Proof API damage, normal reward plan and actual pointer entry; no product reward values changed"
+}

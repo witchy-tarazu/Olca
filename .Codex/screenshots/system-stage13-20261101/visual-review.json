@@ -1,0 +1,193 @@
+{
+  "reviewer": "independent_refactor_review",
+  "stage": 13,
+  "scope": "Final-source five view/dialog states across FHD/4K/4:3, visual-only",
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "viewedImageCount": 15,
+  "images": [
+    {
+      "file": "system-stage13-native-after-checkpoint-prompt-fhd.png",
+      "sha256": "e15b76e36cdf60625ed3313a11496ea98749bb1c4d54ec027851048944eb6351",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-checkpoint-prompt-4k.png",
+      "sha256": "7f4cf0ac476809b3f4bb361e7b72c7059b17f37a1288dd8bc816e9b06005dfff",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-checkpoint-prompt-4by3.png",
+      "sha256": "55dd5efbc07a0c774bf8f5dcb5b4fe43b43aeae7edfa8b16a7fdf40ce0c9142f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-newgame-confirmation-fhd.png",
+      "sha256": "1c44e640c437314cc307a77d3e43797d3bcec35c3fdb647a1bba0f97152bdcff",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-newgame-confirmation-4k.png",
+      "sha256": "5deb1db3e2af505e077f501ee7d128a2279d466b1badaeb825ed1bdbda0ae64d",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-newgame-confirmation-4by3.png",
+      "sha256": "b10ad201d0415d0128ea36f383d9e68ccae0fd8d26310b105d750fef49e5ff8d",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-checkpoint-save-retry-fhd.png",
+      "sha256": "20cb2586687dd4fa3e7a0346dd5eb834b7f2ab54970b09cef36fe921e1b245a7",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-checkpoint-save-retry-4k.png",
+      "sha256": "ee3745785b63b169e867c6acaf0a81f2d632bf30a5ad1d0d92457066d8a049e0",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-checkpoint-save-retry-4by3.png",
+      "sha256": "5a600e377cb6ef16083466a21b6fd83f13e38e92f845a55fc191c41332501db5",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-manual-save-retry-fhd.png",
+      "sha256": "4157e00d0a1b663502bc3ea09d3cd283a25c04b4f64631a1b24a938b795f6497",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-manual-save-retry-4k.png",
+      "sha256": "f2a7e379ac729715d7aea6b496c2ec6e3b129cc69b0d2b3e9067d2e44e599d7c",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-manual-save-retry-4by3.png",
+      "sha256": "c2bcb25fae515b2dad6139e035f36287381c3d2c26d391490dda3201b672d773",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-manual-save-success-fhd.png",
+      "sha256": "b0fa3f4c9e41d8495ef8d5f6081325655e38239b86401ed08cd28ee171601783",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-manual-save-success-4k.png",
+      "sha256": "f3415e7c77cc15968deaedab5be69daaec79b0a408bd0cbbe3205a120eec555e",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage13-native-after-manual-save-success-4by3.png",
+      "sha256": "04cbef84af48d5b8b98f8ef3b324a9b76b1a3b300059d22042078102076a061e",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "Checkpoint prompt three-line explanation and single Continue action are readable and separated in all three ratios. Faint top New Game control belongs to background; its actual input availability is not inferred from image.",
+    "New-game confirmation retains full multiline consequences and separated destructive/cancel actions; no clipped line or hidden foreground action observed.",
+    "Checkpoint retry displays stop/preserved-save explanation and selected retry action; manual retry distinguishes selected retry from gray disabled-looking Close. Visual state does not prove disabled behavior.",
+    "Success displays concise saved-slot message and a single prominent Close action.",
+    "Jiki foreground text, watermirror action frames and pale overlay remain coherent with known managed popup styling from Stage10/12. Background text remains faintly visible; no matched-before evidence proves a new opacity regression.",
+    "Injected test failure lines visibly contain Kanji and checkpoint ASCII. These are identified as isolated diagnostic payloads in captures, not treated as evidence that all product error strings have Kana conversion."
+  ],
+  "comparisonBoundary": "No same-state matched before supplied or independently established. Known prior popup style is qualitative reference only; no pixel equality or full historical geometry equivalence claimed.",
+  "native4kSupplement": {
+    "method": "Original PNG lossless unscaled in-memory crops; originals unchanged. Full4K images viewer-resized to2048x1152.",
+    "crops": [
+      {
+        "file": "system-stage13-native-after-newgame-confirmation-4k.png",
+        "rect": [
+          900,
+          1350,
+          1620,
+          1510
+        ]
+      },
+      {
+        "file": "system-stage13-native-after-checkpoint-save-retry-4k.png",
+        "rect": [
+          1620,
+          1550,
+          2220,
+          1690
+        ]
+      },
+      {
+        "file": "system-stage13-native-after-manual-save-success-4k.png",
+        "rect": [
+          2200,
+          1360,
+          2650,
+          1510
+        ]
+      }
+    ],
+    "observation": "Representative action glyphs/frame padding remain distinct at native scale."
+  },
+  "limits": [
+    "Images cannot prove input blocking/focus restoration, retry idempotency, save success or preservation, lifetime/cancellation, or stale callback guards; parent runtime assertions are separate.",
+    "Only representative4K crops examined at1:1, whole4K framing viewed resized.",
+    "No new matched-before capture; no claim of pixel-perfect equality or global aesthetic completion.",
+    "No Unity operations, product edits, tests, physical devices or audio listening performed by reviewer."
+  ]
+}

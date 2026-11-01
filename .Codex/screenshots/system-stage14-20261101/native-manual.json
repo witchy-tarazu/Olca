@@ -1,0 +1,20 @@
+{
+  "mainContextOwner": true,
+  "beforeFailure": {
+    "progress/progress.json": "6644c7138ee6cd7ba647e2af1d1b9c65a707c16da1eba19ce7743c07dd61e7c4",
+    "progress/progress.backup.json": "1bc06943f43c0fc29d0dbb5a7e4f0f7e7767c0e70478c7539b10a6d971715480",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "prewriteBytesUnchanged": true,
+  "disabledCancelRetainedTicket": true,
+  "retryWrites": 2,
+  "closedFocus": "ManualSaveButton",
+  "afterSuccess": {
+    "progress/progress.json": "006abda14a05c511949e43ed39eb12724db468509e01009b864a51025edce03f",
+    "progress/progress.backup.json": "6644c7138ee6cd7ba647e2af1d1b9c65a707c16da1eba19ce7743c07dd61e7c4",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "oldTicketNoDuplicate": true
+}

@@ -1,0 +1,152 @@
+[
+  {
+    "file": "before-keyboard-settings-fhd.png",
+    "source": ".Codex/screenshots/system-stage9-20261031/after-keyboard-settings-fhd.png",
+    "commit": "1e9d7188911b4eb48632ab755925500aa71182c6",
+    "sha256": "407d33c2d5b713145b59c9c28d14f44aefe1ca8d1d6169eb9967bd559dec5ec5",
+    "kind": "previous native capture; not newly shot before"
+  },
+  {
+    "file": "before-keyboard-settings-4k.png",
+    "source": ".Codex/screenshots/system-stage9-20261031/after-keyboard-settings-4k.png",
+    "commit": "1e9d7188911b4eb48632ab755925500aa71182c6",
+    "sha256": "8eabad758695685932797a824f877e67437f36d8ae9badc8b69c1ed93c2eee28",
+    "kind": "previous native capture; not newly shot before"
+  },
+  {
+    "file": "before-keyboard-settings-4by3.png",
+    "source": ".Codex/screenshots/system-stage9-20261031/after-keyboard-settings-4by3.png",
+    "commit": "1e9d7188911b4eb48632ab755925500aa71182c6",
+    "sha256": "395c964a0492ff1959b1e0aead50f1600b6ee56231c57c44e5185bffaa0b6613",
+    "kind": "previous native capture; not newly shot before"
+  },
+  {
+    "file": "before-reset-dialog-fhd.png",
+    "source": ".Codex/screenshots/system-stage9-20261031/after-reset-dialog-fhd.png",
+    "commit": "1e9d7188911b4eb48632ab755925500aa71182c6",
+    "sha256": "930947dff733c078af04d794f2bb069e20bfff04b0b9f38de96bc8f75b7612f0",
+    "kind": "previous native capture; not newly shot before"
+  },
+  {
+    "file": "before-reset-dialog-4k.png",
+    "source": ".Codex/screenshots/system-stage9-20261031/after-reset-dialog-4k.png",
+    "commit": "1e9d7188911b4eb48632ab755925500aa71182c6",
+    "sha256": "9e8c45ef12dd75ec8dd276c15b0184ebd152d32de9bdc0a5a269b357a6880195",
+    "kind": "previous native capture; not newly shot before"
+  },
+  {
+    "file": "before-reset-dialog-4by3.png",
+    "source": ".Codex/screenshots/system-stage9-20261031/after-reset-dialog-4by3.png",
+    "commit": "1e9d7188911b4eb48632ab755925500aa71182c6",
+    "sha256": "85ef3d8d525d8fa7b49bdf11e5870409a276b2fdc3ba42e8a4f0aa31bfb67c64",
+    "kind": "previous native capture; not newly shot before"
+  },
+  {
+    "file": "before-gamepad-settings-fhd.png",
+    "source": "system-stage10-native-after-before-gamepad-settings-fhd.png",
+    "sha256": "3d55ada2231a64d9a6f10767ca2158bee1f8190e0fc985189006d49060719187",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-gamepad-settings-fhd.png",
+    "source": "system-stage10-native-after-after-gamepad-settings-fhd.png",
+    "sha256": "831cae02a4fe27ce14337a0f5b3cdc56a624f76380b2fe9e09291f0401326ee9",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-gamepad-settings-4k.png",
+    "source": "system-stage10-native-after-before-gamepad-settings-4k.png",
+    "sha256": "840a4ff569ef24c3849af525ece42f9c694ce7c433300c86d9d28e6a5d3b37a8",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-gamepad-settings-4k.png",
+    "source": "system-stage10-native-after-after-gamepad-settings-4k.png",
+    "sha256": "58bc1b323f29d9938e529743620bca7d82fe3c026b287c9a113a9e2bb3eecd50",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-gamepad-settings-4by3.png",
+    "source": "system-stage10-native-after-before-gamepad-settings-4by3.png",
+    "sha256": "886b48e87fa3cbd9bfc0a62119ba1b730320de292bd0a5b85c2715ac351497d1",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-gamepad-settings-4by3.png",
+    "source": "system-stage10-native-after-after-gamepad-settings-4by3.png",
+    "sha256": "606af4f9cd777039c9c614afb19a30b172de71493daf682f0cc18006d097146e",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-pad-reset-dialog-fhd.png",
+    "source": "system-stage10-native-after-before-pad-reset-dialog-fhd.png",
+    "sha256": "123e74c45a78b0bf0d4a87fb271e00796a826def1b71867d964dcf77e2282944",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-pad-reset-dialog-fhd.png",
+    "source": "system-stage10-native-after-after-pad-reset-dialog-fhd.png",
+    "sha256": "f696b6dfb2aba46b0a76c59dee0252e18652a1aa56d93f65cbe2427ce62b8d4f",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-pad-reset-dialog-4k.png",
+    "source": "system-stage10-native-after-before-pad-reset-dialog-4k.png",
+    "sha256": "56efd6981474e31c129f806221bcc7b577aef426f69051e098922400376638cb",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-pad-reset-dialog-4k.png",
+    "source": "system-stage10-native-after-after-pad-reset-dialog-4k.png",
+    "sha256": "950e1bd13ab6936c0aff59ff767f0b3038fadfa9c170e8129d13d319aa779896",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-pad-reset-dialog-4by3.png",
+    "source": "system-stage10-native-after-before-pad-reset-dialog-4by3.png",
+    "sha256": "20ee0aba93d3e036148278b46eb3a434b1da9779bb89ccaf1b66c2a1168b00bd",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-pad-reset-dialog-4by3.png",
+    "source": "system-stage10-native-after-after-pad-reset-dialog-4by3.png",
+    "sha256": "708ddf9b866ec0bcf7190dd0cd35449ef460e029da9f0581bd24c1d82d05a7f5",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-audio-settings-fhd.png",
+    "source": "system-stage10-native-after-before-audio-settings-fhd.png",
+    "sha256": "349c093171bbdc7b171b655e5672eb9e08a72b7fd83d25f6b7948d30821644ac",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-audio-settings-fhd.png",
+    "source": "system-stage10-native-after-after-audio-settings-fhd.png",
+    "sha256": "ba8888cf5d755019dd53fbaa7566d7af4151fc351295b0986d67f6a9806bb958",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-audio-settings-4k.png",
+    "source": "system-stage10-native-after-before-audio-settings-4k.png",
+    "sha256": "483da652864b2388e7b5e25bfbc73960bf0dcdc4657f4fbfe4981b5dd6a8c16c",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-audio-settings-4k.png",
+    "source": "system-stage10-native-after-after-audio-settings-4k.png",
+    "sha256": "b6c07bf5426b463f0725df924bb305ed72e4b23c05a9d4a5b8ec55cac86c9386",
+    "kind": "actual managed View UI, before temporary edits"
+  },
+  {
+    "file": "before-audio-settings-4by3.png",
+    "source": "system-stage10-native-after-before-audio-settings-4by3.png",
+    "sha256": "718940459e7015bb64559c6052e484d5cf726b6048375e3f3b7014a3d6168195",
+    "kind": "old commit classes in labelled inert-save visual fixture"
+  },
+  {
+    "file": "after-audio-settings-4by3.png",
+    "source": "system-stage10-native-after-after-audio-settings-4by3.png",
+    "sha256": "a14bb0fc66ebf0cda2daca50c5cbb323af3958ef307131a3bc2b303bc277d1b2",
+    "kind": "actual managed View UI, before temporary edits"
+  }
+]

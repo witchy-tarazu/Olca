@@ -1,0 +1,27 @@
+{
+  "summary": {
+    "total": 494,
+    "passed": 493,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 48.41,
+  "failed": [
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.初期化途中の失敗で攻略所有を戻し再試行と二重開始を区別する",
+      "Status": "Failed",
+      "Duration": 3.1992272,
+      "Message": "System.Reflection.TargetInvocationException : Exception has been thrown by the target of an invocation.\n  ----> UnityEngine.MissingReferenceException : The object of type 'UnityEngine.GameObject' has been destroyed but you are still trying to access it.\nYour script should either check if it is null or you should not destroy the object.",
+      "StackTrace": "  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <1d26c8856bcb48938402e0be7f5cc174>:0 \n  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <1d26c8856bcb48938402e0be7f5cc174>:0 \n  at Olca.Tests.Application.GameSystemManagementTests.初期化途中の失敗で攻略所有を戻し再試行と二重開始を区別する () [0x003bf] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:202 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 \n--MissingReferenceException\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x00064] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/UnityEngineObject.bindings.cs:1071 \n  at UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) [0x00010] in /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/BindingsHelpers.cs:61 \n  at UnityEngine.GameObject.SetActive (System.Boolean value) [0x00006] in <08b76a262c874da0853d4cdc5b748adc>:0 \n  at Olca.Application.Dungeon.DungeonBattleController.StopManagedHost () [0x00062] in /workspace/olca-validation-20261024/project/Assets/Olca/Application/Dungeon/DungeonBattleController.cs:2758 \n  at Olca.Application.Dungeon.DungeonBattleController.OnDestroy () [0x00000] in /workspace/olca-validation-20261024/project/Assets/Olca/Application/Dungeon/DungeonBattleController.cs:2779 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    }
+  ],
+  "cause": "new ?.SetActive bypassed Unity native-null in existing initialization/rollback/destroy regression; corrected3guards; expectedvaluesunchanged",
+  "priorSourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "59bdbf81295b1ee3177424532f85a6fa0e0a12d89efd121ed07335c96cee928e",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "871e675a4c64e8b728bd2a621929fd4862225f375c1e0f4ac8dacc27e0a244cd",
+    "Assets/Olca/Presentation/Management/ViewManager.cs": "b7ad7da99ddeb6e264f29848150634ebba8d1f07fe690ead86faf50db00d0465",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "68cb1301e927701d83645fe75c6702e852ad029f1a6db65caada2ccff48972f3",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "eada26598de6e97749e7282256c94b4192e11d60b66a70a09c42675406d92e02"
+  }
+}

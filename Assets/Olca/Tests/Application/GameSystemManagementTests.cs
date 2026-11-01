@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -124,18 +125,38 @@ namespace Olca.Tests.Application
             var screen=await Screen();frame=10;var result=dialogs.Show(screen.Context,screen.Panel,screen.Confirm,screen.Cancel,_=>{});screen.Cancel.onClick.Invoke();await result;
             Assert.IsTrue(screen.Context.DialogBlocksInput);frame++;dialogs.Tick();Assert.IsFalse(screen.Context.DialogBlocksInput);
         }
-        [Test] public async Task 設定の初期化Dialogを取消すと起点ボタンへ戻る()
+        [TestCase(false)] [TestCase(true)] public async Task 設定の初期化Dialogを取消すと起点ボタンへ戻る(bool gamepad)
         {
             var panel=Panel("keyboard");var view=panel.AddComponent<Olca.Presentation.Field.GameplayKeyboardSettingsView>();
             // EditModeで手動更新したViewの入力購読も明示解放する。
             viewCleanup=()=>{if(view!=null)view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);};
-            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),profile=>null);
-            Register("keyboard",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(UnityInputProvider.CreateDefaultKeyboardProfile());});
+            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),profile=>null,gamepad);
+            Register("keyboard",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile());});
             await views.ShowAsync("keyboard");var update=view.GetType().GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);
             Assert.AreEqual("CloseKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
             var buttons=panel.GetComponentsInChildren<Button>(true);Array.Find(buttons,x=>x.name=="ResetKeyboardSettings").onClick.Invoke();update.Invoke(view,null);
             Array.Find(buttons,x=>x.name=="CancelKeyboardReset").onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);
             Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreEqual("ResetKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
+        }
+        [Test] public async Task 音量画面は閉鎖通知し旧クリックを拒否して再表示できる()
+        {
+            var panel=Panel("audio");var view=panel.AddComponent<Olca.Presentation.Field.GameplayAudioSettingsView>();
+            int saved=0,closed=0;
+            viewCleanup=()=>{if(view!=null)view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);};
+            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),value=>{saved++;return null;},()=>{closed++;view.DiscardAndClose();});
+            Register("audio",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(new AudioVolumeSettings(),null);});
+            await views.ShowAsync("audio");
+            var buttons=panel.GetComponentsInChildren<Button>(true);var save=Array.Find(buttons,x=>x.name=="SaveAudioSettings");var cancel=Array.Find(buttons,x=>x.name=="CancelAudioSettings");
+            save.onClick.Invoke();Assert.AreEqual(1,saved);
+            views.CloseCurrent();save.onClick.Invoke();cancel.onClick.Invoke();Assert.AreEqual(1,saved);Assert.AreEqual(0,closed);
+            await views.ShowAsync("audio");save.onClick.Invoke();Assert.AreEqual(2,saved);
+            cancel.onClick.Invoke();Assert.AreEqual(1,closed);
+            // EditModeの手動View操作ではMonoBehaviourの非表示通知も明示する。
+            view.GetType().GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.IsNull(views.CurrentKey);
+            save.onClick.Invoke();Assert.AreEqual(2,saved);
+            var oldSave=save.onClick;var oldCancel=cancel.onClick;var oldSlider=panel.GetComponentInChildren<Slider>(true).onValueChanged;
+            view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);viewCleanup=null;
+            views.UnregisterOwner(owner);oldSave.Invoke();oldCancel.Invoke();oldSlider.Invoke(50);Assert.AreEqual(2,saved);Assert.AreEqual(1,closed);
         }
         [Test] public async Task 破棄中のロードは後着しても表示せず二重解放しない()
         {
@@ -173,7 +194,9 @@ namespace Olca.Tests.Application
                 Assert.IsFalse(sounds.Router.IsPaused);
                 controller.enabled=false;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsTrue(sounds.Router.IsPaused);
                 controller.enabled=true;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnEnable",flags).Invoke(controller,null);Assert.IsFalse(sounds.Router.IsPaused);
-                Assert.AreEqual(1,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(1,views.RegisteredCount);
+                Assert.AreEqual(3,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(3,views.RegisteredCount);
+                var entries=(System.Collections.IDictionary)typeof(ViewManager).GetField("entries",flags).GetValue(views);
+                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings"},entries.Keys);
             } finally {
                 var canvas=(GameObject)typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("pauseCanvas",flags).GetValue(controller);if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);
                 // 反射StartのEditMode fixtureでは破棄通知も明示し、実行中購読を残さない。
@@ -194,5 +217,252 @@ namespace Olca.Tests.Application
             } finally { root.Services?.Dispose();field.SetValue(null,prior);UnityEngine.Object.DestroyImmediate(go); }
         }
 
+        [Test] public async Task Pause画面は閉じた世代のクリックを再表示後も実行しない()
+        {
+            int calls=0;bool allowed=true;var panel=Panel("pause");var resume=Button(panel,"Resume");resume.onClick.AddListener(()=>calls++);
+            var pause=panel.AddComponent<GameplayPauseView>();pause.Initialize(()=>allowed);var layer=views.GetLayer("pause-test");
+            layer.Register(owner,"pause",ct=>Task.FromResult(panel),(go,context)=>pause.Show(context),go=>pause.Hide());
+            Assert.IsTrue((await layer.ShowAsync("pause")).Succeeded);var old=resume.onClick;old.Invoke();Assert.AreEqual(1,calls);
+            allowed=false;old.Invoke();Assert.AreEqual(1,calls);allowed=true;layer.CloseCurrent();old.Invoke();Assert.AreEqual(1,calls);
+            Assert.IsTrue((await layer.ShowAsync("pause")).Succeeded);old.Invoke();Assert.AreEqual(1,calls);resume.onClick.Invoke();Assert.AreEqual(2,calls);
+            views.UnregisterOwner(owner);old.Invoke();Assert.AreEqual(2,calls);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [Test] public async Task Pauseを覆う確認は取消で戻り親終了では旧確定を実行しない()
+        {
+            int confirms=0;var panel=Panel("pause");var source=Button(panel,"Retreat");var pause=panel.AddComponent<GameplayPauseView>();pause.Initialize(()=>true);
+            var popup=Panel("retreat");var confirm=Button(popup,"ConfirmRetreat");var cancel=Button(popup,"CancelRetreat");
+            var layer=views.GetLayer("pause-dialog-test");layer.Register(owner,"pause",ct=>Task.FromResult(panel),(go,context)=>pause.Show(context),go=>pause.Hide());
+            await layer.ShowAsync("pause");var context=pause.Context;EventSystem.current.SetSelectedGameObject(source.gameObject);
+            pause.CoverForDialog();var request=context.ShowDialog(popup,confirm,cancel,result=>{pause.RestoreAfterDialog();if(result==DialogResult.Confirmed)confirms++;});
+            Assert.IsTrue(context.IsCurrent);Assert.IsTrue(panel.activeSelf);Assert.AreEqual(0,panel.GetComponent<CanvasGroup>().alpha);
+            Assert.IsTrue((await layer.ShowAsync("pause")).Succeeded);Assert.AreEqual(1,dialogs.ActiveCount);
+            cancel.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await request);
+            Assert.IsTrue(panel.activeSelf);Assert.AreSame(source.gameObject,EventSystem.current.currentSelectedGameObject);
+            Assert.AreEqual("Retreat",pause.TakeRestoredFocus());Assert.IsNull(pause.TakeRestoredFocus());
+            frame++;pause.CoverForDialog();request=context.ShowDialog(popup,confirm,cancel,result=>{pause.RestoreAfterDialog();if(result==DialogResult.Confirmed)confirms++;});
+            var stale=confirm.onClick;layer.CloseCurrent();Assert.AreEqual(DialogResult.ParentClosed,await request);stale.Invoke();Assert.AreEqual(0,confirms);Assert.IsFalse(panel.activeSelf);Assert.AreEqual(0,dialogs.ActiveCount);
+            UnityEngine.Object.DestroyImmediate(popup);
+        }
+        [Test] public async Task Checkpoint案内は内容更新で世代を変えず再表示後の旧入力を拒否する()
+        {
+            int calls=0;bool allowed=true;var panel=Panel("checkpoint");var button=Button(panel,"Continue");button.onClick.AddListener(()=>calls++);
+            var view=panel.AddComponent<CheckpointPromptView>();view.Initialize(()=>allowed);var layer=views.GetLayer("checkpoint-test");
+            layer.Register(owner,"checkpoint",ct=>Task.FromResult(panel),(go,context)=>view.Show(context),go=>view.Hide());
+            await layer.ShowAsync("checkpoint");var first=view.Context;var old=button.onClick;
+            await layer.ShowAsync("checkpoint");Assert.AreSame(first,view.Context);old.Invoke();old.Invoke();Assert.AreEqual(1,calls);
+            allowed=false;old.Invoke();Assert.AreEqual(1,calls);allowed=true;button.gameObject.SetActive(false);old.Invoke();Assert.AreEqual(1,calls);button.gameObject.SetActive(true);
+            layer.CloseCurrent();await layer.ShowAsync("checkpoint");old.Invoke();Assert.AreEqual(1,calls);
+            button.onClick.Invoke();Assert.AreEqual(2,calls);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [Test] public async Task 保存再試行Dialogは失敗で閉じず無効取消と同frame再入を拒否する()
+        {
+            int attempts=0,completed=0;bool parent=true;var panel=Panel("retry");var confirm=Button(panel,"Retry");var cancel=Button(panel,"Close");cancel.interactable=false;
+            using(var scope=dialogs.CreateOwner(()=>parent)){
+                var task=dialogs.ShowPersistent(scope,panel,confirm,cancel,()=>{attempts++;confirm.onClick.Invoke();if(attempts==2){confirm.gameObject.SetActive(false);cancel.interactable=true;}return false;},_=>completed++);
+                confirm.onClick.Invoke();confirm.onClick.Invoke();cancel.onClick.Invoke();Assert.AreEqual(1,attempts);Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(task.IsCompleted);
+                frame++;confirm.onClick.Invoke();Assert.AreEqual(2,attempts);Assert.AreEqual(1,dialogs.ActiveCount);
+                cancel.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await task);Assert.AreEqual(1,completed);
+            }
+        }
+        [Test] public async Task 未移行親のDialog寿命も終了後と再表示後の旧確定を拒否する()
+        {
+            bool parent=true;int effects=0;var panel=Panel("progress");var confirm=Button(panel,"Confirm");var cancel=Button(panel,"Cancel");
+            using(var scope=dialogs.CreateOwner(()=>parent)){
+                var task=dialogs.ShowPersistent(scope,panel,confirm,cancel,()=>{effects++;return true;},_=>effects++);
+                var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+                var stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("ConfirmAction").GetValue(ticket);
+                parent=false;dialogs.Tick();Assert.AreEqual(DialogResult.ParentClosed,await task);stale();Assert.AreEqual(0,effects);
+                parent=true;frame++;var next=dialogs.ShowPersistent(scope,panel,confirm,cancel,()=>{effects++;return true;},_=>{});stale();Assert.AreEqual(0,effects);
+                confirm.onClick.Invoke();Assert.AreEqual(DialogResult.Confirmed,await next);Assert.AreEqual(1,effects);
+            }
+        }
+        [Test] public async Task Checkpointの進行確認取消は同frameの親クリック遮断を解除しない()
+        {
+            var parent=Panel("checkpoint-parent");var prompt=parent.AddComponent<CheckpointPromptView>();prompt.Initialize(()=>true);var layer=views.GetLayer("checkpoint");
+            layer.Register(owner,"checkpoint",ct=>Task.FromResult(parent),(go,context)=>prompt.Show(context),go=>prompt.Hide());await layer.ShowAsync("checkpoint");
+            var popup=Panel("progress-popup");var confirm=Button(popup,"ConfirmNewGame");var cancel=Button(popup,"CancelProgressAction");
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            Set("gameSystem",system);Set("managedCheckpointView",prompt);Set("progressActionOverlay",popup);Set("progressConfirmButton",confirm);Set("progressCancelButton",cancel);Set("progressDialogOpen",true);
+            type.GetMethod("OpenManagedProgressDialog",flags).Invoke(controller,null);Assert.AreEqual(1,dialogs.ActiveCount);
+            cancel.onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse((bool)type.GetField("progressDialogOpen",flags).GetValue(controller));Assert.IsTrue(prompt.Context.DialogBlocksInput);
+            frame++;dialogs.Tick();Assert.IsFalse(prompt.Context.DialogBlocksInput);
+            // 未起動fixtureに所有サービスを残してOnDestroyへ流さない。
+            Set("gameSystem",null);UnityEngine.Object.DestroyImmediate(controller);
+        }
+        [Test] public void 未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する()
+        {
+            var parent=Panel("hub-parent");parent.SetActive(true);var hub=parent.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();
+            var popup=Panel("progress-popup");var confirm=Button(popup,"ConfirmNewGame");var cancel=Button(popup,"CancelProgressAction");
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            Set("gameSystem",system);Set("clearReturnView",hub);Set("progressActionOverlay",popup);Set("progressConfirmButton",confirm);Set("progressCancelButton",cancel);Set("progressDialogOpen",true);
+            type.GetMethod("OpenManagedProgressDialog",flags).Invoke(controller,null);Assert.AreEqual(1,dialogs.ActiveCount);
+            var scope=(IDialogOwner)type.GetField("managedProgressOwner",flags).GetValue(controller);Assert.IsTrue(scope.IsCurrent);
+            controller.StopManagedHost();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(scope.IsCurrent);Assert.IsFalse(popup.activeSelf);
+            // TickやUnity側のDestroyを待つ前に終了境界が成立している。
+            UnityEngine.Object.DestroyImmediate(controller);
+        }
+        [Test] public void host終了後の旧手動保存イベントはUnity破棄前でも保存と世代を変更しない()
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-stopped-progress-"+Guid.NewGuid().ToString("N"));
+            try{
+                var store=new ClearReturnFileStore(directory);var progress=new Olca.Core.Domain.ClearReturnSession(store);
+                Assert.IsTrue(progress.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()),progress.Error);
+                var before=File.ReadAllBytes(store.ActivePath);long revision=progress.Snapshot.Revision;
+                var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+                void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+                Set("gameSystem",system);Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);
+                var button=Button(host,"ManualSaveButton");button.onClick.AddListener((UnityEngine.Events.UnityAction)Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction),controller,type.GetMethod("SaveProgressFromUi",flags)));var old=button.onClick;
+                controller.StopManagedHost();Assert.DoesNotThrow(()=>old.Invoke());CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));Assert.AreEqual(revision,progress.Snapshot.Revision);Assert.IsFalse(progress.HasPendingSave);
+                UnityEngine.Object.DestroyImmediate(controller);
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        }
+        [Test] public async Task 読取専用Dialogは閉鎖世代と親終了を守りスクロール所有を返す()
+        {
+            var screen=await Screen();var scroll=screen.Panel.AddComponent<ScrollRect>();int completed=0;
+            var request=dialogs.ShowNotice(screen.Context,screen.Panel,screen.Cancel,scroll,_=>completed++);
+            Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsTrue(screen.Context.DialogBlocksInput);
+            var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+            var stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("CancelAction").GetValue(ticket);
+            screen.Cancel.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await request);Assert.AreEqual(1,completed);
+            Assert.IsTrue(screen.Context.DialogBlocksInput);frame++;dialogs.Tick();Assert.IsFalse(screen.Context.DialogBlocksInput);
+            var next=dialogs.ShowNotice(screen.Context,screen.Panel,screen.Cancel,scroll,_=>completed++);stale();Assert.IsFalse(next.IsCompleted);
+            views.CloseCurrent();Assert.AreEqual(DialogResult.ParentClosed,await next);Assert.AreEqual(1,completed);Assert.AreEqual(0,dialogs.ActiveCount);
+            stale();Assert.AreEqual(1,completed);
+        }
+        [Test] public async Task 帰還共有画面は世代入力と詳細Popupを管理し別層図鑑を独立閉鎖する()
+        {
+            var panel=Panel("return-hub");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();
+            int actions=0;view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{},()=>actions++);
+            var layer=views.GetLayer("return-test");layer.Register(owner,"return",ct=>Task.FromResult(panel),(go,ctx)=>view.ShowManaged(ctx),go=>view.HideManaged());
+            view.ConfigureManagement(()=>{var result=layer.ShowAsync("return");Assert.IsTrue(result.IsCompleted&&result.Result.Succeeded);},layer.CloseCurrent,dialogs);
+            void Render()=>view.Render(new Olca.Core.Domain.ClearReturnProfile(),new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null);
+            Render();var first=view.ManagementContext;Assert.IsTrue(first.IsCurrent);
+            var other=views.GetLayer("collection-test");var collection=Panel("collection");other.Register(owner,"collection",ct=>Task.FromResult(collection),(go,ctx)=>go.SetActive(true),go=>go.SetActive(false));
+            await other.ShowAsync("collection");Assert.IsTrue(first.IsCurrent);other.CloseCurrent();Assert.IsTrue(first.IsCurrent);
+            var method=view.GetType().GetMethod("OpenReadonlyText",BindingFlags.Instance|BindingFlags.NonPublic);
+            var parameters=method.GetParameters();Assert.AreEqual(4,parameters.Length);
+            method.Invoke(view,new object[]{"詳細","表示内容",null,null});Assert.AreEqual(1,dialogs.ActiveCount);
+            layer.CloseCurrent();Assert.IsFalse(first.IsCurrent);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);
+            Render();Assert.IsTrue(view.ManagementContext.IsCurrent);Assert.AreNotSame(first,view.ManagementContext);
+            views.UnregisterOwner(owner);Assert.AreEqual(0,layer.RegisteredCount);Assert.AreEqual(0,dialogs.ActiveCount);
+        }
+        private Olca.Presentation.Dungeon.ClearReturnView ReturnView()
+        {
+            var panel=Panel("return15");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+            var layer=views.GetLayer("return15");layer.Register(owner,"return15",ct=>Task.FromResult(panel),(go,ctx)=>view.ShowManaged(ctx),go=>view.HideManaged());
+            view.ConfigureManagement(()=>{var request=layer.ShowAsync("return15");Assert.IsTrue(request.IsCompleted&&request.Result.Succeeded);},layer.CloseCurrent,dialogs);return view;
+        }
+        private UnityEngine.Events.UnityAction CurrentConfirm()
+        {
+            var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+            return (UnityEngine.Events.UnityAction)ticket.GetType().GetField("ConfirmAction").GetValue(ticket);
+        }
+        [Test] public void 編成破棄Dialogは親を保持し取消再描画後のframe遮断と旧確定を守る()
+        {
+            var view=ReturnView();int resumes=0,discards=0;var profile=new Olca.Core.Domain.ClearReturnProfile();var draft=new List<Olca.Core.Domain.Card>();
+            void Render(bool discard=false)=>view.RenderOwnedDeparture(profile,new Olca.Core.Domain.Card[0],draft,null,false,(_,__)=>{},()=>{},_=>discards++,()=>{resumes++;Render();},discard);
+            Render();var parent=view.transform.Find("DepartureContents").gameObject;Render(true);var old=CurrentConfirm();Render(true);
+            Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(parent.activeSelf);Assert.AreSame(parent,view.transform.Find("DepartureContents").gameObject);
+            view.GetComponentsInChildren<Button>().Single(x=>x.name=="KeepEditingDeparture").onClick.Invoke();
+            Assert.AreEqual(1,resumes);Assert.AreEqual(0,discards);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+            Assert.AreEqual("CloseOwnedDeparture",EventSystem.current.currentSelectedGameObject.name);old();Assert.AreEqual(0,discards);
+            frame++;dialogs.Tick();Render(true);var confirm=CurrentConfirm();confirm();confirm();Assert.AreEqual(1,discards);
+        }
+        [Test] public void 保存デッキ削除Dialogは取消focusと左右選択を保ち旧確定を再使用しない()
+        {
+            var view=ReturnView();int deletes=0;var profile=new Olca.Core.Domain.ClearReturnProfile{SavedDecks=new[]{new Olca.Core.Domain.SavedDepartureDeck{Id="isolated",Name=new string('長',300),Cards=new Olca.Core.Domain.SavedDeckCard[0]}}};
+            void Render(string deleting=null)=>view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},_=>{},_=>{},id=>Render(id),()=>{},()=>{},deleting,()=>{deletes++;Render();});
+            Render();Render("isolated");var old=CurrentConfirm();var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+            Assert.IsFalse((bool)ticket.GetType().GetField("DirectionScroll").GetValue(ticket));Assert.NotNull(ticket.GetType().GetField("Scroll").GetValue(ticket));
+            view.GetComponentsInChildren<Button>().Single(x=>x.name=="CancelDeleteDeck").onClick.Invoke();Assert.AreEqual(0,deletes);Assert.AreEqual("DeleteDeck_isolated",EventSystem.current.currentSelectedGameObject.name);Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+            old();Assert.AreEqual(0,deletes);frame++;dialogs.Tick();Render("isolated");var next=CurrentConfirm();old();Assert.AreEqual(1,dialogs.ActiveCount);next();next();Assert.AreEqual(1,deletes);Assert.AreEqual(0,dialogs.ActiveCount);
+        }
+        [Test] public void 親終了で編成削除Dialogの業務callbackと後着確定を破棄する()
+        {
+            var view=ReturnView();int effects=0;var profile=new Olca.Core.Domain.ClearReturnProfile();
+            view.RenderOwnedDeparture(profile,new Olca.Core.Domain.Card[0],new List<Olca.Core.Domain.Card>(),null,false,(_,__)=>{},()=>{},_=>effects++,()=>effects++,true);
+            var old=CurrentConfirm();views.GetLayer("return15").CloseCurrent();Assert.AreEqual(0,dialogs.ActiveCount);old();Assert.AreEqual(0,effects);Assert.IsFalse(view.gameObject.activeSelf);Assert.IsNull(view.ManagementContext);
+        }
+        [Test] public void Dialog取消後の再描画で閉鎖frameを消さず新拠点の保存入口も遮断する()
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-stage15-frame-"+Guid.NewGuid().ToString("N"));
+            try{
+                var store=new ClearReturnFileStore(directory);var progress=new Olca.Core.Domain.ClearReturnSession(store);Assert.IsTrue(progress.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+                var view=ReturnView();view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null);
+                var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+                void Set(string n,object v)=>type.GetField(n,flags).SetValue(controller,v);
+                Set("gameSystem",system);Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);Set("clearReturnView",view);
+                Assert.IsTrue((bool)type.GetProperty("IsProgressHub",flags).GetValue(controller),"保存入口自体が有効な拠点で遮断を検証する");
+                var popup=Panel("frame-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");dialogs.Show(view.ManagementContext,popup,yes,no,_=>view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null));
+                var bytes=File.ReadAllBytes(store.ActivePath);no.onClick.Invoke();Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+                Assert.DoesNotThrow(()=>type.GetMethod("SaveProgressFromUi",flags).Invoke(controller,null));CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));
+                UnityEngine.Object.DestroyImmediate(controller);
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 装備三画面は管理世代とDialog入力を守り明示終端で参照を返す(int kind)
+        {
+            var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var panel=Panel("equipment");var layer=views.GetLayer("equipment16");Component view;Action open,hide,release;Action<ManagedScreenContext> show;Action<Action,Action> configure;Func<ManagedScreenContext> context;int cancels=0;
+            var catalog=new Olca.Core.Logic.Customization.CustomizationCatalog("fixture16",new Olca.Core.Logic.Customization.PartsBoardDefinition(2,1,new[]{new Olca.Core.Domain.Vector2Int(0,0)}),Array.Empty<string>(),new Dictionary<string,Olca.Core.Logic.Customization.PartShape>(),null);
+            var progress=new Olca.Core.Logic.Customization.CustomizationProgress();
+            if(kind==0){var v=panel.AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();v.Initialize(font,()=>{},()=>{cancels++;v.Close();},()=>{});view=v;show=v.ShowManaged;hide=v.HideManaged;release=v.ReleaseManagement;configure=v.ConfigureManagement;context=()=>v.Context;open=()=>v.Open(new Olca.Core.Logic.Customization.CustomizationEditDraft(catalog,progress,0));}
+            else if(kind==1){var v=panel.AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();v.Initialize(font,_=>{},()=>{cancels++;v.Close();},()=>{});view=v;show=v.ShowManaged;hide=v.HideManaged;release=v.ReleaseManagement;configure=v.ConfigureManagement;context=()=>v.Context;open=()=>v.Open(catalog,progress);}
+            else{var v=panel.AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();v.Initialize(font,_=>{},()=>{cancels++;v.Close();},()=>{});view=v;show=v.ShowManaged;hide=v.HideManaged;release=v.ReleaseManagement;configure=v.ConfigureManagement;context=()=>v.Context;open=()=>v.Open(new Olca.Core.Logic.Customization.CustomizationAcquisitionPlan{ContextId="fixture16",BoardId=catalog.BoardId,MaximumClaims=0,Candidates=Array.Empty<Olca.Core.Logic.Customization.CustomizationAcquisitionCandidate>()},progress,false,catalog);}
+            layer.Register(owner,"equipment",ct=>Task.FromResult(panel),(go,ctx)=>show(ctx),go=>hide());configure(()=>Assert.IsTrue(layer.ShowAsync("equipment").GetAwaiter().GetResult().Succeeded),layer.CloseCurrent);
+            var origin=Button(host,"origin16");EventSystem.current.SetSelectedGameObject(origin.gameObject);view.GetType().GetMethod("PrepareManagedOpen").Invoke(view,null);Assert.IsTrue(context().IsCurrent);Assert.AreSame(origin.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsNull(view.GetType().GetField(kind==0?"draft":kind==1?"state":"plan",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view));
+            open();var first=context();Assert.IsTrue(first.IsCurrent);var cancel=view.GetComponentsInChildren<Button>().Single(b=>b.name==(kind==0?"CancelCustomization":kind==1?"CancelCustomizationUnlock":"CancelCustomizationAcquisition"));var old=cancel.onClick;var cancelName=cancel.name;
+            var popup=Panel("equipment-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");dialogs.Show(first,popup,yes,no,_=>{});old.Invoke();Assert.AreEqual(0,cancels);Assert.IsTrue(first.IsCurrent);
+            layer.CloseCurrent();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(first.IsCurrent);Assert.IsNull(context());Assert.IsFalse(panel.activeSelf);old.Invoke();Assert.AreEqual(0,cancels);
+            open();Assert.AreNotSame(first,context());old.Invoke();Assert.AreEqual(0,cancels);Assert.IsTrue(context().IsCurrent);
+            var current=view.GetComponentsInChildren<Button>().Single(b=>b.name==cancelName).onClick;current.Invoke();Assert.AreEqual(1,cancels);Assert.IsNull(context());Assert.IsNull(EventSystem.current.currentSelectedGameObject);current.Invoke();Assert.AreEqual(1,cancels);
+            open();release();Assert.IsNull(context());Assert.IsFalse(panel.activeSelf);Assert.IsNull(layer.CurrentKey);
+            foreach(var name in new[]{"menu","ensureManagedVisible","hideManaged",kind==0?"draft":kind==1?"state":"plan"})Assert.IsNull(view.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view),name);
+            layer.UnregisterOwner(owner);Assert.AreEqual(0,layer.RegisteredCount);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.DoesNotThrow(()=>old.Invoke());Assert.AreEqual(1,cancels);
+        }
+        private sealed class EquipmentSourceProbe:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
+        {
+            public int Calls;
+            public Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition Resolve(Olca.Core.Logic.Customization.CustomizationAcquisitionContext context){Calls++;return null;}
+        }
+        [TestCase("OpenCustomizationEditor")][TestCase("OpenCustomizationUnlocks")][TestCase("OpenCustomizationAcquisitions")]
+        public void 帰還確認を閉じた同frameの旧装備入口は草稿も取得計画も作らない(string method)
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-stage16-fence-"+Guid.NewGuid().ToString("N"));
+            try{
+                var store=new ClearReturnFileStore(directory);var progress=new Olca.Core.Domain.ClearReturnSession(store);Assert.IsTrue(progress.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+                var view=ReturnView();view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null);var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+                void Set(string n,object value)=>type.GetField(n,flags).SetValue(controller,value);
+                var catalog=new Olca.Core.Logic.Customization.CustomizationCatalog("fence16",new Olca.Core.Logic.Customization.PartsBoardDefinition(1,1,new[]{new Olca.Core.Domain.Vector2Int(0,0)}),Array.Empty<string>(),new Dictionary<string,Olca.Core.Logic.Customization.PartShape>(),null);var source=new EquipmentSourceProbe();
+                Set("gameSystem",system);Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);Set("clearReturnView",view);Set("customizationCatalog",catalog);Set("customizationAcquisitionProvider",source);
+                var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var load=Panel("load").AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();load.Initialize(font,()=>{},()=>{},()=>{});var unlock=Panel("unlock").AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();unlock.Initialize(font,_=>{},()=>{},()=>{});var acquire=Panel("acquire").AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();acquire.Initialize(font,_=>{},()=>{},()=>{});Set("customizationEditorView",load);Set("customizationUnlockView",unlock);Set("customizationAcquisitionView",acquire);
+                Assert.IsTrue((bool)type.GetProperty("IsProgressHub",flags).GetValue(controller));Assert.IsTrue(progress.Ready);Assert.IsFalse(progress.HasPendingSave);
+                var popup=Panel("fence16-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");dialogs.Show(view.ManagementContext,popup,yes,no,_=>view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null));var bytes=File.ReadAllBytes(store.ActivePath);no.onClick.Invoke();Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+                Assert.DoesNotThrow(()=>type.GetMethod(method,flags).Invoke(controller,null));Assert.IsFalse(load.gameObject.activeSelf);Assert.IsFalse(unlock.gameObject.activeSelf);Assert.IsFalse(acquire.gameObject.activeSelf);Assert.IsNull(load.Draft);Assert.AreEqual(0,source.Calls);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));
+                UnityEngine.Object.DestroyImmediate(controller);
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 資源報酬画面は旧選択を次の待機へ渡さず親終了で取消す(bool item)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var pause=typeof(GameplayPause);var release=pause.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var frames=pause.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);bool wasPaused=GameplayPause.IsPaused;var wasRelease=release.GetValue(null);var wasFrames=frames.GetValue(null);
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();
+            void Set(string n,object v)=>type.GetField(n,flags).SetValue(controller,v);
+            object Call(string n,params object[] args)=>type.GetMethod(n,flags).Invoke(controller,args);
+            try{
+                GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();Assert.IsFalse(GameplayPause.InputBlocked);
+                var currency=Panel("CurrencyRewardPanel");var items=Panel("ItemRewardPanel");Set("gameSystem",system);Set("currencyOverlay",currency);Set("itemRewardOverlay",items);
+                var root=item?items:currency;var yes=Button(root,item?"ReceiveItemReward":"ReceiveCurrencyButton");var no=Button(root,item?"SkipItemReward":"SkipCurrencyButton");Call("RegisterResourceRewardViews");
+                var first=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,first,CancellationToken.None);var old=yes.onClick;var context=(ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller);Assert.IsTrue(context.IsCurrent);
+                var popup=Panel("reward-popup");var confirm=Button(popup,"confirm");var cancel=Button(popup,"cancel");dialogs.Show(context,popup,confirm,cancel,_=>{});old.Invoke();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,first.Task.Status);
+                views.GetLayer("resource-reward").CloseCurrent();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,first.Task.Status);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
+                frame++;var next=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,next,CancellationToken.None);old.Invoke();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,next.Task.Status);
+                yes.onClick.Invoke();no.onClick.Invoke();Assert.IsTrue(next.Task.GetAwaiter().GetResult());Call("CloseResourceReward",root,next);Assert.IsFalse(root.activeSelf);Assert.IsNull(type.GetField("activeResourceRewardChoice",flags).GetValue(controller));
+                frame++;var final=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,final,CancellationToken.None);Call("OnDisable");Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,final.Task.Status);Call("OnEnable");Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,final.Task.Status);views.GetLayer("resource-reward").CloseCurrent();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,final.Task.Status);Assert.IsNull(type.GetField("resourceRewardRoot",flags).GetValue(controller));
+                var crossOld=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,crossOld,CancellationToken.None);var other=item?currency:items;var otherNo=Button(other,item?"SkipCurrencyButton":"SkipItemReward");var crossNext=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",other,otherNo.name,crossNext,CancellationToken.None);Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,crossOld.Task.Status);Assert.IsTrue(((ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller)).IsCurrent);otherNo.onClick.Invoke();Assert.IsFalse(crossNext.Task.GetAwaiter().GetResult());Call("CloseResourceReward",other,crossNext);
+                Call("ReleasePresentationBindings");Assert.IsNull(type.GetField("resourceRewardMenu",flags).GetValue(controller));Assert.IsNull(type.GetField("resourceRewardViews",flags).GetValue(controller));views.UnregisterOwner(controller);Assert.AreEqual(0,resources.OwnedInstanceCount);
+            }finally{UnityEngine.Object.DestroyImmediate(controller);GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
+        }
     }
 }

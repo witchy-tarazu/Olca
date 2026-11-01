@@ -1,0 +1,48 @@
+{
+  "scope": "Stage9 independent read-only design review of Controller Core construction and checkpoint candidate flow",
+  "unresolvedRequiredFindings": 0,
+  "recommendation": "Extract construction first into a normal DungeonCoreFactory; keep save/plan atomic commit and host UI/clock replacement policy in Controller. Extract checkpoint candidate validation as a separate flow with an explicit final suspension boundary.",
+  "constructionBoundaries": [
+    {
+      "path": "Controller initial startup, around1842-1919",
+      "contract": "Player level HP/attack/stagger/poise and milestone growth precede departure customization; initial processing systems and conditional checkpoints/hasNextFloor/evaluation provider remain explicit."
+    },
+    {
+      "path": "StartNextDepartureWithDeck, around1582-1587",
+      "contract": "Frozen departure preview intentionally constructs a temporary manager without processing bundle; captures into the temporary checkpoint store. Do not install as Runtime.Dungeon or add processing behavior."
+    },
+    {
+      "path": "CreateFloorManager, around2535",
+      "contract": "Use route.Current.State and definitions.CreateCheckpointSession at the existing floor index; preserve restoration object, hasNextFloor and processing/database/provider bindings."
+    },
+    {
+      "path": "ActivateNextDeparture and RestoreMemoryCheckpoint",
+      "contract": "Use existing single restore API with identical processing bundle; keep candidate restoration separate from accepted runtime replacement."
+    }
+  ],
+  "flowRisks": [
+    "A flow described as read-only must distinguish candidate construction/validation from manager.SuspendForCheckpoint(), which mutates the current model. Make that final ownership boundary explicit rather than hiding suspension inside a generic read method.",
+    "Keep TryRestoreMemoryCheckpoint Observe-before / finally Observe(false), ReleaseInput and QueueSnapshot in host so success, refusal and thrown IOException all exclude only read/initialization time and preserve existing debt.",
+    "Do not broadly catch restore exceptions or convert them into success/default definitions; existing integration tests distinguish returned error from thrown read errors.",
+    "Terminal checkpoint and non-Cleared receipt rejection must precede current model suspension and ReplaceManager. On failure preserve existing route, floor index, current model and save bytes.",
+    "NextDeparture activation writes missing run files before restoring and replacing old model; keep its existing write/read/runID/Terminal checks and atomic plan ordering outside an allegedly read-only candidate flow.",
+    "Do not adopt candidate Core into Runtime until existing ReplaceManager boundary; discarded preview/failed candidate must not suspend or overwrite active runtime.",
+    "Pass RNG/logger/factory source from the runtime; do not create new clocks, inputs or RNG on restoration or floor replacement.",
+    "Avoid one broad options object with implicit defaults that silently enables processing/evaluation in frozen-preview or return/blocked-start paths. Prefer named construction methods or explicit typed policy fields.",
+    "Keep legacy map/card combination resolution and definition hashes in host for this stage; do not normalize or recalculate old save contracts while moving constructors."
+  ],
+  "proposedResult": "CheckpointCandidate with Manager, CheckpointSession and optional LoadedRoute; host updates route/floor fields and performs existing ReplaceManager order only after validation and current suspension succeeds.",
+  "regressionsRequired": [
+    "Initial new run versus old save/return/blocked-start processing and provider policy",
+    "Frozen next-departure capture and no added processing behavior",
+    "Floor transition restoration and hasNextFloor boundary",
+    "Terminal/receipt rejection, read exception and failed current suspension preserve current state",
+    "Clock debt/input generations/queued commands across failed and successful restore",
+    "Runtime/Core identity replacement and no View-triggered recreation",
+    "Save bytes and runID/definitionHash compatibility"
+  ],
+  "limits": [
+    "No source implementation, Unity calls or tests executed for Stage9 by this reviewer.",
+    "Factory extraction must preserve current constructor arguments and order; this design review does not introduce fixes to existing behavioral asymmetries."
+  ]
+}

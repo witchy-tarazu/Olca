@@ -1,0 +1,44 @@
+[
+  {
+    "source": ".Codex/screenshots/system-stage7-20261031/after-custom-fhd.png",
+    "target": "before-custom-fhd.png",
+    "sha256": "fb72eeefbc179fa1019849c56f87e47c61da8c270a2e0d1a51245d032b56516d",
+    "sourceCommit": "8705ee4abce7470a248450b2b1d21ebd3e7c8be0",
+    "note": "Stage7後画像を引用、新before撮影でない。同testmap6/seed7/Custom frame0・closed60、idle位相のrun差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage7-20261031/after-custom-4k.png",
+    "target": "before-custom-4k.png",
+    "sha256": "9a0d7ac0697487b758eb89695badc4f9648852c0c25a15539fd4205045057fb6",
+    "sourceCommit": "8705ee4abce7470a248450b2b1d21ebd3e7c8be0",
+    "note": "Stage7後画像を引用、新before撮影でない。同testmap6/seed7/Custom frame0・closed60、idle位相のrun差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage7-20261031/after-custom-4by3.png",
+    "target": "before-custom-4by3.png",
+    "sha256": "cf8d39cb64ccc4bdc26bd0cd868dbc513b65cd93b8aee2d2b57f12aa3b22e21d",
+    "sourceCommit": "8705ee4abce7470a248450b2b1d21ebd3e7c8be0",
+    "note": "Stage7後画像を引用、新before撮影でない。同testmap6/seed7/Custom frame0・closed60、idle位相のrun差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage7-20261031/after-battle-host-fhd.png",
+    "target": "before-battle-host-fhd.png",
+    "sha256": "ad7331bcb8a9de3a61159b40b97241e83f90313e203613278b92ea2c3cbbe34b",
+    "sourceCommit": "8705ee4abce7470a248450b2b1d21ebd3e7c8be0",
+    "note": "Stage7後画像を引用、新before撮影でない。同testmap6/seed7/Custom frame0・closed60、idle位相のrun差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage7-20261031/after-battle-host-4k.png",
+    "target": "before-battle-host-4k.png",
+    "sha256": "a5b21d44a43ed5b8c7e91260e86f566b189f8eb3adc4793a0ba792251b9f0d00",
+    "sourceCommit": "8705ee4abce7470a248450b2b1d21ebd3e7c8be0",
+    "note": "Stage7後画像を引用、新before撮影でない。同testmap6/seed7/Custom frame0・closed60、idle位相のrun差あり。"
+  },
+  {
+    "source": ".Codex/screenshots/system-stage7-20261031/after-battle-host-4by3.png",
+    "target": "before-battle-host-4by3.png",
+    "sha256": "bb4c084b443e11a00939576876b638f5bf3a41460dd730a89bc4c45f463db335",
+    "sourceCommit": "8705ee4abce7470a248450b2b1d21ebd3e7c8be0",
+    "note": "Stage7後画像を引用、新before撮影でない。同testmap6/seed7/Custom frame0・closed60、idle位相のrun差あり。"
+  }
+]

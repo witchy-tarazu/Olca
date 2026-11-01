@@ -1,0 +1,720 @@
+{
+  "reviewer": "equipment_save_review (design/code/final evidence), independent_refactor_review (native visual)",
+  "scope": "Stage7 Bootstrap-only production, 1GO host/26GO reward prefab and lifecycle; final source12",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "codeReview": {
+      "scope": "Stage7 final independent static review of the 12 manifested source/assets; no Unity/test operations",
+      "unresolvedRequiredFindings": 0,
+      "findings": [],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "66cb69137583dc0cb7d8e1088309c4511592cf130c7297fca0981955c44d9c14",
+        "Assets/Olca/Application/Management/BootstrapEntry.cs": "ee7c525e7ea80442eeb71a82f22c013c29e7bb9d89e916c447f1db9ac3033852",
+        "Assets/Olca/Application/Management/CardRewardPresentationBinding.cs": "74d27d4feadc362ee5bb068e91c7016d23416561e908fb1fc4bb35d4c682107d",
+        "Assets/Olca/Application/Management/GameHostManager.cs": "eda79e8b312823e1c35b91453ac540cee43ad24f6431e28348c5356aec350de1",
+        "Assets/Olca/Application/Management/GameSystemRoot.cs": "52dffa18e9b59a9995ddb77cb51ccf59695a952141a167a8c090d84c46804cdd",
+        "Assets/Olca/Application/Management/GameplayCameraBinding.cs": "82e13161aa9d7c652a88baec92621c1637c81ce824b87806488a24497db56132",
+        "Assets/Olca/Application/Management/GameplayPrefabHostLease.cs": "0a4eca383ceb5ad64207901264cc17b8c0112a7f129219c1b38f4ea3cf7588c9",
+        "Assets/Olca/Tests/Application/CameraPresentationManagementTests.cs": "873c15b1026cff836d0ea1585a9d46f49c1f05b49c5bb7d4d07589975a20b117",
+        "Assets/Olca/Tests/Application/PrefabHostManagementTests.cs": "8a411f14872d191f02dd1837da5499a30ad93dccb5a875d893b64167a5148dc0",
+        "Assets/Olca/Unity/Management/SceneResourceLoader.cs": "6112a46468b2173b6e02b6ef1d0d0d9db1841d0731f6386d1d7b0c1ca3a1c0a9",
+        "Assets/Resources/OlcaSystem/CardReward.prefab": "50472bb37f1877ead0d0c140b095c36d854da42cc7a9a5bb6578087115083bce",
+        "Assets/Resources/OlcaSystem/DungeonHost.prefab": "bc91553254efd920b3e556f427356b283ab6d51320a81f7551612561d28b80d7"
+      },
+      "validationCopyHashesMatch": true,
+      "validationCopyMismatches": [],
+      "checkedBoundaries": [
+        "Legacy Scene request constructor/interface and StartCompatibilityHostAsync preserved.",
+        "Scene and prefab identities use distinct prefixes.",
+        "Inactive host prefab validated before instantiation; DI before Activate/Start.",
+        "Explicit legacy-null camera binding avoids scene search for prefab host.",
+        "Host Stop cancels transition before reward Hide and releases subscriptions/input/views/session; root managers retain ownership.",
+        "Unload tracks native destruction through LastPostLateUpdate and keeps strict root-null assertion/retry.",
+        "Pre-start cancellation and late factory completion release without activation.",
+        "Bootstrap scene owns prefab host so Single scene replacement destroys old host.",
+        "CardReward is eagerly generated at startup, with its content hidden until the existing reward phase; creation failure rejects startup rather than entering null-view skip fallback.",
+        "View factory failure cleanup and duplicate Stop/OnDestroy are idempotent under the guarded paths."
+      ],
+      "testsRead": [
+        "PrefabHostManagementTests inactive unload/missing/pre-cancel/reward ownership/shared identity/late cancellation",
+        "CameraPresentationManagementTests explicit legacy-null rental"
+      ],
+      "limits": [
+        "Latest related467 run is in progress; no result is claimed.",
+        "Final full suite and post-fix native Close/timeScale0/cancel/reopen verification are incomplete at review time.",
+        "Pre-fix native Close initially failed its early destruction check; later observations and retry confirmed released objects. These are not post-fix success evidence.",
+        "LastPostLateUpdate is not claimed to universally guarantee native destruction timing; strict completion validation remains necessary.",
+        "This static review does not certify all gameplay states, physical build or absence of defects."
+      ],
+      "assetEvidenceBoundary": "Prefab export/reimport/StringSnapshot records are separate native evidence; this review reads manifest bytes and code, not an independent Unity import."
+    },
+    "finalEvidenceReview": {
+      "scope": "Stage7 final evidence consistency review before supplementary Single/save proof and cleanup; independent read-only review",
+      "unresolvedRequiredFindings": 0,
+      "findings": [],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "66cb69137583dc0cb7d8e1088309c4511592cf130c7297fca0981955c44d9c14",
+        "Assets/Olca/Application/Management/BootstrapEntry.cs": "ee7c525e7ea80442eeb71a82f22c013c29e7bb9d89e916c447f1db9ac3033852",
+        "Assets/Olca/Application/Management/CardRewardPresentationBinding.cs": "74d27d4feadc362ee5bb068e91c7016d23416561e908fb1fc4bb35d4c682107d",
+        "Assets/Olca/Application/Management/GameHostManager.cs": "eda79e8b312823e1c35b91453ac540cee43ad24f6431e28348c5356aec350de1",
+        "Assets/Olca/Application/Management/GameSystemRoot.cs": "52dffa18e9b59a9995ddb77cb51ccf59695a952141a167a8c090d84c46804cdd",
+        "Assets/Olca/Application/Management/GameplayCameraBinding.cs": "82e13161aa9d7c652a88baec92621c1637c81ce824b87806488a24497db56132",
+        "Assets/Olca/Application/Management/GameplayPrefabHostLease.cs": "0a4eca383ceb5ad64207901264cc17b8c0112a7f129219c1b38f4ea3cf7588c9",
+        "Assets/Olca/Tests/Application/CameraPresentationManagementTests.cs": "873c15b1026cff836d0ea1585a9d46f49c1f05b49c5bb7d4d07589975a20b117",
+        "Assets/Olca/Tests/Application/PrefabHostManagementTests.cs": "8a411f14872d191f02dd1837da5499a30ad93dccb5a875d893b64167a5148dc0",
+        "Assets/Olca/Unity/Management/SceneResourceLoader.cs": "6112a46468b2173b6e02b6ef1d0d0d9db1841d0731f6386d1d7b0c1ca3a1c0a9",
+        "Assets/Resources/OlcaSystem/CardReward.prefab": "50472bb37f1877ead0d0c140b095c36d854da42cc7a9a5bb6578087115083bce",
+        "Assets/Resources/OlcaSystem/DungeonHost.prefab": "bc91553254efd920b3e556f427356b283ab6d51320a81f7551612561d28b80d7"
+      },
+      "sourceHashesSubmissionValidationRelatedFullCodeReviewMatch": true,
+      "full": {
+        "summary": {
+          "total": 3575,
+          "passed": 3575,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 269.82,
+        "consoleErrors": 0,
+        "groundTruthWarnings": 59,
+        "wrapperTimedOut": true,
+        "completedRunRecovered": true
+      },
+      "related": {
+        "summary": {
+          "total": 467,
+          "passed": 467,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "durationSeconds": 38.92,
+        "consoleErrors": 0
+      },
+      "eventRegistry": {
+        "sameEditorTwoCyclesPassed": 10,
+        "postFull": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      "nativeEvidence": {
+        "zeroTimeScaleFirstClose": {
+          "oldInputDisposed": true,
+          "oldCoreSubscriptionsRemoved": true,
+          "oldCameraReferencesRemoved": true,
+          "cameraReturnedInactiveWithDefaults": true,
+          "oldBattleCustomReferencesReleased": true,
+          "oldCustomInputDisposed": true,
+          "oldGeneratedSpritesReleased": true,
+          "oldPresentationObjectsDestroyed": true,
+          "oldWorldReferencesReleased": true,
+          "oldWorldSubscriptionsRemoved": true,
+          "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+          "state": {
+            "playing": true,
+            "screen": [
+              640,
+              360
+            ],
+            "activeScene": "Assets/Scenes/BootstrapScene.unity",
+            "scenes": [
+              {
+                "path": "Assets/Scenes/BootstrapScene.unity",
+                "handleHash": -87171908,
+                "isLoaded": true
+              }
+            ],
+            "roots": 1,
+            "rootId": -252619068,
+            "rootScene": "DontDestroyOnLoad",
+            "rootStartupError": null,
+            "cameraBorrowed": false,
+            "borrowedCameraId": null,
+            "gameplayView": null,
+            "worldViewKey": null,
+            "worldRegistered": 0,
+            "worldFields": 0,
+            "backgroundViews": 0,
+            "numberPools": 0,
+            "battleViewKey": null,
+            "battleRegistered": 0,
+            "battleViews": 0,
+            "customViews": 0,
+            "gameplayRegistered": 0,
+            "hudCount": 0,
+            "host": null,
+            "loading": false,
+            "ownedScenes": 0,
+            "ownedViews": 3,
+            "registeredViews": 0,
+            "dialogs": 0,
+            "session": false,
+            "controllerIds": [],
+            "controllerScenes": [],
+            "rewardViews": 0,
+            "rewardRegistered": 0,
+            "rewardViewKey": null,
+            "cameras": 0,
+            "listeners": 0,
+            "events": 1,
+            "audioIds": [
+              -252619074,
+              -252619080,
+              -252619086
+            ],
+            "defaultStoreExists": false,
+            "store": null
+          }
+        },
+        "reopenSaveBytesUnchanged": true,
+        "rewardPendingClose": {
+          "pendingPhaseAndDeckUnchanged": true,
+          "rewardDestroyed": true,
+          "fontAndArtworkCallbacksReleased": true
+        },
+        "rewardCloseResumeSaveBytesUnchanged": true,
+        "rewardDeckSequence": {
+          "beforeChoice": 20,
+          "afterCardChoiceBeforeCurrencyConfirmation": 20,
+          "afterCurrencySkipConfirmation": 21,
+          "atNextCustom": 21
+        },
+        "rewardSaveTiming": "Existing reward transaction commits selected card only at final currency confirmation; persistent owned-card count remains20 until established return flow.",
+        "victoryIsFixtureDamageAPI": true
+      },
+      "visualReview": {
+        "evidence": "evidence/system-stage7-visual-review.json",
+        "totalViewedAfterImageCount": 21,
+        "unresolvedRequiredFindings": 0,
+        "captureVersionBoundary": "These captures precede the reported GameplayPrefabHostLease destruction-wait change from NextFrame to LastPostLateUpdate. Other active-display sources/assets are reported unchanged. This review does not certify the final wait change, final native lifecycle or automated test completion.",
+        "independentImageReviewNotRepeatedHere": true
+      },
+      "openVerificationItems": [],
+      "limits": [
+        "No Unity operations, test execution or repeated image viewing were performed by this evidence reviewer.",
+        "Initial Close failed before the destruction-wait correction; later pre-fix observations/retry are not substituted for post-fix firstClose evidence.",
+        "Visual captures have explicit pre-final destruction-wait boundaries; active-display review is separate from native lifecycle proof.",
+        "Card reward is eagerly instantiated at startup, not loaded lazily; actual transaction commits the card at final currency confirmation, not immediately on card click.",
+        "Source-only static review and evidence agreement do not establish physical build support or absence of all defects.",
+        "Previously observed out-of-scope UGUI/editor issues are not claimed resolved.",
+        "Single/save proof and cleanup are now complete, but physical build/device/audio listening remain unverified."
+      ],
+      "publicationStatus": "All scoped required evidence checks complete; zero unresolved required findings for publication review. This is not a whole-game defect-free guarantee.",
+      "completedSupplementaryProof": {
+        "actualStorage": "save/system-stage7-9701",
+        "nonemptyFileCount": 6,
+        "beforeSingleAndCheckpointResumeHashesEqual": true,
+        "singleReentryRootAudioReused": true,
+        "oldInputDisposed": true,
+        "cameraListenerEventSystemCounts": [
+          1,
+          1,
+          1
+        ],
+        "dialogsAfterReentry": 0,
+        "cleanup": {
+          "originalHead": "5c4f7e647f6a8685a954b504e76ca499d25716f6",
+          "originalClean": true,
+          "devices": {
+            "devices": [
+              {
+                "name": "Mouse",
+                "layout": "Mouse",
+                "native": true
+              },
+              {
+                "name": "Keyboard",
+                "layout": "Keyboard",
+                "native": true
+              }
+            ],
+            "events": [],
+            "screen": [
+              640,
+              360
+            ],
+            "temp": "/workspace/olca-validation-20261024/save/tmp/"
+          },
+          "actualRender": {
+            "screen": [
+              640,
+              360
+            ],
+            "textures": [
+              {
+                "name": "GameView.m_RenderTexture",
+                "width": 640,
+                "height": 360
+              },
+              {
+                "name": "PlayModeView.m_TargetTexture",
+                "width": 640,
+                "height": 360
+              }
+            ],
+            "temp": "/workspace/olca-validation-20261024/save/tmp/"
+          },
+          "storageGuard": true,
+          "defaultStoreAbsent": true,
+          "trackedAssetComparison": 919,
+          "exceptPrivateURP": [
+            "Assets/Settings/UniversalRP.asset",
+            "Assets/UniversalRenderPipelineGlobalSettings.asset"
+          ],
+          "differences": [],
+          "consoleErrors": 0
+        },
+        "postNativeEventRegistry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        },
+        "final12SourceHashesRemainMatched": true
+      },
+      "retainedHistory": [
+        "Initial Single helper referenced another directory: its save assertion is excluded; accepted proof uses nonempty9701 hashes.",
+        "An item-only reward state was initially awaited as a card state; fixture wait was corrected without changing product reward logic.",
+        "Compatibility-scene guard refusal is preserved as a rejected setup, not a successful gameplay proof."
+      ]
+    },
+    "reviewBoundary": "Code review was performed before final result collection; finalEvidenceReview closes native/full/cleanup pending items with final source unchanged."
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "viewedAfterImageCount": 15,
+    "comparisonReferenceCount": 15,
+    "comparisonReferenceVerification": "All 15 Stage6 reference SHA256 values match the previously visually reviewed Stage6 review record.",
+    "images": [
+      {
+        "file": "system-stage7-native-after-custom-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "fb72eeefbc179fa1019849c56f87e47c61da8c270a2e0d1a51245d032b56516d",
+        "comparisonFile": "system-stage6-native-after-custom-fhd.png",
+        "comparisonSha256": "d5cc730cab6ba9c7497bbc7c37df8ae9c7bf1728112a25efa33b85538d88126b",
+        "differenceBoundingBox": [
+          0,
+          149,
+          954,
+          930
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-custom-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "9a0d7ac0697487b758eb89695badc4f9648852c0c25a15539fd4205045057fb6",
+        "comparisonFile": "system-stage6-native-after-custom-4k.png",
+        "comparisonSha256": "7bc3df764f2d925dd6e2df3856687d35dffed1cf237770166302de0bfc4f9e6c",
+        "differenceBoundingBox": [
+          0,
+          297,
+          1915,
+          1861
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-custom-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "cf8d39cb64ccc4bdc26bd0cd868dbc513b65cd93b8aee2d2b57f12aa3b22e21d",
+        "comparisonFile": "system-stage6-native-after-custom-4by3.png",
+        "comparisonSha256": "37e55a5d0e478bfaa59b18d9ab88ecb393ec93847032801587b7c325fa274714",
+        "differenceBoundingBox": [
+          8,
+          58,
+          1308,
+          1021
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "ad7331bcb8a9de3a61159b40b97241e83f90313e203613278b92ea2c3cbbe34b",
+        "comparisonFile": "system-stage6-native-after-battle-host-fhd.png",
+        "comparisonSha256": "81c76c11cb6f88330a9a0319747728cc0140352b77f6850a937cc485034630d1",
+        "differenceBoundingBox": [
+          1529,
+          115,
+          1852,
+          1023
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "a5b21d44a43ed5b8c7e91260e86f566b189f8eb3adc4793a0ba792251b9f0d00",
+        "comparisonFile": "system-stage6-native-after-battle-host-4k.png",
+        "comparisonSha256": "811bea97d208bad9e92684b435efc7931c7de50fe352cb63f5222b99a94733f3",
+        "differenceBoundingBox": [
+          3432,
+          2035,
+          3438,
+          2041
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "bb4c084b443e11a00939576876b638f5bf3a41460dd730a89bc4c45f463db335",
+        "comparisonFile": "system-stage6-native-after-battle-host-4by3.png",
+        "comparisonSha256": "3d1892a4410144abe6b855a3e38a93019c2653c378b7b596a7370adba196443b",
+        "differenceBoundingBox": [
+          187,
+          75,
+          1308,
+          925
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-managed-battle-host-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "8aa5681c61bc3d3279003a15e2afeb502139abcbb051fbd6cc8bcec53f5a056b",
+        "comparisonFile": "system-stage6-native-after-managed-battle-host-fhd.png",
+        "comparisonSha256": "e3f601ecd5c577f15a7f1ed1ba0d1b298c81bac08b4d4699ce6c198f5c416916",
+        "differenceBoundingBox": [
+          1529,
+          115,
+          1852,
+          1023
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-managed-battle-host-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "233e6434710aa0a789100eed69f5cfa8a9725f3dbc024c7184bbb62c4f0730c4",
+        "comparisonFile": "system-stage6-native-after-managed-battle-host-4k.png",
+        "comparisonSha256": "ce83d82c3ae1f6ba2e036e8f5d0038c8aaed23cfd0eb25d9075a56828d967856",
+        "differenceBoundingBox": [
+          3432,
+          2035,
+          3438,
+          2041
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-managed-battle-host-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "3cbd90ab01532ec11a25a918eeadd8ed962b537f588f080dcb15d259ede017c7",
+        "comparisonFile": "system-stage6-native-after-managed-battle-host-4by3.png",
+        "comparisonSha256": "4e5d722072b10d660c2e0172548f8555ac980114ebd972d68f57b113151bc8d9",
+        "differenceBoundingBox": [
+          187,
+          75,
+          1308,
+          925
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-keyboard-settings-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "ef1e8ee53ab8e262d4cb16130daedcfa1a532162718971f92fdcac4f9616d2a5",
+        "comparisonFile": "system-stage6-native-after-keyboard-settings-fhd.png",
+        "comparisonSha256": "591ab4263a9f5b7d59c95dff63893d79b4a538a4fdfe4f0effa73e537eb3d9dd",
+        "differenceBoundingBox": [
+          200,
+          89,
+          1732,
+          961
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-keyboard-settings-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "eba368768655511222eb32d15b3737047ba005da9441018236f69b5e2583a69b",
+        "comparisonFile": "system-stage6-native-after-keyboard-settings-4k.png",
+        "comparisonSha256": "5c800602f09070d6a605ed7e040ff1270f44e865af264d309088ec37887eb9be",
+        "differenceBoundingBox": [
+          377,
+          160,
+          3202,
+          1938
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-keyboard-settings-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "0fae7e1915d7015ec382530cc82a6d1e947fc104ca3b94f021afaf869f59e0a8",
+        "comparisonFile": "system-stage6-native-after-keyboard-settings-4by3.png",
+        "comparisonSha256": "954f1b2e07227e524866dc894d0fe6c0d2086e0ef9f0f081c39d56aa079f1d0b",
+        "differenceBoundingBox": [
+          101,
+          108,
+          1361,
+          912
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-reset-dialog-fhd.png",
+        "dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "2caeb9a64a87dc392dbffaf120167aca16a3ba0af0bcd823aae1be86fb490f43",
+        "comparisonFile": "system-stage6-native-after-reset-dialog-fhd.png",
+        "comparisonSha256": "d29d3e146f693cf880ecdd8aa52febad99ccc1e4c5049a07a52316d991778450",
+        "differenceBoundingBox": [
+          217,
+          241,
+          1612,
+          963
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-reset-dialog-4k.png",
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "sha256": "ea8340f4164d934d50e96ae62dd98ad45ffc206962a20393c1461b1806183cbb",
+        "comparisonFile": "system-stage6-native-after-reset-dialog-4k.png",
+        "comparisonSha256": "1fc5f6e1689822eb7594b4a77eb23e67435343abec10a1dc25fc28a70c70a1db",
+        "differenceBoundingBox": [
+          431,
+          162,
+          3220,
+          1937
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      },
+      {
+        "file": "system-stage7-native-after-reset-dialog-4by3.png",
+        "dimensions": [
+          1440,
+          1080
+        ],
+        "sha256": "04d0714ea606d28688433e58057a553550692034171dc7161228d183ba47c8ee",
+        "comparisonFile": "system-stage6-native-after-reset-dialog-4by3.png",
+        "comparisonSha256": "26489216ced1fea21cae79ec66d58d69d5429ba36440f48da43769c6d3169148",
+        "differenceBoundingBox": [
+          116,
+          153,
+          1360,
+          911
+        ],
+        "viewed": "view_image detail original requested; 4K whole-image output was viewer-resized"
+      }
+    ],
+    "observations": [
+      "Custom retains left-edge/left-half composition, five square minis, sword art, body/scrollbar, use-order, cost and confirm/undo presentation",
+      "Closed direct and managed battle retain visible actor proportions, foot contact, camera framing and floor/foreground seam appearance",
+      "Normal enemy name/HP circle/group line and fixed player HP/gauge positions show no newly visible displacement",
+      "Keyboard settings retain readable three-column Jiki labels, key controls and bottom actions; reset popup retains its message/actions above a subdued background",
+      "No new visible clipping, material change, loss of artwork, anchor drift or control-frame overlap appears in these captured states"
+    ],
+    "limits": [
+      "Static image review does not verify actual raycast/input areas, focus, disposal ordering, frame-boundary destruction, scene reentry, instance counts, saves, audio or tests",
+      "Reviewer performed no Unity commands, test execution, product source edits or image generation",
+      "Final LastPostLateUpdate wait correction and its final native/related/full test results remain unverified by this image review",
+      "4K originals were opened with original detail requested, but the tool output resized the full images; no new diagnostic crops were generated in this task",
+      "Dense statuses, warnings, actual boss and motion are not covered by these fifteen Stage7 captures",
+      "Separate capture runs can differ in glyph/render state; difference bounding boxes are informational, not proof of pixel equivalence or a global visual guarantee"
+    ]
+  },
+  "additionalVisualReviews": {
+    "reviewer": "independent_refactor_review",
+    "scope": "Stage7 active display screenshots only: custom/direct battle/managed battle/keyboard settings/reset dialog at FHD/4K/4:3 versus corresponding Stage6 views",
+    "captureVersionBoundary": "These captures precede the reported GameplayPrefabHostLease destruction-wait change from NextFrame to LastPostLateUpdate. Other active-display sources/assets are reported unchanged. This review does not certify the final wait change, final native lifecycle or automated test completion.",
+    "sourceReviewPerformedThisTurn": false,
+    "unityExecutionByReviewer": false,
+    "sourceEditsByReviewer": false,
+    "additionalCardRewardReview": {
+      "unresolvedRequiredFindings": 0,
+      "viewedAfterImageCount": 3,
+      "images": [
+        {
+          "file": "system-stage7-native-after-card-reward-fhd.png",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "sha256": "2a7ec9d220802df94277823c4885e434437b45d343f8ac590656368f40efa393",
+          "comparisonFile": "ui-round50-after-reward-fhd.png",
+          "comparisonSha256": "a5abee1dc0efff91a460346bd860a5aac7077de8cdab5a2e319fff4e09b5922c",
+          "viewed": "view_image original requested; 4K whole-image output viewer-resized"
+        },
+        {
+          "file": "system-stage7-native-after-card-reward-4k.png",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "sha256": "45ea034eb685a4d29ed531aa2ecf48ec760caa8ab97d1a7f12d9436aafc63647",
+          "comparisonFile": "ui-round50-after-reward-4k.png",
+          "comparisonSha256": "beebb24b9c5f9dfb4e90466f3d9407e2290f7e276162016da2943c02abcdbdcd",
+          "viewed": "view_image original requested; 4K whole-image output viewer-resized"
+        },
+        {
+          "file": "system-stage7-native-after-card-reward-4by3.png",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "sha256": "2e59671cd928e6691bf10921e0cc3741d13d5f028ac774020bd7bf0f63b7c9c7",
+          "comparisonFile": "ui-round50-after-reward-4by3.png",
+          "comparisonSha256": "ab37c6897ee2e0ecf39da5c5cf1957ff8c149d37a76038427882bbcc10a794fb",
+          "viewed": "view_image original requested; 4K whole-image output viewer-resized"
+        }
+      ],
+      "additionalHistoricalReference": {
+        "file": "ui-round50-canonical-4by3.png",
+        "sha256": "0531d0cc84cc98ea697160451a48a95eee6e7a897e659660c6c4ba9bbee17267",
+        "viewed": true
+      },
+      "observations": [
+        "Reward card frames, titles, square artwork, body information, take controls and skip footer retain the Round50 arrangement and readable separation at all three ratios",
+        "Upper-center exploration HUD text faintly shows through the reward heading in Stage7; this is also visibly present in historical Round50 after-reward FHD/4K/4:3 and canonical4:3, so it is not classified as a new Stage7 migration regression",
+        "Current fire_card/heal_card/shield_card fallback labels and reused artwork are existing fallback presentation, not newly authored/resolved D05 definitions or art"
+      ],
+      "existingVisualLimit": "Heading-background HUD ghost-through remains an existing visual-quality candidate; this review does not mark that symptom resolved or declare the entire reward UI flawless.",
+      "limits": [
+        "Historical Round50 scenes differ in deck count, elapsed time, exact candidate definitions/order and render phase; no exact-state pixel-equivalence claim",
+        "Static images do not prove selection, skip, persistence, reward receipt counts, pending close/reload or resource lifetime behavior",
+        "Main-agent reported final-source lifecycle passes are not executed by this reviewer",
+        "These newly reviewed reward captures are recorded independently from the earlier pre-destruction-wait fifteen-view set; no assumption of identical capture-source timing is made"
+      ]
+    },
+    "totalViewedAfterImageCount": 21,
+    "additionalActualBossReview": {
+      "unresolvedRequiredFindings": 0,
+      "viewedAfterImageCount": 3,
+      "images": [
+        {
+          "file": "system-stage7-native-after-actual-boss-fhd.png",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "sha256": "580861ac4e9d21f682f59192225a1a2615974b855b98c84b2fb852e1590b5f14",
+          "comparisonFile": "system-stage6-native-after-actual-boss-fhd.png",
+          "comparisonSha256": "a032a1f92b83092a5e79061d6020265cde565ee34ecf95192ff20d663d6e5fa0",
+          "differenceBoundingBox": [
+            3,
+            47,
+            1852,
+            1026
+          ],
+          "viewed": "view_image original requested; full 4K output viewer-resized"
+        },
+        {
+          "file": "system-stage7-native-after-actual-boss-4k.png",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "sha256": "021e8caf5a86ac9da50e03ee55cb22c680b20fcaf5afacd9b29f1c480312aca5",
+          "comparisonFile": "system-stage6-native-after-actual-boss-4k.png",
+          "comparisonSha256": "e16e264d3d5301e32e24c4a7be5f6ca1c5d5147b80aab79848ff79bd26c0bea4",
+          "differenceBoundingBox": [
+            0,
+            224,
+            3670,
+            2046
+          ],
+          "viewed": "view_image original requested; full 4K output viewer-resized"
+        },
+        {
+          "file": "system-stage7-native-after-actual-boss-4by3.png",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "sha256": "711dd2538b42dbd2287bbf28c0d2d697bc70630011afe71116a2ecc8c80de6a1",
+          "comparisonFile": "system-stage6-native-after-actual-boss-4by3.png",
+          "comparisonSha256": "9472be3e1ae4493ad119146188df64f00f8b655eb928cd0eb8be97c6ccb0e138",
+          "differenceBoundingBox": [
+            77,
+            43,
+            1418,
+            1019
+          ],
+          "viewed": "view_image original requested; full 4K output viewer-resized"
+        }
+      ],
+      "observations": [
+        "Actual crystal boss retains Stage6 silhouette proportions, screen placement and bottom/ground relationship at all three ratios",
+        "Right fixed HP and poise bars with value200 remain visible, separate from left Custom gauge and right lower touch controls",
+        "Custom window geometry, five square hand minis, text and bottom actions retain their Stage6 visual placement",
+        "Current focus art/name/hand order and keyboard versus pad hints differ from Stage6 because the captured gameplay/input state differs; these are not treated as migration regressions"
+      ],
+      "limits": [
+        "No exact-state pixel-equivalence claim because card/input/render states differ between captures",
+        "Actual boss identity and lifecycle successes are main-agent assertions, not reviewer-executed tests",
+        "Dense boss states/warnings, motion, gameplay input, reward pending-close/reload, disposal timing and saves are not verified by these images",
+        "The earlier pre-final destruction-wait fifteen-view boundary remains explicit; these additional captures do not retroactively validate that lifecycle change"
+      ]
+    }
+  },
+  "fullSourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "66cb69137583dc0cb7d8e1088309c4511592cf130c7297fca0981955c44d9c14",
+    "Assets/Olca/Application/Management/BootstrapEntry.cs": "ee7c525e7ea80442eeb71a82f22c013c29e7bb9d89e916c447f1db9ac3033852",
+    "Assets/Olca/Application/Management/CardRewardPresentationBinding.cs": "74d27d4feadc362ee5bb068e91c7016d23416561e908fb1fc4bb35d4c682107d",
+    "Assets/Olca/Application/Management/GameHostManager.cs": "eda79e8b312823e1c35b91453ac540cee43ad24f6431e28348c5356aec350de1",
+    "Assets/Olca/Application/Management/GameSystemRoot.cs": "52dffa18e9b59a9995ddb77cb51ccf59695a952141a167a8c090d84c46804cdd",
+    "Assets/Olca/Application/Management/GameplayCameraBinding.cs": "82e13161aa9d7c652a88baec92621c1637c81ce824b87806488a24497db56132",
+    "Assets/Olca/Application/Management/GameplayPrefabHostLease.cs": "0a4eca383ceb5ad64207901264cc17b8c0112a7f129219c1b38f4ea3cf7588c9",
+    "Assets/Olca/Tests/Application/CameraPresentationManagementTests.cs": "873c15b1026cff836d0ea1585a9d46f49c1f05b49c5bb7d4d07589975a20b117",
+    "Assets/Olca/Tests/Application/PrefabHostManagementTests.cs": "8a411f14872d191f02dd1837da5499a30ad93dccb5a875d893b64167a5148dc0",
+    "Assets/Olca/Unity/Management/SceneResourceLoader.cs": "6112a46468b2173b6e02b6ef1d0d0d9db1841d0731f6386d1d7b0c1ca3a1c0a9",
+    "Assets/Resources/OlcaSystem/CardReward.prefab": "50472bb37f1877ead0d0c140b095c36d854da42cc7a9a5bb6578087115083bce",
+    "Assets/Resources/OlcaSystem/DungeonHost.prefab": "bc91553254efd920b3e556f427356b283ab6d51320a81f7551612561d28b80d7"
+  },
+  "limits": [
+    "Not whole-game defect-free guarantee; legacy Scene compatibility remains",
+    "Core/Input/clock/UI Initialize/static catalogs and phase-lazy generation remain",
+    "Real build, physical/OS/audio listening and historical UGUI unresolved/unverified"
+  ]
+}

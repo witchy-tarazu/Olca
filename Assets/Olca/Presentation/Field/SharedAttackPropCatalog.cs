@@ -13,9 +13,8 @@ namespace Olca.Presentation.Field
         public const string Blast = "shared/blast";
         public const float BlastVisibleWidth = 54f / 100f, BlastVisibleHeight = 8f / 100f;
         public const float BombVisibleHeight = 38f / 100f;
-        private static readonly Dictionary<string, Sprite> loaded = new Dictionary<string, Sprite>();
 
-        public static bool TryGetSprite(string key, out Sprite sprite)
+        public static bool TryGetSprite(string key, out Sprite sprite, Olca.Unity.GeneratedSpriteAssets.Lease assets=null)
         {
             sprite = null;
             string resource;
@@ -29,24 +28,16 @@ namespace Olca.Presentation.Field
                 case Blast: resource = "shared_blast"; pivot = new Vector2(.5f, .5f); break;
                 default: return false;
             }
-            if (loaded.TryGetValue(key, out sprite) && sprite != null) return true;
-            // PNGの同一bytesを読み、既定import圧縮による色・輪郭の変化を避ける。
-            var source = Resources.Load<TextAsset>("OlcaAttackProps/" + resource);
-            if (source == null) return false;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (!texture.LoadImage(source.bytes, true)) {
-                if (UnityEngine.Application.isPlaying) Object.Destroy(texture); else Object.DestroyImmediate(texture);
-                return false;
-            }
-            texture.name = key;
-            texture.hideFlags = HideFlags.HideAndDontSave;
-            texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp;
-            sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), pivot, 100f, 0, SpriteMeshType.FullRect);
-            sprite.name = key;
-            sprite.hideFlags = HideFlags.HideAndDontSave;
-            loaded[key] = sprite;
-            return true;
+            sprite=Olca.Unity.GeneratedSpriteAssets.Get<Sprite>("prop/"+key,owned=>{
+                var source=Resources.Load<TextAsset>("OlcaAttackProps/"+resource);
+                if(source==null)return null;
+                var texture=owned.CreateTexture(2,2);
+                if(!texture.LoadImage(source.bytes,true))return null;
+                texture.name=key;texture.hideFlags=HideFlags.HideAndDontSave;texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;
+                var result=owned.CreateSprite(texture,new Rect(0,0,texture.width,texture.height),pivot);
+                result.name=key;result.hideFlags=HideFlags.HideAndDontSave;return result;
+            },assets);
+            return sprite!=null;
         }
     }
 }

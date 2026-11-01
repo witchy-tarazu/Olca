@@ -1,0 +1,16 @@
+using System;using System.Linq;using System.Collections.Generic;using System.Threading.Tasks;using UnityEngine;using Olca.Unity;using Olca.Application.Management;
+public static class Stage11RootEndProof {
+ static object P(object value,string key)=>value.GetType().GetProperty(key).GetValue(value);
+ public static async Task<object> End(){
+  var root=UnityEngine.Object.FindObjectsByType<GameSystemRoot>(FindObjectsSortMode.None).Single();if(root.Services.CurrentSession!=null)throw new Exception("Close host first");
+  int generation=root.Services.Resources.GeneratedSpriteGeneration;var prior=GeneratedSpriteAssets.Inspect();var ids=new HashSet<int>();
+  foreach(var cache in (Array)P(prior,"caches"))foreach(var entry in (Array)P(cache,"entries"))foreach(var key in new[]{"sprites","textures"})foreach(int id in (int[])P(entry,key))ids.Add(id);
+  var sprites=Resources.FindObjectsOfTypeAll<Sprite>().Where(x=>x!=null&&ids.Contains(x.GetInstanceID())).ToArray();var textures=Resources.FindObjectsOfTypeAll<Texture2D>().Where(x=>x!=null&&ids.Contains(x.GetInstanceID())).ToArray();if(sprites.Length==0||textures.Length==0)throw new Exception("Loaded six-family generation required");
+  var imported=Resources.Load<Texture2D>("OlcaUI/window");int importId=imported.GetInstanceID();UnityEngine.Object.Destroy(root.gameObject);for(int n=0;n<6;n++)await Awaitable.NextFrameAsync();
+  if(sprites.Any(x=>x!=null)||textures.Any(x=>x!=null))throw new Exception("Actual Root final release leaked owned native objects");
+  if(imported==null||imported.GetInstanceID()!=importId)throw new Exception("Import destroyed");var ended=GeneratedSpriteAssets.Inspect();
+  if((int)P(ended,"roots")!=0||(int)P(ended,"borrowers")!=0||(int)P(ended,"pendingNativeDestroy")!=0)throw new Exception("Generation retained");
+  return new{playing=Application.isPlaying,normalRootDestroyNotApplicationQuit=true,generation,ownedSprites=sprites.Length,ownedTextures=textures.Length,allDirectReferencesNullBeforeInspect=true,importAlive=true,ended,roots=UnityEngine.Object.FindObjectsByType<GameSystemRoot>(FindObjectsSortMode.None).Length,cameras=UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Length,listeners=UnityEngine.Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None).Length,events=UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsSortMode.None).Length,audio=UnityEngine.Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None).Length};
+ }
+ public static async Task<object> Recreate(){Time.timeScale=1;var operation=UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(BootstrapEntry.BootstrapScenePath,UnityEngine.SceneManagement.LoadSceneMode.Single);while(!operation.isDone)await Task.Delay(20);GameSystemRoot root=null;var until=DateTime.UtcNow.AddSeconds(20);while(DateTime.UtcNow<until){root=UnityEngine.Object.FindObjectsByType<GameSystemRoot>(FindObjectsSortMode.None).SingleOrDefault();if(root?.Services?.CurrentSession!=null)break;await Task.Delay(20);}if(root?.Services?.CurrentSession==null)throw new Exception("Bootstrap did not recreate session");return new{recreated=true,roots=UnityEngine.Object.FindObjectsByType<GameSystemRoot>(FindObjectsSortMode.None).Length,generation=root.Services.Resources.GeneratedSpriteGeneration,cache=GeneratedSpriteAssets.Inspect()};}
+}

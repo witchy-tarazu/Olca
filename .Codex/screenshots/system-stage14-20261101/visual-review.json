@@ -1,0 +1,334 @@
+{
+  "reviewer": "independent_refactor_review",
+  "stage": 14,
+  "status": "Final-source recapture review complete after owned mini/Texture termination fix",
+  "unresolvedRequiredVisualFindings": 0,
+  "images": [
+    {
+      "file": "system-stage14-return-hub-fhd.png",
+      "sha256": "7fd67cc38706704faf20d2ccb2cebcf613bb6793c6a2a600350f304985d158ba",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-return-hub-4k.png",
+      "sha256": "54be780b0f2e3f22ad0f0fbd416a96dbdc93a5246ae5d4f33418b4894223f5fa",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-return-hub-4by3.png",
+      "sha256": "5c4b188482f10214ab536bb9a37d7bae522f8ada1e4f040377aa1239dc3e1dbf",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-return-save-retry-fhd.png",
+      "sha256": "4ca8707e52b3355e0a2987452125d793f8ddcd2e9cfa6cb9e048693aaeea83f8",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-return-save-retry-4k.png",
+      "sha256": "bbf776b1ecc94df26d0f36171e68f6206e44d2eaf06aba96e20a9df18d37b53b",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-return-save-retry-4by3.png",
+      "sha256": "72bb3c5b6c9f7209ef616c20ff03fdf43d205b62484fed2706f16f238bc26bb8",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-owned-detail-fhd.png",
+      "sha256": "5aafbf77a07e198d7d611194a561ea85b89999300ef85f025f27ce6542a0fbe5",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-owned-detail-4k.png",
+      "sha256": "bed8f7ba703a90cc9decb568c221aad801238b665b97b8caa4d4a1f6bcffa213",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-owned-detail-4by3.png",
+      "sha256": "92df68a94b9b771f24abed686da83e6b53970ebfeb035746ba00203b61516d57",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-card-collection-fhd.png",
+      "sha256": "cc4b1582a312cd8280c445cc43aa1043aeba395ca615c0c68a2de60e3b32ddf4",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-card-collection-4k.png",
+      "sha256": "05fd4aaf668ea0517d25b9ababf2b44708a04140366df1ec0f2fa593b792f1de",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-card-collection-4by3.png",
+      "sha256": "b507b048c5d9337deb3c3177ad83d45d1753719f3161757dd7dffec838160e9b",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-long-notice-fhd.png",
+      "sha256": "e8d036bd4dd5799b8c85330d3852ca7fb48be2d1483275bb7dc2a6200b4bcd1e",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-long-notice-4k.png",
+      "sha256": "9cbd6237a18270fcc060f0334a11a22ddb56362d018d6415c6f756cc4df2d292",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    },
+    {
+      "file": "system-stage14-long-notice-4by3.png",
+      "sha256": "5434cd557bc561467aac551534906bedaf8654842757e2dcae559c9d1493a011",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "finalSourceRecaptureViewed": true
+    }
+  ],
+  "viewedImageCount": 15,
+  "observations": [
+    "Return heading, separate profile summary and five owned rows retain readable name/count/detail correspondence in FHD/4:3 views. Bottom operations remain within visible framing.",
+    "4:3 heading avoids upper auxiliary column; summary and list remain separated.",
+    "Save-retry heading and injected failure diagnostic are readable. Gray-looking normal operations are visually distinguished from the sole lower retry action.",
+    "Return retry HP0 versus hubHP100 is a captured state difference; not inferred as a visual migration defect. Diagnostic Kanji belongs to injected error payload, not proof of product-wide Kana conversion.",
+    "Owned detail foreground title, four short text lines and Return/East/Esc action remain readable and separated. Large short-text blank region is retained fixed reading space, not declared globally aesthetically complete.",
+    "Card collection keeps distinct tabs, four rows with matching mini/name/performance/action, page count and separate Back action across three ratios; no new missing or clipped control observed.",
+    "Long-notice fixture shows ordered lines from1 within a scroll viewport with separate header/footer. Bottom partial row is viewport clipping, not proof of lost text. Captures show top, not all80lines or terminal scroll position.",
+    "Detail/notice backgrounds visibly shield the underlying list; no ghost controls compete with foreground in these supplied views.",
+    "All15 image bytes changed since initial-source review and all15 were reopened for final-source recapture review. No additional required visual defect observed; unchanged appearance intention is not asserted as pixel equality."
+  ],
+  "limits": [
+    "No newly matched-before captures; no pixel identity, complete historical geometry equivalence or global aesthetic-completion claim.",
+    "Long-notice alone uses80-line isolated display fixture, not saved product definition. Screenshot does not prove terminal reachability; actual scroll/cancel/focus is parent runtime evidence.",
+    "No input blocking/callback safety, View/Dialog layer retention or save success inferred from images.",
+    "Native4K local crops supplement representative regions only; full4K views were viewer-resized.",
+    "No Unity operation, source edit, test execution, physical device or listening validation by reviewer.",
+    "Owned Sprite/Texture teardown and imported Texture survival are parent runtime evidence; this reviewer only refreshed image inspection and hashes after that fix."
+  ],
+  "findings": [],
+  "native4kSupplement": {
+    "method": "Lossless unscaled in-memory crops of originalPNG; no PNG edits. Whole4K viewer images were resized to2048x1152.",
+    "observation": "Representative count/detail glyphs and multiline body remain readable at native scale; crop edges intentionally cut adjacent content.",
+    "finalRecaptureCropsRechecked": [
+      {
+        "file": "system-stage14-owned-detail-4k.png",
+        "rect": [
+          280,
+          280,
+          1050,
+          430
+        ]
+      },
+      {
+        "file": "system-stage14-long-notice-4k.png",
+        "rect": [
+          280,
+          330,
+          1080,
+          470
+        ]
+      }
+    ],
+    "priorCaptureCrops": [
+      {
+        "file": "system-stage14-return-hub-4k.png",
+        "rect": [
+          2880,
+          750,
+          3450,
+          900
+        ]
+      },
+      {
+        "file": "system-stage14-owned-detail-4k.png",
+        "rect": [
+          280,
+          280,
+          1050,
+          430
+        ]
+      },
+      {
+        "file": "system-stage14-card-collection-4k.png",
+        "rect": [
+          3100,
+          690,
+          3650,
+          840
+        ]
+      },
+      {
+        "file": "system-stage14-long-notice-4k.png",
+        "rect": [
+          280,
+          330,
+          1080,
+          470
+        ]
+      }
+    ]
+  },
+  "recaptureComparison": [
+    {
+      "file": "system-stage14-return-hub-fhd.png",
+      "previousCaptureSha256": "1f3733a9e3b92e0eb38e8e58c18111d98e74fed30e16f61762c35e3537d0f13d",
+      "finalCaptureSha256": "7fd67cc38706704faf20d2ccb2cebcf613bb6793c6a2a600350f304985d158ba",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-return-hub-4k.png",
+      "previousCaptureSha256": "ca414000f679302445f0bb4a296c9865b13dd98e14d849c584c721fd8b95ae78",
+      "finalCaptureSha256": "54be780b0f2e3f22ad0f0fbd416a96dbdc93a5246ae5d4f33418b4894223f5fa",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-return-hub-4by3.png",
+      "previousCaptureSha256": "1d7976de3a3f169633f1bdd7b930a36b6d60a1b4fca90c3452b9a03fcf633157",
+      "finalCaptureSha256": "5c4b188482f10214ab536bb9a37d7bae522f8ada1e4f040377aa1239dc3e1dbf",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-return-save-retry-fhd.png",
+      "previousCaptureSha256": "8f69f3a2cd70fef2448c600d286001806c30364a600afa474e2c3002664d5755",
+      "finalCaptureSha256": "4ca8707e52b3355e0a2987452125d793f8ddcd2e9cfa6cb9e048693aaeea83f8",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-return-save-retry-4k.png",
+      "previousCaptureSha256": "c3fb35abdcb35986981c1ad1619b027594c231a6696c0c0066d50611c7107bee",
+      "finalCaptureSha256": "bbf776b1ecc94df26d0f36171e68f6206e44d2eaf06aba96e20a9df18d37b53b",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-return-save-retry-4by3.png",
+      "previousCaptureSha256": "d9d3c90b19d1adbafe39fc0b341f19f1c91f5985aea98303e3f49f06aed21359",
+      "finalCaptureSha256": "72bb3c5b6c9f7209ef616c20ff03fdf43d205b62484fed2706f16f238bc26bb8",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-owned-detail-fhd.png",
+      "previousCaptureSha256": "0cff951fbd4b5e86f00b2ee567cbe57d3952d5275b6c6f12c7f485cd5b137d35",
+      "finalCaptureSha256": "5aafbf77a07e198d7d611194a561ea85b89999300ef85f025f27ce6542a0fbe5",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-owned-detail-4k.png",
+      "previousCaptureSha256": "bc6a9e4f9c30b36ab395b1102138d81682433d818061f29afccd21e1635bcc3c",
+      "finalCaptureSha256": "bed8f7ba703a90cc9decb568c221aad801238b665b97b8caa4d4a1f6bcffa213",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-owned-detail-4by3.png",
+      "previousCaptureSha256": "b582883af182a041a23091582d116b79d836a634bd97ad204adc290eaab4d19c",
+      "finalCaptureSha256": "92df68a94b9b771f24abed686da83e6b53970ebfeb035746ba00203b61516d57",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-card-collection-fhd.png",
+      "previousCaptureSha256": "40e7b5eadd11a2e63e20b13acfc75f39a82d13fdf7f250beb7733cec88b6a050",
+      "finalCaptureSha256": "cc4b1582a312cd8280c445cc43aa1043aeba395ca615c0c68a2de60e3b32ddf4",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-card-collection-4k.png",
+      "previousCaptureSha256": "f7c0098fa155967d65f3958b62b3e773e59cd4f65a1219cda4469eba26d82864",
+      "finalCaptureSha256": "05fd4aaf668ea0517d25b9ababf2b44708a04140366df1ec0f2fa593b792f1de",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-card-collection-4by3.png",
+      "previousCaptureSha256": "4688dba935c87d1c5643ed624707a25544040ec674d050509258145187c41d2d",
+      "finalCaptureSha256": "b507b048c5d9337deb3c3177ad83d45d1753719f3161757dd7dffec838160e9b",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-long-notice-fhd.png",
+      "previousCaptureSha256": "0ec1df28615c38074af374447ed66efe2a87128aa54d5273d962eee1f2044d2c",
+      "finalCaptureSha256": "e8d036bd4dd5799b8c85330d3852ca7fb48be2d1483275bb7dc2a6200b4bcd1e",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-long-notice-4k.png",
+      "previousCaptureSha256": "ec31e80ca46237ee9553c262607574322d7bf24a95c0cdfe6fbfd33bbd1396ee",
+      "finalCaptureSha256": "9cbd6237a18270fcc060f0334a11a22ddb56362d018d6415c6f756cc4df2d292",
+      "changed": true
+    },
+    {
+      "file": "system-stage14-long-notice-4by3.png",
+      "previousCaptureSha256": "1f5606fc0746e0df35a65f2d7b680481b43983bdd2f98860dd74871c1b58cc8d",
+      "finalCaptureSha256": "5434cd557bc561467aac551534906bedaf8654842757e2dcae559c9d1493a011",
+      "changed": true
+    }
+  ],
+  "finalSourceIdentifierSuppliedByParent": "14647e28... (six C# source hashes; full source-set verification belongs to parent evidence)"
+}

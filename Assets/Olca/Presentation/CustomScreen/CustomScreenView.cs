@@ -1985,6 +1985,16 @@ namespace Olca.Presentation.CustomScreen
             if(hideCustomButton!=null)hideCustomButton.gameObject.SetActive(false);
             ConfigureLogicalConfirmation(null,null);
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
+            ReleaseOwnedArtwork();
+        }
+
+        // 未表示のままresolverとして使う場合も、OnDestroyに依存せず所有生成物を返す。
+        private void ReleaseOwnedArtwork()
+        {
+            foreach(var illustration in registeredIllustrations.Values)if(illustration!=null){if(Application.isPlaying)Destroy(illustration);else DestroyImmediate(illustration);}
+            registeredIllustrations.Clear();
+            foreach(var icon in generatedMiniIcons.Values)if(icon!=null){var texture=icon.texture;if(Application.isPlaying){Destroy(icon);Destroy(texture);}else{DestroyImmediate(icon);DestroyImmediate(texture);}}
+            generatedMiniIcons.Clear();
         }
 
         private void OnDestroy()
@@ -1994,10 +2004,7 @@ namespace Olca.Presentation.CustomScreen
             SetScreenVisibility(true);
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
             gamepadInput?.Dispose();
-            foreach(var illustration in registeredIllustrations.Values)if(illustration!=null){if(Application.isPlaying)Destroy(illustration);else DestroyImmediate(illustration);}
-            registeredIllustrations.Clear();
-            foreach(var icon in generatedMiniIcons.Values)if(icon!=null){var texture=icon.texture;if(Application.isPlaying){Destroy(icon);Destroy(texture);}else{DestroyImmediate(icon);DestroyImmediate(texture);}}
-            generatedMiniIcons.Clear();
+
 
             // 破棄中は購読だけを解除し、子UIの再生成や表示更新を行わない。
             UnbindTransformations();

@@ -8,7 +8,7 @@ namespace Olca.Presentation.Effects
     /// <summary>中央が透明な独立防御レイヤー。状態の寿命や判定・キャラ画像は所有しない。</summary>
     public sealed class DefensiveFieldVisual : System.IDisposable
     {
-        private static readonly Dictionary<DefensiveFieldKind, Sprite> sprites = new Dictionary<DefensiveFieldKind, Sprite>();
+        private Olca.Unity.GeneratedSpriteAssets.Lease generatedAssets;
         [System.Serializable] private sealed class ContentBounds { public string name; public int width, height, x, y, w, h; }
         [System.Serializable] private sealed class BoundsDocument { public ContentBounds[] entries; }
         private static BoundsDocument contentBounds;
@@ -36,30 +36,28 @@ namespace Olca.Presentation.Effects
         private bool disposed;
         public DefensiveFieldKind? VisibleKind { get; private set; }
         public SpriteRenderer Renderer => field;
-        public static Sprite GetSprite(DefensiveFieldKind kind)
+        public static Sprite GetSprite(DefensiveFieldKind kind,Olca.Unity.GeneratedSpriteAssets.Lease assets=null)
         {
             if (!System.Enum.IsDefined(typeof(DefensiveFieldKind), kind)) return null;
-            if (sprites.TryGetValue(kind, out var sprite) && sprite != null) return sprite;
-            var bytes = Resources.Load<TextAsset>("OlcaDefensiveFields/" + kind.ToString().ToLowerInvariant());
-            if (bytes == null) return null;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (!texture.LoadImage(bytes.bytes, true)) { DestroyOwned(texture); return null; }
-            texture.name = "defensive-field/" + kind; texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp; texture.hideFlags = HideFlags.HideAndDontSave;
-            sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f, .5f), 100, 0, SpriteMeshType.FullRect);
-            sprite.name = texture.name; sprite.hideFlags = HideFlags.HideAndDontSave; sprites[kind] = sprite;
-            return sprite;
+            return Olca.Unity.GeneratedSpriteAssets.Get<Sprite>("defensive-field/"+kind,owned=>{
+                var bytes=Resources.Load<TextAsset>("OlcaDefensiveFields/"+kind.ToString().ToLowerInvariant());if(bytes==null)return null;
+                var texture=owned.CreateTexture(2,2);if(!texture.LoadImage(bytes.bytes,true))return null;
+                texture.name="defensive-field/"+kind;texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.HideAndDontSave;
+                var sprite=owned.CreateSprite(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f));sprite.name=texture.name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
+            },assets);
         }
         public void Refresh(SpriteRenderer body, bool barrier, bool aura)
         {
             if (disposed || body == null || !body.gameObject.activeInHierarchy || !body.enabled || body.forceRenderingOff || body.sprite == null || barrier == aura) { Clear(); return; }
             var kind = barrier ? DefensiveFieldKind.Barrier : DefensiveFieldKind.Aura;
-            var sprite = GetSprite(kind);
-            if (sprite == null) { Clear(); return; }
+            if(field==null){generatedAssets?.Dispose();generatedAssets=null;}
+            var sprite = GetSprite(kind,generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire()));
+            if (sprite == null) { Clear();if(field==null){generatedAssets?.Dispose();generatedAssets=null;} return; }
             if (field == null) {
                 var obj = new GameObject("DefensiveFieldVisual", typeof(SpriteRenderer)); obj.transform.SetParent(body.transform, false);
                 field = obj.GetComponent<SpriteRenderer>();
             } else if (field.transform.parent != body.transform) field.transform.SetParent(body.transform, false);
+            generatedAssets.BindNativeOwner(field);
             field.sprite = sprite; field.color = new Color(1, 1, 1, .55f);
             field.sortingLayerID = body.sortingLayerID;
             field.sortingOrder = body.sortingOrder == int.MinValue ? int.MinValue : body.sortingOrder - 1;
@@ -76,7 +74,7 @@ namespace Olca.Presentation.Effects
         public void Dispose()
         {
             if (disposed) return;
-            disposed = true; Clear(); if (field != null) DestroyOwned(field.gameObject); field = null;
+            disposed = true; Clear(); if (field != null) {field.sprite=null;DestroyOwned(field.gameObject);} field = null;generatedAssets?.Dispose();generatedAssets=null;
         }
         private static void DestroyOwned(Object value) { if (Application.isPlaying) Object.Destroy(value); else Object.DestroyImmediate(value); }
     }

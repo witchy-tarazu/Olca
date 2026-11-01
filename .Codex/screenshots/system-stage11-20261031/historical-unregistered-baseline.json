@@ -1,0 +1,8 @@
+{
+  "count": 2095,
+  "source": "native-late-owner.json ended.familySprites",
+  "idsSha256": "9e8af93ba988e4c61c6fb9ab6a19d5a40287c91f9391e9df1f613d4bc4c284b6",
+  "origin": "unidentified preexisting same-name native Sprite population outside new registry; historical residue candidate, not proven attribution",
+  "destroyedByThisWork": false,
+  "limits": "name prefixes do not enumerate every seven directly tracked native references; direct reference null is the seven-object release proof"
+}

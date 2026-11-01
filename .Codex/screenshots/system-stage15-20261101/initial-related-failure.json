@@ -1,0 +1,19 @@
+{
+  "summary": {
+    "total": 501,
+    "passed": 500,
+    "failed": 1,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "failed": [
+    {
+      "FullName": "Olca.Tests.Application.GameSystemManagementTests.保存デッキ削除Dialogは取消focusと左右選択を保ち旧確定を再使用しない",
+      "Status": "Failed",
+      "Duration": 0.0271321,
+      "Message": "  Expected: not null\n  But was:  null\n",
+      "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.保存デッキ削除Dialogは取消focusと左右選択を保ち旧確定を再使用しない () [0x000b7] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:378\n"
+    }
+  ],
+  "diagnosis": "Short-name fixture wrongly required optional overflow Scroll; fixture changed to300 long characters; assertions and product3source unchanged; final related/full results separate."
+}

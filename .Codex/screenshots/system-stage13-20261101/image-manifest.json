@@ -1,0 +1,137 @@
+[
+  {
+    "file": "checkpoint-prompt-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "e15b76e36cdf60625ed3313a11496ea98749bb1c4d54ec027851048944eb6351",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "checkpoint-prompt-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "7f4cf0ac476809b3f4bb361e7b72c7059b17f37a1288dd8bc816e9b06005dfff",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "checkpoint-prompt-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "55dd5efbc07a0c774bf8f5dcb5b4fe43b43aeae7edfa8b16a7fdf40ce0c9142f",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "newgame-confirmation-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "1c44e640c437314cc307a77d3e43797d3bcec35c3fdb647a1bba0f97152bdcff",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "newgame-confirmation-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "5deb1db3e2af505e077f501ee7d128a2279d466b1badaeb825ed1bdbda0ae64d",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "newgame-confirmation-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "b10ad201d0415d0128ea36f383d9e68ccae0fd8d26310b105d750fef49e5ff8d",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "checkpoint-save-retry-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "20cb2586687dd4fa3e7a0346dd5eb834b7f2ab54970b09cef36fe921e1b245a7",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "checkpoint-save-retry-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "ee3745785b63b169e867c6acaf0a81f2d632bf30a5ad1d0d92457066d8a049e0",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "checkpoint-save-retry-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "5a600e377cb6ef16083466a21b6fd83f13e38e92f845a55fc191c41332501db5",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "manual-save-retry-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "4157e00d0a1b663502bc3ea09d3cd283a25c04b4f64631a1b24a938b795f6497",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "manual-save-retry-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "f2a7e379ac729715d7aea6b496c2ec6e3b129cc69b0d2b3e9067d2e44e599d7c",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "manual-save-retry-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "c2bcb25fae515b2dad6139e035f36287381c3d2c26d391490dda3201b672d773",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "manual-save-success-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "b0fa3f4c9e41d8495ef8d5f6081325655e38239b86401ed08cd28ee171601783",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "manual-save-success-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "f3415e7c77cc15968deaedab5be69daaec79b0a408bd0cbbe3205a120eec555e",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  },
+  {
+    "file": "manual-save-success-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "04cbef84af48d5b8b98f8ef3b324a9b76b1a3b300059d22042078102076a061e",
+    "kind": "final-source actual native screen, same nullable battle frame / forced Canvas update; no newly-shot matched before"
+  }
+]

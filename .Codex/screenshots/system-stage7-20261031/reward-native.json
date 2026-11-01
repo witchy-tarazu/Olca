@@ -1,0 +1,142 @@
+{
+  "visible": {
+    "phase": "CardReward",
+    "frame": null,
+    "deck": 20,
+    "rewardId": -252626342,
+    "panelActive": true,
+    "alpha": 1,
+    "scene": "Assets/Scenes/BootstrapScene.unity",
+    "fonts": [
+      "JikiTourai"
+    ],
+    "buttons": [
+      {
+        "name": "CardRewardChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "CardRewardChoice_1",
+        "interactable": true
+      },
+      {
+        "name": "CardRewardChoice_2",
+        "interactable": true
+      },
+      {
+        "name": "SkipCardReward",
+        "interactable": true
+      }
+    ]
+  },
+  "pendingClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -87171908,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -252619068,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -252619074,
+        -252619080,
+        -252619086
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "noCommit": {
+    "pendingPhaseAndDeckUnchanged": true,
+    "rewardDestroyed": true,
+    "fontAndArtworkCallbacksReleased": true
+  },
+  "savedBytesUnchangedOnCloseResume": true,
+  "actualRewardChoice": "CardRewardChoice_0",
+  "deckBeforeChoice": 20,
+  "nextBattle": {
+    "actualNextBattleWithSameView": true,
+    "oldBattleAndCustomSubscriptionsRemoved": true,
+    "state": {
+      "phase": "Battle",
+      "battleIdentity": -2126869312,
+      "view": -252634010,
+      "custom": -252634020,
+      "hand": 5,
+      "selected": [],
+      "frame": 0,
+      "currency": 0,
+      "registered": 1,
+      "battleViews": 1,
+      "customViews": 1
+    }
+  },
+  "visits": [],
+  "saveHashesAfterNext": {
+    "settings/keyboard-gameplay.backup.json": "e000dd4e53d59ff65053e5fab5a81d0833f466f605f9f8d31eaeede374e68831",
+    "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+    "progress/progress.json": "d4fef2e7ad37aa5667c04da5e52743aec9c2bd85dca3ee10df0ff438f021887b",
+    "progress/progress.backup.json": "df98bdb0800327e064f286c758d42b3b5eed3c5873fe1d914eeef6c11d720eee",
+    "checkpoints/runs/576dd29a7d444a6899d9e713d06577ad/active.json": "537aea0d0a14e17054969baf0529e353957588be2bd145340de0ec29091deaf6",
+    "checkpoints/runs/576dd29a7d444a6899d9e713d06577ad/active.backup.json": "a417e7e5d58374b723d32183a6443dd3012910c6a6ab61211c8efa59500c0d45"
+  },
+  "victoryIsFixtureDamageAPI": true,
+  "actualDeckSequence": {
+    "beforeChoice": 20,
+    "afterCardChoiceBeforeCurrencyConfirmation": 20,
+    "afterCurrencySkipConfirmation": 21,
+    "atNextCustom": 21
+  },
+  "saveTimingPreserved": "Existing reward transaction commits selected card only at final currency confirmation; persistent owned-card count remains20 until established return flow."
+}

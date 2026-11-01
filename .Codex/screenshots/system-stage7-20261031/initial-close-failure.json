@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 105,\n  \"executeMs\": 15,\n  \"assemblyName\": \"PipelineRunScript_Bootstrap7Proof_627e34dc8db8485a9eeb3bebd43e1c99\",\n  \"success\": false,\n  \"error\": \"Runtime Error\",\n  \"errorDetails\": \"InvalidOperationException: host\u306e\u7834\u68c4\u5b8c\u4e86\u3092\u78ba\u8a8d\u3067\u304d\u307e\u305b\u3093\u3002\u89e3\u653e\u3092\u518d\u8a66\u884c\u3057\u3066\u304f\u3060\u3055\u3044\\n  at Olca.Application.Management.GameplayPrefabHostLease.UnloadCore () [0x000eb] in /workspace/olca-validation-20261024/project/Assets/Olca/Application/Management/GameplayPrefabHostLease.cs:39 \\n  at Olca.Application.Management.GameHostManager.RunClose (System.Threading.Tasks.Task`1[TResult] priorLoad, System.Threading.Tasks.TaskCompletionSource`1[TResult] completion) [0x00098] in /workspace/olca-validation-20261024/project/Assets/Olca/Application/Management/GameHostManager.cs:115 \\n  at Bootstrap7Proof.Close () [0x00051] in /workspace/olca-validation-20261024/project/AgentScripts/Bootstrap7Proof.cs:11 \\n  at Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand.RunEphemeral (System.String file, System.String entry, Newtonsoft.Json.Linq.JArray args, System.String[] references, System.String[] defines, System.Boolean pdb, System.Boolean dryRun, System.Int32 timeoutMs, System.Diagnostics.Stopwatch total) [0x00492] in ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:252 \"\n}"
+    }
+  ]
+}

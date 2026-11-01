@@ -1,0 +1,194 @@
+{
+  "reviewer": "independent_refactor_review",
+  "stage": 15,
+  "status": "Final15 supplied screenshots inspected",
+  "scope": "Managed discard/delete popup lifetime migration, static visual review only",
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "viewedImageCount": 15,
+  "images": [
+    {
+      "file": "system-stage15-discard-confirm-fhd.png",
+      "sha256": "74dd61971cfce6c085075f8fd75e0143b0fe726e46c181911398e184a02ff2c5",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-discard-confirm-4k.png",
+      "sha256": "2bc81aa2a3628529d2cdbd3b926cea9ca28d0901012af1bdeab88f8f7aa37b2b",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-discard-confirm-4by3.png",
+      "sha256": "c022604ef139ad6c81212fcd5ef173fe112258605f6f5714965f4beb946c6c01",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-confirm-fhd.png",
+      "sha256": "b8f182131db2e7a54277d9d68b4cd3c1a8acf9d5086d990ec71d7b3af7367b32",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-confirm-4k.png",
+      "sha256": "f5b0a924aed2c45b21e1b8fb190097c77f9e73e0db88bf45a1ae6f737289a78d",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-confirm-4by3.png",
+      "sha256": "90266cc99a9f8014b84a8ac77aa9c65778f4c629d0a50a0d146c4d3712b25b8d",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-save-retry-fhd.png",
+      "sha256": "acdcfd9571f1ac2083cdfaac9ff116b2980e620c45bcd5bf3426e4be6de28759",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-save-retry-4k.png",
+      "sha256": "e0e67473201e054b4a7e360ea1a774d9c849f10dcd9cd71b54652e0682b77aab",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-save-retry-4by3.png",
+      "sha256": "9173bd387648b80626beeaed9d0a7e6d310411aca3630860ee0019a8101b6ce1",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-long-name-fhd.png",
+      "sha256": "0c13bfa2a83efb98e6192775e0dc514830b569297a9e327fb28a8ade07d76d0b",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-long-name-4k.png",
+      "sha256": "f78bda2dea3e9218dd729fc9da6783afd361cffa03f3c5ba36b7dfa2310306e9",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-delete-long-name-4by3.png",
+      "sha256": "b2a34aa2225bf6ba50d2b05ce0ddf578c48c3c33184e48e57849becfc062d49f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-saved-decks-after-delete-fhd.png",
+      "sha256": "3eee60c7d29ab8f59acec7e10b4c21218082138a9d4805f51d4debf4b83e9ffd",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-saved-decks-after-delete-4k.png",
+      "sha256": "f847348d7ad469aed7b3623568e8a23b70ece6e6f87d9531dc7fbabc93e53338",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage15-saved-decks-after-delete-4by3.png",
+      "sha256": "aa823c2ccffaa5dba936b42f52ae94296e081b3f96b6508abd3f9805ce597e91",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "Discard confirmation shows one distinct title, question, selected return-to-editing action and separate discard action. No competing parent text or new overlap apparent.",
+    "Delete confirmation separates target name from fixed warning that owned cards do not decrease; selected Cancel is visually distinct from Delete. Both remain readable in4:3.",
+    "Long-name fixture stays in its reserved multiline scroll region above the fixed warning/actions; lower partial text line is viewport clipping, not overlap with warning. Still image does not establish full1000-character reachability.",
+    "Save-retry list visibly dims normal actions and exposes the lower retry action; injected prewrite failure diagnostic is legible. The diagnostic Kanji is isolated testpayload, not asserted as product-wide Kana coverage.",
+    "After-delete list shows only equipped starter row with edit/copy enabled-looking and equip/delete dimmed; row/action correspondence and lower operations remain readable. This image does not prove disk deletion.",
+    "Water-colored surfaces/Jiki text/button framing remain coherent with prior shared return views. Spacious confirmation composition retained; no redesign/global aesthetic-completion claim."
+  ],
+  "native4kSupplement": {
+    "method": "Whole4K views were viewer-resized to2048x1152; three originalPNG lossless unscaled in-memory crops were additionally inspected. Original files unchanged.",
+    "crops": [
+      {
+        "file": "system-stage15-discard-confirm-4k.png",
+        "rect": [
+          700,
+          1300,
+          1250,
+          1430
+        ]
+      },
+      {
+        "file": "system-stage15-delete-long-name-4k.png",
+        "rect": [
+          280,
+          585,
+          900,
+          790
+        ]
+      },
+      {
+        "file": "system-stage15-delete-save-retry-4k.png",
+        "rect": [
+          1580,
+          2020,
+          2250,
+          2130
+        ]
+      }
+    ],
+    "observation": "Representative action glyph strokes and name-region multiline spacing intact at native scale."
+  },
+  "fixtureBoundary": "Longname is presentation-only1000ナ fixture; parent reports persisted savedNameケンショウB unchanged. Failure is isolated prewrite FailOnce using existing pending-list retry contract. These runtime claims were not independently executed by reviewer.",
+  "limits": [
+    "No newly shot matched-before; no pixel identity or full historical geometry equivalence claimed.",
+    "No focus behavior/input blocking, scrolling to final character, stale callback rejection, writes/idempotency or lease teardown inferred from images; parent runtime evidence separate.",
+    "Only representative native4K crops supplemented full views, not every4K pixel examined1:1.",
+    "No Unity/MCP/test/input/product/source operation; physical devices/audio/historicalUGUI not validated."
+  ]
+}

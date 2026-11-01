@@ -1,0 +1,161 @@
+{
+  "checkpointContextStable": true,
+  "checkpointPrewriteFailureNoWrite": true,
+  "checkpointRetryWrites": 2,
+  "checkpointStoreRestored": true,
+  "newgameCancelFocus": "NewGameButton",
+  "cancelNoWrite": true,
+  "heldVirtualPadCancelNoWrite": true,
+  "newgameOwned20Once": true,
+  "manualPrewriteFailureNoWrite": true,
+  "disabledCancelRejected": true,
+  "retrySameTicket": true,
+  "manualCloseFocus": "ManualSaveButton",
+  "faultWrites": 2,
+  "realStoreRestored": true,
+  "oldCallbacksRejected": true,
+  "hostCloseNoWrite": true,
+  "singleDialogCancelNoWrite": true,
+  "oldManualSourceAfterHostEndNoWrite": true,
+  "backgroundManualSourceBlocked": true,
+  "closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 681796628,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -272075564,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -272075570,
+        -272075576,
+        -272075582
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "reopened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/BootstrapScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/BootstrapScene.unity",
+        "handleHash": 681796628,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -272075564,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "cameraBorrowed": true,
+    "borrowedCameraId": -272078814,
+    "gameplayView": "dungeon-hud",
+    "worldViewKey": "dungeon-world",
+    "worldRegistered": 1,
+    "worldFields": 1,
+    "backgroundViews": 2,
+    "numberPools": 1,
+    "battleViewKey": "battle-custom",
+    "battleRegistered": 1,
+    "battleViews": 1,
+    "customViews": 1,
+    "gameplayRegistered": 1,
+    "hudCount": 1,
+    "host": "OlcaSystem/DungeonHost",
+    "loading": false,
+    "ownedScenes": 0,
+    "ownedViews": 8,
+    "registeredViews": 3,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      -272099840
+    ],
+    "controllerScenes": [
+      "Assets/Scenes/BootstrapScene.unity"
+    ],
+    "rewardViews": 1,
+    "rewardRegistered": 1,
+    "rewardViewKey": "card-reward",
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -272075570,
+      -272075576,
+      -272075582
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/system-stage13-13001/settings"
+  },
+  "saveHashesAfter": {
+    "settings/keyboard-gameplay.backup.json": "e000dd4e53d59ff65053e5fab5a81d0833f466f605f9f8d31eaeede374e68831",
+    "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+    "settings/gamepad-gameplay.json": "601125fc740adfa868ce3e40a8143862d70ecc0d8d543465fb2ae2042a19bf94",
+    "settings/gamepad-gameplay.backup.json": "ce33094d5710ccf3902bd7d2a11df08262b345670034ddad65d8041180581cb5",
+    "settings/audio-volumes.json.backup": "c3f2fc018cb3ac7e3e142650b5156982847b6daf56a0f5b570d38a379ab11ff3",
+    "settings/audio-volumes.json": "45fc85a64ac29dbf7db0f57b1450c96d159ff057cb5a055a46907d53b296ea59",
+    "progress/progress.json": "62584a97c900a9172ff7c1acae34d5ccd740afb0b6bd152feec76153c66a883f",
+    "progress/progress.backup.json": "43c07613dd31ddf8e6ceafe9286378b88f9285610e2b6dc88a52de859feaff03",
+    "progress/new-game-backups/progress-3-E491EDF5CD52E4D4EEA9822CD2223AC07C974ACDE7C3987E8A5196A03C47BAC1.json": "e491edf5cd52e4d4eea9822cd2223ac07c974acde7c3987e8a5196a03c47bac1",
+    "checkpoints/runs/576dd29a7d444a6899d9e713d06577ad/active.json": "a45ab921cc1fc4cba9c7510d519606b0855157b0b83202336123caded6d1569c",
+    "checkpoints/runs/576dd29a7d444a6899d9e713d06577ad/active.backup.json": "537aea0d0a14e17054969baf0529e353957588be2bd145340de0ec29091deaf6"
+  }
+}

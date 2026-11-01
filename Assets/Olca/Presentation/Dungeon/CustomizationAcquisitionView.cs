@@ -14,21 +14,32 @@ namespace Olca.Presentation.Dungeon
         private CustomizationAcquisitionPlan plan;private CustomizationProgress progress;private CustomizationCatalog catalog;
         private const string ChoiceGuide="コウホをエラんでカクテイしてください";
         private string selected,lastReceived,message;private int page;private bool pending;
+        public Olca.Presentation.Management.ManagedScreenContext Context { get; private set; }
+        private Action ensureManagedVisible,hideManaged;
+        public bool CanInteract=>gameObject.activeInHierarchy&&(ensureManagedVisible==null||Context?.IsCurrent==true&&!Context.DialogBlocksInput);
+        public void ConfigureManagement(Action show,Action hide){ensureManagedVisible=show;hideManaged=hide;}
+        public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){Context=context;gameObject.SetActive(true);}
+        /// <summary>内容や焦点を変更せず、親を閉じる前に表示の寿命だけを確保する。</summary>
+        public void PrepareManagedOpen()=>EnsureManaged();
+        private void EnsureManaged(){if(ensureManagedVisible!=null&&Context?.IsCurrent!=true){ensureManagedVisible();if(Context?.IsCurrent!=true)throw new InvalidOperationException("装備画面の管理開始に失敗しました");}}
+        public void HideManaged(){Context?.NotifyHidden();Context=null;menu?.Suspend();var selectedObject=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selectedObject!=null&&selectedObject.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);plan=null;progress=null;catalog=null;selected=lastReceived=null;sizes.Clear();if(this!=null)gameObject.SetActive(false);}
+        public void ReleaseManagement(){HideManaged();menu?.Dispose();menu=null;ensureManagedVisible=hideManaged=null;claim=null;close=retry=null;font=null;content=null;}
+        private Action Live(Action action){var context=Context;var owner=content;return()=>{if(this!=null&&CanInteract&&ReferenceEquals(Context,context)&&content==owner&&owner!=null&&owner.activeInHierarchy)action?.Invoke();};}
         public void Initialize(Font value,Action<string> receive,Action cancel,Action retrySave)
-        {font=value;claim=receive;close=cancel;retry=retrySave;var r=(RectTransform)transform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;UiLook.Face(gameObject.AddComponent<Image>());menu=new Olca.Unity.MenuPadScope(()=>gameObject.activeInHierarchy&&Olca.Unity.MenuPadScope.IsTopmost(transform));gameObject.SetActive(false);}
+        {font=value;claim=receive;close=cancel;retry=retrySave;var r=(RectTransform)transform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;UiLook.Face(gameObject.AddComponent<Image>());menu=new Olca.Unity.MenuPadScope(()=>CanInteract&&Olca.Unity.MenuPadScope.IsTopmost(transform));gameObject.SetActive(false);}
         public void Open(CustomizationAcquisitionPlan value,CustomizationProgress state,bool saving=false)=>Open(value,state,saving,null);
         public void Open(CustomizationAcquisitionPlan value,CustomizationProgress state,bool saving,CustomizationCatalog definitions)
-        {plan=value?.Copy();progress=state?.Copy();catalog=definitions;selected=lastReceived=null;page=0;pending=saving;message=saving?"ホゾンをサイシコウしてください":ChoiceGuide;gameObject.SetActive(true);transform.SetAsLastSibling();Render();}
+        {EnsureManaged();plan=value?.Copy();progress=state?.Copy();catalog=definitions;selected=lastReceived=null;page=0;pending=saving;message=saving?"ホゾンをサイシコウしてください":ChoiceGuide;gameObject.SetActive(true);transform.SetAsLastSibling();Render();}
         public void Saved(CustomizationAcquisitionPlan value,CustomizationProgress state)
         {lastReceived=selected;plan=value.Copy();progress=state.Copy();pending=false;selected=null;message="ホゾンしました";Render();}
         public void Failed(bool saving){pending=saving;message=saving?"ホゾンをサイシコウしてください":"ウケトリできません。モドってカクニンしてください";Render();}
-        public void Close(){gameObject.SetActive(false);plan=null;progress=null;catalog=null;}
-        private void OnDisable(){menu?.Suspend();}private void OnDestroy(){menu?.Dispose();}
+        public void Close(){if(ensureManagedVisible!=null&&Context?.IsCurrent==true)hideManaged();else HideManaged();}
+        private void OnDisable(){Context?.NotifyHidden();Context=null;menu?.Suspend();plan=null;progress=null;catalog=null;}private void OnDestroy(){ReleaseManagement();}
         private void LateUpdate(){CustomizationMenuElements.FitReference(transform,content,sizes);menu?.Tick();}
         private Text Label(string name,string value,float x,float y,float width,float height,int size=26,bool white=false,TextAnchor align=TextAnchor.MiddleLeft)
         {var t=CustomizationMenuElements.Label(content.transform,font,name,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value),x,y,width,height,size);t.color=white?Color.white:UiLook.Ink;t.alignment=align;sizes[t]=size;return t;}
         private Button Button(string name,string text,float x,float y,float width,Action action,bool enabled)
-        {var b=CustomizationMenuElements.Button(content.transform,name,x,y,width,80);b.interactable=enabled;b.onClick.AddListener(()=>{if(this!=null&&gameObject.activeInHierarchy&&b!=null&&b.IsActive()&&b.IsInteractable())action();});var t=Label(name+"Label",text,0,0,width-24,72,28,false,TextAnchor.MiddleCenter);t.transform.SetParent(b.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(b);return b;}
+        {var invoke=Live(action);var b=CustomizationMenuElements.Button(content.transform,name,x,y,width,80);b.interactable=enabled;b.onClick.AddListener(()=>{if(this!=null&&b!=null&&b.IsActive()&&b.IsInteractable())invoke();});var t=Label(name+"Label",text,0,0,width-24,72,28,false,TextAnchor.MiddleCenter);t.transform.SetParent(b.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(b);return b;}
         private string Contents(CustomizationAcquisitionCandidate candidate,bool received,string idle)
         {
             if(candidate==null)return idle;
@@ -69,7 +80,7 @@ namespace Olca.Presentation.Dungeon
             string footer=message;if(!pending&&message==ChoiceGuide&&!receivable)footer=idle.Split('\n')[0];
             Label("AcquisitionMessage",footer,0,-405,1700,60,26,true,TextAnchor.MiddleCenter);
             Button(pending?"RetryCustomizationAcquisition":"ClaimCustomizationAcquisition",pending?"ホゾンをサイシコウ":"ウケトってホゾン",-420,-485,700,()=>{if(pending)retry();else claim(selected);},pending||selected!=null);Button("CancelCustomizationAcquisition","モドル",420,-485,700,close,!pending);
-            CustomizationMenuElements.FitReference(transform,content,sizes);menu.Bind(transform,pending?"RetryCustomizationAcquisition":selected!=null?"ClaimCustomizationAcquisition":"CancelCustomizationAcquisition",()=>{if(!pending)close();});
+            CustomizationMenuElements.FitReference(transform,content,sizes);menu.Bind(transform,pending?"RetryCustomizationAcquisition":selected!=null?"ClaimCustomizationAcquisition":"CancelCustomizationAcquisition",Live(()=>{if(!pending)close();}));
         }
     }
 }

@@ -1,0 +1,7 @@
+{
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "751bcd2469ebbfc8c37fd293b228d742958c6e9fa71526f257b9e4f7f96b2545",
+  "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs": "18d09a570377f027740923ef44a98240b7605aba20a2ca5d18313c289341dbb6",
+  "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs": "4203e70df1df6121e1665a49b9c1646a0af02462160198432e26ba2b8d7c8f9f",
+  "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs": "5ed6c118eb6e6c883ed4db4cb7d8c0516b36b0fb31f0aa58b706073e0b37f6ee",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "41942d40f7dea9871112f393aa3b0d87eec6fbbf0e53669405057ab0c7beca36"
+}

@@ -1,0 +1,114 @@
+{
+  "reviewer": "independent_refactor_review",
+  "stage": 12,
+  "status": "final-source recaptures inspected; final static visual review complete",
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "viewedImageCount": 6,
+  "images": [
+    {
+      "file": "system-stage12-native-after-pause-fhd.png",
+      "sha256": "038b922c7f7f6783177d161ff8e18414802da68cd24f7df200b7d39c91c6c5cb",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "viewedFinalRecapture": true
+    },
+    {
+      "file": "system-stage12-native-after-pause-4k.png",
+      "sha256": "0626ebe33b4d250dea22496e2427b2d2b298602032e33c4c3d344181e3370def",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "viewedFinalRecapture": true
+    },
+    {
+      "file": "system-stage12-native-after-pause-4by3.png",
+      "sha256": "9e6d5add67026eed3349d69a129c916da53c3d767ae5b02607562279cd1a8934",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "viewedFinalRecapture": true
+    },
+    {
+      "file": "system-stage12-native-after-retreat-confirmation-fhd.png",
+      "sha256": "5c533e27c9ad249a8073d400979b510a5b059a40f4d1327762d99ee2a13e4cce",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "viewedFinalRecapture": true
+    },
+    {
+      "file": "system-stage12-native-after-retreat-confirmation-4k.png",
+      "sha256": "2640dec9a185a4f66caf1e2d4733de36f6f886c4a91279a18a94585277c9d8e1",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "viewedFinalRecapture": true
+    },
+    {
+      "file": "system-stage12-native-after-retreat-confirmation-4by3.png",
+      "sha256": "a939203bd48604254d8fe95ef808c5da228c4c305b55a07203614c07c4ba0d19",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "viewedFinalRecapture": true
+    }
+  ],
+  "comparisonReference": {
+    "file": "ui-round42-approved-fhd.png",
+    "sha256": "0458c22dd6be617e3b05df16e098828f9724d7fca640ab08c62286a7b46777bf",
+    "boundary": "Historical pause composition reference, not matched before or Stage10 full-host pixel comparison"
+  },
+  "observations": [
+    "Pause retains watermirror frame, ten controls, section separator, original background and Jiki glyph appearance. Two-line setting labels and retreat action remain readable at FHD/4:3.",
+    "Retreat confirmation message and separated confirm/return buttons fit all three views and retain a clear visible primary decision hierarchy.",
+    "Dimmed/washed underlying custom UI remains visible through overlays. No matched before establishes this as a new Stage12 regression; not claimed to be fully opaque.",
+    "No obvious missing texture, displaced world actor/feet or new clipping appears in supplied captures.",
+    "Final recaptures preserve the same readable ten-control pause arrangement and retreat message/two-action composition; no additional required visual finding."
+  ],
+  "native4kSupplement": {
+    "method": "Original PNG unscaled in-memory crops; full4K output viewer-resized to2048x1152",
+    "crops": [
+      {
+        "file": "system-stage12-native-after-pause-4k.png",
+        "rect": [
+          1580,
+          1210,
+          2170,
+          1390
+        ],
+        "observation": "Two-line transformation setting glyphs retain separation and frame padding."
+      },
+      {
+        "file": "system-stage12-native-after-retreat-confirmation-4k.png",
+        "rect": [
+          2050,
+          1200,
+          2710,
+          1340
+        ],
+        "observation": "Return action text and selected framing readable."
+      }
+    ]
+  },
+  "limits": [
+    "No exact matched before; no pixel equality or global visual-completion claim. Stage10 pause PNG was not found under corresponding filenames; historical Round42 reference used instead.",
+    "Images cannot prove focus restoration, modal input blocking, callbacks, save behavior, timing or lifetime.",
+    "No Unity operation, tests, product edits or physical/audio validation performed by reviewer.",
+    "Final-source six captures and two native4K crops were re-inspected after recapture. Focus/pointer/stale-dialog/save assertions remain parent runtime evidence, not independently executed or proved by screenshots."
+  ],
+  "finalRecaptureInspected": true
+}

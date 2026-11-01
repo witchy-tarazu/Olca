@@ -85,6 +85,7 @@ namespace Olca.Presentation.Battle
         private bool gaugeResetting;
 
         private Text transformationStatus, transformationCaption;
+        private Olca.Unity.GeneratedSpriteAssets.Lease transformationAssets;
         private Image transformationFrame, transformationSweep, transformationIcon, transformationEffect;
         private Olca.Presentation.CustomScreen.CustomScreenView TransformationVisualSource
             => customScreenContainer==null?null:customScreenContainer.GetComponentInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true);
@@ -143,7 +144,7 @@ namespace Olca.Presentation.Battle
             transformationFrame.gameObject.SetActive(activation||release);if(!activation&&!release)return;
             float progress=activation?1f-state.ActivationFramesRemaining/(float)state.ActivationDurationFrames:1f-state.ReleaseFramesRemaining/12f;
             transformationFrame.color=new Color(.6f,.92f,1f,activation ? .08f+.12f*Mathf.Sin(Mathf.PI*progress):.16f*(1f-progress));
-            transformationEffect.sprite=Olca.Presentation.Effects.TransformationEffectSprites.Get(activation);
+            transformationEffect.sprite=Olca.Presentation.Effects.TransformationEffectSprites.Get(activation,transformationAssets??(transformationAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));
             transformationEffect.enabled=transformationEffect.sprite!=null;
             transformationEffect.color=new Color(1,1,1,.75f*(1f-progress));
             transformationCaption.text=activation?"ヘンシン  "+TransformationName(state.ActiveId):"変身解除";
@@ -562,6 +563,7 @@ namespace Olca.Presentation.Battle
 
         private void OnDestroy()
         {
+            if(transformationEffect!=null)transformationEffect.sprite=null;transformationAssets?.Dispose();transformationAssets=null;
             statusIcons?.Clear();
             // アニメーション用CancellationTokenをキャンセル
             animationCts?.Cancel();

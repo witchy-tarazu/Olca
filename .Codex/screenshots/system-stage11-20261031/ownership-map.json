@@ -1,0 +1,78 @@
+{
+  "scope": "Stage11 static ownership map for six shared generated Sprite/Texture catalogs; no Unity changes",
+  "catalogs": [
+    {
+      "file": "Assets/Olca/Presentation/Field/SharedAttackPropCatalog.cs",
+      "generated": "Texture2D PNG decode + Sprite per key",
+      "currentRetention": "static loaded",
+      "actualConsumers": "GameFieldView Bomb/Blast SpriteRenderers are current product direct consumers. Sword/knife/bolt raw assets are available; ActionAppearance/ProjectileAppearance can borrow supplied sprites but no automatic catalog call there.",
+      "currentRelease": "Only failed LoadImage texture cleanup; no cache shutdown.",
+      "leaseBoundary": "GameFieldView holds borrow for generated bomb/blast renderers until reference clear/World release. Explicit external appearance registration must retain its own lease if it uses shared props."
+    },
+    {
+      "file": "Assets/Olca/Presentation/Battle/CombatStatusIcons.cs",
+      "generated": "Color and grayscale Texture2D/Sprite pair per icon",
+      "currentRetention": "static CombatStatusIconCatalog.loaded",
+      "actualConsumers": "CombatStatusIconStrip children in BattleView player HUD and EnemyView boss status Canvas. Pool-like reusable Image slots.",
+      "currentRelease": "Strip.Clear hides slots but keeps sprite refs; no catalog teardown.",
+      "leaseBoundary": "Strip owns pair borrow(s) while slots reference sprites; release on Destroy or null slot sprites before early release. Root-hold must not substitute for borrower ownership."
+    },
+    {
+      "file": "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs",
+      "generated": "Texture2D/Sprite per Sword/Break/Wind",
+      "currentRetention": "static AttackPropertyIconCatalog.sprites",
+      "actualConsumers": "CardAttackPropertyIcons under Text in card/recipe/Custom detail surfaces.",
+      "currentRelease": "OnDisable Show(empty) nulls slot sprites; no catalog shutdown.",
+      "leaseBoundary": "Row-level borrow acquisition in Show and release after nulling slots; Destroy cleanup also required even if inactive."
+    },
+    {
+      "file": "Assets/Olca/Presentation/Effects/ActorConditionVisual.cs",
+      "generated": "Texture2D/Sprite per Guard/Paralyze",
+      "currentRetention": "static sprites dictionary",
+      "actualConsumers": "Non-Mono ActorConditionVisual instances created by GameFieldView player and EnemyView enemy; each owns a renderer GameObject.",
+      "currentRelease": "Instance Dispose destroys renderer only; static art retained.",
+      "leaseBoundary": "Non-Mono Visual owns borrow, releases only after renderer sprite cleared/destroyed; Clear hides renderer and currently retains its sprite."
+    },
+    {
+      "file": "Assets/Olca/Presentation/Effects/DefensiveFieldVisual.cs",
+      "generated": "Texture2D/Sprite per Barrier/Aura",
+      "currentRetention": "static sprites dictionary; static contentBounds is managed metadata",
+      "actualConsumers": "Non-Mono DefensiveFieldVisual instances owned by GameFieldView and EnemyView.",
+      "currentRelease": "Instance Dispose destroys field renderer GameObject only; no art shutdown.",
+      "leaseBoundary": "Visual borrow independent from owner Root lifetime; contentBounds/import source are not generated Unity assets to destroy."
+    },
+    {
+      "file": "Assets/Olca/Presentation/Effects/TransformationEffectSprites.cs",
+      "generated": "Texture2D/Sprite activation/release",
+      "currentRetention": "static activation and release fields",
+      "actualConsumers": "BattleView transformationEffect Image, reset hides parent but retains sprite.",
+      "currentRelease": "No generated shared asset teardown.",
+      "leaseBoundary": "BattleView holds effect borrows until Image sprite reset/null and final Release/OnDestroy; do not destroy art merely at animation hide."
+    }
+  ],
+  "importBoundary": "TextAsset PNG bytes, source font/texture assets and Resources.Load imported objects are borrowed. Destroy generated Sprite first, then only its generated Texture. Color/gray pair must each be destroyed once; never Destroy imported bytes or source texture.",
+  "designRecommendations": [
+    "ResourceManager can own a generic generated-asset cache/lease implementation in Unity assembly; Presentation enums/catalogs must not introduce Unity->Presentation asmdef dependency. Use stable namespaced keys and factory-owned generated payloads.",
+    "Root hold lease keeps useful cache across host/view reconstruction; each renderer/Image owner holds its own borrow. Root.Dispose drops only its hold and prevents new acquisitions from that disposed service; existing borrows stay valid until release.",
+    "Explicitly decide multiple-Root/new-Root behavior: do not route old borrowers through a mutable global current Root. Old-cache leases must remain tied to their original owner/generation.",
+    "Clear Unity references before releasing borrows, especially reusable hidden icon slots and hidden transformation Image. Hiding a GameObject alone does not remove its Sprite references.",
+    "Legacy/direct tests require an explicit scoped fallback owner, not an immortal automatic static fallback or a new GameSystemRoot created by a read-only catalog lookup. Preserve unknown-key/null behavior.",
+    "Raw Get/TryGet Sprite APIs alone cannot track caller lifetime. Audit and adapt direct tests/external appearance registration so raw lookups do not silently create permanent borrowers.",
+    "Late Destroy must remain safe after Root Dispose; borrow Dispose must be idempotent and use its retained managed owner without native calls on destroyed wrappers.",
+    "Failed generation must clean partially-created color/gray textures and sprites and must not publish a cache entry; reacquisition after final release must recreate valid assets."
+  ],
+  "requiredVerification": [
+    "Two borrowers share identity; first borrower/root release does not invalidate second.",
+    "Final borrow release destroys exactly generated sprites/textures once; reacquire is new valid identity.",
+    "Root recreation while old borrow survives does not release old assets or cross-bind leases.",
+    "Multiple roots reject or isolate ownership explicitly without implicit global switch.",
+    "View hiding/reuse, host shutdown and delayed OnDestroy leave no stale sprite refs/duplicate release.",
+    "Legacy scoped fallback/read-only tests do not spawn persistent runtime services.",
+    "Native Point/Clamp/palette/alpha/sorting and actual display unchanged."
+  ],
+  "limits": [
+    "This is a static reference/ownership survey, not runtime allocation counting.",
+    "Generated per-instance gauge/minis/world sprites already have separate owners and are not included in the six-catalog migration.",
+    "No image generation, source edits, Unity calls or test runs performed."
+  ]
+}

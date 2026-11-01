@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 101,\n  \"executeMs\": 6,\n  \"assemblyName\": \"PipelineRunScript_Stage6EventRegistryProof_e0d9afb49e254b3d88c791a16b971d97\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"currentClrNull\": true,\n    \"currentUnityNull\": true,\n    \"registered\": [],\n    \"sceneEvents\": []\n  }\n}"
+    }
+  ]
+}

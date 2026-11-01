@@ -1,0 +1,134 @@
+{
+  "playing": false,
+  "scale": 1,
+  "keys": [
+    {
+      "key": "Stage14OldButton",
+      "present": false
+    },
+    {
+      "key": "Stage14OldClose",
+      "present": false
+    },
+    {
+      "key": "Stage14OldMain",
+      "present": false
+    },
+    {
+      "key": "Stage14OldCollection",
+      "present": false
+    },
+    {
+      "key": "Stage14OwnedSprites",
+      "present": false
+    },
+    {
+      "key": "Stage14OwnedMiniTextures",
+      "present": false
+    },
+    {
+      "key": "Stage14ImportedTexture",
+      "present": false
+    },
+    {
+      "key": "Stage14ArtworkView",
+      "present": false
+    },
+    {
+      "key": "Stage13Confirm",
+      "present": false
+    },
+    {
+      "key": "Stage13OldManualSave",
+      "present": false
+    },
+    {
+      "key": "Stage13Store",
+      "present": false
+    },
+    {
+      "key": "Stage13Session",
+      "present": false
+    },
+    {
+      "key": "Stage13Fault",
+      "present": false
+    },
+    {
+      "key": "Stage13Hold",
+      "present": false
+    },
+    {
+      "key": "Stage13CheckpointSession",
+      "present": false
+    },
+    {
+      "key": "Stage13CheckpointStore",
+      "present": false
+    },
+    {
+      "key": "Stage13CheckpointFault",
+      "present": false
+    },
+    {
+      "key": "Stage10OldController",
+      "present": false
+    },
+    {
+      "key": "Stage10OldCustom",
+      "present": false
+    },
+    {
+      "key": "Stage10OldInput",
+      "present": false
+    },
+    {
+      "key": "Stage10OldManager",
+      "present": false
+    },
+    {
+      "key": "Stage10OldField",
+      "present": false
+    },
+    {
+      "key": "Stage10OldBackgrounds",
+      "present": false
+    },
+    {
+      "key": "Stage10BorrowedCamera",
+      "present": false
+    },
+    {
+      "key": "Stage10OldBattle",
+      "present": false
+    },
+    {
+      "key": "Stage10OldCustomInput",
+      "present": false
+    },
+    {
+      "key": "Stage10FieldBattle",
+      "present": false
+    },
+    {
+      "key": "Stage10FieldPlayer",
+      "present": false
+    }
+  ],
+  "devices": [
+    {
+      "name": "Mouse",
+      "native": true,
+      "enabled": true
+    },
+    {
+      "name": "Keyboard",
+      "native": true,
+      "enabled": true
+    }
+  ],
+  "inputBlocked": true,
+  "isPaused": false,
+  "awaitRelease": true,
+  "resumeFrames": 2
+}

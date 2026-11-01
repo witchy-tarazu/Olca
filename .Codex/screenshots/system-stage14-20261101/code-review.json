@@ -1,0 +1,33 @@
+{
+  "scope": "Stage14 final static review of managed return/collection views, single-close notice and inactive Custom resolver asset teardown",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "80e5ece9e607188b58190751552fc49e540eb2cdd31acad4acc5c85029ce2926",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "55d6266a4f51b001a6067afabe381c573119ffbcf06437cf306b4d211d86408e",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "589df1e8ec4b98c2bb9d54b5106ccac3fe752f932da2e5aab6ebad755232c045",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "f19096544cce541b8cb6b3b56b5079ffbf4eac49ead329876c8247463cd1f51c",
+    "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs": "f992671523139d8ae6e511794e883ff1cd52b2ab3dd84a6149e314e5181e2d92",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9170aa10b2a1d08de87a7dea85affff399730506308baff59f67f0b284e68baa"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "correctedFindings": [
+    "Busy notice cleanup destroys only rejected modal refs, without cancelling existing ticket or restoring background focus/menu.",
+    "Managed BeginRender establishes synchronous valid context before StopMenu/old content destruction.",
+    "Explicit Custom.ReleaseSessionPresentation now calls idempotent ReleaseOwnedArtwork, avoiding dependence on OnDestroy for never-active resolver views."
+  ],
+  "checked": [
+    "Return/collection consumers Hide before Battle/Custom binding teardown and generated artwork destruction.",
+    "Illustrations release owned Sprite only; generated mini icons release owned Sprite and Texture; dictionaries clear after scheduling/destruction, so duplicate terminal calls do not destroy twice.",
+    "Assigned/imported art is not added to these owned generated dictionaries by this patch; imported illustration Texture remains borrowed.",
+    "New inactive resolver regression uses actual BattlePresentationBinding, captures owned mini/texture/generated illustration and borrowed import texture, asserts dict0 and ownership release plus double Dispose.",
+    "Notice has exactly one close control and manager-owned scroll; parent menu pauses while context dialog blocks.",
+    "Old content callbacks retain identity/current-content validation; Close checks parent/modal/context before restoring menu."
+  ],
+  "limits": [
+    "Six final C# files not yet remirrored/compiled/tested at this request; no runtime success inferred.",
+    "Previously observed native host-close leak of5mini/5textures is a baseline failure, not fixed proof yet.",
+    "EditMode regression asserts immediate destruction; corrected Play lifecycle must separately observe delayed native Destroy and reused-host scenario.",
+    "Saved-deck delete/dirty confirmation remains internal modal logic outside this migration.",
+    "Independent reviewer executed no Unity/MCP/test/source operations."
+  ]
+}

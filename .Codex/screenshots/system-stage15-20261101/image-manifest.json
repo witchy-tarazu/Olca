@@ -1,0 +1,137 @@
+[
+  {
+    "file": "discard-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "74dd61971cfce6c085075f8fd75e0143b0fe726e46c181911398e184a02ff2c5",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "discard-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "2bc81aa2a3628529d2cdbd3b926cea9ca28d0901012af1bdeab88f8f7aa37b2b",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "discard-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "c022604ef139ad6c81212fcd5ef173fe112258605f6f5714965f4beb946c6c01",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "b8f182131db2e7a54277d9d68b4cd3c1a8acf9d5086d990ec71d7b3af7367b32",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f5b0a924aed2c45b21e1b8fb190097c77f9e73e0db88bf45a1ae6f737289a78d",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "90266cc99a9f8014b84a8ac77aa9c65778f4c629d0a50a0d146c4d3712b25b8d",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "acdcfd9571f1ac2083cdfaac9ff116b2980e620c45bcd5bf3426e4be6de28759",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "e0e67473201e054b4a7e360ea1a774d9c849f10dcd9cd71b54652e0682b77aab",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "9173bd387648b80626beeaed9d0a7e6d310411aca3630860ee0019a8101b6ce1",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-long-name-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "0c13bfa2a83efb98e6192775e0dc514830b569297a9e327fb28a8ade07d76d0b",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-long-name-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f78bda2dea3e9218dd729fc9da6783afd361cffa03f3c5ba36b7dfa2310306e9",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "delete-long-name-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b2a34aa2225bf6ba50d2b05ce0ddf578c48c3c33184e48e57849becfc062d49f",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "saved-decks-after-delete-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "3eee60c7d29ab8f59acec7e10b4c21218082138a9d4805f51d4debf4b83e9ffd",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "saved-decks-after-delete-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f847348d7ad469aed7b3623568e8a23b70ece6e6f87d9531dc7fbabc93e53338",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  },
+  {
+    "file": "saved-decks-after-delete-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "aa823c2ccffaa5dba936b42f52ae94296e081b3f96b6508abd3f9805ce597e91",
+    "kind": "final-source actual native render; same held logical frame/forcedCanvas within state; longname is presentation-only fixture; no matched-before pixel equivalence claim"
+  }
+]
