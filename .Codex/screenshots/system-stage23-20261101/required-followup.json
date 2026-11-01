@@ -1,0 +1,17 @@
+{
+  "systemMigrationAllComplete": false,
+  "closedThisStage": [
+    "keyboard/gamepad reset shared confirmation",
+    "retreat shared drawing/buttons with thin eligibility/pause coordinator"
+  ],
+  "requiredRemaining": [
+    "dialogue skip shared confirmation",
+    "dialogue backlog content/scroll owned dialog",
+    "Custom details content/input owned dialog"
+  ],
+  "notRequired": [
+    "Force stateful ProgressAction pending/retry into simple confirmation",
+    "One dedicated dialog class per purpose",
+    "Prefab every internal widget"
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "stage": 23,
+  "reviewType": "independent static code review",
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "35271c393896f0e33292bbd63a54e1ea65c096b3f6e6406e8b7f5d8cc6a37c33",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "c5e439086cb7ffb3e0e53a22c4e6646b09f939334d3275012fc9f868d3937dc6",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "ff181a23be34526eb7c6836f5c3050fb9fd0ce29f5eb63e62b23c59e1ce53d22",
+    "Assets/Olca/Presentation/Management/ViewManager.cs": "c0720e168bdbe5cb1374069ce73faf8256863108fffc7fef53abbf92545eeab3",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "597fcca1e9dbc6baf93fd48677bab0a76a1d1009173e50863fba5f7e128e8c83"
+  },
+  "submissionProjectAndReceiptMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "ConfirmationLayout is generic geometry; ConfirmationContent supplies text/button identities/feedback. No reset/retreat domain-kind switch introduced.",
+    "CanConfirm callback checks latest eligibility at confirmation; shared dialog owns ticket/input/generation and all-result Closing lifecycle.",
+    "Keyboard/gamepad reset creates shared dialog lazily; only confirmed result replaces edit with Defaults().BeginEdit(); existing save-success/application and failure paths retained.",
+    "OpenReset refreshes before assigning ResetKeyboardSettings origin focus to avoid InvalidateNavigation overwriting it. UI Close listener now checks CanOperate while explicit DiscardAndClose remains host-close API.",
+    "Legacy activeSelf prevents old closed Save/Close, and open reset rejects background Save/Close. Managed owner/context guards preserve modal fence and stale callback rejection.",
+    "Retreat coordinator retains state projection/cover/restore/result only; shared dialog owns text/button widgets/ticket and geometry.",
+    "Four new managed/legacy keyboard/gamepad cases verify canceled draft, stale popup events, confirmed draft-only reset, save failure, parent closure and stale Save; existing focus case now queries lazily generated button."
+  ],
+  "validation": {
+    "status": "Final v3 related/full/native and cleanup complete; reviewer did not publish.",
+    "targeted": {
+      "related": {
+        "receipt": "system-stage23-related-test-result.json",
+        "summary": {
+          "total": 541,
+          "passed": 541,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 71.85,
+        "consoleErrors": 0,
+        "hashesMatch": true
+      },
+      "integration-related": {
+        "receipt": "system-stage23-integration-related-test-result.json",
+        "summary": {
+          "total": 605,
+          "passed": 605,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 53.13,
+        "consoleErrors": 0,
+        "hashesMatch": true
+      }
+    },
+    "nativeReceipts": [
+      "system-stage23-native-settings-result.json",
+      "system-stage23-native-lifetime-retreat-result.json",
+      "system-stage23-native-final-close-result.json"
+    ],
+    "nativeScope": "Keyboard/pad custom saved profile, cancel/confirm draft-only reset, failed save/no apply and retry; host Close/Open/Single and retreat cancel/failure retry invariants. Physical devices/hearing not verified.",
+    "full": {
+      "receipt": "system-stage23-final-test-result.json",
+      "summary": {
+        "total": 3653,
+        "passed": 3653,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 247,
+      "consoleErrors": 0,
+      "groundTruthWarnings": 59,
+      "wrapperTimedOut": true,
+      "completedResultRecovered": true,
+      "sourceHashesMatch": true
+    },
+    "cleanup": {
+      "receipt": "system-stage23-cleanup.json",
+      "status": "PASS: recorded original/assets, guard/render/TMP/default-store, native devices, event/generated leases and native save invariants restored."
+    },
+    "currentHashesMatch": true,
+    "sameEditor": "84 passed per parent receipt",
+    "visual": "18 native images, required findings0 per independent visual review"
+  },
+  "limits": [
+    "Static scoped review is not universal correctness assurance.",
+    "Actual focus on next frame, normal Play natural destruction/reentry, sound and visual geometry need runtime verification.",
+    "No production edits, Unity operations or test execution by reviewer."
+  ],
+  "progressActionBoundary": "Inspected ProgressActionDialog.Attempt: stores purpose/pending/revision and distinct ManualSave Retry versus NewGame Start/Retry; false attempt preserves ticket and disabled cancellation on pending failure, success produces one typed NewGameStarted result. This is genuinely stateful workflow, not text/yes-no only; forcing that state into ConfirmationDialog would introduce domain-mode logic. Shared primitive rendering may be factored separately without moving retry ownership.",
+  "retreatGrowth": {
+    "receipt": "system-stage23-native-retreat-growth.json",
+    "backupMatchesCapturedPreRetreatProgress": true,
+    "experienceLevelTokensUnchanged": true,
+    "checkedState": "Experience0 / Level1 / Tokens0 before-backup and after-active; nonzero reward behavior covered by Integration, not claimed demonstrated by this native sample."
+  },
+  "pretestRevisionNote": "v1/v2 focus ordering and entry-guard refinements occurred before tests; not test failures."
+}

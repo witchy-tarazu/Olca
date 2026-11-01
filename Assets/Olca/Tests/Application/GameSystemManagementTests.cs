@@ -135,8 +135,27 @@ namespace Olca.Tests.Application
             await views.ShowAsync("keyboard");var update=view.GetType().GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);
             Assert.AreEqual("CloseKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
             var buttons=panel.GetComponentsInChildren<Button>(true);Array.Find(buttons,x=>x.name=="ResetKeyboardSettings").onClick.Invoke();update.Invoke(view,null);
-            Array.Find(buttons,x=>x.name=="CancelKeyboardReset").onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);
+            panel.GetComponentsInChildren<Button>().Single(x=>x.name=="CancelKeyboardReset").onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);
             Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreEqual("ResetKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
+        }
+        [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
+        public async Task 割当初期化は共通確認を必要時生成し候補だけ変更して旧世代と閉鎖後保存を拒否する(bool managed,bool gamepad)
+        {
+            var panel=Panel("reset-shared");var view=panel.AddComponent<Olca.Presentation.Field.GameplayKeyboardSettingsView>();
+            viewCleanup=()=>{if(view!=null)view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);};
+            var defaults=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();string device=gamepad?"gamepad":"keyboard";
+            var slot=(device,"battle","AttackPrimary");var changed=defaults.BeginEdit();Assert.IsTrue(changed.TryAssign(slot,defaults.Bindings[(device,"battle","CardPrimary")],out var error),error);var profile=changed.Preview();int saves=0;
+            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),candidate=>{saves++;return "fixture save failure";},gamepad);
+            if(managed){Register("reset-shared",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(profile);});await views.ShowAsync("reset-shared");}else view.Open(profile);
+            var update=view.GetType().GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);
+            Button Find(string name)=>panel.GetComponentsInChildren<Button>().Single(x=>x.name==name);string Draft()=>Find("Bind_battle_AttackPrimary").GetComponentInChildren<Text>().text;
+            string original=Draft();var save=Find("SaveKeyboardSettings").onClick;var close=Find("CloseKeyboardSettings").onClick;Assert.IsNull(panel.GetComponentInChildren<ConfirmationDialog>());
+            Find("ResetKeyboardSettings").Select();Find("ResetKeyboardSettings").onClick.Invoke();var first=panel.GetComponentInChildren<ConfirmationDialog>();Assert.IsNotNull(first);var oldConfirm=first.ConfirmButton.onClick;var oldCancel=first.CancelButton.onClick;save.Invoke();close.Invoke();Assert.AreEqual(0,saves);Assert.IsTrue(first.IsOpen);Assert.IsTrue(panel.activeSelf);
+            first.CancelButton.onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);Assert.AreEqual(original,Draft());Assert.AreEqual("ResetKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
+            Find("ResetKeyboardSettings").onClick.Invoke();var second=panel.GetComponentInChildren<ConfirmationDialog>();Assert.IsNotNull(second);Assert.AreNotSame(first,second);oldConfirm.Invoke();oldCancel.Invoke();Assert.IsTrue(second.IsOpen);Assert.AreEqual(original,Draft());
+            second.ConfirmButton.onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);Assert.AreEqual(0,saves);Assert.AreNotEqual(original,Draft());Assert.AreSame(profile,view.GetType().GetField("applied",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view));
+            save.Invoke();Assert.AreEqual(1,saves);StringAssert.Contains("保存できませんでした",panel.GetComponentsInChildren<Text>().Single(x=>x.name=="Status").text);
+            view.DiscardAndClose();view.GetType().GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);save.Invoke();oldConfirm.Invoke();Assert.AreEqual(1,saves);Assert.AreEqual(0,dialogs.ActiveCount);
         }
         [Test] public async Task 音量画面は閉鎖通知し旧クリックを拒否して再表示できる()
         {

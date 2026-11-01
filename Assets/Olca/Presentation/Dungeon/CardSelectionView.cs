@@ -1364,7 +1364,8 @@ namespace Olca.Presentation.Management
         protected virtual void LateUpdate(){RefreshLifetime();if(this==null||!IsOpen)return;FitReferenceLayout();RefreshContents();}
         protected virtual void RefreshContents(){}
         protected override void Redraw(){FitReferenceLayout();RefreshContents();Rendered();}
-        protected sealed override void OnResult(DialogResult result,string focusName){Restore();Terminated?.Invoke();Terminated=null;if(result!=DialogResult.ParentClosed)Deliver(result);if(this!=null&&!destroying){if(UnityEngine.Application.isPlaying)Destroy(gameObject);else DestroyImmediate(gameObject);}}
+        protected virtual void Closing(DialogResult result){}
+        protected sealed override void OnResult(DialogResult result,string focusName){Restore();Closing(result);Terminated?.Invoke();Terminated=null;if(result!=DialogResult.ParentClosed)Deliver(result);if(this!=null&&!destroying){if(UnityEngine.Application.isPlaying)Destroy(gameObject);else DestroyImmediate(gameObject);}}
         private void ClearOwnership(){Terminated=null;parent=null;surface=null;widgets=null;body=null;ReleaseCallbacks();}
         protected override void OnDestroy(){destroying=true;base.OnDestroy();ClearOwnership();}
         protected abstract void ReleaseCallbacks();
@@ -1376,7 +1377,7 @@ namespace Olca.Presentation.Management
         private readonly Transform root;private readonly Font font;
         public ReturnDialogWidgets(Transform root,Font font){this.root=root;this.font=font;}
         public Text Text(string name,string value,float x,float y,float width,float height,int size){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(root,false);var text=obj.GetComponent<Text>();text.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value);text.font=font;text.fontSize=size;text.alignment=TextAnchor.MiddleCenter;text.raycastTarget=false;UiLook.Label(text);var rect=text.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(x,y);rect.sizeDelta=new Vector2(width,height);return text;}
-        public Button Button(string name,string label,float x,float y,float width,float height){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(root,false);var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(x,y);rect.sizeDelta=new Vector2(width,height);obj.GetComponent<Image>().color=UiLook.ButtonFace;var edge=obj.AddComponent<Outline>();edge.effectColor=new Color(.5f,.9f,.93f,.6f);edge.effectDistance=new Vector2(1,-1);var button=obj.GetComponent<Button>();button.navigation=new Navigation{mode=Navigation.Mode.None};var text=Text(name+"Label",label,0,0,width,height,25);text.transform.SetParent(obj.transform,false);text.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(button);return button;}
+        public Button Button(string name,string label,float x,float y,float width,float height,int fontSize=25,bool outlined=true){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(root,false);var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(x,y);rect.sizeDelta=new Vector2(width,height);obj.GetComponent<Image>().color=UiLook.ButtonFace;if(outlined){var edge=obj.AddComponent<Outline>();edge.effectColor=new Color(.5f,.9f,.93f,.6f);edge.effectDistance=new Vector2(1,-1);}var button=obj.GetComponent<Button>();button.navigation=new Navigation{mode=Navigation.Mode.None};var text=Text(name+"Label",label,0,0,width,height,fontSize);text.transform.SetParent(obj.transform,false);text.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(button);return button;}
         public Image Face(string name){var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(root,false);var image=obj.GetComponent<Image>();image.sprite=Resources.Load<Sprite>("OlcaUI/window");image.type=Image.Type.Sliced;image.color=Color.white;image.raycastTarget=false;return image;}
         public static bool Overflows(Text label){if(label.font==null||string.IsNullOrEmpty(label.text))return false;using(var generator=new TextGenerator()){generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));return generator.characterCountVisible<label.text.TrimEnd('\r','\n').Length;}}
     }
@@ -1387,15 +1388,37 @@ namespace Olca.Presentation.Management
         public string TitleName="ConfirmationTitle",MessageName="ConfirmationMessage",SubjectName="ConfirmationSubject",StatusName="ConfirmationStatus";
         public string ConfirmName="Confirm",CancelName="Cancel",ConfirmLabel="はい",CancelLabel="いいえ";
         public bool ConfirmEnabled=true;
+        public ConfirmationLayout Layout;
+        public Action<string> ButtonFeedback;
+    }
+    /// <summary>用途に依存しない既存表示geometry。業務状態・保存処理は保持しない。</summary>
+    public sealed class ConfirmationLayout
+    {
+        public bool ReferenceLayout;
+        public Vector2 MessagePosition,MessageSize,ConfirmPosition,CancelPosition,ButtonSize;
+        public int MessageFontSize=30,ButtonFontSize=25;public bool ButtonOutline;
+        public string ReadingName;public Vector2 ReadingPosition,ReadingSize;public float ReadingSideInset=80;
+        public Color Surface=UiLook.Surface;
     }
     /// <summary>文言・はい/いいえ・必要なsubject読取を共通化し、業務処理は呼出側へ返す。</summary>
     public sealed class ConfirmationDialog : ReturnDialog
     {
-        private bool confirmEnabled;
+        private bool confirmEnabled;private ConfirmationLayout layout;private RectTransform reading;
+        public Func<bool> CanConfirm;
+        public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
         public event Action<bool> Completed;
+        public event Action<DialogResult> Finished;
         public static ConfirmationDialog Create(Transform host,Font font,ConfirmationContent data)
         {
-            if(data==null)throw new ArgumentNullException(nameof(data));var value=CreateShell<ConfirmationDialog>(host,font,data.RootName,data.BodyName,true);value.confirmEnabled=data.ConfirmEnabled;
+            if(data==null)throw new ArgumentNullException(nameof(data));var value=CreateShell<ConfirmationDialog>(host,font,data.RootName,data.BodyName,data.Layout==null||data.Layout.ReferenceLayout);value.confirmEnabled=data.ConfirmEnabled;
+            if(data.Layout!=null){
+                var layout=value.layout=data.Layout;value.GetComponent<Image>().color=layout.Surface;
+                if(layout.ReadingName!=null){var face=value.widgets.Face(layout.ReadingName);face.rectTransform.anchoredPosition=layout.ReadingPosition;face.rectTransform.sizeDelta=layout.ReadingSize;value.reading=face.rectTransform;}
+                value.widgets.Text(data.MessageName,data.Message,layout.MessagePosition.x,layout.MessagePosition.y,layout.MessageSize.x,layout.MessageSize.y,layout.MessageFontSize);
+                value.confirm=value.widgets.Button(data.ConfirmName,data.ConfirmLabel,layout.ConfirmPosition.x,layout.ConfirmPosition.y,layout.ButtonSize.x,layout.ButtonSize.y,layout.ButtonFontSize,layout.ButtonOutline);
+                value.cancel=value.widgets.Button(data.CancelName,data.CancelLabel,layout.CancelPosition.x,layout.CancelPosition.y,layout.ButtonSize.x,layout.ButtonSize.y,layout.ButtonFontSize,layout.ButtonOutline);
+                value.confirm.interactable=value.confirmEnabled;value.confirm.onClick.AddListener(()=>data.ButtonFeedback?.Invoke(data.ConfirmName));value.cancel.onClick.AddListener(()=>data.ButtonFeedback?.Invoke(data.CancelName));value.directionScroll=false;value.CaptureFeedback();return value;
+            }
             bool subject=data.Subject!=null;
             var title=value.widgets.Text(data.TitleName,data.Title,0,455,1700,subject?70:60,36);
             if(subject){
@@ -1408,9 +1431,11 @@ namespace Olca.Presentation.Management
             value.confirm=value.widgets.Button(data.ConfirmName,data.ConfirmLabel,subject?-400:420,-150,subject?700:750,subject?75:80);value.confirm.interactable=value.confirmEnabled;
             value.cancel=value.widgets.Button(data.CancelName,data.CancelLabel,subject?400:-420,-150,subject?700:750,subject?75:80);value.directionScroll=false;value.CaptureFeedback();return value;
         }
-        protected override bool Attempt()=>confirmEnabled;
+        protected override void RefreshContents(){if(reading!=null)reading.sizeDelta=new Vector2(Mathf.Min(layout.ReadingSize.x,Mathf.Max(1,((RectTransform)transform).rect.width-layout.ReadingSideInset)),layout.ReadingSize.y);}
+        protected override bool Attempt()=>confirmEnabled&&(CanConfirm?.Invoke()??true);
+        protected override void Closing(DialogResult result){var callback=Finished;Finished=null;callback?.Invoke(result);}
         protected override void Deliver(DialogResult result){var callback=Completed;Completed=null;callback?.Invoke(result==DialogResult.Confirmed);}
-        protected override void ReleaseCallbacks(){Completed=null;}
+        protected override void ReleaseCallbacks(){Completed=null;Finished=null;CanConfirm=null;reading=null;layout=null;}
     }
     public sealed class ReadOnlyDetailsDialog : ReturnDialog
     {

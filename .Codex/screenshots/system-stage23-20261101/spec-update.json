@@ -1,0 +1,14 @@
+{
+  "checkedUtc": "2026-11-01T22:05:42.440284+00:00",
+  "head": "dd2e0192edcaacb297a0fd111a54f31660072060",
+  "originMaster": "dd2e0192edcaacb297a0fd111a54f31660072060",
+  "specificationChangesSinceStage22": [],
+  "previousProtectedDocs": [
+    "9a548c1539020bfd083cc4117b50eb5233b9976a",
+    "06cae0db243a9af2b2151b12feb0362104a65b50",
+    "526bd97f3148464d113005a4cd2abaf24eb99ffa",
+    "023c95321c09b9f44f46df7a83e65bd1445be19a"
+  ],
+  "scope": "No exploration/new gameplay specification implemented; preserve prior document history.",
+  "prePublicationFetch": "HEAD/origin dd2e019 unchanged"
+}

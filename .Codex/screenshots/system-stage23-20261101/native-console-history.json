@@ -1,0 +1,48 @@
+{
+  "errors": {
+    "entries": [],
+    "cursor": 440168,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 174
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T21:51:39.48461Z",
+      "ageMs": 45,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 174,
+      "seeded": true
+    }
+  },
+  "warnings": {
+    "entries": [],
+    "cursor": 440168,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 174
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T21:51:39.48461Z",
+      "ageMs": 161,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 174,
+      "seeded": true
+    }
+  }
+}

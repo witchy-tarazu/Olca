@@ -1,0 +1,34 @@
+{
+  "nativeAfterStartupClear": {
+    "sampledUtc": "2026-11-01T21:51:39.48461Z",
+    "ageMs": 45,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 174,
+    "seeded": true
+  },
+  "startup": {
+    "sampledUtc": "2026-11-01T21:46:39.757005Z",
+    "ageMs": 99,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 3,
+    "seeded": true
+  },
+  "startupWarningCategory": "UnityAI connection-info save to read-only environment; no security/credential changes",
+  "startupWarning": {
+    "seq": 439994,
+    "timestampUtc": "2026-11-01T21:46:22.766414Z",
+    "level": "warn",
+    "logType": "Warning",
+    "message": "Could not save connection info: Read-only file system",
+    "stackTrace": "UnityEngine.Debug:LogWarning (object)\nUnity.AI.Tracing.ConsoleSink:LogToConsole (string,string,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceSinks.cs:310)\nUnity.AI.Tracing.ConsoleSink:Write (Unity.AI.Tracing.TraceEvent) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceSinks.cs:277)\nUnity.AI.Tracing.TraceWriter:WriteEventInternal (string,string,Unity.AI.Tracing.TraceEventOptions,string,System.Nullable`1<int>) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceWriter.cs:373)\nUnity.AI.Tracing.TraceWriter:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceWriter.cs:297)\nUnity.AI.Tracing.TraceLogger:Emit (string,string,string,string,Unity.AI.Tracing.TraceEventOptions,object,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceLogger.cs:105)\nUnity.AI.Tracing.TraceLogger:Warn (string,string,string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.Tracing/TraceLogger.cs:39)\nUnity.AI.MCP.Editor.Helpers.McpLog:Warning (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Helpers/McpLog.cs:16)\nUnity.AI.MCP.Editor.Helpers.ServerDiscovery:SaveConnectionInfo (string) (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Connection/ServerDiscovery.cs:136)\nUnity.AI.MCP.Editor.Bridge:Start () (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Bridge.cs:297)\nUnity.AI.MCP.Editor.Bridge:EnsureStartedOnEditorIdle () (at ./Library/PackageCache/com.unity.ai.assistant@6fee27370e6a/Modules/Unity.AI.MCP.Editor/Bridge.cs:454)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions () (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)\n",
+    "seeded": false
+  },
+  "mcpHistoryBufferContainsEarlierTestFixtureMessages": true,
+  "note": "Engine groundTruth counts distinguish current startup warning1 from retained MCP fixture history. No warnings suppressed."
+}

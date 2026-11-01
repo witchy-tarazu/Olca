@@ -1,0 +1,22 @@
+{
+  "actualSavedActiveAndBackup": {
+    "progress.json": {
+      "Revision": 3,
+      "Experience": 0,
+      "Level": 1,
+      "Tokens": 0,
+      "sha256": "7ee0689bc777e3cedbe00beeaeb329a114e24399a22eb2ee237a6c9d28a9cf1d"
+    },
+    "progress.backup.json": {
+      "Revision": 2,
+      "Experience": 0,
+      "Level": 1,
+      "Tokens": 0,
+      "sha256": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d"
+    }
+  },
+  "backupRevisionMatchesNativeBefore": true,
+  "experienceLevelTokensUnchanged": true,
+  "source": "Actual isolated progress envelope Payload decoded; before-backup and after-active; no product changes",
+  "backupHashMatchesCapturedPreRetreatProgress": true
+}

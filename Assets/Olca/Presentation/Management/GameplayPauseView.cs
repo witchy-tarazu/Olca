@@ -60,6 +60,7 @@ namespace Olca.Presentation.Management
     public sealed class GameplayPanelFactory
     {
         public Font Font { get; }
+        public void Feedback(string name)=>sound?.Invoke(name);
         private readonly Transform parent;
         private readonly Action<string> sound;
         public GameplayPanelFactory(Transform parent,Font font,Action<string> sound){this.parent=parent;Font=font;this.sound=sound;}
@@ -397,42 +398,39 @@ namespace Olca.Presentation.Management
         public bool CanConfirm=>Paused&&!Returning;
     }
     /// <summary>撤退の警告・可否表示・確認結果とPauseの覆いを所有し、損失計算は行わない。</summary>
-    public sealed class RetreatConfirmationDialog : OwnedPopup
+    /// <summary>撤退固有の最新可否とPause復帰だけを調整し、確認表示/入力は共通Dialogへ委譲する。</summary>
+    public sealed class RetreatConfirmationDialog : MonoBehaviour
     {
-        private Func<RetreatDialogState> state;
-        private GameplayPauseView pause;
-        private GameObject legacyPause;
-        private Func<bool> hostLive;
-        private GameObject legacyOrigin;
-        public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
+        private Func<RetreatDialogState> state;private GameplayPauseView pause;private GameObject legacyPause,legacyOrigin;private Func<bool> hostLive;private Font font;private Action<string> feedback;
+        private ConfirmationDialog dialog;
+        public bool IsOpen=>dialog!=null&&dialog.IsOpen;
+        public Button ConfirmButton=>dialog!=null?dialog.ConfirmButton:null;public Button CancelButton=>dialog!=null?dialog.CancelButton:null;
         public event Action Confirmed;
-        public void Initialize(GameplayPanelFactory factory)
-        {
-            var text=factory.Label("RetreatWarning",transform,new Vector2(.5f,.5f),new Vector2(0,150),new Vector2(1600,200));
-            text.text="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
-            confirm=factory.Button("ConfirmRetreat","撤退して帰還",transform,new Vector2(.5f,.5f),new Vector2(-280,-100));cancel=factory.Button("CancelRetreat","攻略へ戻る",transform,new Vector2(.5f,.5f),new Vector2(280,-100));
-            foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(420,70);CaptureFeedback();
-        }
+        public void Initialize(GameplayPanelFactory factory){font=factory.Font;feedback=factory.Feedback;}
         public static bool CanRequest(RetreatDialogState state,DialogManager manager,GameplayPauseView parent)=>state.CanOpen&&(manager==null||manager.ActiveCount==0&&parent?.Context?.IsCurrent==true&&!parent.Context.DialogBlocksInput);
         public void Open(Func<RetreatDialogState> source,DialogManager manager,GameplayPauseView parent,GameObject legacy,Func<bool> live)
         {
             if(IsOpen||!CanRequest(source(),manager,parent))return;
             state=source;pause=parent;legacyPause=legacy;hostLive=live;legacyOrigin=EventSystem.current?.currentSelectedGameObject;
-            var owner=parent?.Context;if(manager!=null&&(owner?.IsCurrent!=true||owner.DialogBlocksInput)){Clear();return;}
-            if(manager!=null&&manager.ActiveCount!=0){Clear();return;}
-            if(parent!=null)parent.CoverForDialog();
-            if(!Begin(manager,owner,live)){if(parent!=null)parent.RestoreAfterDialog();Clear();return;}
-            if(parent==null&&legacy!=null)legacy.SetActive(false);Redraw();
+            var owner=parent?.Context;if(manager!=null&&(owner?.IsCurrent!=true||owner.DialogBlocksInput||manager.ActiveCount!=0)){Clear();return;}
+            if(parent!=null)parent.CoverForDialog();gameObject.SetActive(true);transform.SetAsLastSibling();
+            var popup=ConfirmationDialog.Create(transform,font,new ConfirmationContent{ButtonFeedback=feedback,RootName="RetreatConfirmationContents",MessageName="RetreatWarning",Message="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。",ConfirmName="ConfirmRetreat",ConfirmLabel="撤退して帰還",CancelName="CancelRetreat",CancelLabel="攻略へ戻る",Layout=new ConfirmationLayout{ButtonFontSize=30,MessagePosition=new Vector2(0,150),MessageSize=new Vector2(1600,200),ConfirmPosition=new Vector2(-280,-100),CancelPosition=new Vector2(280,-100),ButtonSize=new Vector2(420,70),Surface=Color.clear}});
+            dialog=popup;popup.CanConfirm=()=>this!=null&&state?.Invoke().CanConfirm==true;
+            popup.Finished+=result=>{if(this!=null&&ReferenceEquals(dialog,popup))Finish(result);};
+            if(!popup.Open(gameObject,manager,owner,()=>this!=null&&(hostLive?.Invoke()??false),false)){if(parent!=null)parent.RestoreAfterDialog();dialog=null;Clear();gameObject.SetActive(false);return;}
+            if(parent==null&&legacy!=null)legacy.SetActive(false);
         }
-        public void ConfirmFromCompatibilityApi(){confirm.onClick.Invoke();}
-        protected override bool Attempt()=>state?.Invoke().CanConfirm==true;
-        protected override void Redraw(){confirm.interactable=cancel.interactable=true;Rendered();}
-        protected override void OnResult(DialogResult result,string focusName)
+        public void ConfirmFromCompatibilityApi(){ConfirmButton?.onClick.Invoke();}
+        public void RefreshLifetime(){if(dialog!=null)dialog.RefreshLifetime();}
+        public void Abort(){if(dialog!=null)dialog.Abort();}
+        private void Finish(DialogResult result)
         {
+            dialog=null;
             if(result!=DialogResult.ParentClosed&&(hostLive?.Invoke()??false)){if(pause!=null)pause.RestoreAfterDialog();else if(legacyPause!=null){legacyPause.SetActive(true);if(legacyOrigin!=null&&legacyOrigin.activeInHierarchy&&legacyOrigin.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(legacyOrigin);}}
-            bool accepted=result==DialogResult.Confirmed;Clear();if(accepted)Confirmed?.Invoke();
+            bool accepted=result==DialogResult.Confirmed;Clear();gameObject.SetActive(false);if(accepted)Confirmed?.Invoke();
         }
         private void Clear(){state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
-        protected override void OnDestroy(){base.OnDestroy();Clear();Confirmed=null;}
+        private void OnDisable(){Abort();}
+        private void OnDestroy(){Abort();Clear();dialog=null;font=null;feedback=null;Confirmed=null;}
     }
 }

@@ -25,6 +25,7 @@ namespace Olca.Presentation.Management
         internal ManagedScreenContext(ViewManager manager, string key, long epoch) { this.manager = manager; Key = key; Epoch = epoch; }
         public bool IsCurrent => manager.IsCurrent(this);
         public bool DialogBlocksInput => manager.Dialogs.Blocks(this);
+        internal DialogManager Dialogs => manager.Dialogs;
         public Task<DialogResult> ShowDialog(GameObject panel, Button confirm, Button cancel, Action<DialogResult> complete) => manager.Dialogs.Show(this, panel, confirm, cancel, complete);
         public void NotifyHidden() => manager.NotifyHidden(this);
     }

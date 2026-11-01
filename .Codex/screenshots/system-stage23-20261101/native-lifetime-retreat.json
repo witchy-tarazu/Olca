@@ -1,0 +1,717 @@
+{
+  "first": {
+    "revision": 2,
+    "tokens": 0,
+    "owned": [
+      {
+        "Id": "bomb",
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Count": 4
+      },
+      {
+        "Id": "sword",
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Count": 4
+      }
+    ],
+    "paused": true,
+    "dialogs": 0,
+    "keyboardDefault": true,
+    "padDefault": true,
+    "root": -303482914,
+    "audio": 3
+  },
+  "hostClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1982606454,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -303482914,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -303482920,
+        -303482926,
+        -303482932
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "oldReset": {
+    "oldViewDestroyed": true,
+    "oldCallbacksHarmless": true,
+    "dialogs": 0
+  },
+  "reopened": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": true,
+        "id": -303491404,
+        "active": true
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 2,
+    "pending": false,
+    "progress": false,
+    "owned": 9,
+    "dialogs": 0,
+    "focus": "ContinueCheckpointButton",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "ContinueCheckpointButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -303482914,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "6e97c2bb-8dba-4b27-afb3-221669982e2a",
+    "presentation": "1fabec6b-a6e6-49ce-80ca-8227b668d85a"
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -303490218,
+    "newControllerId": -303494878,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1639583835,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -303482914,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -303482992,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -303494878
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -303482920,
+        -303482926,
+        -303482932
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings"
+    }
+  },
+  "beforeRetreat": {
+    "revision": 2,
+    "tokens": 0,
+    "owned": [
+      {
+        "Id": "bomb",
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Count": 4
+      },
+      {
+        "Id": "sword",
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Count": 4
+      }
+    ],
+    "paused": true,
+    "dialogs": 0,
+    "keyboardDefault": true,
+    "padDefault": true,
+    "root": -303482914,
+    "audio": 3
+  },
+  "failure": {
+    "phase": "Dungeon",
+    "position": 4.4,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": true,
+        "id": -303496530,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": true,
+        "id": -303496064,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": true,
+        "id": -303498026,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -303498292,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -303496362,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 2,
+    "pending": true,
+    "progress": false,
+    "owned": 14,
+    "dialogs": 0,
+    "focus": "RetryClearReturn",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "RetryClearReturn",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": false
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": false
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": false
+      }
+    ],
+    "rootId": -303482914,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "6e97c2bb-8dba-4b27-afb3-221669982e2a",
+    "presentation": "1fabec6b-a6e6-49ce-80ca-8227b668d85a"
+  },
+  "retry": {
+    "phase": "Dungeon",
+    "position": 4.4,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": true,
+        "id": -303496530,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": true,
+        "id": -303496064,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": true,
+        "id": -303498026,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -303498292,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -303496362,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 14,
+    "dialogs": 0,
+    "focus": "SelectDepartureStyle",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      }
+    ],
+    "rootId": -303482914,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "6e97c2bb-8dba-4b27-afb3-221669982e2a",
+    "presentation": "1fabec6b-a6e6-49ce-80ca-8227b668d85a"
+  },
+  "writes": 2,
+  "afterRetreat": {
+    "revision": 3,
+    "tokens": 0,
+    "owned": [
+      {
+        "Id": "bomb",
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Count": 4
+      },
+      {
+        "Id": "sword",
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Count": 4
+      }
+    ],
+    "paused": false,
+    "dialogs": 0,
+    "keyboardDefault": true,
+    "padDefault": true,
+    "root": -303482914,
+    "audio": 3
+  },
+  "cancelBytesUnchanged": true,
+  "failedProgressBytesUnchanged": true,
+  "checkpointBoundary": "Intentional host suspension/retreat may write checkpoint; not treated as read-only",
+  "rewardInvariance": true
+}

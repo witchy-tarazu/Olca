@@ -789,3 +789,16 @@ ProgressActionはrevision/pending/同計画Retry/成功通知という固有状�
 第22段階の最終検証はUI382、Application537、Integration605、同Editor反復76、全3649件が成功。全件247.08秒、console error0、警告59は既存fixture診断5分類と一致。v4最終ソースで新しい隔離保存先22002の通常Bootstrapから破棄取消/確定、削除書込前失敗→同計画再試行(試行2回・Aのみ削除)、読取詳細の実scroll末尾、同frame背面入力・旧ticket、自然Destroy/親終了/timeScale0 host終了/CloseOpen/Single再入を確認。FHD/4K/4:3の最終18枚と独立code/visual reviewの必須指摘0。元保存・原本・import資産は保護し、生成lease/EventSystem/注入/仮想機器/検証参照のcleanupと640復元を確認した。[検証/比較/残件](../.Codex/screenshots/system-stage22-20261101/README.md)。
 
 次の必須まとまりは割当初期化と会話skipの単純確認を共通Confirmationへ揃え、会話backlogとCustom詳細は固有内容/操作を各Dialogへ移すこと。Retreatの最新可否/覆い復帰は現行責務を守り、単純二択の描画共用を整合する。ProgressActionの固有write-plan再試行状態を汎用DialogManagerへ移さない。Prefab全widget化や名称変更だけの抽象化は必須に追加しない。基盤全体の必須完了ではなく、この段階で共通確認2入口と帰還読取詳細の責務を閉じた。
+
+
+## 第23段階: キー/パッド初期化と撤退確認の共用
+
+単純テキスト+二択は共通ConfirmationDialogへ文言・geometry・ボタン挙動を渡す方針で閉じた。GameplayKeyboardSettingsViewの専用reset widget生成/ローカル確認Menuを除去し、初回要求だけ共通Popupを生成。確定はDefaults().BeginEdit()による草稿変更のみ、保存・適用は従来経路の成功後。UIの旧保存/戻りをモーダル中・閉鎖後に拒否し、host用DiscardAndClose公開操作を維持する。
+
+RetreatConfirmationDialogは描画/ボタン/ticketを持つ専用Popupから、最新可否・Pause覆い復帰・結果通知だけの薄いcoordinatorへ変更。共通ConfirmationLayoutは元の位置/文字サイズ/reading面を持つ純表示データ、CanConfirmは押下時の可否callback。効果音の既存factory callbackを引き継ぎ、報酬・保存・checkpoint計算は既存Controller/Sessionへ委譲する。DialogManagerに用途分岐や業務依存は追加しない。ManagedScreenContextのinternal Dialogs接続だけを追加し、既存Root/Session/Resource/Sound/入力/固定時計の所有は不変。
+
+ProgressActionDialogは確認revision、pending計画、同ticket再試行、取消不能な失敗、成功通知という固有状態を持つため、単純二択へ一律統合しない。共通Dialogを業務状態で膨らませず、専用の表示状態所有を維持する。
+
+最終Application541/Integration605/同Editor84/全3653件が成功、全件247秒・console error0。警告59は既存fixture診断5分類。隔離23001の実入口で両機器の候補作成/初期化取消と確定/保存前失敗→通常再試行2回/旧callback/同frame背面入力/親終了、host CloseOpen/Singleとcheckpoint実再開、撤退取消/旧確定/保存失敗→同計画再試行2回を確認。経験値等は実保存前hashとbackupを照合し確認状態で不変、非ゼロ報酬の破棄等は既存回帰の範囲と区別。FHD/4K/4:3原寸18枚、独立code/visual review必須指摘0。保存bytes・入力機器/注入/proof・EventSystem登録/管理生成lease・原本/928資産・640復元のcleanupを確認。[証跡と比較](../.Codex/screenshots/system-stage23-20261101/README.md)。
+
+残必須は会話skipの共通確認化、backlog固有内容/scroll、Custom詳細固有内容/入力の3機能。専用classの個数や任意の全widget Prefab化を必須に増やさない。今回で全体安定化完了とはしない。実build/物理入力/聴感/全HotReload、製品データ・極端な旧長名・登録外Sprite2095、歴史的UGUI/Pipeline/CLI/UnityAIは既存の未確認として保持。新外界仕様/未決数値の実装は混ぜず、最新fetchでStage22から文書差分なしを確認した。
