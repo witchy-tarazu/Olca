@@ -1,0 +1,21 @@
+{
+  "systemMigrationAllComplete": false,
+  "dialogManagerGeneric": true,
+  "individualDialogClassesImplemented": [
+    "ProgressActionDialog",
+    "RetreatConfirmationDialog"
+  ],
+  "individualDialogClassesNotImplemented": [
+    "DeckDiscardDialog",
+    "SavedDeckDeleteDialog",
+    "ReadOnlyDetailsDialog",
+    "BindingResetDialog",
+    "DialogueSkipDialog",
+    "DialogueBacklogDialog",
+    "CustomCardDetailsDialog"
+  ],
+  "optionalNotMandatory": [
+    "Serialize every internal widget as a prefab",
+    "Rename already managed factories purely for abstraction"
+  ]
+}

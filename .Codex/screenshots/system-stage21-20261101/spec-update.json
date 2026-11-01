@@ -1,0 +1,24 @@
+{
+  "head": "d59495e68df5107fd542e92fe9af2c042a6a5e12",
+  "protected": [
+    "50ec65c20b00f21e8d482ba626e5f3c1cf1f4926",
+    "eb7e934753b5bddc7c5d2e5da9b8d940388fe09e",
+    "d6ec493",
+    "bc3650b",
+    "fce65ea",
+    "713bb03",
+    "d59495e68df5107fd542e92fe9af2c042a6a5e12"
+  ],
+  "scope": "Documentation only, no outside-exploration implementation",
+  "changes": [
+    "Recovery and FT discovery count in exploration percentage; integer floor, 100 only for all targets, no totals, no dedicated reward; achievement undecided",
+    "Underwater basic left/right+jump with modified speed/gravity; breath depletion death, not continuous damage; specific style/item unlimited breath; values pending"
+  ],
+  "additionalChanges": [
+    "Breath refills immediately out of water and starts full when unlimited style removed; stops with exploration time and only displays when limited underwater",
+    "Underwater attacks normally share land/air action; entry resets fall distance and water/underwater landing has no fall damage; ground-contact underwater normal dash allowed",
+    "Water speed/gravity/jump use modifiers and adjustable provisional values distinctly recorded, not final balance",
+    "Multiple safe bases provide recovery/deck/shop/NPC/quests and FT; key/story/unlock valuables unsellable/undiscardable/nonconsuming except event; post-ending world and unfinished quests continue",
+    "No NG+ carry-over loop for now; possible second part with partial resources is future planning, not implemented. Distinct from existing erase-progress NewGame action."
+  ]
+}

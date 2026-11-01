@@ -1,0 +1,11 @@
+{
+  "pushExecuted": false,
+  "gateStoppedBeforePush": true,
+  "oldVerifiedCommit": "cf11b9054110b15993921590d867e5a271220af9",
+  "backupBranch": "stage21-verified-before-d59495e",
+  "rebasedVerifiedCommit": "345375d01fd374166380ddf0857e27d135611c5a",
+  "newBase": "d59495e68df5107fd542e92fe9af2c042a6a5e12",
+  "remoteChange": "one documentation line only: no NG+ now; second-part partial transfer is future concept",
+  "testedSourceAndAssetsUnchanged": true,
+  "worktreeAndIndexPreserved": true
+}

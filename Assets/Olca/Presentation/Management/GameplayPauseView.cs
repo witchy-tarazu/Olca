@@ -183,17 +183,6 @@ namespace Olca.Presentation.Management
                 Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero);
             LayoutPauseMenu(panel);return panel;
         }
-        public GameObject Progress(out Text message,out Button confirm,out Button cancel)
-        {
-            var panel=Panel("ProgressActionOverlay",true);
-            var obj=new GameObject("ProgressActionMessage",typeof(RectTransform),typeof(Text));obj.transform.SetParent(panel.transform,false);
-            message=obj.GetComponent<Text>();message.font=Font;message.fontSize=30;UiLook.Label(message);message.alignment=TextAnchor.MiddleCenter;
-            message.rectTransform.sizeDelta=new Vector2(1500,430);message.rectTransform.anchoredPosition=new Vector2(0,120);
-            confirm=Button("ConfirmNewGame","進行を初期化して開始",panel.transform,new Vector2(.5f,.5f),new Vector2(-300,-180));
-            cancel=Button("CancelProgressAction","取消して戻る",panel.transform,new Vector2(.5f,.5f),new Vector2(300,-180));
-            foreach(var button in new[]{confirm,cancel})((RectTransform)button.transform).sizeDelta=new Vector2(500,80);
-            return panel;
-        }
         public Text Label(string name,Transform target,Vector2 anchor,Vector2 position,Vector2 size)
         {
             var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(target,false);
@@ -220,14 +209,227 @@ namespace Olca.Presentation.Management
             resume=Button("ContinueCheckpointButton","続きから",panel.transform,new Vector2(.5f,.5f),new Vector2(0,-270));
             retry=Button("RetryCheckpointButton","保存を再試行",panel.transform,new Vector2(.5f,.5f),new Vector2(0,-270));((RectTransform)retry.transform).sizeDelta=new Vector2(320,70);return panel;
         }
-        public GameObject Retreat(out Button confirm,out Button cancel)
+
+    }
+}
+
+namespace Olca.Presentation.Management
+{
+    // 画面固有の内容を持たず、借用Popupと共通ticketの接続だけをまとめる。
+    public abstract class OwnedPopup : MonoBehaviour
+    {
+        protected Button confirm,cancel;
+        private DialogManager manager;
+        private IDialogOwner owner;
+        private DialogOwnerScope scope;
+        private Func<bool> valid;
+        private object generation;
+        private System.Threading.Tasks.Task<DialogResult> request;
+        private Olca.Unity.MenuPadScope legacyMenu;
+        private GameObject origin;
+        private bool suspended,attempting;
+        private Button.ButtonClickedEvent confirmFeedback,cancelFeedback;
+        public bool IsOpen {get;private set;}
+        public IDialogOwner Owner=>owner;
+        public event Action VisibilityChanged;
+        protected void CaptureFeedback(){confirmFeedback=confirm.onClick;cancelFeedback=cancel.onClick;}
+        protected void CompleteAccepted()=>Finish(DialogResult.Confirmed);
+        protected bool Begin(DialogManager service,IDialogOwner parent,Func<bool> live)
         {
-            var panel=Panel("RetreatConfirmation",true);
-            var text=Label("RetreatWarning",panel.transform,new Vector2(.5f,.5f),new Vector2(0,150),new Vector2(1600,200));
-            text.text="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
-            confirm=Button("ConfirmRetreat","撤退して帰還",panel.transform,new Vector2(.5f,.5f),new Vector2(-280,-100));
-            cancel=Button("CancelRetreat","攻略へ戻る",panel.transform,new Vector2(.5f,.5f),new Vector2(280,-100));
-            foreach(var button in new[]{confirm,cancel})((RectTransform)button.transform).sizeDelta=new Vector2(420,70);return panel;
+            if(IsOpen||!(live?.Invoke()??false)||service!=null&&(service.ActiveCount!=0||parent!=null&&(!parent.IsCurrent||service.Blocks(parent))))return false;
+            manager=service;owner=parent;valid=live;origin=EventSystem.current?.currentSelectedGameObject;IsOpen=true;suspended=false;
+            if(Attach())return true;
+            Abort();return false;
         }
+        private bool Attach()
+        {
+            if(!(valid?.Invoke()??false)||owner!=null&&!owner.IsCurrent)return false;
+            if(manager!=null&&manager.ActiveCount!=0)return false;
+            var token=generation=new object();
+            gameObject.SetActive(true);transform.SetAsLastSibling();
+            confirm.onClick=new Button.ButtonClickedEvent();cancel.onClick=new Button.ButtonClickedEvent();
+            confirm.onClick.AddListener(()=>{if(Live(token)&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});
+            cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())cancelFeedback?.Invoke();});
+            if(manager!=null){
+                if(owner==null){scope=manager.CreateOwner(()=>IsOpen&&!suspended&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false));owner=scope;}
+                request=manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),result=>{if(Live(token))Finish(result);});
+                if(request.IsCompleted){if(request.Result==DialogResult.ParentClosed||request.Result==DialogResult.Busy){Finish(DialogResult.ParentClosed);return false;}}
+            }else{
+                confirm.onClick.AddListener(()=>{if(!Live(token)||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
+                cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
+                legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&Olca.Unity.MenuPadScope.IsTopmost(transform));
+                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke());
+            }
+            return true;
+        }
+        private bool Live(object token)=>this!=null&&IsOpen&&!suspended&&!attempting&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false)&&(owner==null||owner.IsCurrent);
+        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);transform.SetAsLastSibling();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm.gameObject);}
+        public void RefreshLifetime()
+        {
+            if(!IsOpen)return;
+            if(!(valid?.Invoke()??false)||owner!=null&&!owner.IsCurrent){Abort();return;}
+            if(suspended){if(manager==null||manager.ActiveCount==0){suspended=false;if(Attach())Redraw();}return;}
+            if(request?.IsCompleted==true){Finish(DialogResult.ParentClosed);return;}
+            legacyMenu?.Tick();if(this!=null&&gameObject.activeInHierarchy)transform.SetAsLastSibling();
+        }
+        public void Suspend()
+        {
+            if(!IsOpen||suspended)return;suspended=true;generation=null;Detach();if(this!=null)gameObject.SetActive(false);
+        }
+        public void Resume(DialogManager service,IDialogOwner parent,Func<bool> live)
+        {
+            if(!IsOpen||!suspended)return;manager=service;owner=parent;valid=live;RefreshLifetime();
+        }
+        private void Detach()
+        {
+            var old=owner;generation=null;if(old!=null)manager?.CancelActiveOwner(old);scope?.Dispose();scope=null;owner=null;request=null;legacyMenu?.Dispose();legacyMenu=null;
+        }
+        private void Finish(DialogResult result)
+        {
+            if(!IsOpen)return;
+            bool restore=result!=DialogResult.ParentClosed&&(valid?.Invoke()??false);var focus=origin;
+            IsOpen=false;suspended=false;Detach();origin=null;if(this!=null)gameObject.SetActive(false);VisibilityChanged?.Invoke();
+            if(restore&&focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(focus);
+            valid=null;manager=null;OnResult(result,restore?focus?.name:null);
+        }
+        public void Abort()=>Finish(DialogResult.ParentClosed);
+        protected abstract bool Attempt();
+        protected abstract void Redraw();
+        protected abstract void OnResult(DialogResult result,string focusName);
+        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;}
+    }
+    public enum ProgressPendingAction { None,ManualSave,NewGame }
+    public interface IProgressActionOperations
+    {
+        long Revision {get;} bool Pending {get;} ProgressPendingAction PendingAction {get;} string Error {get;} bool CanStartNewGame {get;}
+        bool ManualSave();bool Retry();bool StartNewGame(long confirmedRevision);
+    }
+    public enum ProgressActionOutcome { Closed,Cancelled,NewGameStarted }
+    public readonly struct ProgressActionResult
+    {
+        public readonly ProgressActionOutcome Outcome;public readonly string FocusName;
+        public ProgressActionResult(ProgressActionOutcome outcome,string focusName){Outcome=outcome;FocusName=focusName;}
+    }
+    /// <summary>進行確認と保存結果/同一計画再試行の表示・操作状態を所有する。</summary>
+    public sealed class ProgressActionDialog : OwnedPopup
+    {
+        private enum Purpose { Notice,ManualSave,NewGame }
+        private Purpose purpose;
+        private IProgressActionOperations operations;
+        private long revision;
+        private bool pending,newGameSucceeded,showConfirm,canClose;
+        private string body,confirmText;
+        public Text Message {get;private set;}
+        public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
+        public event Action<ProgressActionResult> Completed;
+        public void Initialize(GameplayPanelFactory factory)
+        {
+            var obj=new GameObject("ProgressActionMessage",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);
+            Message=obj.GetComponent<Text>();Message.font=factory.Font;Message.fontSize=30;Olca.Presentation.Dungeon.UiLook.Label(Message);Message.alignment=TextAnchor.MiddleCenter;
+            Message.rectTransform.sizeDelta=new Vector2(1500,430);Message.rectTransform.anchoredPosition=new Vector2(0,120);
+            confirm=factory.Button("ConfirmNewGame","進行を初期化して開始",transform,new Vector2(.5f,.5f),new Vector2(-300,-180));
+            cancel=factory.Button("CancelProgressAction","取消して戻る",transform,new Vector2(.5f,.5f),new Vector2(300,-180));
+            foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(500,80);CaptureFeedback();
+        }
+        public void OpenManualSave(IProgressActionOperations service,DialogManager manager,IDialogOwner parent,Func<bool> live)
+        {
+            if(IsOpen||service.Pending&&service.PendingAction==ProgressPendingAction.None)return;
+            purpose=service.PendingAction==ProgressPendingAction.NewGame?Purpose.NewGame:Purpose.ManualSave;operations=service;pending=service.Pending;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
+            if(!Begin(manager,parent,live)){operations=null;return;}
+            if(pending){ShowPending();return;}
+            bool saved=service.ManualSave();pending=!saved&&service.Pending;
+            Set(saved?"スロット1に保存しました。\n拠点の所持・成長・編成・図鑑を保存しました。\nダンジョンの途中状態は保存していません。":"保存できませんでした。スロット1の元データを保持しています。\n"+service.Error+"\n同じ内容で再試行してください。",pending,!pending,"同じ保存を再試行");
+        }
+        public void OpenNewGame(IProgressActionOperations service,DialogManager manager,IDialogOwner parent,Func<bool> live)
+        {
+            if(IsOpen||service.Pending&&service.PendingAction!=ProgressPendingAction.NewGame)return;
+            purpose=Purpose.NewGame;operations=service;revision=service.Revision;pending=service.Pending;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
+            if(!Begin(manager,parent,live)){operations=null;return;}
+            if(pending){ShowPending();return;}
+            Set("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で拠点から開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
+        }
+        public void OpenNotice(string message,bool accept,bool close,DialogManager manager,IDialogOwner parent,Func<bool> live)
+        {
+            if(IsOpen){if(purpose==Purpose.Notice)Set(message,accept,close,confirmText);return;}
+            purpose=Purpose.Notice;operations=null;pending=false;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
+            if(Begin(manager,parent,live))Set(message,accept,close,"進行を初期化して開始");
+        }
+        private void ShowPending()
+        {
+            if(purpose==Purpose.NewGame)Set("新規開始の保存が完了していません。元の進行と同じ再試行計画を保持しています。\n"+operations.Error,true,false,"同じ新規開始を再試行");
+            else Set("保存できませんでした。スロット1の元データを保持しています。\n"+operations.Error+"\n同じ内容で再試行してください。",true,false,"同じ保存を再試行");
+        }
+        private void Set(string message,bool accept,bool close,string label){body=message;showConfirm=accept;canClose=close;confirmText=label;Redraw();}
+        protected override void Redraw()
+        {
+            if(newGameSucceeded){CompleteAccepted();return;}
+            Message.text=body;confirm.gameObject.SetActive(showConfirm);confirm.interactable=true;cancel.interactable=canClose;
+            confirm.GetComponentInChildren<Text>().text=confirmText;cancel.GetComponentInChildren<Text>().text=purpose==Purpose.NewGame?"取消して戻る":"閉じる";
+            cancel.navigation=showConfirm?new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=confirm,selectOnRight=confirm}:new Navigation{mode=Navigation.Mode.None};
+            confirm.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=cancel,selectOnRight=cancel};Rendered();
+        }
+        protected override bool Attempt()
+        {
+            if(newGameSucceeded)return true;
+            if(purpose==Purpose.ManualSave&&pending){if(operations.Retry()){pending=false;Set("スロット1に保存しました。",false,true,confirmText);}else Set("保存を再試行できませんでした。\n"+operations.Error,true,false,confirmText);return false;}
+            if(purpose!=Purpose.NewGame)return false;
+            bool saved=pending?operations.Retry():operations.CanStartNewGame&&operations.StartNewGame(revision);
+            if(!saved){pending=operations.Pending;Set("新規開始の保存が完了していません。元の進行と同じ再試行計画を保持しています。\n"+operations.Error,true,!pending,"同じ新規開始を再試行");return false;}
+            pending=false;newGameSucceeded=true;return true;
+        }
+        public void ConfirmFromCompatibilityApi(){confirm.onClick.Invoke();}
+        protected override void OnResult(DialogResult result,string focusName)
+        {
+            var outcome=newGameSucceeded?ProgressActionOutcome.NewGameStarted:result==DialogResult.Cancelled?ProgressActionOutcome.Cancelled:ProgressActionOutcome.Closed;
+            operations=null;pending=false;body=null;newGameSucceeded=false;
+            if(result!=DialogResult.ParentClosed)Completed?.Invoke(new ProgressActionResult(outcome,focusName));
+        }
+        protected override void OnDestroy(){base.OnDestroy();Completed=null;operations=null;}
+    }
+    public readonly struct RetreatDialogState
+    {
+        public readonly bool Paused,Returning,Ending,Suspended,CheckpointBlocked,Finished;
+        public RetreatDialogState(bool paused,bool returning,bool ending,bool suspended,bool blocked,bool finished){Paused=paused;Returning=returning;Ending=ending;Suspended=suspended;CheckpointBlocked=blocked;Finished=finished;}
+        public bool CanOpen=>Paused&&!Returning&&!Ending&&!Suspended&&!CheckpointBlocked&&!Finished;
+        public bool CanConfirm=>Paused&&!Returning;
+    }
+    /// <summary>撤退の警告・可否表示・確認結果とPauseの覆いを所有し、損失計算は行わない。</summary>
+    public sealed class RetreatConfirmationDialog : OwnedPopup
+    {
+        private Func<RetreatDialogState> state;
+        private GameplayPauseView pause;
+        private GameObject legacyPause;
+        private Func<bool> hostLive;
+        private GameObject legacyOrigin;
+        public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
+        public event Action Confirmed;
+        public void Initialize(GameplayPanelFactory factory)
+        {
+            var text=factory.Label("RetreatWarning",transform,new Vector2(.5f,.5f),new Vector2(0,150),new Vector2(1600,200));
+            text.text="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
+            confirm=factory.Button("ConfirmRetreat","撤退して帰還",transform,new Vector2(.5f,.5f),new Vector2(-280,-100));cancel=factory.Button("CancelRetreat","攻略へ戻る",transform,new Vector2(.5f,.5f),new Vector2(280,-100));
+            foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(420,70);CaptureFeedback();
+        }
+        public static bool CanRequest(RetreatDialogState state,DialogManager manager,GameplayPauseView parent)=>state.CanOpen&&(manager==null||manager.ActiveCount==0&&parent?.Context?.IsCurrent==true&&!parent.Context.DialogBlocksInput);
+        public void Open(Func<RetreatDialogState> source,DialogManager manager,GameplayPauseView parent,GameObject legacy,Func<bool> live)
+        {
+            if(IsOpen||!CanRequest(source(),manager,parent))return;
+            state=source;pause=parent;legacyPause=legacy;hostLive=live;legacyOrigin=EventSystem.current?.currentSelectedGameObject;
+            var owner=parent?.Context;if(manager!=null&&(owner?.IsCurrent!=true||owner.DialogBlocksInput)){Clear();return;}
+            if(manager!=null&&manager.ActiveCount!=0){Clear();return;}
+            if(parent!=null)parent.CoverForDialog();
+            if(!Begin(manager,owner,live)){if(parent!=null)parent.RestoreAfterDialog();Clear();return;}
+            if(parent==null&&legacy!=null)legacy.SetActive(false);Redraw();
+        }
+        public void ConfirmFromCompatibilityApi(){confirm.onClick.Invoke();}
+        protected override bool Attempt()=>state?.Invoke().CanConfirm==true;
+        protected override void Redraw(){confirm.interactable=cancel.interactable=true;Rendered();}
+        protected override void OnResult(DialogResult result,string focusName)
+        {
+            if(result!=DialogResult.ParentClosed&&(hostLive?.Invoke()??false)){if(pause!=null)pause.RestoreAfterDialog();else if(legacyPause!=null){legacyPause.SetActive(true);if(legacyOrigin!=null&&legacyOrigin.activeInHierarchy&&legacyOrigin.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(legacyOrigin);}}
+            bool accepted=result==DialogResult.Confirmed;Clear();if(accepted)Confirmed?.Invoke();
+        }
+        private void Clear(){state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
+        protected override void OnDestroy(){base.OnDestroy();Clear();Confirmed=null;}
     }
 }

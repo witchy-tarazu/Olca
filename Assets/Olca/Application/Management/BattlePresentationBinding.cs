@@ -131,3 +131,26 @@ namespace Olca.Application.Management
         private void OnDestroy(){var value=binding;binding=null;value?.Dispose();}
     }
 }
+
+
+namespace Olca.Application.Management
+{
+    /// <summary>進行Dialogの型付き操作口。保存計画と原子的な適用は既存Sessionだけが所有する。</summary>
+    public sealed class ProgressActionOperations : Olca.Presentation.Management.IProgressActionOperations
+    {
+        private readonly Olca.Core.Domain.ClearReturnSession session;
+        private readonly System.Func<bool> canStart,alive;
+        private Olca.Presentation.Management.ProgressPendingAction pendingAction;
+        private readonly System.Func<System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card>> starter;
+        public ProgressActionOperations(Olca.Core.Domain.ClearReturnSession session,System.Func<bool> canStart,System.Func<System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card>> starter,System.Func<bool> alive)
+        {this.alive=alive;this.session=session??throw new System.ArgumentNullException(nameof(session));this.canStart=canStart;this.starter=starter;}
+        public long Revision=>session.Snapshot.Revision;
+        public bool Pending=>session.HasPendingSave;
+        public string Error=>session.Error;
+        public Olca.Presentation.Management.ProgressPendingAction PendingAction=>session.HasPendingSave?pendingAction:Olca.Presentation.Management.ProgressPendingAction.None;
+        public bool CanStartNewGame=>(alive?.Invoke()??false)&&(canStart?.Invoke()??false);
+        public bool ManualSave(){if(!(alive?.Invoke()??false)||session.HasPendingSave)return false;bool saved=session.ManualSave();pendingAction=session.HasPendingSave?Olca.Presentation.Management.ProgressPendingAction.ManualSave:Olca.Presentation.Management.ProgressPendingAction.None;return saved;}
+        public bool Retry(){if(!(alive?.Invoke()??false)||PendingAction==Olca.Presentation.Management.ProgressPendingAction.None)return false;bool saved=session.Retry();if(saved)pendingAction=Olca.Presentation.Management.ProgressPendingAction.None;return saved;}
+        public bool StartNewGame(long confirmedRevision){if(!CanStartNewGame||session.HasPendingSave)return false;bool saved=session.StartNewGame(confirmedRevision,starter());pendingAction=session.HasPendingSave?Olca.Presentation.Management.ProgressPendingAction.NewGame:Olca.Presentation.Management.ProgressPendingAction.None;return saved;}
+    }
+}
