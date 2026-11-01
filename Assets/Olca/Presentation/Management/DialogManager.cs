@@ -53,8 +53,8 @@ namespace Olca.Presentation.Management
             if(disposed)throw new ObjectDisposedException(nameof(DialogManager));
             return new DialogOwnerScope(this,valid??throw new ArgumentNullException(nameof(valid)));
         }
-        public Task<DialogResult> Show(IDialogOwner owner, GameObject panel, Button confirm, Button cancel, Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true)
-            =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,null,completed,scroll,directionScroll);
+        public Task<DialogResult> Show(IDialogOwner owner, GameObject panel, Button confirm, Button cancel, Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true,bool manageMenu=true,Func<bool> inputAllowed=null)
+            =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,null,completed,scroll,directionScroll,manageMenu,inputAllowed);
         /// <summary>保存の再試行は同ticket内で実行する。true時だけ閉じ、falseなら更新済み表示を保つ。</summary>
         public Task<DialogResult> ShowPersistent(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed)
             =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,attempt??throw new ArgumentNullException(nameof(attempt)),completed,null);

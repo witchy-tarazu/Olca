@@ -1,0 +1,140 @@
+{
+  "stage": 19,
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-01T12:56:23.925210+00:00",
+  "viewedImageCount": 9,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage19-conversation-fhd.png",
+      "sha256": "61198cd17bca5381309e7c3bbdd2b4277be09b3c82cf4ac60d487ca791574982",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-conversation-4k.png",
+      "sha256": "147e8038605366d8becda12bd0339dd996d9ae22028b6b1e5cb9c7b146ace073",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-conversation-4by3.png",
+      "sha256": "ecee1b61207b1d36ddd5c5d47e5891113ad98dc452ae5edc4dbf38ad52693e5a",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-backlog-tail-fhd.png",
+      "sha256": "80a39967b1f447379061371cf86589d83a488bd8caddbcb808861d9b01f8c2cb",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-backlog-tail-4k.png",
+      "sha256": "fdb16a99e6aeba8e31776865d3d325d1600a383c70365fbf6270357ab2ddabe2",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-backlog-tail-4by3.png",
+      "sha256": "607b4e80c54e3ffcc4f9b896ed54a06695f8eee8ae1f3e093d21e8ab6978eee7",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-skip-confirm-fhd.png",
+      "sha256": "b2aa1650915b93a580a6116c6f28f051b902a836c73e3bcd7908220af474f9c7",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-skip-confirm-4k.png",
+      "sha256": "d7810bce85ccfc470192d605638d55717e4f9f2029ef5dee013f05ca776f42f9",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage19-skip-confirm-4by3.png",
+      "sha256": "b51f4f950f616f99021f06e9c4afbca12032fa21ac4d3b95680b11c566e512ce",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "All three ratios show readable Jiki-style conversation text and four separated conversation controls within the screen. The bottom partial body line is the scroll viewport boundary.",
+    "Backlog tail オワリシルシ is fully visible and legible in FHD, 4K and 4:3, with generous clearance from navigation controls.",
+    "Skip confirmation title, question, explicit finish and cancel/return labels are distinct and not clipped in all three ratios. Cancel has the visible focus treatment.",
+    "The pale overlay allows faint world/HUD silhouettes through, but they do not compete with the dark active text in these captures. No new visual regression can be established without matched-before.",
+    "Water-mirror buttons, control spacing and reading area remain coherent after the supplied reparenting migration; static images cannot verify actual parentage or raycast boundaries."
+  ],
+  "native4kSupplement": {
+    "method": "Original whole images viewed; viewer resized 3840x2160 to 2048x1152. Unscaled lossless in-memory crops supplement representative native glyph/button inspection. Originals unchanged.",
+    "crops": [
+      {
+        "file": "system-stage19-backlog-tail-4k.png",
+        "box": [
+          420,
+          1120,
+          850,
+          1200
+        ],
+        "observation": "オワリシルシ is legible with no cut glyphs."
+      },
+      {
+        "file": "system-stage19-skip-confirm-4k.png",
+        "box": [
+          380,
+          1730,
+          1060,
+          1870
+        ],
+        "observation": "Explicit skip/finish button label and border readable."
+      },
+      {
+        "file": "system-stage19-conversation-4k.png",
+        "box": [
+          1180,
+          1730,
+          1860,
+          1870
+        ],
+        "observation": "Auto advance OFF label and button readable."
+      }
+    ]
+  },
+  "limits": [
+    "No newly matched-before: no pixel identity or global aesthetic completion claim.",
+    "Isolated dialogue script supplied through Controller API is validation data, not evidence of product NPC registration.",
+    "Input, focus return, duplicate/stale callbacks, pause/resume, scroll trajectory, choice restrictions, persistence and lifecycle are separate parent native-dialogue-result.json assertions, not independently executed here or proven by still images.",
+    "Representative 4K native crops only; entire 4K image was not inspected pixel-by-pixel at 1:1.",
+    "Physical devices, audio and historical UGUI not verified. No Unity commands, tests, product edits or image generation performed."
+  ]
+}

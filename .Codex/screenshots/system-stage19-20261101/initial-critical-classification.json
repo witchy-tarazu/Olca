@@ -1,0 +1,33 @@
+{
+  "review": "system-stage19-code-review-initial-critical.json",
+  "result": {
+    "status": "completed",
+    "duration": 11.37,
+    "summary": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "results": [
+      {
+        "FullName": "Olca.Tests.Application.GameSystemManagementTests.会話Popupは元ViewとSessionを保持し世代入力とpause親終了を管理する(False)",
+        "Status": "Failed",
+        "Duration": 5.7549777,
+        "Message": "  Expected: same as <DialogueHistory (UnityEngine.GameObject)>\n  But was:  null\n",
+        "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.会話Popupは元ViewとSessionを保持し世代入力とpause親終了を管理する (System.Boolean skipMode) [0x0053b] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:503\nat UnityEngine.TestTools.TestRunner.TestTaskWrapper+<Execute>d__2.MoveNext () [0x00063] in ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEngine.TestRunner/TestRunner/TestTaskWrapper.cs:31\nat UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0003a] in ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44\n"
+      },
+      {
+        "FullName": "Olca.Tests.Application.GameSystemManagementTests.会話Popupは元ViewとSessionを保持し世代入力とpause親終了を管理する(True)",
+        "Status": "Failed",
+        "Duration": 0.0396879,
+        "Message": "  Expected: same as <DialogueSkip (UnityEngine.GameObject)>\n  But was:  null\n",
+        "StackTrace": "at Olca.Tests.Application.GameSystemManagementTests.会話Popupは元ViewとSessionを保持し世代入力とpause親終了を管理する (System.Boolean skipMode) [0x0053b] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Application/GameSystemManagementTests.cs:503\nat UnityEngine.TestTools.TestRunner.TestTaskWrapper+<Execute>d__2.MoveNext () [0x00063] in ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEngine.TestRunner/TestRunner/TestTaskWrapper.cs:31\nat UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0003a] in ./Library/PackageCache/com.unity.test-framework@0bd5c5194236/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44\n"
+      }
+    ]
+  },
+  "classification": "product focus restoration absent during same-frame input fence; both expected original entry focus values retained",
+  "fix": "explicit selection-only restoration, no CanAct/input fence relaxation",
+  "compileWarning": "CS4014 in test Notice call fixed by retaining and awaiting task after close"
+}

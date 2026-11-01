@@ -1,0 +1,147 @@
+{
+  "scope": "Stage19 initial independent static design/code review: managed Dialogue main view and borrowed skip/backlog popup",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f20c11f87ada10a443127330bbef7408117a927fc2dee36f6340d1bba17b9c1a",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "8ed6e7c3dbce9429642d9451c8ff11534358722c568dfe8a2c67d01da30283d8",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "1845103e1c17bc1cde16702f9355963976547243aa3cdc5a93b29378bd2723ef",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9bfe0c4888ac290a698a49627a5892fabe89e26fdd1144d3f31a97798617c3ed"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Existing DialogueSession/Core/dialogueLoop/save decisions remain Controller owned; View Hide does not mutate Session flags or interrupt.",
+    "Managed View uses explicit layer and real existing panel lease; legacy Bind path remains.",
+    "Popup borrows original root children into same fullrect coordinate space; restore returns original sequence; construction does not clone/import-destroy visual resources.",
+    "Existing MenuPadScope remains sole input owner: both skip and backlog use manageMenu=false; Show defaults preserve other callers.",
+    "Input allowance uses Dialogue Live/session pause/context rather than global GameplayPause.InputBlocked, allowing normal dialogue input while gameplay clock is paused.",
+    "Managed confirm/cancel listeners retained through Refresh; Action skips manager-owned next/history controls, while other buttons receive fresh events captured Session/reference/Version/generation.",
+    "Pause returns active ticket ParentClosed, restores children and hides via CanvasGroup without ending View/Session; resume reopens new ticket and old event identity cannot cancel it.",
+    "Completion restores popup children, dispatches only existing Session commands, refreshes content and keeps closing-frame context fence via CancelActiveOwner.",
+    "Parent end and explicit presentation release clear owner/menu/context; Controller remains responsible for Interrupt and finished callback.",
+    "New2 parameterized tests cover normal/skip/backlog callbacks, pause competing notice, reopen stale close, same-frame Next, skip once, parent close, scroll extent and resource unregister."
+  ],
+  "limits": [
+    "Final4 source matches513 related and3621 full success;native/visual/event80/cleanup complete.",
+    "Native child rect/order equivalence, backlog page Close listener retention and real pad/pointer/keyboard need dynamic verification.",
+    "No Unity/MCP/test invocation or product edits by reviewer.",
+    "Main panel remains existing generated hierarchy, not claimed prefab extraction or whole UI migration completion."
+  ],
+  "initialSourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "80a3799dab568bddd520098276274a1bca1a785081dbdb47733bbcb17d83e9ab",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "a84b58a50ec957f6a22278d5d9593f3c9bed96f72c08c23fcf87286d9a4c8d80",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "1845103e1c17bc1cde16702f9355963976547243aa3cdc5a93b29378bd2723ef",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "684f3628e8a14cb02810b0b0b8d52893fcdc1aa4d8f3de169f2c8a49849b3e09"
+  },
+  "lifecycleRereview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "HideManaged cancels popup/restores borrowed children before clearing all current Button events, releasing captured old Session references from cached View.",
+      "Rebind Refresh recreates pause/normal/choice callbacks; externally held old events still rejected by owner/generation guards.",
+      "Controller UpdateDialogue handles externally closed managed view via existing FinishDialogue(interrupt:true), leaving Core interruption responsibility at Controller.",
+      "System pause keeps view context/current key via CanvasGroup so it does not trigger external-close interruption."
+    ],
+    "limits": [
+      "Final4 mirrored and recompiling; no tests/native success yet.",
+      "Controller assumes existing synchronous View factory contract; no new asynchronous startup introduced."
+    ]
+  },
+  "criticalFocusCorrection": {
+    "unresolvedRequiredFindings": 0,
+    "initialFailureReceipt": "system-stage19-critical-result.json",
+    "history": "Both new critical cases failed expected origin History/Skip versus actual null. Product focus restoration gap, not environment issue; original expectations retained.",
+    "cause": "DialogManager hides popup before previous-focus check; borrowed origin inactive. Same-frame context fence prevents MenuPadScope.Bind from focusing. Initial static review did not identify this focus timing until prompted concrete path review.",
+    "correction": "Completion holds origin locally, restores children, executes existing Session operation and Refresh, then restores EventSystem selection only for still-open captured Session/live context/active interactable origin; ParentClosed and ended Session do not restore. Input fence unchanged.",
+    "testCorrection": "Pause notice Task is now consumed and awaited Cancelled, avoiding CS4014 without changing behavior expectations.",
+    "limits": [
+      "Final4 mirrored, focus recompile pending; no post-fix test success yet.",
+      "Old0 verdict is historical precritical static scope, not proof that initial critical source passed."
+    ]
+  },
+  "relatedReceiptReview": {
+    "receipt": "system-stage19-related-test-result.json",
+    "summary": {
+      "total": 513,
+      "passed": 513,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 58.83,
+    "consoleErrors": 0,
+    "finalFourHashesMatchSubmissionProject": true,
+    "unresolvedRequiredFindings": 0,
+    "history": "Initial2 origin-focus failures retained; same expectations pass in final related run. CS4014 call now awaited.",
+    "pending": []
+  },
+  "nativeReceiptReview": {
+    "unresolvedRequiredFindings": 0,
+    "fourSourceHashesUnchangedSubmissionProject": true,
+    "receipts": [
+      "system-stage19-native-dialogue-result.json",
+      "system-stage19-native-lifetime-result.json"
+    ],
+    "confirmed": [
+      "Existing TryStartDialogue API with isolated text fixture and actual EventSystem raycast/scroll; reading/cancel saved bytes identical",
+      "Backlog tail3ratios, cancel origin focus History/Skip, oldnormal/oldticket rejection and skip one end notification",
+      "Pause hands ticket to independent confirmation; resume presents new ticket without changing Session flags",
+      "Externally closed managed view interrupted by Controller; choice-bearing dialogue refuses skip and Choice1 reaches expected index then Completed",
+      "HostClose/Open/checkpoint/Single release old view/session references/menu/borrowed children; imported font survives; final console0",
+      "Final missing/canceled loads save byte equality measured separately from legitimate host SuspendForCheckpoint"
+    ],
+    "helperLimits": [
+      "First helper rejected entry immediately after Continue; exact rejecting guard was not sampled then, later Battle/ready state verified. Do not claim a specific original rejection cause.",
+      "Already-completed first Close/Open was not repeated; readiness wait resumed remaining flow.",
+      "Initial first-suspend local hash values not persisted, no reconstructed digest claimed."
+    ],
+    "additionalLimits": [
+      "Physical input not run; supplied9-image visual review0 is separate independent reviewer/parent report.",
+      "Native state may still name hidden DialogueNext after Session end; no new generic post-dialogue focus-target guarantee inferred.",
+      "Same-Editor80/80, full3621/3621 and cleanup verified in finalValidationReview."
+    ]
+  },
+  "finalValidationReview": {
+    "unresolvedRequiredFindings": 0,
+    "finalFourHashesMatchSubmissionProjectFull": true,
+    "full": {
+      "receipt": "system-stage19-final-test-result.json",
+      "summary": {
+        "total": 3621,
+        "passed": 3621,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 286.42,
+      "consoleErrors": 0,
+      "consoleWarnings": 59
+    },
+    "sameEditor": {
+      "receipt": "system-stage19-event-regression.json",
+      "passed": 80
+    },
+    "cleanup": {
+      "receipt": "system-stage19-cleanup.json",
+      "confirmed": [
+        "Original clean;928 Assets match excluding existing2 private URP settings",
+        "640x360 both RT/TMP guard/default store absent",
+        "Native Mouse/Keyboard;EventSystem/generated/proof/fault0",
+        "Final native save bytes unchanged after stop/event80/full"
+      ]
+    },
+    "publication": "Not yet published",
+    "frozen": true,
+    "limits": [
+      "Initial2 focus assertion failures and static review correction history retained.",
+      "Initial helper entry rejection exact guard unobserved; no first-suspend local hashes reconstructed.",
+      "Physical input/build/audio and whole-project migration/defect-free guarantee not performed.",
+      "59 fixture diagnostics retained/non-suppressed, not zero warnings."
+    ]
+  },
+  "specOnlyIntegrationReview": {
+    "receipt": "system-stage19-spec-update.json",
+    "unresolvedRequiredFindings": 0,
+    "finalFourSourceHashesStillMatch": true,
+    "scope": "Remote game specification document additions acquired/protected only; Stage19 dialogue lifecycle implementation and tested source unchanged. New exploration/style/air/wall/action-cost/interruption mechanics are not claimed implemented.",
+    "frozen": true
+  }
+}

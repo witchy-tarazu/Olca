@@ -1,0 +1,83 @@
+[
+  {
+    "file": "conversation-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "61198cd17bca5381309e7c3bbdd2b4277be09b3c82cf4ac60d487ca791574982",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "conversation-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "147e8038605366d8becda12bd0339dd996d9ae22028b6b1e5cb9c7b146ace073",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "conversation-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "ecee1b61207b1d36ddd5c5d47e5891113ad98dc452ae5edc4dbf38ad52693e5a",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "backlog-tail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "80a39967b1f447379061371cf86589d83a488bd8caddbcb808861d9b01f8c2cb",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "backlog-tail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "fdb16a99e6aeba8e31776865d3d325d1600a383c70365fbf6270357ab2ddabe2",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "backlog-tail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "607b4e80c54e3ffcc4f9b896ed54a06695f8eee8ae1f3e093d21e8ab6978eee7",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "skip-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "b2aa1650915b93a580a6116c6f28f051b902a836c73e3bcd7908220af474f9c7",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "skip-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "d7810bce85ccfc470192d605638d55717e4f9f2029ef5dee013f05ca776f42f9",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  },
+  {
+    "file": "skip-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b51f4f950f616f99021f06e9c4afbca12032fa21ac4d3b95680b11c566e512ce",
+    "kind": "actual Bootstrap dialogue entry with isolated script; held logical frame/forcedCanvas. No product story data mutation, matched-before or physical input claim"
+  }
+]
