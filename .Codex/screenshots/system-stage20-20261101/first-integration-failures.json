@@ -1,0 +1,74 @@
+{
+  "summary": {
+    "total": 605,
+    "passed": 596,
+    "failed": 9,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "failures": [
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(\"keyboard\")",
+      "Status": "Failed",
+      "Duration": 0.062054,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する (System.String destroyed) [0x000b4] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3750 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(\"both\")",
+      "Status": "Failed",
+      "Duration": 0.0528441,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する (System.String destroyed) [0x000b4] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3750 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する(True)",
+      "Status": "Failed",
+      "Duration": 0.0485029,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する (System.Boolean victory) [0x000e1] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:2749 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する(False)",
+      "Status": "Failed",
+      "Duration": 0.0441185,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する (System.Boolean victory) [0x000e1] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:2749 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ(True)",
+      "Status": "Failed",
+      "Duration": 0.0489989,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ (System.Boolean victory) [0x00104] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:2799 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ(False)",
+      "Status": "Failed",
+      "Duration": 0.048279,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ (System.Boolean victory) [0x00104] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:2799 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.固有攻撃HUDは実タメ完了と保持再開を区別し補助案内に主操作を重複しない",
+      "Status": "Failed",
+      "Duration": 0.0541658,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.<固有攻撃HUDは実タメ完了と保持再開を区別し補助案内に主操作を重複しない>g__Text|93_0 (System.String name, Olca.Tests.Integration.FloorSequenceControllerTests+<>c__DisplayClass93_0& ) [0x0000d] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3825 \n  at Olca.Tests.Integration.FloorSequenceControllerTests.固有攻撃HUDは実タメ完了と保持再開を区別し補助案内に主操作を重複しない () [0x000a4] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3828 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.固有攻撃HUDは硬直取消可能なら再使用待ちと誤表示せずボタンと一致する",
+      "Status": "Failed",
+      "Duration": 0.0501838,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.固有攻撃HUDは硬直取消可能なら再使用待ちと誤表示せずボタンと一致する () [0x00083] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3844 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    },
+    {
+      "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.通貨画面中のポーズは前面に表示し停止中の受取を拒否する",
+      "Status": "Failed",
+      "Duration": 0.0278114,
+      "Message": "System.NullReferenceException : Object reference not set to an instance of an object",
+      "StackTrace": "  at Olca.Tests.Integration.FloorSequenceControllerTests.通貨画面中のポーズは前面に表示し停止中の受取を拒否する () [0x00025] in /workspace/olca-validation-20261024/project/Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs:3338 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <1d26c8856bcb48938402e0be7f5cc174>:0 "
+    }
+  ]
+}

@@ -1,0 +1,545 @@
+{
+  "stage": 20,
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-01T17:22:32.607572+00:00",
+  "scope": "Final factory/lifetime migration screenshot regression review after two z-order fixes",
+  "viewedImageCount": 15,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "return-hub-fhd.png",
+      "sha256": "ea9f4830e595af2488e28037abf50216bebe218844dbc5f877410e9e82765bc4",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:19:17.853453+00:00",
+      "previousCaptureSha256": "4cf35c5f941a20fd90870e10c9cc7885db1b1e6d7816e6370d481761e9f90530",
+      "priorReviewedCaptureSha256": "f4bccaac2edbf330f25c6eb963ed41c230897b107e07eaec89597718fb2ca2e2",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-return-hub-fhd.png"
+    },
+    {
+      "file": "return-hub-4k.png",
+      "sha256": "0858c8e87080a527a8417bba52b3899780dbeb99824dca38808f3ee25bfd2108",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:19:27.663417+00:00",
+      "previousCaptureSha256": "80ba2d33fd884ad8d646b11116194fcebf7f2f3dcb950aa4dae371b60c5a7d29",
+      "priorReviewedCaptureSha256": "50201e04c4b7bc922327b81af76d7749e171bcfe25dcd2a0e390f905a8150650",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-return-hub-4k.png"
+    },
+    {
+      "file": "return-hub-4by3.png",
+      "sha256": "9c8c782d43f34c5a277c1a756d00a54676c78b5d942fe42b3565a54784c5a5b1",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:19:31.961765+00:00",
+      "previousCaptureSha256": "2b3bb662659f2bb2488e921d9f8036be6f779b9d0c87793a5a2d084ec8c2a927",
+      "priorReviewedCaptureSha256": "1a343d40b983099ac633cf3887914916add281008d7e8167107cd8678e27b162",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-return-hub-4by3.png"
+    },
+    {
+      "file": "progress-confirm-fhd.png",
+      "sha256": "6ce3ea10ddd45c171effcc7c8cc36b06dfb22b991cc2505f75fcca199b368544",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:19:40.891928+00:00",
+      "previousCaptureSha256": "d02877dbebee8930b1ee188f02f64883949b9e5a890a4be45b4e82bb603c0218",
+      "priorReviewedCaptureSha256": "a9e61ad9800f60310484d52511255a0aa3fd3b03ab2c55f8d2856cafad293ad2",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-progress-confirm-fhd.png"
+    },
+    {
+      "file": "progress-confirm-4k.png",
+      "sha256": "8ff535c8c91300bf48354592acbbd6b78619edf4b2ec92c7a3d31b055a9cef64",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:19:47.877769+00:00",
+      "previousCaptureSha256": "917fe5e7779f0a5d8da565a39a348974ee61452b5dd26e8af7687b369546b636",
+      "priorReviewedCaptureSha256": "1a443d1d595b31866f3c70d2497883903027247e7d6a25c1d503fe413ffacae1",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-progress-confirm-4k.png"
+    },
+    {
+      "file": "progress-confirm-4by3.png",
+      "sha256": "b291fd77deead20c415464a5d78283d7f582f274fe4a121023dc8743d4ac3607",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:19:52.306043+00:00",
+      "previousCaptureSha256": "cd341504c20b4d547eb354b2baffff49b8d534305b95419f13f151c64292eb5a",
+      "priorReviewedCaptureSha256": "69cab7bdd01c545519ce629c77223eab2ebdb062adcb2cc635646ade3cded6ef",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-progress-confirm-4by3.png"
+    },
+    {
+      "file": "save-retry-fhd.png",
+      "sha256": "c89b08a4f380aeab0e48b5d0c366e8f547712815ed33d6990a8286ee7d45bc85",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:20:04.080216+00:00",
+      "previousCaptureSha256": "4f1a3ab9791b2c5b1ca495cdb384e5e4d4c32712b088cc9c9531401d0c2c9029",
+      "priorReviewedCaptureSha256": "6faeb0a012de1c3f5a27c4141db581282c7a93ccd4669c7ff238bff86cdbe760",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-save-retry-fhd.png"
+    },
+    {
+      "file": "save-retry-4k.png",
+      "sha256": "f2c4aeeff7857ae94ae0b8dc73af608d09c6f18c24a0a806a4ae43ef4e9defb0",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:20:09.847269+00:00",
+      "previousCaptureSha256": "18124049cd9a73ac53adf8c60d580cb4881576c5beb11dd81aac5315cfce3592",
+      "priorReviewedCaptureSha256": "8c5515efea5cc70da0e69dd26784705cb088089cff25b2e54b6e28aa577d76f2",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-save-retry-4k.png"
+    },
+    {
+      "file": "save-retry-4by3.png",
+      "sha256": "5af0c6f9642b372cf24f386473cb6fe9cff85ff28953386952f0fbd5b359333d",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:20:14.147930+00:00",
+      "previousCaptureSha256": "7d8774e5a03ace471590d3e6e5a2a759b394cbab0caefb006fda5fe021aa593b",
+      "priorReviewedCaptureSha256": "44300884f43b9a425ad91c25b6d3b597f27de8f96ba4e71e288d31f08e9cef37",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-save-retry-4by3.png"
+    },
+    {
+      "file": "pause-fhd.png",
+      "sha256": "8f255db02e6e79d3b1f3e8a1a56673465ed5fdf90abcb83b7bcbb6316c59beea",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:20:26.972571+00:00",
+      "previousCaptureSha256": "b694463dd24d0170ab9ca6c63f2b6b87c90073a63d8b71dea3b19066841ebd17",
+      "priorReviewedCaptureSha256": "9542eb4f6a1724c19f4a21c92e19312b299646c87b36b931f3d1d543a5a5a0b6",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-pause-fhd.png"
+    },
+    {
+      "file": "pause-4k.png",
+      "sha256": "3ff5c5155a2cc1ff18a80b4ae593e4420ccef42f87b701104cbbcb52bea60adb",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:20:31.767219+00:00",
+      "previousCaptureSha256": "0ea6ff2a7b8606e7ce0b0cf82b823811bb879cc664934d2c2501bf41589ec121",
+      "priorReviewedCaptureSha256": "bba53e7442678bee22c104e849f417c6fdd5bd9d43f8120412714dc21d5925be",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-pause-4k.png"
+    },
+    {
+      "file": "pause-4by3.png",
+      "sha256": "564a53b05bb3055272b15cc4b861fdf87bd4e6f90df9a779dd918cc18b306ac7",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:20:35.822994+00:00",
+      "previousCaptureSha256": "8cb308dcd215c7e180b0f82133945f617812eda2f288d2da0b2c3cf6b79c7ab2",
+      "priorReviewedCaptureSha256": "1f01a60c7d667874c9bc27a3bbe50ad070e4bff1c164e6a47b307a37abd92d50",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-pause-4by3.png"
+    },
+    {
+      "file": "checkpoint-fhd.png",
+      "sha256": "c9415747afb086a71d41fe750aa1efe45c65255a9ec73df710bd4830cd11bf1c",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:21:00.063955+00:00",
+      "previousCaptureSha256": "c966e8bbca502531938d96c1bd986071cf3e48c080df359344bbab42639e230b",
+      "priorReviewedCaptureSha256": "f601d89279ea0ce2d08eff1d0a90a4ed7dc72c8f6c1ed9640dbb7ce3b94c323d",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-checkpoint-fhd.png"
+    },
+    {
+      "file": "checkpoint-4k.png",
+      "sha256": "0bf083c01aba0775d07b1c2bf95cd72979bc8cbcbace6d66e2d1978b97268a05",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:21:05.183589+00:00",
+      "previousCaptureSha256": "0cd3df71ab09567d2e7427ddba5a52802147a45918fad3e115a8079a9c388096",
+      "priorReviewedCaptureSha256": "ea231d7bc576303b8a1104da86cd3da9981ef2a6894e9d55b10c4680895eeb25",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-checkpoint-4k.png"
+    },
+    {
+      "file": "checkpoint-4by3.png",
+      "sha256": "182d32e4e0a167bacd77d95147756d21c69e5efa7794395b28144608634a06b3",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true,
+      "modifiedUtc": "2026-11-01T17:21:09.217705+00:00",
+      "previousCaptureSha256": "d7d743dc05e42a4f4cce872c0e6f4c478a19790ff8757927bd1e0b47a14f69e6",
+      "priorReviewedCaptureSha256": "3e7dc466fd7c050a95eaaeea9f252b4f8de0ef47ca66a9ab97f7c07ec9315c55",
+      "reViewedAfterFinalRecapture": true,
+      "exactByteEquivalentToPriorReview": false,
+      "captureSourceName": "system-stage20-checkpoint-4by3.png"
+    }
+  ],
+  "resolvedRequiredFindings": [
+    {
+      "issue": "Lazy Return surface covered equipment auxiliary controls",
+      "result": "Equipment and unlock controls are visible at the established top-right positions in all three final return-hub captures. Disabled appearance agrees with absent catalog. Acquisition absence is explicitly supplied as no-provider context, not a missing-control finding."
+    },
+    {
+      "issue": "First lazy TouchHUD generation appeared in front of checkpoint prompt",
+      "result": "All three final checkpoint captures have no bright Jump/Dash HUD in front of the prompt. Continue and prompt remain legible. Pause retains its dimmed background TouchHUD rather than foreground controls."
+    }
+  ],
+  "observations": [
+    "Return body, primary departure/cancel and style/exchange controls remain readable in all ratios without extra foreground UI.",
+    "Progress confirmation explanatory text and confirm/cancel controls are separated and unclipped.",
+    "Save retry message and retry/disabled Close hierarchy are readable. Raw isolated error text contains kanji 隔 and 書; this validation exception string is not treated as a product kana conversion regression.",
+    "Pause menu retains readable two-line settings/retreat labels and water-mirror geometry across all ratios.",
+    "Checkpoint explanatory text and Continue remain unobstructed after the first-generation guard fix."
+  ],
+  "native4kSupplement": {
+    "method": "Whole original images viewed; viewer resized 3840x2160 to 2048x1152. Lossless in-memory unscaled crops supplement representative glyph inspection; originals untouched.",
+    "crops": [
+      {
+        "file": "system-stage20-return-hub-4k.png",
+        "box": [
+          2920,
+          260,
+          3520,
+          530
+        ],
+        "observation": "Final recapture equipment/unregistered two-line label and unlock remain legible."
+      },
+      {
+        "file": "system-stage20-checkpoint-4k.png",
+        "box": [
+          1440,
+          790,
+          2450,
+          990
+        ],
+        "observation": "Final recapture checkpoint message glyphs/line spacing readable; crop edge truncation is diagnostic only."
+      }
+    ],
+    "previousCaptureCrops": [
+      {
+        "file": "system-stage20-return-hub-4k.png",
+        "box": [
+          2920,
+          260,
+          3520,
+          530
+        ],
+        "observation": "Equipment unregistered two-line label and unlock glyphs readable."
+      },
+      {
+        "file": "system-stage20-progress-confirm-4k.png",
+        "box": [
+          750,
+          670,
+          1800,
+          840
+        ],
+        "observation": "Representative confirmation glyphs/line spacing readable; crop boundaries are diagnostic, not clipping in full image."
+      },
+      {
+        "file": "system-stage20-save-retry-4k.png",
+        "box": [
+          1100,
+          730,
+          2300,
+          940
+        ],
+        "observation": "Representative failure message and raw injected error readable."
+      }
+    ]
+  },
+  "limits": [
+    "Factory/lifetime migration review only, not a redesign or global visual completion claim.",
+    "Previous z-order-defect captures preserved separately; no newly matched old-HEAD full-scene comparison or pixel identity claim.",
+    "EventSystem raycast, save retry, callback ownership, lifecycle and focus behavior are parent native assertions, not independently executed here or established by photographs.",
+    "Per-dialog classes remain mandatory follow-up according to parent, not claimed completed by this visual result.",
+    "Representative 4K crops supplement resized whole-image viewing; physical devices/audio/historical UGUI not verified. No Unity commands, tests or product edits performed."
+  ],
+  "reviewHistory": [
+    {
+      "reviewedAtUtc": "2026-11-01T16:22:01.286818+00:00",
+      "images": [
+        {
+          "file": "system-stage20-return-hub-fhd.png",
+          "sha256": "ea9f4830e595af2488e28037abf50216bebe218844dbc5f877410e9e82765bc4",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:19:17.853453+00:00",
+          "previousCaptureSha256": "4cf35c5f941a20fd90870e10c9cc7885db1b1e6d7816e6370d481761e9f90530",
+          "priorReviewedCaptureSha256": "f4bccaac2edbf330f25c6eb963ed41c230897b107e07eaec89597718fb2ca2e2",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-return-hub-4k.png",
+          "sha256": "0858c8e87080a527a8417bba52b3899780dbeb99824dca38808f3ee25bfd2108",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:19:27.663417+00:00",
+          "previousCaptureSha256": "80ba2d33fd884ad8d646b11116194fcebf7f2f3dcb950aa4dae371b60c5a7d29",
+          "priorReviewedCaptureSha256": "50201e04c4b7bc922327b81af76d7749e171bcfe25dcd2a0e390f905a8150650",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-return-hub-4by3.png",
+          "sha256": "9c8c782d43f34c5a277c1a756d00a54676c78b5d942fe42b3565a54784c5a5b1",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:19:31.961765+00:00",
+          "previousCaptureSha256": "2b3bb662659f2bb2488e921d9f8036be6f779b9d0c87793a5a2d084ec8c2a927",
+          "priorReviewedCaptureSha256": "1a343d40b983099ac633cf3887914916add281008d7e8167107cd8678e27b162",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-progress-confirm-fhd.png",
+          "sha256": "6ce3ea10ddd45c171effcc7c8cc36b06dfb22b991cc2505f75fcca199b368544",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:19:40.891928+00:00",
+          "previousCaptureSha256": "d02877dbebee8930b1ee188f02f64883949b9e5a890a4be45b4e82bb603c0218",
+          "priorReviewedCaptureSha256": "a9e61ad9800f60310484d52511255a0aa3fd3b03ab2c55f8d2856cafad293ad2",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-progress-confirm-4k.png",
+          "sha256": "8ff535c8c91300bf48354592acbbd6b78619edf4b2ec92c7a3d31b055a9cef64",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:19:47.877769+00:00",
+          "previousCaptureSha256": "917fe5e7779f0a5d8da565a39a348974ee61452b5dd26e8af7687b369546b636",
+          "priorReviewedCaptureSha256": "1a443d1d595b31866f3c70d2497883903027247e7d6a25c1d503fe413ffacae1",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-progress-confirm-4by3.png",
+          "sha256": "b291fd77deead20c415464a5d78283d7f582f274fe4a121023dc8743d4ac3607",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:19:52.306043+00:00",
+          "previousCaptureSha256": "cd341504c20b4d547eb354b2baffff49b8d534305b95419f13f151c64292eb5a",
+          "priorReviewedCaptureSha256": "69cab7bdd01c545519ce629c77223eab2ebdb062adcb2cc635646ade3cded6ef",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-save-retry-fhd.png",
+          "sha256": "c89b08a4f380aeab0e48b5d0c366e8f547712815ed33d6990a8286ee7d45bc85",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:20:04.080216+00:00",
+          "previousCaptureSha256": "4f1a3ab9791b2c5b1ca495cdb384e5e4d4c32712b088cc9c9531401d0c2c9029",
+          "priorReviewedCaptureSha256": "6faeb0a012de1c3f5a27c4141db581282c7a93ccd4669c7ff238bff86cdbe760",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-save-retry-4k.png",
+          "sha256": "f2c4aeeff7857ae94ae0b8dc73af608d09c6f18c24a0a806a4ae43ef4e9defb0",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:20:09.847269+00:00",
+          "previousCaptureSha256": "18124049cd9a73ac53adf8c60d580cb4881576c5beb11dd81aac5315cfce3592",
+          "priorReviewedCaptureSha256": "8c5515efea5cc70da0e69dd26784705cb088089cff25b2e54b6e28aa577d76f2",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-save-retry-4by3.png",
+          "sha256": "5af0c6f9642b372cf24f386473cb6fe9cff85ff28953386952f0fbd5b359333d",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:20:14.147930+00:00",
+          "previousCaptureSha256": "7d8774e5a03ace471590d3e6e5a2a759b394cbab0caefb006fda5fe021aa593b",
+          "priorReviewedCaptureSha256": "44300884f43b9a425ad91c25b6d3b597f27de8f96ba4e71e288d31f08e9cef37",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-pause-fhd.png",
+          "sha256": "8f255db02e6e79d3b1f3e8a1a56673465ed5fdf90abcb83b7bcbb6316c59beea",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:20:26.972571+00:00",
+          "previousCaptureSha256": "b694463dd24d0170ab9ca6c63f2b6b87c90073a63d8b71dea3b19066841ebd17",
+          "priorReviewedCaptureSha256": "9542eb4f6a1724c19f4a21c92e19312b299646c87b36b931f3d1d543a5a5a0b6",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-pause-4k.png",
+          "sha256": "3ff5c5155a2cc1ff18a80b4ae593e4420ccef42f87b701104cbbcb52bea60adb",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:20:31.767219+00:00",
+          "previousCaptureSha256": "0ea6ff2a7b8606e7ce0b0cf82b823811bb879cc664934d2c2501bf41589ec121",
+          "priorReviewedCaptureSha256": "bba53e7442678bee22c104e849f417c6fdd5bd9d43f8120412714dc21d5925be",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-pause-4by3.png",
+          "sha256": "564a53b05bb3055272b15cc4b861fdf87bd4e6f90df9a779dd918cc18b306ac7",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:20:35.822994+00:00",
+          "previousCaptureSha256": "8cb308dcd215c7e180b0f82133945f617812eda2f288d2da0b2c3cf6b79c7ab2",
+          "priorReviewedCaptureSha256": "1f01a60c7d667874c9bc27a3bbe50ad070e4bff1c164e6a47b307a37abd92d50",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-checkpoint-fhd.png",
+          "sha256": "c9415747afb086a71d41fe750aa1efe45c65255a9ec73df710bd4830cd11bf1c",
+          "dimensions": [
+            1920,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:21:00.063955+00:00",
+          "previousCaptureSha256": "c966e8bbca502531938d96c1bd986071cf3e48c080df359344bbab42639e230b",
+          "priorReviewedCaptureSha256": "f601d89279ea0ce2d08eff1d0a90a4ed7dc72c8f6c1ed9640dbb7ce3b94c323d",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-checkpoint-4k.png",
+          "sha256": "0bf083c01aba0775d07b1c2bf95cd72979bc8cbcbace6d66e2d1978b97268a05",
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:21:05.183589+00:00",
+          "previousCaptureSha256": "0cd3df71ab09567d2e7427ddba5a52802147a45918fad3e115a8079a9c388096",
+          "priorReviewedCaptureSha256": "ea231d7bc576303b8a1104da86cd3da9981ef2a6894e9d55b10c4680895eeb25",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        },
+        {
+          "file": "system-stage20-checkpoint-4by3.png",
+          "sha256": "182d32e4e0a167bacd77d95147756d21c69e5efa7794395b28144608634a06b3",
+          "dimensions": [
+            1440,
+            1080
+          ],
+          "viewed": true,
+          "modifiedUtc": "2026-11-01T17:21:09.217705+00:00",
+          "previousCaptureSha256": "d7d743dc05e42a4f4cce872c0e6f4c478a19790ff8757927bd1e0b47a14f69e6",
+          "priorReviewedCaptureSha256": "3e7dc466fd7c050a95eaaeea9f252b4f8de0ef47ca66a9ab97f7c07ec9315c55",
+          "reViewedAfterFinalRecapture": true,
+          "exactByteEquivalentToPriorReview": false
+        }
+      ],
+      "note": "Earlier isolated20002 capture review; superseded by re-viewed final inactive-host compatibility source capture."
+    }
+  ],
+  "finalRecaptureReview": {
+    "isolatedRunSuppliedByParent": "20003",
+    "changedImageCount": 15,
+    "reViewedImageCount": 15,
+    "observations": "All 15 changed PNG files actually re-opened at original detail. Equipment/unlock remain visible all ratios; checkpoint has no foreground TouchHUD; confirmation/retry/pause remain readable with no required new regression. Exact-byte equivalence is not claimed."
+  },
+  "finalSourceHashesReadFromSubmission": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "2ca3ee4a9e4f992425d8623db9f95c0924a11f0811bdcfb55039155fcb108f73",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "24847b3fece5858062717b3970ff30acd76c5fad77dfdd5763b1d5aacb50fcd9"
+  }
+}

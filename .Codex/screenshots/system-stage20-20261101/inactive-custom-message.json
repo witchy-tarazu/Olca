@@ -1,0 +1,10 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"diagnostics\": [], \"compileMs\": 2482, \"executeMs\": 18, \"assemblyName\": \"PipelineRunScript_Stage20InactiveCheckpointProof_bd53822a13f347cdb40f473904f84055\", \"success\": true, \"command\": \"run_script\", \"result\": {\"inactiveGenerationDeferred\": true, \"customMessagePreserved\": true, \"panelActive\": true, \"body\": \"\\u9694\\u96e2\\u78ba\\u8a8d: \\u4fdd\\u5b58\\u6848\\u5185\\u306e\\u500b\\u5225\\u672c\\u6587\", \"hudAbsent\": true, \"applicationAssembly\": \"c0e2e09a-fbd7-4f94-8396-21f1343d9d6f\"}, \"executionTimeMs\": 2508, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-01T16:42:40.988713Z\"}"
+    }
+  ],
+  "trackedCliJob": "f3c1eeb3c13546b1a99edb07819124d0",
+  "targetPid": 137059
+}

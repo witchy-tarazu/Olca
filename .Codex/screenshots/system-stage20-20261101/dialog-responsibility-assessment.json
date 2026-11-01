@@ -1,0 +1,58 @@
+{
+  "manager": "Assets/Olca/Presentation/Management/DialogManager.cs",
+  "managerOwns": [
+    "common owner/ticket lifecycle",
+    "modal input blocking",
+    "focus/result/scroll input coordination"
+  ],
+  "managerHasDomainSpecificDependencies": false,
+  "managerHasDialogTypeSwitch": false,
+  "managerConstructsIndividualUI": false,
+  "currentOwners": {
+    "DungeonBattleController": [
+      "progress confirmation/save result/retry",
+      "retreat confirmation"
+    ],
+    "ClearReturnView": [
+      "deck discard",
+      "saved deck delete",
+      "read-only details"
+    ],
+    "GameplayKeyboardSettingsView": [
+      "key/pad reset confirmation"
+    ],
+    "DialogueView": [
+      "skip confirmation",
+      "backlog"
+    ],
+    "CustomScreenView": [
+      "card details"
+    ]
+  },
+  "implementedThisStage": [
+    "GameplayPanelFactory: common presentation construction extracted from host",
+    "HostPanelBindings: lazy View resources/Popup instance lease and host teardown"
+  ],
+  "individualDialogClassesNotYetImplemented": [
+    "ProgressActionDialog",
+    "RetreatConfirmationDialog",
+    "DeckDiscardDialog",
+    "SavedDeckDeleteDialog",
+    "ReadOnlyDetailsDialog",
+    "BindingResetDialog",
+    "DialogueSkipDialog",
+    "DialogueBacklogDialog",
+    "CustomCardDetailsDialog"
+  ],
+  "newUserRequirementComplete": false,
+  "mandatoryNextScope": "First ProgressActionDialog + RetreatConfirmationDialog, existing flow/save services remain domain owner",
+  "design": "Planning/GameSystem管理基盤と段階移行.md",
+  "currentSpecificPresentationConstruction": {
+    "GameplayPanelFactory.Progress": "進行/保存確認PopupのLabel/Button組立。ProgressActionDialogへ移す必須残件",
+    "GameplayPanelFactory.Retreat": "撤退PopupのLabel/Button組立。RetreatConfirmationDialogへ移す必須残件",
+    "ClearReturnView": "編成破棄/保存デッキ削除/読取詳細の各内容",
+    "GameplayKeyboardSettingsView": "キー/pad初期化確認の各内容",
+    "DialogueView": "skip/backlogの各内容",
+    "CustomScreenView": "カード詳細内容"
+  }
+}

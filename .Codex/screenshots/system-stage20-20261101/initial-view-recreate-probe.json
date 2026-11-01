@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 102,\n  \"executeMs\": 2,\n  \"assemblyName\": \"PipelineRunScript_Stage20LeaseProof_b53e43973ee04f1981b23dd6940766fd\",\n  \"success\": true,\n  \"result\": {\n    \"opened\": true,\n    \"reopened\": true,\n    \"prior\": 1,\n    \"owned\": 2,\n    \"created\": 2,\n    \"active\": false,\n    \"currentKey\": \"probe\",\n    \"context\": false\n  }\n}"
+    }
+  ]
+}

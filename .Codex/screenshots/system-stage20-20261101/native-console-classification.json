@@ -1,0 +1,10 @@
+{
+  "errors": 0,
+  "warnings": 1,
+  "categories": {
+    "UnityAI connection info read-only environment warning": 1
+  },
+  "productOrContentWarningsObserved": 0,
+  "suppressed": false,
+  "history": "native-console-history.json"
+}

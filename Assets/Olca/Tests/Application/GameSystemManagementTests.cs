@@ -421,6 +421,23 @@ namespace Olca.Tests.Application
             foreach(var name in new[]{"menu","ensureManagedVisible","hideManaged",kind==0?"draft":kind==1?"state":"plan"})Assert.IsNull(view.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view),name);
             layer.UnregisterOwner(owner);Assert.AreEqual(0,layer.RegisteredCount);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.DoesNotThrow(()=>old.Invoke());Assert.AreEqual(1,cancels);
         }
+        [TestCase(false)][TestCase(true)]
+        public void 帰還面の必要時生成後も装備入口は前面にあり確認中だけ隠れる(bool registered)
+        {
+            // Chrome表示のfixtureは読込済み拠点を使い、新規配布の契約を要求しない。
+            var progress=new Olca.Core.Domain.ClearReturnSession(new Olca.Core.Logic.Dungeon.MemoryClearReturnStore(new Olca.Core.Domain.ClearReturnProfile()));
+            Assert.IsTrue(progress.Ready);
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var chrome=factory.Chrome();
+            var view=ReturnView();view.transform.SetParent(host.transform,false);view.gameObject.SetActive(true);
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();void Set(string n,object v)=>type.GetField(n,flags).SetValue(controller,v);
+            Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);Set("clearReturnView",view);
+            Set("manualSaveButton",chrome.Save);Set("newGameButton",chrome.NewGame);Set("customizationEditorButton",chrome.Loadout);Set("customizationUnlockButton",chrome.Unlock);Set("customizationAcquisitionButton",chrome.Acquisition);Set("customizationAcquisitionProvider",new EquipmentSourceProbe());
+            if(registered)Set("customizationCatalog",new Olca.Core.Logic.Customization.CustomizationCatalog("chrome20",new Olca.Core.Logic.Customization.PartsBoardDefinition(1,1,new[]{new Olca.Core.Domain.Vector2Int(0,0)}),Array.Empty<string>(),new Dictionary<string,Olca.Core.Logic.Customization.PartShape>(),null));
+            type.GetMethod("RefreshProgressActions",flags).Invoke(controller,null);
+            foreach(var button in new[]{chrome.Loadout,chrome.Unlock,chrome.Acquisition}){Assert.IsTrue(button.gameObject.activeSelf);Assert.AreEqual(registered,button.interactable);Assert.Greater(button.transform.GetSiblingIndex(),view.transform.GetSiblingIndex());}
+            Set("progressDialogOpen",true);Set("progressActionOverlay",Panel("progress-overlay"));type.GetMethod("RefreshProgressActions",flags).Invoke(controller,null);
+            foreach(var button in new[]{chrome.Loadout,chrome.Unlock,chrome.Acquisition})Assert.IsFalse(button.gameObject.activeSelf);
+        }
         private sealed class EquipmentSourceProbe:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
         {
             public int Calls;
@@ -452,15 +469,17 @@ namespace Olca.Tests.Application
             object Call(string n,params object[] args)=>type.GetMethod(n,flags).Invoke(controller,args);
             try{
                 GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();Assert.IsFalse(GameplayPause.InputBlocked);
-                var currency=Panel("CurrencyRewardPanel");var items=Panel("ItemRewardPanel");Set("gameSystem",system);Set("currencyOverlay",currency);Set("itemRewardOverlay",items);
-                var root=item?items:currency;var yes=Button(root,item?"ReceiveItemReward":"ReceiveCurrencyButton");var no=Button(root,item?"SkipItemReward":"SkipCurrencyButton");Call("RegisterResourceRewardViews");
+                var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});
+                var binding=new HostPanelBindings(controller,host.transform,resources,views);Set("gameSystem",system);Set("panelFactory",factory);Set("hostPanels",binding);Call("RegisterResourceRewardViews");
+                Assert.IsNull(type.GetField("currencyOverlay",flags).GetValue(controller));Assert.IsNull(type.GetField("itemRewardOverlay",flags).GetValue(controller));Assert.AreEqual(0,resources.OwnedInstanceCount);
+                var root=binding.Show(item?"item":"currency");var yes=root.GetComponentsInChildren<Button>(true).Single(x=>x.name==(item?"ReceiveItemReward":"ReceiveCurrencyButton"));var no=root.GetComponentsInChildren<Button>(true).Single(x=>x.name==(item?"SkipItemReward":"SkipCurrencyButton"));
                 var first=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,first,CancellationToken.None);var old=yes.onClick;var context=(ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller);Assert.IsTrue(context.IsCurrent);
                 var popup=Panel("reward-popup");var confirm=Button(popup,"confirm");var cancel=Button(popup,"cancel");dialogs.Show(context,popup,confirm,cancel,_=>{});old.Invoke();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,first.Task.Status);
                 views.GetLayer("resource-reward").CloseCurrent();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,first.Task.Status);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
                 frame++;var next=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,next,CancellationToken.None);old.Invoke();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,next.Task.Status);
                 yes.onClick.Invoke();no.onClick.Invoke();Assert.IsTrue(next.Task.GetAwaiter().GetResult());Call("CloseResourceReward",root,next);Assert.IsFalse(root.activeSelf);Assert.IsNull(type.GetField("activeResourceRewardChoice",flags).GetValue(controller));
                 frame++;var final=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,final,CancellationToken.None);Call("OnDisable");Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,final.Task.Status);Call("OnEnable");Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Pending,final.Task.Status);views.GetLayer("resource-reward").CloseCurrent();Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,final.Task.Status);Assert.IsNull(type.GetField("resourceRewardRoot",flags).GetValue(controller));
-                var crossOld=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,crossOld,CancellationToken.None);var other=item?currency:items;var otherNo=Button(other,item?"SkipCurrencyButton":"SkipItemReward");var crossNext=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",other,otherNo.name,crossNext,CancellationToken.None);Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,crossOld.Task.Status);Assert.IsTrue(((ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller)).IsCurrent);otherNo.onClick.Invoke();Assert.IsFalse(crossNext.Task.GetAwaiter().GetResult());Call("CloseResourceReward",other,crossNext);
+                var crossOld=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",root,no.name,crossOld,CancellationToken.None);var other=binding.Show(item?"currency":"item");var otherNo=other.GetComponentsInChildren<Button>(true).Single(x=>x.name==(item?"SkipCurrencyButton":"SkipItemReward"));var crossNext=new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>();Call("BindResourceReward",other,otherNo.name,crossNext,CancellationToken.None);Assert.AreEqual(Cysharp.Threading.Tasks.UniTaskStatus.Canceled,crossOld.Task.Status);Assert.IsTrue(((ManagedScreenContext)type.GetField("resourceRewardContext",flags).GetValue(controller)).IsCurrent);otherNo.onClick.Invoke();Assert.IsFalse(crossNext.Task.GetAwaiter().GetResult());Call("CloseResourceReward",other,crossNext);
                 Call("ReleasePresentationBindings");Assert.IsNull(type.GetField("resourceRewardMenu",flags).GetValue(controller));Assert.IsNull(type.GetField("resourceRewardViews",flags).GetValue(controller));views.UnregisterOwner(controller);Assert.AreEqual(0,resources.OwnedInstanceCount);
             }finally{UnityEngine.Object.DestroyImmediate(controller);GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
         }
@@ -506,6 +525,58 @@ namespace Olca.Tests.Application
             else{var scroll=root.GetComponentInChildren<ScrollRect>();Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);layer.CloseCurrent();Assert.IsTrue(session.IsOpen);Assert.IsTrue(session.BacklogOpen);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(root.activeSelf);}
             layer.CloseCurrent();Assert.AreNotSame(beforeHide,next.onClick);stalePopup.Invoke();var oldSession=session;long oldVersion=oldSession.Version;
             session=new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript("dialogue-reopen",new[]{new Olca.Core.Domain.DialogueLine("フッキ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);frame++;Assert.IsTrue((await layer.ShowAsync("dialogue")).Succeeded);oldNormal.Invoke();stalePopup.Invoke();Assert.AreEqual(0,session.Index);Assert.AreEqual(oldVersion,oldSession.Version);Find("DialogueNext").onClick.Invoke();Assert.AreEqual(1,session.Index);layer.CloseCurrent();views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Host表示は初回要求だけ生成し再表示とPopupを共有して終了後に返す(bool managed)
+        {
+            var content=Panel("host-factory-content");content.SetActive(true);var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var factory=new GameplayPanelFactory(content.transform,font,_=>{});var bindings=new HostPanelBindings(owner,content.transform,managed?resources:null,managed?views:null);
+            int generated=0,actions=0;GameplayPauseView pause=null;
+            bindings.Register("pause","fixture-host-ui",()=>{generated++;var root=factory.Pause();pause=root.AddComponent<GameplayPauseView>();root.GetComponentsInChildren<Button>(true).Single(b=>b.name=="ResumeButton").onClick.AddListener(()=>{if(bindings.IsAlive)actions++;});pause.Initialize(()=>bindings.IsAlive);return root;},(root,ctx)=>pause.Show(ctx),root=>{if(root!=null)root.GetComponent<GameplayPauseView>().Hide();});
+            Assert.AreEqual(0,generated);Assert.AreEqual(0,content.transform.childCount);Assert.AreEqual(0,resources.OwnedInstanceCount);
+            var first=bindings.Show("pause");Assert.AreEqual(1,generated);if(!managed)first.SetActive(true);var old=first.GetComponentsInChildren<Button>(true).Single(b=>b.name=="ResumeButton").onClick;
+            Assert.AreSame(first,bindings.Show("pause"));Assert.AreEqual(1,generated);
+            if(managed){old.Invoke();Assert.AreEqual(1,actions);views.GetLayer("fixture-host-ui").CloseCurrent();old.Invoke();Assert.AreEqual(1,actions);frame++;bindings.Show("pause");old.Invoke();Assert.AreEqual(1,actions);}
+            int prompts=0;GameObject CreatePrompt(){prompts++;return factory.Progress(out _,out _,out _);}
+            var popup=bindings.Popup("prompt",CreatePrompt);Assert.AreSame(popup,bindings.Popup("prompt",CreatePrompt));Assert.AreEqual(1,prompts);
+            Assert.AreEqual(managed?2:0,resources.OwnedInstanceCount);bindings.Dispose();bindings.Dispose();Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.IsTrue(first==null);Assert.IsTrue(popup==null);Assert.IsTrue(font!=null);Assert.Throws<ObjectDisposedException>(()=>bindings.Show("pause"));int beforeOld=actions;using(var replacement=new HostPanelBindings(owner,content.transform,managed?resources:null,managed?views:null)){Assert.DoesNotThrow(()=>old.Invoke());Assert.AreEqual(beforeOld,actions,"旧bindingの入力は新binding生成後も作用しない");}
+            UnityEngine.Object.DestroyImmediate(content);
+        }
+        [Test]
+        public void Host表示factory失敗は旧Viewを保ち同じ登録で再試行できる()
+        {
+            var content=Panel("host-factory-failure");content.SetActive(true);var factory=new GameplayPanelFactory(content.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});
+            using(var bindings=new HostPanelBindings(owner,content.transform,resources,views)){
+                bindings.Register("base","fixture-host-ui",()=>factory.Panel("base"),(root,ctx)=>root.SetActive(true),root=>{if(root!=null)root.SetActive(false);});var prior=bindings.Show("base");
+                bool fail=true;bindings.Register("retry","fixture-host-ui",()=>factory.Component<GameplayPauseView>("retry",v=>{if(fail)throw new InvalidOperationException("fixture20");v.Initialize(()=>true);}).gameObject,(root,ctx)=>root.GetComponent<GameplayPauseView>().Show(ctx),root=>{if(root!=null)root.GetComponent<GameplayPauseView>().Hide();});
+                Assert.Throws<InvalidOperationException>(()=>bindings.Show("retry"));Assert.IsTrue(prior.activeSelf);Assert.AreEqual("base",views.GetLayer("fixture-host-ui").CurrentKey);Assert.AreEqual(1,resources.OwnedInstanceCount);Assert.AreEqual(1,content.transform.childCount);
+                fail=false;var next=bindings.Show("retry");Assert.NotNull(next);Assert.IsFalse(prior.activeSelf);Assert.AreEqual(2,resources.OwnedInstanceCount);
+                views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.IsTrue(next==null);Assert.IsTrue(prior==null);
+            }
+            UnityEngine.Object.DestroyImmediate(content);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 同画面の再表示は旧contextを閉じ現在の実体だけ保持する(bool destroyed)
+        {
+            int created=0;ManagedScreenContext context=null;var layer=views.GetLayer("recreate20");
+            layer.Register(owner,"screen",_=>{created++;return Task.FromResult(Panel("recreate20"));},(root,ctx)=>{context=ctx;root.SetActive(true);},root=>{if(root!=null)root.SetActive(false);});
+            Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);var priorContext=context;var first=host.transform.Find("recreate20").gameObject;
+            var popup=Panel("recreate20-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");var pending=dialogs.Show(priorContext,popup,yes,no,_=>Assert.Fail("親終了は業務callbackを呼ばない"));
+            if(destroyed)UnityEngine.Object.DestroyImmediate(first);else first.SetActive(false);
+            Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);var next=host.transform.Find("recreate20").gameObject;
+            Assert.AreEqual(destroyed?2:1,created);Assert.AreEqual(1,resources.OwnedInstanceCount);Assert.IsTrue(next.activeSelf);Assert.IsTrue(context.IsCurrent);Assert.IsFalse(priorContext.IsCurrent);Assert.AreNotSame(priorContext,context);Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());Assert.AreEqual(0,dialogs.ActiveCount);
+            if(!destroyed)Assert.AreSame(first,next);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.IsTrue(next==null);
+        }
+        [Test]
+        public void 同画面の再表示失敗は無効なcurrentとleaseを残さず再生成できる()
+        {
+            bool fail=false;ManagedScreenContext context=null;var layer=views.GetLayer("retry20");
+            layer.Register(owner,"screen",_=>Task.FromResult(Panel("retry20")),(root,ctx)=>{context=ctx;root.SetActive(true);if(fail)throw new InvalidOperationException("fixture20-show");},root=>{if(root!=null)root.SetActive(false);});
+            Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);var prior=context;
+            var popup=Panel("retry20-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");int callbacks=0;var pending=dialogs.Show(prior,popup,yes,no,_=>callbacks++);var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);var old=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("ConfirmAction").GetValue(ticket);
+            host.transform.Find("retry20").gameObject.SetActive(false);fail=true;
+            var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
+            fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
     }
 }

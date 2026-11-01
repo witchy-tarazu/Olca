@@ -1016,11 +1016,11 @@ namespace Olca.Tests.Integration
             var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var type=controller.GetType();
             void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
             object Get(string name)=>type.GetField(name,flags).GetValue(controller);
-            void Call(string name)=>type.GetMethod(name,flags).Invoke(controller,null);
+            void Call(string name,params object[] args)=>type.GetMethod(name,flags).Invoke(controller,args);
             var progress=new ClearReturnSession(new MemoryClearReturnStore(new ClearReturnProfile()));
             Set("manager",manager);Set("clearReturnSession",progress);
             try {
-                Call("CreatePauseControls");var pause=(UnityEngine.GameObject)Get("pauseOverlay");pause.SetActive(true);
+                Call("CreatePauseControls");Assert.IsNull(Get("pauseOverlay"),"未表示pauseは生成しない");Call("SetPausePanelVisible",true);var pause=(UnityEngine.GameObject)Get("pauseOverlay");Assert.IsTrue(pause.activeSelf);
                 var button=(UnityEngine.UI.Button)Get("cardCollectionButton");var oldOpen=button.onClick;
                 long revision=progress.Snapshot.Revision;long frame=manager.CurrentBattle?.LogicalFrame??0;bool custom=manager.CurrentBattle?.CustomScreen.IsOpen??false;
                 for(int repeat=0;repeat<2;repeat++){
@@ -1031,6 +1031,37 @@ namespace Olca.Tests.Integration
                     revision=progress.Snapshot.Revision;Assert.IsTrue(pause.activeSelf);Assert.IsTrue(manager.IsUserPaused);Assert.AreEqual(frame,manager.CurrentBattle?.LogicalFrame??0);Assert.AreEqual(custom,manager.CurrentBattle?.CustomScreen.IsOpen??false);
                 }
             } finally {var canvas=Get("pauseCanvas") as UnityEngine.GameObject;if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(host);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 図鑑の内部停止は未表示Pauseを生成せず終了で元の状態へ戻す(bool battle)
+        {
+            Create();if(battle)Contact();var host=new UnityEngine.GameObject("lazy-gallery20");host.SetActive(false);var c=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var type=c.GetType();void Set(string n,object value)=>type.GetField(n,flags).SetValue(c,value);object Get(string n)=>type.GetField(n,flags).GetValue(c);void Call(string n,params object[] args)=>type.GetMethod(n,flags).Invoke(c,args);
+            var progress=new ClearReturnSession(new MemoryClearReturnStore(new ClearReturnProfile()));Set("manager",manager);Set("clearReturnSession",progress);Set("clearReturnVisible",!battle);Set("initialHub",!battle);
+            var pause=typeof(Olca.Unity.GameplayPause);var sf=System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic;var release=pause.GetField("awaitRelease",sf);var frames=pause.GetField("resumeFrames",sf);bool wasPaused=Olca.Unity.GameplayPause.IsPaused;var wasRelease=release.GetValue(null);var wasFrames=frames.GetValue(null);float oldScale=UnityEngine.Time.timeScale;
+            long frame=manager.CurrentBattle?.LogicalFrame??0;int hp=manager.Dungeon.Player.CurrentHp;var hand=manager.CurrentBattle?.CustomScreen.CurrentHand.ToArray();
+            try{
+                Call("CreatePauseControls");Assert.IsNull(Get("pauseOverlay"));Assert.IsNull(Get("cardCollectionView"));
+                for(int repeat=0;repeat<2;repeat++){
+                    Call("OpenCardCollection");Assert.IsTrue(manager.IsUserPaused);Assert.IsTrue((bool)Get("cardCollectionOpen"));Assert.IsNull(Get("pauseOverlay"),"図鑑を表示するためだけにPauseを生成しない");Assert.IsTrue(((UnityEngine.Component)Get("cardCollectionView")).gameObject.activeSelf);
+                    Call("CloseCardCollection");Assert.IsFalse(manager.IsUserPaused);Assert.IsFalse((bool)Get("cardCollectionOpen"));Assert.IsNull(Get("pauseOverlay"));Assert.AreEqual(frame,manager.CurrentBattle?.LogicalFrame??0);Assert.AreEqual(hp,manager.Dungeon.Player.CurrentHp);if(hand!=null)CollectionAssert.AreEqual(hand,manager.CurrentBattle.CustomScreen.CurrentHand);
+                }
+                c.SetUserPaused(true);Assert.NotNull(Get("pauseOverlay"));Assert.IsTrue(((UnityEngine.GameObject)Get("pauseOverlay")).activeSelf);
+            }finally{var canvas=Get("pauseCanvas") as UnityEngine.GameObject;if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(host);UnityEngine.Time.timeScale=oldScale;Olca.Unity.GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Checkpoint選択待ちでは未生成の操作HUDが案内の前に生成されない(bool active)
+        {
+            Create();var host=new UnityEngine.GameObject("checkpoint-hud20");host.SetActive(false);var c=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var type=c.GetType();void Set(string n,object v)=>type.GetField(n,flags).SetValue(c,v);object Get(string n)=>type.GetField(n,flags).GetValue(c);void Call(string n)=>type.GetMethod(n,flags).Invoke(c,null);
+            Set("manager",manager);Set("awaitingCheckpointChoice",true);
+            host.SetActive(active);
+            try{
+                Call("CreatePauseControls");Call("RefreshBasicAttackHud");Assert.IsNull(Get("basicAttackHud"),"案内を覆う初回HUDは復帰決定前に生成しない");
+                if(!active){Assert.IsNull(Get("checkpointOverlay"),"非表示hostの案内は生成保留");host.SetActive(true);Call("OnEnable");}
+                Assert.IsTrue(((UnityEngine.GameObject)Get("checkpointOverlay")).activeSelf);Assert.NotNull(Get("checkpointMessage"));Call("RefreshBasicAttackHud");Assert.IsNull(Get("basicAttackHud"));
+            }
+            finally{var canvas=Get("pauseCanvas") as UnityEngine.GameObject;if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);UnityEngine.Object.DestroyImmediate(host);}
         }
         private DungeonBattleManager manager;
         private DungeonCheckpointSession session;
@@ -2715,9 +2746,9 @@ namespace Olca.Tests.Integration
                 if(victory)foreach(var e in m.CurrentBattle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);else m.CurrentBattle.Player.TakeDamage(100000);
                 Assert.IsTrue(m.IsBattleEndPresentationPending);
                 c.SetUserPaused(true);
-                Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
+                Assert.IsFalse(c.IsUserPaused);Assert.IsNull(Get(c,"pauseOverlay"),"停止要求が演出後へ保留されている間はPauseを生成しない");
                 UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
-                Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
+                Assert.IsFalse(c.IsUserPaused);Assert.IsNull(Get(c,"pauseOverlay"),"停止要求が演出後へ保留されている間はPauseを生成しない");
                 Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsTrue(c.IsUserPaused);
                 Assert.IsFalse(m.CompleteBattleEndPresentation());KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
                 Assert.IsNull(Get(c,"automaticPauseOwner"));
@@ -2765,7 +2796,7 @@ namespace Olca.Tests.Integration
             if(victory)foreach(var e in m.CurrentBattle.Enemies.ToArray())e.TakeDamage(100000,ElementType.None);else m.CurrentBattle.Player.TakeDamage(100000);
             Assert.IsTrue(m.IsBattleEndPresentationPending);
             Call(c,"OnApplicationPause",true);Call(c,"OnApplicationPause",false);
-            Assert.IsFalse(c.IsUserPaused);Assert.IsFalse(((UnityEngine.GameObject)Get(c,"pauseOverlay")).activeSelf);
+            Assert.IsFalse(c.IsUserPaused);Assert.IsNull(Get(c,"pauseOverlay"),"停止要求が演出後へ保留されている間はPauseを生成しない");
             Assert.IsTrue(m.CompleteBattleEndPresentation());Assert.IsTrue(c.IsUserPaused);
             Assert.IsFalse(m.CompleteBattleEndPresentation());Assert.IsNull(Get(c,"automaticPauseOwner"));
             KeyboardButton(c,"ResumeButton");Assert.IsFalse(c.IsUserPaused);
@@ -3303,9 +3334,11 @@ namespace Olca.Tests.Integration
         public void 通貨画面中のポーズは前面に表示し停止中の受取を拒否する()
         {
             var controller = Start();
-            var currency = (UnityEngine.GameObject)Get(controller, "currencyOverlay");
-            currency.SetActive(true); currency.transform.SetAsLastSibling();
+            // 未表示の先行実体へ触れず、製品と同じfactory/binding入口で待機面を用意する。
+            controller.gameObject.SetActive(true);Call(controller,"OnEnable");
+            var currency=((Olca.Application.Management.HostPanelBindings)Get(controller,"hostPanels")).Show("currency");
             var choice = new Cysharp.Threading.Tasks.UniTaskCompletionSource<bool>(); Set(controller, "currencyChoice", choice);
+            Call(controller,"BindResourceReward",currency,"SkipCurrencyButton",choice,System.Threading.CancellationToken.None);
             controller.SetUserPaused(true);
             var pause = (UnityEngine.GameObject)Get(controller, "pauseOverlay");
             Assert.IsTrue(pause.activeSelf); Assert.Greater(pause.transform.GetSiblingIndex(), currency.transform.GetSiblingIndex());
@@ -3714,8 +3747,8 @@ namespace Olca.Tests.Integration
             try {
                 var c=Start();var model=Model(c);var session=(DungeonCheckpointSession)Get(c,"memoryCheckpoints");
                 var file=(Olca.Unity.FileCheckpointStore)session.Store;var saved=System.IO.File.ReadAllBytes(file.ActivePath);
-                var keyboard=(Olca.Presentation.Field.GameplayKeyboardSettingsView)Get(c,"keyboardSettingsView");
                 UnityEngine.Time.timeScale=.75f;c.SetUserPaused(true);KeyboardButton(c,"KeyboardSettingsButton");
+                var keyboard=(Olca.Presentation.Field.GameplayKeyboardSettingsView)Get(c,"keyboardSettingsView");Assert.NotNull(keyboard,"設定の実入口で初回生成する");
                 if(destroyed=="keyboard"||destroyed=="both")UnityEngine.Object.DestroyImmediate(keyboard.gameObject);
                 if(destroyed=="overlay"||destroyed=="both")UnityEngine.Object.DestroyImmediate((UnityEngine.GameObject)Get(c,"pauseOverlay"));
                 Assert.DoesNotThrow(()=>c.SetUserPaused(false));Assert.IsTrue(c.IsExplorationResumeCounting);FinishExplorationCountdown(c);Assert.IsFalse(model.IsUserPaused);Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused);
@@ -3790,6 +3823,7 @@ namespace Olca.Tests.Integration
         {
             var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
             battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
+            Call(c,"RefreshBasicAttackHud");
             var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
             string Text(string name)=>hud.GetComponentsInChildren<UnityEngine.UI.Text>(true).Single(t=>t.name==name).text;
             Tick(c,new LogicalInput { BasicAttackButtonDown=true,BasicAttackButton=true });
@@ -3809,6 +3843,7 @@ namespace Olca.Tests.Integration
             battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
             Tick(c,new LogicalInput { BasicAttackButtonDown=true,BasicAttackButton=true });
             Tick(c,new LogicalInput { BasicAttackButtonUp=true });
+            Call(c,"RefreshBasicAttackHud");
             var hud=(Olca.Presentation.Dungeon.BasicAttackHud)Get(c,"basicAttackHud");
             var button=hud.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(x=>x.name=="BasicAttackButton");
             bool observed=false;for(int i=0;i<20;i++){

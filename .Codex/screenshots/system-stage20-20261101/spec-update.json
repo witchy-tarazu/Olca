@@ -1,0 +1,24 @@
+{
+  "head": "bbe75b8319d8004aaed9ac91e571fd2f004cda6f",
+  "protected": [
+    "cf6a66416e06d9b35e4e3c649e82dee27d2a3218",
+    "ec8d8ec8ebae7892e34722ad729ffbfd223d624e",
+    "c39ca5611b13fe0f1567ff279edbaa130dc91851",
+    "927e6d74fa88365bc35fcfd0df91df272980d68c",
+    "d4de6b53636fe8e0d3a74b8f46a5dc126685cd35",
+    "f2ce7ec59cb7d5ae48e92859700122d58b18669f",
+    "de9ddb74dc95eea80438eb80f402757b3691edd1"
+  ],
+  "docsOnly": true,
+  "implemented": false,
+  "previousHead": "de9ddb74dc95eea80438eb80f402757b3691edd1",
+  "newSpecCommit": "bbe75b8319d8004aaed9ac91e571fd2f004cda6f",
+  "newSpecSummary": [
+    "探索率は宝箱・一度きり強敵など種類で自動集計し個別フラグを使わない。対象種類全一覧は別途未定",
+    "そのマップのボス撃破を含め、マップ内依頼完了は含めない"
+  ],
+  "localUnpublishedHashesPreserved": true,
+  "finalPrefetchHead": "bbe75b8319d8004aaed9ac91e571fd2f004cda6f",
+  "finalOriginMaster": "bbe75b8319d8004aaed9ac91e571fd2f004cda6f",
+  "finalSourceUnchanged": true
+}

@@ -1,0 +1,180 @@
+{
+  "results": [
+    {
+      "status": "completed",
+      "duration": 15.46,
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "results": [
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する(True)",
+          "Status": "Passed",
+          "Duration": 6.9630755,
+          "Message": null,
+          "StackTrace": null
+        },
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中のパッド切断は演出完了までメニューを遅延し一度だけ停止する(False)",
+          "Status": "Passed",
+          "Duration": 2.2066295,
+          "Message": null,
+          "StackTrace": null
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "duration": 0.17,
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "results": [
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ(True)",
+          "Status": "Passed",
+          "Duration": 0.0613624,
+          "Message": null,
+          "StackTrace": null
+        },
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.勝敗演出中の休止と復帰は完了後の停止を一度だけ引き継ぐ(False)",
+          "Status": "Passed",
+          "Duration": 0.0825762,
+          "Message": null,
+          "StackTrace": null
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "duration": 2.38,
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "results": [
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(\"keyboard\")",
+          "Status": "Passed",
+          "Duration": 2.0975988,
+          "Message": null,
+          "StackTrace": null
+        },
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(\"overlay\")",
+          "Status": "Passed",
+          "Duration": 0.086564,
+          "Message": null,
+          "StackTrace": null
+        },
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(\"both\")",
+          "Status": "Passed",
+          "Duration": 0.0895814,
+          "Message": null,
+          "StackTrace": null
+        },
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.先に破棄されたポーズUIを解除時に呼ばず時間とモデルと保存を維持する(\"none\")",
+          "Status": "Passed",
+          "Duration": 0.0883742,
+          "Message": null,
+          "StackTrace": null
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "duration": 0.11,
+      "summary": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "results": [
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.固有攻撃HUDは実タメ完了と保持再開を区別し補助案内に主操作を重複しない",
+          "Status": "Passed",
+          "Duration": 0.0929074,
+          "Message": null,
+          "StackTrace": null
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "duration": 0.08,
+      "summary": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "results": [
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.固有攻撃HUDは硬直取消可能なら再使用待ちと誤表示せずボタンと一致する",
+          "Status": "Passed",
+          "Duration": 0.0567777,
+          "Message": null,
+          "StackTrace": null
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "duration": 0.06,
+      "summary": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "results": [
+        {
+          "FullName": "Olca.Tests.Integration.FloorSequenceControllerTests.通貨画面中のポーズは前面に表示し停止中の受取を拒否する",
+          "Status": "Passed",
+          "Duration": 0.0440136,
+          "Message": null,
+          "StackTrace": null
+        }
+      ]
+    }
+  ],
+  "actualRender": {
+    "screen": [
+      640,
+      360
+    ],
+    "textures": [
+      {
+        "name": "GameView.m_RenderTexture",
+        "width": 640,
+        "height": 360
+      },
+      {
+        "name": "PlayModeView.m_TargetTexture",
+        "width": 640,
+        "height": 360
+      }
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/",
+    "playing": false
+  },
+  "productBehaviorExpectedValuesUnchanged": true
+}

@@ -1,0 +1,33 @@
+{
+  "reviewer": "equipment_save_review",
+  "unresolvedRequiredFindings": 0,
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "2ca3ee4a9e4f992425d8623db9f95c0924a11f0811bdcfb55039155fcb108f73",
+    "Assets/Olca/Application/Management/BattlePresentationBinding.cs": "0d51f56612095fa2b6b736871a406451a62cd522b9ec1f9a06db2f8dc5f5d438",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "efd297083be374992c20586f80fcc4d078c74928974b05b89646bb4e79a18ce1",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "1f3061b3593ec7d14fb1b594eb09e2ca452d71331435b384c02a4ce3404c5223",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "24847b3fece5858062717b3970ff30acd76c5fad77dfdd5763b1d5aacb50fcd9",
+    "Assets/Olca/Presentation/Management/ViewManager.cs": "30ad46e9181326cc65eae0a58c4326402c7f5282f56059b61f8ceb5772f1bce4"
+  },
+  "findings": [
+    "Lazy equipment chrome only promoted over active return panel; disabled/unavailable and modal behavior unchanged",
+    "Only first HUD creation deferred while checkpoint awaiting/suspended/blocked; existing HUD behavior unchanged",
+    "Bindings own instance lifecycle; DialogManager only generic owner/ticket/input/result coordination",
+    "Per-popup classes9 explicitly remain mandatory subsequent user requirement; Stage20 factory extraction is not total architecture completion"
+  ],
+  "dynamicResultsNotClaimedByStaticReview": true,
+  "fixtureCorrection": "Read-loaded profile Ready instead of unsupported new-starter distribution against MemoryClearReturnStore; target behavior assertions unchanged; independently reviewed",
+  "checkpointFixtureCorrection": "Active real-entry host before panel initialization; awaiting choice/no HUD assertions unchanged; independently reviewed",
+  "inactiveCompatibilityFix": "Cache requested checkpoint text before lazy creation; skip missing widget updates while inactive; active host OnEnable renders current requested status with existing context reuse; no Core/save/clock change",
+  "reviewLimit": "Static source review distinct from physical/build/hearing/all-HotReload not run",
+  "lazyFixtureAdaptation": "Independent required findings0: paused end-presentation expects no generated Pause; keyboard/HUD obtained after real open/render; currency uses actual factory/input binding on active initialized host, original outcome/time/save assertions retained",
+  "verifiedDynamicEvidence": {
+    "full": "system-stage20-final-test-result.json",
+    "applicationRelated": "system-stage20-related-test-result.json",
+    "integrationRelated": "system-stage20-integration-related-test-result.json",
+    "sameEditor": "system-stage20-event-regression.json",
+    "native": "system-stage20-native-main-result.json",
+    "customInactiveText": "system-stage20-inactive-custom-message.json",
+    "cleanup": "system-stage20-cleanup.json"
+  }
+}

@@ -103,18 +103,21 @@ namespace Olca.Presentation.Management
                 if (entry.Lease == null || entry.Lease.Instance == null) created = await resources.CreateAsync(entry.Factory, cts.Token);
                 cts.Token.ThrowIfCancellationRequested();
                 if (disposed || !entry.Valid || request != version) throw new OperationCanceledException();
-                if (created != null) { entry.Lease = created; created = null; }
+                if (created != null) { entry.Lease?.Dispose(); entry.Lease = created; created = null; }
                 var prior = current;
+                var priorContext = prior?.Context;
                 var context = new ManagedScreenContext(this, entry.Key, request);
                 current = entry; entry.Context = context; committing = true;
                 try {
                     entry.Show(entry.Lease.Instance, context);
                     if (!ReferenceEquals(current, entry) || !entry.Valid) throw new OperationCanceledException();
-                    if (prior != null) { Dialogs.CancelOwner(prior.Context); prior.Hide(prior.Lease.Instance); prior.Context = null; }
+                    if (prior != null) { Dialogs.CancelOwner(priorContext); if (!ReferenceEquals(prior,entry)) { prior.Hide(prior.Lease.Instance); prior.Context = null; } }
                 } catch {
-                    Dialogs.CancelOwner(context); entry.Context = null; current = prior;
+                    Dialogs.CancelOwner(context);
+                    if(ReferenceEquals(prior,entry))Dialogs.CancelOwner(priorContext);
+                    entry.Context = null; current = ReferenceEquals(prior,entry) ? null : prior;
                     if (entry.Lease != null) { entry.Hide?.Invoke(entry.Lease.Instance); entry.Lease.Dispose(); entry.Lease = null; }
-                    if (prior?.Lease?.Instance != null && !prior.Lease.Instance.activeSelf) prior.Show(prior.Lease.Instance, prior.Context);
+                    if (!ReferenceEquals(prior,entry) && prior?.Lease?.Instance != null && !prior.Lease.Instance.activeSelf) prior.Show(prior.Lease.Instance, prior.Context);
                     throw;
                 } finally { committing = false; }
                 outcome = new ScreenOpenResult(true);

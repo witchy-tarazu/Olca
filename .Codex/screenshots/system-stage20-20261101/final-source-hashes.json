@@ -1,0 +1,8 @@
+{
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "2ca3ee4a9e4f992425d8623db9f95c0924a11f0811bdcfb55039155fcb108f73",
+  "Assets/Olca/Application/Management/BattlePresentationBinding.cs": "0d51f56612095fa2b6b736871a406451a62cd522b9ec1f9a06db2f8dc5f5d438",
+  "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "efd297083be374992c20586f80fcc4d078c74928974b05b89646bb4e79a18ce1",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "1f3061b3593ec7d14fb1b594eb09e2ca452d71331435b384c02a4ce3404c5223",
+  "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "24847b3fece5858062717b3970ff30acd76c5fad77dfdd5763b1d5aacb50fcd9",
+  "Assets/Olca/Presentation/Management/ViewManager.cs": "30ad46e9181326cc65eae0a58c4326402c7f5282f56059b61f8ceb5772f1bce4"
+}
