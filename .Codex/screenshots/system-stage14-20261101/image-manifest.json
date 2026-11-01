@@ -1,0 +1,137 @@
+[
+  {
+    "file": "return-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "4ca8707e52b3355e0a2987452125d793f8ddcd2e9cfa6cb9e048693aaeea83f8",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "return-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "bbf776b1ecc94df26d0f36171e68f6206e44d2eaf06aba96e20a9df18d37b53b",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "return-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "72bb3c5b6c9f7209ef616c20ff03fdf43d205b62484fed2706f16f238bc26bb8",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "return-hub-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "7fd67cc38706704faf20d2ccb2cebcf613bb6793c6a2a600350f304985d158ba",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "return-hub-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "54be780b0f2e3f22ad0f0fbd416a96dbdc93a5246ae5d4f33418b4894223f5fa",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "return-hub-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "5c4b188482f10214ab536bb9a37d7bae522f8ada1e4f040377aa1239dc3e1dbf",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "owned-detail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "5aafbf77a07e198d7d611194a561ea85b89999300ef85f025f27ce6542a0fbe5",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "owned-detail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "bed8f7ba703a90cc9decb568c221aad801238b665b97b8caa4d4a1f6bcffa213",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "owned-detail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "92df68a94b9b771f24abed686da83e6b53970ebfeb035746ba00203b61516d57",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "card-collection-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "cc4b1582a312cd8280c445cc43aa1043aeba395ca615c0c68a2de60e3b32ddf4",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "card-collection-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "05fd4aaf668ea0517d25b9ababf2b44708a04140366df1ec0f2fa593b792f1de",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "card-collection-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b507b048c5d9337deb3c3177ad83d45d1753719f3161757dd7dffec838160e9b",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "long-notice-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "e8d036bd4dd5799b8c85330d3852ca7fb48be2d1483275bb7dc2a6200b4bcd1e",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "long-notice-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "9cbd6237a18270fcc060f0334a11a22ddb56362d018d6415c6f756cc4df2d292",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  },
+  {
+    "file": "long-notice-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "5434cd557bc561467aac551534906bedaf8654842757e2dcae559c9d1493a011",
+    "kind": "final-source actual native render; forced Canvas / same held nullable battle frame within each state; long-notice presentation fixture only; no newly-shot matched before"
+  }
+]

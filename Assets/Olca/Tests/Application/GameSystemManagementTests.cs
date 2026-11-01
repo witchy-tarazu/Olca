@@ -317,5 +317,35 @@ namespace Olca.Tests.Application
                 UnityEngine.Object.DestroyImmediate(controller);
             }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
         }
+        [Test] public async Task 読取専用Dialogは閉鎖世代と親終了を守りスクロール所有を返す()
+        {
+            var screen=await Screen();var scroll=screen.Panel.AddComponent<ScrollRect>();int completed=0;
+            var request=dialogs.ShowNotice(screen.Context,screen.Panel,screen.Cancel,scroll,_=>completed++);
+            Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsTrue(screen.Context.DialogBlocksInput);
+            var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+            var stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("CancelAction").GetValue(ticket);
+            screen.Cancel.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await request);Assert.AreEqual(1,completed);
+            Assert.IsTrue(screen.Context.DialogBlocksInput);frame++;dialogs.Tick();Assert.IsFalse(screen.Context.DialogBlocksInput);
+            var next=dialogs.ShowNotice(screen.Context,screen.Panel,screen.Cancel,scroll,_=>completed++);stale();Assert.IsFalse(next.IsCompleted);
+            views.CloseCurrent();Assert.AreEqual(DialogResult.ParentClosed,await next);Assert.AreEqual(1,completed);Assert.AreEqual(0,dialogs.ActiveCount);
+            stale();Assert.AreEqual(1,completed);
+        }
+        [Test] public async Task 帰還共有画面は世代入力と詳細Popupを管理し別層図鑑を独立閉鎖する()
+        {
+            var panel=Panel("return-hub");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();
+            int actions=0;view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{},()=>actions++);
+            var layer=views.GetLayer("return-test");layer.Register(owner,"return",ct=>Task.FromResult(panel),(go,ctx)=>view.ShowManaged(ctx),go=>view.HideManaged());
+            view.ConfigureManagement(()=>{var result=layer.ShowAsync("return");Assert.IsTrue(result.IsCompleted&&result.Result.Succeeded);},layer.CloseCurrent,dialogs);
+            void Render()=>view.Render(new Olca.Core.Domain.ClearReturnProfile(),new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null);
+            Render();var first=view.ManagementContext;Assert.IsTrue(first.IsCurrent);
+            var other=views.GetLayer("collection-test");var collection=Panel("collection");other.Register(owner,"collection",ct=>Task.FromResult(collection),(go,ctx)=>go.SetActive(true),go=>go.SetActive(false));
+            await other.ShowAsync("collection");Assert.IsTrue(first.IsCurrent);other.CloseCurrent();Assert.IsTrue(first.IsCurrent);
+            var method=view.GetType().GetMethod("OpenReadonlyText",BindingFlags.Instance|BindingFlags.NonPublic);
+            var parameters=method.GetParameters();Assert.AreEqual(4,parameters.Length);
+            method.Invoke(view,new object[]{"詳細","表示内容",null,null});Assert.AreEqual(1,dialogs.ActiveCount);
+            layer.CloseCurrent();Assert.IsFalse(first.IsCurrent);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);
+            Render();Assert.IsTrue(view.ManagementContext.IsCurrent);Assert.AreNotSame(first,view.ManagementContext);
+            views.UnregisterOwner(owner);Assert.AreEqual(0,layer.RegisteredCount);Assert.AreEqual(0,dialogs.ActiveCount);
+        }
     }
 }

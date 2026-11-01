@@ -1,0 +1,276 @@
+{
+  "initial": {
+    "pending": false,
+    "revision": 1,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 1,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "root": -274885272,
+    "resources": 9,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      }
+    ]
+  },
+  "beforeFailure": {
+    "progress/progress.json": "1bc06943f43c0fc29d0dbb5a7e4f0f7e7767c0e70478c7539b10a6d971715480",
+    "progress/progress.backup.json": "439e7aa762734e044fa15159e7e1d6be58365e23dde48fa98d2466a50b3338fc",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "failed": {
+    "pending": true,
+    "revision": 2,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "RetryClearReturn",
+    "root": -274885272,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "NextDeparture",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": false
+      },
+      {
+        "name": "RetryClearReturn",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": false
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": false
+      }
+    ]
+  },
+  "afterFailure": {
+    "progress/progress.json": "1bc06943f43c0fc29d0dbb5a7e4f0f7e7767c0e70478c7539b10a6d971715480",
+    "progress/progress.backup.json": "439e7aa762734e044fa15159e7e1d6be58365e23dde48fa98d2466a50b3338fc",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "progressPrewriteBytesUnchanged": true,
+  "checkpointFilesMayChangeDuringEstablishedSuspendBoundary": true,
+  "retry": {
+    "pending": false,
+    "revision": 3,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "SelectDepartureStyle",
+    "root": -274885272,
+    "resources": 10,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      }
+    ]
+  },
+  "faultWrites": 2,
+  "afterSuccess": {
+    "progress/progress.json": "6644c7138ee6cd7ba647e2af1d1b9c65a707c16da1eba19ce7743c07dd61e7c4",
+    "progress/progress.backup.json": "1bc06943f43c0fc29d0dbb5a7e4f0f7e7767c0e70478c7539b10a6d971715480",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "oldRetreatConfirmNoDuplicate": true
+}

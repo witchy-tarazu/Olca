@@ -1,0 +1,49 @@
+{
+  "mainView": {
+    "type": "ClearReturnView primary existing panel",
+    "layer": "return-hub",
+    "factory": "existing Controller-built panel; ResourceManager.InstanceLease acquired on first render",
+    "hide": "cancel owner dialogs, suspend menu, clear context, deactivate",
+    "dispose": "Session.UnregisterOwner recursively releases layer entry and instance",
+    "content": [
+      "return",
+      "owned",
+      "departure editing",
+      "saved decks",
+      "destination",
+      "style",
+      "exchange",
+      "visit",
+      "visit removal"
+    ]
+  },
+  "collectionView": {
+    "type": "ClearReturnView second instance",
+    "layer": "card-collection",
+    "reason": "overlays retained primary; independent lifetime/context"
+  },
+  "notice": {
+    "type": "ReadonlyCardDetails generic readonly Popup",
+    "owner": "actual current ClearReturnView context",
+    "manager": "DialogManager.ShowNotice",
+    "input": "one Close, back/pad and ScrollRect",
+    "parentEnd": "cancel ticket before destroying modal/content; no completion callback"
+  },
+  "pending": [
+    "KeepEditingDeparture confirmation",
+    "ConfirmDeleteDeck confirmation",
+    "CustomizationLoadoutView",
+    "CustomizationUnlockView",
+    "CustomizationAcquisitionView",
+    "reward overlays",
+    "CustomScreen detail/inspection",
+    "Dialogue and skip/backlog",
+    "Controller internal Initialize / required-time Prefab decomposition"
+  ],
+  "unchanged": [
+    "Core/save write and apply plan",
+    "fixed logical clock/input contracts",
+    "visuals/imported art",
+    "generated6families leases/unknown2095 baseline"
+  ]
+}

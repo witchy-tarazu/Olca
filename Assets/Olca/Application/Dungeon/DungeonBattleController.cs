@@ -232,6 +232,24 @@ namespace Olca.Application.Dungeon
                 (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.GameplayPauseView>().Hide();});
         }
+        private void RegisterReturnViews()
+        {
+            if(gameSystem==null)return;
+            RegisterReturnView(clearReturnView,"return-hub");
+            RegisterReturnView(cardCollectionView,"card-collection");
+        }
+        private void RegisterReturnView(ClearReturnView view,string key)
+        {
+            var layer=gameSystem.Views.GetLayer(key);
+            layer.Register(this,key,ct=>{ct.ThrowIfCancellationRequested();if(view==null)throw new System.InvalidOperationException("帰還画面がありません");return System.Threading.Tasks.Task.FromResult(view.gameObject);},
+                (panel,context)=>{if(!isActiveAndEnabled||runtimeReleased||runtimeReleasing)throw new System.OperationCanceledException();view.ShowManaged(context);},
+                panel=>{if(panel!=null)panel.GetComponent<ClearReturnView>().HideManaged();});
+            // 既存の同期組立を保ちつつ、描画前に必ず管理contextを取得する。
+            view.ConfigureManagement(()=>{
+                var request=layer.ShowAsync(key);
+                if(!request.IsCompleted||!request.Result.Succeeded)throw new System.InvalidOperationException("帰還画面の管理開始に失敗しました");
+            },layer.CloseCurrent,gameSystem.Dialogs);
+        }
         private bool managedUiContent,managedDungeonHud;
         private Olca.Application.Management.GameplayCameraBinding managedCameraBinding;
         private Olca.Application.Management.BattlePresentationBinding managedBattlePresentation;
@@ -284,6 +302,9 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
+            // Customの素材を借りる帰還画面を先に閉じ、生成物の終端解放より後に表示を残さない。
+            if(clearReturnView!=null)clearReturnView.Hide();
+            if(cardCollectionView!=null)cardCollectionView.Hide();
             if(managedCardRewardPresentation!=null){managedCardRewardPresentation.Dispose();managedCardRewardPresentation=null;cardSelectionView=null;}
             if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
@@ -495,7 +516,7 @@ namespace Olca.Application.Dungeon
         {
             if(!IsProgressHub||clearReturnSession.HasPendingSave||customizationCatalog==null)return;
             if(!TryGetCustomizationLayout(out _,out _)){clearReturnError="ホゾンとテイギがイッチしません";if(initialHub)ShowDungeonSelection();else ShowClearReturn();return;}
-            customizationUnlockWasOpen=true;customizationUnlockSavePending=false;clearReturnView.gameObject.SetActive(false);
+            customizationUnlockWasOpen=true;customizationUnlockSavePending=false;clearReturnView.Hide();
             customizationUnlockView.Open(customizationCatalog,clearReturnSession.CustomizationSnapshot);RefreshProgressActions();
         }
         private void CloseCustomizationUnlocks()
@@ -529,7 +550,7 @@ namespace Olca.Application.Dungeon
                 customizationDraft = new Olca.Core.Logic.Customization.CustomizationEditDraft(customizationCatalog, clearReturnSession.CustomizationSnapshot, clearReturnSession.Snapshot.Revision);
             } catch (System.ArgumentException) { clearReturnError="ホゾンとテイギがイッチしません";if(initialHub)ShowDungeonSelection();else ShowClearReturn();return; }
             customizationSavePending = false;
-            clearReturnView.gameObject.SetActive(false); customizationEditorView.Open(customizationDraft); RefreshProgressActions();
+            clearReturnView.Hide(); customizationEditorView.Open(customizationDraft); RefreshProgressActions();
         }
         private void CloseCustomizationEditor()
         {
@@ -579,7 +600,7 @@ namespace Olca.Application.Dungeon
                 bool prepared=saved!=null||clearReturnSession.TryPrepareCustomizationAcquisition(customizationCatalog,definition);
                 customizationAcquisitionPending=clearReturnSession.HasPendingSave;
                 if(!prepared&&!customizationAcquisitionPending)throw new System.ArgumentException(clearReturnSession.Error);
-                clearReturnView.gameObject.SetActive(false);
+                clearReturnView.Hide();
                 customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending,customizationCatalog);RefreshProgressActions();
             }catch(System.ArgumentException){clearReturnError="ソウビのコウホをカクニンできません。ホゾンをホジしています";if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
         }
@@ -1132,6 +1153,7 @@ namespace Olca.Application.Dungeon
             clearReturnView.ConfigureMenuNavigation(()=>new[]{cardCollectionButton,manualSaveButton,newGameButton,customizationEditorButton,customizationUnlockButton},owned=>ResolveOwnedDefinition(owned,out var resolved)?resolved:null,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);
             RegisterPauseView();
             RegisterCheckpointView();
+            RegisterReturnViews();
         }
         private void OpenKeyboardSettings()
         {
@@ -1179,6 +1201,7 @@ namespace Olca.Application.Dungeon
             progressDialogScope?.Dispose();progressDialogScope=null;
             var checkpoint=managedCheckpointView?.Context;
             if(checkpoint?.IsCurrent==true)managedProgressOwner=checkpoint;
+            else if(clearReturnView?.ManagementContext?.IsCurrent==true)managedProgressOwner=clearReturnView.ManagementContext;
             else{
                 var parent=clearReturnView!=null?clearReturnView.gameObject:null;
                 progressDialogScope=gameSystem.Dialogs.CreateOwner(()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&progressDialogOpen&&parent!=null&&parent.activeInHierarchy);
@@ -1366,7 +1389,7 @@ namespace Olca.Application.Dungeon
         private void CloseCardCollection()
         {
             if(clearReturnSession.HasPendingSave)return;
-            cardCollectionView.gameObject.SetActive(false);cardCollectionOpen=false;SetUserPaused(collectionWasPaused);
+            cardCollectionView.Hide();cardCollectionOpen=false;SetUserPaused(collectionWasPaused);
             SetPausePanelVisible(collectionWasPaused);
         }
         private void RecordFusionDiscovery(IReadOnlyList<Card> materials,Card output)
@@ -1390,7 +1413,7 @@ namespace Olca.Application.Dungeon
             if (!IsUserPaused || HasIncompleteReturn) return;
             collectionOpen = true; SetPausePanelVisible(false); clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.Snapshot?.Flow, false, null, true);
         }
-        private void CloseOwnedCards() { collectionOpen = false; clearReturnView.gameObject.SetActive(false); SetPausePanelVisible(IsUserPaused); }
+        private void CloseOwnedCards() { collectionOpen = false; clearReturnView.Hide(); SetPausePanelVisible(IsUserPaused); }
 
         private bool ownedDepartureEditing;
         private bool savedDeckMenuOpen, savedDeckDirty;
@@ -1763,7 +1786,7 @@ namespace Olca.Application.Dungeon
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
             floorDefinitions = choice.Floors; nextDepartureDefinitions = choice.Single; selectedDungeon = System.Math.Max(0,dungeonChoices.IndexOf(choice));
             initialHub = false; dungeonSelectionOpen = false; floorSession = route; floorStore = routeStore; CurrentFloorIndex = route?.Current.FloorIndex ?? 0; floorSwapPending = false;
-            clearReturnVisible = false; clearReturnError = null; nonClearReturnRequest = null; clearReturnView.gameObject.SetActive(false); SetCheckpointPanelVisible(false);
+            clearReturnVisible = false; clearReturnError = null; nonClearReturnRequest = null; clearReturnView.Hide(); SetCheckpointPanelVisible(false);
             ReplaceManager(next, session); return true;
         }
 
@@ -2075,8 +2098,8 @@ namespace Olca.Application.Dungeon
         private void ResetVisitSelection() { selectedVisit=-1;selectingVisitRemoval=false;visitRemovalTargets.Clear(); }
         private void RefreshDungeonVisit()
         {
-            if(manager.Dungeon.ActiveVisit==null){if(renderedVisitCell.HasValue&&!clearReturnVisible)clearReturnView.gameObject.SetActive(false);renderedVisitCell=null;ResetVisitSelection();return;}
-            if(IsUserPaused){clearReturnView.gameObject.SetActive(false);return;}
+            if(manager.Dungeon.ActiveVisit==null){if(renderedVisitCell.HasValue&&!clearReturnVisible)clearReturnView.Hide();renderedVisitCell=null;ResetVisitSelection();return;}
+            if(IsUserPaused){clearReturnView.Hide();return;}
             if(renderedVisitCell!=manager.Dungeon.ActiveVisit.Cell||!clearReturnView.gameObject.activeSelf){ResetVisitSelection();logicalLoop.ReleaseInput();ShowDungeonVisit();}
         }
         private void ShowDungeonVisit()

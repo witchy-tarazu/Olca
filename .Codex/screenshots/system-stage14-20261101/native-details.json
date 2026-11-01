@@ -1,0 +1,248 @@
+{
+  "sameFrameOldDepartRejected": true,
+  "oldCloseCannotCloseNewTicket": true,
+  "oldContentDepartRejected": true,
+  "mainAndCollectionIndependent": true,
+  "tabPageRoundtrips": true,
+  "longMessagePresentationFixture": true,
+  "actualScrollEvent": {
+    "before": 1,
+    "after": 0.9959453,
+    "content": 2657,
+    "viewport": 684,
+    "state": {
+      "pending": false,
+      "revision": 4,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 0,
+      "screen": [
+        640,
+        360
+      ],
+      "main": true,
+      "mainContext": true,
+      "collection": true,
+      "collectionContext": true,
+      "mainKey": "return-hub",
+      "collectionKey": "card-collection",
+      "dialogs": 1,
+      "focus": "CloseReadonlyCardDetails",
+      "root": -274885272,
+      "resources": 11,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "EditOwnedDeparture",
+          "interactable": true
+        },
+        {
+          "name": "OwnedCardDetails_1",
+          "interactable": true
+        },
+        {
+          "name": "OwnedCardDetails_3",
+          "interactable": true
+        },
+        {
+          "name": "NextDeparture",
+          "interactable": true
+        },
+        {
+          "name": "CloseReadonlyCardDetails",
+          "interactable": true
+        },
+        {
+          "name": "OwnedCardDetails_4",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ReturnPreviousPage",
+          "interactable": false
+        },
+        {
+          "name": "CollectionStatusDetails",
+          "interactable": true
+        },
+        {
+          "name": "RecipeCollectionTab",
+          "interactable": true
+        },
+        {
+          "name": "SelectDungeon",
+          "interactable": true
+        },
+        {
+          "name": "NextCollectionPage",
+          "interactable": false
+        },
+        {
+          "name": "SavedDeckMenu",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionTab",
+          "interactable": true
+        },
+        {
+          "name": "ReturnNextPage",
+          "interactable": false
+        },
+        {
+          "name": "OwnedCardDetails_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OwnedCardDetails_2",
+          "interactable": true
+        },
+        {
+          "name": "RetryCardCollection",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "PreviousCollectionPage",
+          "interactable": false
+        },
+        {
+          "name": "CloseCardCollection",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "sameFrameOldRecipeRejected": true,
+  "restoredProductCollection": true,
+  "saveBytesBefore": {
+    "progress/progress.json": "006abda14a05c511949e43ed39eb12724db468509e01009b864a51025edce03f",
+    "progress/progress.backup.json": "6644c7138ee6cd7ba647e2af1d1b9c65a707c16da1eba19ce7743c07dd61e7c4",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "saveBytesAfter": {
+    "progress/progress.json": "006abda14a05c511949e43ed39eb12724db468509e01009b864a51025edce03f",
+    "progress/progress.backup.json": "6644c7138ee6cd7ba647e2af1d1b9c65a707c16da1eba19ce7743c07dd61e7c4",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.json": "258f6b94f3904076455bdb9f59cd6a80c77f00c06f6bf4038ad89ef4bbcbbf53",
+    "checkpoints/runs/30f1c42c2155475996e0d6884076ee2d/active.backup.json": "bd175b859ce60dfb9324352a3b05991385ff12e775999213ed8225a7164b8f85"
+  },
+  "final": {
+    "pending": false,
+    "revision": 4,
+    "owned": 20,
+    "tokens": 0,
+    "playing": true,
+    "scale": 0,
+    "screen": [
+      640,
+      360
+    ],
+    "main": true,
+    "mainContext": true,
+    "collection": false,
+    "collectionContext": false,
+    "mainKey": "return-hub",
+    "collectionKey": null,
+    "dialogs": 0,
+    "focus": "SelectDungeon",
+    "root": -274885272,
+    "resources": 11,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      }
+    ]
+  }
+}

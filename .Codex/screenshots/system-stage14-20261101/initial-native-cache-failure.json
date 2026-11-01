@@ -1,0 +1,120 @@
+{
+  "initialRelated": {
+    "total": 496,
+    "passed": 496,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "failure": {
+    "diagnostics": [],
+    "compileMs": 131,
+    "executeMs": 146,
+    "assemblyName": "PipelineRunScript_Bootstrap14Proof_32a2c9f17b3a4ed5a9d98f23742e7288",
+    "success": false,
+    "error": "Runtime Error",
+    "errorDetails": "Exception: Old Custom sprites retained\n  at Bootstrap14Proof.Close (System.Boolean zeroTimeScale) [0x00666] in /workspace/olca-validation-20261024/project/AgentScripts/Bootstrap14Proof.cs:11 \n  at Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand.RunEphemeral (System.String file, System.String entry, Newtonsoft.Json.Linq.JArray args, System.String[] references, System.String[] defines, System.Boolean pdb, System.Boolean dryRun, System.Int32 timeoutMs, System.Diagnostics.Stopwatch total) [0x00492] in ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:252 "
+  },
+  "observedAfterClose": {
+    "playing": true,
+    "oldNativeAlive": false,
+    "mini": {
+      "count": 5,
+      "sprites": [
+        {
+          "alive": true,
+          "name": "SwordCustomIcon",
+          "textureAlive": true
+        },
+        {
+          "alive": true,
+          "name": "bombCustomIcon",
+          "textureAlive": true
+        },
+        {
+          "alive": true,
+          "name": "healCustomIcon",
+          "textureAlive": true
+        },
+        {
+          "alive": true,
+          "name": "shieldCustomIcon",
+          "textureAlive": true
+        },
+        {
+          "alive": true,
+          "name": "tuningCustomIcon",
+          "textureAlive": true
+        }
+      ]
+    },
+    "illustrations": {
+      "count": 0,
+      "sprites": []
+    }
+  },
+  "hostStateAfterFailedVerification": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/BootstrapScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/BootstrapScene.unity",
+        "handleHash": 2107300336,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -274855414,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "cameraBorrowed": false,
+    "borrowedCameraId": null,
+    "gameplayView": null,
+    "worldViewKey": null,
+    "worldRegistered": 0,
+    "worldFields": 0,
+    "backgroundViews": 0,
+    "numberPools": 0,
+    "battleViewKey": null,
+    "battleRegistered": 0,
+    "battleViews": 0,
+    "customViews": 0,
+    "gameplayRegistered": 0,
+    "hudCount": 0,
+    "host": null,
+    "loading": false,
+    "ownedScenes": 0,
+    "ownedViews": 3,
+    "registeredViews": 0,
+    "dialogs": 0,
+    "session": false,
+    "controllerIds": [],
+    "controllerScenes": [],
+    "rewardViews": 0,
+    "rewardRegistered": 0,
+    "rewardViewKey": null,
+    "cameras": 0,
+    "listeners": 0,
+    "events": 1,
+    "audioIds": [
+      -274855420,
+      -274855426,
+      -274855432
+    ],
+    "defaultStoreExists": false,
+    "store": null
+  },
+  "hostCloseHadAlreadyExecuted": true,
+  "correction": "Move existing owned Artwork destruction to explicit terminal ReleaseSessionPresentation; hide return users first; preserve borrowed/imported textures; add inactive resolver regression. No expectation weakened.",
+  "finalNativeProof": {
+    "oldViewDestroyed": true,
+    "ownedSpritesDestroyed": 6,
+    "ownedTexturesDestroyed": 5,
+    "importedTextureSurvives": true
+  },
+  "initialFullSuiteRun": false
+}
