@@ -1,0 +1,9 @@
+{
+  "fromOffset": 3060209017,
+  "messages": {
+    "Could not save connection info: Read-only file system": 1,
+    "[ERROR] [relay] log Failed to load credentials from keychain: Could not connect: No such file or directory (code: 1)": 1,
+    "[ERROR] [relay] log Failed to reveal figma/FIGMA_API_TOKEN: Could not connect: No such file or directory (code: 1)": 1,
+    "Failed to handle /api/exec request: Main thread operation timed out after 120000ms": 1
+  }
+}

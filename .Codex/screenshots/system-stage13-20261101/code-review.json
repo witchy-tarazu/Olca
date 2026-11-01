@@ -1,0 +1,256 @@
+{
+  "scope": "Stage13 first static review: checkpoint prompt View and persistent progress Dialog ownership",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "341d2abf109f9a4fa1fc78a63a55c6c03808a97849e80a22521ed147fa764205",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "871e675a4c64e8b728bd2a621929fd4862225f375c1e0f4ac8dacc27e0a244cd",
+    "Assets/Olca/Presentation/Management/ViewManager.cs": "b7ad7da99ddeb6e264f29848150634ebba8d1f07fe690ead86faf50db00d0465",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "68cb1301e927701d83645fe75c6702e852ad029f1a6db65caada2ccff48972f3",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "eada26598de6e97749e7282256c94b4192e11d60b66a70a09c42675406d92e02"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "DialogOwnerScope is a real dialog-only validity scope, not a dummy managed screen. Dispose invalidates it before cancelling its ticket.",
+    "Checkpoint context has stable identity across per-frame content refresh and captures per-show callbacks.",
+    "Controller host OnDisable disposes hub scope/closes checkpoint context, keeps progress state available for OnEnable re-presentation.",
+    "Persistent confirm runs while ticket is current, rejects reentry and disabled/inactive buttons, retains same ticket after false return and refreshes menu.",
+    "Legacy direct progress listeners are omitted when managed; old ticket callbacks verify identity/current/active/interactable.",
+    "Successful ConfirmNewGame explicitly closes its owner while persistent attempt is active, yielding ParentClosed rather than Confirmed. No result consumer or post-callback gameplay action depends on Confirmed, so this is not a gameplay defect in current usage."
+  ],
+  "limits": [
+    "Not mirrored/compiled/tested at review request; no Unity operations by reviewer.",
+    "Checkpoint/new-game focus handoff needs actual next-frame validation, not just direct selection assertions.",
+    "Full ClearReturn screen ownership remains unmigrated; host-bound dialog scope does not claim its migration."
+  ],
+  "priorFindings": [
+    {
+      "id": "S13-PROGRESS-BUSY",
+      "file": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "method": "OpenManagedProgressDialog/ShowProgressAction",
+      "description": "ShowProgressAction activates the overlay and sets progressDialogOpen before ShowPersistent. An already-active other-owner ticket returns Busy; only ParentClosed is handled. The visible progress overlay then has no managed ticket/listeners while progressDialogOpen remains true.",
+      "recommendation": "Handle Busy explicitly with safe presentation rollback or defer presentation until accepted. Preserve pending save plan and prevent this failure branch from hiding the other active dialog. Add competing-owner regression."
+    }
+  ],
+  "corrected": [
+    "Immediate Busy now rolls back visible progress overlay/flag rather than leaving listener-free modal.",
+    "Public manual save/new-game request rejects another active Dialog before save effect.",
+    "Checkpoint callbacks also reject inactive/noninteractable buttons.",
+    "Persistent attempts reject nested and sequential same-frame duplicate confirm; next-frame retry remains allowed."
+  ],
+  "reviewHistory": [
+    {
+      "findings": [
+        {
+          "id": "S13-BUSY-OWNER-CANCEL",
+          "method": "OpenManagedProgressDialog -> CloseProgressAction",
+          "description": "Immediate Busy rollback invokes CancelOwner(managedProgressOwner). If that owner is an existing checkpoint context with a different active panel, Busy means the progress request owns no ticket, yet rollback cancels the preexisting unrelated ticket. Hub newly-created scopes do not share this issue.",
+          "recommendation": "Separate rejected-open rollback from owned-ticket close: hide/reset progress fields without cancelling an existing checkpoint owner ticket that was not acquired. Add same-owner/different-panel Busy regression."
+        }
+      ],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f4fdbac60a1e5b87e24f29b53b7d23d1e92a1fc5e39719b929ac48a50aafeebd",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "871e675a4c64e8b728bd2a621929fd4862225f375c1e0f4ac8dacc27e0a244cd",
+        "Assets/Olca/Presentation/Management/ViewManager.cs": "b7ad7da99ddeb6e264f29848150634ebba8d1f07fe690ead86faf50db00d0465",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "b5ded29064781e1fad1237bc86142f2170a7d43cc35a6b4811d16c62ef612287",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "cb0b71ce4ba64e958201e46af7484ca044774c2e1640f7eb159cb0e1bf3ba9c0"
+      }
+    },
+    {
+      "findings": [
+        {
+          "id": "S13-REJECTED-FOCUS",
+          "method": "ShowProgressAction",
+          "description": "After OpenManagedProgressDialog rejects Busy/ParentClosed and CloseProgressAction(false) hides popup/restores source, ShowProgressAction continues and unconditionally selects a now-hidden popup button. This undoes focus restoration and may steal focus from the existing competing dialog.",
+          "recommendation": "Return immediately when progressDialogOpen became false after managed open, before popup focus/Refresh calls."
+        }
+      ],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "7dc3c5eaba056e97f70258eb77fa9a368e8b3cae14c9dd3fb59009e71b9f7040",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "871e675a4c64e8b728bd2a621929fd4862225f375c1e0f4ac8dacc27e0a244cd",
+        "Assets/Olca/Presentation/Management/ViewManager.cs": "b7ad7da99ddeb6e264f29848150634ebba8d1f07fe690ead86faf50db00d0465",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "68cb1301e927701d83645fe75c6702e852ad029f1a6db65caada2ccff48972f3",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "2c658d6757b2a4c3585b56cdf83fac0ab7141a627756f3a3b43d4211c846aed0"
+      }
+    }
+  ],
+  "finalStaticRereview": {
+    "unresolvedRequiredFindings": 0,
+    "resolved": [
+      "S13-PROGRESS-BUSY: rejected request rolls back presentation and fields, preserving pending plan flags.",
+      "S13-BUSY-OWNER-CANCEL: immediate Busy/ParentClosed now calls CloseProgressAction(false), so an existing checkpoint owner ticket is not cancelled; disposing a newly created hub scope remains scoped to its own identity."
+    ],
+    "checked": [
+      "Checkpoint button callbacks reject old context, inactive/noninteractable controls and repeated clicks in the same rendered frame. Show resets its presentation click guard; no logical-clock progression is modified.",
+      "Persistent attempts retain their ticket on failure and reject same-frame/nested repeat; parent-close/new-game success retains legacy Controller transition ordering."
+    ],
+    "limits": [
+      "First mirror/compile in progress; no final dynamic results yet.",
+      "Same-owner/different-panel Busy and next-frame checkpoint focus restoration remain useful actual/native regression targets.",
+      "No Unity operations or product edits by independent reviewer."
+    ]
+  },
+  "focusRereview": {
+    "unresolvedRequiredFindings": 1,
+    "checked": [
+      "CloseProgressAction sets progressDialogOpen=false and removes owner fields before RefreshProgressActions, so the normal close/refresh path does not recurse.",
+      "Captured origin is preserved across KeepOpen retry rather than overwritten with popup controls.",
+      "Checkpoint origin name is consumed once for parent menu rebind."
+    ],
+    "findings": [
+      {
+        "id": "S13-REJECTED-FOCUS",
+        "method": "ShowProgressAction",
+        "description": "After OpenManagedProgressDialog rejects Busy/ParentClosed and CloseProgressAction(false) hides popup/restores source, ShowProgressAction continues and unconditionally selects a now-hidden popup button. This undoes focus restoration and may steal focus from the existing competing dialog.",
+        "recommendation": "Return immediately when progressDialogOpen became false after managed open, before popup focus/Refresh calls."
+      }
+    ],
+    "limits": [
+      "New focus version not yet mirrored/compiled; no tests/native results independently checked."
+    ]
+  },
+  "latestFinalRereview": {
+    "unresolvedRequiredFindings": 0,
+    "submissionValidationFiveSourceHashMatch": true,
+    "resolved": "S13-REJECTED-FOCUS: managed open rejection now immediately returns before selecting hidden popup controls.",
+    "checked": [
+      "Busy/ParentClosed rollback retains pending-plan flags and does not CancelOwner for a rejected checkpoint request.",
+      "Normal close refreshes parent controls before restoring actual captured origin; checkpoint one-shot focus survives parent menu rebind.",
+      "KeepOpen retry does not overwrite captured origin; close refresh starts after progressDialogOpen=false and owner clearing, avoiding recursion."
+    ],
+    "limits": [
+      "Final explicit compile not executed because socket unavailable; no final compile/test/native success inferred.",
+      "Initial compile success predates latest focus changes.",
+      "Read-only source/hash review; no Unity operations or product edits."
+    ]
+  },
+  "fenceRereview": {
+    "unresolvedRequiredFindings": 0,
+    "correctedContractDefect": "Cancelled completion now calls CloseProgressAction(false), preserving DialogManager.closedOwner for a still-current checkpoint context through the closing frame.",
+    "regressionRead": "Real unstarted Controller with managed checkpoint prompt and actual OpenManagedProgressDialog/cancel path asserts progress flag false, Dialog0, same-frame context blocked and next-frame unblocked. Parent host owns fixture objects and common TearDown disposes system/host/EventSystem; fixture clears injected gameSystem before normal Controller destruction.",
+    "limits": [
+      "Final fence version is submission-only pending mirror/recompile at review request.",
+      "No test/native run independently performed.",
+      "The added source test validates same-frame fencing directly; held-pad/pointer native operation remains separate verification."
+    ]
+  },
+  "hostStopRereview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "StopManagedHost sets runtimeReleasing before invalidating/disposal, cancels dialog ownership synchronously before Unity Destroy/end-of-frame and before broader runtime teardown.",
+      "Scope validity excludes releasing/released runtime; Dispose invalidates the scope before CancelOwner so parent-close completion cannot re-run business effects.",
+      "Checkpoint managed owner is also cancelled at explicit host stop; this is parent termination, not ordinary Cancel, so clearing its closing-frame fence is appropriate.",
+      "New real Controller test checks dialog0/scope invalid/popup hidden directly after Stop, without Tick or Destroy; common fixture still owns parent popup/services, controller terminal stop is idempotent for later destruction."
+    ],
+    "limits": [
+      "Final five files pending mirror/compile/test; no dynamic success inferred.",
+      "Uninitialized hub fixture proves dialog ownership boundary only, not full ClearReturn migration or normal startup/render behavior."
+    ]
+  },
+  "sourceSaveEntryRereview": {
+    "unresolvedRequiredFindings": 0,
+    "corrected": "SaveProgressFromUi, RequestNewGame and ConfirmNewGame now reject destroyed/inactive/releasing/released Controller before any save/retry or UI effects.",
+    "regressionRead": "Actual ClearReturnFileStore in unique temporary directory, initialized starter20; real bound SaveProgressFromUi event captured before Stop and invoked after Stop/before Destroy; asserts no throw, active file byte equality, revision unchanged and no pending plan. Temporary storage removed in finally.",
+    "limits": [
+      "New final guards/regression not yet mirrored/compiled/executed at review request.",
+      "Regression directly proves only the stale manual-save entry; other two entry guards were inspected statically.",
+      "No product/source/Unity changes by reviewer."
+    ]
+  },
+  "destroyedWrapperRereview": {
+    "unresolvedRequiredFindings": 0,
+    "history": "First related run493/494 failed existing initialization rollback/retry case: StopManagedHost SetActive on destroyed Unity wrapper. Failure/result hashes archived by parent; not treated as final success.",
+    "correction": "Three newly introduced popup deactivation calls now use Unity native !=null guards instead of CLR-only ?. before SetActive, covering OnDisable, CloseProgressAction and StopManagedHost.",
+    "checked": [
+      "Native-destroyed wrappers now skip access while live popup deactivation remains identical.",
+      "No test expectations, save ordering, logical time or disposal ownership were modified for this correction."
+    ],
+    "limits": [
+      "Final corrected source awaiting compile/retest; no success inferred from initial493/494."
+    ]
+  },
+  "relatedReceiptReview": {
+    "unresolvedRequiredFindings": 0,
+    "sourceHashesMatchFiveSubmissionAndProject": true,
+    "summary": {
+      "total": 494,
+      "passed": 494,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 33.48,
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T01:15:57.774067Z",
+      "ageMs": 869,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 22,
+      "seeded": true
+    },
+    "fixedOldTargetReceipt": {
+      "file": "system-stage13-fixed-old-target-result.json",
+      "summary": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 14.65
+    },
+    "history": "Initial493/494 remains archived, separate from corrected494/494.",
+    "pending": [
+      "Full3602 final suite",
+      "Native fixture13002 startup and actual operations"
+    ],
+    "limits": [
+      "No Unity operation or test started by reviewer."
+    ]
+  },
+  "finalReceiptReview": {
+    "unresolvedRequiredFindings": 0,
+    "submissionProjectFullRelatedFiveHashMatch": true,
+    "full": {
+      "summary": {
+        "total": 3602,
+        "passed": 3602,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 271.49,
+      "consoleErrors": 0,
+      "consoleWarnings": 59
+    },
+    "related": {
+      "summary": {
+        "total": 494,
+        "passed": 494,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 33.48
+    },
+    "nativeEvidence": "system-stage13-progress-native-summary.json",
+    "nativeConfirmed": [
+      "checkpoint stable context/prewrite no-write/retry2/store restored",
+      "NewGame cancel focus NewGameButton; held virtual-pad cancel no-write; starter20 once",
+      "Manual save prewrite no-write/disabled cancel rejected/same ticket retry/close focus ManualSaveButton/store restored",
+      "Old callbacks and old manual source after host stop rejected; background manual source blocked",
+      "Single dialog cancel and hostClose no-write; close releases host subscriptions/views/resources then reopens with single Camera/Listener/EventSystem"
+    ],
+    "initialFailureHistory": "493/494 initial related and destroyed-Unity-wrapper correction retained in destroyedWrapperRereview; not conflated with final success.",
+    "pending": [
+      "Same-Editor42 repeat currently running; not counted as passed in this review."
+    ],
+    "limits": [
+      "Independent read-only evidence/hash review; no Unity/test actions.",
+      "59 warnings are recorded, not zero warnings; source reports console errors0.",
+      "ClearReturn main screen remains unmigrated; hub Dialog scope is partial ownership migration.",
+      "Physical build/devices and historical Editor issues remain outside this scope."
+    ]
+  }
+}

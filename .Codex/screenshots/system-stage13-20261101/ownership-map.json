@@ -1,0 +1,29 @@
+{
+  "checkpoint": {
+    "object": "CheckpointOverlay / CheckpointPromptView",
+    "physicalBuild": "existing Controller CreatePauseControls; needed-on-demand Prefab extraction remains",
+    "lifetime": "ResourceManager InstanceLease through ViewManager checkpoint layer, owner Controller",
+    "generation": "ManagedScreenContext remains stable while content changes; new context after hide/show",
+    "input": "live/current/active/interactable/allowed + same Unity frame fence",
+    "domainOwner": "Controller / existing CheckpointFlow and Core session"
+  },
+  "progressPopup": {
+    "object": "ProgressActionOverlay",
+    "manager": "DialogManager borrowed existing host-owned panel",
+    "checkpointParent": "ManagedScreenContext as IDialogOwner",
+    "hubParent": "DialogOwnerScope predicate tied to actual ClearReturnView visibility and live host",
+    "notMigrated": "ClearReturnView itself is still unmanaged; no fake screen registered",
+    "persistentAttempt": "existing Controller action while ticket current, one attempt per frame; keep same ticket for save failure or saved notice",
+    "close": "remove ticket listeners, dispose menu, close panel, restore valid focus; Controller rebind gets one-shot checkpoint focus",
+    "hostEnd": "scope invalidated and ticket canceled synchronously before Unity destruction; all 3 source action entries reject stopped/destroyed/disabled host"
+  },
+  "preserved": [
+    "SaveManager and existing write/apply order",
+    "Session/CoreFactory/CheckpointFlow ownership",
+    "fixed logical frames and gameplay values",
+    "Root Camera/UIRoot/EventSystem/Sound lifetime",
+    "six generated asset families and leases",
+    "historical external2095 Sprite population not destroyed"
+  ],
+  "validationStatus": "static ownership map; dynamic results recorded separately"
+}

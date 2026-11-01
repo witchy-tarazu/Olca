@@ -1,0 +1,316 @@
+{
+  "final-direct-state": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/DungeonScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/DungeonScene.unity",
+        "handleHash": -1688333821,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -272075564,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "cameraBorrowed": false,
+    "borrowedCameraId": null,
+    "gameplayView": "dungeon-hud",
+    "worldViewKey": "dungeon-world",
+    "worldRegistered": 1,
+    "worldFields": 1,
+    "backgroundViews": 2,
+    "numberPools": 1,
+    "battleViewKey": "battle-custom",
+    "battleRegistered": 1,
+    "battleViews": 1,
+    "customViews": 1,
+    "gameplayRegistered": 1,
+    "hudCount": 1,
+    "host": null,
+    "loading": false,
+    "ownedScenes": 0,
+    "ownedViews": 5,
+    "registeredViews": 3,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      756512
+    ],
+    "controllerScenes": [
+      "Assets/Scenes/DungeonScene.unity"
+    ],
+    "rewardViews": 1,
+    "rewardRegistered": 0,
+    "rewardViewKey": null,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -272075570,
+      -272075576,
+      -272075582
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/ui-round76-13002/settings"
+  },
+  "boot-confirmed": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "activeScene": "Assets/Scenes/BootstrapScene.unity",
+    "scenes": [
+      {
+        "path": "Assets/Scenes/BootstrapScene.unity",
+        "handleHash": -493824939,
+        "isLoaded": true
+      }
+    ],
+    "roots": 1,
+    "rootId": -272075564,
+    "rootScene": "DontDestroyOnLoad",
+    "rootStartupError": null,
+    "cameraBorrowed": true,
+    "borrowedCameraId": -272078814,
+    "gameplayView": "dungeon-hud",
+    "worldViewKey": "dungeon-world",
+    "worldRegistered": 1,
+    "worldFields": 1,
+    "backgroundViews": 2,
+    "numberPools": 1,
+    "battleViewKey": "battle-custom",
+    "battleRegistered": 1,
+    "battleViews": 1,
+    "customViews": 1,
+    "gameplayRegistered": 1,
+    "hudCount": 1,
+    "host": "OlcaSystem/DungeonHost",
+    "loading": false,
+    "ownedScenes": 0,
+    "ownedViews": 9,
+    "registeredViews": 3,
+    "dialogs": 0,
+    "session": true,
+    "controllerIds": [
+      -272078760
+    ],
+    "controllerScenes": [
+      "Assets/Scenes/BootstrapScene.unity"
+    ],
+    "rewardViews": 1,
+    "rewardRegistered": 1,
+    "rewardViewKey": "card-reward",
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audioIds": [
+      -272075570,
+      -272075576,
+      -272075582
+    ],
+    "defaultStoreExists": false,
+    "store": "/workspace/olca-validation-20261024/save/system-stage13-13001/settings"
+  },
+  "managed-bootstrap-single-reentry": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -272078760,
+    "newControllerId": -272083780,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1586479767,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -272075564,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -272078814,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -272083780
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -272075570,
+        -272075576,
+        -272075582
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage13-13001/settings"
+    }
+  },
+  "host-closed": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1586479767,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -272075564,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -272075570,
+        -272075576,
+        -272075582
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "duplicate-reopen": {
+    "duplicateOpenSucceeded": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1586479767,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -272075564,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -272078814,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -272087100
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -272075570,
+        -272075576,
+        -272075582
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage13-13001/settings"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "341d2abf109f9a4fa1fc78a63a55c6c03808a97849e80a22521ed147fa764205",
+  "Assets/Olca/Presentation/Management/DialogManager.cs": "871e675a4c64e8b728bd2a621929fd4862225f375c1e0f4ac8dacc27e0a244cd",
+  "Assets/Olca/Presentation/Management/ViewManager.cs": "b7ad7da99ddeb6e264f29848150634ebba8d1f07fe690ead86faf50db00d0465",
+  "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "68cb1301e927701d83645fe75c6702e852ad029f1a6db65caada2ccff48972f3",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "eada26598de6e97749e7282256c94b4192e11d60b66a70a09c42675406d92e02"
+}

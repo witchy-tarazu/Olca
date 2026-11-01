@@ -242,5 +242,80 @@ namespace Olca.Tests.Application
             var stale=confirm.onClick;layer.CloseCurrent();Assert.AreEqual(DialogResult.ParentClosed,await request);stale.Invoke();Assert.AreEqual(0,confirms);Assert.IsFalse(panel.activeSelf);Assert.AreEqual(0,dialogs.ActiveCount);
             UnityEngine.Object.DestroyImmediate(popup);
         }
+        [Test] public async Task Checkpoint案内は内容更新で世代を変えず再表示後の旧入力を拒否する()
+        {
+            int calls=0;bool allowed=true;var panel=Panel("checkpoint");var button=Button(panel,"Continue");button.onClick.AddListener(()=>calls++);
+            var view=panel.AddComponent<CheckpointPromptView>();view.Initialize(()=>allowed);var layer=views.GetLayer("checkpoint-test");
+            layer.Register(owner,"checkpoint",ct=>Task.FromResult(panel),(go,context)=>view.Show(context),go=>view.Hide());
+            await layer.ShowAsync("checkpoint");var first=view.Context;var old=button.onClick;
+            await layer.ShowAsync("checkpoint");Assert.AreSame(first,view.Context);old.Invoke();old.Invoke();Assert.AreEqual(1,calls);
+            allowed=false;old.Invoke();Assert.AreEqual(1,calls);allowed=true;button.gameObject.SetActive(false);old.Invoke();Assert.AreEqual(1,calls);button.gameObject.SetActive(true);
+            layer.CloseCurrent();await layer.ShowAsync("checkpoint");old.Invoke();Assert.AreEqual(1,calls);
+            button.onClick.Invoke();Assert.AreEqual(2,calls);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [Test] public async Task 保存再試行Dialogは失敗で閉じず無効取消と同frame再入を拒否する()
+        {
+            int attempts=0,completed=0;bool parent=true;var panel=Panel("retry");var confirm=Button(panel,"Retry");var cancel=Button(panel,"Close");cancel.interactable=false;
+            using(var scope=dialogs.CreateOwner(()=>parent)){
+                var task=dialogs.ShowPersistent(scope,panel,confirm,cancel,()=>{attempts++;confirm.onClick.Invoke();if(attempts==2){confirm.gameObject.SetActive(false);cancel.interactable=true;}return false;},_=>completed++);
+                confirm.onClick.Invoke();confirm.onClick.Invoke();cancel.onClick.Invoke();Assert.AreEqual(1,attempts);Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(task.IsCompleted);
+                frame++;confirm.onClick.Invoke();Assert.AreEqual(2,attempts);Assert.AreEqual(1,dialogs.ActiveCount);
+                cancel.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await task);Assert.AreEqual(1,completed);
+            }
+        }
+        [Test] public async Task 未移行親のDialog寿命も終了後と再表示後の旧確定を拒否する()
+        {
+            bool parent=true;int effects=0;var panel=Panel("progress");var confirm=Button(panel,"Confirm");var cancel=Button(panel,"Cancel");
+            using(var scope=dialogs.CreateOwner(()=>parent)){
+                var task=dialogs.ShowPersistent(scope,panel,confirm,cancel,()=>{effects++;return true;},_=>effects++);
+                var ticket=typeof(DialogManager).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(dialogs);
+                var stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("ConfirmAction").GetValue(ticket);
+                parent=false;dialogs.Tick();Assert.AreEqual(DialogResult.ParentClosed,await task);stale();Assert.AreEqual(0,effects);
+                parent=true;frame++;var next=dialogs.ShowPersistent(scope,panel,confirm,cancel,()=>{effects++;return true;},_=>{});stale();Assert.AreEqual(0,effects);
+                confirm.onClick.Invoke();Assert.AreEqual(DialogResult.Confirmed,await next);Assert.AreEqual(1,effects);
+            }
+        }
+        [Test] public async Task Checkpointの進行確認取消は同frameの親クリック遮断を解除しない()
+        {
+            var parent=Panel("checkpoint-parent");var prompt=parent.AddComponent<CheckpointPromptView>();prompt.Initialize(()=>true);var layer=views.GetLayer("checkpoint");
+            layer.Register(owner,"checkpoint",ct=>Task.FromResult(parent),(go,context)=>prompt.Show(context),go=>prompt.Hide());await layer.ShowAsync("checkpoint");
+            var popup=Panel("progress-popup");var confirm=Button(popup,"ConfirmNewGame");var cancel=Button(popup,"CancelProgressAction");
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            Set("gameSystem",system);Set("managedCheckpointView",prompt);Set("progressActionOverlay",popup);Set("progressConfirmButton",confirm);Set("progressCancelButton",cancel);Set("progressDialogOpen",true);
+            type.GetMethod("OpenManagedProgressDialog",flags).Invoke(controller,null);Assert.AreEqual(1,dialogs.ActiveCount);
+            cancel.onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse((bool)type.GetField("progressDialogOpen",flags).GetValue(controller));Assert.IsTrue(prompt.Context.DialogBlocksInput);
+            frame++;dialogs.Tick();Assert.IsFalse(prompt.Context.DialogBlocksInput);
+            // 未起動fixtureに所有サービスを残してOnDestroyへ流さない。
+            Set("gameSystem",null);UnityEngine.Object.DestroyImmediate(controller);
+        }
+        [Test] public void 未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する()
+        {
+            var parent=Panel("hub-parent");parent.SetActive(true);var hub=parent.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();
+            var popup=Panel("progress-popup");var confirm=Button(popup,"ConfirmNewGame");var cancel=Button(popup,"CancelProgressAction");
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            Set("gameSystem",system);Set("clearReturnView",hub);Set("progressActionOverlay",popup);Set("progressConfirmButton",confirm);Set("progressCancelButton",cancel);Set("progressDialogOpen",true);
+            type.GetMethod("OpenManagedProgressDialog",flags).Invoke(controller,null);Assert.AreEqual(1,dialogs.ActiveCount);
+            var scope=(IDialogOwner)type.GetField("managedProgressOwner",flags).GetValue(controller);Assert.IsTrue(scope.IsCurrent);
+            controller.StopManagedHost();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(scope.IsCurrent);Assert.IsFalse(popup.activeSelf);
+            // TickやUnity側のDestroyを待つ前に終了境界が成立している。
+            UnityEngine.Object.DestroyImmediate(controller);
+        }
+        [Test] public void host終了後の旧手動保存イベントはUnity破棄前でも保存と世代を変更しない()
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-stopped-progress-"+Guid.NewGuid().ToString("N"));
+            try{
+                var store=new ClearReturnFileStore(directory);var progress=new Olca.Core.Domain.ClearReturnSession(store);
+                Assert.IsTrue(progress.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()),progress.Error);
+                var before=File.ReadAllBytes(store.ActivePath);long revision=progress.Snapshot.Revision;
+                var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+                void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+                Set("gameSystem",system);Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);
+                var button=Button(host,"ManualSaveButton");button.onClick.AddListener((UnityEngine.Events.UnityAction)Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction),controller,type.GetMethod("SaveProgressFromUi",flags)));var old=button.onClick;
+                controller.StopManagedHost();Assert.DoesNotThrow(()=>old.Invoke());CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));Assert.AreEqual(revision,progress.Snapshot.Revision);Assert.IsFalse(progress.HasPendingSave);
+                UnityEngine.Object.DestroyImmediate(controller);
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        }
     }
 }
