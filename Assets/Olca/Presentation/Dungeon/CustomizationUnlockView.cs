@@ -14,23 +14,34 @@ namespace Olca.Presentation.Dungeon
         private Action<string> apply;private Action cancel,retry;private Olca.Unity.MenuPadScope menu;private GameObject content;
         private readonly Dictionary<Text,int> sizes=new Dictionary<Text,int>();
         private string selected,message;private int page,offsetX,offsetY;private bool pending;
+        public Olca.Presentation.Management.ManagedScreenContext Context { get; private set; }
+        private Action ensureManagedVisible,hideManaged;
+        public bool CanInteract=>gameObject.activeInHierarchy&&(ensureManagedVisible==null||Context?.IsCurrent==true&&!Context.DialogBlocksInput);
+        public void ConfigureManagement(Action show,Action hide){ensureManagedVisible=show;hideManaged=hide;}
+        public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){Context=context;gameObject.SetActive(true);}
+        /// <summary>内容や焦点を変更せず、親を閉じる前に表示の寿命だけを確保する。</summary>
+        public void PrepareManagedOpen()=>EnsureManaged();
+        private void EnsureManaged(){if(ensureManagedVisible!=null&&Context?.IsCurrent!=true){ensureManagedVisible();if(Context?.IsCurrent!=true)throw new InvalidOperationException("装備画面の管理開始に失敗しました");}}
+        public void HideManaged(){Context?.NotifyHidden();Context=null;menu?.Suspend();var selectedObject=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selectedObject!=null&&selectedObject.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);state=null;catalog=null;selected=null;sizes.Clear();if(this!=null)gameObject.SetActive(false);}
+        public void ReleaseManagement(){HideManaged();menu?.Dispose();menu=null;ensureManagedVisible=hideManaged=null;apply=null;cancel=retry=null;font=null;content=null;}
+        private Action Live(Action action){var context=Context;var owner=content;return()=>{if(this!=null&&CanInteract&&ReferenceEquals(Context,context)&&content==owner&&owner!=null&&owner.activeInHierarchy)action?.Invoke();};}
         public void Initialize(Font value,Action<string> applyAction,Action cancelAction,Action retryAction)
         {
             font=value;apply=applyAction;cancel=cancelAction;retry=retryAction;var r=(RectTransform)transform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;
-            UiLook.Face(gameObject.AddComponent<Image>());menu=new Olca.Unity.MenuPadScope(()=>gameObject.activeInHierarchy&&Olca.Unity.MenuPadScope.IsTopmost(transform));gameObject.SetActive(false);
+            UiLook.Face(gameObject.AddComponent<Image>());menu=new Olca.Unity.MenuPadScope(()=>CanInteract&&Olca.Unity.MenuPadScope.IsTopmost(transform));gameObject.SetActive(false);
         }
         public void Open(CustomizationCatalog definition,CustomizationProgress progress)
-        {catalog=definition??throw new ArgumentNullException(nameof(definition));state=(progress??new CustomizationProgress()).Copy();selected=null;page=offsetX=offsetY=0;pending=false;message="カイホウはホゾンされます。ソウビはヘンコウしません";gameObject.SetActive(true);transform.SetAsLastSibling();Render("CancelCustomizationUnlock");}
+        {if(definition==null)throw new ArgumentNullException(nameof(definition));EnsureManaged();catalog=definition;state=(progress??new CustomizationProgress()).Copy();selected=null;page=offsetX=offsetY=0;pending=false;message="カイホウはホゾンされます。ソウビはヘンコウしません";gameObject.SetActive(true);transform.SetAsLastSibling();Render("CancelCustomizationUnlock");}
         public void Applied(CustomizationProgress progress){state=progress.Copy();pending=false;message="カイホウをホゾンしました";Render("CancelCustomizationUnlock");}
         public void SaveFailed(bool isPending){pending=isPending;message=isPending?"ホゾンがカンリョウしていません。サイシコウしてください":"カイホウできません。モドってカクニンしてください";Render(isPending?"RetryCustomizationUnlock":"CancelCustomizationUnlock");}
-        public void Close(){state=null;gameObject.SetActive(false);}
-        private void OnDisable(){menu?.Suspend();state=null;}private void OnDestroy(){menu?.Dispose();}
+        public void Close(){if(ensureManagedVisible!=null&&Context?.IsCurrent==true)hideManaged();else HideManaged();}
+        private void OnDisable(){Context?.NotifyHidden();Context=null;menu?.Suspend();state=null;catalog=null;}private void OnDestroy(){ReleaseManagement();}
         private void LateUpdate(){CustomizationMenuElements.FitReference(transform,content,sizes);menu?.Tick();}
         private Text Label(string name,string text,float x,float y,float w,float h,int size=26,bool white=false,TextAnchor align=TextAnchor.MiddleLeft)
         {var t=CustomizationMenuElements.Label(content.transform,font,name,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text),x,y,w,h,size);t.alignment=align;t.color=white?Color.white:UiLook.Ink;sizes[t]=size;return t;}
         private Button Button(string name,string text,float x,float y,float w,float h,Action action,bool enabled=true)
         {
-            var b=CustomizationMenuElements.Button(content.transform,name,x,y,w,h);b.interactable=enabled;b.onClick.AddListener(()=>{if(this!=null&&state!=null&&gameObject.activeInHierarchy&&b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable())action();});
+            var invoke=Live(action);var b=CustomizationMenuElements.Button(content.transform,name,x,y,w,h);b.interactable=enabled;b.onClick.AddListener(()=>{if(this!=null&&state!=null&&b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable())invoke();});
             var t=Label(name+"Label",text,0,0,w-24,h-8,28,false,TextAnchor.MiddleCenter);t.transform.SetParent(b.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(b);return b;
         }
         private void Render(string focus)
@@ -65,7 +76,7 @@ namespace Olca.Presentation.Dungeon
             Button("UnlockBoardLeft","←",0,-220,110,52,()=>{offsetX=Math.Max(0,offsetX-8);Render("UnlockBoardRight");},!pending&&offsetX>0);Button("UnlockBoardRight","→",150,-220,110,52,()=>{offsetX+=8;Render("UnlockBoardLeft");},!pending&&(long)offsetX+8<catalog.Board.Width);Button("UnlockBoardUp","↑",300,-220,110,52,()=>{offsetY=Math.Max(0,offsetY-6);Render("UnlockBoardDown");},!pending&&offsetY>0);Button("UnlockBoardDown","↓",450,-220,110,52,()=>{offsetY+=6;Render("UnlockBoardUp");},!pending&&(long)offsetY+6<catalog.Board.Height);
             Label("UnlockMessage",message,0,-405,1700,60,26,true,TextAnchor.MiddleCenter);
             Button(pending?"RetryCustomizationUnlock":"ApplyCustomizationUnlock",pending?"ホゾンをサイシコウ":"カイホウしてホゾン",-420,-485,700,70,()=>{if(pending)retry();else apply(selected);},pending||selected!=null&&!state.AppliedUnlockItemIds.Contains(selected));Button("CancelCustomizationUnlock","モドル",420,-485,700,70,cancel,!pending);
-            CustomizationMenuElements.FitReference(transform,content,sizes);menu.Bind(transform,focus,()=>{if(!pending)cancel();});
+            CustomizationMenuElements.FitReference(transform,content,sizes);menu.Bind(transform,focus,Live(()=>{if(!pending)cancel();}));
         }
     }
 }

@@ -24,34 +24,45 @@ namespace Olca.Presentation.Dungeon
         private readonly System.Collections.Generic.Dictionary<Text,int> labelSizes=new System.Collections.Generic.Dictionary<Text,int>();
         private const int PageSize=4,Columns=8,Rows=6;
         public CustomizationEditDraft Draft=>draft;
+        public Olca.Presentation.Management.ManagedScreenContext Context { get; private set; }
+        private Action ensureManagedVisible,hideManaged;
+        public bool CanInteract=>gameObject.activeInHierarchy&&(ensureManagedVisible==null||Context?.IsCurrent==true&&!Context.DialogBlocksInput);
+        public void ConfigureManagement(Action show,Action hide){ensureManagedVisible=show;hideManaged=hide;}
+        public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){Context=context;gameObject.SetActive(true);}
+        /// <summary>内容や焦点を変更せず、親を閉じる前に表示の寿命だけを確保する。</summary>
+        public void PrepareManagedOpen()=>EnsureManaged();
+        private void EnsureManaged(){if(ensureManagedVisible!=null&&Context?.IsCurrent!=true){ensureManagedVisible();if(Context?.IsCurrent!=true)throw new InvalidOperationException("装備画面の管理開始に失敗しました");}}
+        public void HideManaged(){Context?.NotifyHidden();Context=null;menu?.Suspend();var selectedObject=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selectedObject!=null&&selectedObject.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);draft=null;selectedPart=selectedInstance=null;nameReadout=null;nameReadoutText=null;labelSizes.Clear();if(this!=null)gameObject.SetActive(false);}
+        public void ReleaseManagement(){HideManaged();menu?.Dispose();menu=null;ensureManagedVisible=hideManaged=null;save=cancel=retry=null;font=null;content=null;}
+        private Action Live(Action action){var context=Context;var owner=content;return()=>{if(this!=null&&CanInteract&&ReferenceEquals(Context,context)&&content==owner&&owner!=null&&owner.activeInHierarchy)action?.Invoke();};}
         public void Initialize(Font value,Action saveAction,Action cancelAction,Action retryAction)
         {
             font=value;save=saveAction;cancel=cancelAction;retry=retryAction;
             var rect=(RectTransform)transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
             UiLook.Face(gameObject.AddComponent<Image>());
-            menu=new Olca.Unity.MenuPadScope(()=>gameObject.activeInHierarchy&&Olca.Unity.MenuPadScope.IsTopmost(transform));
+            menu=new Olca.Unity.MenuPadScope(()=>CanInteract&&Olca.Unity.MenuPadScope.IsTopmost(transform));
             gameObject.SetActive(false);
         }
         public void Open(CustomizationEditDraft value)
         {
-            draft=value??throw new ArgumentNullException(nameof(value));selectedPart=selectedInstance=null;rotation=PartRotation.None;
+            if(value==null)throw new ArgumentNullException(nameof(value));EnsureManaged();draft=value;selectedPart=selectedInstance=null;rotation=PartRotation.None;
             accessoryPage=partPage=offsetX=offsetY=0;message="ヘンコウはまだホゾンしていません";pending=false;
             gameObject.SetActive(true);transform.SetAsLastSibling();Render("CancelCustomization");
         }
-        public void Close(){draft=null;gameObject.SetActive(false);}
+        public void Close(){if(ensureManagedVisible!=null&&Context?.IsCurrent==true)hideManaged();else HideManaged();}
         public void SaveFailed(bool isPending){pending=isPending;message=isPending?"ホゾンがカンリョウしていません。サイシコウしてください":"ホゾンできません。トリケシしてヒラきナオしてください";Render(isPending?"RetryCustomizationSave":"CancelCustomization");}
         private void LateUpdate(){FitReference();menu?.Tick();}
         private void FitReference(){if(content==null)return;var available=((RectTransform)transform).rect.size;float scale=Mathf.Min(1,available.x/1920,available.y/1080);var rect=(RectTransform)content.transform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,.5f);rect.anchoredPosition=Vector2.zero;rect.sizeDelta=new Vector2(1920,1080);rect.localScale=Vector3.one*Mathf.Max(.01f,scale);foreach(var pair in labelSizes)if(pair.Key!=null)pair.Key.fontSize=pair.Value<34?Mathf.RoundToInt(pair.Value*(scale<.9f?1.12f:1)):pair.Value;}
-        private void OnDisable(){menu?.Suspend();draft=null;}
-        private void OnDestroy(){menu?.Dispose();}
+        private void OnDisable(){Context?.NotifyHidden();Context=null;menu?.Suspend();draft=null;}
+        private void OnDestroy(){ReleaseManagement();}
         private Text Label(string name,string text,float x,float y,float w,float h,int size=26)
         {
             var label=CustomizationMenuElements.Label(content.transform,font,name,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text),x,y,w,h,size);labelSizes[label]=size;return label;
         }
         private Button Button(string name,string label,float x,float y,float w,float h,Action action,bool enabled=true)
         {
-            var b=CustomizationMenuElements.Button(content.transform,name,x,y,w,h);
-            b.onClick.AddListener(()=>{if(this!=null&&draft!=null&&gameObject.activeInHierarchy&&b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable())action();});b.interactable=enabled;
+            var invoke=Live(action);var b=CustomizationMenuElements.Button(content.transform,name,x,y,w,h);
+            b.onClick.AddListener(()=>{if(this!=null&&draft!=null&&b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable())invoke();});b.interactable=enabled;
             var text=Label(name+"Label",label,0,0,w-12,h-8);text.transform.SetParent(b.transform,false);text.rectTransform.anchoredPosition=Vector2.zero;UiLook.Button(b);return b;
         }
         private Image Face(string name,float x,float y,float w,float h,bool dark=false)
@@ -72,7 +83,7 @@ namespace Olca.Presentation.Dungeon
             var badge=Label(b.name+"State",state,0,0,110,48,22);badge.transform.SetParent(b.transform,false);badge.rectTransform.anchoredPosition=new Vector2(205,0);badge.color=UiLook.Ink;
             if(selected){var marker=new GameObject("SelectionMarker",typeof(RectTransform),typeof(Image));marker.transform.SetParent(b.transform,false);var image=marker.GetComponent<Image>();image.color=new Color(.07f,.42f,.53f,1);image.raycastTarget=false;var r=(RectTransform)marker.transform;r.anchoredPosition=new Vector2(-260,0);r.sizeDelta=new Vector2(5,42);}
             {var trigger=b.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();var owner=content;
-                void Event(UnityEngine.EventSystems.EventTriggerType type,Action action){var entry=new UnityEngine.EventSystems.EventTrigger.Entry{eventID=type};entry.callback.AddListener(_=>{if(this!=null&&draft!=null&&content==owner&&owner!=null&&owner.activeInHierarchy)action();});trigger.triggers.Add(entry);}
+                void Event(UnityEngine.EventSystems.EventTriggerType type,Action action){var entry=new UnityEngine.EventSystems.EventTrigger.Entry{eventID=type};entry.callback.AddListener(_=>{if(this!=null&&draft!=null&&content==owner&&owner!=null&&owner.activeInHierarchy&&CanInteract)action();});trigger.triggers.Add(entry);}
                 Event(UnityEngine.EventSystems.EventTriggerType.PointerEnter,()=>{if(longName)ShowName(name);else HideName();});Event(UnityEngine.EventSystems.EventTriggerType.Select,()=>{if(longName)ShowName(name);else HideName();});
             }
         }
@@ -144,7 +155,7 @@ namespace Olca.Presentation.Dungeon
             Reading(Label("CustomizationMessage",message,0,-419,1700,36,24),true,TextAnchor.MiddleCenter);
             Button(pending?"RetryCustomizationSave":"SaveCustomization",pending?"ホゾンをサイシコウ":"ホゾン",-400,-485,650,70,pending?retry:save);
             Button("CancelCustomization","トリケシ",400,-485,650,70,cancel,!pending);
-            NameReadout();FitReference();menu.Bind(transform,pending?"RetryCustomizationSave":focus,()=>{if(!pending)cancel();});
+            NameReadout();FitReference();menu.Bind(transform,pending?"RetryCustomizationSave":focus,Live(()=>{if(!pending)cancel();}));
         }
     }
 }

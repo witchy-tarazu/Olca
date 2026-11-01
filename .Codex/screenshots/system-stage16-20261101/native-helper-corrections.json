@@ -1,0 +1,19 @@
+{
+  "sourceUnchanged": true,
+  "corrections": [
+    {
+      "step": "acquisition-open",
+      "observed": "actual View opened and providerCalls1; return focus cache ConfirmDungeonSelection as existing Render fallback, not universally header",
+      "action": "did not repeat Open; continued from active View after recording incorrect helper focus expectation"
+    },
+    {
+      "step": "acquisition-reopen",
+      "observed": "hub provider resolves again (Calls2), persisted plan, customization and revision unchanged; Core existing plan returns without Stage/write",
+      "action": "continued from known-open View; do not require provider cache contract absent from code"
+    },
+    {
+      "step": "final-current-save-record",
+      "note": "loadout/unlock afterBytes fields unavailable in resumed Python process and left null; earlier in-process assertions and persisted receipts retained, not reconstructed hashes"
+    }
+  ]
+}

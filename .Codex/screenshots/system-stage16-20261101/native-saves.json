@@ -1,0 +1,6194 @@
+{
+  "loadout": {
+    "initial": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {},
+      "editDraft": null,
+      "equipmentKey": null,
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [
+          "アクアリング"
+        ],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [
+          "アクアリング"
+        ],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 6,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": true,
+      "mainContext": true,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": "return-hub",
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "ManualSaveButton",
+      "root": -280605034,
+      "resources": 9,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationAcquisitions",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        }
+      ]
+    },
+    "cancel": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationEditor"
+      },
+      "editDraft": null,
+      "equipmentKey": null,
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [
+          "アクアリング"
+        ],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [
+          "アクアリング"
+        ],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 6,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": true,
+      "mainContext": true,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": "return-hub",
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "ConfirmDungeonSelection",
+      "root": -280605034,
+      "resources": 10,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationAcquisitions",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        }
+      ]
+    },
+    "virtualPadCancel": {
+      "screen": [
+        640,
+        360
+      ],
+      "unlock": false,
+      "acquisition": false,
+      "progress": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [
+          "アクアリング"
+        ],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "texts": [],
+      "buttons": [
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationAcquisitions",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        }
+      ]
+    },
+    "afterVirtualDeviceRemoval": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationEditor"
+      },
+      "editDraft": null,
+      "equipmentKey": null,
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [
+          "アクアリング"
+        ],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [
+          "アクアリング"
+        ],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 6,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 0,
+      "screen": [
+        640,
+        360
+      ],
+      "main": true,
+      "mainContext": true,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": "return-hub",
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "ResumeButton",
+      "root": -280605034,
+      "resources": 11,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "KeyboardSettingsButton",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "VibrationSetting",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "GamepadSettingsButton",
+          "interactable": true
+        },
+        {
+          "name": "OwnedCardsButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": true
+        },
+        {
+          "name": "TransformationAnimationSetting",
+          "interactable": true
+        },
+        {
+          "name": "ResumeButton",
+          "interactable": true
+        },
+        {
+          "name": "AudioSettingsButton",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": true
+        },
+        {
+          "name": "LoadCheckpointButton",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "DialogueTextSpeedButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "RetreatButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationAcquisitions",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        }
+      ]
+    },
+    "changed": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationEditor"
+      },
+      "editDraft": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "equipmentKey": "equipment-loadout",
+      "equipmentRegistered": 3,
+      "loadout": true,
+      "unlock": false,
+      "acquisition": false,
+      "loadoutContext": true,
+      "unlockContext": false,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [
+          "アクアリング"
+        ],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [
+          "アクアリング"
+        ],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 6,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "Cell_2_0",
+      "root": -280605034,
+      "resources": 11,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "Cell_1_1",
+          "interactable": true
+        },
+        {
+          "name": "Accessory_アクアリング",
+          "interactable": true
+        },
+        {
+          "name": "Cell_5_5",
+          "interactable": true
+        },
+        {
+          "name": "AccessoriesPrevious",
+          "interactable": false
+        },
+        {
+          "name": "BoardLeft",
+          "interactable": false
+        },
+        {
+          "name": "Part_ティーパーツ",
+          "interactable": true
+        },
+        {
+          "name": "Cell_2_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_0_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_6_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_1_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_2_2",
+          "interactable": true
+        },
+        {
+          "name": "BoardUp",
+          "interactable": false
+        },
+        {
+          "name": "Cell_2_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_1_0",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_0",
+          "interactable": true
+        },
+        {
+          "name": "SaveCustomization",
+          "interactable": true
+        },
+        {
+          "name": "Cell_6_3",
+          "interactable": true
+        },
+        {
+          "name": "Cell_2_0",
+          "interactable": true
+        },
+        {
+          "name": "CancelCustomization",
+          "interactable": true
+        },
+        {
+          "name": "Cell_1_2",
+          "interactable": true
+        },
+        {
+          "name": "Cell_5_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_4",
+          "interactable": true
+        },
+        {
+          "name": "BoardDown",
+          "interactable": true
+        },
+        {
+          "name": "Cell_6_2",
+          "interactable": true
+        },
+        {
+          "name": "Cell_4_5",
+          "interactable": true
+        },
+        {
+          "name": "RotateCustomizationPart",
+          "interactable": true
+        },
+        {
+          "name": "AccessoriesNext",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_3",
+          "interactable": true
+        },
+        {
+          "name": "Cell_0_2",
+          "interactable": true
+        },
+        {
+          "name": "Cell_7_5",
+          "interactable": true
+        },
+        {
+          "name": "Cell_5_3",
+          "interactable": true
+        },
+        {
+          "name": "Cell_4_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_0_5",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_3",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_4_2",
+          "interactable": true
+        },
+        {
+          "name": "ClearCustomizationSelection",
+          "interactable": true
+        },
+        {
+          "name": "Cell_5_2",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_5",
+          "interactable": true
+        },
+        {
+          "name": "Cell_7_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_4_0",
+          "interactable": true
+        },
+        {
+          "name": "Cell_6_5",
+          "interactable": true
+        },
+        {
+          "name": "Cell_4_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_0_3",
+          "interactable": true
+        },
+        {
+          "name": "Cell_5_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_6_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_7_2",
+          "interactable": true
+        },
+        {
+          "name": "Cell_7_0",
+          "interactable": true
+        },
+        {
+          "name": "BoardRight",
+          "interactable": true
+        },
+        {
+          "name": "Cell_6_0",
+          "interactable": true
+        },
+        {
+          "name": "PartsPrevious",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "Cell_2_5",
+          "interactable": true
+        },
+        {
+          "name": "Cell_0_0",
+          "interactable": true
+        },
+        {
+          "name": "RemoveCustomizationPart",
+          "interactable": true
+        },
+        {
+          "name": "Cell_0_1",
+          "interactable": true
+        },
+        {
+          "name": "Cell_7_4",
+          "interactable": true
+        },
+        {
+          "name": "Cell_4_3",
+          "interactable": true
+        },
+        {
+          "name": "PartsNext",
+          "interactable": false
+        },
+        {
+          "name": "Cell_7_3",
+          "interactable": true
+        },
+        {
+          "name": "Part_ストレート",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_2",
+          "interactable": true
+        },
+        {
+          "name": "Cell_5_0",
+          "interactable": true
+        },
+        {
+          "name": "Cell_2_3",
+          "interactable": true
+        },
+        {
+          "name": "Cell_1_5",
+          "interactable": true
+        }
+      ]
+    },
+    "failed": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationEditor"
+      },
+      "editDraft": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "equipmentKey": "equipment-loadout",
+      "equipmentRegistered": 3,
+      "loadout": true,
+      "unlock": false,
+      "acquisition": false,
+      "loadoutContext": true,
+      "unlockContext": false,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [
+          "アクアリング"
+        ],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [
+          "アクアリング"
+        ],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": true,
+      "revision": 6,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "RetryCustomizationSave",
+      "root": -280605034,
+      "resources": 11,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "Cell_2_4",
+          "interactable": false
+        },
+        {
+          "name": "Cell_4_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_0_4",
+          "interactable": false
+        },
+        {
+          "name": "Cell_4_4",
+          "interactable": false
+        },
+        {
+          "name": "PartsPrevious",
+          "interactable": false
+        },
+        {
+          "name": "Cell_6_0",
+          "interactable": false
+        },
+        {
+          "name": "BoardLeft",
+          "interactable": false
+        },
+        {
+          "name": "Cell_4_0",
+          "interactable": false
+        },
+        {
+          "name": "Cell_2_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_6_2",
+          "interactable": false
+        },
+        {
+          "name": "Cell_5_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_7_5",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_0",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_3",
+          "interactable": false
+        },
+        {
+          "name": "RemoveCustomizationPart",
+          "interactable": false
+        },
+        {
+          "name": "Cell_4_5",
+          "interactable": false
+        },
+        {
+          "name": "AccessoriesNext",
+          "interactable": false
+        },
+        {
+          "name": "BoardDown",
+          "interactable": false
+        },
+        {
+          "name": "Cell_7_2",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_4",
+          "interactable": false
+        },
+        {
+          "name": "CancelCustomization",
+          "interactable": false
+        },
+        {
+          "name": "Cell_7_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_7_3",
+          "interactable": false
+        },
+        {
+          "name": "Part_ティーパーツ",
+          "interactable": false
+        },
+        {
+          "name": "RetryCustomizationSave",
+          "interactable": true
+        },
+        {
+          "name": "Cell_7_4",
+          "interactable": false
+        },
+        {
+          "name": "Cell_3_0",
+          "interactable": false
+        },
+        {
+          "name": "Cell_6_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_3_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_5_5",
+          "interactable": false
+        },
+        {
+          "name": "BoardUp",
+          "interactable": false
+        },
+        {
+          "name": "Cell_0_2",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_5",
+          "interactable": false
+        },
+        {
+          "name": "Cell_6_4",
+          "interactable": false
+        },
+        {
+          "name": "Cell_2_3",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_2",
+          "interactable": false
+        },
+        {
+          "name": "Cell_5_4",
+          "interactable": false
+        },
+        {
+          "name": "Cell_3_3",
+          "interactable": false
+        },
+        {
+          "name": "Cell_0_5",
+          "interactable": false
+        },
+        {
+          "name": "Cell_2_0",
+          "interactable": false
+        },
+        {
+          "name": "RotateCustomizationPart",
+          "interactable": false
+        },
+        {
+          "name": "Accessory_アクアリング",
+          "interactable": false
+        },
+        {
+          "name": "Cell_7_0",
+          "interactable": false
+        },
+        {
+          "name": "PartsNext",
+          "interactable": false
+        },
+        {
+          "name": "Cell_4_2",
+          "interactable": false
+        },
+        {
+          "name": "ClearCustomizationSelection",
+          "interactable": false
+        },
+        {
+          "name": "Cell_0_1",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "Cell_3_4",
+          "interactable": false
+        },
+        {
+          "name": "Part_ストレート",
+          "interactable": false
+        },
+        {
+          "name": "Cell_5_3",
+          "interactable": false
+        },
+        {
+          "name": "Cell_6_5",
+          "interactable": false
+        },
+        {
+          "name": "Cell_2_5",
+          "interactable": false
+        },
+        {
+          "name": "Cell_3_2",
+          "interactable": false
+        },
+        {
+          "name": "AccessoriesPrevious",
+          "interactable": false
+        },
+        {
+          "name": "Cell_5_0",
+          "interactable": false
+        },
+        {
+          "name": "Cell_2_2",
+          "interactable": false
+        },
+        {
+          "name": "Cell_5_2",
+          "interactable": false
+        },
+        {
+          "name": "BoardRight",
+          "interactable": false
+        },
+        {
+          "name": "Cell_0_3",
+          "interactable": false
+        },
+        {
+          "name": "Cell_3_5",
+          "interactable": false
+        },
+        {
+          "name": "Cell_4_3",
+          "interactable": false
+        },
+        {
+          "name": "Cell_6_3",
+          "interactable": false
+        },
+        {
+          "name": "Cell_1_1",
+          "interactable": false
+        },
+        {
+          "name": "Cell_0_0",
+          "interactable": false
+        }
+      ]
+    },
+    "saved": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationEditor"
+      },
+      "editDraft": null,
+      "equipmentKey": null,
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 7,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": true,
+      "mainContext": true,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": "return-hub",
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "ConfirmDungeonSelection",
+      "root": -280605034,
+      "resources": 11,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationAcquisitions",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        }
+      ]
+    },
+    "persisted": {
+      "revision": 7,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      }
+    },
+    "writes": 2,
+    "failedBytesUnchanged": true,
+    "afterBytes": null
+  },
+  "unlock": {
+    "selected": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationUnlocks"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-unlock",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": true,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": true,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 7,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "ApplyCustomizationUnlock",
+      "root": -280605034,
+      "resources": 12,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "UnlockItem_ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+          "interactable": true
+        },
+        {
+          "name": "UnlockItem_エリアのカギ",
+          "interactable": true
+        },
+        {
+          "name": "ApplyCustomizationUnlock",
+          "interactable": true
+        },
+        {
+          "name": "UnlockNext",
+          "interactable": true
+        },
+        {
+          "name": "UnlockBoardRight",
+          "interactable": true
+        },
+        {
+          "name": "UnlockBoardDown",
+          "interactable": true
+        },
+        {
+          "name": "UnlockBoardUp",
+          "interactable": false
+        },
+        {
+          "name": "UnlockBoardLeft",
+          "interactable": false
+        },
+        {
+          "name": "UnlockItem_アオいカギ",
+          "interactable": true
+        },
+        {
+          "name": "CancelCustomizationUnlock",
+          "interactable": true
+        },
+        {
+          "name": "UnlockPrevious",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "UnlockItem_イチのカギ",
+          "interactable": true
+        }
+      ]
+    },
+    "failed": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationUnlocks"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-unlock",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": true,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": true,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": true,
+      "revision": 7,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "RetryCustomizationUnlock",
+      "root": -280605034,
+      "resources": 12,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "UnlockItem_エリアのカギ",
+          "interactable": false
+        },
+        {
+          "name": "UnlockBoardUp",
+          "interactable": false
+        },
+        {
+          "name": "UnlockNext",
+          "interactable": false
+        },
+        {
+          "name": "RetryCustomizationUnlock",
+          "interactable": true
+        },
+        {
+          "name": "UnlockPrevious",
+          "interactable": false
+        },
+        {
+          "name": "CancelCustomizationUnlock",
+          "interactable": false
+        },
+        {
+          "name": "UnlockItem_イチのカギ",
+          "interactable": false
+        },
+        {
+          "name": "UnlockBoardLeft",
+          "interactable": false
+        },
+        {
+          "name": "UnlockItem_ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+          "interactable": false
+        },
+        {
+          "name": "UnlockBoardRight",
+          "interactable": false
+        },
+        {
+          "name": "UnlockItem_アオいカギ",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "UnlockBoardDown",
+          "interactable": false
+        }
+      ]
+    },
+    "saved": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "OpenCustomizationUnlocks"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-unlock",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": true,
+      "acquisition": false,
+      "loadoutContext": false,
+      "unlockContext": true,
+      "acquisitionContext": false,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 0,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 8,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "CancelCustomizationUnlock",
+      "root": -280605034,
+      "resources": 12,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "UnlockItem_ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+          "interactable": true
+        },
+        {
+          "name": "CancelCustomizationUnlock",
+          "interactable": true
+        },
+        {
+          "name": "UnlockBoardRight",
+          "interactable": true
+        },
+        {
+          "name": "UnlockNext",
+          "interactable": true
+        },
+        {
+          "name": "UnlockItem_イチのカギ",
+          "interactable": true
+        },
+        {
+          "name": "UnlockPrevious",
+          "interactable": false
+        },
+        {
+          "name": "UnlockBoardDown",
+          "interactable": true
+        },
+        {
+          "name": "UnlockItem_エリアのカギ",
+          "interactable": true
+        },
+        {
+          "name": "UnlockBoardUp",
+          "interactable": false
+        },
+        {
+          "name": "UnlockBoardLeft",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "UnlockItem_アオいカギ",
+          "interactable": true
+        },
+        {
+          "name": "ApplyCustomizationUnlock",
+          "interactable": false
+        }
+      ]
+    },
+    "persisted": {
+      "revision": 8,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": []
+      }
+    },
+    "writes": 2,
+    "failedBytesUnchanged": true,
+    "afterBytes": null
+  },
+  "acquisition": {
+    "openedPreparedPlan": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "ConfirmDungeonSelection"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-acquisition",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": true,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": true,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": [
+          {
+            "ContextId": "r55-hub",
+            "BoardId": "r55-fixture",
+            "MaximumClaims": 2,
+            "Candidates": [
+              {
+                "RequestId": "00000000000000000000000000000001",
+                "ClearRunId": null,
+                "DisplayName": "ミラーチャームセット",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": [
+                  {
+                    "Id": "アオいカギ",
+                    "Count": 1
+                  }
+                ]
+              },
+              {
+                "RequestId": "00000000000000000000000000000002",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 2",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "スクエア",
+                    "Count": 2
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000003",
+                "ClearRunId": null,
+                "DisplayName": "エルパーツセット",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "エルパーツ",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000004",
+                "ClearRunId": null,
+                "DisplayName": "シロいブローチのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+                "Accessories": [
+                  "シロいブローチ"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000005",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 5",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000006",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 6",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              }
+            ]
+          }
+        ]
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 1,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 9,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "CancelCustomizationAcquisition",
+      "root": -280605034,
+      "resources": 13,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "AcquisitionPrevious",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000004",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000001",
+          "interactable": true
+        },
+        {
+          "name": "CancelCustomizationAcquisition",
+          "interactable": true
+        },
+        {
+          "name": "ClaimCustomizationAcquisition",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000003",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000002",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionNext",
+          "interactable": true
+        }
+      ]
+    },
+    "selected": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "ConfirmDungeonSelection"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-acquisition",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": true,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": true,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": [
+          {
+            "ContextId": "r55-hub",
+            "BoardId": "r55-fixture",
+            "MaximumClaims": 2,
+            "Candidates": [
+              {
+                "RequestId": "00000000000000000000000000000001",
+                "ClearRunId": null,
+                "DisplayName": "ミラーチャームセット",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": [
+                  {
+                    "Id": "アオいカギ",
+                    "Count": 1
+                  }
+                ]
+              },
+              {
+                "RequestId": "00000000000000000000000000000002",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 2",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "スクエア",
+                    "Count": 2
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000003",
+                "ClearRunId": null,
+                "DisplayName": "エルパーツセット",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "エルパーツ",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000004",
+                "ClearRunId": null,
+                "DisplayName": "シロいブローチのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+                "Accessories": [
+                  "シロいブローチ"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000005",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 5",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000006",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 6",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              }
+            ]
+          }
+        ]
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 1,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 9,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "ClaimCustomizationAcquisition",
+      "root": -280605034,
+      "resources": 13,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000004",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000002",
+          "interactable": true
+        },
+        {
+          "name": "ClaimCustomizationAcquisition",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000003",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionNext",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000001",
+          "interactable": true
+        },
+        {
+          "name": "CancelCustomizationAcquisition",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionPrevious",
+          "interactable": false
+        }
+      ]
+    },
+    "failed": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "ConfirmDungeonSelection"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-acquisition",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": true,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": true,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 2
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 2
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          }
+        ],
+        "Acquisitions": [
+          {
+            "ContextId": "r55-hub",
+            "BoardId": "r55-fixture",
+            "MaximumClaims": 2,
+            "Candidates": [
+              {
+                "RequestId": "00000000000000000000000000000001",
+                "ClearRunId": null,
+                "DisplayName": "ミラーチャームセット",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": [
+                  {
+                    "Id": "アオいカギ",
+                    "Count": 1
+                  }
+                ]
+              },
+              {
+                "RequestId": "00000000000000000000000000000002",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 2",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "スクエア",
+                    "Count": 2
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000003",
+                "ClearRunId": null,
+                "DisplayName": "エルパーツセット",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "エルパーツ",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000004",
+                "ClearRunId": null,
+                "DisplayName": "シロいブローチのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+                "Accessories": [
+                  "シロいブローチ"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000005",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 5",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000006",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 6",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              }
+            ]
+          }
+        ]
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 1,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": true,
+      "revision": 9,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "RetryCustomizationAcquisition",
+      "root": -280605034,
+      "resources": 13,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000003",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000001",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionNext",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000002",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000004",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionPrevious",
+          "interactable": false
+        },
+        {
+          "name": "CancelCustomizationAcquisition",
+          "interactable": false
+        },
+        {
+          "name": "RetryCustomizationAcquisition",
+          "interactable": true
+        }
+      ]
+    },
+    "saved": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "ConfirmDungeonSelection"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-acquisition",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": true,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": true,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング",
+          "ミラーチャーム"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 3
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 3
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          },
+          {
+            "RequestId": "00000000000000000000000000000001",
+            "Fingerprint": "3F341E57DDAB3B27E0121B613C867A1983E1CB7C2ABB0CE628693C8537210E08"
+          }
+        ],
+        "Acquisitions": [
+          {
+            "ContextId": "r55-hub",
+            "BoardId": "r55-fixture",
+            "MaximumClaims": 2,
+            "Candidates": [
+              {
+                "RequestId": "00000000000000000000000000000001",
+                "ClearRunId": null,
+                "DisplayName": "ミラーチャームセット",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": [
+                  {
+                    "Id": "アオいカギ",
+                    "Count": 1
+                  }
+                ]
+              },
+              {
+                "RequestId": "00000000000000000000000000000002",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 2",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "スクエア",
+                    "Count": 2
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000003",
+                "ClearRunId": null,
+                "DisplayName": "エルパーツセット",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "エルパーツ",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000004",
+                "ClearRunId": null,
+                "DisplayName": "シロいブローチのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+                "Accessories": [
+                  "シロいブローチ"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000005",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 5",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000006",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 6",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              }
+            ]
+          }
+        ]
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 1,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 10,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "CancelCustomizationAcquisition",
+      "root": -280605034,
+      "resources": 13,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000003",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000004",
+          "interactable": true
+        },
+        {
+          "name": "ClaimCustomizationAcquisition",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000001",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionPrevious",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CancelCustomizationAcquisition",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionNext",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000002",
+          "interactable": false
+        }
+      ]
+    },
+    "persisted": {
+      "revision": 10,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング",
+          "ミラーチャーム"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 3
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 3
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          },
+          {
+            "RequestId": "00000000000000000000000000000001",
+            "Fingerprint": "3F341E57DDAB3B27E0121B613C867A1983E1CB7C2ABB0CE628693C8537210E08"
+          }
+        ],
+        "Acquisitions": [
+          {
+            "ContextId": "r55-hub",
+            "BoardId": "r55-fixture",
+            "MaximumClaims": 2,
+            "Candidates": [
+              {
+                "RequestId": "00000000000000000000000000000001",
+                "ClearRunId": null,
+                "DisplayName": "ミラーチャームセット",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": [
+                  {
+                    "Id": "アオいカギ",
+                    "Count": 1
+                  }
+                ]
+              },
+              {
+                "RequestId": "00000000000000000000000000000002",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 2",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "スクエア",
+                    "Count": 2
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000003",
+                "ClearRunId": null,
+                "DisplayName": "エルパーツセット",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "エルパーツ",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000004",
+                "ClearRunId": null,
+                "DisplayName": "シロいブローチのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+                "Accessories": [
+                  "シロいブローチ"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000005",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 5",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000006",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 6",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "reopenedSavedPlan": {
+      "equipmentCounts": [
+        1,
+        1,
+        1
+      ],
+      "returnFocusCache": {
+        "DungeonSelectionContents": "ConfirmDungeonSelection"
+      },
+      "editDraft": null,
+      "equipmentKey": "equipment-acquisition",
+      "equipmentRegistered": 3,
+      "loadout": false,
+      "unlock": false,
+      "acquisition": true,
+      "loadoutContext": false,
+      "unlockContext": false,
+      "acquisitionContext": true,
+      "customization": {
+        "BoardId": "r55-fixture",
+        "OwnedAccessoryIds": [
+          "アクアリング",
+          "ミラーチャーム"
+        ],
+        "OwnedParts": [
+          {
+            "Id": "エルパーツ",
+            "Count": 2
+          },
+          {
+            "Id": "シングル",
+            "Count": 2
+          },
+          {
+            "Id": "ジグザグ",
+            "Count": 2
+          },
+          {
+            "Id": "スクエア",
+            "Count": 2
+          },
+          {
+            "Id": "ストレート",
+            "Count": 3
+          },
+          {
+            "Id": "ティーパーツ",
+            "Count": 2
+          }
+        ],
+        "OwnedUnlockItems": [
+          {
+            "Id": "アオいカギ",
+            "Count": 3
+          },
+          {
+            "Id": "イチのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "ウエのカギのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+            "Count": 1
+          },
+          {
+            "Id": "エリアのカギ",
+            "Count": 1
+          },
+          {
+            "Id": "オーバーラップ",
+            "Count": 1
+          },
+          {
+            "Id": "カドのカギ",
+            "Count": 1
+          }
+        ],
+        "EquippedAccessoryIds": [],
+        "Placements": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "X": 0,
+            "Y": 0,
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "X": 2,
+            "Y": 0,
+            "Rotation": 0
+          }
+        ],
+        "UnlockedCells": [
+          {
+            "X": 0,
+            "Y": 0
+          },
+          {
+            "X": 1,
+            "Y": 0
+          },
+          {
+            "X": 2,
+            "Y": 0
+          },
+          {
+            "X": 3,
+            "Y": 0
+          },
+          {
+            "X": 4,
+            "Y": 0
+          },
+          {
+            "X": 5,
+            "Y": 0
+          },
+          {
+            "X": 6,
+            "Y": 0
+          },
+          {
+            "X": 0,
+            "Y": 1
+          },
+          {
+            "X": 1,
+            "Y": 1
+          },
+          {
+            "X": 2,
+            "Y": 1
+          },
+          {
+            "X": 3,
+            "Y": 1
+          },
+          {
+            "X": 4,
+            "Y": 1
+          },
+          {
+            "X": 5,
+            "Y": 1
+          },
+          {
+            "X": 6,
+            "Y": 1
+          },
+          {
+            "X": 0,
+            "Y": 2
+          },
+          {
+            "X": 1,
+            "Y": 2
+          },
+          {
+            "X": 2,
+            "Y": 2
+          },
+          {
+            "X": 3,
+            "Y": 2
+          },
+          {
+            "X": 4,
+            "Y": 2
+          },
+          {
+            "X": 5,
+            "Y": 2
+          },
+          {
+            "X": 0,
+            "Y": 3
+          },
+          {
+            "X": 1,
+            "Y": 3
+          },
+          {
+            "X": 2,
+            "Y": 3
+          },
+          {
+            "X": 3,
+            "Y": 3
+          },
+          {
+            "X": 4,
+            "Y": 3
+          }
+        ],
+        "AppliedUnlockItemIds": [
+          "アオいカギ"
+        ],
+        "Receipts": [
+          {
+            "RequestId": "161616161616461686161616161600ff",
+            "Fingerprint": "BF309078F12A8F7F5F8C3F595091A7097125F011E6D48FC51A8580415808F7D5"
+          },
+          {
+            "RequestId": "00000000000000000000000000000001",
+            "Fingerprint": "3F341E57DDAB3B27E0121B613C867A1983E1CB7C2ABB0CE628693C8537210E08"
+          }
+        ],
+        "Acquisitions": [
+          {
+            "ContextId": "r55-hub",
+            "BoardId": "r55-fixture",
+            "MaximumClaims": 2,
+            "Candidates": [
+              {
+                "RequestId": "00000000000000000000000000000001",
+                "ClearRunId": null,
+                "DisplayName": "ミラーチャームセット",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": [
+                  {
+                    "Id": "アオいカギ",
+                    "Count": 1
+                  }
+                ]
+              },
+              {
+                "RequestId": "00000000000000000000000000000002",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 2",
+                "Accessories": [
+                  "ミラーチャーム"
+                ],
+                "Parts": [
+                  {
+                    "Id": "スクエア",
+                    "Count": 2
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000003",
+                "ClearRunId": null,
+                "DisplayName": "エルパーツセット",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "エルパーツ",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000004",
+                "ClearRunId": null,
+                "DisplayName": "シロいブローチのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエのナガいナマエ",
+                "Accessories": [
+                  "シロいブローチ"
+                ],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000005",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 5",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              },
+              {
+                "RequestId": "00000000000000000000000000000006",
+                "ClearRunId": null,
+                "DisplayName": "コウホセット 6",
+                "Accessories": [],
+                "Parts": [
+                  {
+                    "Id": "ストレート",
+                    "Count": 1
+                  }
+                ],
+                "UnlockItems": []
+              }
+            ]
+          }
+        ]
+      },
+      "sources": {
+        "accessories": [],
+        "parts": [
+          {
+            "InstanceId": "placed-a",
+            "PartId": "エルパーツ",
+            "Anchor": {
+              "X": 0,
+              "Y": 0
+            },
+            "Rotation": 0
+          },
+          {
+            "InstanceId": "e1f57236950f4b5a8a7a45c195aa8c9d",
+            "PartId": "ストレート",
+            "Anchor": {
+              "X": 2,
+              "Y": 0
+            },
+            "Rotation": 0
+          }
+        ]
+      },
+      "sourceError": null,
+      "providerCalls": 2,
+      "modal": null,
+      "modalActive": false,
+      "parent": null,
+      "parentActive": false,
+      "decks": [
+        {
+          "Id": "6beb05600f464798b5283328ad5714ef",
+          "Name": "スターター",
+          "cards": 20
+        }
+      ],
+      "editing": null,
+      "dirty": false,
+      "draft": 0,
+      "pending": false,
+      "revision": 10,
+      "owned": 20,
+      "tokens": 0,
+      "playing": true,
+      "scale": 1,
+      "screen": [
+        640,
+        360
+      ],
+      "main": false,
+      "mainContext": false,
+      "collection": false,
+      "collectionContext": false,
+      "mainKey": null,
+      "collectionKey": null,
+      "dialogs": 0,
+      "focus": "CancelCustomizationAcquisition",
+      "root": -280605034,
+      "resources": 13,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "buttons": [
+        {
+          "name": "AcquisitionPrevious",
+          "interactable": false
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000002",
+          "interactable": false
+        },
+        {
+          "name": "ClaimCustomizationAcquisition",
+          "interactable": false
+        },
+        {
+          "name": "CancelCustomizationAcquisition",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000004",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionNext",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000003",
+          "interactable": true
+        },
+        {
+          "name": "AcquisitionCandidate_00000000000000000000000000000001",
+          "interactable": false
+        }
+      ]
+    },
+    "writes": 2,
+    "failedBytesUnchanged": true,
+    "afterBytes": {
+      "progress/progress.json": "890b0f87722afbbb8fd4b4f755b157c3d55d4fc1e0423e40148ade8c1bd81b49",
+      "progress/progress.backup.json": "2e61c3e635c607a4dd2f264c6dc7fa5630512001cdba2cf7e8dfa4f6296b1d29"
+    }
+  },
+  "onlyExistingSaveBoundaries": true,
+  "sourceContract": "Saved snapshot and loadout sources match persisted values; fixture defines no product stat/ability values, existing effects covered separately by Core regressions"
+}

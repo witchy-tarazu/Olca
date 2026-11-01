@@ -1,0 +1,199 @@
+{
+  "scope": "Stage16 independent static review of three existing customization views under ViewManager lifecycle; no prefab extraction or new popup migration",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "751bcd2469ebbfc8c37fd293b228d742958c6e9fa71526f257b9e4f7f96b2545",
+    "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs": "18d09a570377f027740923ef44a98240b7605aba20a2ca5d18313c289341dbb6",
+    "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs": "4203e70df1df6121e1665a49b9c1646a0af02462160198432e26ba2b8d7c8f9f",
+    "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs": "5ed6c118eb6e6c883ed4db4cb7d8c0516b36b0fb31f0aa58b706073e0b37f6ee",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "41942d40f7dea9871112f393aa3b0d87eec6fbbf0e53669405057ab0c7beca36"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Three mutually exclusive keys reuse existing GameObjects under customization layer; no new gameplay manager or prefab extraction.",
+    "View Live wrappers capture context identity and content owner; button enabled/native checks precede business callbacks. Inline hover/readout remains inside its current content.",
+    "HideManaged releases models/state and context, disposes menus only at terminal ReleaseManagement; explicit terminal cleanup precedes Session disposal.",
+    "Destroyed Unity wrapper native access in HideManaged is guarded by this!=null before gameObject.SetActive; pure managed refs can still clear.",
+    "Controller clears customizationViews ref and draft on terminal presentation release; save/retry/claim/apply/close reject inactive/released controller and blocked target view.",
+    "PrepareManagedOpen acquires/validates context without selecting focus or constructing model, then hub Hide captures existing return focus, then existing Open renders; missing catalog/provider guards unchanged.",
+    "Parameterized3 tests verify blocked old cancel, parent-close, reopen stale event, explicit release refs and owner unregister."
+  ],
+  "limits": [
+    "Final source matches507+84 passed receipts; native saves/lifetime and18-image review completed as separate records. Final full3615/3615 passed; cleanup PASS and reviewed.",
+    "Return-focus cache may legitimately retain ConfirmDungeonSelection; no header-focus guarantee imposed.",
+    "Actual inactive artwork1Sprite/0Texture release does not substitute for the separate6Sprite/5Texture regression.",
+    "No Unity/MCP/tests/product edits by independent reviewer."
+  ],
+  "priorFindings": [
+    {
+      "id": "S16-SOURCE-FENCE",
+      "file": "Assets/Olca/Application/Dungeon/DungeonBattleController.cs",
+      "methods": [
+        "OpenCustomizationEditor",
+        "OpenCustomizationUnlocks",
+        "OpenCustomizationAcquisitions"
+      ],
+      "description": "Source header entry checks runtime and IsProgressHub but not return-context DialogBlocksInput. After Stage15 dialog cancellation rerenders hub and restores controls, an old source click in that same frame can open equipment despite the retained fence; acquisition can prepare/persist its plan before showing. ManualSave/NewGame already check this fence.",
+      "recommendation": "Add the same return-context DialogBlocksInput rejection to the three Open entry methods; retain existing prepare/save ordering."
+    }
+  ],
+  "fenceCorrectionReview": {
+    "unresolvedRequiredFindings": 0,
+    "resolved": "All3 Open methods now reject return-context DialogBlocksInput before draft/layout/provider/plan preparation.",
+    "regressions": "Three parameter cases establish ready/nonpending hub, initialized3 views/catalog/provider, close actual managed Dialog with reRender, invoke old source method same frame; assert all views inactive, draft null, provider calls0 and active save bytes unchanged. Original3 lifecycle cases retained.",
+    "limits": [
+      "Latest Controller/tests submission changes not yet mirrored; final explicit compile pending reload recovery.",
+      "Earlier initial five-file compile does not validate the newly added fence tests.",
+      "Independent static review only; native/full/related tests not yet executed."
+    ]
+  },
+  "focusReview": {
+    "checked": "Only clearing selection under the old view transform preserves the newly shown sibling view selection under ViewManager new.Show then old.Hide ordering.",
+    "limits": "Latest4 focus files not mirrored/compiled/tested; previous candidate compile does not validate them."
+  },
+  "reviewHistory": [
+    {
+      "findings": [
+        {
+          "id": "S16-FOCUS-LOCAL-SHADOW",
+          "scope": "CustomizationAcquisitionView/CustomizationUnlockView.HideManaged",
+          "description": "New var selected GameObject shadows string selected field. Acquisition selected=lastReceived=null attempts to assign string to GameObject (compile error); Unlock selected=null clears local rather than selection state.",
+          "recommendation": "Rename focus local to selectedObject (or equivalent), retaining existing string field cleanup."
+        }
+      ],
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "d62ab1801f7139b4e6a2c889d46038c0fb19831d03f03a70562750d23986e3d2",
+        "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs": "15bc3bf2ae2d298c0ae8ea2b381def7eaf69f20abbabefd3a61c544922f9eed4",
+        "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs": "532bddf2dec2e1fc544dc7dc24415057000caeee9510334d4048146e4ba06deb",
+        "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs": "1e29114dba9997afba50ead1f73fa232823f77a7be8f0dfe513143d3d462a084",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "8791e6e1714b9bc4799f75b897aa3956badcb861b310f4c420b6fd02f16efb10"
+      }
+    },
+    {
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "d62ab1801f7139b4e6a2c889d46038c0fb19831d03f03a70562750d23986e3d2",
+        "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs": "99e133cbce899d6870e3508745eb9f6cdd621e75d0a44d8ba55655d3344c6ec7",
+        "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs": "e5b0a2d79a407547cb501a0c1b6bb16e7c24201d775941c7248a600154dbed1c",
+        "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs": "4b32eda92ff9592e9c484b59464920795868e4606d4c2c3c4167ea65d91189b2",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "8791e6e1714b9bc4799f75b897aa3956badcb861b310f4c420b6fd02f16efb10"
+      },
+      "finding": "Open-new-view before return.Hide allowed SaveMenuFocus to capture another view Cancel button; identified statically by parent and independently confirmed."
+    }
+  ],
+  "focusShadowCorrection": {
+    "unresolvedRequiredFindings": 0,
+    "correction": "All3 focus locals renamed selectedObject; Acquisition/Unlock string selected field cleanup remains intact.",
+    "checked": "Selection clears only when currently selected object belongs to the hidden view; sibling new view focus preserved.",
+    "limits": [
+      "Submission-only latest5 hashes; final mirror/compile/test not yet performed.",
+      "Local-shadow issue was caught statically before compilation; not a recorded Unity compile failure.",
+      "Earlier assembly read timeout remains tool status, not test result."
+    ]
+  },
+  "prepareOpenRereview": {
+    "unresolvedRequiredFindings": 0,
+    "checked": [
+      "All3 Controller paths perform PrepareManagedOpen -> return.Hide -> existing Open.",
+      "PrepareManagedOpen delegates only to EnsureManaged: validates/acquires current context without model initialization or Render/menu focus selection. Existing Open Ensure remains idempotent.",
+      "Existing3 parameterized cases assert origin selection unchanged and model null immediately after Prepare; lifecycle callbacks/blocked input/old epochs assertions remain.",
+      "Management acquisition failure occurs before hiding return view; original source focus is captured before new view Render can select Cancel."
+    ],
+    "limits": [
+      "Latest5 files submission-only pending safe Play stop, mirror, compile and reruns.",
+      "Previous507+84 success predates Prepare change and is not final validation.",
+      "Actual final return focus and cached return-menu source focus must be distinguished in native evidence; no Unity operations by reviewer."
+    ]
+  },
+  "latestValidatedStaticReview": {
+    "unresolvedRequiredFindings": 0,
+    "sourceHashesMatchFive": true,
+    "testReceipts": {
+      "system-stage16-related-test-result.json": {
+        "summary": {
+          "total": 507,
+          "passed": 507,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 52.24,
+        "consoleErrors": 0
+      },
+      "system-stage16-customization-test-result.json": {
+        "summary": {
+          "total": 84,
+          "passed": 84,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 3.1,
+        "consoleErrors": 0
+      }
+    },
+    "pending": [],
+    "historyNote": "Older initial/recompile/unmirrored limitations remain in historical sections only; they do not describe the current validated source."
+  },
+  "nativeEvidenceReview": {
+    "unresolvedRequiredFindings": 0,
+    "receipts": [
+      "system-stage16-native-saves-result.json",
+      "system-stage16-native-lifetime-result.json",
+      "system-stage16-native-helper-corrections.json",
+      "system-stage16-visual-review-final.json"
+    ],
+    "confirmed": [
+      "All3 save boundaries prewrite failure bytes unchanged and2 attempts(failure+success), not2 successful writes",
+      "Existing saved acquisition context resolves hub provider again on reopen; saved plan/revision retained without restaging/write, no provider cache contract invented",
+      "Lifecycle releases all3 views and callbacks across Close/Open/Single/missing/cancel/duplicateOpen; generated artwork actual1Sprite/0Texture and import survival, distinct from earlier6/5 dedicated regression",
+      "18 images independently reviewed0 findings; root/menu focus fallback distinct from origin cache, no header-focus guarantee"
+    ],
+    "documentationRead": "Planning/GameSystem管理基盤と段階移行.md Stage16 actual-operation/lifetime section matches these scoped claims.",
+    "limits": [
+      "Loadout/unlock aggregate afterBytes fields null after resumed private process; do not claim those fields prove final disk hashes. Earlier in-process assertions/receipts are separate evidence, as helper-corrections records.",
+      "Same-Editor68/68 receipt verified; final full3615/3615 receipt verified in finalFullReview.",
+      "Reviewer read records and separate visual review; did not independently operate input or view18 images this turn.",
+      "Fixture ability/provider values are isolated existingStage55 data, not registered product/stat-completion evidence."
+    ]
+  },
+  "finalFullReview": {
+    "unresolvedRequiredFindings": 0,
+    "receipt": "system-stage16-final-test-result.json",
+    "summary": {
+      "total": 3615,
+      "passed": 3615,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 347.61,
+    "consoleErrors": 0,
+    "consoleWarnings": 59,
+    "fiveHashesMatchSubmissionProject": true,
+    "pending": [],
+    "limits": [
+      "Warning5-category equivalence reported by parent; no warnings suppressed or claimed zero.",
+      "No Unity operations or product edits by reviewer."
+    ],
+    "sameEditorRegression": {
+      "receipt": "system-stage16-event-regression.json",
+      "total": 68,
+      "passed": 68,
+      "allRecordedEventRegistriesEmpty": true
+    }
+  },
+  "cleanupReview": {
+    "receipt": "system-stage16-cleanup.json",
+    "unresolvedRequiredFindings": 0,
+    "confirmed": [
+      "Original clean;928 assets match with existing2 private URP exceptions only",
+      "Native2 save files unchanged after stop/full tests",
+      "640x360 and TMP/storage guard restored; default save store absent",
+      "Native Mouse/Keyboard only; EventSystem current CLR/Unity null and registration0",
+      "Generated registry/roots/borrowers/entries/pending0; recorded proof/fault keys absent",
+      "Historical unmanaged named Sprite2095 retained, not forcibly destroyed or claimed resolved"
+    ],
+    "frozen": true,
+    "publication": "Not performed yet; outside this review action."
+  }
+}

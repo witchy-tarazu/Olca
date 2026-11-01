@@ -1,0 +1,199 @@
+{
+  "priorRelated": {
+    "summary": {
+      "total": 507,
+      "passed": 507,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 59.2,
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T08:38:47.447926Z",
+      "ageMs": 609,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 24,
+      "seeded": true
+    },
+    "consoleCounts": {
+      "error": 0,
+      "warn": 0,
+      "log": 24
+    },
+    "wrapperTimedOut": false,
+    "sourceHashes": {
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "d62ab1801f7139b4e6a2c889d46038c0fb19831d03f03a70562750d23986e3d2",
+      "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs": "99e133cbce899d6870e3508745eb9f6cdd621e75d0a44d8ba55655d3344c6ec7",
+      "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs": "e5b0a2d79a407547cb501a0c1b6bb16e7c24201d775941c7248a600154dbed1c",
+      "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs": "4b32eda92ff9592e9c484b59464920795868e4606d4c2c3c4167ea65d91189b2",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "8791e6e1714b9bc4799f75b897aa3956badcb861b310f4c420b6fd02f16efb10"
+    },
+    "productionSourceHashes": {
+      "Assets/Art/Sprites/AttackProps/shared_blast.png": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+      "Assets/Art/Sprites/AttackProps/shared_bomb.png": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "d62ab1801f7139b4e6a2c889d46038c0fb19831d03f03a70562750d23986e3d2",
+      "Assets/Olca/Application/Management/GameSystem.cs": "cc0b41e70de41878839ffdddf7c280c12e0270ccd0e0feb694e22abba18718cc",
+      "Assets/Olca/Core/Domain/Deck.cs": "86953ac7d5e2c180484db7bf2e4f02f7db8e25be4745c542e7cd3ef3f21737a8",
+      "Assets/Olca/Prefabs/Effects/WorldDamageNumber.prefab": "aa5c6c61a74d6f820b343ec0b6788254ad569096c71442c3f82e85f6f9974f1e",
+      "Assets/Olca/Presentation/Battle/BattleView.cs": "4245ebf88fdb4879ffe299c69ea7189cff14639124fc0e04d2a1ca9403da7d6a",
+      "Assets/Olca/Presentation/Battle/CombatStatusIconStrip.cs": "3da23c97fc39658d3a0349ea21c4dd3a00da449ab989fec8c05e0d8064a4b94f",
+      "Assets/Olca/Presentation/Battle/CombatStatusIcons.cs": "7fb4bdc8680c3a20e39973549f51e48fd43096b8a7fe0bbf269da4057469d226",
+      "Assets/Olca/Presentation/Battle/EnemyView.cs": "ff9b1c4a714f97ffffe48d0eb8899a4c705bce8f2d6ee82082ff6b64b49b2b48",
+      "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs": "dc2444eb4fe5f43de18afb2fc4bf1cc7568a4b1ca2af87265bf6ca59cd052cc1",
+      "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "55d6266a4f51b001a6067afabe381c573119ffbcf06437cf306b4d211d86408e",
+      "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "bec55e74485eaf2d1904af10513bb0df8a7795642b95736269863c1229d65ffd",
+      "Assets/Olca/Presentation/Dungeon/DungeonHudView.cs": "8a99becf53a81131562ffa98c0b4c596e4c79ea973fe4738f7110431b0d780dd",
+      "Assets/Olca/Presentation/Effects/ActorConditionVisual.cs": "c07eacc13b638b908c68be425d2aac6a073a73449a7284da33e8aee6a30c85ed",
+      "Assets/Olca/Presentation/Effects/DefensiveFieldVisual.cs": "65825692ecac4d9a48a9faee34dfaee739a13fcc4a120ce03af3acec50825bd0",
+      "Assets/Olca/Presentation/Effects/TransformationEffectSprites.cs": "2db35030a784b905714d8e6c97d235196bd6400cff45f857a0cecfc22e30079b",
+      "Assets/Olca/Presentation/Effects/WorldDamageNumberPool.cs": "55030f769b5c8c8128f40a9dcfdb6a2f3487c8c67e0c147b41497385ff91f76b",
+      "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs": "3ba1f39a42569aca5073ccfdabb6a20d8b30dad06eb984383f2713968f76985a",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "05c0c622e268e43e53507a04476e0adae44f3501a9a4a6949f4b1ce8dea6d60e",
+      "Assets/Olca/Presentation/Field/SharedAttackPropCatalog.cs": "ada4438aa96c2851bfb517db7c624f0c89b2b51717593bd744c73a36ccd7f6d5",
+      "Assets/Olca/Presentation/Field/WorldBattleGridView.cs": "f1cfb1c810a8814143ab98fc5858e158446f05ba764079833ea41cd27a5b339c",
+      "Assets/Olca/Presentation/Field/WorldEnemyView.cs": "34922f5d24b1338095ea0ab92285692cb6da7d7df9e123bbb8a35b97211b1ee9",
+      "Assets/Olca/Tests/ActorConditionVisualTests.cs": "17b90c340b327785dbb71d4dbe42463fcd85ab9545a99b44b55d6e79946542d7",
+      "Assets/Olca/Tests/Application/GeneratedSpriteAssetsTests.cs": "99770b70f21ab2bb710abde112647d247609021846bf846edf4a360eb4b90071",
+      "Assets/Olca/Tests/AttackPropertyIconTests.cs": "b700240f83a0abb6819b3d3ab77e8dca7165a3c508f18a87f2162cd32c923268",
+      "Assets/Olca/Tests/CombatStatusIconsTests.cs": "a3d476eb98b1ff8e140a84fd401ad27d578c68f7e0295f1ddbed90b4c6369bad",
+      "Assets/Olca/Tests/DefensiveFieldVisualTests.cs": "c0d324fbb973cfa25392eab4fa67fe83dc75c385905c65bf97bb8f7dd6f58b03",
+      "Assets/Olca/Tests/SharedAttackPropCatalogTests.cs": "207083084cf8b0e0ea944c26824caa92d2073e5a7b3e6622363362915a8ab4db",
+      "Assets/Olca/Tests/TransformationEffectVisualTests.cs": "ec86b8bffc8cac6c486e316eacf0da89f2b73f5f17f01bc522d4446ae6100d99",
+      "Assets/Olca/Unity/Management/GeneratedSpriteAssets.cs": "939c4c82268856d0cfb61e2295000fd30daa7d3a6a2e2b8ee50430f23e0887f4",
+      "Assets/Olca/Unity/Management/ResourceManager.cs": "58dbbf954a4f2c33c607ce9c69dbf2ec064813232282bdb22a00ea8340fc0aad",
+      "Assets/Olca/Unity/UnityLogger.cs": "0baca7b7bc9372dbfe39198e944cb25373adb3e31fa91a94ad88db3cdd63b4f9",
+      "Assets/Prefabs/EnemyViewPrerfab.prefab": "5278b9d2d626ad1b6e4197af7fbddb9a79492d687435ded7a67040fae888f4af",
+      "Assets/Resources/OlcaAttackProps/shared_blast.bytes": "034eca5a0ea59780ed7dd36ff1b62a843a7807301185e0d41555b1dd7a751fdd",
+      "Assets/Resources/OlcaAttackProps/shared_bomb.bytes": "5ec110dd972ff94797203a62e59c3c73083da51defd584308f5697a8f6b7b96a",
+      "Assets/Scenes/DungeonScene.unity": "cb43076e38b757303322ab2527683d440af4b03986f35b7044e0e2445f0d45f8"
+    }
+  },
+  "priorCustomization": {
+    "summary": {
+      "total": 84,
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    },
+    "duration": 3.1,
+    "sourceHashes": {
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "d62ab1801f7139b4e6a2c889d46038c0fb19831d03f03a70562750d23986e3d2",
+      "Assets/Olca/Presentation/Dungeon/CustomizationLoadoutView.cs": "99e133cbce899d6870e3508745eb9f6cdd621e75d0a44d8ba55655d3344c6ec7",
+      "Assets/Olca/Presentation/Dungeon/CustomizationUnlockView.cs": "e5b0a2d79a407547cb501a0c1b6bb16e7c24201d775941c7248a600154dbed1c",
+      "Assets/Olca/Presentation/Dungeon/CustomizationAcquisitionView.cs": "4b32eda92ff9592e9c484b59464920795868e4606d4c2c3c4167ea65d91189b2",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "8791e6e1714b9bc4799f75b897aa3956badcb861b310f4c420b6fd02f16efb10"
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-01T08:39:10.677803Z",
+      "ageMs": 132,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 31,
+      "seeded": true
+    }
+  },
+  "priorPassIsNotFinal": "After507+84pass, independent review confirmed return focus-cache contamination by Hide after newView.Open. Final PrepareManagedOpen->return.Hide->Open preserves focus capture and failure-safe allocation; final source recompiled/retested.",
+  "staticCorrections": [
+    "3Open return-context same-frame Dialog fence",
+    "own-view selection clearing and selectedObject local-name correction before compilation",
+    "Prepare-only allocation preserving original focus capture order"
+  ],
+  "compileReceipts": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"completed\",\n  \"failed\": false,\n  \"errors\": [],\n  \"compilationFailed\": false\n}"
+        }
+      ]
+    }
+  ],
+  "actualFinalAssembly": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"diagnostics\": [],\n  \"compileMs\": 38,\n  \"executeMs\": 7,\n  \"assemblyName\": \"PipelineRunScript_Stage16CompileProof_10bf93c5d17445578546c21a86e61940\",\n  \"success\": true,\n  \"result\": {\n    \"playing\": false,\n    \"compiling\": false,\n    \"assemblyId\": \"c6737808-0a63-41d8-9426-82d5cea6c196\",\n    \"views\": [\n      {\n        \"Name\": \"CustomizationLoadoutView\",\n        \"managed\": true,\n        \"release\": true,\n        \"prepare\": true\n      },\n      {\n        \"Name\": \"CustomizationUnlockView\",\n        \"managed\": true,\n        \"release\": true,\n        \"prepare\": true\n      },\n      {\n        \"Name\": \"CustomizationAcquisitionView\",\n        \"managed\": true,\n        \"release\": true,\n        \"prepare\": true\n      }\n    ],\n    \"finalHeaderFenceTest\": true,\n    \"lifeTest\": true,\n    \"screen\": [\n      640,\n      360\n    ]\n  }\n}"
+      }
+    ]
+  },
+  "timeouts": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: Pipeline command 'run_script' timed out after 60000ms"
+        }
+      ],
+      "isError": true
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"entries\": [\n    {\n      \"seq\": 364525,\n      \"timestampUtc\": \"2026-11-01T08:44:01.568389Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Failed to handle /api/exec request: Main thread operation timed out after 60000ms\",\n      \"stackTrace\": \"UnityEngine.Debug:LogError (object)\\nUnity.Pipeline.BasePipelineServer/<HandleExecRequest>d__119:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2257)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteGated>d__109:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:1589)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<>c__DisplayClass119_0/<<HandleExecRequest>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2218)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommandByName>d__137:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2664)\\nSystem.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<object>:SetException (System.Exception)\\nUnity.Pipeline.BasePipelineServer/<ExecuteCommand>d__138:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@62c08c808737/Runtime/Common/BasePipelineServer.cs:2703)\\nSystem.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()\\n\",\n      \"seeded\": false\n    }\n  ],\n  \"cursor\": 364528,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 1,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 1,\n    \"warn\": 1,\n    \"log\": 37\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-01T08:45:08.180845Z\",\n    \"ageMs\": 111,\n    \"compilationFailed\": false,\n    \"compiling\": false,\n    \"consoleErrors\": 1,\n    \"consoleWarnings\": 1,\n    \"consoleLogs\": 5,\n    \"seeded\": true\n  }\n}"
+        }
+      ]
+    }
+  ],
+  "initialPlayStoppedNormally": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Exited play mode"
+      }
+    ]
+  },
+  "initialNativeHelperPrefix": "Initial no-equipment Play used save/system-stage15-16001 due to Bootstrap15Proof helper selection; preserved isolated default starter only, corrected to Bootstrap16Proof for final native save/system-stage16-16001, no original/default user path touched.",
+  "fullSuiteWrapperTimedOut": true,
+  "existingJobRecovered": true,
+  "noEditorRestartModelCredentialChange": true,
+  "actualNativeConsole": "native-console-history.json"
+}

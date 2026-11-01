@@ -1,0 +1,220 @@
+{
+  "reviewer": "independent_refactor_review",
+  "stage": 16,
+  "scope": "Final18 screenshots, equipment loadout/unlock/acquisition and save-retry states; visual-only lifecycle migration regression/readability review",
+  "viewedImageCount": 18,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage16-equipment-loadout-fhd.png",
+      "sha256": "dfc5df6558853888ef875da315a9f21c39bdd554d7008810d2c3b5ab6cf25eb5",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-loadout-4k.png",
+      "sha256": "8d9173a924aa1bb760a8381f6a81c9a4f1db9d1dac0a6786488574fe7bd0ad95",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-loadout-4by3.png",
+      "sha256": "b8d0f57c3e8e279be3e22c415d0ad8fa8069e001cae9450f77cbcaeb5fb5bdee",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-loadout-save-retry-fhd.png",
+      "sha256": "4f06dab8cf74ba1e5b9de0836edc34d0344a1fb5dc86f8914e68e674db39c232",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-loadout-save-retry-4k.png",
+      "sha256": "7317ffb0ce2b24a1e824c62edd01a37fd001ea33dadf92f555f79524832dc3fd",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-loadout-save-retry-4by3.png",
+      "sha256": "d0e1088f50b4c2ced0042b18017b4059c0d71fc16fab40a9d33c31b38ab03264",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-unlock-fhd.png",
+      "sha256": "8a6a464b23e8a32fc26844de59d05c765c70fc8ddbb8114c2b5c907cefb73538",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-unlock-4k.png",
+      "sha256": "a1d781e332296bd521512d2fd05d28d204a01065160465734364972c0dd7a28b",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-unlock-4by3.png",
+      "sha256": "f82c4d7c304cf5f32f478f011f4ee645d4929df82c0d677e943958e2971b4e99",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-unlock-save-retry-fhd.png",
+      "sha256": "b80c3a0c51a73d2e4572778d4a7f69f6a13503e6781cba4ae6eacbdab9269122",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-unlock-save-retry-4k.png",
+      "sha256": "9a498fc5979737cc6ac73e72ad8308319462d2da99fabbbf35072a6a48355800",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-unlock-save-retry-4by3.png",
+      "sha256": "92b7f3d2dbb18c2d5f58ad67459d53e88cbfcfe46bec1ab65df1ca0bc3ff4716",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-acquisition-fhd.png",
+      "sha256": "12adedac9d8199c157c6f23569c647a5ba62dd02be9f5616dfe50b2d09c4e1cb",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-acquisition-4k.png",
+      "sha256": "8a477dcb2f8de3cbf973b07e3caf78f9551d63818f37c2ad9b0b9e684dcc34fd",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-equipment-acquisition-4by3.png",
+      "sha256": "68a0b15d80510f89a9ce26f6b325583798deb4a7d3c9652f284ec476499624d5",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-acquisition-save-retry-fhd.png",
+      "sha256": "1cf6bb184f69a2a5389a05654b20bfde74e7818ea33aa1def5e3a5e78f62d5b3",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-acquisition-save-retry-4k.png",
+      "sha256": "ab638959b98798834ff0a787d53bd3dc61c8a023c7bb52b31852dabc2040d799",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage16-acquisition-save-retry-4by3.png",
+      "sha256": "852cc2faaa2afcf8ef61782936ed9add92d54c07e791fd9e4cba756bfc59c402",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "Loadout keeps separate equipment/part lists, numbered board, shape preview, position controls and lower save/cancel. Selected part counts and grid symbols remain readable, including4:3.",
+    "Unlock shows item/status/count correspondence, highlighted two-cell target and separate shape/detail panel. White symbols on dark locked cells remain distinct. No foreground text collides with panel frames in supplied views.",
+    "Acquisition separates candidate list, two quantity previews and indented textual breakdown; quantities and owned counts fit visibly in4:3 andFHD.",
+    "All three save-retry states visually dim normal actions, retain old displayed data and expose selected retry in the same lower control region. Explanatory text remains separated above footer. Images alone do not prove disabled input or old-snapshot correctness.",
+    "Watermirror frames, pale list surfaces/dark board surfaces and Jiki text remain coherent; no obvious missing sprite, clipping or unintended competing parent text observed.",
+    "Visible selected/highlighted controls are reviewed as appearance only. No claim that returning to cache-origin header receives actual focus; parent reports existing ConfirmDungeonSelection fallback separately."
+  ],
+  "native4kSupplement": {
+    "method": "Whole4K images viewer-resized to2048x1152; three originalPNG unscaled lossless in-memory crops inspected with originals unchanged.",
+    "crops": [
+      {
+        "file": "system-stage16-equipment-unlock-4k.png",
+        "rect": [
+          3000,
+          920,
+          3550,
+          1250
+        ]
+      },
+      {
+        "file": "system-stage16-equipment-acquisition-4k.png",
+        "rect": [
+          1800,
+          1000,
+          2450,
+          1320
+        ]
+      },
+      {
+        "file": "system-stage16-acquisition-save-retry-4k.png",
+        "rect": [
+          400,
+          1990,
+          1200,
+          2120
+        ]
+      }
+    ],
+    "observation": "Representative detail glyphs/owned quantities and retry control text remain distinct at native scale."
+  },
+  "fixtureBoundary": "ExistingStage55 isolated catalog/provider supplied via explicitDI, not new product definitions or performance. Pending captures use parent-reported prewriteFailOnce and existing same-plan retry contract.",
+  "limits": [
+    "No newly shot matched-before; no pixel identity or complete historical layout equivalence claimed.",
+    "Only supplied states and representative native4K regions inspected; no global aesthetic-completion claim.",
+    "Still images cannot validate focus/callback/input/scroll/save/lifetime/idempotency or snapshot integrity. Parent native receipts are separate.",
+    "No Unity/MCP/input/tests/product edits executed by reviewer; physical devices/audio/historicalUGUI unverified."
+  ]
+}

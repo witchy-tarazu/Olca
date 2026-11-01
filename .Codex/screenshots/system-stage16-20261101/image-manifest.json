@@ -1,0 +1,164 @@
+[
+  {
+    "file": "equipment-loadout-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "dfc5df6558853888ef875da315a9f21c39bdd554d7008810d2c3b5ab6cf25eb5",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-loadout-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "8d9173a924aa1bb760a8381f6a81c9a4f1db9d1dac0a6786488574fe7bd0ad95",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-loadout-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b8d0f57c3e8e279be3e22c415d0ad8fa8069e001cae9450f77cbcaeb5fb5bdee",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "loadout-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "4f06dab8cf74ba1e5b9de0836edc34d0344a1fb5dc86f8914e68e674db39c232",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "loadout-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "7317ffb0ce2b24a1e824c62edd01a37fd001ea33dadf92f555f79524832dc3fd",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "loadout-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "d0e1088f50b4c2ced0042b18017b4059c0d71fc16fab40a9d33c31b38ab03264",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-unlock-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "8a6a464b23e8a32fc26844de59d05c765c70fc8ddbb8114c2b5c907cefb73538",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-unlock-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "a1d781e332296bd521512d2fd05d28d204a01065160465734364972c0dd7a28b",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-unlock-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "f82c4d7c304cf5f32f478f011f4ee645d4929df82c0d677e943958e2971b4e99",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "unlock-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "b80c3a0c51a73d2e4572778d4a7f69f6a13503e6781cba4ae6eacbdab9269122",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "unlock-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "9a498fc5979737cc6ac73e72ad8308319462d2da99fabbbf35072a6a48355800",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "unlock-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "92b7f3d2dbb18c2d5f58ad67459d53e88cbfcfe46bec1ab65df1ca0bc3ff4716",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-acquisition-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "12adedac9d8199c157c6f23569c647a5ba62dd02be9f5616dfe50b2d09c4e1cb",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-acquisition-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "8a477dcb2f8de3cbf973b07e3caf78f9551d63818f37c2ad9b0b9e684dcc34fd",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "equipment-acquisition-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "68a0b15d80510f89a9ce26f6b325583798deb4a7d3c9652f284ec476499624d5",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "acquisition-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "1cf6bb184f69a2a5389a05654b20bfde74e7818ea33aa1def5e3a5e78f62d5b3",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "acquisition-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "ab638959b98798834ff0a787d53bd3dc61c8a023c7bb52b31852dabc2040d799",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  },
+  {
+    "file": "acquisition-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "852cc2faaa2afcf8ef61782936ed9add92d54c07e791fd9e4cba756bfc59c402",
+    "kind": "final-source actual native render; same held nullable battle frame/forcedCanvas per state; explicit existing test catalog/provider, not product data; no new matched-before"
+  }
+]

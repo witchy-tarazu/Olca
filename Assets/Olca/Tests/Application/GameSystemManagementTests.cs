@@ -401,5 +401,47 @@ namespace Olca.Tests.Application
                 UnityEngine.Object.DestroyImmediate(controller);
             }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
         }
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 装備三画面は管理世代とDialog入力を守り明示終端で参照を返す(int kind)
+        {
+            var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var panel=Panel("equipment");var layer=views.GetLayer("equipment16");Component view;Action open,hide,release;Action<ManagedScreenContext> show;Action<Action,Action> configure;Func<ManagedScreenContext> context;int cancels=0;
+            var catalog=new Olca.Core.Logic.Customization.CustomizationCatalog("fixture16",new Olca.Core.Logic.Customization.PartsBoardDefinition(2,1,new[]{new Olca.Core.Domain.Vector2Int(0,0)}),Array.Empty<string>(),new Dictionary<string,Olca.Core.Logic.Customization.PartShape>(),null);
+            var progress=new Olca.Core.Logic.Customization.CustomizationProgress();
+            if(kind==0){var v=panel.AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();v.Initialize(font,()=>{},()=>{cancels++;v.Close();},()=>{});view=v;show=v.ShowManaged;hide=v.HideManaged;release=v.ReleaseManagement;configure=v.ConfigureManagement;context=()=>v.Context;open=()=>v.Open(new Olca.Core.Logic.Customization.CustomizationEditDraft(catalog,progress,0));}
+            else if(kind==1){var v=panel.AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();v.Initialize(font,_=>{},()=>{cancels++;v.Close();},()=>{});view=v;show=v.ShowManaged;hide=v.HideManaged;release=v.ReleaseManagement;configure=v.ConfigureManagement;context=()=>v.Context;open=()=>v.Open(catalog,progress);}
+            else{var v=panel.AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();v.Initialize(font,_=>{},()=>{cancels++;v.Close();},()=>{});view=v;show=v.ShowManaged;hide=v.HideManaged;release=v.ReleaseManagement;configure=v.ConfigureManagement;context=()=>v.Context;open=()=>v.Open(new Olca.Core.Logic.Customization.CustomizationAcquisitionPlan{ContextId="fixture16",BoardId=catalog.BoardId,MaximumClaims=0,Candidates=Array.Empty<Olca.Core.Logic.Customization.CustomizationAcquisitionCandidate>()},progress,false,catalog);}
+            layer.Register(owner,"equipment",ct=>Task.FromResult(panel),(go,ctx)=>show(ctx),go=>hide());configure(()=>Assert.IsTrue(layer.ShowAsync("equipment").GetAwaiter().GetResult().Succeeded),layer.CloseCurrent);
+            var origin=Button(host,"origin16");EventSystem.current.SetSelectedGameObject(origin.gameObject);view.GetType().GetMethod("PrepareManagedOpen").Invoke(view,null);Assert.IsTrue(context().IsCurrent);Assert.AreSame(origin.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsNull(view.GetType().GetField(kind==0?"draft":kind==1?"state":"plan",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view));
+            open();var first=context();Assert.IsTrue(first.IsCurrent);var cancel=view.GetComponentsInChildren<Button>().Single(b=>b.name==(kind==0?"CancelCustomization":kind==1?"CancelCustomizationUnlock":"CancelCustomizationAcquisition"));var old=cancel.onClick;var cancelName=cancel.name;
+            var popup=Panel("equipment-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");dialogs.Show(first,popup,yes,no,_=>{});old.Invoke();Assert.AreEqual(0,cancels);Assert.IsTrue(first.IsCurrent);
+            layer.CloseCurrent();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(first.IsCurrent);Assert.IsNull(context());Assert.IsFalse(panel.activeSelf);old.Invoke();Assert.AreEqual(0,cancels);
+            open();Assert.AreNotSame(first,context());old.Invoke();Assert.AreEqual(0,cancels);Assert.IsTrue(context().IsCurrent);
+            var current=view.GetComponentsInChildren<Button>().Single(b=>b.name==cancelName).onClick;current.Invoke();Assert.AreEqual(1,cancels);Assert.IsNull(context());Assert.IsNull(EventSystem.current.currentSelectedGameObject);current.Invoke();Assert.AreEqual(1,cancels);
+            open();release();Assert.IsNull(context());Assert.IsFalse(panel.activeSelf);Assert.IsNull(layer.CurrentKey);
+            foreach(var name in new[]{"menu","ensureManagedVisible","hideManaged",kind==0?"draft":kind==1?"state":"plan"})Assert.IsNull(view.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view),name);
+            layer.UnregisterOwner(owner);Assert.AreEqual(0,layer.RegisteredCount);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.DoesNotThrow(()=>old.Invoke());Assert.AreEqual(1,cancels);
+        }
+        private sealed class EquipmentSourceProbe:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
+        {
+            public int Calls;
+            public Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition Resolve(Olca.Core.Logic.Customization.CustomizationAcquisitionContext context){Calls++;return null;}
+        }
+        [TestCase("OpenCustomizationEditor")][TestCase("OpenCustomizationUnlocks")][TestCase("OpenCustomizationAcquisitions")]
+        public void 帰還確認を閉じた同frameの旧装備入口は草稿も取得計画も作らない(string method)
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-stage16-fence-"+Guid.NewGuid().ToString("N"));
+            try{
+                var store=new ClearReturnFileStore(directory);var progress=new Olca.Core.Domain.ClearReturnSession(store);Assert.IsTrue(progress.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+                var view=ReturnView();view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null);var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
+                void Set(string n,object value)=>type.GetField(n,flags).SetValue(controller,value);
+                var catalog=new Olca.Core.Logic.Customization.CustomizationCatalog("fence16",new Olca.Core.Logic.Customization.PartsBoardDefinition(1,1,new[]{new Olca.Core.Domain.Vector2Int(0,0)}),Array.Empty<string>(),new Dictionary<string,Olca.Core.Logic.Customization.PartShape>(),null);var source=new EquipmentSourceProbe();
+                Set("gameSystem",system);Set("clearReturnSession",progress);Set("initialHub",true);Set("clearReturnVisible",true);Set("clearReturnView",view);Set("customizationCatalog",catalog);Set("customizationAcquisitionProvider",source);
+                var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var load=Panel("load").AddComponent<Olca.Presentation.Dungeon.CustomizationLoadoutView>();load.Initialize(font,()=>{},()=>{},()=>{});var unlock=Panel("unlock").AddComponent<Olca.Presentation.Dungeon.CustomizationUnlockView>();unlock.Initialize(font,_=>{},()=>{},()=>{});var acquire=Panel("acquire").AddComponent<Olca.Presentation.Dungeon.CustomizationAcquisitionView>();acquire.Initialize(font,_=>{},()=>{},()=>{});Set("customizationEditorView",load);Set("customizationUnlockView",unlock);Set("customizationAcquisitionView",acquire);
+                Assert.IsTrue((bool)type.GetProperty("IsProgressHub",flags).GetValue(controller));Assert.IsTrue(progress.Ready);Assert.IsFalse(progress.HasPendingSave);
+                var popup=Panel("fence16-popup");var yes=Button(popup,"yes");var no=Button(popup,"no");dialogs.Show(view.ManagementContext,popup,yes,no,_=>view.Render(progress.Snapshot,new Olca.Core.Domain.ClearReturnData{Stage=Olca.Core.Domain.ClearReturnStage.Returned},false,null));var bytes=File.ReadAllBytes(store.ActivePath);no.onClick.Invoke();Assert.IsTrue(view.ManagementContext.DialogBlocksInput);
+                Assert.DoesNotThrow(()=>type.GetMethod(method,flags).Invoke(controller,null));Assert.IsFalse(load.gameObject.activeSelf);Assert.IsFalse(unlock.gameObject.activeSelf);Assert.IsFalse(acquire.gameObject.activeSelf);Assert.IsNull(load.Draft);Assert.AreEqual(0,source.Calls);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));
+                UnityEngine.Object.DestroyImmediate(controller);
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        }
     }
 }

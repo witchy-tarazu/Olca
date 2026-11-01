@@ -1,0 +1,737 @@
+{
+  "before": {
+    "playing": false,
+    "currentClrNull": true,
+    "currentUnityNull": true,
+    "registered": [],
+    "sceneEvents": []
+  },
+  "rounds": [
+    [
+      {
+        "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 5.47,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "UIRuntimeManagementTests",
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 1.88,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "GeneratedSpriteAssetsTests",
+        "summary": {
+          "total": 8,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 8.8,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Pause画面は閉じた世代のクリックを再表示後も実行しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Pauseを覆う確認は取消で戻り親終了では旧確定を実行しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Checkpoint案内は内容更新で世代を変えず再表示後の旧入力を拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "保存再試行Dialogは失敗で閉じず無効取消と同frame再入を拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "未移行親のDialog寿命も終了後と再表示後の旧確定を拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Checkpointの進行確認取消は同frameの親クリック遮断を解除しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "host終了後の旧手動保存イベントはUnity破棄前でも保存と世代を変更しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "帰還共有画面は世代入力と詳細Popupを管理し別層図鑑を独立閉鎖する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.13,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "読取専用Dialogは閉鎖世代と親終了を守りスクロール所有を返す",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.07,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Release_未表示Customを帰還の素材resolverとして使っても終端で所有Spriteを返す",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.08,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "編成破棄Dialogは親を保持し取消再描画後のframe遮断と旧確定を守る",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "保存デッキ削除Dialogは取消focusと左右選択を保ち旧確定を再使用しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.42,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "親終了で編成削除Dialogの業務callbackと後着確定を破棄する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Dialog取消後の再描画で閉鎖frameを消さず新拠点の保存入口も遮断する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "装備三画面は管理世代とDialog入力を守り明示終端で参照を返す",
+        "summary": {
+          "total": 3,
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.25,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "帰還確認を閉じた同frameの旧装備入口は草稿も取得計画も作らない",
+        "summary": {
+          "total": 3,
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.31,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      }
+    ],
+    [
+      {
+        "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "UIRuntimeManagementTests",
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "GeneratedSpriteAssetsTests",
+        "summary": {
+          "total": 8,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Pause画面は閉じた世代のクリックを再表示後も実行しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Pauseを覆う確認は取消で戻り親終了では旧確定を実行しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Checkpoint案内は内容更新で世代を変えず再表示後の旧入力を拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "保存再試行Dialogは失敗で閉じず無効取消と同frame再入を拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "未移行親のDialog寿命も終了後と再表示後の旧確定を拒否する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Checkpointの進行確認取消は同frameの親クリック遮断を解除しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "未移行親の進行Dialogもhost終了時点でUnity破棄より先に解除する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "host終了後の旧手動保存イベントはUnity破棄前でも保存と世代を変更しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "帰還共有画面は世代入力と詳細Popupを管理し別層図鑑を独立閉鎖する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.07,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "読取専用Dialogは閉鎖世代と親終了を守りスクロール所有を返す",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Release_未表示Customを帰還の素材resolverとして使っても終端で所有Spriteを返す",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "編成破棄Dialogは親を保持し取消再描画後のframe遮断と旧確定を守る",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "保存デッキ削除Dialogは取消focusと左右選択を保ち旧確定を再使用しない",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.47,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "親終了で編成削除Dialogの業務callbackと後着確定を破棄する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Dialog取消後の再描画で閉鎖frameを消さず新拠点の保存入口も遮断する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.05,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "装備三画面は管理世代とDialog入力を守り明示終端で参照を返す",
+        "summary": {
+          "total": 3,
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.11,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "帰還確認を閉じた同frameの旧装備入口は草稿も取得計画も作らない",
+        "summary": {
+          "total": 3,
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.11,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      }
+    ]
+  ],
+  "sameEditorNoDomainReloadBetweenRuns": true,
+  "staticListNeverClearedByHarness": true
+}
