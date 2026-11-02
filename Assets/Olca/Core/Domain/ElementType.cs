@@ -30,6 +30,60 @@ namespace Olca.Core.Domain
         public static void ValidateCurrent(ElementType value) { if(!IsCurrent(value))throw new System.ArgumentOutOfRangeException(nameof(value),"新規定義は八属性から指定します"); }
         public static void ValidateKnown(ElementType value) { if(!System.Enum.IsDefined(typeof(ElementType),value))throw new System.ArgumentOutOfRangeException(nameof(value),"未定義の属性です"); }
     }
+    /// <summary>新規明示定義の相性基準。追加倍率ではなく、受ける属性の基本耐性へ解決する。</summary>
+    public static class ElementAffinity
+    {
+        public static ElementResistances CreatePlayerBase(ElementType element,int weakness=-50,int advantage=50)
+            => Create(element,weakness,advantage);
+        public static ElementResistances CreateEnemyBase(ElementType element,int weakness=-50,int advantage=0)
+            => Create(element,weakness,advantage);
+        private static bool Wins(ElementType from,ElementType to)
+            => from==ElementType.Wood&&to==ElementType.Earth || from==ElementType.Earth&&to==ElementType.Water ||
+               from==ElementType.Water&&to==ElementType.Fire || from==ElementType.Fire&&to==ElementType.Metal ||
+               from==ElementType.Metal&&to==ElementType.Wood || from==ElementType.Yin&&to==ElementType.Yang ||
+               from==ElementType.Yang&&to==ElementType.Yin;
+        private static ElementResistances Create(ElementType element,int weakness,int advantage)
+        {
+            ElementRules.ValidateCurrent(element);
+            int Value(ElementType attack) => Wins(attack,element)?weakness:Wins(element,attack)?advantage:0;
+            return ElementResistances.CreateCurrent(Value(ElementType.Fire),Value(ElementType.Water),Value(ElementType.Metal),
+                Value(ElementType.Wood),Value(ElementType.Earth),Value(ElementType.Yin),Value(ElementType.Yang));
+        }
+    }
+    /// <summary>新規生成専用。個別の実基本耐性は全体置換であり、基準への加算・部分上書きではない。</summary>
+    public sealed class CurrentElementDefenseDefinition
+    {
+        public ElementType Element { get; }
+        public ElementResistances BaseResistances { get; }
+        public bool IsEnemy { get; }
+        private CurrentElementDefenseDefinition(ElementType element,bool enemy,ElementResistances actualBaseResistances)
+        {
+            ElementRules.ValidateCurrent(element);
+            if(actualBaseResistances!=null&&actualBaseResistances.Wind!=0)throw new System.ArgumentException("新規定義に旧風耐性は指定できません",nameof(actualBaseResistances));
+            Element=element;IsEnemy=enemy;
+            BaseResistances=actualBaseResistances??(enemy?ElementAffinity.CreateEnemyBase(element):ElementAffinity.CreatePlayerBase(element));
+        }
+        public static CurrentElementDefenseDefinition ForPlayer(ElementType element,ElementResistances actualBaseResistances=null)
+            =>new CurrentElementDefenseDefinition(element,false,actualBaseResistances);
+        public static CurrentElementDefenseDefinition ForEnemy(ElementType element,ElementResistances actualBaseResistances=null)
+            =>new CurrentElementDefenseDefinition(element,true,actualBaseResistances);
+        /// <summary>既存生成引数と確定styleを使用。生成後の復元・変身へ基準を再適用しない。</summary>
+        public PlayerCharacter CreatePlayer(int maxHp,DepartureStyleDefinition style,Vector2Int initialPosition=default,
+            int attackPower=10,float customSpeed=1.0f,int poise=30,int staggerDurationFrames=0,int? poiseRecoveryDelayFrames=null,TimedStatusResistances statusResistances=null)
+        {
+            if(IsEnemy)throw new System.InvalidOperationException("敵用の定義です");
+            if(style==null)throw new System.ArgumentNullException(nameof(style));
+            if((style.Attack?.Element??ElementType.None)!=Element)throw new System.ArgumentException("スタイルと本人属性が一致しません",nameof(style));
+            var player=new PlayerCharacter(maxHp,initialPosition,attackPower,customSpeed,poise,staggerDurationFrames,poiseRecoveryDelayFrames,statusResistances);
+            player.SetDepartureStyle(style);player.SetElementResistances(BaseResistances);return player;
+        }
+        public Enemy CreateEnemy(string id,string name,int maxHp,Vector2Int initialPosition,bool isSummoned=false,
+            TimedStatusResistances statusResistances=null,EnemyPoiseDefinition poiseDefinition=null,EnemyDashContactDefinition dashContact=null)
+        {
+            if(!IsEnemy)throw new System.InvalidOperationException("プレイヤー用の定義です");
+            return new Enemy(id,name,maxHp,Element,initialPosition,isSummoned,BaseResistances,statusResistances,poiseDefinition,dashContact);
+        }
+    }
     /// <summary>属性・カード系統とは独立した攻撃性質。明示した定義だけで使用する。</summary>
     [System.Flags]
     // 旧bitは保存定義と互換。追加3種は分類のみで共通効果を持たない。

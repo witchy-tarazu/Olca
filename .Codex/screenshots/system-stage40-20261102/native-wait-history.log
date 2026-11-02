@@ -1,0 +1,47 @@
+Native boot
+Compile checked, isolated Bootstrap prepared; ONE Play
+{"content": [{"type": "text", "text": "Entered play mode"}]}
+
+Recover existing Play; no repeated request
+Native native-recover
+Existing Play readiness read wait 0
+Existing Play readiness read wait 1
+Existing Play readiness read wait 2
+Existing Play readiness read wait 3
+Existing Play readiness read wait 4
+Existing Play readiness read wait 5
+Existing Play readiness read wait 6
+Existing Play readiness read wait 7
+Existing Play readiness read wait 8
+Existing Play readiness read wait 9
+Existing Play readiness read wait 10
+Existing Play readiness read wait 11
+Existing Play readiness read wait 12
+Existing Play readiness read wait 13
+Existing Play readiness read wait 14
+Existing Play readiness read wait 15
+Existing Play readiness read wait 16
+Existing Play readiness read wait 17
+Existing Play readiness read wait 18
+Existing Play readiness read wait 19
+Existing Play readiness read wait 20
+Existing Play readiness read wait 21
+Existing Play readiness read wait 22
+Existing Play readiness read wait 23
+Tracked helper system-stage40-native-existing-play-started c1d5014c07c149bf80aab32cdee2f1af
+Tracked helper system-stage40-native-base-started b02c2e08630c408bb66116a08d25e91e
+Traceback (most recent call last):
+  File "/workspace/olca-validation-20261024/system-stage40-native-recover.py", line 19, in <module>
+    time.sleep(1);fresh=call('console',{'level':'error','tail':100},'native-clean-fresh-'+str(i))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 9, in call
+AssertionError: Traceback (most recent call last):
+  File "/workspace/olca-validation-20261024/mcp-call.py", line 28, in <module>
+    raise TimeoutError('MCP response timeout')
+TimeoutError: MCP response timeout
+
+Traceback (most recent call last):
+  File "/workspace/olca-validation-20261024/system-stage40-native-chain.py", line 12, in <module>
+    print('Native',step,flush=True);p=subprocess.run(['python3','system-stage40-'+step+'.py']);assert p.returncode==0,step
+                                                                                                      ^^^^^^^^^^^^^^^
+AssertionError: native-recover

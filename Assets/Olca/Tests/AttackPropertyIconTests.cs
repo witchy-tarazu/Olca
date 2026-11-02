@@ -14,6 +14,56 @@ namespace Olca.Tests
         [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
 
         private static Card Card(AttackProperty properties,ElementType element=ElementType.None)=>new Card("fixture","テスト",1,CardRarity.Normal,CardCategory.Attack,element,CardSeries.Sword,1,"",properties:properties);
+        [TestCase(false)] [TestCase(true)] public void 明示相性は八属性全組合せを受ける属性の耐性へ一度だけ解決する(bool enemy)
+        {
+            var elements=new[]{ElementType.Fire,ElementType.Water,ElementType.Metal,ElementType.Wood,ElementType.Earth,ElementType.Yin,ElementType.Yang,ElementType.None};
+            var table=new[]{new[]{0,-50,50,0,0,0,0,0},new[]{50,0,0,0,-50,0,0,0},new[]{-50,0,0,50,0,0,0,0},new[]{0,0,-50,0,50,0,0,0},new[]{0,50,0,-50,0,0,0,0},new[]{0,0,0,0,0,0,-50,0},new[]{0,0,0,0,0,-50,0,0},new int[8]};
+            for(int own=0;own<8;own++)for(int attack=0;attack<8;attack++){
+                var value=enemy?ElementAffinity.CreateEnemyBase(elements[own]):ElementAffinity.CreatePlayerBase(elements[own]);
+                int expected=enemy&&table[own][attack]>0?0:table[own][attack];Assert.AreEqual(expected,value.Get(elements[attack]),$"{elements[own]} <- {elements[attack]}");
+                Assert.AreEqual(100-expected,value.CalculateDamage(100,elements[attack],false));Assert.AreEqual(0,value.Wind);
+            }
+        }
+        [Test] public void 明示実基本値は全置換で旧風と役割違いを拒否し基準値も調整できる()
+        {
+            var actual=ElementResistances.CreateCurrent(water:17,yang:-23);var d=CurrentElementDefenseDefinition.ForPlayer(ElementType.Fire,actual);Assert.AreSame(actual,d.BaseResistances);Assert.AreEqual(17,d.BaseResistances.Water);Assert.AreEqual(0,d.BaseResistances.Metal);
+            Assert.AreEqual(-60,ElementAffinity.CreatePlayerBase(ElementType.Fire,-60,40).Water);Assert.AreEqual(40,ElementAffinity.CreatePlayerBase(ElementType.Fire,-60,40).Metal);Assert.AreEqual(25,ElementAffinity.CreateEnemyBase(ElementType.Fire,-40,25).Metal);
+            foreach(var value in new[]{ElementType.Wind,(ElementType)99}){Assert.Throws<System.ArgumentOutOfRangeException>(()=>ElementAffinity.CreatePlayerBase(value));Assert.Throws<System.ArgumentOutOfRangeException>(()=>CurrentElementDefenseDefinition.ForEnemy(value));}
+            Assert.Throws<System.ArgumentException>(()=>CurrentElementDefenseDefinition.ForEnemy(ElementType.Fire,new ElementResistances(wind:1)));
+            Assert.Throws<System.InvalidOperationException>(()=>d.CreateEnemy("x","検証",100,new Olca.Core.Domain.Vector2Int(0,0)));
+            Assert.Throws<System.InvalidOperationException>(()=>CurrentElementDefenseDefinition.ForEnemy(ElementType.Fire).CreatePlayer(100,DepartureStyleDefinition.Basic));
+            Assert.Throws<System.ArgumentException>(()=>d.CreatePlayer(100,DepartureStyleDefinition.Basic));Assert.Throws<System.ArgumentNullException>(()=>d.CreatePlayer(100,null));
+        }
+        [Test] public void 明示プレイヤーは装備加算と端数処理を既存式で行い解決済み値を復元する()
+        {
+            var style=new DepartureStyleDefinition("explicit-fire","検証",null,new TransformationAttackDefinition(ElementType.Fire));
+            var player=CurrentElementDefenseDefinition.ForPlayer(ElementType.Fire).CreatePlayer(200,style);
+            player.SetDepartureAbilities(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(new Olca.Core.Logic.Customization.CustomizationAbilitiesDto{DefinitionId="explicit",Sources=new[]{new Olca.Core.Logic.Customization.CustomizationAbilitySourceDto{Kind="part",SourceId="one",ItemId="one",Water=20,Fire=150,AdditionalElements=new[]{0,0,-150,0}}}}));
+            Assert.AreEqual(-30,player.ActiveResistances.Get(ElementType.Water));Assert.AreEqual(100,player.ActiveResistances.Get(ElementType.Fire));Assert.AreEqual(-100,player.ActiveResistances.Get(ElementType.Yin));
+            player.TakeDamage(41,affectsPoise:false,attackElement:ElementType.Water);Assert.AreEqual(147,player.CurrentHp);
+            var mapper=typeof(Olca.Core.Logic.Dungeon.DungeonCheckpointSession).Assembly.GetType("Olca.Core.Logic.Dungeon.CheckpointPlayerMapper");var flags=System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic;
+            var dto=(CheckpointPlayerDto)mapper.GetMethod("Capture",flags).Invoke(null,new object[]{player});var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(dto);
+            var restored=(PlayerCharacter)mapper.GetMethod("Restore",flags).Invoke(null,new object[]{Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<CheckpointPlayerDto>(bytes)});
+            Assert.AreEqual(ElementType.Fire,restored.ActiveElement);Assert.IsTrue(player.BaseElementResistances.HasSameValues(restored.BaseElementResistances));Assert.IsTrue(player.Resistances.HasSameValues(restored.Resistances));Assert.AreEqual(147,restored.CurrentHp);
+            restored.TakeDamage(10,affectsPoise:false,attackElement:ElementType.Metal);Assert.AreEqual(142,restored.CurrentHp);
+            Assert.Throws<System.InvalidOperationException>(()=>player.SetDepartureStyle(DepartureStyleDefinition.Basic));
+        }
+        [Test] public void 明示敵は弱点だけを標準適用し個別値と保存復元と実被弾に接続する()
+        {
+            var enemy=CurrentElementDefenseDefinition.ForEnemy(ElementType.Metal).CreateEnemy("explicit-metal","検証",200,new Olca.Core.Domain.Vector2Int(4,1));
+            Assert.AreEqual(-50,enemy.Resistances.Fire);Assert.AreEqual(0,enemy.Resistances.Wood);enemy.TakeDamage(41,ElementType.Fire);Assert.AreEqual(139,enemy.CurrentHp);
+            var dto=Olca.Core.Logic.Dungeon.PortableEnemyDefinition.Capture(enemy);var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(dto);var restored=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<Olca.Core.Logic.Dungeon.PortableEnemyDefinition>(bytes).Restore();
+            Assert.AreEqual(ElementType.Metal,restored.Element);Assert.IsTrue(enemy.Resistances.HasSameValues(restored.Resistances));restored.TakeDamage(41,ElementType.Wood);Assert.AreEqual(159,restored.CurrentHp);
+            var exception=CurrentElementDefenseDefinition.ForEnemy(ElementType.Metal,ElementResistances.CreateCurrent(fire:-25,wood:50)).CreateEnemy("exception","検証",100,new Olca.Core.Domain.Vector2Int(0,0));exception.TakeDamage(41,ElementType.Wood);Assert.AreEqual(80,exception.CurrentHp);
+        }
+        [Test] public void 従来生成と復元へ相性を自動適用せず明示生成も既存製品定義を変えない()
+        {
+            var products=new Olca.Application.Battle.SimpleCardFactory().CollectionCards.Select(c=>CollectionDisplay.DefinitionHash(c)).ToArray();
+            var old=new Enemy("legacy","検証",100,ElementType.Fire,new Olca.Core.Domain.Vector2Int(0,0));Assert.IsTrue(old.Resistances.IsNeutral);old.TakeDamage(40,ElementType.Water);Assert.AreEqual(60,old.CurrentHp);
+            var player=new PlayerCharacter(100);player.SetDepartureStyle(new DepartureStyleDefinition("legacy","検証",null,new TransformationAttackDefinition(ElementType.Fire)));Assert.IsTrue(player.Resistances.IsNeutral);
+            CurrentElementDefenseDefinition.ForPlayer(ElementType.Fire).CreatePlayer(100,new DepartureStyleDefinition("explicit","検証",null,new TransformationAttackDefinition(ElementType.Fire)));
+            CollectionAssert.AreEqual(products,new Olca.Application.Battle.SimpleCardFactory().CollectionCards.Select(c=>CollectionDisplay.DefinitionHash(c)).ToArray());Assert.IsTrue(player.Resistances.IsNeutral);
+        }
         public sealed class OldElementEnvelope { public int Version; public string Payload,Sha256; }
         [Test] public void 旧raw封筒は元payloadのhashを検証してから追加欄欠損を読む()
         {

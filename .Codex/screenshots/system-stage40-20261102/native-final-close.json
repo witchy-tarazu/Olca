@@ -1,0 +1,148 @@
+{
+  "saveHashesAfter": {
+    "progress/progress.json": "b3ab85d359c4fe5aa98b25b2b77026b3b0112dbb72c30ae9d9b1ac1f43948922",
+    "affinity-files/adjusted/active.json": "9d7c84ce85ebdf2e81d5092fc3ced427cd71dd1bca5330406c91090538c4b8ae",
+    "affinity-files/baseline/active.json": "5408d4c764972e8a743252444b6a5f49e359f1482c1aae577a4e8803fe83f9e0",
+    "explicit-host/progress/progress.json": "e1adc9d484735a6bff80e4ac1ea30e90cea1b2a5c4fdc75d04bcd8ae1d874493",
+    "explicit-host/checkpoints/runs/0734014750e847af8b22742f3be4a0b4/floors.active.json": "a389b7f3e8085eca65b1f3a80aa21b4234d566d5bed918fd5ae2a0615f643c17",
+    "explicit-host/checkpoints/runs/0734014750e847af8b22742f3be4a0b4/floors.backup.json": "142ef09a002ac631099afd8200dc45745aeabc62c24ebf0c37501e70730e80f9"
+  },
+  "close": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1230907897,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -334337576,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -334337582,
+        -334337588,
+        -334337594
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "ownProofKeys": {
+    "keys": [
+      {
+        "name": "Deck35Old",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseSave",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseNew",
+        "present": false
+      },
+      {
+        "name": "Deck35Io",
+        "present": false
+      }
+    ]
+  },
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "e8eafa1995ee38aae58e47309ffe462025f8e805143f5d754943a0d5fd26d39c",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "318372e7096391e7fefcb697047cca7b5337bdaa05ad3992264f02233bbf307d"
+  },
+  "console": {
+    "entries": [],
+    "cursor": 560355,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 267
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T23:49:47.796049Z",
+      "ageMs": 78,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 267,
+      "seeded": true
+    }
+  },
+  "warnings": {
+    "entries": [],
+    "cursor": 560355,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 267
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T23:49:47.796049Z",
+      "ageMs": 200,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 267,
+      "seeded": true
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "e8eafa1995ee38aae58e47309ffe462025f8e805143f5d754943a0d5fd26d39c",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "318372e7096391e7fefcb697047cca7b5337bdaa05ad3992264f02233bbf307d"
+  },
+  "currentAndMirrorMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "ElementAffinity solves resistance for incoming element: five-element overcoming cycle, player advantage+50/enemy default0, incoming weakness-50, Yin/Yang mutual weakness takes priority, same/None neutral. No extra multiplier.",
+    "CurrentElementDefenseDefinition current8 validation excludes oldWind/unknown; actualBaseResistances immutable whole replacement, nonzeroWind rejected. No implicit additions/partial override.",
+    "Role-specific factories reject wrong role and player/style attribute mismatch before generation. Player retains existing constructor arguments/defaults and one-time departure style assignment then resolved base. Enemy retains existing ctor options.",
+    "No changes to existing constructors/restores/DTO/hash/formula. New factories used explicitly only; stored resolved raw values restored without affinity rerun.",
+    "Added tests cover128 table combinations, explicit adjustments/rejections, real Player equipment/clamp/rounding/checkpoint restore, Enemy damage/portable restore and unchanged legacy neutrality/product hashes."
+  ],
+  "validation": {
+    "status": "v1 compile/reload/related28 tracked by parent; related28/full3740/native unverified in this static review.",
+    "dynamicVerified": false
+  },
+  "limits": [
+    "Static review is not all-branch/runtime guarantee.",
+    "Explicit current definition API is mechanism, not automatic product catalog registration or oldWind/checkpoint migration.",
+    "Actual per-character base values remain explicit registration; configurable basis arguments do not alter old rules.",
+    "No product source edits, Unity calls or tests performed by reviewer."
+  ]
+}
