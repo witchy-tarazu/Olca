@@ -654,8 +654,9 @@ namespace Olca.Core.Domain
         }
         public static CollectionRecipeRow[] RecipeRows(ClearReturnProfile profile,IEnumerable<CollectionRecipe> recipes,IReadOnlyList<Card> catalog=null)
             => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
+        private static string DisplayElement(ElementType value) => value==ElementType.Metal?"キン":value==ElementType.Wood?"キ":value==ElementType.Yin?"イン":value==ElementType.Yang?"ヨウ":System.Enum.IsDefined(typeof(ElementType),value)?value.ToString():"未定義";
         public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+
-            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+card.Element+"　シリーズ "+card.Series?.Name+
+            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+DisplayElement(card.Element)+"　シリーズ "+card.Series?.Name+
             "\n"+(description??card.Description);
     }
     /// <summary>公開判定後の表示専用値。未公開行には結果定義自体を渡さない。</summary>

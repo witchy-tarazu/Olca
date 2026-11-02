@@ -18,7 +18,17 @@ namespace Olca.Core.Domain
         Wind,
 
         /// <summary>土属性</summary>
-        Earth
+        Earth,
+
+        // 0〜4は旧保存互換。Wind=3を別属性へ読み替えない。
+        Metal = 5, Wood = 6, Yin = 7, Yang = 8
+    }
+    /// <summary>新規登録の八属性と旧Wind読取を区別する。相性を自動付与しない。</summary>
+    public static class ElementRules
+    {
+        public static bool IsCurrent(ElementType value) => value!=ElementType.Wind && System.Enum.IsDefined(typeof(ElementType),value);
+        public static void ValidateCurrent(ElementType value) { if(!IsCurrent(value))throw new System.ArgumentOutOfRangeException(nameof(value),"新規定義は八属性から指定します"); }
+        public static void ValidateKnown(ElementType value) { if(!System.Enum.IsDefined(typeof(ElementType),value))throw new System.ArgumentOutOfRangeException(nameof(value),"未定義の属性です"); }
     }
     /// <summary>属性・カード系統とは独立した攻撃性質。明示した定義だけで使用する。</summary>
     [System.Flags]
@@ -143,15 +153,25 @@ namespace Olca.Core.Domain
         public int Water { get; }
         public int Wind { get; }
         public int Earth { get; }
-        public ElementResistances(int fire = 0, int water = 0, int wind = 0, int earth = 0)
+        public int Metal { get; } public int Wood { get; } public int Yin { get; } public int Yang { get; }
+        public ElementResistances(int fire = 0, int water = 0, int wind = 0, int earth = 0, int metal = 0, int wood = 0, int yin = 0, int yang = 0)
         {
             // 元値は旧保存・定義hashとの照合用に保持し、有効値はGetで制限する。
-            Fire = fire; Water = water; Wind = wind; Earth = earth;
+            Fire = fire; Water = water; Wind = wind; Earth = earth; Metal=metal; Wood=wood; Yin=yin; Yang=yang;
         }
+        public static ElementResistances CreateCurrent(int fire=0,int water=0,int metal=0,int wood=0,int earth=0,int yin=0,int yang=0) => new ElementResistances(fire,water,0,earth,metal,wood,yin,yang);
+        public bool HasAdditionalValues => Metal!=0||Wood!=0||Yin!=0||Yang!=0;
+        // 旧4欄はそのまま保持。追加領域は金/木/陰/陽順、旧欠損/nullは0。
+        public int[] CaptureAdditional() => HasAdditionalValues ? new[]{Metal,Wood,Yin,Yang} : null;
+        public static ElementResistances Restore(int fire,int water,int wind,int earth,int[] additional) {
+            ValidateAdditional(additional);return new ElementResistances(fire,water,wind,earth,additional?[0]??0,additional?[1]??0,additional?[2]??0,additional?[3]??0);
+        }
+        public static void ValidateAdditional(int[] value) { if(value!=null&&value.Length!=4)throw new System.ArgumentException("追加耐性は金/木/陰/陽の4欄が必要です"); }
         private static int Clamp(long value) => (int)System.Math.Max(-100L, System.Math.Min(100L, value));
-        public int Get(ElementType element) => Clamp(element == ElementType.Fire ? Fire :
-            element == ElementType.Water ? Water : element == ElementType.Wind ? Wind :
-            element == ElementType.Earth ? Earth : 0);
+        public int Get(ElementType element) {
+            ElementRules.ValidateKnown(element);
+            return Clamp(element==ElementType.Fire?Fire:element==ElementType.Water?Water:element==ElementType.Wind?Wind:element==ElementType.Earth?Earth:element==ElementType.Metal?Metal:element==ElementType.Wood?Wood:element==ElementType.Yin?Yin:element==ElementType.Yang?Yang:0);
+        }
         /// <summary>同属性の全補正を合算してから一度だけ上下限を適用する。</summary>
         public static ElementResistances Combine(params ElementResistances[] values)
         {
@@ -161,18 +181,18 @@ namespace Olca.Core.Domain
         internal static ElementResistances CombineSources(ElementResistances baseline,System.Collections.Generic.IReadOnlyList<ElementResistances> values)
         {
             if(baseline==null)throw new System.ArgumentException("耐性補正がnullです",nameof(values));
-            long fire=baseline.Fire,water=baseline.Water,wind=baseline.Wind,earth=baseline.Earth;
+            long fire=baseline.Fire,water=baseline.Water,wind=baseline.Wind,earth=baseline.Earth,metal=baseline.Metal,wood=baseline.Wood,yin=baseline.Yin,yang=baseline.Yang;
             for(int i=0;i<values.Count;i++){
                 var value=values[i];
                 if(value==null)throw new System.ArgumentException("耐性補正がnullです",nameof(values));
-                fire+=value.Fire;water+=value.Water;wind+=value.Wind;earth+=value.Earth;
+                fire+=value.Fire;water+=value.Water;wind+=value.Wind;earth+=value.Earth;metal+=value.Metal;wood+=value.Wood;yin+=value.Yin;yang+=value.Yang;
             }
-            return new ElementResistances(Clamp(fire),Clamp(water),Clamp(wind),Clamp(earth));
+            return new ElementResistances(Clamp(fire),Clamp(water),Clamp(wind),Clamp(earth),Clamp(metal),Clamp(wood),Clamp(yin),Clamp(yang));
         }
         public double Multiplier(ElementType element) => (100L - Get(element)) / 100d;
-        public bool IsNeutral => Fire == 0 && Water == 0 && Wind == 0 && Earth == 0;
+        public bool IsNeutral => Fire == 0 && Water == 0 && Wind == 0 && Earth == 0 && !HasAdditionalValues;
         public bool HasSameValues(ElementResistances other) => other != null &&
-            Fire == other.Fire && Water == other.Water && Wind == other.Wind && Earth == other.Earth;
+            Fire == other.Fire && Water == other.Water && Wind == other.Wind && Earth == other.Earth && Metal==other.Metal && Wood==other.Wood && Yin==other.Yin && Yang==other.Yang;
         public int CalculateDamage(int damage, ElementType element, bool fireOnGrass)
         {
             if (damage < 0) throw new System.ArgumentOutOfRangeException(nameof(damage));

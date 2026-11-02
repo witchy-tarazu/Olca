@@ -600,7 +600,7 @@ namespace Olca.Presentation.Dungeon
         public static string FormatDungeonInformation(DungeonDeparturePreview info)
         {
             if(info==null)throw new ArgumentNullException(nameof(info));
-            string Element(ElementType value) => value==ElementType.None?"ムゾクセイ":value==ElementType.Fire?"ヒ":value==ElementType.Water?"ミズ":value==ElementType.Wind?"カゼ":value==ElementType.Earth?"ツチ":"？？？";
+            string Element(ElementType value) => Olca.Presentation.CustomScreen.CustomDisplay.ElementName(value);
             string Terrain(PanelType value) => value==PanelType.Normal?"ノーマル":value==PanelType.Grass?"クサムラ":value==PanelType.Ice?"コオリ":value==PanelType.Magma?"マグマ":value==PanelType.Cracked?"ヒビ":value==PanelType.Hole?"アナ":"？？？";
             return "テキゾクセイ: "+(info.EnemyElements.Count==0?"情報なし":string.Join(" / ",System.Linq.Enumerable.Select(info.EnemyElements,Element)))+
                 "　チケイ: "+(info.TerrainTypes.Count==0?"情報なし":string.Join(" / ",System.Linq.Enumerable.Select(info.TerrainTypes,Terrain)));
@@ -852,7 +852,7 @@ namespace Olca.Presentation.Dungeon
         public static string FormatDepartureStyleChoice(DepartureStyleDefinition value)
         {
             if(value==null)throw new ArgumentNullException(nameof(value));var element=value.Attack?.Element??ElementType.None;
-            string attribute=element==ElementType.None?"ムゾクセイ":element==ElementType.Fire?"ヒ":element==ElementType.Water?"ミズ":element==ElementType.Wind?"カゼ":element==ElementType.Earth?"ツチ":"？？？";
+            string attribute=Olca.Presentation.CustomScreen.CustomDisplay.ElementName(element);
             return FormatDepartureStyleName(value)+(value.Id==DepartureStyleDefinition.BasicId?"":" / ゾクセイ "+attribute)+(value.RequiredClear==null?"":" / カイホウ: "+value.RequiredClear+"クリア");
         }
         private int stylePage;

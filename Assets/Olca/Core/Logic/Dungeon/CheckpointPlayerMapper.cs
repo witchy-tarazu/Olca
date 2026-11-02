@@ -9,6 +9,7 @@ namespace Olca.Core.Logic.Dungeon
         internal static CheckpointPlayerDto Capture(PlayerCharacter player)
         {
             return new CheckpointPlayerDto {
+                AdditionalElementResistances = player.BaseElementResistances.CaptureAdditional(),
                 CustomizationAbilities = player.DepartureAbilities?.Capture(),
                 RawBaseFireResistance = player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Fire,
                 RawBaseWaterResistance = player.DepartureAbilities==null?(int?)null:player.BaseElementResistances.Water,
@@ -42,7 +43,7 @@ namespace Olca.Core.Logic.Dungeon
             if(p.CustomizationAbilities!=null)player.SetDepartureAbilities(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(p.CustomizationAbilities));
             if(p.AttackGrowth!=null)player.SetAttackGrowth(p.AttackGrowth.Restore());
             player.SetDepartureStyle(p.Style?.Restore() ?? DepartureStyleDefinition.Basic);
-            player.SetElementResistances(new ElementResistances(p.RawBaseFireResistance??p.FireResistance, p.RawBaseWaterResistance??p.WaterResistance, p.RawBaseWindResistance??p.WindResistance, p.RawBaseEarthResistance??p.EarthResistance));
+            player.SetElementResistances(ElementResistances.Restore(p.RawBaseFireResistance??p.FireResistance, p.RawBaseWaterResistance??p.WaterResistance, p.RawBaseWindResistance??p.WindResistance, p.RawBaseEarthResistance??p.EarthResistance,p.AdditionalElementResistances));
             player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             player.RestorePoisons(p.Poisons);
             return player;

@@ -1,0 +1,194 @@
+{
+  "reviewer": "independent_refactor_review",
+  "reviewedAt": "2026-11-02T22:54:30.943265+00:00",
+  "version": "v4",
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/Card.cs": "c9e6aa327daf551aec3ca9cf1b59edff91b43a8275b37efb057a7d2fa4ce69f1",
+    "Assets/Olca/Core/Domain/Deck.cs": "3bb640177405d8ccdde395ca320af03c87824b60b01672870fb9ccdc208b02fc",
+    "Assets/Olca/Core/Domain/DungeonConfig.cs": "a6e59cd4ccededdfb0712d20b284d65b51f8553481c7bce0aa3ee45e77c8a59c",
+    "Assets/Olca/Core/Domain/ElementType.cs": "3639d14934dcbba4edafd64a001de141ffb0622c8f786c9913c6fe3aadfaf47d",
+    "Assets/Olca/Core/Domain/Enemy.cs": "696c4769a8ab0ee611084ba2ce9f8b2462a3131864f80ffb62a59aa94c3bda98",
+    "Assets/Olca/Core/Logic/Customization/CustomizationAbilities.cs": "fe4e8e5c4c50362d089a23da9abe228f9a22814469e25e94cc6dcadb7660cbfb",
+    "Assets/Olca/Core/Logic/Dungeon/CheckpointPlayerMapper.cs": "c7b52535899b2362be6584c470442089f295409fbdc7299cc0c1a1f726d5b374",
+    "Assets/Olca/Core/Logic/Dungeon/DungeonSystem.cs": "ee6205a858a20dc131fe001e494896675ab267d1aa41b425ab29de60d09d2930",
+    "Assets/Olca/Core/Logic/Dungeon/PortableBattleCatalog.cs": "f2a9377a6043ff108c050c70094e293e4fd7b2aba56009782705c56227a23a31",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b7c0ca9413cecd28a2349f0e0e664105dab3c1dfd0896a83a0420c75b380274b",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "c3ef9c3395c0774c616dbd01976961e703cfa9c5d3819a71aa45c8d07096cace",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "5d285428c9ffac89a86b301ce63ca24a0599736fda6c358c999976091421847c"
+  },
+  "viewedImageCount": 15,
+  "imageHashes": [
+    {
+      "file": "system-stage39-metal-fhd.png",
+      "sha256": "6c9bda09e7afe306fde88fdf07692f020a1f0aadc6191698bc40a043219090e8",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-metal-4k.png",
+      "sha256": "220e833c62d37f04e28aabec330eb67e2cffe69021d883b86e7558a22bd5d6dc",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-metal-4by3.png",
+      "sha256": "e01ace98f4c612026f232a901b15884569f47135091c93946a4cb292e3b58985",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-wood-fhd.png",
+      "sha256": "a975d66527d2153845a34831507f4ade78fa9b8de7bf6f4720a1046a58c8d0b9",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-wood-4k.png",
+      "sha256": "d3e41aead4f222afe58cf96f32366f6f17b158cc50eabd7cbeed858108e5cfdc",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-wood-4by3.png",
+      "sha256": "bd796ccb863e11a4e0085c3f9a02a35b49ee6735dd20301d6c96d3a60854e445",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-yin-fhd.png",
+      "sha256": "ee8a40583e716c67e112a92ce885a0f564fdcf31f24bfdbefb16cad29c16684e",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-yin-4k.png",
+      "sha256": "68de42721472fc6997686a3d27a2e0bef8a54a0c269bdf1ccc3fa1fffdbbc0b7",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-yin-4by3.png",
+      "sha256": "6644a4e97dc40db25b44afa4c538b5b14a4d4b8997d2a1d20b8f68c47c80ab85",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-yang-fhd.png",
+      "sha256": "293ebdb52515e378e7937e4c47c8670fc1ce76b6b23aff42e8227c333306711c",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-yang-4k.png",
+      "sha256": "ed06aed113c10ecf0f2f3797abdb0bc90318ddf1ef66f5dfd5b8b1bb5c638ac3",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-yang-4by3.png",
+      "sha256": "0718adbd8653e61952011c6cb97ba6d89794eb0a93a64cfe88414f18b824f4df",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-seven-resistances-fhd.png",
+      "sha256": "9e5f09b07c76f3d3a6a187a96311446f9edebaf4002daa28a3b67474ce7f66a6",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-seven-resistances-4k.png",
+      "sha256": "5880c96a565c3aab000835f4755ac13c503123144e3bc3ca73d4ed7b631deeae",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage39-seven-resistances-4by3.png",
+      "sha256": "161d901b07706dcfc7bb64e60bff9023f754a28811827975e546633a7c56657b",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "observations": [
+    "全15枚を実見。金/木/陰/陽はキン/キ/イン/ヨウと表示され、3比率で欠字や行端の切れを認めない。",
+    "属性登録の検証・相性の自動適用なしという注記は枠内に収まり、性能行と戻る操作に競合しない。",
+    "自己詳細は火11/水-22/旧風0/土55、金33/木-44/陰66/陽-77が2行に分かれ、キュウカゼの互換欄を独立した名称として読める。符号と数字の欠けなし。",
+    "4:3の自己詳細では上部の属性無属性が次行へ折り返すが、耐性見出し/2行/状態耐性/閉じるは分離して読める。",
+    "既存Jiki字体/水鏡面/戻る固定位置に今回の文字追加による必須の退行は認めない。"
+  ],
+  "nativeLocalInspection": [
+    {
+      "file": "system-stage39-metal-4k.png",
+      "crop": [
+        290,
+        350,
+        1830,
+        625
+      ]
+    },
+    {
+      "file": "system-stage39-seven-resistances-4k.png",
+      "crop": [
+        70,
+        640,
+        1220,
+        830
+      ]
+    }
+  ],
+  "method": "全15全景をview_image originalで実見。4K全景のviewer縮小を明記局所の無拡縮メモリcropで補足。元PNG不変更。",
+  "limits": [
+    "表示fixture値/カードであり製品性能やカードの新登録を意味しない。",
+    "写真は入力/閉鎖focus/保存/互換値の計算/寿命を証明しない。主担当の操作再確認と分離する。",
+    "新matched-beforeはなくpixel完全一致の比較ではない。Stage38画像/結果の流用なし。",
+    "原背景と本体は自己詳細の外側に見える範囲だけ確認。カード読取詳細は既存不透明背景を保ち本体を表示しない。",
+    "物理機器/聴感/全条件の美的完成は未確認。manifestは現v4の全12項目をそのまま記録。"
+  ]
+}
