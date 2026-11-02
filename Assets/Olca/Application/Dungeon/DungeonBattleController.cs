@@ -230,7 +230,7 @@ namespace Olca.Application.Dungeon
         {
             if(gameSystem!=null){pauseViews=gameSystem.Views.GetLayer("system-pause");pauseViewRegistered=true;}
             hostPanels.Register(ManagedPauseScreen,"system-pause",BuildPausePanel,
-                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);},
+                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.GameplayPauseView>().Hide();});
         }
         private void RegisterReturnViews(){RegisterReturnView(false);RegisterReturnView(true);}
@@ -314,7 +314,7 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
-            outsideExploration?.Dispose();outsideExploration=null;outsideExplorationOpening=false;
+            outsideExploration?.Dispose();outsideExploration=null;outsideExplorationOpening=false;gameplayChrome?.SetCovered(false);gameplayChrome=null;
             if(dialogueViews!=null&&dialogueView!=null)dialogueView.HideManaged();dialogueViews=null;
             currencyChoice?.TrySetCanceled();itemRewardChoice?.TrySetCanceled();CloseResourceReward(currencyOverlay);CloseResourceReward(itemRewardOverlay);
             resourceRewardMenu?.Dispose();resourceRewardMenu=null;resourceRewardViews=null;resourceRewardContexts.Clear();currencyChoice=itemRewardChoice=null;
@@ -441,6 +441,7 @@ namespace Olca.Application.Dungeon
             (debugUnlockDungeons || index == 0 || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index].Id) || clearReturnSession.Snapshot.ClearedDungeons.Contains(dungeonChoices[index - 1].Id));
         private Olca.Application.Management.OutsideExplorationPresentationBinding outsideExploration;
         private bool outsideExplorationOpening;
+        private Olca.Presentation.Management.GameplayPanelFactory.ChromeBinding gameplayChrome;
         private int outsideClosedFrame=-1;
         private bool OutsideRouteBusy=>outsideExplorationOpening||outsideExploration?.IsOpen==true;
         private void ResetOutsideRouteInput(){logicalLoop?.ReleaseInput();inputProvider?.QueueSnapshot();ResetTouchInput();}
@@ -453,7 +454,7 @@ namespace Olca.Application.Dungeon
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources));},
                         ()=>CustomizationUiLive&&initialHub&&clearReturnVisible,
-                        ()=>{if(!CustomizationUiLive||!initialHub)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");});
+                        ()=>{if(!CustomizationUiLive||!initialHub)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true));
                 }
                 var result=await outsideExploration.OpenAsync();
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
@@ -1020,7 +1021,7 @@ namespace Olca.Application.Dungeon
             panelFactory=new Olca.Presentation.Management.GameplayPanelFactory(pauseCanvas.transform,font,name=>{if(soundOwner.IsAlive)router?.PlayEffect(UiFeedbackSounds.ForButton(name,effect));});
             dungeonHudView?.ConfigureMissingStatusFont(font);
             cardSelectionView?.ConfigurePresentation(font,card=>customScreenView!=null?customScreenView.GetCardIllustrationForCard(card):null);
-            var chrome=panelFactory.Chrome();var bindings=hostPanels;
+            gameplayChrome=panelFactory.Chrome();var chrome=gameplayChrome;var bindings=hostPanels;
             void Bind(Button button,System.Action action)=>button.onClick.AddListener(()=>{if(this!=null&&bindings.IsAlive&&!OutsideRouteBusy&&Time.frameCount!=outsideClosedFrame)action();});
             currencyBalanceText=chrome.Currency;manualSaveButton=chrome.Save;newGameButton=chrome.NewGame;cardCollectionButton=chrome.Collection;
             customizationEditorButton=chrome.Loadout;customizationUnlockButton=chrome.Unlock;customizationAcquisitionButton=chrome.Acquisition;
@@ -1065,11 +1066,12 @@ namespace Olca.Application.Dungeon
             },(panel,context)=>panel.SetActive(true),panel=>{if(panel!=null)panel.SetActive(false);});
             ShowCheckpointStatus();
         }
+        private static bool OutsidePauseControlAllowed(string name)=>name=="ResumeButton"||name=="KeyboardSettingsButton"||name=="GamepadSettingsButton"||name=="AudioSettingsButton"||name=="VibrationSetting"||name=="TransformationAnimationSetting"||name=="DialogueTextSpeedButton";
         private GameObject BuildPausePanel()
         {
             pauseOverlay=panelFactory.Pause();var bindings=hostPanels;
             Button Button(string name)=>pauseOverlay.transform.Find(name).GetComponent<Button>();
-            void Bind(string name,System.Action action)=>Button(name).onClick.AddListener(()=>{if(this!=null&&bindings.IsAlive&&!OutsideRouteBusy&&Time.frameCount!=outsideClosedFrame)action();});
+            void Bind(string name,System.Action action)=>Button(name).onClick.AddListener(()=>{if(this!=null&&bindings.IsAlive&&(!OutsideRouteBusy||OutsidePauseControlAllowed(name))&&Time.frameCount!=outsideClosedFrame)action();});
             Bind("ResumeButton",()=>SetUserPaused(false));Bind("LoadCheckpointButton",ContinueCheckpointFromUi);
             Bind("KeyboardSettingsButton",OpenKeyboardSettings);Bind("GamepadSettingsButton",OpenGamepadSettings);Bind("AudioSettingsButton",OpenAudioSettings);
             Bind("OwnedCardsButton",OpenOwnedCards);Bind("RetreatButton",RequestRetreat);
@@ -1853,8 +1855,8 @@ namespace Olca.Application.Dungeon
             vibrationSettings.TryRead(out gamepadVibrationEnabled,out vibrationSettingsError);gamepadVibration.Enabled=gamepadVibrationEnabled;
             inputProvider.GamepadGameplayActive=()=>manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
                 (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused);
-            inputProvider.GamepadContext=()=>manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
-            inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen);
+            inputProvider.GamepadContext=()=>OutsideRouteBusy||manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
+            inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&((outsideExploration?.IsOpen==true&&gameSystem.Dialogs.ActiveCount==0)||(!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen)));
             gamepadSettings=gameSystemSession?.Storage.Gamepad ?? new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             inputProvider.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _);
             if(gamepadSettings.TryRead(out var padProfile,out var padError))inputProvider.TryRestoreGamepadProfile(padProfile,out padError);GameplayGamepadSettingsError=padError;
@@ -2017,7 +2019,15 @@ namespace Olca.Application.Dungeon
             gamepadVibration?.Tick();
             if (manager == null) return;
             if(outsideExploration?.HasLostView==true)OpenOutsideExplorationAsync().Forget();
-            if(OutsideRouteBusy){logicalLoop.Observe(false);systemMenu?.Suspend();systemMenuRoot=null;return;}
+            gameplayChrome?.SetCovered(OutsideRouteBusy);
+            if(OutsideRouteBusy){
+                logicalLoop.Observe(false);
+                if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
+                outsideExploration?.SetCovered(IsUserPaused);
+                outsideExploration?.Pump(!IsUserPaused&&Time.timeScale>0);
+                if(IsUserPaused)RefreshSystemMenu();else{systemMenu?.Suspend();systemMenuRoot=null;}
+                return;
+            }
             if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
             RefreshTouchContext();
             UpdateDialogue();

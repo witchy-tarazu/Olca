@@ -1,0 +1,27 @@
+{
+  "editorPid": 137059,
+  "sameVmEditorModelAuthentication": true,
+  "editorRestarted": false,
+  "duplicatePlayOrStop": false,
+  "intermediateRelated": {
+    "v3": {
+      "app": 551,
+      "core": 12,
+      "integration": 605
+    },
+    "v5": {
+      "app": 552,
+      "core": 12,
+      "integration": 605
+    },
+    "v6": {
+      "app": 552,
+      "core": 12,
+      "integration": 605
+    },
+    "final": "v7 hash equality verified separately"
+  },
+  "recoveredWaits": "Normal full-domain reload and cold first-script readiness tracked by same jobs; read-only status timeouts retained. No speculative cause or product-failure claim.",
+  "earlyWatcherFailure": "v5 watcher read missing compile-offset before submission; exited before Unity action, fixed bounded file wait; no duplicate request.",
+  "fullWrapperTimedOut": true
+}

@@ -766,5 +766,70 @@ namespace Olca.Tests.Application
             using(var incomplete=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>Task.FromResult(Panel("outside-no-view")),()=>true,null)){Assert.IsFalse((await incomplete.OpenAsync()).Succeeded);}
             Assert.IsTrue(prior.IsCurrent);Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsFalse(system.OutsideExploration.IsPresented);Assert.IsFalse(system.OutsideExploration.IsEnded);Assert.AreEqual(before,resources.OwnedInstanceCount);
         }
+
+        [Test] public void 外界Runtimeは単一driverだけを許し解放後も同じRoot状態と時計を再利用する()
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();
+            using(var runtime=new OutsideExplorationRuntime(model))using(var input=new Olca.Unity.UnityInputProvider()){
+                var first=new object();var second=new object();var core=model.Core;
+                runtime.Attach(first,input);Assert.Throws<InvalidOperationException>(()=>runtime.Attach(second,input));
+                runtime.Pump(second,true);Assert.AreEqual(0,runtime.Frame);Assert.AreEqual(0,core.Frame);
+                runtime.Detach(second);Assert.Throws<InvalidOperationException>(()=>runtime.Attach(second,input));
+                runtime.Detach(first);runtime.Attach(second,input);runtime.Pump(second,false);
+                Assert.AreSame(core,model.Core);Assert.AreEqual(0,runtime.Frame);Assert.AreEqual(0,core.Frame);
+                runtime.Dispose();Assert.Throws<ObjectDisposedException>(()=>runtime.Attach(first,input));
+            }
+        }
+
+        [Test] public async Task 外界Pause被覆は状態を保ち背面Backと復帰同frameの旧操作を拒否する()
+        {
+            int returned=0,paused=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,factory,()=>true,()=>returned++,paused:()=>paused++)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);
+                var back=binding.View.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseOutsideExploration");var pause=binding.View.GetComponentsInChildren<Button>().Single(b=>b.name=="PauseOutsideExploration");
+                pause.onClick.Invoke();Assert.AreEqual(1,paused);binding.SetCovered(true);back.onClick.Invoke();pause.onClick.Invoke();Assert.AreEqual(0,returned);Assert.AreEqual(1,paused);Assert.IsTrue(binding.IsOpen);Assert.IsFalse(binding.View.CanPlay);
+                binding.SetCovered(false);back.onClick.Invoke();Assert.AreEqual(0,returned);Assert.AreSame(back.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(0,system.OutsideExploration.Core.Frame);
+            }
+            Assert.IsFalse(system.OutsideExploration.IsPresented);
+        }
+
+        [Test] public async Task Pause一時制限は旧イベントも拒否し終了時に元の各ボタン状態だけを復元する()
+        {
+            var panel=Panel("restricted-pause");var resume=Button(panel,"ResumeButton");var load=Button(panel,"LoadCheckpointButton");resume.interactable=false;int loaded=0;load.onClick.AddListener(()=>loaded++);
+            var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);var layer=views.GetLayer("restriction-fixture");
+            layer.Register(owner,"restricted",_=>Task.FromResult(panel),(go,ctx)=>view.Show(ctx),go=>view.Hide());
+            Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);var old=load.onClick;view.RestrictControls(new[]{"LoadCheckpointButton"});Assert.IsFalse(load.interactable);old.Invoke();Assert.AreEqual(0,loaded);
+            layer.CloseCurrent();Assert.IsTrue(load.interactable);Assert.IsFalse(resume.interactable);old.Invoke();Assert.AreEqual(0,loaded);
+            Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);load.onClick.Invoke();Assert.AreEqual(1,loaded);Assert.IsFalse(resume.interactable);
+        }
+
+        [Test] public void 外界入力epochは古い履歴を捨て未来neutralを採用前に評価しない()
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();bool paused=Olca.Unity.GameplayPause.IsPaused;var pauseType=typeof(Olca.Unity.GameplayPause);var release=pauseType.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pauseType.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                var driver=new object();input.QueueSnapshot();runtime.Attach(driver,input);Assert.AreEqual(1,input.CaptureTimestamped().Length,"所有境界前の履歴を残さない");
+                // 製品入力とは別の時刻列fixture。実入口はnative InputSystemで別途確認する。
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);
+                long frequency=System.Diagnostics.Stopwatch.Frequency,origin=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10,now=origin;
+                typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);
+                var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",flags).GetValue(input);
+                var held=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,Horizontal=1};var neutral=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true};
+                events.Add(new Olca.Unity.TimestampedLogicalInput(origin,held));events.Add(new Olca.Unity.TimestampedLogicalInput(origin+frequency*2,neutral));events.Add(new Olca.Unity.TimestampedLogicalInput(origin+frequency/20,held));
+                now=origin+frequency/10;runtime.Pump(driver,true);Assert.Greater(model.Core.Frame,0);Assert.AreEqual(model.Core.Definition.Start,model.Core.Position,"未来neutralでheldを先に許可しない");Assert.AreEqual(runtime.Frame,model.Core.Frame);
+                now=origin+frequency*2+frequency/10;runtime.Pump(driver,true);Assert.AreEqual(model.Core.Definition.Start,model.Core.Position);
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now,held));now+=frequency/10;runtime.Pump(driver,true);Assert.Greater(model.Core.Position,model.Core.Definition.Start);Assert.AreEqual(runtime.Frame,model.Core.Frame);
+            }}finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);resume.SetValue(null,priorResume);model.Dispose();}
+        }
+
+        [Test] public void Chrome遮蔽は背面描画とraycastだけを止め各元状態とactiveを復元する()
+        {
+            var chrome=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Chrome();
+            var original=chrome.Save.gameObject.AddComponent<CanvasGroup>();original.alpha=.4f;original.interactable=false;original.blocksRaycasts=true;original.enabled=false;
+            bool collectionActive=chrome.Collection.gameObject.activeSelf;chrome.SetCovered(true);chrome.SetCovered(true);
+            Assert.IsTrue(original.enabled);Assert.AreEqual(0,original.alpha);Assert.IsFalse(original.interactable);Assert.IsFalse(original.blocksRaycasts);Assert.AreEqual(collectionActive,chrome.Collection.gameObject.activeSelf);
+            chrome.SetCovered(false);Assert.AreEqual(.4f,original.alpha);Assert.IsFalse(original.interactable);Assert.IsTrue(original.blocksRaycasts);Assert.IsFalse(original.enabled);Assert.AreEqual(collectionActive,chrome.Collection.gameObject.activeSelf);
+            var added=chrome.Pause.GetComponent<CanvasGroup>();Assert.AreEqual(1,added.alpha);Assert.IsTrue(added.blocksRaycasts);Assert.IsTrue(added.interactable);chrome.SetCovered(false);
+        }
     }
 }

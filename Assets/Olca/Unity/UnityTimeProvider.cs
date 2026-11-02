@@ -48,15 +48,17 @@ namespace Olca.Unity
     public sealed class UnityLogicalLoop : System.IDisposable
     {
         private bool disposed;
-        public UnityLogicalLoop(bool observeEditor = false)
+        private readonly System.Func<bool> editorActive;
+        public UnityLogicalLoop(bool observeEditor = false, System.Func<bool> editorActive = null)
         {
+            this.editorActive=editorActive;
 #if UNITY_EDITOR
             if (observeEditor) UnityEditor.EditorApplication.pauseStateChanged += EditorPauseChanged;
 #endif
         }
 #if UNITY_EDITOR
         private void EditorPauseChanged(UnityEditor.PauseState state)
-        { Observe(state == UnityEditor.PauseState.Paused && Time.timeScale > 0); ReleaseInput(); }
+        { Observe(state == UnityEditor.PauseState.Paused && Time.timeScale > 0 && (editorActive?.Invoke()??true)); ReleaseInput(); }
 #endif
         public void Dispose()
         {

@@ -15,6 +15,7 @@ namespace Olca.Presentation.Management
         private Func<bool> inputAllowed;
         private readonly Dictionary<Button,Button.ButtonClickedEvent> actions=new Dictionary<Button,Button.ButtonClickedEvent>();
         private bool covered;
+        private readonly Dictionary<Button,bool> restricted=new Dictionary<Button,bool>();
         private CanvasGroup presentation;
         private GameObject previousFocus;
         private string restoredFocus;
@@ -33,11 +34,17 @@ namespace Olca.Presentation.Management
             foreach(var pair in actions){
                 var captured=owner;var action=pair.Value;var button=pair.Key;
                 button.onClick=new Button.ButtonClickedEvent();
-                button.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&!captured.DialogBlocksInput&&(inputAllowed?.Invoke()??false))action.Invoke();});
+                button.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&!captured.DialogBlocksInput&&!restricted.ContainsKey(button)&&(inputAllowed?.Invoke()??false))action.Invoke();});
             }
             gameObject.SetActive(true);transform.SetAsLastSibling();
         }
-        public void Hide(){context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
+        public void RestrictControls(IEnumerable<string> names)
+        {
+            RestoreRestrictedControls();var unavailable=new HashSet<string>(names??Array.Empty<string>());
+            foreach(var button in actions.Keys)if(button!=null&&unavailable.Contains(button.name)){restricted.Add(button,button.interactable);button.interactable=false;}
+        }
+        private void RestoreRestrictedControls(){foreach(var pair in restricted)if(pair.Key!=null)pair.Key.interactable=pair.Value;restricted.Clear();}
+        public void Hide(){RestoreRestrictedControls();context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
         public void CoverForDialog()
         {
             previousFocus=EventSystem.current?.currentSelectedGameObject;covered=true;presentation.alpha=0;presentation.blocksRaycasts=false;
@@ -49,8 +56,8 @@ namespace Olca.Presentation.Management
             var focus=previousFocus;previousFocus=null;
             if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){EventSystem.current?.SetSelectedGameObject(focus);restoredFocus=focus.name;}
         }
-        private void OnDisable(){context?.NotifyHidden();context=null;}
-        private void OnDestroy(){context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
+        private void OnDisable(){RestoreRestrictedControls();context?.NotifyHidden();context=null;}
+        private void OnDestroy(){RestoreRestrictedControls();context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
     }
 }
 
@@ -68,6 +75,17 @@ namespace Olca.Presentation.Management
         {
             public Button Pause,Save,NewGame,Collection,Loadout,Unlock,Acquisition;
             public Text Currency;
+            private bool covered;
+            private readonly Dictionary<CanvasGroup,(float Alpha,bool Interactable,bool Blocks,bool Enabled)> previous=new Dictionary<CanvasGroup,(float,bool,bool,bool)>();
+            /// <summary>別画面中の共通Chromeだけを覆う。元の個別状態を保持し、host終了前に返す。</summary>
+            public void SetCovered(bool value)
+            {
+                if(covered==value)return;covered=value;
+                if(value){foreach(var item in new Component[]{Pause,Save,NewGame,Collection,Loadout,Unlock,Acquisition,Currency}){
+                    if(item==null)continue;var group=item.GetComponent<CanvasGroup>();if(group==null)group=item.gameObject.AddComponent<CanvasGroup>();
+                    previous.Add(group,(group.alpha,group.interactable,group.blocksRaycasts,group.enabled));group.enabled=true;group.alpha=0;group.interactable=false;group.blocksRaycasts=false;
+                }}else{foreach(var pair in previous)if(pair.Key!=null){pair.Key.alpha=pair.Value.Alpha;pair.Key.interactable=pair.Value.Interactable;pair.Key.blocksRaycasts=pair.Value.Blocks;pair.Key.enabled=pair.Value.Enabled;}previous.Clear();}
+            }
         }
         public static GameObject LegacyCanvas()
         {

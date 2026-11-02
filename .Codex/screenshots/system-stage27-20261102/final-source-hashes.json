@@ -1,0 +1,15 @@
+{
+  "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+  "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+  "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "0fc8d618330d7c4857cde661b4d88ef342217b14dce62670a8c95a2909221eef",
+  "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+  "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "f2180e543e9f83030ba72f29beea50cae10b2385bfc31f66d94d30e219313e12",
+  "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+  "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+  "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "b636b4c21699a7462de3bf1b9b6d5bdf5ab704800ba905e56ccade76469a3f23",
+  "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+  "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "b900a60246caded9bf1e0d9b7d88b9dd9282990ebf5df72948ff12d9c372b335",
+  "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+  "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+}

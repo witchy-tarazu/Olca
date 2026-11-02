@@ -89,3 +89,7 @@ mockInput.SetKeyDown(GameKey.Attack, true);
 ## アセンブリ
 
 テストコードは `Olca.Tests.asmdef` に属すること。
+
+### Play停止の完了判定
+
+停止後に必ずドメイン再読込や接続断が起こるとは限らない。ログの特定行やdown→upを必須条件にして待ち続けず、通常の検出statusとeditor_statusでready/stopped/compiling=false/domainReloadInProgress=falseを確認する。停止要求は再送せず、既存要求の結果を回収する。解像度はその後に実GameView/RenderTextureを読む。誤った待機監視を解除する場合は当該ローカル監視プロセスだけを対象とし、Editorを終了しない。
