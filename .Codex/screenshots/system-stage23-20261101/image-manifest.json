@@ -1,0 +1,245 @@
+[
+  {
+    "file": "keyboard-reset-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "0e44df1778d299625cf95aacd0c9c7b2946691fdf964f82d387a0989df0c540b",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "keyboard-reset-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "51e9b398f2417201be4bcb07b514d8178e2ca4af164097b402f53fc2cc2e1ca1",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "keyboard-reset-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "86ac0f93ddec077bdaf45c042aa19c621a8053ae3d18b9e9ea66f6ff3c4c7f3c",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "keyboard-save-failure-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "dec02f0c6dbdd75517f4dd8397027e7471ba191d0d2a2508c76f6426d49cd91d",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "keyboard-save-failure-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "cb34d631ed822c5eaa291395d28ab6e220d09c335fc00211cb3c66f0a9a0e239",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "keyboard-save-failure-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b83b11ce2241760924848dd3bf351dbe66bc58140e32916230aef884461c7165",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "pad-reset-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "843f9922d79eab94bde5fc1d49ce69a46356d3013a6e6113bdb0c2e6b64e1550",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "pad-reset-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "4050162956559a534b13245058de7089e4413e0d5446b876e3c9165fc33f6452",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "pad-reset-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "98df932031a46a8727217d2bc111f827bcb51a516fc3a2b200e868993c4737cb",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "pad-save-failure-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "89aea3eacf21df807977aea0ada49b23f4d9b0de55209e36957053801b34370d",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "pad-save-failure-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "7164a2fb9a12682d7241ca1b0c6dcf1d872cd1d6f712d1c7822d0a0610a0033a",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "pad-save-failure-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "f5ab4242accfb85eeada03371e53f0f7ef2ccdabd37de6703da7ac7a29a6414a",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "retreat-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "02959369bd8797680d4da75d983075a5f6907a1cf9f78132313225c69788e8eb",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "retreat-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f183c8f54ad6ef9cc769ecbdf06c25f0185f7df804bdd30acce580a7c4b09852",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "retreat-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "db27b0814e749982aac9037afda3f4cd38ba65b4b5356a355a02bd5194e846f1",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "retreat-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "8fff444a2070affefd720890b3dec3b287358c19ce863087f72cec3448631fdc",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "retreat-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "a02f162e9b64e3d85ecf6d147acd121851e09a254b7b98feb9382f116e8e3ded",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "retreat-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "0048a71c83ae8940b166f42bffb2bf9f50dfa7c80f17eb5709df78c8e2c5b8a8",
+    "kind": "Actual isolated Bootstrap UI entry, paused/held logical state, Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "before-keyboard-reset-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "d38e92cd3b0fb397b579cfdd792af5c15c01adfdf63e8a9b8ba514876a03e3fb",
+    "kind": "Published reference ui-round70-20261031; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-keyboard-reset-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "2d22e6aff57e9550446ce8fbb4cc9e5294a0e45d2b2008147f3936e48e9a6588",
+    "kind": "Published reference ui-round70-20261031; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-keyboard-reset-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "757c6c2bb6d5a00aa713cc0235ce45ec741e54b4cb5edf813b458c3bba65c7f8",
+    "kind": "Published reference ui-round70-20261031; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-pad-reset-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "f696b6dfb2aba46b0a76c59dee0252e18652a1aa56d93f65cbe2427ce62b8d4f",
+    "kind": "Published reference system-stage10-20261031; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-pad-reset-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "950e1bd13ab6936c0aff59ff767f0b3038fadfa9c170e8129d13d319aa779896",
+    "kind": "Published reference system-stage10-20261031; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-pad-reset-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "708ddf9b866ec0bcf7190dd0cd35449ef460e029da9f0581bd24c1d82d05a7f5",
+    "kind": "Published reference system-stage10-20261031; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-retreat-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "9bd2e035de5e2570b4674111285c33f3dc4c8501afc825b4945e89d2dac7ecea",
+    "kind": "Published reference system-stage21-20261101; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-retreat-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "1bd42026e7ba894ef851d442938d479cde200cc110668f8d9557237bd28e5b17",
+    "kind": "Published reference system-stage21-20261101; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  },
+  {
+    "file": "before-retreat-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "00beb2b9827779a43095b835ae676b9ae8e8c080041e1e1321b0235299cc1c49",
+    "kind": "Published reference system-stage21-20261101; same established layout/resolution, separate run/context, not whole-scene same-frame claim"
+  }
+]

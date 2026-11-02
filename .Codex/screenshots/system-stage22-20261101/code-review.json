@@ -1,0 +1,136 @@
+{
+  "stage": 22,
+  "reviewType": "independent static code review",
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "d69f985bd60c945fd893178d531af6809aefdb3d04b72c9185933456904a7e3d",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "1012808c90fc18efb662a3ce68da6166e8519d2fb5962d32d9a25bcbe6488065",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "1109e6c36652f8e9599d55782438fa87b370e49d6dd647c62958da560f83e4e0",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "50ff04469a4367ffc238a5cf02a164255fbdb32a6d58ce658d91037e4922e389",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "7170f26aa5fbd55b4f4642ef89bad34fcf00e7a183739b4d444d5cb2e481dee3"
+  },
+  "submissionProjectMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Latest user direction: ConfirmationDialog/ConfirmationContent shares simple text/yes-no and optional subject scrolling without domain-mode switches. Parent supplies domain callbacks; ReadOnlyDetailsDialog retains reader layout/state.",
+    "ReturnDialog owns cover/restore and termination; OwnedPopup owns common ticket, generation and managed/legacy input. DialogManager adds optional scroll forwarding only.",
+    "ReturnDialog destroying flag is set before base OnDestroy/Abort and suppresses recursive native destruction; cleanup clears parent/surface/widgets/body and Terminated.",
+    "OwnedPopup destruction clears feedback/button/scroll references after abort; individual classes clear completion callbacks.",
+    "Added managed/legacy regression inspects direct destruction, stale events and Busy rejection without canceling existing ticket.",
+    "Parent content/context checks preserve stale callback rejection; successful/cancel result callbacks remain domain-neutral.",
+    "v3: origin name captured using Unity-native null check before closure; selected child of closing popup cleared without clearing selection restored to another view.",
+    "v3: rejected ReturnDialog explicitly clears ownership and subclass result callbacks without relying on untriggered EditMode OnDestroy.",
+    "v3: direct-destroy fixture explicitly invokes lifecycle then DestroyImmediate; expected callback count, ticket release and null references remain strict. Natural Play Destroy remains required and unverified.",
+    "v4: unchanged reference scaling calculation now applied synchronously in Redraw before RefreshContents and retained in LateUpdate. Exactly three CostView test lines follow actual dialog hierarchy and modal EventSystem focus without weakening geometric, stale-event or focus expectations."
+  ],
+  "validation": {
+    "status": "Final v4 targeted/full/native and cleanup receipts complete; publication not performed by reviewer.",
+    "targeted": {
+      "ui-related": {
+        "receipt": "system-stage22-ui-related-test-result.json",
+        "summary": {
+          "total": 382,
+          "passed": 382,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 46.57,
+        "consoleErrors": 0,
+        "hashesMatch": true
+      },
+      "related": {
+        "receipt": "system-stage22-related-test-result.json",
+        "summary": {
+          "total": 537,
+          "passed": 537,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 55.38,
+        "consoleErrors": 0,
+        "hashesMatch": true
+      },
+      "integration-related": {
+        "receipt": "system-stage22-integration-related-test-result.json",
+        "summary": {
+          "total": 605,
+          "passed": 605,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 48.59,
+        "consoleErrors": 0,
+        "hashesMatch": true
+      }
+    },
+    "nativeReceipts": [
+      "system-stage22-native-discard-result.json",
+      "system-stage22-native-delete-result.json",
+      "system-stage22-native-reader-result.json",
+      "system-stage22-native-lifetime-result.json",
+      "system-stage22-native-final-close-result.json"
+    ],
+    "nativeScope": "Actual discard/delete/reader and lifetime replay, including natural destruction, host Close/Open and Single per parent receipts; no reviewer Unity execution.",
+    "sameEditor": {
+      "receipt": "system-stage22-event-regression.json",
+      "passed": 76,
+      "rounds": 2
+    },
+    "full": {
+      "receipt": "system-stage22-final-test-result.json",
+      "summary": {
+        "total": 3649,
+        "passed": 3649,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 247.08,
+      "consoleErrors": 0,
+      "hashesMatchReviewAndCurrent": true
+    },
+    "currentHashesMatch": true,
+    "cleanup": {
+      "receipt": "system-stage22-cleanup.json",
+      "status": "PASS per recorded cleanup receipt; original/source assets, render/TMP/guards, devices, registry/generated leases and native save bytes checked."
+    }
+  },
+  "limits": [
+    "Scoped static review is not universal correctness assurance.",
+    "Requires runtime confirmation of cancel focus/same-frame fence, long subject scroll, short/long reader resize, parent destruction and managed/legacy cleanup.",
+    "No Unity operations, tests or production edits performed by reviewer."
+  ],
+  "history": [
+    {
+      "version": "v2",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "bbe31afd90ffae356f333b5164157cee78b70f632987d828d37bed1316d88e8e",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "1012808c90fc18efb662a3ce68da6166e8519d2fb5962d32d9a25bcbe6488065",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "e5c202de8ff99aaba11f89b08ec86ac192fc00abfcbc72b9a01d8ecbd8c4d410",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9f39a0496f7de710c151628b51a4e540bb793bafc638d168d9aeb811ce87084c"
+      },
+      "initialRelated": "532/537 passed; 5 failed",
+      "receipt": "system-stage22-first-related-failures.json",
+      "diagnosis": "Three legacy cases exposed product MissingReference reading destroyed Unity origin.name; two direct-destruction fixtures did not trigger EditMode lifecycle. Prior static review missed the origin null-conditional hazard."
+    },
+    {
+      "version": "v3",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "dd42fa28934ea0746730c23acec08331eb98bec37ef0d22a796395ffb0871c37",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "1012808c90fc18efb662a3ce68da6166e8519d2fb5962d32d9a25bcbe6488065",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "1109e6c36652f8e9599d55782438fa87b370e49d6dd647c62958da560f83e4e0",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "50ff04469a4367ffc238a5cf02a164255fbdb32a6d58ce658d91037e4922e389"
+      },
+      "full": "3638/3649, 11 failures",
+      "receipt": "system-stage22-first-full-failures.json",
+      "diagnosis": "4 immediate reference-layout failures; 7 obsolete direct-child hierarchy assumptions. Initial static review missed first-render scaling timing."
+    }
+  ],
+  "specUpdate": {
+    "receipt": "system-stage22-spec-protection-latest.json",
+    "status": "Parent reports protected spec-only fast-forward through023c953; no gameplay implementation claimed."
+  }
+}

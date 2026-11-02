@@ -1,0 +1,405 @@
+{
+  "originalHead": "5c4f7e647f6a8685a954b504e76ca499d25716f6",
+  "originalClean": true,
+  "devices": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "actualRender": {
+    "screen": [
+      640,
+      360
+    ],
+    "textures": [
+      {
+        "name": "GameView.m_RenderTexture",
+        "width": 640,
+        "height": 360
+      },
+      {
+        "name": "PlayModeView.m_TargetTexture",
+        "width": 640,
+        "height": 360
+      }
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/",
+    "playing": false
+  },
+  "storageGuard": true,
+  "defaultStoreAbsent": true,
+  "trackedAssetComparison": 928,
+  "exceptPrivateURP": [
+    "Assets/Settings/UniversalRP.asset",
+    "Assets/UniversalRenderPipelineGlobalSettings.asset"
+  ],
+  "differences": [],
+  "consoleErrors": 0,
+  "generatedAssets": {
+    "generations": 0,
+    "roots": 0,
+    "borrowers": 0,
+    "entries": 0,
+    "pendingNativeDestroy": 0,
+    "caches": []
+  },
+  "historicalUnmanagedNamedSprites": 2095,
+  "eventRegistry": {
+    "playing": false,
+    "currentClrNull": true,
+    "currentUnityNull": true,
+    "registered": [],
+    "sceneEvents": []
+  },
+  "proofAndFaultKeys": {
+    "playing": false,
+    "scale": 1,
+    "keys": [
+      {
+        "key": "Settings23Old",
+        "present": false
+      },
+      {
+        "key": "Settings23Fault",
+        "present": false
+      },
+      {
+        "key": "Settings23Store",
+        "present": false
+      },
+      {
+        "key": "Return23OriginalReaderText",
+        "present": false
+      },
+      {
+        "key": "Return23OldButton",
+        "present": false
+      },
+      {
+        "key": "Return23OldClose",
+        "present": false
+      },
+      {
+        "key": "Return23OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Return23OldMain",
+        "present": false
+      },
+      {
+        "key": "Return23OldCollection",
+        "present": false
+      },
+      {
+        "key": "Stage23OldClick",
+        "present": false
+      },
+      {
+        "key": "Stage23OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage23OldBinding",
+        "present": false
+      },
+      {
+        "key": "Stage23Hold",
+        "present": false
+      },
+      {
+        "key": "Stage23Fault",
+        "present": false
+      },
+      {
+        "key": "Stage23FaultSession",
+        "present": false
+      },
+      {
+        "key": "Stage23OldController",
+        "present": false
+      },
+      {
+        "key": "Stage23OldCustom",
+        "present": false
+      },
+      {
+        "key": "Stage23OldInput",
+        "present": false
+      },
+      {
+        "key": "Stage23OldManager",
+        "present": false
+      },
+      {
+        "key": "Stage23OldField",
+        "present": false
+      },
+      {
+        "key": "Stage23OldBackgrounds",
+        "present": false
+      },
+      {
+        "key": "Stage23BorrowedCamera",
+        "present": false
+      },
+      {
+        "key": "Stage23OldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage23OldCustomInput",
+        "present": false
+      },
+      {
+        "key": "Stage23FieldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage23FieldPlayer",
+        "present": false
+      },
+      {
+        "key": "Stage19OldNormal",
+        "present": false
+      },
+      {
+        "key": "Stage19OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage19OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage19End",
+        "present": false
+      },
+      {
+        "key": "Stage19Finished",
+        "present": false
+      },
+      {
+        "key": "Stage19Reason",
+        "present": false
+      },
+      {
+        "key": "Stage18Origin",
+        "present": false
+      },
+      {
+        "key": "Stage18OldCycle",
+        "present": false
+      },
+      {
+        "key": "Stage18OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage18OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage18OriginalText",
+        "present": false
+      },
+      {
+        "key": "Stage18End",
+        "present": false
+      },
+      {
+        "key": "Stage17OldReward",
+        "present": false
+      },
+      {
+        "key": "Stage17End",
+        "present": false
+      },
+      {
+        "key": "Stage16Source",
+        "present": false
+      },
+      {
+        "key": "Stage16OldEquipment",
+        "present": false
+      },
+      {
+        "key": "Stage16OldMenus",
+        "present": false
+      },
+      {
+        "key": "Stage16OldButton",
+        "present": false
+      },
+      {
+        "key": "Stage16OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage16OldMain",
+        "present": false
+      },
+      {
+        "key": "Stage16OldCollection",
+        "present": false
+      },
+      {
+        "key": "Stage16OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage14OldButton",
+        "present": false
+      },
+      {
+        "key": "Stage14OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage14OldMain",
+        "present": false
+      },
+      {
+        "key": "Stage14OldCollection",
+        "present": false
+      },
+      {
+        "key": "Stage14OwnedSprites",
+        "present": false
+      },
+      {
+        "key": "Stage14OwnedMiniTextures",
+        "present": false
+      },
+      {
+        "key": "Stage14ImportedTexture",
+        "present": false
+      },
+      {
+        "key": "Stage14ArtworkView",
+        "present": false
+      },
+      {
+        "key": "Stage13Confirm",
+        "present": false
+      },
+      {
+        "key": "Stage13OldManualSave",
+        "present": false
+      },
+      {
+        "key": "Stage13Store",
+        "present": false
+      },
+      {
+        "key": "Stage13Session",
+        "present": false
+      },
+      {
+        "key": "Stage13Fault",
+        "present": false
+      },
+      {
+        "key": "Stage13Hold",
+        "present": false
+      },
+      {
+        "key": "Stage13CheckpointSession",
+        "present": false
+      },
+      {
+        "key": "Stage13CheckpointStore",
+        "present": false
+      },
+      {
+        "key": "Stage13CheckpointFault",
+        "present": false
+      },
+      {
+        "key": "Stage10OldController",
+        "present": false
+      },
+      {
+        "key": "Stage10OldCustom",
+        "present": false
+      },
+      {
+        "key": "Stage10OldInput",
+        "present": false
+      },
+      {
+        "key": "Stage10OldManager",
+        "present": false
+      },
+      {
+        "key": "Stage10OldField",
+        "present": false
+      },
+      {
+        "key": "Stage10OldBackgrounds",
+        "present": false
+      },
+      {
+        "key": "Stage10BorrowedCamera",
+        "present": false
+      },
+      {
+        "key": "Stage10OldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage10OldCustomInput",
+        "present": false
+      },
+      {
+        "key": "Stage10FieldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage10FieldPlayer",
+        "present": false
+      }
+    ],
+    "devices": [
+      {
+        "name": "Mouse",
+        "native": true,
+        "enabled": true
+      },
+      {
+        "name": "Keyboard",
+        "native": true,
+        "enabled": true
+      }
+    ],
+    "inputBlocked": true,
+    "isPaused": false,
+    "awaitRelease": true,
+    "resumeFrames": 2
+  },
+  "nativeSaveBytes": {
+    "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+    "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+    "settings/gamepad-gameplay.json": "601125fc740adfa868ce3e40a8143862d70ecc0d8d543465fb2ae2042a19bf94",
+    "settings/gamepad-gameplay.backup.json": "3732927bd40af402f82c4c6f680f03a7884d5767bb34f712ffb5a11250a71350",
+    "progress/progress.json": "7ee0689bc777e3cedbe00beeaeb329a114e24399a22eb2ee237a6c9d28a9cf1d",
+    "progress/progress.backup.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+    "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+  },
+  "nativeSaveBytesUnchangedAfterStopAndTests": true
+}

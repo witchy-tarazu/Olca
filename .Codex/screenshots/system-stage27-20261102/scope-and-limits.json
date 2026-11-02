@@ -1,0 +1,30 @@
+{
+  "implemented": "Root-owned outside Core/session/runtime with60Hz fixed logical horizontal move/stop, bounded validation terrain, horizontal UI viewport follow, actual existingInputProvider keyboard/Dpad and Pause/settings/back lifecycle",
+  "terrain": {
+    "id": "validation-flat-32",
+    "width": 32,
+    "start": 8,
+    "speedPerSecond": 6,
+    "productBalance": false,
+    "provenance": "Parent explicitly allowed validation terrain when product map unregistered. Values demonstrate input/bounds/follow; not an authored product map or balance choice."
+  },
+  "assets": "Original imported cave/ground/idle, ratios/pivot preserved; no new generated art. Idle translation is not completed walking body motion. Root Camera/Listener settings unchanged.",
+  "notImplemented": [
+    "product startmap registration",
+    "jump/variable height/dash/walls/doublejump/water/combat",
+    "outside persistent save and dungeon roundtrip",
+    "outside-specific rebinding and touch movement"
+  ],
+  "unverified": [
+    "player build",
+    "physical keyboard/gamepad/touch/IME",
+    "auditory review",
+    "all HotReload paths",
+    "existing product stat/Itemskip/NPC registration/extreme old names"
+  ],
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095 baseline",
+    "D05/factory/S08 unresolved"
+  ]
+}

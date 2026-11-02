@@ -54,3 +54,42 @@ namespace Olca.Application.Management
         }
     }
 }
+
+namespace Olca.Application.Management
+{
+    /// <summary>外界Sessionの単一時計。hostは借用して駆動し、View終了では時計/位置を破棄しない。</summary>
+    public sealed class OutsideExplorationRuntime : System.IDisposable
+    {
+        private readonly Olca.Core.Logic.Integration.OutsideExplorationSession session;
+        private Olca.Unity.UnityLogicalLoop loop;
+        private object driver;private Olca.Unity.UnityInputProvider input;
+        private bool disposed,active,armed,pumping;
+        public long Frame=>loop?.Clock.Frame??0;
+        public OutsideExplorationRuntime(Olca.Core.Logic.Integration.OutsideExplorationSession session){this.session=session??throw new System.ArgumentNullException(nameof(session));}
+        public void Attach(object owner,Olca.Unity.UnityInputProvider provider)
+        {
+            if(disposed)throw new System.ObjectDisposedException(nameof(OutsideExplorationRuntime));
+            if(owner==null||provider==null)throw new System.ArgumentNullException(nameof(owner));
+            if(driver!=null&&!ReferenceEquals(driver,owner))throw new System.InvalidOperationException("外界driverが重複しています");
+            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded);driver=owner;input=provider;Reset();
+        }
+        private void Reset(){active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
+        public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();driver=null;input=null;}
+        public void Pump(object owner,bool canPlay)
+        {
+            if(disposed||!ReferenceEquals(driver,owner)||pumping)return;
+            pumping=true;
+            try{
+                if(!canPlay){if(active)Reset();loop.Observe(false);input.CaptureTimestamped();return;}
+                if(!active){Reset();active=true;}
+                // 時刻順/floor/未来保留は既存loopだけが判断する。未採用イベントでneutralを解除しない。
+                loop.PumpTimestamped(true,input.CaptureTimestamped(),(frame,ms,value)=>{
+                    if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
+                    bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
+                    session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton);
+                },()=>session.IsPresented&&!session.IsEnded);
+            }finally{pumping=false;}
+        }
+        public void Dispose(){if(disposed)return;disposed=true;Reset();driver=null;input=null;loop?.Dispose();}
+    }
+}

@@ -1,0 +1,33 @@
+{
+  "implemented": "independent outside shared card gauge dataAPI (spend/refill/final config), recovery only from existing Core60Hz, read-only HUD. No Dungeon CustomGaugeSystem reuse.",
+  "spec": "Planning/ゲーム全体仕様.md §1 197-202 regen/stop/maxchange/explicit provisional permission,222HUD",
+  "provisional": {
+    "maximum": 100,
+    "recoveryPerSecond": 10,
+    "initial100": "validation map only, not product new-game decision"
+  },
+  "fixture": "Partial20 prepared through spend80 API before actual entry; max140/10,empty/refill are verification API calls, not card attacks/equipment/recoverypoint registration.",
+  "notImplemented": [
+    "card/redraw/attack input and animation-start transaction",
+    "sameframe attack consumption-vs-recovery order",
+    "equipment/parts/kamui modifier summing/registration",
+    "fractional-rate or maximum<=0 product effects",
+    "full outside HUD beyond gauge",
+    "existing closed-view externalDestroy auto-reopens; normal user route/desired policy not established, unchanged",
+    "product map/recovery/map-reset/dungeon-roundtrip connections",
+    "outside persistent save"
+  ],
+  "unverified": [
+    "player build",
+    "native gamepad gauge flow (regression separate)",
+    "physical input/IME",
+    "auditory review",
+    "allHotReload",
+    "productstat/Itemskip/NPC/extreme old names"
+  ],
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095",
+    "D05/factory/S08"
+  ]
+}

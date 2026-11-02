@@ -1,0 +1,365 @@
+{
+  "stateBefore": {
+    "phase": "Dungeon",
+    "position": 4.4,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": true,
+        "id": -303496530,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": true,
+        "id": -303496064,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": true,
+        "id": -303498026,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -303498292,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": true,
+        "id": -303496362,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 3,
+    "pending": false,
+    "progress": false,
+    "owned": 14,
+    "dialogs": 0,
+    "focus": "SelectDepartureStyle",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "interactable": false
+      },
+      {
+        "name": "ReturnNextPage",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "EditOwnedDeparture",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "NextDeparture",
+        "interactable": true
+      }
+    ],
+    "rootId": -303482914,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "6e97c2bb-8dba-4b27-afb3-221669982e2a",
+    "presentation": "1fabec6b-a6e6-49ce-80ca-8227b668d85a"
+  },
+  "beforeIntentionalSuspend": {
+    "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+    "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+    "settings/gamepad-gameplay.json": "601125fc740adfa868ce3e40a8143862d70ecc0d8d543465fb2ae2042a19bf94",
+    "settings/gamepad-gameplay.backup.json": "3732927bd40af402f82c4c6f680f03a7884d5767bb34f712ffb5a11250a71350",
+    "progress/progress.json": "7ee0689bc777e3cedbe00beeaeb329a114e24399a22eb2ee237a6c9d28a9cf1d",
+    "progress/progress.backup.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+    "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+  },
+  "afterIntentionalSuspend": {
+    "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+    "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+    "settings/gamepad-gameplay.json": "601125fc740adfa868ce3e40a8143862d70ecc0d8d543465fb2ae2042a19bf94",
+    "settings/gamepad-gameplay.backup.json": "3732927bd40af402f82c4c6f680f03a7884d5767bb34f712ffb5a11250a71350",
+    "progress/progress.json": "7ee0689bc777e3cedbe00beeaeb329a114e24399a22eb2ee237a6c9d28a9cf1d",
+    "progress/progress.backup.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+    "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+  },
+  "finalClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1639583835,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -303482914,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -303482920,
+        -303482926,
+        -303482932
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "oldBindingReturned": {
+    "bindingAlive": false,
+    "slots": 0,
+    "popups": 0,
+    "session": false,
+    "dialogs": 0,
+    "owned": 3
+  },
+  "missingCancel": {
+    "actualMissingPrefabRejected": true,
+    "canceledAfterRealPrefabCreatedBeforePreparation": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1639583835,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -303482914,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -303482920,
+        -303482926,
+        -303482932
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "saveHashesAfter": {
+    "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+    "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+    "settings/gamepad-gameplay.json": "601125fc740adfa868ce3e40a8143862d70ecc0d8d543465fb2ae2042a19bf94",
+    "settings/gamepad-gameplay.backup.json": "3732927bd40af402f82c4c6f680f03a7884d5767bb34f712ffb5a11250a71350",
+    "progress/progress.json": "7ee0689bc777e3cedbe00beeaeb329a114e24399a22eb2ee237a6c9d28a9cf1d",
+    "progress/progress.backup.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+    "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+  },
+  "finalConsole": {
+    "sampledUtc": "2026-11-01T21:51:46.706717Z",
+    "ageMs": 236,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 0,
+    "seeded": true
+  },
+  "boundaryNote": "Intentional host suspension keeps existing checkpoint write contract; read/cancel invariance checked separately",
+  "physicalDevicesAndHearingNotRun": true
+}

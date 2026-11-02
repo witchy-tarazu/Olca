@@ -1,0 +1,34 @@
+{
+  "probe": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"diagnostics\": [], \"compileMs\": 40, \"executeMs\": 22, \"assemblyName\": \"PipelineRunScript_Dialogue24LegacyBindProof_f7eab213bffb4c5095364d5594abbf5b\", \"success\": true, \"command\": \"run_script\", \"result\": {\"expectedFocus\": \"DialogueSkip\", \"actualFocus\": \"DialogueHistory\", \"publicLegacyBind\": true, \"noSaveStoreUsed\": true}, \"executionTimeMs\": 66, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-01T23:26:51.951788Z\"}"
+      }
+    ],
+    "trackedCliJob": "17adc1ecabb841039c699b4f83ec91de",
+    "targetPid": 137059
+  },
+  "probeAfterFix": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"diagnostics\": [], \"compileMs\": 145, \"executeMs\": 22, \"assemblyName\": \"PipelineRunScript_Dialogue24LegacyBindProof_d49de84ba42f4b54b2efcd0774e347a7\", \"success\": true, \"command\": \"run_script\", \"result\": {\"expectedFocus\": \"DialogueSkip\", \"actualFocus\": \"DialogueSkip\", \"publicLegacyBind\": true, \"noSaveStoreUsed\": true}, \"executionTimeMs\": 172, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-01T23:43:00.562158Z\"}"
+      }
+    ],
+    "trackedCliJob": "7122385859624424b4a64175a94ffcee",
+    "targetPid": 137059
+  },
+  "eventCleanup": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"diagnostics\": [], \"compileMs\": 50, \"executeMs\": 10, \"assemblyName\": \"PipelineRunScript_Stage6EventRegistryProof_97310a616d924115a07a5e5badfa14ca\", \"success\": true, \"command\": \"run_script\", \"result\": {\"playing\": false, \"currentClrNull\": true, \"currentUnityNull\": true, \"registered\": [], \"sceneEvents\": []}, \"executionTimeMs\": 71, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-01T23:43:01.182875Z\"}"
+      }
+    ],
+    "trackedCliJob": "a10eee60c784419d80c3a6aac6bc003f",
+    "targetPid": 137059
+  },
+  "fix": "New Bind and terminal destruction clear popupOrigin/restoredFocus; same-conversation pause retains position/origin. One public legacy UI regression added.",
+  "privateProbeFailure": "Initial probe supplied duplicate Image to Initialize; partial exact-name fixtures2 removed, compatibility scene restored before corrected successful repro. Not a product initialization claim."
+}

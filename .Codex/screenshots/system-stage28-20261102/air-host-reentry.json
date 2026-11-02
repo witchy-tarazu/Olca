@@ -1,0 +1,171 @@
+{
+  "airHostPreserved": true,
+  "frozen": {
+    "frame": 5970,
+    "clock": 5970,
+    "position": 1920000,
+    "height": 66000,
+    "velocity": 9600,
+    "grounded": false,
+    "worldX": 32,
+    "Facing": 1,
+    "map": "validation-flat-32",
+    "baseState": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -317029758,
+        "session": -1649945898,
+        "presented": true,
+        "ended": false,
+        "resources": 10,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -317035752,
+      "open": true,
+      "rootParent": true,
+      "layer": "outside-exploration-entry",
+      "session": -1649945898,
+      "core": -1295950538,
+      "runtime": -1995643904,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 0,
+      "focus": "CloseOutsideExploration",
+      "buttons": [
+        {
+          "name": "PauseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "CloseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": false
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": false
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": false
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": false
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        }
+      ]
+    }
+  },
+  "after": {
+    "frame": 6009,
+    "clock": 6009,
+    "position": 1920000,
+    "height": 0,
+    "velocity": 0,
+    "grounded": true,
+    "worldX": 32,
+    "Facing": 1,
+    "map": "validation-flat-32",
+    "baseState": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -317029758,
+        "session": -1649945898,
+        "presented": false,
+        "ended": false,
+        "resources": 10,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -317035752,
+      "open": false,
+      "rootParent": true,
+      "layer": "return-hub",
+      "session": -1649945898,
+      "core": -1295950538,
+      "runtime": -1995643904,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "OutsideExplorationEntry",
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        }
+      ]
+    }
+  }
+}

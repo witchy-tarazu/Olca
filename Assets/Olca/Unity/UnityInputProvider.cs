@@ -310,6 +310,7 @@ namespace Olca.Unity
             return new Olca.Core.Logic.Integration.LogicalInput {
                 HasInputSample = true, AnyKey = physicalTouches.Count>0 || buttons.Values.Any(pressed => pressed),
                 Horizontal = touchMovement.Direction!=0 ? touchMovement.Direction : x, Vertical = y, BasicAttackButton = ActionHeld("battle", "AttackPrimary"),
+                JumpButton = ActionHeld("exploration", "JumpPrimary"),
                 DashButton = ActionHeld("exploration", "DashPrimary") || ActionHeld("exploration", "DashSecondary")
             };
         }
@@ -398,7 +399,7 @@ namespace Olca.Unity
             float horizontal = Input.GetAxisRaw("Horizontal");
             var value = new Olca.Core.Logic.Integration.LogicalInput {
                 Horizontal = horizontal, HorizontalDown = lastHorizontal == 0 ? horizontal : 0,
-                Vertical = Input.GetAxisRaw("Vertical"), JumpButtonDown = Input.GetKeyDown(KeyCode.Space),
+                Vertical = Input.GetAxisRaw("Vertical"), JumpButton = Input.GetKey(KeyCode.Space), JumpButtonDown = Input.GetKeyDown(KeyCode.Space),
                 CardUseButtonDown = Input.GetKeyDown(KeyCode.Space), BasicAttackButton = Input.GetKey(KeyCode.Z),
                 DashButton = DashButton,
                 DashButtonDown = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift),
@@ -778,6 +779,8 @@ namespace Olca.Unity
         private bool directionScroll=true;private Vector2 linkedScrollPosition;private bool linkedScrollTracked;
         private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Selectable focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
         public string FocusName=>focused!=null?focused.name:null;
+        /// <summary>ゲーム操作を併用する表示では、メニュー決定/方向を採用せず取消だけ受ける。</summary>
+        public bool CancelOnly {get;set;}
         public static bool IsTopmost(Transform root)
         {
             if(root==null||!root.gameObject.activeInHierarchy)return false;var es=UnityEngine.EventSystems.EventSystem.current;if(es==null)return true;
@@ -831,6 +834,7 @@ namespace Olca.Unity
             int current=version;
             foreach(var e in commands){if(current!=version||e.Epoch!=input.Epoch||!Usable())break;
                 if(e.Command==CustomPadCommand.Cancel){cancel?.Invoke();continue;}
+                if(CancelOnly)continue;
                 if(scroll!=null&&(e.Command==CustomPadCommand.PageUp||e.Command==CustomPadCommand.PageDown||directionScroll&&(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.Down))){scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.PageUp?.2f:-.2f));continue;}
                 if(e.Command==CustomPadCommand.Decide){if(focused!=null&&focused.IsInteractable()){if(focused is UnityEngine.UI.Button button)button.onClick.Invoke();else if(focused is UnityEngine.UI.Toggle toggle)toggle.isOn=!toggle.isOn;}continue;}
                 if(focused is UnityEngine.UI.Slider slider&&(e.Command==CustomPadCommand.Left||e.Command==CustomPadCommand.Right)){float step=slider.wholeNumbers?1:(slider.maxValue-slider.minValue)*.1f;slider.value=Mathf.Clamp(slider.value+(e.Command==CustomPadCommand.Right?step:-step),slider.minValue,slider.maxValue);continue;}

@@ -1,0 +1,25 @@
+{
+  "fix": "Only normal registered Hide clears binding View; active externalDestroy keeps recovery. No visual/core/input/save rules changed.",
+  "initialReproduction": "Stage31 helper closed cached View then externally Destroyed it; HasLostView reopened it. Normal user-only trigger not established.",
+  "readJobLostOnReload": "Stage32 initial dimension-read job46fb207724e7488093afaa555ccc0f8b was not found after domain reload; no tests/Play/write had started. Re-read only after reload completed.",
+  "renderPreflight": "Reload result Screen640x360 with no RT stopped before tests; normal Small once restored twoRT640x360; strict guard unchanged.",
+  "firstPlayHelper": {
+    "compileMs": 336143,
+    "executeMs": 24
+  },
+  "fullLaunchWrapperTimedOut": true,
+  "sameEditorPid": 137059,
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095"
+  ],
+  "unverified": [
+    "normal UI-only trigger for external destruction",
+    "playerbuild",
+    "physical input/IME",
+    "auditory",
+    "allHotReload",
+    "productstat/Itemskip/NPC/extreme oldnames"
+  ],
+  "outsideFeatureScopeUnchanged": true
+}

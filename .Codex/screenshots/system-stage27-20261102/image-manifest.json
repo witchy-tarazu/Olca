@@ -1,0 +1,254 @@
+[
+  {
+    "file": "outside-initial-fhd.png",
+    "sha256": "307dc3707ebcab57f9e3f5af004f20c6b8fc7c80c4bb461950590b4dead79a0c",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 514,
+      "clock": 514,
+      "position": 480000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-initial-4k.png",
+    "sha256": "6ba0ff845e9bfad2e9c39920f188e5965825454ed2daba90613c20bb9a21495a",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 514,
+      "clock": 514,
+      "position": 480000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-initial-4by3.png",
+    "sha256": "365a4550f533051341a01e6b74570d032680d2c3f159ee87a56e1d80f2500b8a",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 514,
+      "clock": 514,
+      "position": 480000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-left-edge-fhd.png",
+    "sha256": "1393cce5317fb31517d8ee222094800a9da083fe3ff820c7f1da9c154dc6e651",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 900,
+      "clock": 900,
+      "position": 0,
+      "Facing": -1
+    }
+  },
+  {
+    "file": "outside-left-edge-4k.png",
+    "sha256": "cfad0171895e8ce6d5d59b3ac550236791c106498a4f07b70e476d6ebabfda24",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 900,
+      "clock": 900,
+      "position": 0,
+      "Facing": -1
+    }
+  },
+  {
+    "file": "outside-left-edge-4by3.png",
+    "sha256": "64a8d4613246b7d532373d3db4a3c7e875d537d562c864f98f171d4263026b17",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 900,
+      "clock": 900,
+      "position": 0,
+      "Facing": -1
+    }
+  },
+  {
+    "file": "outside-follow-fhd.png",
+    "sha256": "d52cabd530bd3f417666a08337ea7234ab72c92b069f7ada20eedf28d27894f0",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 1283,
+      "clock": 1283,
+      "position": 1014000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-follow-4k.png",
+    "sha256": "997f437ffeea36f7088908948ee67f28dd8e80bf4ccad54bf1f024ac2f8c3813",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 1283,
+      "clock": 1283,
+      "position": 1014000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-follow-4by3.png",
+    "sha256": "76aa264d4d918df57e231cd3daecd4c94a3f4d94ee13f0bd6ae0b0440275711d",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 1283,
+      "clock": 1283,
+      "position": 1014000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-right-edge-fhd.png",
+    "sha256": "4389a52be22b1972efd5d439153530c518ecfce19a66e1cba6538385467d284b",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 2200,
+      "clock": 2200,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-right-edge-4k.png",
+    "sha256": "dc91992eba8b8d2abebfbb5205698033dd7e51589cea10caab26a926c7166412",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 2200,
+      "clock": 2200,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-right-edge-4by3.png",
+    "sha256": "8162895bf9cf5799a38cfd8a6664aa122201a16082ffac55b8f3a68340f7d276",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 2200,
+      "clock": 2200,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-pause-fhd.png",
+    "sha256": "86d6c3e6d0d1df58ce0be048901f02375846054f7914da4543cbd1a73e23c574",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 2991,
+      "clock": 2991,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-pause-4k.png",
+    "sha256": "a4865adb7ba8e5078e19d8ec407d43a1260d19d7dd751b65966957388a92abf9",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 2991,
+      "clock": 2991,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "outside-pause-4by3.png",
+    "sha256": "ba95f1f4729149bd995f8f0967fcc7b4795ef95a3f40abb7e5c88e6abf619ff5",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 2991,
+      "clock": 2991,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "returned-hub-fhd.png",
+    "sha256": "4d11ae38bfb688123fb69aef2d0a455ed978935a27067ee858729efb2776c8d6",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 3249,
+      "clock": 3249,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "returned-hub-4k.png",
+    "sha256": "ea28be97b87db7005d20a89faecdf662e3f073f8eea3e0ed6397d20e7faf03c5",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 3249,
+      "clock": 3249,
+      "position": 1920000,
+      "Facing": 1
+    }
+  },
+  {
+    "file": "returned-hub-4by3.png",
+    "sha256": "7dde8bfc26fe395a7642b47e25656a9ae0b9dc064530fe772586852f700347ac",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 3249,
+      "clock": 3249,
+      "position": 1920000,
+      "Facing": 1
+    }
+  }
+]

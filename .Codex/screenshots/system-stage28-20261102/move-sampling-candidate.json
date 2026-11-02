@@ -1,0 +1,10 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"diagnostics\": [], \"compileMs\": 42, \"executeMs\": 34, \"assemblyName\": \"PipelineRunScript_Stage28MotionCandidate_73e4838f1e894f65a1106d5f2beb3499\", \"success\": true, \"command\": \"run_script\", \"result\": {\"directWithAnimator\": \"Assets/Art/Sprites/Characters/Heroine/Move/move_03.png\", \"manualAnimator\": \"Assets/Art/Sprites/Characters/Heroine/Move/move_03.png\", \"animatorHasState\": true}, \"executionTimeMs\": 83, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-02T08:23:16.461577Z\"}"
+    }
+  ],
+  "trackedCliJob": "ee2dee54ce7f4e5ab862dc4508773f53",
+  "targetPid": 137059
+}

@@ -1,0 +1,19 @@
+{
+  "systemMigrationAllComplete": false,
+  "simpleConfirmationsCommon": true,
+  "implemented": [
+    "Common ConfirmationDialog: deck discard and saved deck delete",
+    "ReadOnlyDetailsDialog"
+  ],
+  "requiredFeatureAreas": [
+    "binding reset common confirmation",
+    "dialogue skip common confirmation",
+    "dialogue backlog owned dialog",
+    "Custom details owned dialog",
+    "Review Retreat simple drawing reuse while preserving stateful eligibility/cover"
+  ],
+  "optional": [
+    "Prefab every internal widget",
+    "Purely aesthetic abstraction"
+  ]
+}

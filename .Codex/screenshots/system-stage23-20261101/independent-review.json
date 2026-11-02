@@ -1,0 +1,12 @@
+{
+  "reviewer": "equipment_save_review / independent_refactor_review",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "evidence": "code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "evidence": "visual-review.json"
+  },
+  "scope": "Reset and retreat use shared ConfirmationDialog display/input. Thin retreat policy owns latest eligibility/pause restore; existing settings domain/save stays in View/controller; DialogManager generic."
+}

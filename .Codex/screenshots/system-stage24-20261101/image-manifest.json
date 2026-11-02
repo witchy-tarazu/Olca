@@ -1,0 +1,212 @@
+[
+  {
+    "file": "conversation-fhd.png",
+    "sourceEvidenceName": "system-stage24-conversation-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "bdc83d798c4c00ae8a956fd91f5c3ea4bf927f5e8bf04eab20e9541b0406d430",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "conversation-4k.png",
+    "sourceEvidenceName": "system-stage24-conversation-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "dc51abf5628554c117b08c2d827dd8ed6b50335f795dfb2ec84dd851c846ed03",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "conversation-4by3.png",
+    "sourceEvidenceName": "system-stage24-conversation-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "4069c0ae243760f875c2f295127bcc50cd1cba697da93986ddd9105034a349ec",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "backlog-tail-fhd.png",
+    "sourceEvidenceName": "system-stage24-backlog-tail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "a59994a95f95a0d0737b75b3767ad0a0fde3bac3bc371c81307b51482263339e",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "backlog-tail-4k.png",
+    "sourceEvidenceName": "system-stage24-backlog-tail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "92da565be2875e790e761de2991f95e038b3ff50f012c80e9818b371131c7a3c",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "backlog-tail-4by3.png",
+    "sourceEvidenceName": "system-stage24-backlog-tail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "96481c187521af6c4805ee0c23ff31479915fd4075b12a99dc3e5761d223814b",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "skip-confirm-fhd.png",
+    "sourceEvidenceName": "system-stage24-skip-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "e33ef2fbfb9cf7989841bd87231e7eccedd4a9d1724b8f6cd127d97d63389610",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "skip-confirm-4k.png",
+    "sourceEvidenceName": "system-stage24-skip-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "e27f50ece09a8cec03b796874960ea0b329558e013a05f744c490abea3b89329",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "skip-confirm-4by3.png",
+    "sourceEvidenceName": "system-stage24-skip-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "31e2fe7f04c4463a16cd3c97132f373dbc4e36fab6602d0665bfd669478ba68c",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "backlog-multiple-tail-fhd.png",
+    "sourceEvidenceName": "system-stage24-backlog-multiple-tail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "50c9966012a2722b84fc4eede585d3438d416d03d3ec5cbf748c8f05d5978f40",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "backlog-multiple-tail-4k.png",
+    "sourceEvidenceName": "system-stage24-backlog-multiple-tail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "040a6a44be670c68ba1c7a8cd1a7827871222497b4ae51f6cb4cf085baa416ff",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "backlog-multiple-tail-4by3.png",
+    "sourceEvidenceName": "system-stage24-backlog-multiple-tail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "23880709275cca69c5f7e71f2da1e80271fe1aeb0e36008d47d927e1ef747524",
+    "kind": "Actual isolated Bootstrap dialogue entry, held logical state, Canvas and both actual render textures checked"
+  },
+  {
+    "file": "before-conversation-fhd.png",
+    "sourceEvidenceName": "conversation-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "61198cd17bca5381309e7c3bbdd2b4277be09b3c82cf4ac60d487ca791574982",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-conversation-4k.png",
+    "sourceEvidenceName": "conversation-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "147e8038605366d8becda12bd0339dd996d9ae22028b6b1e5cb9c7b146ace073",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-conversation-4by3.png",
+    "sourceEvidenceName": "conversation-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "ecee1b61207b1d36ddd5c5d47e5891113ad98dc452ae5edc4dbf38ad52693e5a",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-backlog-tail-fhd.png",
+    "sourceEvidenceName": "backlog-tail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "80a39967b1f447379061371cf86589d83a488bd8caddbcb808861d9b01f8c2cb",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-backlog-tail-4k.png",
+    "sourceEvidenceName": "backlog-tail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "fdb16a99e6aeba8e31776865d3d325d1600a383c70365fbf6270357ab2ddabe2",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-backlog-tail-4by3.png",
+    "sourceEvidenceName": "backlog-tail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "607b4e80c54e3ffcc4f9b896ed54a06695f8eee8ae1f3e093d21e8ab6978eee7",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-skip-confirm-fhd.png",
+    "sourceEvidenceName": "skip-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "b2aa1650915b93a580a6116c6f28f051b902a836c73e3bcd7908220af474f9c7",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-skip-confirm-4k.png",
+    "sourceEvidenceName": "skip-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "d7810bce85ccfc470192d605638d55717e4f9f2029ef5dee013f05ca776f42f9",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  },
+  {
+    "file": "before-skip-confirm-4by3.png",
+    "sourceEvidenceName": "skip-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b51f4f950f616f99021f06e9c4afbca12032fa21ac4d3b95680b11c566e512ce",
+    "kind": "Published Stage19 same fixture/layout and resolution reference; separate run, no whole-world same-frame claim"
+  }
+]

@@ -1,0 +1,86 @@
+{
+  "stage": 24,
+  "reviewType": "independent static source review",
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "2945db731338682732aeaddcb3d72652ad25b9b7c6b2fac78cb8b22b6c534467",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "10bc2973f3e122f338f905f94174373fe3affce0a40918e7c4ca8a45210751a6",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "091ddae3f2a18b35871a71173e591964984e8aa7275a6d1cb0c2995c47c54daf"
+  },
+  "hashReceiptMatchesCurrent": true,
+  "submissionProjectMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "scope": [
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs",
+    "Assets/Olca/Presentation/Management/DialogManager.cs",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs"
+  ],
+  "checked": [
+    "Shared ConfirmationDialog owns skip text/buttons/ticket; Session ConfirmSkip/CancelSkip remain parent result operations.",
+    "Dedicated DialogueBacklogDialog owns copied entries/page/scroll/previous-next/close and sole reading Menu, retaining close listener identity across page changes.",
+    "DialogueView owns normal progress and popup launch/result; normal content is hidden without reparenting shared Pause, and background actions are blocked while popup/session flags active.",
+    "Pause cancels popup through ParentClosed without changing Session flags, retains backlog reading position and recreates fresh popup on resume.",
+    "bindEpoch/popupEpoch/session/context checks reject stale events; normal CanAct blocks old background Next; origin selection restoration preserves manager same-frame input fence.",
+    "Generic external button/MenuExtras API supplies shared Pause without domain branching in DialogManager; backlog manageMenu=false prevents duplicate menu ownership.",
+    "ReturnDialog restores parent before Closing callback; popupEpoch increment before Abort prevents canceled popup from mutating Session on parent shutdown.",
+    "New managed/legacy backlog tests retain close event across page changes and reject old prior-generation page/close actions.",
+    "v2 SetPresentationPaused explicitly GetComponent then Unity ==null AddComponent before alpha/raycast writes; retains pause flags and callback semantics. Expectations unchanged.",
+    "v3 BringToFront promotes popup then only live active same-parent MenuExtras; Rendered and per-frame RefreshLifetime share order. Suspended/closed/invalid-owner paths return before promotion; parent Pause is not reparented. Existing skip/backlog lifecycle tests assert Pause sibling above popup after explicit RefreshLifetime.",
+    "v4 Bind clears popupOrigin/restoredFocus after CancelPopup for new-session boundary; OnDestroy clears terminal focus references, while pause cancellation retains same-session origin. One new public legacy Bind regression rejects A close in B, preserves old Session Version and restores DialogueSkip after B skip cancellation."
+  ],
+  "validation": {
+    "status": "v4 compile jobfc6e7c7f208545dc840163d957ecfb1f requested once, compiling per parent. Final tests/native pending.",
+    "dynamicVerified": false
+  },
+  "limits": [
+    "Scoped static review is not all-branch/runtime correctness assurance.",
+    "Must verify close origin focus and same-frame stale Next, Pause-to-other-confirmation/resume, long-text end position after pause, natural Destroy reentry, legacy choice dialogue and visual equivalence.",
+    "Reviewer performed no Unity operations, tests or production edits."
+  ],
+  "history": [
+    {
+      "version": "v1",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "9f6c30bde5c6d521b3b57e1e03e529d1715658264b62c5dfb41bdd2fd37cd15f",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "5299ce41a38a54f2dfa648b88e1004b90e87163d13ba98c5d4b6128166729e48",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "d83d118c5ff94375a9dac84cf8df32dd14cabf948987c8fb08c32e426664ecd8"
+      },
+      "initialApplication": "541/543; 2 SetPresentationPaused MissingComponentException failures",
+      "diagnosis": "Unity missing-object wrapper bypassed CLR null-coalescing GetComponent fallback. Earlier static review missed Unity-null hazard."
+    },
+    {
+      "version": "v2",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "dcd28813e12553b6acb46ffb1215df9fa983d803d40749de0e77cff6a6a4860d",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "5299ce41a38a54f2dfa648b88e1004b90e87163d13ba98c5d4b6128166729e48",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "d83d118c5ff94375a9dac84cf8df32dd14cabf948987c8fb08c32e426664ecd8"
+      },
+      "nativeIssue": "Actual backlog Pause raycast blocked: popup sibling2/depth14 above Pause sibling1/depth12",
+      "receipt": "system-stage24-native-backlog-pause-hits.json",
+      "cause": "OwnedPopup per-frame front promotion undid parent open-time Pause promotion. Previous static review missed ordering interaction."
+    },
+    {
+      "version": "v3",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "dcd28813e12553b6acb46ffb1215df9fa983d803d40749de0e77cff6a6a4860d",
+        "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "10bc2973f3e122f338f905f94174373fe3affce0a40918e7c4ca8a45210751a6",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "bc70b46ab1a6d355de34aea0861755178f64bf77075a2765ce69e031e198658a"
+      },
+      "related": "Application543/Integration605 passed per parent; native final not run",
+      "publicLegacyReproducer": "Bind A -> Backlog -> Bind B -> Skip -> Cancel incorrectly restored DialogueHistory",
+      "receipt": "system-stage24-v3-legacy-rebind-focus-probe-corrected.json",
+      "cause": "CancelPopup preserved origin for same-session pause, but new Bind failed to reset it. Prior review missed public legacy rebind boundary.",
+      "helperFailureSeparate": "Private probe initially passed duplicate Image to Initialize; partial named fixtures cleaned before successful reproducer. Not a product change or cause of reproduced focus defect."
+    }
+  ]
+}

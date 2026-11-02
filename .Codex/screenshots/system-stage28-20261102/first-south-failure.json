@@ -1,0 +1,98 @@
+{
+  "state": {
+    "frame": 598,
+    "clock": 598,
+    "position": 480000,
+    "height": 12000,
+    "velocity": 11600,
+    "grounded": false,
+    "worldX": 8,
+    "Facing": 1,
+    "map": "validation-flat-32",
+    "baseState": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -315720146,
+        "session": 202067344,
+        "presented": false,
+        "ended": false,
+        "resources": 11,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -315721924,
+      "open": false,
+      "rootParent": true,
+      "layer": "return-hub",
+      "session": 202067344,
+      "core": -1964858138,
+      "runtime": -434671972,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "OutsideExplorationEntry",
+      "buttons": [
+        {
+          "name": "OutsideExplorationEntry",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "saveHashes": {
+    "progress/progress.json": "2024a0569ec9a7bca0c11499ab104183287d3bdec38003761a99b32687bb0e0c"
+  },
+  "finding": "South triggers jump and menu Decide/back in same input event; exact native repro, no product save edit"
+}

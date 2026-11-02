@@ -1,0 +1,19 @@
+{
+  "base": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "head": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "remote": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "safeFetchAtStart": true,
+  "newSpecificationChanges": [],
+  "noGameplayImplementationAdded": true,
+  "publicationBoundaryFetchStillRequired": false,
+  "safeFastForwardPullAtV3Boundary": true,
+  "pullResult": "Already up to date",
+  "localSourceAndDesignPreserved": true,
+  "preFullSafeFetchAndPull": true,
+  "preFullHead": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "preFullRemote": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "publicationBoundaryFetchUtc": "2026-11-02T00:11:27.876631+00:00",
+  "publicationHead": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "publicationRemote": "8357b2ed09fab5564aa871d4e753a0489dc6644a",
+  "publicationSpecChanges": []
+}

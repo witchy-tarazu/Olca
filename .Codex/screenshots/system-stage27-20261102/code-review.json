@@ -1,0 +1,124 @@
+{
+  "stage": 27,
+  "reviewType": "independent static review final App-v2",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "0fc8d618330d7c4857cde661b4d88ef342217b14dce62670a8c95a2909221eef",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "f2180e543e9f83030ba72f29beea50cae10b2385bfc31f66d94d30e219313e12",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "b636b4c21699a7462de3bf1b9b6d5bdf5ab704800ba905e56ccade76469a3f23",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "b900a60246caded9bf1e0d9b7d88b9dd9282990ebf5df72948ff12d9c372b335",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "submissionProjectMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "resolvedFindings": [
+    "Core long extreme arithmetic overflow fixed by quotient/remainder and pre-add saturation; regression added.",
+    "Low-speed right-edge inward motion lost remainder; direction-based saturation and both-edge speed1/60frame regression added.",
+    "Outside regular gamepad Pause was blocked by provider availability and early return; App-v2 adds outside availability/context and consumes Pause in route branch."
+  ],
+  "checked": [
+    "Root owns lazy OutsideExplorationRuntime single UnityLogicalLoop; binding owns driver attachment and borrowed existing provider; detach observes inactive/releases without destroying Root Core/clock. Existing Dungeon runtime still separate and inactive while outside.",
+    "Optional editorActive defaults true for legacy callers; outside callback only while active/presented/nonended; Dispose unsubscribes loop.",
+    "Neutral gate filters movement until physical neutral and preserves timestamped logical catch-up; shared UnityLogicalLoop handles pause barrier frame updates.",
+    "Core uses fixed 60000units/world and per-frame remainder, bounded interval; validation32/start8/speed6 explicitly not production data.",
+    "View projects Core continuous position/facing and follows horizontally without altering Core/world collision; imported art ownership retained.",
+    "App-v2 Pause action and gamepad route use existing pause service. SetCovered suspends view menu, rejects Back and sends outside behind pause; restore rebinds Back and fences same-frame actions. Optional callback hides Pause for older fixtures.",
+    "App-v3 BuildPausePanel allows only Resume and named existing settings during outside route; other Chrome remains blocked. Managed Show applies restriction of LoadCheckpoint/OwnedCards/Retreat. PauseView saves per-button prior interactable, rejects captured events while restricted and restores individually on Hide/Disable/Destroy. Normal legacy pause remains unrestricted and outside entry requires GameSystem.",
+    "Final v5 Reset drains provider timestamp history before snapshot. Neutral gate runs only on actual loop ticks after existing queue timestamp/floor/future handling; no duplicate floor/queue implementation. Core still ticks zero input before arm, matching loop frame. Regression injects out-of-order future neutral/current held using existing clock seam, asserts no early movement and fresh post-neutral movement; GameplayPause three static states restored in finally.",
+    "v6 floor Repeat uses actual Image tile width sprite.rect.width/(terrain.pixelsPerUnit*terrain.pixelsPerUnitMultiplier); Ground border0. Projection108, spritePPU64 and Canvas100 unchanged.",
+    "v7 boundary labels hidden outside actual visible interval and clamped by label half-width inside viewport; ChromeBinding covers only existing Chrome via CanvasGroup, stores/restores each original alpha/interactable/blocks/enabled without changing active or Pause/settings hierarchy. GetComponent uses explicit Unity ==null. Controller delegates cover and restores on release. No input/clock/value/save change from v6."
+  ],
+  "validation": {
+    "status": "v7 compile2320490fe9e743b793d3aa10c7103205 requested once; final App553/full3673/repeat68 and native27002 pending. v6 proofs archived, not final source validation.",
+    "dynamicVerified": false
+  },
+  "limits": [
+    "Native must verify actual Pause raycast ordering, holding input/release after resume and disconnected devices.",
+    "Must verify neutral movement, both edges, split/catchup, Editor paused while hidden, natural Destroy/reopen, host Close/Open/Single Core/clock identities and save invariants.",
+    "Scope is validation flat horizontal movement only, not product map/jump/physics/combat/save implementation.",
+    "No Unity operations/tests/product edits by reviewer."
+  ],
+  "history": [
+    {
+      "version": "App-v2",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "758527b6f80ee06b54aacb02a0df759eface45dbdd0b9faf01bbc0fb97236ae0",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "7a031bf4e5d6bc959f765e937af6f0d002968bcfe6ad4390ab03319ea3feb5a7",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "f2180e543e9f83030ba72f29beea50cae10b2385bfc31f66d94d30e219313e12",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "ba1dd9454131fd830d88db8fc3366597ec43054edfcbc96f14c4c32f3f3aa4f3",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "038abc564b81803c23a638826fabd2328b62b580fb99b87dfb6d46291aedad54",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "b900a60246caded9bf1e0d9b7d88b9dd9282990ebf5df72948ff12d9c372b335",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "staticFinding": "BuildPausePanel inherited !OutsideRouteBusy rejected Resume/settings after pause entry. Earlier review missed second callback guard.",
+      "dynamic": "Intermediate App versions untested/unpublished; Core12 only passed."
+    },
+    {
+      "version": "App-v3",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "cba49a68e8e20c2ca27a5b368f212bac9eb90c1e839d8b5b7ce625e17204c99d",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "7a031bf4e5d6bc959f765e937af6f0d002968bcfe6ad4390ab03319ea3feb5a7",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "f2180e543e9f83030ba72f29beea50cae10b2385bfc31f66d94d30e219313e12",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "ba1dd9454131fd830d88db8fc3366597ec43054edfcbc96f14c4c32f3f3aa4f3",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "e4babf25d5f65b0c926edb284f4ecd9cf13aba52fb9a46b7c596f2b7a358bc92",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "d5a77f448792ff2f25949ff11e8e7e30220d137cc7b2558455e173ccb8475ce0",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "b900a60246caded9bf1e0d9b7d88b9dd9282990ebf5df72948ff12d9c372b335",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "related": "App551/Core12/Integration605 passed, intermediate archived",
+      "identifiedIssue": "Neutral gate previously scanned unaccepted provider events before loop floor/order/future buffering, allowing pre-ownership neutral to arm held input."
+    },
+    {
+      "version": "App-v5",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "cba49a68e8e20c2ca27a5b368f212bac9eb90c1e839d8b5b7ce625e17204c99d",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "0fc8d618330d7c4857cde661b4d88ef342217b14dce62670a8c95a2909221eef",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "f2180e543e9f83030ba72f29beea50cae10b2385bfc31f66d94d30e219313e12",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "ba1dd9454131fd830d88db8fc3366597ec43054edfcbc96f14c4c32f3f3aa4f3",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "e4babf25d5f65b0c926edb284f4ecd9cf13aba52fb9a46b7c596f2b7a358bc92",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "081d28ffd0190b0d0423caa7f26927f4b2f405098062e348d02a87b40e61118d",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "b900a60246caded9bf1e0d9b7d88b9dd9282990ebf5df72948ff12d9c372b335",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "related": "App552/Core12/Integration605 passed console0 per parent",
+      "confirmedIssue": "Repeat floor period used world projection108 while actual Image tiling used Canvas100/spritePPU64. Source-derived mismatch, native jump not yet observed."
+    },
+    {
+      "version": "v6",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "cba49a68e8e20c2ca27a5b368f212bac9eb90c1e839d8b5b7ce625e17204c99d",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "0fc8d618330d7c4857cde661b4d88ef342217b14dce62670a8c95a2909221eef",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "f2180e543e9f83030ba72f29beea50cae10b2385bfc31f66d94d30e219313e12",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "5bce430384b44cb7bf3585b40ccb3ae83905cbde0a166d7f0676e76b60bb7911",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "e4babf25d5f65b0c926edb284f4ecd9cf13aba52fb9a46b7c596f2b7a358bc92",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "081d28ffd0190b0d0423caa7f26927f4b2f405098062e348d02a87b40e61118d",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "b900a60246caded9bf1e0d9b7d88b9dd9282990ebf5df72948ff12d9c372b335",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "native": "Functional and CloseOpen/Single/save single-file invariants passed per parent, archived; final visual critique found 4:3 boundary label clipping and duplicate background Chrome in Pause.",
+      "toolBoundary": "Stop watcher unnecessarily awaited DomainProfiling; local Python975341 ended only, Editor137059 maintained, Stop not resent."
+    }
+  ]
+}

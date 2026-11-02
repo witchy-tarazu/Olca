@@ -15,6 +15,7 @@ namespace Olca.Presentation.Management
         private Func<bool> inputAllowed;
         private readonly Dictionary<Button,Button.ButtonClickedEvent> actions=new Dictionary<Button,Button.ButtonClickedEvent>();
         private bool covered;
+        private readonly Dictionary<Button,bool> restricted=new Dictionary<Button,bool>();
         private CanvasGroup presentation;
         private GameObject previousFocus;
         private string restoredFocus;
@@ -33,11 +34,17 @@ namespace Olca.Presentation.Management
             foreach(var pair in actions){
                 var captured=owner;var action=pair.Value;var button=pair.Key;
                 button.onClick=new Button.ButtonClickedEvent();
-                button.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&!captured.DialogBlocksInput&&(inputAllowed?.Invoke()??false))action.Invoke();});
+                button.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&!captured.DialogBlocksInput&&!restricted.ContainsKey(button)&&(inputAllowed?.Invoke()??false))action.Invoke();});
             }
             gameObject.SetActive(true);transform.SetAsLastSibling();
         }
-        public void Hide(){context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
+        public void RestrictControls(IEnumerable<string> names)
+        {
+            RestoreRestrictedControls();var unavailable=new HashSet<string>(names??Array.Empty<string>());
+            foreach(var button in actions.Keys)if(button!=null&&unavailable.Contains(button.name)){restricted.Add(button,button.interactable);button.interactable=false;}
+        }
+        private void RestoreRestrictedControls(){foreach(var pair in restricted)if(pair.Key!=null)pair.Key.interactable=pair.Value;restricted.Clear();}
+        public void Hide(){RestoreRestrictedControls();context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
         public void CoverForDialog()
         {
             previousFocus=EventSystem.current?.currentSelectedGameObject;covered=true;presentation.alpha=0;presentation.blocksRaycasts=false;
@@ -49,8 +56,8 @@ namespace Olca.Presentation.Management
             var focus=previousFocus;previousFocus=null;
             if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){EventSystem.current?.SetSelectedGameObject(focus);restoredFocus=focus.name;}
         }
-        private void OnDisable(){context?.NotifyHidden();context=null;}
-        private void OnDestroy(){context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
+        private void OnDisable(){RestoreRestrictedControls();context?.NotifyHidden();context=null;}
+        private void OnDestroy(){RestoreRestrictedControls();context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
     }
 }
 
@@ -60,6 +67,7 @@ namespace Olca.Presentation.Management
     public sealed class GameplayPanelFactory
     {
         public Font Font { get; }
+        public void Feedback(string name)=>sound?.Invoke(name);
         private readonly Transform parent;
         private readonly Action<string> sound;
         public GameplayPanelFactory(Transform parent,Font font,Action<string> sound){this.parent=parent;Font=font;this.sound=sound;}
@@ -67,6 +75,17 @@ namespace Olca.Presentation.Management
         {
             public Button Pause,Save,NewGame,Collection,Loadout,Unlock,Acquisition;
             public Text Currency;
+            private bool covered;
+            private readonly Dictionary<CanvasGroup,(float Alpha,bool Interactable,bool Blocks,bool Enabled)> previous=new Dictionary<CanvasGroup,(float,bool,bool,bool)>();
+            /// <summary>別画面中の共通Chromeだけを覆う。元の個別状態を保持し、host終了前に返す。</summary>
+            public void SetCovered(bool value)
+            {
+                if(covered==value)return;covered=value;
+                if(value){foreach(var item in new Component[]{Pause,Save,NewGame,Collection,Loadout,Unlock,Acquisition,Currency}){
+                    if(item==null)continue;var group=item.GetComponent<CanvasGroup>();if(group==null)group=item.gameObject.AddComponent<CanvasGroup>();
+                    previous.Add(group,(group.alpha,group.interactable,group.blocksRaycasts,group.enabled));group.enabled=true;group.alpha=0;group.interactable=false;group.blocksRaycasts=false;
+                }}else{foreach(var pair in previous)if(pair.Key!=null){pair.Key.alpha=pair.Value.Alpha;pair.Key.interactable=pair.Value.Interactable;pair.Key.blocksRaycasts=pair.Value.Blocks;pair.Key.enabled=pair.Value.Enabled;}previous.Clear();}
+            }
         }
         public static GameObject LegacyCanvas()
         {
@@ -219,6 +238,10 @@ namespace Olca.Presentation.Management
     public abstract class OwnedPopup : MonoBehaviour
     {
         protected Button confirm,cancel;
+        protected ScrollRect inputScroll;protected bool directionScroll=true,manageMenu=true;
+        public Func<IEnumerable<Button>> MenuExtras {get;set;}
+        protected virtual bool AcceptsInput=>true;
+        protected bool CanOperatePopup=>generation!=null&&Live(generation)&&AcceptsInput&&gameObject.activeInHierarchy;
         private DialogManager manager;
         private IDialogOwner owner;
         private DialogOwnerScope scope;
@@ -232,7 +255,7 @@ namespace Olca.Presentation.Management
         public bool IsOpen {get;private set;}
         public IDialogOwner Owner=>owner;
         public event Action VisibilityChanged;
-        protected void CaptureFeedback(){confirmFeedback=confirm.onClick;cancelFeedback=cancel.onClick;}
+        protected void CaptureFeedback(){confirmFeedback=confirm!=null?confirm.onClick:null;cancelFeedback=cancel.onClick;}
         protected void CompleteAccepted()=>Finish(DialogResult.Confirmed);
         protected bool Begin(DialogManager service,IDialogOwner parent,Func<bool> live)
         {
@@ -247,30 +270,37 @@ namespace Olca.Presentation.Management
             if(manager!=null&&manager.ActiveCount!=0)return false;
             var token=generation=new object();
             gameObject.SetActive(true);transform.SetAsLastSibling();
-            confirm.onClick=new Button.ButtonClickedEvent();cancel.onClick=new Button.ButtonClickedEvent();
-            confirm.onClick.AddListener(()=>{if(Live(token)&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});
-            cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())cancelFeedback?.Invoke();});
+            if(confirm!=null){confirm.onClick=new Button.ButtonClickedEvent();confirm.onClick.AddListener(()=>{if(Live(token)&&AcceptsInput&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});}
+            cancel.onClick=new Button.ButtonClickedEvent();
+            cancel.onClick.AddListener(()=>{if(Live(token)&&AcceptsInput&&cancel.IsInteractable())cancelFeedback?.Invoke();});
             if(manager!=null){
                 if(owner==null){scope=manager.CreateOwner(()=>IsOpen&&!suspended&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false));owner=scope;}
-                request=manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),result=>{if(Live(token))Finish(result);});
+                Action<DialogResult> completed=result=>{if(Live(token))Finish(result);};
+                request=confirm==null?manager.ShowNotice(owner,gameObject,cancel,inputScroll,completed,manageMenu,()=>Live(token)&&AcceptsInput,MenuExtras):manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&AcceptsInput&&Attempt(),completed,inputScroll,directionScroll,MenuExtras);
                 if(request.IsCompleted){if(request.Result==DialogResult.ParentClosed||request.Result==DialogResult.Busy){Finish(DialogResult.ParentClosed);return false;}}
             }else{
-                confirm.onClick.AddListener(()=>{if(!Live(token)||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
-                cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
-                legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&Olca.Unity.MenuPadScope.IsTopmost(transform));
-                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke());
+                if(confirm!=null)confirm.onClick.AddListener(()=>{if(!Live(token)||!AcceptsInput||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
+                cancel.onClick.AddListener(()=>{if(Live(token)&&AcceptsInput&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
+                if(manageMenu){legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&AcceptsInput&&Olca.Unity.MenuPadScope.IsTopmost(transform),MenuExtras);
+                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke(),inputScroll,directionScroll:directionScroll);}
             }
             return true;
         }
         private bool Live(object token)=>this!=null&&IsOpen&&!suspended&&!attempting&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false)&&(owner==null||owner.IsCurrent);
-        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);transform.SetAsLastSibling();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm.gameObject);}
+        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);BringToFront();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm!=null?confirm.gameObject:null);}
         public void RefreshLifetime()
         {
             if(!IsOpen)return;
             if(!(valid?.Invoke()??false)||owner!=null&&!owner.IsCurrent){Abort();return;}
             if(suspended){if(manager==null||manager.ActiveCount==0){suspended=false;if(Attach())Redraw();}return;}
             if(request?.IsCompleted==true){Finish(DialogResult.ParentClosed);return;}
-            legacyMenu?.Tick();if(this!=null&&gameObject.activeInHierarchy)transform.SetAsLastSibling();
+            legacyMenu?.Tick();if(this!=null&&gameObject.activeInHierarchy)BringToFront();
+        }
+        // 親が所有する共用操作は借り替えず、明示された同階層のボタンだけ覆いより前へ保つ。
+        private void BringToFront()
+        {
+            transform.SetAsLastSibling();var external=MenuExtras?.Invoke();if(external==null)return;
+            foreach(var button in external)if(button!=null&&button.gameObject.activeInHierarchy&&button.transform.parent==transform.parent)button.transform.SetAsLastSibling();
         }
         public void Suspend()
         {
@@ -287,16 +317,17 @@ namespace Olca.Presentation.Management
         private void Finish(DialogResult result)
         {
             if(!IsOpen)return;
-            bool restore=result!=DialogResult.ParentClosed&&(valid?.Invoke()??false);var focus=origin;
+            bool restore=result!=DialogResult.ParentClosed&&(valid?.Invoke()??false);var focus=origin;string focusName=restore&&focus!=null?focus.name:null;
             IsOpen=false;suspended=false;Detach();origin=null;if(this!=null)gameObject.SetActive(false);VisibilityChanged?.Invoke();
             if(restore&&focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(focus);
-            valid=null;manager=null;OnResult(result,restore?focus?.name:null);
+            if(EventSystem.current!=null){var selected=EventSystem.current.currentSelectedGameObject;if(selected!=null&&selected.transform.IsChildOf(transform))EventSystem.current.SetSelectedGameObject(null);}
+            valid=null;manager=null;OnResult(result,focusName);
         }
         public void Abort()=>Finish(DialogResult.ParentClosed);
         protected abstract bool Attempt();
         protected abstract void Redraw();
         protected abstract void OnResult(DialogResult result,string focusName);
-        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;}
+        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;confirmFeedback=cancelFeedback=null;confirm=cancel=null;inputScroll=null;MenuExtras=null;}
     }
     public enum ProgressPendingAction { None,ManualSave,NewGame }
     public interface IProgressActionOperations
@@ -394,42 +425,39 @@ namespace Olca.Presentation.Management
         public bool CanConfirm=>Paused&&!Returning;
     }
     /// <summary>撤退の警告・可否表示・確認結果とPauseの覆いを所有し、損失計算は行わない。</summary>
-    public sealed class RetreatConfirmationDialog : OwnedPopup
+    /// <summary>撤退固有の最新可否とPause復帰だけを調整し、確認表示/入力は共通Dialogへ委譲する。</summary>
+    public sealed class RetreatConfirmationDialog : MonoBehaviour
     {
-        private Func<RetreatDialogState> state;
-        private GameplayPauseView pause;
-        private GameObject legacyPause;
-        private Func<bool> hostLive;
-        private GameObject legacyOrigin;
-        public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
+        private Func<RetreatDialogState> state;private GameplayPauseView pause;private GameObject legacyPause,legacyOrigin;private Func<bool> hostLive;private Font font;private Action<string> feedback;
+        private ConfirmationDialog dialog;
+        public bool IsOpen=>dialog!=null&&dialog.IsOpen;
+        public Button ConfirmButton=>dialog!=null?dialog.ConfirmButton:null;public Button CancelButton=>dialog!=null?dialog.CancelButton:null;
         public event Action Confirmed;
-        public void Initialize(GameplayPanelFactory factory)
-        {
-            var text=factory.Label("RetreatWarning",transform,new Vector2(.5f,.5f),new Vector2(0,150),new Vector2(1600,200));
-            text.text="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。";
-            confirm=factory.Button("ConfirmRetreat","撤退して帰還",transform,new Vector2(.5f,.5f),new Vector2(-280,-100));cancel=factory.Button("CancelRetreat","攻略へ戻る",transform,new Vector2(.5f,.5f),new Vector2(280,-100));
-            foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(420,70);CaptureFeedback();
-        }
+        public void Initialize(GameplayPanelFactory factory){font=factory.Font;feedback=factory.Feedback;}
         public static bool CanRequest(RetreatDialogState state,DialogManager manager,GameplayPauseView parent)=>state.CanOpen&&(manager==null||manager.ActiveCount==0&&parent?.Context?.IsCurrent==true&&!parent.Context.DialogBlocksInput);
         public void Open(Func<RetreatDialogState> source,DialogManager manager,GameplayPauseView parent,GameObject legacy,Func<bool> live)
         {
             if(IsOpen||!CanRequest(source(),manager,parent))return;
             state=source;pause=parent;legacyPause=legacy;hostLive=live;legacyOrigin=EventSystem.current?.currentSelectedGameObject;
-            var owner=parent?.Context;if(manager!=null&&(owner?.IsCurrent!=true||owner.DialogBlocksInput)){Clear();return;}
-            if(manager!=null&&manager.ActiveCount!=0){Clear();return;}
-            if(parent!=null)parent.CoverForDialog();
-            if(!Begin(manager,owner,live)){if(parent!=null)parent.RestoreAfterDialog();Clear();return;}
-            if(parent==null&&legacy!=null)legacy.SetActive(false);Redraw();
+            var owner=parent?.Context;if(manager!=null&&(owner?.IsCurrent!=true||owner.DialogBlocksInput||manager.ActiveCount!=0)){Clear();return;}
+            if(parent!=null)parent.CoverForDialog();gameObject.SetActive(true);transform.SetAsLastSibling();
+            var popup=ConfirmationDialog.Create(transform,font,new ConfirmationContent{ButtonFeedback=feedback,RootName="RetreatConfirmationContents",MessageName="RetreatWarning",Message="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。",ConfirmName="ConfirmRetreat",ConfirmLabel="撤退して帰還",CancelName="CancelRetreat",CancelLabel="攻略へ戻る",Layout=new ConfirmationLayout{ButtonFontSize=30,MessagePosition=new Vector2(0,150),MessageSize=new Vector2(1600,200),ConfirmPosition=new Vector2(-280,-100),CancelPosition=new Vector2(280,-100),ButtonSize=new Vector2(420,70),Surface=Color.clear}});
+            dialog=popup;popup.CanConfirm=()=>this!=null&&state?.Invoke().CanConfirm==true;
+            popup.Finished+=result=>{if(this!=null&&ReferenceEquals(dialog,popup))Finish(result);};
+            if(!popup.Open(gameObject,manager,owner,()=>this!=null&&(hostLive?.Invoke()??false),false)){if(parent!=null)parent.RestoreAfterDialog();dialog=null;Clear();gameObject.SetActive(false);return;}
+            if(parent==null&&legacy!=null)legacy.SetActive(false);
         }
-        public void ConfirmFromCompatibilityApi(){confirm.onClick.Invoke();}
-        protected override bool Attempt()=>state?.Invoke().CanConfirm==true;
-        protected override void Redraw(){confirm.interactable=cancel.interactable=true;Rendered();}
-        protected override void OnResult(DialogResult result,string focusName)
+        public void ConfirmFromCompatibilityApi(){ConfirmButton?.onClick.Invoke();}
+        public void RefreshLifetime(){if(dialog!=null)dialog.RefreshLifetime();}
+        public void Abort(){if(dialog!=null)dialog.Abort();}
+        private void Finish(DialogResult result)
         {
+            dialog=null;
             if(result!=DialogResult.ParentClosed&&(hostLive?.Invoke()??false)){if(pause!=null)pause.RestoreAfterDialog();else if(legacyPause!=null){legacyPause.SetActive(true);if(legacyOrigin!=null&&legacyOrigin.activeInHierarchy&&legacyOrigin.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(legacyOrigin);}}
-            bool accepted=result==DialogResult.Confirmed;Clear();if(accepted)Confirmed?.Invoke();
+            bool accepted=result==DialogResult.Confirmed;Clear();gameObject.SetActive(false);if(accepted)Confirmed?.Invoke();
         }
         private void Clear(){state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
-        protected override void OnDestroy(){base.OnDestroy();Clear();Confirmed=null;}
+        private void OnDisable(){Abort();}
+        private void OnDestroy(){Abort();Clear();dialog=null;font=null;feedback=null;Confirmed=null;}
     }
 }

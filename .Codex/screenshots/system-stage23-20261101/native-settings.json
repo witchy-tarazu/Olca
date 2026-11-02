@@ -1,0 +1,3748 @@
+{
+  "devices": [
+    {
+      "device": "keyboard",
+      "original": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": true,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ヘンコウするキーをエラんでください。オナじバメンのワりアてはコウカンされます。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "changed": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": false,
+        "defaultApplied": true,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "ミホゾンのコウホ / ワリアテをコウカンしました。ホゾン・テキヨウでカクテイします。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "persisted": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": false,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ホゾン・テキヨウしました。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "cancel": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "ResetKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": false,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ショキカをトりケしました。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "candidate": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "ResetKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "ミホゾンのコウホ / ショキハイチをヒョウジしました。ホゾン・テキヨウでカクテイします。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "failed": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "ResetKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "ミホゾンのコウホ / ホゾンできませんでした。ヘンコウはまだテキヨウされていません。\nサイシコウするか、ハキしてモドってください。",
+        "saveFailureDisplayed": true,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "retry": {
+        "writes": 2,
+        "state": {
+          "pad": false,
+          "current": "keyboard-settings",
+          "dialogs": 0,
+          "focus": "ResetKeyboardSettings",
+          "paused": true,
+          "draft": [
+            {
+              "slot": "(keyboard, battle, AttackPrimary)",
+              "value": "Z"
+            },
+            {
+              "slot": "(keyboard, battle, CardPrimary)",
+              "value": "Space"
+            },
+            {
+              "slot": "(keyboard, battle, CustomPrimary)",
+              "value": "LeftAlt"
+            },
+            {
+              "slot": "(keyboard, battle, CustomSecondary)",
+              "value": "AltGr"
+            },
+            {
+              "slot": "(keyboard, battle, DownPrimary)",
+              "value": "DownArrow"
+            },
+            {
+              "slot": "(keyboard, battle, DownSecondary)",
+              "value": "S"
+            },
+            {
+              "slot": "(keyboard, battle, LeftPrimary)",
+              "value": "LeftArrow"
+            },
+            {
+              "slot": "(keyboard, battle, LeftSecondary)",
+              "value": "A"
+            },
+            {
+              "slot": "(keyboard, battle, RightPrimary)",
+              "value": "RightArrow"
+            },
+            {
+              "slot": "(keyboard, battle, RightSecondary)",
+              "value": "D"
+            },
+            {
+              "slot": "(keyboard, battle, UpPrimary)",
+              "value": "UpArrow"
+            },
+            {
+              "slot": "(keyboard, battle, UpSecondary)",
+              "value": "W"
+            },
+            {
+              "slot": "(keyboard, exploration, DashPrimary)",
+              "value": "LeftShift"
+            },
+            {
+              "slot": "(keyboard, exploration, DashSecondary)",
+              "value": "RightShift"
+            },
+            {
+              "slot": "(keyboard, exploration, JumpPrimary)",
+              "value": "Space"
+            }
+          ],
+          "applied": [
+            {
+              "slot": "(keyboard, battle, AttackPrimary)",
+              "value": "Z"
+            },
+            {
+              "slot": "(keyboard, battle, CardPrimary)",
+              "value": "Space"
+            },
+            {
+              "slot": "(keyboard, battle, CustomPrimary)",
+              "value": "LeftAlt"
+            },
+            {
+              "slot": "(keyboard, battle, CustomSecondary)",
+              "value": "AltGr"
+            },
+            {
+              "slot": "(keyboard, battle, DownPrimary)",
+              "value": "DownArrow"
+            },
+            {
+              "slot": "(keyboard, battle, DownSecondary)",
+              "value": "S"
+            },
+            {
+              "slot": "(keyboard, battle, LeftPrimary)",
+              "value": "LeftArrow"
+            },
+            {
+              "slot": "(keyboard, battle, LeftSecondary)",
+              "value": "A"
+            },
+            {
+              "slot": "(keyboard, battle, RightPrimary)",
+              "value": "RightArrow"
+            },
+            {
+              "slot": "(keyboard, battle, RightSecondary)",
+              "value": "D"
+            },
+            {
+              "slot": "(keyboard, battle, UpPrimary)",
+              "value": "UpArrow"
+            },
+            {
+              "slot": "(keyboard, battle, UpSecondary)",
+              "value": "W"
+            },
+            {
+              "slot": "(keyboard, exploration, DashPrimary)",
+              "value": "LeftShift"
+            },
+            {
+              "slot": "(keyboard, exploration, DashSecondary)",
+              "value": "RightShift"
+            },
+            {
+              "slot": "(keyboard, exploration, JumpPrimary)",
+              "value": "Space"
+            }
+          ],
+          "defaultDraft": true,
+          "defaultApplied": true,
+          "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+          "status": "テキヨウチュウのワリアテ / ホゾン・テキヨウしました。",
+          "saveFailureDisplayed": false,
+          "root": -303482914,
+          "sources": [
+            -303482920,
+            -303482926,
+            -303482932
+          ],
+          "common": false
+        }
+      },
+      "reopen": {
+        "pad": false,
+        "current": "keyboard-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(keyboard, battle, AttackPrimary)",
+            "value": "Z"
+          },
+          {
+            "slot": "(keyboard, battle, CardPrimary)",
+            "value": "Space"
+          },
+          {
+            "slot": "(keyboard, battle, CustomPrimary)",
+            "value": "LeftAlt"
+          },
+          {
+            "slot": "(keyboard, battle, CustomSecondary)",
+            "value": "AltGr"
+          },
+          {
+            "slot": "(keyboard, battle, DownPrimary)",
+            "value": "DownArrow"
+          },
+          {
+            "slot": "(keyboard, battle, DownSecondary)",
+            "value": "S"
+          },
+          {
+            "slot": "(keyboard, battle, LeftPrimary)",
+            "value": "LeftArrow"
+          },
+          {
+            "slot": "(keyboard, battle, LeftSecondary)",
+            "value": "A"
+          },
+          {
+            "slot": "(keyboard, battle, RightPrimary)",
+            "value": "RightArrow"
+          },
+          {
+            "slot": "(keyboard, battle, RightSecondary)",
+            "value": "D"
+          },
+          {
+            "slot": "(keyboard, battle, UpPrimary)",
+            "value": "UpArrow"
+          },
+          {
+            "slot": "(keyboard, battle, UpSecondary)",
+            "value": "W"
+          },
+          {
+            "slot": "(keyboard, exploration, DashPrimary)",
+            "value": "LeftShift"
+          },
+          {
+            "slot": "(keyboard, exploration, DashSecondary)",
+            "value": "RightShift"
+          },
+          {
+            "slot": "(keyboard, exploration, JumpPrimary)",
+            "value": "Space"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": true,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/keyboard-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ヘンコウするキーをエラんでください。オナじバメンのワりアてはコウカンされます。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "sameFrameOldInputRejected": true,
+      "oldGenerationRejected": true,
+      "beforeFailureBytes": {
+        "settings/keyboard-gameplay.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+        "progress/progress.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+        "progress/progress.backup.json": "b02b0e07601f35ac634e3329abb19ebdb071d1d7e654d26f49403ea36898f0c6",
+        "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+      },
+      "postDefaultsBytes": {
+        "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+        "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+        "progress/progress.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+        "progress/progress.backup.json": "b02b0e07601f35ac634e3329abb19ebdb071d1d7e654d26f49403ea36898f0c6",
+        "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+      }
+    },
+    {
+      "device": "pad",
+      "original": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": true,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ヘンコウするボタンをエラんでください。オナじバメンのワりアてはコウカンされます。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "changed": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": false,
+        "defaultApplied": true,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "ミホゾンのコウホ / ワリアテをコウカンしました。ホゾン・テキヨウでカクテイします。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "persisted": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": false,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ホゾン・テキヨウしました。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "cancel": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "ResetKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": false,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ショキカをトりケしました。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "candidate": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "ResetKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "ミホゾンのコウホ / ショキハイチをヒョウジしました。ホゾン・テキヨウでカクテイします。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "failed": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "ResetKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": false,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "ミホゾンのコウホ / ホゾンできませんでした。ヘンコウはまだテキヨウされていません。\nサイシコウするか、ハキしてモドってください。",
+        "saveFailureDisplayed": true,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "retry": {
+        "writes": 2,
+        "state": {
+          "pad": true,
+          "current": "gamepad-settings",
+          "dialogs": 0,
+          "focus": "ResetKeyboardSettings",
+          "paused": true,
+          "draft": [
+            {
+              "slot": "(gamepad, battle, AttackPrimary)",
+              "value": "West"
+            },
+            {
+              "slot": "(gamepad, battle, CardPrimary)",
+              "value": "RightShoulder"
+            },
+            {
+              "slot": "(gamepad, battle, CustomPrimary)",
+              "value": "North"
+            },
+            {
+              "slot": "(gamepad, battle, DownPrimary)",
+              "value": "DpadDown"
+            },
+            {
+              "slot": "(gamepad, battle, LeftPrimary)",
+              "value": "DpadLeft"
+            },
+            {
+              "slot": "(gamepad, battle, Pause)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, battle, RightPrimary)",
+              "value": "DpadRight"
+            },
+            {
+              "slot": "(gamepad, battle, UpPrimary)",
+              "value": "DpadUp"
+            },
+            {
+              "slot": "(gamepad, custom, Cancel)",
+              "value": "East"
+            },
+            {
+              "slot": "(gamepad, custom, Confirm)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, custom, Customize)",
+              "value": "North"
+            },
+            {
+              "slot": "(gamepad, custom, Decide)",
+              "value": "South"
+            },
+            {
+              "slot": "(gamepad, custom, Details)",
+              "value": "RightStick"
+            },
+            {
+              "slot": "(gamepad, custom, Down)",
+              "value": "DpadDown"
+            },
+            {
+              "slot": "(gamepad, custom, Left)",
+              "value": "DpadLeft"
+            },
+            {
+              "slot": "(gamepad, custom, PageDown)",
+              "value": "RightShoulder"
+            },
+            {
+              "slot": "(gamepad, custom, PageUp)",
+              "value": "LeftShoulder"
+            },
+            {
+              "slot": "(gamepad, custom, Right)",
+              "value": "DpadRight"
+            },
+            {
+              "slot": "(gamepad, custom, Transform)",
+              "value": "Select"
+            },
+            {
+              "slot": "(gamepad, custom, Undo)",
+              "value": "West"
+            },
+            {
+              "slot": "(gamepad, custom, Up)",
+              "value": "DpadUp"
+            },
+            {
+              "slot": "(gamepad, exploration, DashPrimary)",
+              "value": "LeftStick"
+            },
+            {
+              "slot": "(gamepad, exploration, JumpPrimary)",
+              "value": "South"
+            },
+            {
+              "slot": "(gamepad, exploration, Pause)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, menu, Cancel)",
+              "value": "East"
+            },
+            {
+              "slot": "(gamepad, menu, Confirm)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, menu, Customize)",
+              "value": "North"
+            },
+            {
+              "slot": "(gamepad, menu, Decide)",
+              "value": "South"
+            },
+            {
+              "slot": "(gamepad, menu, Details)",
+              "value": "RightStick"
+            },
+            {
+              "slot": "(gamepad, menu, Down)",
+              "value": "DpadDown"
+            },
+            {
+              "slot": "(gamepad, menu, Left)",
+              "value": "DpadLeft"
+            },
+            {
+              "slot": "(gamepad, menu, PageDown)",
+              "value": "RightShoulder"
+            },
+            {
+              "slot": "(gamepad, menu, PageUp)",
+              "value": "LeftShoulder"
+            },
+            {
+              "slot": "(gamepad, menu, Right)",
+              "value": "DpadRight"
+            },
+            {
+              "slot": "(gamepad, menu, Transform)",
+              "value": "Select"
+            },
+            {
+              "slot": "(gamepad, menu, Undo)",
+              "value": "West"
+            },
+            {
+              "slot": "(gamepad, menu, Up)",
+              "value": "DpadUp"
+            }
+          ],
+          "applied": [
+            {
+              "slot": "(gamepad, battle, AttackPrimary)",
+              "value": "West"
+            },
+            {
+              "slot": "(gamepad, battle, CardPrimary)",
+              "value": "RightShoulder"
+            },
+            {
+              "slot": "(gamepad, battle, CustomPrimary)",
+              "value": "North"
+            },
+            {
+              "slot": "(gamepad, battle, DownPrimary)",
+              "value": "DpadDown"
+            },
+            {
+              "slot": "(gamepad, battle, LeftPrimary)",
+              "value": "DpadLeft"
+            },
+            {
+              "slot": "(gamepad, battle, Pause)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, battle, RightPrimary)",
+              "value": "DpadRight"
+            },
+            {
+              "slot": "(gamepad, battle, UpPrimary)",
+              "value": "DpadUp"
+            },
+            {
+              "slot": "(gamepad, custom, Cancel)",
+              "value": "East"
+            },
+            {
+              "slot": "(gamepad, custom, Confirm)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, custom, Customize)",
+              "value": "North"
+            },
+            {
+              "slot": "(gamepad, custom, Decide)",
+              "value": "South"
+            },
+            {
+              "slot": "(gamepad, custom, Details)",
+              "value": "RightStick"
+            },
+            {
+              "slot": "(gamepad, custom, Down)",
+              "value": "DpadDown"
+            },
+            {
+              "slot": "(gamepad, custom, Left)",
+              "value": "DpadLeft"
+            },
+            {
+              "slot": "(gamepad, custom, PageDown)",
+              "value": "RightShoulder"
+            },
+            {
+              "slot": "(gamepad, custom, PageUp)",
+              "value": "LeftShoulder"
+            },
+            {
+              "slot": "(gamepad, custom, Right)",
+              "value": "DpadRight"
+            },
+            {
+              "slot": "(gamepad, custom, Transform)",
+              "value": "Select"
+            },
+            {
+              "slot": "(gamepad, custom, Undo)",
+              "value": "West"
+            },
+            {
+              "slot": "(gamepad, custom, Up)",
+              "value": "DpadUp"
+            },
+            {
+              "slot": "(gamepad, exploration, DashPrimary)",
+              "value": "LeftStick"
+            },
+            {
+              "slot": "(gamepad, exploration, JumpPrimary)",
+              "value": "South"
+            },
+            {
+              "slot": "(gamepad, exploration, Pause)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, menu, Cancel)",
+              "value": "East"
+            },
+            {
+              "slot": "(gamepad, menu, Confirm)",
+              "value": "Start"
+            },
+            {
+              "slot": "(gamepad, menu, Customize)",
+              "value": "North"
+            },
+            {
+              "slot": "(gamepad, menu, Decide)",
+              "value": "South"
+            },
+            {
+              "slot": "(gamepad, menu, Details)",
+              "value": "RightStick"
+            },
+            {
+              "slot": "(gamepad, menu, Down)",
+              "value": "DpadDown"
+            },
+            {
+              "slot": "(gamepad, menu, Left)",
+              "value": "DpadLeft"
+            },
+            {
+              "slot": "(gamepad, menu, PageDown)",
+              "value": "RightShoulder"
+            },
+            {
+              "slot": "(gamepad, menu, PageUp)",
+              "value": "LeftShoulder"
+            },
+            {
+              "slot": "(gamepad, menu, Right)",
+              "value": "DpadRight"
+            },
+            {
+              "slot": "(gamepad, menu, Transform)",
+              "value": "Select"
+            },
+            {
+              "slot": "(gamepad, menu, Undo)",
+              "value": "West"
+            },
+            {
+              "slot": "(gamepad, menu, Up)",
+              "value": "DpadUp"
+            }
+          ],
+          "defaultDraft": true,
+          "defaultApplied": true,
+          "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+          "status": "テキヨウチュウのワリアテ / ホゾン・テキヨウしました。",
+          "saveFailureDisplayed": false,
+          "root": -303482914,
+          "sources": [
+            -303482920,
+            -303482926,
+            -303482932
+          ],
+          "common": false
+        }
+      },
+      "reopen": {
+        "pad": true,
+        "current": "gamepad-settings",
+        "dialogs": 0,
+        "focus": "CloseKeyboardSettings",
+        "paused": true,
+        "draft": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "applied": [
+          {
+            "slot": "(gamepad, battle, AttackPrimary)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, battle, CardPrimary)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, battle, CustomPrimary)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, battle, DownPrimary)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, battle, LeftPrimary)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, battle, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, battle, RightPrimary)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, battle, UpPrimary)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, custom, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, custom, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, custom, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, custom, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, custom, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, custom, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, custom, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, custom, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, custom, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, custom, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, custom, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, custom, Up)",
+            "value": "DpadUp"
+          },
+          {
+            "slot": "(gamepad, exploration, DashPrimary)",
+            "value": "LeftStick"
+          },
+          {
+            "slot": "(gamepad, exploration, JumpPrimary)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, exploration, Pause)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Cancel)",
+            "value": "East"
+          },
+          {
+            "slot": "(gamepad, menu, Confirm)",
+            "value": "Start"
+          },
+          {
+            "slot": "(gamepad, menu, Customize)",
+            "value": "North"
+          },
+          {
+            "slot": "(gamepad, menu, Decide)",
+            "value": "South"
+          },
+          {
+            "slot": "(gamepad, menu, Details)",
+            "value": "RightStick"
+          },
+          {
+            "slot": "(gamepad, menu, Down)",
+            "value": "DpadDown"
+          },
+          {
+            "slot": "(gamepad, menu, Left)",
+            "value": "DpadLeft"
+          },
+          {
+            "slot": "(gamepad, menu, PageDown)",
+            "value": "RightShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, PageUp)",
+            "value": "LeftShoulder"
+          },
+          {
+            "slot": "(gamepad, menu, Right)",
+            "value": "DpadRight"
+          },
+          {
+            "slot": "(gamepad, menu, Transform)",
+            "value": "Select"
+          },
+          {
+            "slot": "(gamepad, menu, Undo)",
+            "value": "West"
+          },
+          {
+            "slot": "(gamepad, menu, Up)",
+            "value": "DpadUp"
+          }
+        ],
+        "defaultDraft": true,
+        "defaultApplied": true,
+        "path": "/workspace/olca-validation-20261024/save/system-stage23-23001/settings/gamepad-gameplay.json",
+        "status": "テキヨウチュウのワリアテ / ヘンコウするボタンをエラんでください。オナじバメンのワりアてはコウカンされます。",
+        "saveFailureDisplayed": false,
+        "root": -303482914,
+        "sources": [
+          -303482920,
+          -303482926,
+          -303482932
+        ],
+        "common": false
+      },
+      "sameFrameOldInputRejected": true,
+      "oldGenerationRejected": true,
+      "beforeFailureBytes": {
+        "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+        "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+        "settings/gamepad-gameplay.json": "3732927bd40af402f82c4c6f680f03a7884d5767bb34f712ffb5a11250a71350",
+        "progress/progress.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+        "progress/progress.backup.json": "b02b0e07601f35ac634e3329abb19ebdb071d1d7e654d26f49403ea36898f0c6",
+        "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+      },
+      "postDefaultsBytes": {
+        "settings/keyboard-gameplay.backup.json": "22d46e49229c622b59dfcc350128d0f09a14c5553d7b21ec4ba40d982323e515",
+        "settings/keyboard-gameplay.json": "8899b7410c5102b95709a0fec24620592f7e811c69133cfbfb8c658285429a82",
+        "settings/gamepad-gameplay.json": "601125fc740adfa868ce3e40a8143862d70ecc0d8d543465fb2ae2042a19bf94",
+        "settings/gamepad-gameplay.backup.json": "3732927bd40af402f82c4c6f680f03a7884d5767bb34f712ffb5a11250a71350",
+        "progress/progress.json": "1927e69eae8aded76edb421bfe50a92d3a1bb3b465ba0c0df275d2bc6784068d",
+        "progress/progress.backup.json": "b02b0e07601f35ac634e3329abb19ebdb071d1d7e654d26f49403ea36898f0c6",
+        "checkpoints/runs/e8b1907e7a9d45918723bbf8d51330e7/active.json": "a953c24b56133d0438b5b01b05b0ca339a43d09cbcff11996a39f7e84f9f5d78"
+      }
+    }
+  ],
+  "gameSaveBytesUnchanged": true,
+  "temporaryInputDevicesRemovedByHelper": true
+}

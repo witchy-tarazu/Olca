@@ -1,0 +1,29 @@
+{
+  "implemented": "Root-owned separate 20card deck registration through existing owned/regulation rules; initial hand3/read-onlyHUD/remaining17; clone cards and independent draw history; no automatic product registration.",
+  "initialReview": "v1 required1: raw card Name bypassed existing kanji-to-katakana projection. v2 displays via CustomDisplay.Katakana, with kanji conversion and hiragana/Latin/source-name preservation cases. v1 not tested or published.",
+  "explicitValidationDeck": "sword/bomb/heal/shield and existing Normal fire fallback,4each=20; seeded local IRandomProvider33; explicit isolated fixture only, not product starting deck or owned-item award.",
+  "notImplemented": [
+    "product exploration deck source/editor/multiple saveddeck switching",
+    "card selection/use/refill/redraw and sharedgauge consumption",
+    "attack timing/behavior and outside save/map/dungeon connection"
+  ],
+  "captureHelperFailure": {
+    "job": "136903724cfb4de290da1d81001801b1",
+    "reason": "Root Cards still exist while closed View does not; HandSnapshot incorrectly required active View. Corrected probe condition to Cards AND presented, not product behavior.",
+    "recovery": "Read confirmed closed Root state, preserved20/3/17; resumed same Play without registration/Destroy repetition.",
+    "saveDigestLimit": "Pre-registration through closedDestroy byte assert passed before capture failure; original local numerical digest not serialized. Resumed digest interval recorded separately in native-lifecycle.json."
+  },
+  "sameEditorPid": 137059,
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095"
+  ],
+  "unverified": [
+    "playerbuild",
+    "physical input/IME",
+    "auditory",
+    "allHotReload",
+    "productstat/Itemskip/NPC/extreme oldnames"
+  ],
+  "fullLaunchWrapperTimedOut": true
+}

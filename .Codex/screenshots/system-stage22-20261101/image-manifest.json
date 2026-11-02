@@ -1,0 +1,272 @@
+[
+  {
+    "file": "discard-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "711f41c13a3ee5c25e1c18c34595fce875d0d578b8d8f73e5dd3a515c7db0863",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "discard-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "1bc21e954276b7506b5faeb74a1b95ce13d0fe6e919e8e569eb6eec04cdb659a",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "discard-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "13c7dc60d0d1bea8a80c91387d19c2bcba19502c0b073f69837f79a8fe92c6ad",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "d0389b78c9f17c4b25f72fc3c68659b44f1b85a9bcf9d0fe65e3d82232fa6739",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "aa32a4037f226d923932bdabf7913b900ccead1fb1d0f4590c744e910fbdf0c5",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "13190fc6c3dc5340331f85fd90329cea7f7e8b7939d37368a02ec6c57172e845",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "b109fdc7b6c3de77633023c2be5d4259d820ba50cceb9697005f95a11d4dab01",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "6f0468ec53774cb85e82abfd1ebe2f8feb9d4739941f8296173c2c4e0e3e07b7",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "3cffb3609efd9e18464400403f00a074fd8e18420852dd3154446aa59c298551",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-long-name-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "68f4d328d243b5caf7d5189d573476661f5b161f3a72c6f8932c8249537f4589",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-long-name-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "5b2510a00150adf658eb2b73e19e27b1924a5ca9c3d77e0e9abc684a333db481",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "delete-long-name-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b81444eb08cab43f7fec6046bf5f73b3e0b22895f49e35843cc1f98332e1ee36",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "owned-detail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "e31237605f812ddd51dbbca317a0800b3155c061d8d704485213a22fb3c6049c",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "owned-detail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "d486702d234cba383301b8f078f286c3a1bddea51c210eb149366a3a8db07e28",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "owned-detail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "9688a4441bcc4b6be49a89cddc60c2cdaec8a66f395b3602282e71f948c3670a",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "long-reader-end-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "a217c74c1d2b82001ee868ed4710c3dbe4a8f7decbe8bc44b27cae34ca484032",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "long-reader-end-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "2e09e18dcd873a1a8516d435f689dea9cc2de0e340e3828c8b2dd135196311be",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "long-reader-end-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "8f6f78a965bd165a8b50cc66ac95e35b804b6c8804057e85a494b13c81baf4c7",
+    "kind": "actual isolated Bootstrap entry; held logical frame; Canvas/actual RenderTexture checked"
+  },
+  {
+    "file": "before-discard-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "74dd61971cfce6c085075f8fd75e0143b0fe726e46c181911398e184a02ff2c5",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-discard-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "2bc81aa2a3628529d2cdbd3b926cea9ca28d0901012af1bdeab88f8f7aa37b2b",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-discard-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "c022604ef139ad6c81212fcd5ef173fe112258605f6f5714965f4beb946c6c01",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-confirm-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "b8f182131db2e7a54277d9d68b4cd3c1a8acf9d5086d990ec71d7b3af7367b32",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-confirm-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f5b0a924aed2c45b21e1b8fb190097c77f9e73e0db88bf45a1ae6f737289a78d",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-confirm-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "90266cc99a9f8014b84a8ac77aa9c65778f4c629d0a50a0d146c4d3712b25b8d",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-save-retry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "acdcfd9571f1ac2083cdfaac9ff116b2980e620c45bcd5bf3426e4be6de28759",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-save-retry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "e0e67473201e054b4a7e360ea1a774d9c849f10dcd9cd71b54652e0682b77aab",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-save-retry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "9173bd387648b80626beeaed9d0a7e6d310411aca3630860ee0019a8101b6ce1",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-long-name-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "0c13bfa2a83efb98e6192775e0dc514830b569297a9e327fb28a8ade07d76d0b",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-long-name-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "f78bda2dea3e9218dd729fc9da6783afd361cffa03f3c5ba36b7dfa2310306e9",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  },
+  {
+    "file": "before-delete-long-name-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b2a34aa2225bf6ba50d2b05ce0ddf578c48c3c33184e48e57849becfc062d49f",
+    "kind": "Published stage15; ClearReturnView source unchanged15→21; matched UI/resolution, separate epoch not same globalframe"
+  }
+]

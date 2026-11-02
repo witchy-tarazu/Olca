@@ -1,0 +1,3141 @@
+{
+  "transformationFixture": {
+    "setup": {
+      "fixtureOnly": true,
+      "freeDescriptionField": false,
+      "longNameCharacters": 94,
+      "definitions": [
+        {
+          "Id": "fixture-a",
+          "HandSizeBonus": 0
+        },
+        {
+          "Id": "fixture-b",
+          "HandSizeBonus": 0
+        }
+      ]
+    },
+    "before": {
+      "hand": [
+        418351964,
+        -678734440,
+        579200920,
+        -937612904
+      ],
+      "selected": 0,
+      "cost": 0
+    },
+    "after": {
+      "hand": [
+        418351964,
+        -678734440,
+        579200920,
+        -937612904
+      ],
+      "selected": 0,
+      "cost": 0
+    },
+    "touch": {
+      "actualInputModuleTouch": true,
+      "physicalTouchNotRun": true,
+      "elapsed": 0.5366844249656424,
+      "required": 0.5,
+      "clickCanceled": true,
+      "state": {
+        "playing": true,
+        "screen": [
+          640,
+          360
+        ],
+        "phase": "Battle",
+        "frame": 0,
+        "custom": true,
+        "confirming": false,
+        "hand": [
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "reference": 418351964
+          },
+          {
+            "Id": "tuning",
+            "Name": "チューニング",
+            "reference": -678734440
+          },
+          {
+            "Id": "bomb",
+            "Name": "ボム",
+            "reference": 579200920
+          },
+          {
+            "Id": "heal",
+            "Name": "ヒール",
+            "reference": -937612904
+          }
+        ],
+        "selected": [
+          -313038972
+        ],
+        "cost": 1,
+        "hidden": false,
+        "detailsVersion": 13,
+        "modal": true,
+        "dialogs": 1,
+        "owner": true,
+        "blocked": true,
+        "text": "テスト・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・ナガイヘンシンメイノカクニン・\nテフダジョウゲン +0\nジャクテン: None / Sword\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nコユウコウゲキ: Water / ツウジョウ 100% / タメ 200% / 60フレーム",
+        "normalized": 0,
+        "content": 778.8,
+        "viewport": 778.8,
+        "focus": "CloseCustomPadDetails",
+        "focusId": -308785746,
+        "paused": false,
+        "root": -308782426,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3,
+        "availableTransforms": 2,
+        "buttons": [
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "TouchCardUseButton",
+            "interactable": false
+          },
+          {
+            "name": "TransformationChoice0",
+            "interactable": true
+          },
+          {
+            "name": "CloseCustomPadDetails",
+            "interactable": true
+          },
+          {
+            "name": "SelectionIndicator",
+            "interactable": true
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "ConfirmButton",
+            "interactable": true
+          },
+          {
+            "name": "HideCustomPresentation",
+            "interactable": true
+          },
+          {
+            "name": "HandCardViewPrefab(Clone)",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": true
+          },
+          {
+            "name": "UndoCustomizationButton",
+            "interactable": false
+          },
+          {
+            "name": "BasicAttackButton",
+            "interactable": false
+          },
+          {
+            "name": "InspectCombatants",
+            "interactable": true
+          },
+          {
+            "name": "TransformationChoice1",
+            "interactable": true
+          }
+        ]
+      }
+    },
+    "restore": {
+      "restored": true
+    },
+    "productRegistrationNotClaimed": true
+  },
+  "parentRebind": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 2,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": null,
+    "focusId": null,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "oldAfterRebind": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 3,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -308785746,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "naturalDestroy": {
+    "naturalPlayDestroy": true,
+    "clrContentAndCallbacksCleared": true,
+    "dialogs": 0,
+    "importSurvives": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 0,
+      "modal": false,
+      "dialogs": 0,
+      "owner": true,
+      "blocked": false,
+      "text": null,
+      "normalized": null,
+      "content": null,
+      "viewport": null,
+      "focus": null,
+      "focusId": null,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "oldAfterDestroy": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 1,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -308785746,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "initial": {
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "bindings": [
+      {
+        "name": "pauseOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "checkpointOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "retreatConfirmation",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "progressActionOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "clearReturnView",
+        "exists": true,
+        "id": -308783678,
+        "active": true
+      },
+      {
+        "name": "cardCollectionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationEditorView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationUnlockView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "customizationAcquisitionView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "dialogueView",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "basicAttackHud",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "explorationResumeLabel",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "currencyOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      },
+      {
+        "name": "itemRewardOverlay",
+        "exists": false,
+        "id": 0,
+        "active": false
+      }
+    ],
+    "revision": 1,
+    "pending": false,
+    "progress": false,
+    "owned": 9,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "paused": false,
+    "views": null,
+    "buttons": [
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      }
+    ],
+    "rootId": -308782426,
+    "camera": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "app": "4ce2beec-2027-4c4a-9478-14f1641ccd6c",
+    "presentation": "adae09b7-7843-4470-8fe5-308e8b2943c0"
+  },
+  "initialFiveHand": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -313038972
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 0,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": null,
+    "normalized": null,
+    "content": null,
+    "viewport": null,
+    "focus": "ConfirmDungeonSelection",
+    "focusId": -308784238,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "baseline": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 0,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": null,
+    "normalized": null,
+    "content": null,
+    "viewport": null,
+    "focus": "HandCardViewPrefab(Clone)",
+    "focusId": -308785266,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "touch": {
+    "actualInputModuleTouch": true,
+    "physicalTouchNotRun": true,
+    "elapsed": 0.5281418379745446,
+    "required": 0.5,
+    "clickCanceled": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 1,
+      "modal": true,
+      "dialogs": 1,
+      "owner": true,
+      "blocked": true,
+      "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし",
+      "normalized": 1,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": "CloseCustomPadDetails",
+      "focusId": -308785604,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "CloseCustomPadDetails",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "sameFrameClose": {
+    "sameFrameOldConfirmRejected": true,
+    "originFocusRestored": true,
+    "immediate": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 2,
+      "modal": false,
+      "dialogs": 0,
+      "owner": true,
+      "blocked": true,
+      "text": "",
+      "normalized": 1,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": "HandCardViewPrefab(Clone)",
+      "focusId": -308785346,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        }
+      ]
+    },
+    "after": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 2,
+      "modal": false,
+      "dialogs": 0,
+      "owner": true,
+      "blocked": false,
+      "text": "",
+      "normalized": 0,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": "HandCardViewPrefab(Clone)",
+      "focusId": -308785346,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "reopenedTouch": {
+    "actualInputModuleTouch": true,
+    "physicalTouchNotRun": true,
+    "elapsed": 0.5327531769871712,
+    "required": 0.5,
+    "clickCanceled": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 3,
+      "modal": true,
+      "dialogs": 1,
+      "owner": true,
+      "blocked": true,
+      "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし",
+      "normalized": 1,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": "CloseCustomPadDetails",
+      "focusId": -308785604,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "CloseCustomPadDetails",
+          "interactable": true
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "oldCloseVsNewTicket": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 3,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -308785604,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "pauseHandoff": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 4,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "ResumeButton",
+    "focusId": -308785980,
+    "paused": true,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": false
+      },
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "retreatAfterHandoff": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 4,
+    "modal": false,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "CancelRetreat",
+    "focusId": -308786378,
+    "paused": true,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmRetreat",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelRetreat",
+        "interactable": true
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": false
+      },
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "oldDetailVsRetreat": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 4,
+    "modal": false,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 1,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "CancelRetreat",
+    "focusId": -308786378,
+    "paused": true,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "RetreatButton",
+        "interactable": true
+      },
+      {
+        "name": "TransformationAnimationSetting",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "KeyboardSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmRetreat",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "AudioSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "LoadCheckpointButton",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "CancelRetreat",
+        "interactable": true
+      },
+      {
+        "name": "DialogueTextSpeedButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": false
+      },
+      {
+        "name": "ResumeButton",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardsButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "GamepadSettingsButton",
+        "interactable": true
+      },
+      {
+        "name": "VibrationSetting",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "resumedCustom": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 4,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "ResumeButton",
+    "focusId": -308785980,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "longTail": {
+    "actualScrollEvent": true,
+    "tailMarker": "オワリシルシ",
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 5,
+      "modal": true,
+      "dialogs": 1,
+      "owner": true,
+      "blocked": true,
+      "text": "チューニング\nコスト: 1 / イリョク: 0\nゾクセイ ムゾクセイ / スタンダード / なし / ツウジョウ\n\nタイショウカードにキョウカコウカをフヨするチョウリツカード\n\nカードホセイ (ゴウケイ)\nなし\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nナガイ ショウサイ ノ ヨミトリ カクニン\nオワリシルシ",
+      "normalized": 1.112481e-08,
+      "content": 3522,
+      "viewport": 778.8,
+      "focus": "CloseCustomPadDetails",
+      "focusId": -308785746,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "CloseCustomPadDetails",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "longClose": {
+    "sameFrameOldConfirmRejected": true,
+    "originFocusRestored": true,
+    "immediate": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 6,
+      "modal": false,
+      "dialogs": 0,
+      "owner": true,
+      "blocked": true,
+      "text": "",
+      "normalized": 0,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": "HandCardViewPrefab(Clone)",
+      "focusId": -308785778,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        }
+      ]
+    },
+    "after": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "phase": "Battle",
+      "frame": 0,
+      "custom": true,
+      "confirming": false,
+      "hand": [
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": 418351964
+        },
+        {
+          "Id": "tuning",
+          "Name": "チューニング",
+          "reference": -678734440
+        },
+        {
+          "Id": "bomb",
+          "Name": "ボム",
+          "reference": 579200920
+        },
+        {
+          "Id": "heal",
+          "Name": "ヒール",
+          "reference": -937612904
+        }
+      ],
+      "selected": [
+        -313038972
+      ],
+      "cost": 1,
+      "hidden": false,
+      "detailsVersion": 6,
+      "modal": false,
+      "dialogs": 0,
+      "owner": true,
+      "blocked": false,
+      "text": "",
+      "normalized": 0,
+      "content": 778.8,
+      "viewport": 778.8,
+      "focus": "HandCardViewPrefab(Clone)",
+      "focusId": -308785778,
+      "paused": false,
+      "root": -308782426,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3,
+      "availableTransforms": 0,
+      "buttons": [
+        {
+          "name": "TouchCardUseButton",
+          "interactable": false
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "SelectionIndicator",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmButton",
+          "interactable": true
+        },
+        {
+          "name": "HideCustomPresentation",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "UndoCustomizationButton",
+          "interactable": false
+        },
+        {
+          "name": "BasicAttackButton",
+          "interactable": false
+        },
+        {
+          "name": "InspectCombatants",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        },
+        {
+          "name": "HandCardViewPrefab(Clone)",
+          "interactable": true
+        }
+      ]
+    }
+  },
+  "self": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 7,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "ジブン\nHP 100/100 / コウゲキ 10 / ゾクセイ ムゾクセイ\nキョウジンド 30/30 / カスタムソクド 1\nゾクセイタイセイ (%)\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nジョウタイタイセイ (%)\nドク 0 / マヒ 0 / コンラン 0 / モウモク 0\n\nジョウタイイジョウ: なし\nボウギョ・ホジョ: なし",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -308785746,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "enemy": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": true,
+    "detailsVersion": 9,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "スライム\nHP 50/50 / ゾクセイ ムゾクセイ\nキョウジンド 30/30\nゾクセイタイセイ (%)\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nジョウタイタイセイ (%)\nドク 0 / マヒ 0 / コンラン 0 / モウモク 0\n\nジョウタイイジョウ: なし\nボウギョ・ホジョ: なし",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -308785746,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "NextInspection",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "PreviousInspection",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "oldCycleRejected": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": true,
+    "detailsVersion": 10,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "スライム\nHP 50/50 / ゾクセイ ムゾクセイ\nキョウジンド 30/30\nゾクセイタイセイ (%)\nヒ 0 / ミズ 0 / カゼ 0 / ツチ 0\nジョウタイタイセイ (%)\nドク 0 / マヒ 0 / コンラン 0 / モウモク 0\n\nジョウタイイジョウ: なし\nボウギョ・ホジョ: なし",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "NextInspection",
+    "focusId": -308786470,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "NextInspection",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "PreviousInspection",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "readonlyAfter": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      }
+    ],
+    "selected": [
+      -313038972
+    ],
+    "cost": 1,
+    "hidden": false,
+    "detailsVersion": 12,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "HandCardViewPrefab(Clone)",
+    "focusId": -308785778,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "saveHashesBefore": {
+    "progress/progress.json": "6de9d3da5b8313ccb34365b728a4b4f46674ca89c404efb94c9269d296aea2d1",
+    "progress/progress.backup.json": "582d2370b6ddf8cea21caddd4649e69ef96932894a55e0c26456bb181c414bf7",
+    "checkpoints/runs/222f5233cc31404fa869b0389b073a31/active.json": "87a6f8d05631f94846494e2e8b27f86c82534b12ba82684b5df8e9d8c2a73a1d",
+    "checkpoints/runs/222f5233cc31404fa869b0389b073a31/active.backup.json": "3bc89b6598d630678b65657184ae8887d9a6d4cd6b96f8c4d986dd738e45e92f"
+  },
+  "saveHashesAfterReading": {
+    "progress/progress.json": "6de9d3da5b8313ccb34365b728a4b4f46674ca89c404efb94c9269d296aea2d1",
+    "progress/progress.backup.json": "582d2370b6ddf8cea21caddd4649e69ef96932894a55e0c26456bb181c414bf7",
+    "checkpoints/runs/222f5233cc31404fa869b0389b073a31/active.json": "87a6f8d05631f94846494e2e8b27f86c82534b12ba82684b5df8e9d8c2a73a1d",
+    "checkpoints/runs/222f5233cc31404fa869b0389b073a31/active.backup.json": "3bc89b6598d630678b65657184ae8887d9a6d4cd6b96f8c4d986dd738e45e92f"
+  },
+  "readOnlyHashComparisonPassedBeforeExplicitConfirm": true,
+  "explicitDeselect": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -313038972
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 14,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "HandCardViewPrefab(Clone)",
+    "focusId": -308786896,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "explicitConfirm": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 2,
+    "custom": false,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -678734440
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 579200920
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -937612904
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": 418351964
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "reference": -313038972
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 14,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 778.8,
+    "viewport": 778.8,
+    "focus": "ConfirmButton",
+    "focusId": -308782774,
+    "paused": false,
+    "root": -308782426,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "longFixture": "UI text only; no product Card data or numerical definitions changed",
+  "physicalTouchNotRun": true
+}

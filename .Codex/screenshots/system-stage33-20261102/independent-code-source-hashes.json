@@ -1,0 +1,11 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "70f427abfd3fb3f894afb13286d4f5809fb8d7f32f501979670de8f8d61cae73",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "ac51fb47f8126ebbc25a446bf5ec89de8a085d1b912dccbb84abb8d09d335d48",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "796d34d9b80730c8421651c530b4f82c353774c8f7222bfc7a55a1c2d2d85759",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "5d9e3cd15c46770d210cf993bc616adab4fe65374f21bc49f3b8a1b47083678e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "e097ee471c50d397052458a337d6fb1871edcf54460b6d8b9040b8283cb0d6c2",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "4e999b43b9cd7e46730acfd2b501db148372c8024859afc00f5202849b5330d1"
+  },
+  "unresolvedRequiredFindings": 0
+}

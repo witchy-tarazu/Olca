@@ -1,0 +1,41 @@
+{
+  "editorPid": 137059,
+  "vmModelAuthenticationUnchanged": true,
+  "editorNotRestarted": true,
+  "compileJobs": [
+    "3fb75e43a4bd4b6580cdc04199b6dfc6",
+    "ab68f52f568e48359ff25b296062dc5c",
+    "93fee84646d045cda9e698772eae378d"
+  ],
+  "initialCompileFailurePreserved": true,
+  "prototypeThenFinalPlayCycles": "Intentional separate normal Play cycles after source fixes, no uncertain request repeated",
+  "prototypeStopWait": "Bounded420s socket-cycle watch expired; current ready/stopped and actual render read safely recovered. No Stop retry.",
+  "finalStopWatch": "Read-only watcher awaited observed disconnect; supported editor_status proved ready/stopped/compilingfalse/reloadfalse. Only local Python watcher was terminated; actual render read db0723541c3d4461b75544686febb2f3 succeeded.",
+  "finalStopStatus": {
+    "success": true,
+    "command": "command editor_status",
+    "data": {
+      "command": "editor_status",
+      "parameters": {},
+      "result": {
+        "status": "ready",
+        "compiling": false,
+        "domainReloadInProgress": false,
+        "playMode": "stopped",
+        "lastHeartbeat": "2026-11-02T03:44:23.026761Z",
+        "projectPath": "/workspace/olca-validation-20261024/project",
+        "unityVersion": "6000.3.26f1"
+      },
+      "target": {
+        "host": "127.0.0.1",
+        "port": 7800,
+        "projectPath": "/workspace/olca-validation-20261024/project"
+      }
+    },
+    "errors": [],
+    "warnings": []
+  },
+  "fullWrapperTimedOut": true,
+  "testResultRecoveredWithoutDuplicate": true,
+  "historicalLimitsRetained": "UGUI/Pipeline/CLI/UnityAI, unassignedSprite2095 baseline, realbuild/physicalinput/hearing/allHotReload and productdata checks remain independent."
+}

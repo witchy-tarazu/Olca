@@ -1,0 +1,37 @@
+{
+  "editorPid": 137059,
+  "sameVmModelAuthentication": true,
+  "noRestart": true,
+  "events": [
+    {
+      "phase": "v3 compile",
+      "job": "c2ec29232ca945eb95c74a00d8f679e3",
+      "result": "completed0; DLL19:44; actual640 and TMP checked19:55"
+    },
+    {
+      "phase": "reload status",
+      "result": "read-only editor_status one local40s timeout and one Pipeline mainthread30s timeout; preserved raw and log; no duplicate compile/tests"
+    },
+    {
+      "phase": "cold helper",
+      "job": "072f9a802c864f0ebbe1562c0bd16a5d",
+      "result": "same job completed; no resubmission"
+    },
+    {
+      "phase": "integration605",
+      "result": "605 passed; console gate failed1 UnityAI Relay Process exited code0; raw stack preserved; final full clean gate still required"
+    },
+    {
+      "phase": "native start",
+      "result": "Play requested once; ordinary domainreload completed; samePlay read job2a42c97b91164d2da701007c30a5904b completed; label retained from template does not mean a job was lost this run"
+    },
+    {
+      "phase": "v4 final compile/cold helpers",
+      "result": "Same Editor; explicit compile e5a1a0a9d33146498b6fa02474c97f3a; b8e7546d272a407b824eae4417a3fe92 and native7bff77ca43cf40cdb0f36389dea0c8e7 completed without resubmission; no VM restart; exact receipts retained."
+    },
+    {
+      "phase": "v4 final tests",
+      "result": "UI382/App537/Integration605/sameEditor76/full3649 allpass; full247.08s, console0; initialfull11 preserved, not overwritten as success."
+    }
+  ]
+}

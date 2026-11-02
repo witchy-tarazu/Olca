@@ -1,0 +1,34 @@
+{
+  "implemented": "Outside60Hz vertical physics/grounding/variable height via existing JumpPrimary held+down; no air action reservation or held-landing retrigger; existing imported move/jump visuals; Root state and display lifetimes separate",
+  "validationOnly": {
+    "terrain": "validation-flat-32",
+    "width": 32,
+    "start": 8,
+    "horizontalSpeedPerSecond": 6,
+    "jumpSpeedPerSecond": 12,
+    "gravityPerSecondSquared": 24,
+    "releasedRiseCapPerSecond": 4,
+    "fixedPointPerUnit": 60000,
+    "productValues": false,
+    "provenance": "Parent explicitly permitted validation settings; no product map or physics decision"
+  },
+  "assets": "Original imported Player_Idle/Player_Move(.64sec) and jump_rise/apex/fall, sampled by logical frame; original ratios/pivots retained; shared imported assets never destroyed; no generated character art",
+  "notImplemented": [
+    "product map registration",
+    "double jump/walls/dash/water/fall damage/combat",
+    "outside persistent save/dungeon roundtrip",
+    "outside-specific touch/rebind completion"
+  ],
+  "unverified": [
+    "player build",
+    "physical keyboard/pad/touch/IME",
+    "auditory review",
+    "allHotReload",
+    "productstat/Itemskip/NPCregistration/extremeoldnames"
+  ],
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095",
+    "D05/factory/S08"
+  ]
+}

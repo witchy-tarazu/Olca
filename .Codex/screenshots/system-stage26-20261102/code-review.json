@@ -1,0 +1,111 @@
+{
+  "stage": 26,
+  "reviewType": "independent static implementation review",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "0a914f56d871d924d54098953299d1108a1ff067f2f2d2bf81552458701ed2bf",
+    "Assets/Olca/Application/Management/GameSystem.cs": "bd5fd9bad6d1ef872bc18fceed0345683a194cf1be2046c9ea75087a9dadfafc",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "6c621277cb68e0ab414b884ee878b2f7d5f162204ff82b57d3ac3226d8bbc58e",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "a7b87c003021e7e5c987ade0b5d598409c0ef6c81519169eb955e78fc1e870ec",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "9aec7bcd34339110a1d15b02a408c8ff26b92287e220301b574f1433dfd91f9f",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "3b4ed25b09902f442f0218aa35adf9b882beae4dac828cd25eab2db888da5157",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "72690b9c9d5b91c6b62af4b1b0e5bc0f653afc6d3eca1184531beeae2afb8a25",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9"
+  },
+  "submissionProjectMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Root GameSystem owns pure OutsideExplorationSession; presentation leases invalidate prior presentation and Root Dispose ends model; host binding disposal does not end Root model.",
+    "Private registration owner unregisters only outside key on existing return-hub layer; ViewManager atomically hides old hub on successful Show and retains previous view on factory failure.",
+    "Root UIRuntime ViewParent hosts outside view independently of controller content; ResourceManager/ViewManager owns view instance, art is imported shared data. No new camera/listener/clock.",
+    "Controller Chrome launch callbacks and CanSelect/Progress/Collection guard route busy; resets queued input on entry/back and observes inactive logical loop while outside. Back stamps same-frame guard before rendering fresh hub.",
+    "View Back captures context and session presentation lease; Hide/OnDisable/OnDestroy release lease/menu/context/action; stale events cannot close later view.",
+    "Natural-destroy lost wrapper is detected for automatic re-open; failed open clears dead View field and returns hub once. Binding lifetime predicate rejects host teardown; private owner avoids unregistering hub.",
+    "Scope is static display/back/reentry only. No movement, physics, attack, deck/gauge, save format or authored-map gameplay implemented.",
+    "v2 rejected/disposed OpenAsync uses layer.ShowAsync with canceled token; ViewManager checks disposed/token before entry lookup or load and returns cancellation through existing API.",
+    "v3 entry moved x650 to x150 and caption explicitly ガイカイ タンサク; public FocusMenuControl delegates existing focus selection only under CanOperateView; Back calls it after ShowDungeonSelection, retaining model/callback semantics."
+  ],
+  "validation": {
+    "status": "Final v3 related/native/visual/sameEditor/full/cleanup receipts complete; no publication performed by reviewer.",
+    "related": "Application548/Core6/Integration605 v3 passed per parent",
+    "nativeReceipts": [
+      "system-stage26-native-entry-result.json",
+      "system-stage26-native-lifetime-result.json"
+    ],
+    "nativeScope": "Final runtimeLayoutTrial=false; strict OutsideExplorationEntry return focus, blocked old hub/Back, unchanged entry/back save bytes, held pad cancel/disconnect-resume, natural Destroy auto-recreation; Root session retained host Close/Open and Single. Static display only.",
+    "sameEditor": "38 passed",
+    "full": {
+      "receipt": "system-stage26-final-test-result.json",
+      "summary": {
+        "total": 3662,
+        "passed": 3662,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 259.98,
+      "consoleErrors": 0,
+      "sourceHashesMatchReviewAndCurrent": true
+    },
+    "cleanup": {
+      "receipt": "system-stage26-cleanup.json",
+      "status": "PASS: original clean, 928 assets/privateURP2 exceptions, actual640/TMP/default absence, devices/proof/cache/EventSystem clear.",
+      "saveScope": "Fresh26002 has exactly one actual save file; its hash unchanged after stop/tests. No assumed six-file or prior-stage save count."
+    },
+    "stopObservation": "Parent read editor ready/stopped/compilingfalse/reloadfalse and actual two RT640/TMP/error0 via db0723541c3d4461b75544686febb2f3; local watcher awaiting disconnect terminated, no Editor restart or Stop retry.",
+    "warnings": {
+      "receipt": "system-stage26-warnings.json",
+      "count": 59,
+      "classification": "existing five fixture categories per receipt/parent"
+    }
+  },
+  "limits": [
+    "Static review is not runtime/all-branch assurance.",
+    "Must verify actual input while outside cannot reach Chrome/world, Back same-frame stale actions, natural Destroy/recreate, host Close/Open/Single, cancellation/factory failure rollback/focus and save bytes/revision invariants.",
+    "Only natural destruction auto-recovery is implemented; arbitrary external hiding is not claimed auto-recovery.",
+    "No Unity/test/product changes performed by reviewer."
+  ],
+  "history": [
+    {
+      "version": "v1",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "8154cf91d58799a3e774f3f3ce9492685e32480ca2ead4ee8e4697a6db7e8123",
+        "Assets/Olca/Application/Management/GameSystem.cs": "bd5fd9bad6d1ef872bc18fceed0345683a194cf1be2046c9ea75087a9dadfafc",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "7536a6d9c637eb4fbef5b692255a7c49692ab28c01527ca084043b668fe757bc",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "a7b87c003021e7e5c987ade0b5d598409c0ef6c81519169eb955e78fc1e870ec",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "8ff6ac2056d30939c60c4b4dac8434200ddc9d7cf68d2cad79fc33e927638d29",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "9aec7bcd34339110a1d15b02a408c8ff26b92287e220301b574f1433dfd91f9f",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "3b4ed25b09902f442f0218aa35adf9b882beae4dac828cd25eab2db888da5157",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "72690b9c9d5b91c6b62af4b1b0e5bc0f653afc6d3eca1184531beeae2afb8a25",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9"
+      },
+      "compileFailure": "CS1729: Application could not call internal ScreenOpenResult constructor; no tests started. Initial static review missed assembly accessibility.",
+      "correction": "Use existing public ShowAsync with already-cancelled token; no constructor visibility broadened."
+    },
+    {
+      "version": "v2",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "8154cf91d58799a3e774f3f3ce9492685e32480ca2ead4ee8e4697a6db7e8123",
+        "Assets/Olca/Application/Management/GameSystem.cs": "bd5fd9bad6d1ef872bc18fceed0345683a194cf1be2046c9ea75087a9dadfafc",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "6c621277cb68e0ab414b884ee878b2f7d5f162204ff82b57d3ac3226d8bbc58e",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "a7b87c003021e7e5c987ade0b5d598409c0ef6c81519169eb955e78fc1e870ec",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "8ff6ac2056d30939c60c4b4dac8434200ddc9d7cf68d2cad79fc33e927638d29",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "da64d5c963de5df35db93c55900835b90aecfa1b4931456052bae686232e8c07",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "9aec7bcd34339110a1d15b02a408c8ff26b92287e220301b574f1433dfd91f9f",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "3b4ed25b09902f442f0218aa35adf9b882beae4dac828cd25eab2db888da5157",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "72690b9c9d5b91c6b62af4b1b0e5bc0f653afc6d3eca1184531beeae2afb8a25",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9"
+      },
+      "validation": "Application548/Core6/Integration605 passed per parent; prototype native host/Single retained Root session.",
+      "nativeFindings": [
+        "Entry x650 overlapped equipment",
+        "Mixed kanji 界 caption",
+        "Back focused default dungeon choice instead of outside entry"
+      ],
+      "prototypeBoundary": "Private preview x150/manual focus are prototype only; final native must rerun on v3 with runtimeLayoutTrial false."
+    }
+  ]
+}

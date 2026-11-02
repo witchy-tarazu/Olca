@@ -1,0 +1,15 @@
+{
+  "systemMigrationAllComplete": false,
+  "closedThisStage": [
+    "dialogue skip shared ConfirmationDialog",
+    "dialogue backlog content/pages/scroll/close owned DialogueBacklogDialog"
+  ],
+  "requiredRemaining": [
+    "Custom details content/input owned dialog"
+  ],
+  "notRequired": [
+    "Dedicated class per simple confirmation purpose",
+    "Force ProgressAction pending/retry into simple confirmation",
+    "Prefab every widget"
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "stage": 24,
+  "captureVersion": "final v4; parent-reported fresh isolated root24002",
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-01T23:59:40.997480+00:00",
+  "scope": "Dialogue skip shared ConfirmationDialog and dedicated backlog lifetime migration; static native visual regression review",
+  "sourceHashes": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "2945db731338682732aeaddcb3d72652ad25b9b7c6b2fac78cb8b22b6c534467",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "10bc2973f3e122f338f905f94174373fe3affce0a40918e7c4ca8a45210751a6",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "091ddae3f2a18b35871a71173e591964984e8aa7275a6d1cb0c2995c47c54daf"
+  },
+  "viewedImageCount": 12,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage24-conversation-fhd.png",
+      "sha256": "bdc83d798c4c00ae8a956fd91f5c3ea4bf927f5e8bf04eab20e9541b0406d430",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-conversation-4k.png",
+      "sha256": "dc51abf5628554c117b08c2d827dd8ed6b50335f795dfb2ec84dd851c846ed03",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage24-conversation-4by3.png",
+      "sha256": "4069c0ae243760f875c2f295127bcc50cd1cba697da93986ddd9105034a349ec",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-backlog-tail-fhd.png",
+      "sha256": "a59994a95f95a0d0737b75b3767ad0a0fde3bac3bc371c81307b51482263339e",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-backlog-tail-4k.png",
+      "sha256": "92da565be2875e790e761de2991f95e038b3ff50f012c80e9818b371131c7a3c",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage24-backlog-tail-4by3.png",
+      "sha256": "96481c187521af6c4805ee0c23ff31479915fd4075b12a99dc3e5761d223814b",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-skip-confirm-fhd.png",
+      "sha256": "e33ef2fbfb9cf7989841bd87231e7eccedd4a9d1724b8f6cd127d97d63389610",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-skip-confirm-4k.png",
+      "sha256": "e27f50ece09a8cec03b796874960ea0b329558e013a05f744c490abea3b89329",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage24-skip-confirm-4by3.png",
+      "sha256": "31e2fe7f04c4463a16cd3c97132f373dbc4e36fab6602d0665bfd669478ba68c",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-backlog-multiple-tail-fhd.png",
+      "sha256": "50c9966012a2722b84fc4eede585d3438d416d03d3ec5cbf748c8f05d5978f40",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage24-backlog-multiple-tail-4k.png",
+      "sha256": "040a6a44be670c68ba1c7a8cd1a7827871222497b4ae51f6cb4cf085baa416ff",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage24-backlog-multiple-tail-4by3.png",
+      "sha256": "23880709275cca69c5f7e71f2da1e80271fe1aeb0e36008d47d927e1ef747524",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    }
+  ],
+  "baseline": {
+    "reference": "submission/.Codex/screenshots/system-stage19-20261101; conversation/backlog-tail/skip-confirm each fhd/4k/4by3",
+    "preparation": "system-stage24-visual-baseline.json records published reference exact-byte correspondence to previously actually reviewed Stage19 evidence.",
+    "comparison": "Preserved centered headings, left-aligned scroll body, conversation four-control footer, distinct finish/cancel and backlog paging/return controls. Separate run/world frames; no whole-scene same-frame identity asserted."
+  },
+  "observations": [
+    "All12 current final images actually viewed. Conversation text, footer controls, Jiki glyphs and water-mirror surfaces remain readable in FHD/4K/4:3, with no required new clipping or competing active parent text observed.",
+    "Backlog-tail and backlog-multiple-tail show complete オワリシルシ in all three ratios. Partial first/last continuation lines at scroll viewport boundaries are expected clipping, not lost tail markers.",
+    "Backlog1/1 has visually disabled paging and distinct return control; multi-page1/3 distinguishes enabled next from disabled previous. This is visual state only, not independent proof of paging operation.",
+    "Skip question and finish/cancel controls are separated and readable. Highlighted cancel/return treatment remains distinct. Short-question blank space remains a fixed reading-region characteristic, not a new required regression.",
+    "Pause is visibly present at top right across inspected dialogue/backlog/confirmation images. Still images do not prove raycast ownership, focus return or modal input blocking.",
+    "Faint background HUD/world remains behind pale cyan surfaces, consistent with prior reference limitations; no newly required foreground competition observed. Multiple-backlog world progress differs from single-backlog and is not treated as visual regression."
+  ],
+  "native4kSupplement": {
+    "method": "Whole4K images were actually opened with original detail but viewer displays reduced whole view; lossless in-memory unscaled crops supplement native glyph inspection. Original PNGs unchanged.",
+    "crops": [
+      {
+        "file": "system-stage24-backlog-tail-4k.png",
+        "box": [
+          420,
+          1190,
+          1000,
+          1320
+        ],
+        "observation": "Complete オワリシルシ readable."
+      },
+      {
+        "file": "system-stage24-backlog-multiple-tail-4k.png",
+        "box": [
+          420,
+          1190,
+          1000,
+          1320
+        ],
+        "observation": "Complete multi-page tail marker readable."
+      },
+      {
+        "file": "system-stage24-skip-confirm-4k.png",
+        "box": [
+          1970,
+          1730,
+          2670,
+          1870
+        ],
+        "observation": "Cancel/return label, focus accent and frame readable without glyph clipping."
+      },
+      {
+        "file": "system-stage24-conversation-4k.png",
+        "box": [
+          3240,
+          90,
+          3780,
+          240
+        ],
+        "observation": "Pause label and water-mirror button visibly distinct."
+      }
+    ]
+  },
+  "limits": [
+    "No matched-before capture newly made; Stage19 is an appearance reference from a separate run, not exact pixel/global-frame proof.",
+    "Parent-supplied input, pause-raycast, stale callback, skip, save and lifecycle assertions were not independently executed here and are not inferred from photos or tests.",
+    "Only captured states reviewed; no overall aesthetic completion, physical-device, audio or unpictured-condition claim. Representative4K crops supplement whole views, not exhaustive native pixel inspection.",
+    "No Unity commands, input, tests, product edits or image modifications performed."
+  ]
+}

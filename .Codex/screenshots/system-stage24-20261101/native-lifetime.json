@@ -1,0 +1,607 @@
+{
+  "initial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "battleFieldReady": true,
+    "managerSuspended": false,
+    "checkpointBlocked": false,
+    "awaitingCheckpoint": false,
+    "visit": false,
+    "worldFrame": 368,
+    "battleFrame": 0,
+    "position": 49,
+    "hp": 100,
+    "currency": 0,
+    "deck": 20,
+    "dialogue": true,
+    "open": true,
+    "index": 0,
+    "version": 7,
+    "visible": 5,
+    "choices": [],
+    "backlog": [
+      "テスト\nナガイ カ"
+    ],
+    "skip": false,
+    "history": false,
+    "sessionPaused": false,
+    "userPaused": false,
+    "dialogs": 0,
+    "popup": false,
+    "context": true,
+    "view": true,
+    "layer": "dialogue",
+    "ownerBound": true,
+    "text": "ナガイ カ",
+    "normalized": 0,
+    "content": 420,
+    "viewport": 440,
+    "focus": "DialogueNext",
+    "focusId": -306149062,
+    "finished": 4,
+    "reason": "Interrupted",
+    "root": -306146748,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "HideCustomPresentation",
+        "interactable": false
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "DialogueNext",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "DialoguePause",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": false
+      },
+      {
+        "name": "DialogueSkip",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "DialogueFast",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "DialogueHistory",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "beforeFirstSuspend": {
+    "progress/progress.json": "593321938049fabf23a4efaca58bd153d63be20e40454446662f10a4eba83845",
+    "progress/progress.backup.json": "6c26033c41bff44d524fd4db631575f5b6b1722ca55d58fd79685d882f423be7",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.json": "e978b3701e18f2a612569fb2b3c1fa0ab49e63465fc8a49f53a54ea55b6b7006",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.backup.json": "6af433118a73e6add6b8d50f2d46da0a1780c45e16e5dab9a4a9a205d4508c39"
+  },
+  "afterFirstSuspend": {
+    "progress/progress.json": "593321938049fabf23a4efaca58bd153d63be20e40454446662f10a4eba83845",
+    "progress/progress.backup.json": "6c26033c41bff44d524fd4db631575f5b6b1722ca55d58fd79685d882f423be7",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.json": "e978b3701e18f2a612569fb2b3c1fa0ab49e63465fc8a49f53a54ea55b6b7006",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.backup.json": "6af433118a73e6add6b8d50f2d46da0a1780c45e16e5dab9a4a9a205d4508c39"
+  },
+  "firstClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1236549340,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -306146748,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -306146754,
+        -306146760,
+        -306146766
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "firstReleased": {
+    "oldViewDestroyed": true,
+    "oldOwnerAndContextAndManagerAndMenuReleased": true,
+    "borrowedContentReturned": true,
+    "importedFontSurvives": true,
+    "sessionInterrupted": true,
+    "dialogs": 0,
+    "resources": 3,
+    "finished": 5
+  },
+  "firstMissingCancel": {
+    "actualMissingPrefabRejected": true,
+    "canceledAfterRealPrefabCreatedBeforePreparation": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1236549340,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -306146748,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -306146754,
+        -306146760,
+        -306146766
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "missingCancelBytesUnchanged": true,
+  "reopened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "dialogue": false,
+    "open": null,
+    "root": -306146748,
+    "dialogs": 0,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "finished": 5,
+    "reason": "Interrupted"
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -306151452,
+    "newControllerId": -306154262,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -397533411,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -306146748,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -306146826,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -306154262
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -306146754,
+        -306146760,
+        -306146766
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage24-24002/settings"
+    }
+  },
+  "singleMenu": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Dungeon",
+    "dialogue": false,
+    "open": null,
+    "root": -306146748,
+    "dialogs": 0,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "finished": 6,
+    "reason": "Interrupted"
+  },
+  "oldFinalRejected": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "battleFieldReady": true,
+    "managerSuspended": false,
+    "checkpointBlocked": false,
+    "awaitingCheckpoint": false,
+    "visit": false,
+    "worldFrame": 0,
+    "battleFrame": 0,
+    "position": 49,
+    "hp": 100,
+    "currency": 0,
+    "deck": 20,
+    "dialogue": true,
+    "open": true,
+    "index": 0,
+    "version": 21,
+    "visible": 18,
+    "choices": [],
+    "backlog": [
+      "テスト\nナガイ カイワ ノ ヨミトリ カクニ"
+    ],
+    "skip": false,
+    "history": true,
+    "sessionPaused": false,
+    "userPaused": false,
+    "dialogs": 1,
+    "popup": true,
+    "context": true,
+    "view": true,
+    "layer": "dialogue",
+    "ownerBound": true,
+    "text": "テスト\nナガイ カイワ ノ ヨミトリ カクニ",
+    "normalized": 1,
+    "content": 420,
+    "viewport": 440,
+    "focus": "DialogueHistory",
+    "focusId": -306157070,
+    "finished": 6,
+    "reason": "Interrupted",
+    "root": -306146748,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "DialoguePause",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": false
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": false
+      },
+      {
+        "name": "DialogueHistory",
+        "interactable": true
+      },
+      {
+        "name": "DialogueFast",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "DialogueNext",
+        "interactable": false
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      }
+    ]
+  },
+  "beforeFinalSuspend": {
+    "progress/progress.json": "593321938049fabf23a4efaca58bd153d63be20e40454446662f10a4eba83845",
+    "progress/progress.backup.json": "6c26033c41bff44d524fd4db631575f5b6b1722ca55d58fd79685d882f423be7",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.json": "e978b3701e18f2a612569fb2b3c1fa0ab49e63465fc8a49f53a54ea55b6b7006",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.backup.json": "6af433118a73e6add6b8d50f2d46da0a1780c45e16e5dab9a4a9a205d4508c39"
+  },
+  "afterFinalSuspend": {
+    "progress/progress.json": "593321938049fabf23a4efaca58bd153d63be20e40454446662f10a4eba83845",
+    "progress/progress.backup.json": "6c26033c41bff44d524fd4db631575f5b6b1722ca55d58fd79685d882f423be7",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.json": "e978b3701e18f2a612569fb2b3c1fa0ab49e63465fc8a49f53a54ea55b6b7006",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.backup.json": "6af433118a73e6add6b8d50f2d46da0a1780c45e16e5dab9a4a9a205d4508c39"
+  },
+  "finalClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -397533411,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -306146748,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -306146754,
+        -306146760,
+        -306146766
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "finalReleased": {
+    "oldViewDestroyed": true,
+    "oldOwnerAndContextAndManagerAndMenuReleased": true,
+    "borrowedContentReturned": true,
+    "importedFontSurvives": true,
+    "sessionInterrupted": true,
+    "dialogs": 0,
+    "resources": 3,
+    "finished": 7
+  },
+  "saveHashesAfter": {
+    "progress/progress.json": "593321938049fabf23a4efaca58bd153d63be20e40454446662f10a4eba83845",
+    "progress/progress.backup.json": "6c26033c41bff44d524fd4db631575f5b6b1722ca55d58fd79685d882f423be7",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.json": "e978b3701e18f2a612569fb2b3c1fa0ab49e63465fc8a49f53a54ea55b6b7006",
+    "checkpoints/runs/15bb76d7bff84427acdf02dbe2b55d70/active.backup.json": "6af433118a73e6add6b8d50f2d46da0a1780c45e16e5dab9a4a9a205d4508c39"
+  },
+  "finalConsole": {
+    "sampledUtc": "2026-11-01T23:58:43.99704Z",
+    "ageMs": 187,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 1,
+    "seeded": true
+  },
+  "boundaryNote": "Dialogue viewing/cancel save invariance compared in native-dialogue. Intentional host suspension follows existing checkpoint rules. No dialogue state serialized or new save timing introduced."
+}

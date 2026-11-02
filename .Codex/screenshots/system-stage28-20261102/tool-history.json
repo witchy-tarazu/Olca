@@ -1,0 +1,16 @@
+{
+  "editorPid": 137059,
+  "sameVmModelAuthentication": true,
+  "restarted": false,
+  "initialRelated": {
+    "core": 17,
+    "application": 553,
+    "integration": 605
+  },
+  "initialNativeFailure": "South started jump and also invoked menu Decide/back; archived actual state, then normal Stop confirmed before minimal CancelOnly correction",
+  "finalSource": "v4, final checks and image hashes must match current files",
+  "noDuplicatePlayTests": true,
+  "intermediateMoveFailure": "v2 had valid clip/sprites but SpriteRenderer-only sampling yielded null; disabled controller-free Animator binding was proven in candidate and v3 minimal correction applied. Helper Vector2 output fallback was corrected separately, no product physics change.",
+  "startupDiagnostics": "Pipeline alias/timeouts classified separately; cached console sample reread before success",
+  "fullWrapperTimedOut": true
+}

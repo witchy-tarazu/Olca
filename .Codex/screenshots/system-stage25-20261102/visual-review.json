@@ -1,0 +1,163 @@
+{
+  "stage": 25,
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T01:31:05.855018+00:00",
+  "scope": "Custom detail responsibility/lifetime migration static visual regression review; no redesign",
+  "viewedImageCount": 12,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage25-card-details-fhd.png",
+      "sha256": "655ddeb8e2e9ed34fc57039a9becfa02791d744515fe96f4daad0b8779ed6efb",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-card-details-4k.png",
+      "sha256": "750899115e56d5bc3ac16b4e49191e6194f3d5f02ce0900e1d8c966dabd62756",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage25-card-details-4by3.png",
+      "sha256": "f8706c792ec744a9af705ccaeeef0c4cd9923371d5d5350c52163c633d70d53c",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-long-details-tail-fhd.png",
+      "sha256": "533cdbe38e31e5eb6942727aa0127962d00e94f613c364568585695a7395d46f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-long-details-tail-4k.png",
+      "sha256": "feac7de15cd0aa09da7dd813028235b3382300829c087b0ecee6c993267b396f",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage25-long-details-tail-4by3.png",
+      "sha256": "b43e3fd599ba205098f45cdddc68d07bf3109852742e1b395cd0bfff00082af3",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-combatant-details-fhd.png",
+      "sha256": "a2a2a45335884c0253fe5a2fda90b4770cb55a32de03dd521200672ef1cef86f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-combatant-details-4k.png",
+      "sha256": "578fb78d476eedef6c0dc2d57f2391015a5a9626b22dad05c58d2b8dbf10f30b",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage25-combatant-details-4by3.png",
+      "sha256": "071670bc2e9a59bf6e2cd4ad47abf04af6b87d20066f4f607555897f0ec47d55",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-transformation-details-fhd.png",
+      "sha256": "d772aeb5b43dce4f26d62f896dd02946a1517279c85170051a11f4560fa60f84",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage25-transformation-details-4k.png",
+      "sha256": "142de3b2f8778a1f50dd8e42d67073fbab6f02a1bf035230a4094d780bff4d9b",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage25-transformation-details-4by3.png",
+      "sha256": "d981e2327f690478c6860ab0cf7a53b34dba6d9092b1eb2cb12173f3f942b766",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    }
+  ],
+  "baseline": {
+    "reference": "submission/.Codex/screenshots/system-stage18-20261101",
+    "method": "Previously reviewed Stage18 route/resolution references; card-details-4by3 reopened now for direct appearance comparison.",
+    "difference": "Stage18 Shield versus current Tuning; content/wrapping/world phase differ. No matched-content, whole-scene same-frame or pixel identity claim."
+  },
+  "observations": [
+    "All12 current images actually viewed with original detail. Dark reading surface, Jiki glyphs, context heading/rule, left-side proportions, custom gauge and water-mirror close affordance show no required new visual regression.",
+    "All three long-details-tail images show complete オワリシルシ above the separate close footer. Partial top line at scroll viewport boundary is expected scrolled continuation clipping.",
+    "Tuning description and combatant statistics remain readable;4:3 adds ordinary line wrapping without truncating the visible content or competing parent text.",
+    "Transformation long-name fixture wraps into several lines, followed by complete visible performance lines. Content is dense at top but not colliding with heading or frame; close remains distinct in all ratios.",
+    "Large lower blank reading area for short details remains a fixed viewport characteristic shared with reference, not proof of overall aesthetic completion. Right-side world/touch HUD and Pause remain visible outside the reader."
+  ],
+  "native4kSupplement": {
+    "method": "Whole4K images actually opened but viewer reduced3840x2160 to2048x1152; two successfully displayed lossless unscaled in-memory crops supplement native glyph inspection. Original PNGs unchanged.",
+    "crops": [
+      {
+        "file": "system-stage25-long-details-tail-4k.png",
+        "box": [
+          75,
+          1500,
+          650,
+          1620
+        ],
+        "observation": "Tail marker complete and crisp, with clear space below."
+      },
+      {
+        "file": "system-stage25-card-details-4k.png",
+        "box": [
+          350,
+          1730,
+          1160,
+          1850
+        ],
+        "observation": "Close label/focus accent/frame readable without clipping."
+      }
+    ],
+    "notCounted": "Additional transformation crop could not be processed by viewer; its whole image was viewed, not counted as native crop."
+  },
+  "limits": [
+    "Static images do not prove input, focus restoration, lifecycle, save behavior or scrolling operation; parent runtime receipts are separate.",
+    "Long80line text and transformation long name are isolated display fixtures, not registered product content.",
+    "No new matched-before capture; reference content differs. No global visual completion, physical-device, audio or unpictured-condition verification.",
+    "No Unity commands, tests, input, product edits or image alterations performed."
+  ]
+}

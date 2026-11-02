@@ -1,0 +1,222 @@
+{
+  "stage": 27,
+  "version": "final v7",
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T06:57:35.312092+00:00",
+  "viewedImageCount": 18,
+  "unviewedRequestedImages": [],
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage27-outside-initial-fhd.png",
+      "sha256": "307dc3707ebcab57f9e3f5af004f20c6b8fc7c80c4bb461950590b4dead79a0c",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-initial-4k.png",
+      "sha256": "6ba0ff845e9bfad2e9c39920f188e5965825454ed2daba90613c20bb9a21495a",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage27-outside-initial-4by3.png",
+      "sha256": "365a4550f533051341a01e6b74570d032680d2c3f159ee87a56e1d80f2500b8a",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-left-edge-fhd.png",
+      "sha256": "1393cce5317fb31517d8ee222094800a9da083fe3ff820c7f1da9c154dc6e651",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-left-edge-4k.png",
+      "sha256": "cfad0171895e8ce6d5d59b3ac550236791c106498a4f07b70e476d6ebabfda24",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage27-outside-left-edge-4by3.png",
+      "sha256": "64a8d4613246b7d532373d3db4a3c7e875d537d562c864f98f171d4263026b17",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-follow-fhd.png",
+      "sha256": "d52cabd530bd3f417666a08337ea7234ab72c92b069f7ada20eedf28d27894f0",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-follow-4k.png",
+      "sha256": "997f437ffeea36f7088908948ee67f28dd8e80bf4ccad54bf1f024ac2f8c3813",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage27-outside-follow-4by3.png",
+      "sha256": "76aa264d4d918df57e231cd3daecd4c94a3f4d94ee13f0bd6ae0b0440275711d",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-right-edge-fhd.png",
+      "sha256": "4389a52be22b1972efd5d439153530c518ecfce19a66e1cba6538385467d284b",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-right-edge-4k.png",
+      "sha256": "dc91992eba8b8d2abebfbb5205698033dd7e51589cea10caab26a926c7166412",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage27-outside-right-edge-4by3.png",
+      "sha256": "8162895bf9cf5799a38cfd8a6664aa122201a16082ffac55b8f3a68340f7d276",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-pause-fhd.png",
+      "sha256": "86d6c3e6d0d1df58ce0be048901f02375846054f7914da4543cbd1a73e23c574",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-outside-pause-4k.png",
+      "sha256": "a4865adb7ba8e5078e19d8ec407d43a1260d19d7dd751b65966957388a92abf9",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage27-outside-pause-4by3.png",
+      "sha256": "ba95f1f4729149bd995f8f0967fcc7b4795ef95a3f40abb7e5c88e6abf619ff5",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-returned-hub-fhd.png",
+      "sha256": "4d11ae38bfb688123fb69aef2d0a455ed978935a27067ee858729efb2776c8d6",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage27-returned-hub-4k.png",
+      "sha256": "ea28be97b87db7005d20a89faecdf662e3f073f8eea3e0ed6397d20e7faf03c5",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage27-returned-hub-4by3.png",
+      "sha256": "7dde8bfc26fe395a7642b47e25656a9ae0b9dc064530fe772586852f700347ac",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    }
+  ],
+  "resolvedFindings": [
+    {
+      "id": "boundary-label-clipping",
+      "observation": "Initial4:3 no partial left label remains; left/right-edge labels are wholly readable and inset at all ratios; follow view has no stray clipped boundary fragment."
+    },
+    {
+      "id": "outside-pause-old-chrome-overlap",
+      "observation": "All three final Pause images show only outside header behind dimmer; old save/newgame/catalog/equipment/oldPause duplicates are no longer superimposed."
+    }
+  ],
+  "observations": [
+    "All18 final current files actually viewed. Original background/Jiki/water-mirror hierarchy remain readable, with Pause and Back clearly separated in active header. 検証地形 is explicit.",
+    "Actor remains fully visible at both ends, feet meet the floor, and apparent proportions are consistent across inspected ratios. No numerical scale equality or animation equivalence inferred.",
+    "Pause labels, two-line settings and enabled/disabled treatments remain clear in all ratios. Underlying outside actor/header are dimmed without competing oldChrome text.",
+    "Returned hub shows readable original controls and outside entry focus accent. Input ownership and actual focus are not proved by photos.",
+    "Stage26 static appearance reference was actually viewed during initial review; intentional centered/following actor and boundary labels are Stage27 additions, not pixel-identical comparison."
+  ],
+  "native4kSupplement": {
+    "method": "All4K whole images opened original detail but displayed reduced; representative unscaled in-memory crops supplement native label reading. OriginalPNG unchanged.",
+    "crops": [
+      {
+        "file": "system-stage27-outside-left-edge-4k.png",
+        "box": [
+          210,
+          1750,
+          610,
+          1850
+        ],
+        "observation": "Complete left-boundary label readable."
+      },
+      {
+        "file": "system-stage27-outside-pause-4k.png",
+        "box": [
+          1620,
+          1220,
+          2300,
+          1410
+        ],
+        "observation": "Two-line transformation setting label and button padding readable."
+      }
+    ]
+  },
+  "limits": [
+    "Static images do not prove movement, follow smoothness, fixed60Hz, input, pause freezing, lifecycle or save behavior. Parent native receipts remain separate.",
+    "Validation terrain32/start8/speed6 is not a product map/value approval. Jump/combat/outside persistence/product map/walking body animation remain incomplete or outside scope.",
+    "No global aesthetic completion, exact same-frame pixel baseline, physical-device/audio or uncaptured-condition claim.",
+    "No Unity commands, tests, input, source/product edits performed. v6 failed appearance history remains separately preserved."
+  ]
+}

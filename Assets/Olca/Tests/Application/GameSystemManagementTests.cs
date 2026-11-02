@@ -135,8 +135,27 @@ namespace Olca.Tests.Application
             await views.ShowAsync("keyboard");var update=view.GetType().GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);
             Assert.AreEqual("CloseKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
             var buttons=panel.GetComponentsInChildren<Button>(true);Array.Find(buttons,x=>x.name=="ResetKeyboardSettings").onClick.Invoke();update.Invoke(view,null);
-            Array.Find(buttons,x=>x.name=="CancelKeyboardReset").onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);
+            panel.GetComponentsInChildren<Button>().Single(x=>x.name=="CancelKeyboardReset").onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);
             Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreEqual("ResetKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
+        }
+        [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
+        public async Task 割当初期化は共通確認を必要時生成し候補だけ変更して旧世代と閉鎖後保存を拒否する(bool managed,bool gamepad)
+        {
+            var panel=Panel("reset-shared");var view=panel.AddComponent<Olca.Presentation.Field.GameplayKeyboardSettingsView>();
+            viewCleanup=()=>{if(view!=null)view.GetType().GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);};
+            var defaults=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();string device=gamepad?"gamepad":"keyboard";
+            var slot=(device,"battle","AttackPrimary");var changed=defaults.BeginEdit();Assert.IsTrue(changed.TryAssign(slot,defaults.Bindings[(device,"battle","CardPrimary")],out var error),error);var profile=changed.Preview();int saves=0;
+            view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),candidate=>{saves++;return "fixture save failure";},gamepad);
+            if(managed){Register("reset-shared",ct=>Task.FromResult(panel),(go,context)=>{view.ConfigureManagement(context);view.Open(profile);});await views.ShowAsync("reset-shared");}else view.Open(profile);
+            var update=view.GetType().GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);update.Invoke(view,null);
+            Button Find(string name)=>panel.GetComponentsInChildren<Button>().Single(x=>x.name==name);string Draft()=>Find("Bind_battle_AttackPrimary").GetComponentInChildren<Text>().text;
+            string original=Draft();var save=Find("SaveKeyboardSettings").onClick;var close=Find("CloseKeyboardSettings").onClick;Assert.IsNull(panel.GetComponentInChildren<ConfirmationDialog>());
+            Find("ResetKeyboardSettings").Select();Find("ResetKeyboardSettings").onClick.Invoke();var first=panel.GetComponentInChildren<ConfirmationDialog>();Assert.IsNotNull(first);var oldConfirm=first.ConfirmButton.onClick;var oldCancel=first.CancelButton.onClick;save.Invoke();close.Invoke();Assert.AreEqual(0,saves);Assert.IsTrue(first.IsOpen);Assert.IsTrue(panel.activeSelf);
+            first.CancelButton.onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);Assert.AreEqual(original,Draft());Assert.AreEqual("ResetKeyboardSettings",EventSystem.current.currentSelectedGameObject.name);
+            Find("ResetKeyboardSettings").onClick.Invoke();var second=panel.GetComponentInChildren<ConfirmationDialog>();Assert.IsNotNull(second);Assert.AreNotSame(first,second);oldConfirm.Invoke();oldCancel.Invoke();Assert.IsTrue(second.IsOpen);Assert.AreEqual(original,Draft());
+            second.ConfirmButton.onClick.Invoke();frame++;dialogs.Tick();update.Invoke(view,null);Assert.AreEqual(0,saves);Assert.AreNotEqual(original,Draft());Assert.AreSame(profile,view.GetType().GetField("applied",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view));
+            save.Invoke();Assert.AreEqual(1,saves);StringAssert.Contains("保存できませんでした",panel.GetComponentsInChildren<Text>().Single(x=>x.name=="Status").text);
+            view.DiscardAndClose();view.GetType().GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);save.Invoke();oldConfirm.Invoke();Assert.AreEqual(1,saves);Assert.AreEqual(0,dialogs.ActiveCount);
         }
         [Test] public async Task 音量画面は閉鎖通知し旧クリックを拒否して再表示できる()
         {
@@ -502,10 +521,24 @@ namespace Olca.Tests.Application
                 v.CloseDetailsForSystemPause();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);Assert.IsTrue(model.IsOpen);Assert.IsFalse(model.IsConfirming);CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(cost,model.GetTotalUsedCost());
                 using(var pauseOwner=dialogs.CreateOwner(()=>true)){var pausePanel=Panel("pause-detail-handoff");var pauseClose=Button(pausePanel,"pause-close");var pauseRequest=dialogs.ShowNotice(pauseOwner,pausePanel,pauseClose,null,_=>{});Assert.AreEqual(1,dialogs.ActiveCount);stale();Assert.AreEqual(1,dialogs.ActiveCount);pauseClose.onClick.Invoke();Assert.IsTrue(pauseRequest.IsCompleted);}
                 frame++;EventSystem.current.SetSelectedGameObject(origin.gameObject);Call("ShowDetailsValue","ポーズ カラ フッキ");Assert.AreEqual(1,dialogs.ActiveCount);ticket=typeof(DialogManager).GetField("current",flags).GetValue(dialogs);stale=(UnityEngine.Events.UnityAction)ticket.GetType().GetField("CancelAction").GetValue(ticket);
-                if(parentClose){v.ReleaseSessionPresentation();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);Assert.IsNull(type.GetField("detailsOwner",flags).GetValue(v));stale();Assert.DoesNotThrow(()=>v.OnCardClicked(hand[0]));Assert.DoesNotThrow(()=>Call("OnConfirmClicked"));Assert.DoesNotThrow(()=>Call("OnCustomizeModeCancelled"));Assert.IsFalse(model.IsConfirming);}
+                if(parentClose){v.ReleaseSessionPresentation();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsTrue(panel==null||!panel.activeSelf);Assert.IsNull(type.GetField("detailsOwner",flags).GetValue(v));stale();Assert.DoesNotThrow(()=>v.OnCardClicked(hand[0]));Assert.DoesNotThrow(()=>Call("OnConfirmClicked"));Assert.DoesNotThrow(()=>Call("OnCustomizeModeCancelled"));Assert.IsFalse(model.IsConfirming);}
                 else{stale();Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreSame(origin.gameObject,EventSystem.current.currentSelectedGameObject);queued();v.OnCardClicked(hand[0]);Call("OnConfirmClicked");Assert.IsFalse(model.IsConfirming);Assert.AreEqual(0,model.SelectedCards.Count);frame++;Call("ShowDetailsValue","ミジカイ セツメイ");Assert.AreEqual(1,dialogs.ActiveCount);stale();Assert.AreEqual(1,dialogs.ActiveCount);model.Close();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(panel.activeSelf);}
                 CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(cost,model.GetTotalUsedCost());binding.Dispose();Assert.IsTrue(imported!=null);Assert.AreEqual(0,resources.OwnedInstanceCount);
             }finally{binding.Dispose();GameplayPause.SetPaused(wasPaused);release.SetValue(null,wasRelease);frames.SetValue(null,wasFrames);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Custom専用詳細は読取末尾と固有入力を持ち終端破棄後の旧操作を次世代へ渡さない(bool managed)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var pause=typeof(GameplayPause);var release=pause.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var frames=pause.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);bool paused=GameplayPause.IsPaused;var priorRelease=release.GetValue(null);var priorFrames=frames.GetValue(null);
+            var binding=new BattlePresentationBinding(owner,resources,views,host.transform);var view=binding.Custom;
+            try{
+                GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();binding.Battle.gameObject.SetActive(true);view.gameObject.SetActive(true);view.ConfigureDetailsManagement(managed?dialogs:null);
+                var factory=new Olca.Application.Battle.SimpleCardFactory();var model=new Olca.Core.Logic.Battle.CustomScreenSystem(new Olca.Core.Domain.Deck(Enumerable.Range(0,5).Select(_=>factory.CreateById("sword")).ToList()));model.Open(Array.Empty<Olca.Core.Domain.Card>(),new Olca.Tests.Mocks.MockRandomProvider());view.Initialize(model);var hand=model.CurrentHand.ToArray();int cost=model.GetTotalUsedCost();
+                var show=typeof(Olca.Presentation.CustomScreen.CustomScreenView).GetMethod("ShowDetailsValue",flags);show.Invoke(view,new object[]{string.Concat(Enumerable.Repeat("ナガイ ブン\n",80))+"オワリ"});var first=view.GetComponentInChildren<Olca.Presentation.CustomScreen.CustomCardDetailsDialog>();Assert.NotNull(first);Assert.Greater(first.Scroll.content.rect.height,first.Scroll.viewport.rect.height);first.Scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,first.Scroll.verticalNormalizedPosition,.001);StringAssert.EndsWith("オワリ",first.Body.text);
+                first.HandlePad(CustomPadCommand.Up);Assert.AreEqual(.2f,first.Scroll.verticalNormalizedPosition,.001);first.HandlePad(CustomPadCommand.Down);Assert.AreEqual(0,first.Scroll.verticalNormalizedPosition,.001);var oldClose=first.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseCustomPadDetails").onClick;var imported=first.GetComponent<Image>().sprite;
+                // EditModeではMonoBehaviour終了を明示配送する。自然DestroyはPlay実入口で別途確認する。
+                typeof(Olca.Presentation.CustomScreen.CustomCardDetailsDialog).GetMethod("OnDestroy",flags).Invoke(first,null);UnityEngine.Object.DestroyImmediate(first.gameObject);Assert.AreEqual(0,dialogs.ActiveCount);frame++;show.Invoke(view,new object[]{"ツギ ノ ショウサイ"});var second=view.GetComponentInChildren<Olca.Presentation.CustomScreen.CustomCardDetailsDialog>();Assert.NotNull(second);Assert.IsTrue(second.IsOpen);oldClose.Invoke();Assert.IsTrue(second.IsOpen);second.Dismiss();Assert.IsFalse(second.IsOpen);CollectionAssert.AreEqual(hand,model.CurrentHand);Assert.AreEqual(0,model.SelectedCards.Count);Assert.AreEqual(cost,model.GetTotalUsedCost());Assert.IsFalse(model.IsConfirming);binding.Dispose();Assert.IsTrue(imported!=null);Assert.AreEqual(0,resources.OwnedInstanceCount);
+            }finally{binding.Dispose();GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);frames.SetValue(null,priorFrames);}
         }
         [TestCase(false)][TestCase(true)]
         public async Task 会話Popupは元ViewとSessionを保持し世代入力とpause親終了を管理する(bool skipMode)
@@ -514,23 +547,91 @@ namespace Olca.Tests.Application
             var session=new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript("dialogue-owner",new[]{new Olca.Core.Domain.DialogueLine(string.Concat(Enumerable.Repeat("ナガイ カイワ\n",80))+"オワリ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);
             var layer=views.GetLayer("dialogue");layer.Register(owner,"dialogue",_=>Task.FromResult(root),(panel,ctx)=>v.BindManaged(session,ctx,dialogs),panel=>v.HideManaged());
             Assert.IsTrue((await layer.ShowAsync("dialogue")).Succeeded);
-            Button Find(string name)=>root.GetComponentsInChildren<Button>(true).Single(b=>b.name==name);
+            Button Find(string name)=>root.GetComponentsInChildren<Button>().Single(b=>b.name==name);
             var next=Find("DialogueNext");var history=Find("DialogueHistory");var entry=Find(skipMode?"DialogueSkip":"DialogueHistory");var oldNormal=next.onClick;EventSystem.current.SetSelectedGameObject(entry.gameObject);int index=session.Index;long initialVersion=session.Version;
-            entry.onClick.Invoke();v.Refresh();Assert.AreEqual(1,dialogs.ActiveCount);Assert.AreEqual(skipMode,session.SkipConfirmationOpen);Assert.AreEqual(!skipMode,session.BacklogOpen);var oldClose=history.onClick;oldNormal.Invoke();Assert.AreEqual(index,session.Index);Assert.DoesNotThrow(()=>dialogs.Tick());
+            entry.onClick.Invoke();v.Refresh();var livePopup=root.GetComponentInChildren<ReturnDialog>();livePopup.RefreshLifetime();Assert.Greater(Find("DialoguePause").transform.GetSiblingIndex(),livePopup.transform.GetSiblingIndex(),"毎frameの前面化でも親のPause操作を覆わない");Assert.AreEqual(1,dialogs.ActiveCount);Assert.AreEqual(skipMode,session.SkipConfirmationOpen);Assert.AreEqual(!skipMode,session.BacklogOpen);var oldClose=Find("DialogueHistory").onClick;oldNormal.Invoke();Assert.AreEqual(index,session.Index);Assert.DoesNotThrow(()=>dialogs.Tick());
             session.IsPaused=true;v.SetPresentationPaused(true);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsTrue(root.activeSelf);Assert.AreEqual(skipMode,session.SkipConfirmationOpen);Assert.AreEqual(!skipMode,session.BacklogOpen);
             using(var other=dialogs.CreateOwner(()=>true)){var panel=Panel("pause-dialogue-confirm");var close=Button(panel,"close-pause-dialogue");var otherRequest=dialogs.ShowNotice(other,panel,close,null,_=>{});Assert.AreEqual(1,dialogs.ActiveCount);close.onClick.Invoke();Assert.AreEqual(DialogResult.Cancelled,await otherRequest);}
-            frame++;session.IsPaused=false;v.SetPresentationPaused(false);Assert.AreEqual(1,dialogs.ActiveCount);oldClose.Invoke();Assert.AreEqual(1,dialogs.ActiveCount);history.onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(session.SkipConfirmationOpen);Assert.IsFalse(session.BacklogOpen);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);long afterClose=session.Version;oldNormal.Invoke();next.onClick.Invoke();Assert.AreEqual(afterClose,session.Version);Assert.AreEqual(index,session.Index);
-            frame++;entry.onClick.Invoke();v.Refresh();Assert.AreEqual(1,dialogs.ActiveCount);var stalePopup=history.onClick;var beforeHide=next.onClick;
-            if(skipMode){var confirm=next.onClick;confirm.Invoke();Assert.IsFalse(session.IsOpen);long ended=session.Version;confirm.Invoke();Assert.AreEqual(ended,session.Version);Assert.AreEqual(0,dialogs.ActiveCount);}
+            frame++;session.IsPaused=false;v.SetPresentationPaused(false);Assert.AreEqual(1,dialogs.ActiveCount);oldClose.Invoke();Assert.AreEqual(1,dialogs.ActiveCount);Find("DialogueHistory").onClick.Invoke();Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(session.SkipConfirmationOpen);Assert.IsFalse(session.BacklogOpen);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);long afterClose=session.Version;oldNormal.Invoke();next.onClick.Invoke();Assert.AreEqual(afterClose,session.Version);Assert.AreEqual(index,session.Index);
+            frame++;entry.onClick.Invoke();v.Refresh();Assert.AreEqual(1,dialogs.ActiveCount);var stalePopup=Find("DialogueHistory").onClick;var beforeHide=Find("DialogueNext").onClick;
+            if(skipMode){var confirm=Find("DialogueNext").onClick;confirm.Invoke();Assert.IsFalse(session.IsOpen);long ended=session.Version;confirm.Invoke();Assert.AreEqual(ended,session.Version);Assert.AreEqual(0,dialogs.ActiveCount);}
             else{var scroll=root.GetComponentInChildren<ScrollRect>();Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);layer.CloseCurrent();Assert.IsTrue(session.IsOpen);Assert.IsTrue(session.BacklogOpen);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsFalse(root.activeSelf);}
             layer.CloseCurrent();Assert.AreNotSame(beforeHide,next.onClick);stalePopup.Invoke();var oldSession=session;long oldVersion=oldSession.Version;
             session=new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript("dialogue-reopen",new[]{new Olca.Core.Domain.DialogueLine("フッキ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);frame++;Assert.IsTrue((await layer.ShowAsync("dialogue")).Succeeded);oldNormal.Invoke();stalePopup.Invoke();Assert.AreEqual(0,session.Index);Assert.AreEqual(oldVersion,oldSession.Version);Find("DialogueNext").onClick.Invoke();Assert.AreEqual(1,session.Index);layer.CloseCurrent();views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [Test] public void 旧Bindで会話を交換した後のskip取消は新入口へ戻り前の履歴callbackを拒否する()
+        {
+            var root=Panel("legacy-dialogue-rebind");var view=root.AddComponent<Olca.Presentation.Field.DialogueView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),()=>{});
+            Olca.Core.Domain.DialogueSession Session(string id)=>new Olca.Core.Domain.DialogueSession(new Olca.Core.Domain.DialogueScript(id,new[]{new Olca.Core.Domain.DialogueLine("カイワ"),new Olca.Core.Domain.DialogueLine("ツギ")}),Olca.Core.Domain.DialogueTextSpeed.Instant);
+            Button Find(string name)=>root.GetComponentsInChildren<Button>().Single(b=>b.name==name);
+            var first=Session("first");view.Bind(first);EventSystem.current.SetSelectedGameObject(Find("DialogueHistory").gameObject);Find("DialogueHistory").onClick.Invoke();view.Refresh();var oldClose=Find("DialogueHistory").onClick;long oldVersion=first.Version;
+            var second=Session("second");view.Bind(second);var entry=Find("DialogueSkip");EventSystem.current.SetSelectedGameObject(entry.gameObject);entry.onClick.Invoke();view.Refresh();Assert.IsTrue(second.SkipConfirmationOpen);
+            oldClose.Invoke();Assert.IsTrue(second.SkipConfirmationOpen);Assert.AreEqual(oldVersion,first.Version);Find("DialogueHistory").onClick.Invoke();Assert.IsFalse(second.SkipConfirmationOpen);Assert.AreEqual(0,second.Index);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(oldVersion,first.Version);view.Bind(null);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 履歴Dialogは読取ページと末尾位置を所有し同ticketの閉じると旧世代を分離する(bool managed)
+        {
+            var parent=Panel("backlog-underlay");parent.SetActive(true);bool live=true;int closed=0;
+            var data=new[]{"ミジカイ ブン",string.Concat(Enumerable.Repeat("ナガイ リレキ\n",80))+"オワリ"};
+            using(var scope=dialogs.CreateOwner(()=>live)){
+                var first=DialogueBacklogDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),data);first.Finished+=_=>closed++;
+                Assert.IsTrue(first.Open(parent,managed?dialogs:null,managed?scope:null,()=>live,true));Canvas.ForceUpdateCanvases();Assert.AreEqual(1,first.Position.Page);Assert.Greater(first.Scroll.content.rect.height,first.Scroll.viewport.rect.height);first.Scroll.verticalNormalizedPosition=0;
+                var previous=first.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueNext").onClick;var close=first.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueHistory").onClick;
+                previous.Invoke();Assert.AreEqual(0,first.Position.Page);Assert.AreSame(close,first.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueHistory").onClick,"ページ更新でticketのclose listenerを作り直さない");first.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueFast").onClick.Invoke();Assert.AreEqual(1,first.Position.Page);first.Scroll.verticalNormalizedPosition=0;var reading=first.Position;
+                first.Abort();Assert.AreEqual(1,closed);frame++;var second=DialogueBacklogDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),data,reading);second.Finished+=_=>closed++;
+                Assert.IsTrue(second.Open(parent,managed?dialogs:null,managed?scope:null,()=>live,true));Canvas.ForceUpdateCanvases();Assert.AreEqual(1,second.Position.Page);Assert.AreEqual(0,second.Scroll.verticalNormalizedPosition,.01);previous.Invoke();close.Invoke();Assert.IsTrue(second.IsOpen);Assert.AreEqual(1,second.Position.Page);Assert.AreEqual(1,closed);
+                second.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueHistory").onClick.Invoke();Assert.IsFalse(second.IsOpen);Assert.AreEqual(2,closed);Assert.AreEqual(0,dialogs.ActiveCount);
+            }
         }
         [Test] public void 旧SceneのCheckpoint親でも帰還Viewなしで進行Popupを開閉できる()
         {
             var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=controller.GetType();
             var checkpoint=Panel("legacy-checkpoint");checkpoint.SetActive(true);var popup=ProgressPopup();type.GetField("checkpointOverlay",flags).SetValue(controller,checkpoint);type.GetField("progressActionDialog",flags).SetValue(controller,popup);
             type.GetMethod("ShowProgressAction",flags).Invoke(controller,new object[]{"checkpoint legacy",false,true});Assert.IsTrue(popup.IsOpen);Assert.AreEqual("checkpoint legacy",popup.Message.text);popup.CancelButton.onClick.Invoke();Assert.IsFalse(popup.IsOpen);Assert.IsTrue(checkpoint.activeSelf);
+        }
+        private ConfirmationDialog DiscardPopup()=>ConfirmationDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),new ConfirmationContent{Title="編成",Message="破棄しますか",ConfirmName="DiscardDepartureDraft",CancelName="KeepEditingDeparture"});
+        private ConfirmationDialog DeletePopup(string name,bool pending=false)=>ConfirmationDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),new ConfirmationContent{Title="削除",Subject=name,Message="削除しますか",ConfirmName="ConfirmDeleteDeck",CancelName="CancelDeleteDeck",ConfirmEnabled=!pending});
+        [TestCase(false)][TestCase(true)]
+        public void 共通確認Dialogの編成破棄用途は取消確定と旧世代を自分で所有する(bool managed)
+        {
+            var parent=Panel("deck-parent");parent.SetActive(true);int discarded=0,kept=0;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=DiscardPopup();popup.Completed+=yes=>{if(yes)discarded++;else kept++;};Assert.IsTrue(popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true));Assert.IsFalse(parent.activeSelf);
+                var old=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick;popup.GetComponentsInChildren<Button>().Single(b=>b.name=="KeepEditingDeparture").onClick.Invoke();Assert.AreEqual(1,kept);Assert.IsTrue(parent.activeSelf);if(managed)Assert.IsTrue(dialogs.Blocks(scope));frame++;
+                var next=DiscardPopup();next.Completed+=yes=>{if(yes)discarded++;};Assert.IsTrue(next.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true));old.Invoke();Assert.AreEqual(0,discarded);next.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick.Invoke();Assert.AreEqual(1,discarded);Assert.IsTrue(parent.activeSelf);Assert.AreEqual(0,dialogs.ActiveCount);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 共通確認Dialogの削除用途は対象Idと長名を保持し旧確定を別対象へ渡さない(bool managed)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(1920,1080);var parent=Panel("saved-parent");parent.SetActive(true);string deleted=null;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=DeletePopup(new string('名',2000));popup.Completed+=accepted=>{if(accepted)deleted="first";};Assert.IsTrue(popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true));Assert.NotNull(popup.GetComponentInChildren<ScrollRect>());
+                var old=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck").onClick;popup.GetComponentsInChildren<Button>().Single(b=>b.name=="CancelDeleteDeck").onClick.Invoke();Assert.IsNull(deleted);frame++;
+                var next=DeletePopup("別の保存名");next.Completed+=accepted=>{if(accepted)deleted="second";};next.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true);old.Invoke();Assert.IsNull(deleted);next.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck").onClick.Invoke();Assert.AreEqual("second",deleted);Assert.IsTrue(parent.activeSelf);
+            }
+        }
+        [Test] public void 削除待機Dialogの無効確定と親終了は業務結果を返さない()
+        {
+            var parent=Panel("pending-parent");parent.SetActive(true);bool live=true;int results=0;using(var scope=dialogs.CreateOwner(()=>live)){
+                var popup=DeletePopup("保存名",true);popup.Completed+=r=>results++;popup.Open(parent,dialogs,scope,()=>live,true);var button=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDeleteDeck");Assert.IsFalse(button.interactable);var old=button.onClick;old.Invoke();Assert.AreEqual(0,results);live=false;popup.RefreshLifetime();old.Invoke();Assert.AreEqual(0,results);Assert.AreEqual(0,dialogs.ActiveCount);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 個別読取Dialogは長文末尾とresizeを保持し閉じた世代を拒否する(bool managed)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(1920,1080);var parent=Panel("read-parent");parent.SetActive(true);int closes=0;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=ReadOnlyDetailsDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),"詳細",string.Join("\n",Enumerable.Repeat("長文の検証",200))+"\nオワリシルシ",true);popup.Closed+=()=>closes++;popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,false);Canvas.ForceUpdateCanvases();popup.RefreshLayout();Assert.Greater(popup.Scroll.content.rect.height,popup.Scroll.viewport.rect.height);popup.Scroll.verticalNormalizedPosition=0;popup.RefreshLayout();((RectTransform)host.transform).sizeDelta=new Vector2(1440,1080);Canvas.ForceUpdateCanvases();popup.RefreshLayout();Assert.AreEqual(0,popup.Scroll.verticalNormalizedPosition,.001);Assert.IsTrue(popup.Scroll.content.GetComponent<Text>().text.EndsWith("オワリシルシ"));
+                var old=popup.GetComponentInChildren<Button>().onClick;old.Invoke();Assert.AreEqual(1,closes);frame++;var next=ReadOnlyDetailsDialog.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),"短文","短い説明",false);next.Closed+=()=>closes++;next.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,false);old.Invoke();Assert.AreEqual(1,closes);next.GetComponentInChildren<Button>().onClick.Invoke();Assert.AreEqual(2,closes);Assert.IsTrue(parent.activeSelf);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 共通確認の直接破棄と拒否終了はcallbackと描画参照を返す(bool managed)
+        {
+            var parent=Panel("destroy-parent");parent.SetActive(true);int results=0;using(var scope=dialogs.CreateOwner(()=>true)){
+                var popup=DiscardPopup();popup.Completed+=_=>results++;popup.Terminated+=()=>{};popup.Open(parent,managed?dialogs:null,managed?scope:null,()=>true,true);var old=popup.GetComponentsInChildren<Button>().Single(b=>b.name=="DiscardDepartureDraft").onClick;
+                // EditMode fixtureではMonoBehaviourの破棄messageを明示し、実Playでの自然な破棄も別途確認する。
+                Assert.DoesNotThrow(()=>typeof(ConfirmationDialog).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(popup,null));Assert.DoesNotThrow(()=>UnityEngine.Object.DestroyImmediate(popup.gameObject));old.Invoke();Assert.AreEqual(0,results);Assert.AreEqual(0,dialogs.ActiveCount);Assert.IsNull(typeof(ReturnDialog).GetField("Terminated",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(popup));Assert.IsNull(typeof(ReturnDialog).GetField("widgets",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(popup));
+                if(managed){frame++;var other=Panel("busy-other");dialogs.ShowPersistent(scope,other,Button(other,"yes"),Button(other,"no"),()=>true,_=>{});var rejected=DiscardPopup();rejected.Completed+=_=>results++;rejected.Terminated+=()=>{};Assert.IsFalse(rejected.Open(parent,dialogs,scope,()=>true,true));Assert.IsNull(typeof(ReturnDialog).GetField("Terminated",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(rejected));Assert.AreEqual(0,results);Assert.AreEqual(1,dialogs.ActiveCount);}
+            }
         }
         private sealed class ProgressOperationsProbe : IProgressActionOperations
         {
@@ -637,6 +738,132 @@ namespace Olca.Tests.Application
             host.transform.Find("retry20").gameObject.SetActive(false);fail=true;
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
+        }
+        [Test] public async Task 外界入口は同レイヤーを切替え旧操作を拒否しView再生成でRootSessionを失わない()
+        {
+            var layer=views.GetLayer("return-hub");var hub=Panel("outside-fixture-hub");var entry=Button(hub,"outside-fixture-entry");ManagedScreenContext hubContext=null;int hubCalls=0,returned=0;
+            layer.Register(owner,"outside-fixture-hub",_=>Task.FromResult(hub),(go,ctx)=>{hubContext=ctx;entry.onClick=new Button.ButtonClickedEvent();entry.onClick.AddListener(()=>{if(ctx.IsCurrent)hubCalls++;});go.SetActive(true);EventSystem.current.SetSelectedGameObject(entry.gameObject);},go=>go.SetActive(false));
+            Assert.IsTrue((await layer.ShowAsync("outside-fixture-hub")).Succeeded);var oldHub=entry.onClick;var previous=hubContext;var model=system.OutsideExploration;int before=resources.OwnedInstanceCount;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>{ct.ThrowIfCancellationRequested();return Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));};
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{returned++;layer.ShowAsync("outside-fixture-hub").GetAwaiter().GetResult();})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.IsPresented);Assert.IsFalse(previous.IsCurrent);Assert.IsFalse(hub.activeSelf);oldHub.Invoke();Assert.AreEqual(0,hubCalls);
+                var back=binding.View.GetComponentInChildren<Button>();Assert.AreSame(back.gameObject,EventSystem.current.currentSelectedGameObject);var oldBack=back.onClick;oldBack.Invoke();oldBack.Invoke();Assert.AreEqual(1,returned);Assert.IsFalse(model.IsPresented);Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);oldBack.Invoke();Assert.AreEqual(1,returned);Assert.IsTrue(binding.IsOpen);Assert.AreSame(model,system.OutsideExploration);
+                var lost=binding.View;typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(lost,null);UnityEngine.Object.DestroyImmediate(lost.gameObject);Assert.IsTrue(binding.HasLostView);Assert.IsFalse(model.IsPresented);Assert.IsTrue((await binding.OpenAsync()).Succeeded);oldBack.Invoke();Assert.AreEqual(1,returned);Assert.IsTrue(binding.IsOpen);Assert.AreSame(model,system.OutsideExploration);
+            }
+            Assert.IsFalse(model.IsEnded);Assert.IsFalse(model.IsPresented);Assert.AreEqual(before,resources.OwnedInstanceCount);
+            using(var recreated=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){Assert.IsTrue((await recreated.OpenAsync()).Succeeded);Assert.IsTrue(model.IsPresented);Assert.AreSame(model,system.OutsideExploration);}
+            system.Dispose();Assert.IsTrue(model.IsEnded);Assert.IsFalse(model.IsPresented);
+        }
+        [Test] public async Task 外界入口は管理側で閉じたViewの外部破棄を再表示要求と見なさない()
+        {
+            var layer=views.GetLayer("return-hub");var hub=Panel("outside-closed-hub");var entry=Button(hub,"outside-entry");
+            layer.Register(owner,"outside-closed-hub",_=>Task.FromResult(hub),(go,ctx)=>{go.SetActive(true);EventSystem.current.SetSelectedGameObject(entry.gameObject);},go=>go.SetActive(false));
+            var model=system.OutsideExploration;var core=model.Core;var gauge=core.CardGauge;int created=0,returned=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>{created++;return Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));};
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{returned++;layer.ShowAsync("outside-closed-hub").GetAwaiter().GetResult();})){
+                for(int route=0;route<3;route++){
+                    Assert.IsTrue((await binding.OpenAsync()).Succeeded);var closed=binding.View;var oldBack=closed.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseOutsideExploration").onClick;
+                    if(route==0)oldBack.Invoke();else if(route==1)Assert.IsTrue((await layer.ShowAsync("outside-closed-hub")).Succeeded);else {layer.CloseCurrent();Assert.IsTrue((await layer.ShowAsync("outside-closed-hub")).Succeeded);}
+                    Assert.IsNull(binding.View);Assert.IsFalse(binding.IsOpen);Assert.IsFalse(model.IsPresented);
+                    typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(closed,null);UnityEngine.Object.DestroyImmediate(closed.gameObject);
+                    Assert.IsFalse(binding.HasLostView);oldBack.Invoke();binding.Pump(true);
+                    Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(1,returned);Assert.AreEqual(route+1,created);
+                    Assert.AreSame(core,model.Core);Assert.AreSame(gauge,core.CardGauge);Assert.AreEqual(0,core.Frame);
+                }
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(binding.IsOpen);Assert.AreEqual(4,created);
+            }
+            Assert.IsFalse(model.IsPresented);
+        }
+
+        [TestCase("攻撃", "コウゲキ")] [TestCase("ひらがな Latin", "ひらがな Latin")] public async Task 外界初期手札HUDはRootの三枚を表示し閉鎖と再表示で再抽選しない(string name,string shown)
+        {
+            var source=Enumerable.Range(0,5).SelectMany(id=>Enumerable.Range(0,4).Select(n=>new Olca.Core.Domain.Card("outside-hud-"+id,name,1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))).ToArray();var owned=source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var model=system.OutsideExploration;
+            Assert.IsTrue(model.TryInitializeCards(source,owned,new Olca.Tests.Mocks.MockRandomProvider(),out _));var cards=model.Cards;var hand=cards.Hand.ToArray();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;
+                for(int slot=0;slot<3;slot++){Assert.AreEqual(shown,view.transform.Find("OutsideHandName"+slot).GetComponent<Text>().text);Assert.AreEqual(name,hand[slot].Name);Assert.AreEqual(name,source[slot].Name);Assert.AreEqual("コスト "+hand[slot].GetFinalCost(),view.transform.Find("OutsideHandCost"+slot).GetComponent<Text>().text);Assert.IsFalse(view.transform.Find("OutsideHandName"+slot).GetComponent<Text>().raycastTarget);}
+                StringAssert.Contains("17",view.transform.Find("OutsideHandHeading").GetComponent<Text>().text);
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsFalse(model.IsPresented);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);Assert.AreSame(cards,model.Cards);CollectionAssert.AreEqual(hand,model.Cards.Hand);Assert.AreEqual(0,model.Core.Frame);Assert.AreEqual(6000,model.Core.CardGauge.CurrentUnits);
+            }
+        }
+
+        [Test] public async Task 外界入口の取消と欠損失敗は前画面のfocusとSessionを変更せず再試行できる()
+        {
+            var layer=views.GetLayer("return-hub");var hub=Panel("outside-failure-hub");var entry=Button(hub,"outside-failure-entry");ManagedScreenContext prior=null;
+            layer.Register(owner,"outside-failure-hub",_=>Task.FromResult(hub),(go,ctx)=>{prior=ctx;go.SetActive(true);EventSystem.current.SetSelectedGameObject(entry.gameObject);},go=>go.SetActive(false));Assert.IsTrue((await layer.ShowAsync("outside-failure-hub")).Succeeded);int before=resources.OwnedInstanceCount;
+            var source=new TaskCompletionSource<GameObject>();using(var cancel=new CancellationTokenSource())using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>source.Task,()=>true,null)){
+                var pending=binding.OpenAsync(cancel.Token);cancel.Cancel();source.SetResult(Panel("outside-cancelled"));Assert.IsTrue((await pending).Cancelled);
+            }
+            using(var missing=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>throw new InvalidOperationException("outside-fixture-missing"),()=>true,null)){var failed=await missing.OpenAsync();Assert.IsFalse(failed.Succeeded);StringAssert.Contains("outside-fixture-missing",failed.Error);}
+            using(var incomplete=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>Task.FromResult(Panel("outside-no-view")),()=>true,null)){Assert.IsFalse((await incomplete.OpenAsync()).Succeeded);}
+            Assert.IsTrue(prior.IsCurrent);Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsFalse(system.OutsideExploration.IsPresented);Assert.IsFalse(system.OutsideExploration.IsEnded);Assert.AreEqual(before,resources.OwnedInstanceCount);
+        }
+
+        [Test] public void 外界Runtimeは単一driverだけを許し解放後も同じRoot状態と時計を再利用する()
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();
+            using(var runtime=new OutsideExplorationRuntime(model))using(var input=new Olca.Unity.UnityInputProvider()){
+                var first=new object();var second=new object();var core=model.Core;
+                runtime.Attach(first,input);Assert.Throws<InvalidOperationException>(()=>runtime.Attach(second,input));
+                runtime.Pump(second,true);Assert.AreEqual(0,runtime.Frame);Assert.AreEqual(0,core.Frame);
+                runtime.Detach(second);Assert.Throws<InvalidOperationException>(()=>runtime.Attach(second,input));
+                runtime.Detach(first);runtime.Attach(second,input);runtime.Pump(second,false);
+                Assert.AreSame(core,model.Core);Assert.AreEqual(0,runtime.Frame);Assert.AreEqual(0,core.Frame);
+                runtime.Dispose();Assert.Throws<ObjectDisposedException>(()=>runtime.Attach(first,input));
+            }
+        }
+
+        [Test] public async Task 外界Pause被覆は状態を保ち背面Backと復帰同frameの旧操作を拒否する()
+        {
+            int returned=0,paused=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,factory,()=>true,()=>returned++,paused:()=>paused++)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);
+                var back=binding.View.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseOutsideExploration");var pause=binding.View.GetComponentsInChildren<Button>().Single(b=>b.name=="PauseOutsideExploration");
+                pause.onClick.Invoke();Assert.AreEqual(1,paused);binding.SetCovered(true);back.onClick.Invoke();pause.onClick.Invoke();Assert.AreEqual(0,returned);Assert.AreEqual(1,paused);Assert.IsTrue(binding.IsOpen);Assert.IsFalse(binding.View.CanPlay);
+                binding.SetCovered(false);back.onClick.Invoke();Assert.AreEqual(0,returned);Assert.AreSame(back.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(0,system.OutsideExploration.Core.Frame);
+            }
+            Assert.IsFalse(system.OutsideExploration.IsPresented);
+        }
+
+        [Test] public async Task Pause一時制限は旧イベントも拒否し終了時に元の各ボタン状態だけを復元する()
+        {
+            var panel=Panel("restricted-pause");var resume=Button(panel,"ResumeButton");var load=Button(panel,"LoadCheckpointButton");resume.interactable=false;int loaded=0;load.onClick.AddListener(()=>loaded++);
+            var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);var layer=views.GetLayer("restriction-fixture");
+            layer.Register(owner,"restricted",_=>Task.FromResult(panel),(go,ctx)=>view.Show(ctx),go=>view.Hide());
+            Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);var old=load.onClick;view.RestrictControls(new[]{"LoadCheckpointButton"});Assert.IsFalse(load.interactable);old.Invoke();Assert.AreEqual(0,loaded);
+            layer.CloseCurrent();Assert.IsTrue(load.interactable);Assert.IsFalse(resume.interactable);old.Invoke();Assert.AreEqual(0,loaded);
+            Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);load.onClick.Invoke();Assert.AreEqual(1,loaded);Assert.IsFalse(resume.interactable);
+        }
+
+        [Test] public void 外界入力epochは古い履歴を捨て未来neutralを採用前に評価しない()
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();bool paused=Olca.Unity.GameplayPause.IsPaused;var pauseType=typeof(Olca.Unity.GameplayPause);var release=pauseType.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pauseType.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                var driver=new object();input.QueueSnapshot();runtime.Attach(driver,input);Assert.AreEqual(1,input.CaptureTimestamped().Length,"所有境界前の履歴を残さない");
+                // 製品入力とは別の時刻列fixture。実入口はnative InputSystemで別途確認する。
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);
+                long frequency=System.Diagnostics.Stopwatch.Frequency,origin=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10,now=origin;
+                typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);
+                var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",flags).GetValue(input);
+                var held=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,Horizontal=1};var neutral=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true};
+                events.Add(new Olca.Unity.TimestampedLogicalInput(origin,held));events.Add(new Olca.Unity.TimestampedLogicalInput(origin+frequency*2,neutral));events.Add(new Olca.Unity.TimestampedLogicalInput(origin+frequency/20,held));
+                now=origin+frequency/10;runtime.Pump(driver,true);Assert.Greater(model.Core.Frame,0);Assert.AreEqual(model.Core.Definition.Start,model.Core.Position,"未来neutralでheldを先に許可しない");Assert.AreEqual(runtime.Frame,model.Core.Frame);
+                now=origin+frequency*2+frequency/10;runtime.Pump(driver,true);Assert.AreEqual(model.Core.Definition.Start,model.Core.Position);
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now,held));now+=frequency/10;runtime.Pump(driver,true);Assert.Greater(model.Core.Position,model.Core.Definition.Start);Assert.AreEqual(runtime.Frame,model.Core.Frame);
+            }}finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);resume.SetValue(null,priorResume);model.Dispose();}
+        }
+
+        [Test] public void Chrome遮蔽は背面描画とraycastだけを止め各元状態とactiveを復元する()
+        {
+            var chrome=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Chrome();
+            var original=chrome.Save.gameObject.AddComponent<CanvasGroup>();original.alpha=.4f;original.interactable=false;original.blocksRaycasts=true;original.enabled=false;
+            bool collectionActive=chrome.Collection.gameObject.activeSelf;chrome.SetCovered(true);chrome.SetCovered(true);
+            Assert.IsTrue(original.enabled);Assert.AreEqual(0,original.alpha);Assert.IsFalse(original.interactable);Assert.IsFalse(original.blocksRaycasts);Assert.AreEqual(collectionActive,chrome.Collection.gameObject.activeSelf);
+            chrome.SetCovered(false);Assert.AreEqual(.4f,original.alpha);Assert.IsFalse(original.interactable);Assert.IsTrue(original.blocksRaycasts);Assert.IsFalse(original.enabled);Assert.AreEqual(collectionActive,chrome.Collection.gameObject.activeSelf);
+            var added=chrome.Pause.GetComponent<CanvasGroup>();Assert.AreEqual(1,added.alpha);Assert.IsTrue(added.blocksRaycasts);Assert.IsTrue(added.interactable);chrome.SetCovered(false);
         }
     }
 }

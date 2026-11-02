@@ -1,0 +1,6 @@
+{
+  "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "394c86b16f715faadb729873d0c2cbb21c9fe0c640533405173b2c48c40503c7",
+  "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "352ea807232dce3d8e5f18a9fd31955c93e4a27cce6bb0e0c7a49c5fdf976443",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "daa5c117e453c478d062c37b9bce919561f77a90f446f0ce7b0653bc71d59acc",
+  "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "63d80cc6619f200203054669b248091feb74c3ca6cafa13f58d638112ca4c728"
+}

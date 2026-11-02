@@ -1,0 +1,722 @@
+[
+  {
+    "file": "camera-follow-start-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "647b92e60c233bde1ce26519c5240e00beaf8977dbd10a5dd5c64329ff1eddf1",
+    "state": {
+      "frame": 263,
+      "clock": 263,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 263,
+        "x": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 8,
+      "expected": 8,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 960.000061,
+      "playerY": 0,
+      "groundPhase": -303.9999,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-start-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "e9cd0ae53c059118825a75a634934c9ce24028f45592f9df53c76a8adb180888",
+    "state": {
+      "frame": 263,
+      "clock": 263,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 263,
+        "x": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 8,
+      "expected": 8,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 960.000061,
+      "playerY": 0,
+      "groundPhase": -303.999939,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-start-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "9e9d786ba59a58f2372940b653d443ddb85711c90cfed703f98f69b5c41e136d",
+    "state": {
+      "frame": 263,
+      "clock": 263,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 263,
+        "x": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 8,
+      "expected": 8,
+      "ppu": 108,
+      "viewport": 15.3960075,
+      "playerX": 831.3844,
+      "playerY": 0,
+      "groundPhase": -32.6156,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-move-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "e494b27bd07c5f73344078bca02f9bcfd2432ba7ecf79a3c7c66d4edcbd4d89a",
+    "state": {
+      "frame": 539,
+      "clock": 539,
+      "position": 642000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 539,
+        "x": 642000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 10.7,
+      "expected": 10.7,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 960.000061,
+      "playerY": 0,
+      "groundPhase": -195.59993,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-move-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "49aab36d14c87c53fd3e3036ca66a27a6fea0924a7d95761f8acb329a23e4b5b",
+    "state": {
+      "frame": 539,
+      "clock": 539,
+      "position": 642000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 539,
+        "x": 642000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 10.7,
+      "expected": 10.7,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 960.000061,
+      "playerY": 0,
+      "groundPhase": -195.59993,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-move-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "185b79b3f7e4b3f8c898be9650495ab282827b822fb1604637b1b8c67a8a076d",
+    "state": {
+      "frame": 539,
+      "clock": 539,
+      "position": 642000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 539,
+        "x": 642000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 10.7,
+      "expected": 10.7,
+      "ppu": 108,
+      "viewport": 15.3960075,
+      "playerX": 831.3844,
+      "playerY": 0,
+      "groundPhase": -324.215576,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-start-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "938d3b6e9ac907207e40d82dcb40cf4af4f80be4586b7350747bb4c4589e0059",
+    "state": {
+      "frame": 926,
+      "clock": 926,
+      "position": 642000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 926,
+        "x": 642000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 819.600037,
+      "playerY": 0,
+      "groundPhase": -335.9999,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-start-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "36cbc32f9338c9d483c4257e3fed3d9ef3a7fbcbb6b3e4a53062278b4646d0a7",
+    "state": {
+      "frame": 926,
+      "clock": 926,
+      "position": 642000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 926,
+        "x": 642000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 819.600037,
+      "playerY": 0,
+      "groundPhase": -335.999939,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-start-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "8fef5721357f70c102bf70819d61cd719da00bb83e62f40ccc2857974fa90c56",
+    "state": {
+      "frame": 926,
+      "clock": 926,
+      "position": 642000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 926,
+        "x": 642000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 15.3960075,
+      "playerX": 690.9844,
+      "playerY": 0,
+      "groundPhase": -64.6156,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-move-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "6e33d381d1a48e7ec9c92778b9a7d9301c8063b9f41979a5cc2ec747b4c36f35",
+    "state": {
+      "frame": 1387,
+      "clock": 1387,
+      "position": 822000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 1387,
+        "x": 822000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 1143.6,
+      "playerY": 0,
+      "groundPhase": -335.9999,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-move-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "5a788ca0964799b66c206011ea111ab2bc9fd1344cc985ba78b31ff00be98757",
+    "state": {
+      "frame": 1387,
+      "clock": 1387,
+      "position": 822000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 1387,
+        "x": 822000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 1143.6,
+      "playerY": 0,
+      "groundPhase": -335.999939,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-move-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "2641f1227330d4d6d9eceb5b415de1b9add05fe70065026482347153e22f758f",
+    "state": {
+      "frame": 1387,
+      "clock": 1387,
+      "position": 822000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 1387,
+        "x": 822000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 15.3960075,
+      "playerX": 1014.98438,
+      "playerY": 0,
+      "groundPhase": -64.6156,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-platform-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "448109e199116cfb7892a0ea5b7cd9caa8588ae4f895267a88f70e623c5a4edf",
+    "state": {
+      "frame": 1908,
+      "clock": 1908,
+      "position": 852000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 1908,
+        "x": 852000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 1197.6,
+      "playerY": 108,
+      "groundPhase": -335.9999,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-platform-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "e03a161128d0f47f0fd1d3921c5dca71fa474486de384c0c7cbd8db5cdbfcdba",
+    "state": {
+      "frame": 1908,
+      "clock": 1908,
+      "position": 852000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 1908,
+        "x": 852000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 1197.6,
+      "playerY": 108,
+      "groundPhase": -335.999939,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "camera-fixed-platform-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "8128775622a30de02e4d6491c1896d672501be033158eba229c6c78da414e3a4",
+    "state": {
+      "frame": 1908,
+      "clock": 1908,
+      "position": 852000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": 720000,
+        "frame": 1908,
+        "x": 852000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "presented": true
+      },
+      "camera": 12,
+      "expected": 12,
+      "ppu": 108,
+      "viewport": 15.3960075,
+      "playerX": 1068.98438,
+      "playerY": 108,
+      "groundPhase": -64.6156,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-restored-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "b56f302822c87b185fe2197b7cfcdc9d849e8d9ba1730443f575f94aebda40fe",
+    "state": {
+      "frame": 2828,
+      "clock": 2828,
+      "position": 846000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 2828,
+        "x": 846000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "presented": true
+      },
+      "camera": 14.1,
+      "expected": 14.1,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 960.000061,
+      "playerY": 108,
+      "groundPhase": -162.799988,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-restored-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "6bf71b5a2164fe4ebde33f7cb59a0683a39ea6f7eeeb3f578c5fce7b8228987f",
+    "state": {
+      "frame": 2828,
+      "clock": 2828,
+      "position": 846000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 2828,
+        "x": 846000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "presented": true
+      },
+      "camera": 14.1,
+      "expected": 14.1,
+      "ppu": 108,
+      "viewport": 17.7777786,
+      "playerX": 960.000061,
+      "playerY": 108,
+      "groundPhase": -162.799988,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "camera-follow-restored-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "519cccdce4caff7fa26f76526769e8e3e63a76727ae0dab2b8af40247435cca5",
+    "state": {
+      "frame": 2828,
+      "clock": 2828,
+      "position": 846000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top"
+    },
+    "projection": {
+      "policy": {
+        "fixedCenter": null,
+        "frame": 2828,
+        "x": 846000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "presented": true
+      },
+      "camera": 14.1,
+      "expected": 14.1,
+      "ppu": 108,
+      "viewport": 15.3960075,
+      "playerX": 831.3844,
+      "playerY": 108,
+      "groundPhase": -291.415649,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  }
+]

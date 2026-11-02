@@ -89,3 +89,17 @@ mockInput.SetKeyDown(GameKey.Attack, true);
 ## アセンブリ
 
 テストコードは `Olca.Tests.asmdef` に属すること。
+
+### Play停止の完了判定
+
+停止後に必ずドメイン再読込や接続断が起こるとは限らない。ログの特定行やdown→upを必須条件にして待ち続けず、通常の検出statusとeditor_statusでready/stopped/compiling=false/domainReloadInProgress=falseを確認する。停止要求は再送せず、既存要求の結果を回収する。解像度はその後に実GameView/RenderTextureを読む。誤った待機監視を解除する場合は当該ローカル監視プロセスだけを対象とし、Editorを終了しない。
+
+
+## 再読込直後の未生成RenderTexture
+
+Screenが640×360でも、停止Editorの再読込直後にGameViewのRenderTextureが未生成の場合がある。textures空のままテストを開始せず、既存の低解像度GameView通常描画を一度行ってから、ScreenとGameView/PlayModeView双方の実RTが640×360であることを再読取する。要求送信だけや空配列のall判定で済ませず、前提未成立で停止した記録と、その後の実テスト結果を区別する。
+
+- domainreload後の初回`run_script`は、参照assemblyのcold compile時間も`timeout_ms`へ算入される。Stage30ではcompile280356msの後に描画同期処理が続き、300000msのTask待機予算が尽きた。既存jobがTimeoutでもTaskは継続し得るため再送せず、実Screen/2RTをmain-thread読取で確認してから進める。
+- 同じ根拠のあるcold helperには600000msの有限予算を使用可とし、テスト期待値/保存guard/描画サイズの判定は緩めない。これはUnityテストの再試行や製品処理時間の変更ではない。
+
+- 検証件数の更新は`summary.total/passed`等の対象行だけに限定し、`==36`のような部分文字列を一括置換しない。Stage31ではこれが`height==360`を380へ変えたため、実測640×360をテスト前に拒否した。実行中コピー/修正前helperを保存し、厳密な640×360判定へ戻してから再開した。期待解像度を実測へ合わせて緩めない。

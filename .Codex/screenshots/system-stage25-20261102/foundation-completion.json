@@ -1,0 +1,22 @@
+{
+  "requiredMigrationComplete": true,
+  "closed": "Custom detail-specific read-only rendering/control moved from parent to dedicated Dialog. Common Confirmation reused for discard/delete/reset/retreat/skip; dedicated ProgressAction retry, ReadOnlyDetails, DialogueBacklog, CustomCardDetails. Manager generic.",
+  "optional": [
+    "Prefab every widget",
+    "Further split normal View composition",
+    "Additional generic abstraction"
+  ],
+  "independentUnverified": [
+    "real build",
+    "physical input/audio hearing/all HotReload",
+    "product equipment stat values",
+    "native Item skip",
+    "registered product NPC script",
+    "extreme old deck long names",
+    "historical UGUI and unidentified Sprite baseline"
+  ],
+  "futureScope": [
+    "Review latest outside-exploration specifications before selecting one bounded implementation",
+    "Verify product data registrations and remaining D05/factory/S08 dependencies separately"
+  ]
+}

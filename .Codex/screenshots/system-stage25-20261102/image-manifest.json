@@ -1,0 +1,191 @@
+[
+  {
+    "file": "card-details-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "655ddeb8e2e9ed34fc57039a9becfa02791d744515fe96f4daad0b8779ed6efb",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "card-details-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "750899115e56d5bc3ac16b4e49191e6194f3d5f02ce0900e1d8c966dabd62756",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "card-details-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "f8706c792ec744a9af705ccaeeef0c4cd9923371d5d5350c52163c633d70d53c",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "long-details-tail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "533cdbe38e31e5eb6942727aa0127962d00e94f613c364568585695a7395d46f",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "long-details-tail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "feac7de15cd0aa09da7dd813028235b3382300829c087b0ecee6c993267b396f",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "long-details-tail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "b43e3fd599ba205098f45cdddc68d07bf3109852742e1b395cd0bfff00082af3",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "combatant-details-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "a2a2a45335884c0253fe5a2fda90b4770cb55a32de03dd521200672ef1cef86f",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "combatant-details-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "578fb78d476eedef6c0dc2d57f2391015a5a9626b22dad05c58d2b8dbf10f30b",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "combatant-details-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "071670bc2e9a59bf6e2cd4ad47abf04af6b87d20066f4f607555897f0ec47d55",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "transformation-details-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "d772aeb5b43dce4f26d62f896dd02946a1517279c85170051a11f4560fa60f84",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "transformation-details-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "142de3b2f8778a1f50dd8e42d67073fbab6f02a1bf035230a4094d780bff4d9b",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "transformation-details-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "d981e2327f690478c6860ab0cf7a53b34dba6d9092b1eb2cb12173f3f942b766",
+    "kind": "Stage25 actual longpress route, held logical state, Canvas/both RT checked; transformation and long text are isolated display fixtures"
+  },
+  {
+    "file": "before-card-details-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "059b98ef4eff274d7f83a93f08d721da572186dced0151183b1cd90b7d1cafdb",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-card-details-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "38969dbc36c37f731fab1e6d5cb1a5660d5d994cfde1da5a400bffb164141763",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-card-details-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "df6718ee92ae0a5adc6994f31075fc7cd6fb19af67cd6fd649d6dbcfa8f6df53",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-long-details-tail-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "c317d3cbdd9ee8a1991dbb89904532c3cd5b88c437587c6662a33568d86fb242",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-long-details-tail-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "60823b250353033f19c72e725c11b399dc443b7d14ed7a3573021deb9277aff0",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-long-details-tail-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "7cb265a54dfb68928dcbe7122dd61496a9917064a301985732b3589c712d6686",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-combatant-details-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "842afc7d733ee885231a5032ca15c9a6bdd8a5a8fec51397ffc6cf7150316b97",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-combatant-details-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "e469c9834d86c1fccb33f47d68cb0c62a0903ea3e7db55af40aad211bce41050",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  },
+  {
+    "file": "before-combatant-details-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "af7b1f0a6c73c0f6765d3878fbdbc70c26a47a41a281e41fecf31b5d3018eab8",
+    "kind": "Published Stage18 same UI route/resolution reference; card content differs (Shield vs Tuning), separate run, no whole-world pixel identity claim"
+  }
+]

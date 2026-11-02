@@ -1,0 +1,23 @@
+{
+  "editorPid": 137059,
+  "compileJob": "7a8bf39eb47b4212be4f7b0130704f43",
+  "nativeStartupRead": {
+    "jobId": "bfb04daa9e1e4a20a2d7ff644b834860",
+    "compileMs": 298467,
+    "executeMs": 17,
+    "success": true
+  },
+  "readOnlyStatusTimeout": "Status handshake ready preceded actual main-thread readiness. editor_status read timed out30000ms; original Play continued, no repeated Play or restart.",
+  "sameVmEditorModelAuthentication": true,
+  "noDuplicateUncertainOperations": true,
+  "reload": "Tundra compile succeeded, normal reload disconnected Pipeline port. CPU/log/job tracked without another compile/kill/credential change. Licensing diagnostics retained as tool-side history, not product fix.",
+  "fullWrapperTimedOut": true,
+  "initialRenderTimeout": {
+    "jobId": "1feba55836294835a2be211ecc72cfed",
+    "compileMs": 280356,
+    "executeMs": 97131,
+    "result": "Timeout; original Task is not retained by Pipeline and may continue",
+    "noResend": true,
+    "recovery": "Read-only main-thread Fields twice observed Screen640/twoRT640/TMP/stopped. Original Render helper has no mutations after its synchronous final RenderView. No test started before these observations. Subsequent cold helper finite budget600000ms."
+  }
+}

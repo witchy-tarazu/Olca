@@ -1,0 +1,24 @@
+{
+  "editorPid": 137059,
+  "sameVmModelAuthentication": true,
+  "noEditorRestart": true,
+  "explicitCompileJobs": [
+    "ccf0402f3f8f48128e32791eb4e3531f",
+    "980d14387c3e4b3594be5a03a1e8f18c"
+  ],
+  "finalCompiledSources": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "35271c393896f0e33292bbd63a54e1ea65c096b3f6e6406e8b7f5d8cc6a37c33",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "c5e439086cb7ffb3e0e53a22c4e6646b09f939334d3275012fc9f868d3937dc6",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "ff181a23be34526eb7c6836f5c3050fb9fd0ce29f5eb63e62b23c59e1ce53d22",
+    "Assets/Olca/Presentation/Management/ViewManager.cs": "c0720e168bdbe5cb1374069ce73faf8256863108fffc7fef53abbf92545eeab3",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "597fcca1e9dbc6baf93fd48677bab0a76a1d1009173e50863fba5f7e128e8c83"
+  },
+  "pretestRevisions": "Initial static inspection corrected reset focus update order and guarded UI Close while keeping host public close; no tests claimed for earlier revisions; final v3 tested.",
+  "coldJobsCompletedWithoutResubmission": [
+    "51820c6ea01b48f38178503b2fba3379",
+    "7a8541d9a36d4d4ebe95d14733edcac2"
+  ],
+  "fullWrapperTimeout": true,
+  "fullRunOutcomeRecovered": "Same run3653 success247s; no duplicate suite",
+  "historicalIssuesRetained": "Prior UGUI/Pipeline/CLI/UnityAI and unidentified Sprite2095 baseline remain separate."
+}

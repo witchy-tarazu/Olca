@@ -1,0 +1,42 @@
+Tracked helper system-stage28-native-remember-legacy de2fb511150346d193da9e87e3584ad4
+Tracked helper system-stage28-native-held-entry 0eda61ddaaa04f16b4478fc263eedd1e
+Tracked helper system-stage28-native-old-back-before-moving d7b10bb2bd5c4528b665b30c230feb4e
+Tracked helper system-stage28-native-background-save-blocked 1a09bb37f833463d93cf5a7db598e642
+Tracked helper system-stage28-native-old-legacy-inputs 9b78970e0b95469eb01a31f9af384002
+Tracked helper system-stage28-jump-pad-south a1be790d16d4444ba69d11d9172d0468
+Tracked helper system-stage28-jump-pad-cancel 17400b0477ed431bb24d3c70d27b55f9
+Tracked helper system-stage28-outside-initial-hold d113f97e72b24f5ba38579684941fe32
+Tracked helper system-stage28-outside-initial-outside-frozen b2cb059e46d64b0795d76ef58cdd97ce
+Tracked helper system-stage28-outside-initial-fhd-size b7542a41d481493fbba3cfe35050f5ca
+Tracked helper system-stage28-outside-initial-fhd-canvas e631f40900824b1faca70b313c620fa1
+Tracked helper system-stage28-outside-initial-fhd-actual 2ec670b3f879474d85fb91f20257cbb0
+Tracked helper system-stage28-outside-initial-fhd-outside-state 4a5aa692aea24503adc6eeff1af7074f
+Tracked helper system-stage28-outside-initial-4k-size d71e29d87d334f0a918c1339a81186e5
+Tracked helper system-stage28-outside-initial-4k-canvas 9491cecc6ec94405bdabd7e60926bc7e
+Tracked helper system-stage28-outside-initial-4k-actual 93ccd17d3a26486e95951b1b3081580e
+Tracked helper system-stage28-outside-initial-4k-outside-state ea80efdb23184f908ed8ec15bf72079d
+Tracked helper system-stage28-outside-initial-4by3-size ff7ba82cea8c4ece83d7457a388aa192
+Tracked helper system-stage28-outside-initial-4by3-canvas 397d08df95df45e08ab498b42ac62be2
+Tracked helper system-stage28-outside-initial-4by3-actual 5948c93d842d440d9f8a0e9d1441b132
+Tracked helper system-stage28-outside-initial-4by3-outside-state 02028793c6ec4310a67db5886831055b
+Tracked helper system-stage28-outside-initial-small dfe457ebdf9940b18d94a2da0d41535c
+Tracked helper system-stage28-outside-initial-small-actual c20baaf66c4d4eb3ae8af99208d1b565
+Tracked helper system-stage28-outside-initial-release a4922d1e51aa447d92d4bfd63e67f797
+Tracked helper system-stage28-jump-short c3bf88063e9b45f48fdb7b476ab73942
+Tracked helper system-stage28-jump-long ebe03c975d344a7fb70786cabbd5e1a5
+Tracked helper system-stage28-jump-air-steer 3e18c868ce1146e9a1ca9e5677b3d993
+Tracked helper system-stage28-jump-held-landing 3fae210d271f498b8dfa4ee51d991f3a
+Tracked helper system-stage28-jump-same-frame-tap 56d144752c6745c5953d7542a5484a30
+Tracked helper system-stage28-move-imported-pose cdbb822a092d4dc4b63614f4d9eb8705
+Traceback (most recent call last):
+  File "/workspace/olca-validation-20261024/system-stage28-native-play.py", line 17, in <module>
+    movePose=o('FreezeMove','move-imported-pose');capture('outside-move');o('Thaw','move-thaw')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/olca-validation-20261024/system-stage28-native-play.py", line 2, in o
+    def o(m,n,a=None):return script('Outside28Proof',m,n,a)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 16, in script
+  File "<string>", line 6, in call
+  File "<string>", line 13, in tracked_script
+  File "<string>", line 25, in wait_job
+AssertionError: {'jobId': 'cdbb822a092d4dc4b63614f4d9eb8705', 'command': 'run_script', 'state': 'completed', 'cancellationRequested': False, 'result': {'diagnostics': [], 'compileMs': 189, 'executeMs': 574, 'assemblyName': 'PipelineRunScript_Outside28Proof_a0d8e71d9436409685ab592383545b4b', 'success': False, 'command': 'run_script', 'result': None, 'executionTimeMs': 768, 'message': None, 'error': 'Runtime Error', 'errorDetails': 'Exception: Original Move clip not connected\n  at Outside28Proof.FreezeMove () [0x00356] in /workspace/olca-validation-20261024/project/AgentScripts/Outside28Proof.cs:43 \n  at Outside28Proof.FreezeMove () [0x00415] in /workspace/olca-validation-20261024/project/AgentScripts/Outside28Proof.cs:43 \n  at Unity.Pipeline.Editor.Commands.Scripts.RunScriptCommand.RunEphemeral (System.String file, System.String entry, Newtonsoft.Json.Linq.JArray args, System.String[] references, System.String[] defines, System.Boolean pdb, System.Boolean dryRun, System.Int32 timeoutMs, System.Diagnostics.Stopwatch total) [0x00492] in ./Library/PackageCache/com.unity.pipeline@62c08c808737/Editor/Commands/Scripts/RunScriptCommand.cs:252 ', 'executedAt': '2026-11-02T08:21:59.263445Z'}, 'error': None, 'errorDetails': None, 'progress': None}

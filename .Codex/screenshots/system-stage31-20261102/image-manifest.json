@@ -1,0 +1,1274 @@
+[
+  {
+    "file": "gauge-initial-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "878cd1ad847434a5d1338fa789e61a377e8126febebafe303763d2acf13c2f61",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "gaugeUnits": 1200,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 0,
+        "clock": 0,
+        "position": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 100",
+      "shown": 20,
+      "actual": 20,
+      "width": 79.2,
+      "expected": 79.2,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 18,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-initial-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "a31ba6e71dc95d72f311b7348987e9bec543fe83af5880c9582746b6d5a418ec",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "gaugeUnits": 1200,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 0,
+        "clock": 0,
+        "position": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 100",
+      "shown": 20,
+      "actual": 20,
+      "width": 79.2,
+      "expected": 79.2,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 18,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-initial-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "6512143b6d403f986266255ac1551f795344a29f03def287535dafb9b363fd0a",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "gaugeUnits": 1200,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 0,
+        "clock": 0,
+        "position": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 100",
+      "shown": 20,
+      "actual": 20,
+      "width": 79.2,
+      "expected": 79.2,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 18,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-moving-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "f17e8ab5f1115ca09c5a176538273ae506ac522688463f9a5c9b159b974a6ec5",
+    "state": {
+      "frame": 71,
+      "clock": 71,
+      "position": 828000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "gaugeUnits": 1910,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 71,
+        "clock": 71,
+        "position": 828000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1910,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  31.8 / 100",
+      "shown": 31.8,
+      "actual": 31.833333333333332,
+      "width": 126.06,
+      "expected": 126.06,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 18,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-moving-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "c298c27c550ba3452cd0e7754a1847878f1a82b04e7594acf4336d552ac6a890",
+    "state": {
+      "frame": 71,
+      "clock": 71,
+      "position": 828000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "gaugeUnits": 1910,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 71,
+        "clock": 71,
+        "position": 828000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1910,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  31.8 / 100",
+      "shown": 31.8,
+      "actual": 31.833333333333332,
+      "width": 126.06,
+      "expected": 126.06,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 18,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-moving-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "5c1d2295aae8d7c61d7edec7ed8a3289210ce215c641a34a92fbf9dabcb8f9cf",
+    "state": {
+      "frame": 71,
+      "clock": 71,
+      "position": 828000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "gaugeUnits": 1910,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 71,
+        "clock": 71,
+        "position": 828000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1910,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  31.8 / 100",
+      "shown": 31.8,
+      "actual": 31.833333333333332,
+      "width": 126.06,
+      "expected": 126.06,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 18,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-jump-apex-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "43b8c33b15a8a1626284f3f70972cd1f110098912b71df5dba4c7a52134f9a78",
+    "state": {
+      "frame": 184,
+      "clock": 184,
+      "position": 828000,
+      "Facing": 1,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false,
+      "support": null,
+      "gaugeUnits": 3040,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 184,
+        "clock": 184,
+        "position": 828000,
+        "height": 185600,
+        "velocity": 400,
+        "support": null,
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 3040,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  50.6 / 100",
+      "shown": 50.6,
+      "actual": 50.666666666666664,
+      "width": 200.64,
+      "expected": 200.64,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 18,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-jump-apex-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "14502b058562448570251d82ca56e8628fcc4d93af04bc44890c694f220a5d9b",
+    "state": {
+      "frame": 184,
+      "clock": 184,
+      "position": 828000,
+      "Facing": 1,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false,
+      "support": null,
+      "gaugeUnits": 3040,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 184,
+        "clock": 184,
+        "position": 828000,
+        "height": 185600,
+        "velocity": 400,
+        "support": null,
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 3040,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  50.6 / 100",
+      "shown": 50.6,
+      "actual": 50.666666666666664,
+      "width": 200.64,
+      "expected": 200.64,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 18,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-jump-apex-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "a2be23d5e8c471b9d14498809fba852a339838ca10634f7550d2b848b1e5977a",
+    "state": {
+      "frame": 184,
+      "clock": 184,
+      "position": 828000,
+      "Facing": 1,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false,
+      "support": null,
+      "gaugeUnits": 3040,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 184,
+        "clock": 184,
+        "position": 828000,
+        "height": 185600,
+        "velocity": 400,
+        "support": null,
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 3040,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  50.6 / 100",
+      "shown": 50.6,
+      "actual": 50.666666666666664,
+      "width": 200.64,
+      "expected": 200.64,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 18,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-pause-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "7325b3817afa32ccbd6ed005201a1447b4add4122d71a3b78b116c934f973067",
+    "state": {
+      "frame": 305,
+      "clock": 305,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 4250,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 305,
+        "clock": 305,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 4250,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": true,
+        "scale": 0
+      },
+      "text": "カードゲージ  70.8 / 100",
+      "shown": 70.8,
+      "actual": 70.83333333333333,
+      "width": 280.5,
+      "expected": 280.5,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 18,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-pause-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "49cf7e60caa39b7bd1d9fb5524fa0a578e1144d18d9e4ba43e8c6e693a0af935",
+    "state": {
+      "frame": 305,
+      "clock": 305,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 4250,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 305,
+        "clock": 305,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 4250,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": true,
+        "scale": 0
+      },
+      "text": "カードゲージ  70.8 / 100",
+      "shown": 70.8,
+      "actual": 70.83333333333333,
+      "width": 280.5,
+      "expected": 280.5,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 18,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-pause-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "c0673e7f1dcacecac50bef3c596b1dbe68bc6f6218cf47ca1623c380bf11dd30",
+    "state": {
+      "frame": 305,
+      "clock": 305,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 4250,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 305,
+        "clock": 305,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 4250,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": true,
+        "scale": 0
+      },
+      "text": "カードゲージ  70.8 / 100",
+      "shown": 70.8,
+      "actual": 70.83333333333333,
+      "width": 280.5,
+      "expected": 280.5,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 18,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-max-increase-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "c8444d43a1bd7bac48d710c9974894ea410965c7bd0281fb35498e485b6e599b",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 1200,
+      "gaugeMaximum": 140,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 140,
+        "maximumUnits": 8400,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 140",
+      "shown": 20,
+      "actual": 20,
+      "width": 56.57143,
+      "expected": 56.57143,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 18,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-max-increase-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "e6f632eb7a1efffdaaa01eb0c422b6e72b8fab184820e3611afc3e7a81aea332",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 1200,
+      "gaugeMaximum": 140,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 140,
+        "maximumUnits": 8400,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 140",
+      "shown": 20,
+      "actual": 20,
+      "width": 56.57143,
+      "expected": 56.57143,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 18,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-max-increase-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "59157f688bb53e6e969db360425ab8a54feb519a80dcd1a93558145656dcc6b3",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 1200,
+      "gaugeMaximum": 140,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 140,
+        "maximumUnits": 8400,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 140",
+      "shown": 20,
+      "actual": 20,
+      "width": 56.57143,
+      "expected": 56.57143,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 18,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-max-clamp-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "2f95bc88af84b0abec1700eabd141c598618b9f4e71ce813d37f1eacedbe8bf6",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 600,
+      "gaugeMaximum": 10,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 600,
+        "maximum": 10,
+        "maximumUnits": 600,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  10.0 / 10",
+      "shown": 10,
+      "actual": 10,
+      "width": 396,
+      "expected": 396,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 17,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-max-clamp-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "fd1539a5a4a47ee202f034f0f139436a921a572112d394fb775497feb9f37679",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 600,
+      "gaugeMaximum": 10,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 600,
+        "maximum": 10,
+        "maximumUnits": 600,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  10.0 / 10",
+      "shown": 10,
+      "actual": 10,
+      "width": 396,
+      "expected": 396,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 17,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-max-clamp-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "215a9d83a0168ea11baa0cab7d187e8628fdbdbd93701b9a460d751f978eeae1",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 600,
+      "gaugeMaximum": 10,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 600,
+        "maximum": 10,
+        "maximumUnits": 600,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  10.0 / 10",
+      "shown": 10,
+      "actual": 10,
+      "width": 396,
+      "expected": 396,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 17,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-empty-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "3dd4c8de1019b4063c0a6a455a0836183a8ab94e2b095710ab50074ae0797df8",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 0,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 0,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  0.0 / 100",
+      "shown": 0,
+      "actual": 0,
+      "width": 0,
+      "expected": 0,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 17,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-empty-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "2b3d9d08f24ecaba09618a3d14d538ff8ad7004bbe5540afa20684b787ee94be",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 0,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 0,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  0.0 / 100",
+      "shown": 0,
+      "actual": 0,
+      "width": 0,
+      "expected": 0,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 17,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-empty-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "d33974d8d65e8a0896168515751fa045942fb8c6434b7182aa4d1668dab7db98",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 0,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 0,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  0.0 / 100",
+      "shown": 0,
+      "actual": 0,
+      "width": 0,
+      "expected": 0,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 17,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-restored-full-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "32410c9101acd3bbdef665f2a1b09a9c7e4a2ec5bd72bcd6c97aaa6fde20c276",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 6000,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 6000,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  100.0 / 100",
+      "shown": 100,
+      "actual": 100,
+      "width": 396,
+      "expected": 396,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 22,
+      "visibleCharacters": 19,
+      "screen": [
+        1920,
+        1080
+      ]
+    }
+  },
+  {
+    "file": "gauge-restored-full-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "b8677d654e98952f86b4ffcb89ff46e774e06f8efc9032792dad46fbdfd2a7e9",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 6000,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 6000,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  100.0 / 100",
+      "shown": 100,
+      "actual": 100,
+      "width": 396,
+      "expected": 396,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 44,
+      "visibleCharacters": 19,
+      "screen": [
+        3840,
+        2160
+      ]
+    }
+  },
+  {
+    "file": "gauge-restored-full-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "31d564421576ff1b272e641c4dc62684877518ca8d4d9ee8b5dbc6b9335f2095",
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "Facing": 1,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "gaugeUnits": 6000,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10
+    },
+    "projection": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 6000,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  100.0 / 100",
+      "shown": 100,
+      "actual": 100,
+      "width": 396,
+      "expected": 396,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 19,
+      "visibleCharacters": 19,
+      "screen": [
+        1440,
+        1080
+      ]
+    }
+  }
+]

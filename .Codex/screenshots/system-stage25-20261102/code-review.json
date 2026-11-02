@@ -1,0 +1,100 @@
+{
+  "stage": 25,
+  "reviewType": "independent static code review",
+  "sourceHashes": {
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "394c86b16f715faadb729873d0c2cbb21c9fe0c640533405173b2c48c40503c7",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "352ea807232dce3d8e5f18a9fd31955c93e4a27cce6bb0e0c7a49c5fdf976443",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "daa5c117e453c478d062c37b9bce919561f77a90f446f0ce7b0653bc71d59acc",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "63d80cc6619f200203054669b248091feb74c3ca6cafa13f58d638112ca4c728"
+  },
+  "receiptCurrentAndMirrorMatch": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "CustomCardDetailsDialog owns widgets, card/transformation/combatant formatting, cycle index and buttons, responsive layout, property icons, close guide, .2 pad scroll and keyboard close/cycle.",
+    "Parent retains model/cursor/target launch and existing input dispatch; aliases are readonly projections and raw ShowDetailsValue is thin fixture compatibility entry.",
+    "OwnedPopup AcceptsInput separates live lifecycle from temporary custom input gating, default true preserves other callers; manageMenu=false avoids standard Menu ownership.",
+    "Single active ticket retained for content updates; contentVersion rejects prior cycle callbacks, lifecycle token rejects old close, Closed retains lastDetailsCloseFrame/padViewVersion fences.",
+    "Explicit ReleaseDetailsPresentation releases child before parent owned art; clear content releases icon bindings and battle/card references; natural destroy removes Canvas subscription and callbacks.",
+    "Closed HUD inspection uses existing open Custom model with hidden presentation, while allowCycle restricts enemy traversal; no damage/time/save changes introduced.",
+    "v2 factory initializes active object then hides, registers/unregisters preWillRender through normal OnEnable/OnDisable; partial initialize catch destroys partial native object and rethrows. Never-activated parent teardown still uses explicit Release.",
+    "v2 ConfigureLayout applies local layout directly; Redraw explicitly refreshes presentation for initial/EditMode view. No recursive Redraw path introduced; Canvas callbacks only layout/fit/guide.",
+    "Two CostView calls now target extracted dialog ConfigureLayout API; existing font/height/text assertions unchanged.",
+    "v3 test renamed terminal destruction and explicitly invokes OnDestroy before DestroyImmediate, consistent with established fixture lifecycle. Strict ActiveCount0/stale callback/import/model expectations maintained. Product source hashes unchanged from v2."
+  ],
+  "validation": {
+    "status": "Final v3 targeted/native/sameEditor/full/cleanup receipts complete. Publication not performed by reviewer.",
+    "nativeReceipts": [
+      "system-stage25-native-details-result.json",
+      "system-stage25-native-lifetime-result.json"
+    ],
+    "naturalDestruction": "Actual native Destroy-only/no Tick proof now recorded; EditMode manual lifecycle remains a separate scope.",
+    "nativeScope": "Actual input/long-tail/Pause/rebind; old callback rejection; CLR owner/manager reference release and imported asset survival; physical touch not run.",
+    "sameEditor": "64 passed per parent",
+    "full": {
+      "receipt": "system-stage25-final-test-result.json",
+      "summary": {
+        "total": 3658,
+        "passed": 3658,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 237.53,
+      "consoleErrors": 0,
+      "warningsReceipt": "system-stage25-warnings.json",
+      "sourceHashesMatchReviewAndCurrent": true
+    },
+    "cleanup": {
+      "receipt": "system-stage25-cleanup.json",
+      "status": "PASS per recorded original/928 assets except privateURP2, actual640/TMP/guard, native save bytes, event/generated leases/proof/devices checks."
+    }
+  },
+  "limits": [
+    "Scoped static review is not universal/runtime assurance.",
+    "Required dynamic checks: remapped custom keys/pad/touch hold, .2 scrolling, hidden HUD cycle, close same-frame background commands, pause handoff, parent termination and natural Destroy/import survival.",
+    "No production edits, Unity operations or tests by reviewer."
+  ],
+  "history": [
+    {
+      "version": "v1",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "49c46bdefbf5a3cdc551869741e86c6e0eba28f4dc5c75bdb8cdac23be72f303",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "352ea807232dce3d8e5f18a9fd31955c93e4a27cce6bb0e0c7a49c5fdf976443",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "b5c0de9b8c870ebd1cdc2dd2b47c737de55234f65fbc874fa8767ee4db148d1e"
+      },
+      "initialApplication": "545/546: managed naturalDestroy retained ticket1; legacy passed",
+      "diagnosis": "New component was created on initially inactive object; v2 aligns active initialization then hide with existing ReturnDialog factory. Prior static review did not detect lifecycle failure."
+    },
+    {
+      "version": "v2",
+      "sourceHashes": {
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "394c86b16f715faadb729873d0c2cbb21c9fe0c640533405173b2c48c40503c7",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "352ea807232dce3d8e5f18a9fd31955c93e4a27cce6bb0e0c7a49c5fdf976443",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "b5c0de9b8c870ebd1cdc2dd2b47c737de55234f65fbc874fa8767ee4db148d1e",
+        "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "63d80cc6619f200203054669b248091feb74c3ca6cafa13f58d638112ca4c728"
+      },
+      "related": "545/546: managed ticket remained after EditMode DestroyImmediate; same failure repeated",
+      "interpretation": "Static OnDestroy->Abort->Detach explicitly cancels owned ticket; EditMode callback assumption not runtime proof. Legacy case has no managed ticket and passing does not prove callback."
+    }
+  ],
+  "remainingMandatoryDialogInventory": {
+    "result": "No additional concrete Dialog-specific parent widget/control ownership remains identified within inspected Presentation call sites.",
+    "sharedConfirmation": [
+      "ClearReturnView discard/delete",
+      "GameplayKeyboardSettingsView keyboard/pad reset",
+      "RetreatConfirmationDialog thin coordinator",
+      "DialogueView skip"
+    ],
+    "specialized": [
+      "ProgressActionDialog stateful pending/retry",
+      "ReadOnlyDetailsDialog reader",
+      "DialogueBacklogDialog reader/page",
+      "CustomCardDetailsDialog card/transformation/combatant reader"
+    ],
+    "scope": "Parent normal View content and launch/data dispatch are not missing Dialog migrations; not a claim all app features migrated."
+  },
+  "helperHistory": [
+    "Private helper Unity ?.name after fixture restore and incorrect first-hand deselect were corrected without product changes; real SelectionIndicator LIFO used. Not product defects."
+  ]
+}

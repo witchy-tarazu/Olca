@@ -1,0 +1,57 @@
+{
+  "saveHashes": {
+    "progress/progress.json": "060414ab81fd0020f20a16f2dc6c42a32e9eee66908b3dc3b1a9cf594ed1d934"
+  },
+  "state": {
+    "cards": 1657928422,
+    "hand": [
+      {
+        "id": "fire",
+        "name": "fire_card",
+        "cost": 1,
+        "instance": -89180428
+      },
+      {
+        "id": "heal",
+        "name": "ヒール",
+        "cost": 2,
+        "instance": -1993869888
+      },
+      {
+        "id": "fire",
+        "name": "fire_card",
+        "cost": 1,
+        "instance": -165392548
+      }
+    ],
+    "remaining": 17,
+    "total": 20,
+    "frame": 501,
+    "clock": 501,
+    "position": 480000,
+    "height": 0,
+    "velocity": 0,
+    "support": "floor",
+    "gauge": 358838466,
+    "core": -308287520,
+    "units": 1200,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": false,
+    "paused": false,
+    "scale": 0
+  },
+  "legacy": {
+    "core": 215510636,
+    "runtime": 2091114576,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "originalPreRegistrationComparison": "assert hashes()==before passed after closedDestroy before failed closed-view projection; original local digest was not serialized, so resumed digest is recorded separately. No registration/Destroy re-executed.",
+  "preFailureTrace": "system-stage33-native-capture-helper-history/system-stage33-native-check-process.log"
+}

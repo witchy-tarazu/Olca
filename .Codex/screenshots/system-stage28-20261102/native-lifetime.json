@@ -1,0 +1,487 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "0ceb9b999520869ace63971e3e1fe4c61353a8a4befd25f7e920f5302d201208",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "dffc8242a2e0a36ee0df34fe299e525247ca9597aa523756c41009a25079b5b5",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "8a4eb1799734ab2d04902257036589fb15225d1e7947f5326b26996411ffe135",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "saveRoot": "system-stage28-28004",
+  "version": "v4",
+  "modelBefore": {
+    "root": -317029758,
+    "model": -1649945898,
+    "core": 381684714,
+    "runtime": 840017384,
+    "loop": -170440700,
+    "driver": 290819008,
+    "input": -569108592,
+    "frame": 6269,
+    "clock": 6269,
+    "pending": 0,
+    "position": 1920000,
+    "ended": false,
+    "presented": true
+  },
+  "beforeHostSuspend": {
+    "progress/progress.json": "3247ebfc3ad226ef7f44ffaedb98092d427be14a313e27ec94528b0c69ff1f20"
+  },
+  "afterHostSuspend": {
+    "progress/progress.json": "3247ebfc3ad226ef7f44ffaedb98092d427be14a313e27ec94528b0c69ff1f20"
+  },
+  "close": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -920695443,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -317029758,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -317029764,
+        -317029770,
+        -317029776
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "modelNoHost": {
+    "root": -317029758,
+    "model": -1649945898,
+    "core": 381684714,
+    "runtime": 840017384,
+    "loop": -170440700,
+    "driver": 0,
+    "input": 0,
+    "frame": 6539,
+    "clock": 6539,
+    "pending": 0,
+    "position": 1920000,
+    "ended": false,
+    "presented": false
+  },
+  "cancelledOrMissing": {
+    "root": -317029758,
+    "model": -1649945898,
+    "core": 381684714,
+    "runtime": 840017384,
+    "loop": -170440700,
+    "driver": 0,
+    "input": 0,
+    "frame": 6539,
+    "clock": 6539,
+    "pending": 0,
+    "position": 1920000,
+    "ended": false,
+    "presented": false
+  },
+  "reopened": {
+    "runtimeLayoutTrial": false,
+    "root": {
+      "root": -317029758,
+      "session": -1649945898,
+      "presented": false,
+      "ended": false,
+      "resources": 9,
+      "dialogs": 0,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    },
+    "view": 0,
+    "open": false,
+    "rootParent": false,
+    "layer": "return-hub",
+    "session": -1649945898,
+    "core": 1048633790,
+    "runtime": -1374135788,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0,
+    "paused": false,
+    "scale": 1,
+    "focus": "DungeonChoice_0",
+    "buttons": [
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      }
+    ]
+  },
+  "modelReopened": {
+    "root": -317029758,
+    "model": -1649945898,
+    "core": 381684714,
+    "runtime": 840017384,
+    "loop": -170440700,
+    "driver": -830095034,
+    "input": 1679672320,
+    "frame": 6801,
+    "clock": 6801,
+    "pending": 0,
+    "position": 1920000,
+    "ended": false,
+    "presented": true
+  },
+  "single": {
+    "singleBootstrapReentry": true,
+    "oldControllerId": -317036184,
+    "newControllerId": -317037880,
+    "rootAndAudioReused": true,
+    "oldInputDisposed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -115969397,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -317029758,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": true,
+      "borrowedCameraId": -317029836,
+      "gameplayView": "dungeon-hud",
+      "worldViewKey": "dungeon-world",
+      "worldRegistered": 1,
+      "worldFields": 1,
+      "backgroundViews": 2,
+      "numberPools": 1,
+      "battleViewKey": "battle-custom",
+      "battleRegistered": 1,
+      "battleViews": 1,
+      "customViews": 1,
+      "gameplayRegistered": 1,
+      "hudCount": 1,
+      "host": "OlcaSystem/DungeonHost",
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 9,
+      "registeredViews": 3,
+      "dialogs": 0,
+      "session": true,
+      "controllerIds": [
+        -317037880
+      ],
+      "controllerScenes": [
+        "Assets/Scenes/BootstrapScene.unity"
+      ],
+      "rewardViews": 1,
+      "rewardRegistered": 1,
+      "rewardViewKey": "card-reward",
+      "cameras": 1,
+      "listeners": 1,
+      "events": 1,
+      "audioIds": [
+        -317029764,
+        -317029770,
+        -317029776
+      ],
+      "defaultStoreExists": false,
+      "store": "/workspace/olca-validation-20261024/save/system-stage28-28004/settings"
+    }
+  },
+  "singleMenu": {
+    "runtimeLayoutTrial": false,
+    "root": {
+      "root": -317029758,
+      "session": -1649945898,
+      "presented": false,
+      "ended": false,
+      "resources": 9,
+      "dialogs": 0,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    },
+    "view": 0,
+    "open": false,
+    "rootParent": false,
+    "layer": "return-hub",
+    "session": -1649945898,
+    "core": 1855435602,
+    "runtime": 261680472,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0,
+    "paused": false,
+    "scale": 1,
+    "focus": "DungeonChoice_0",
+    "buttons": [
+      {
+        "name": "OutsideExplorationEntry",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "DungeonChoice_0",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": true
+      }
+    ]
+  },
+  "modelSingle": {
+    "root": -317029758,
+    "model": -1649945898,
+    "core": 381684714,
+    "runtime": 840017384,
+    "loop": -170440700,
+    "driver": -12719414,
+    "input": 1242564344,
+    "frame": 7478,
+    "clock": 7478,
+    "pending": 0,
+    "position": 1920000,
+    "ended": false,
+    "presented": true
+  },
+  "finalClose": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -115969397,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -317029758,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -317029764,
+        -317029770,
+        -317029776
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "finalModel": {
+    "root": -317029758,
+    "model": -1649945898,
+    "core": 381684714,
+    "runtime": 840017384,
+    "loop": -170440700,
+    "driver": 0,
+    "input": 0,
+    "frame": 7761,
+    "clock": 7761,
+    "pending": 0,
+    "position": 1920000,
+    "ended": false,
+    "presented": false
+  },
+  "saveHashesAfter": {
+    "progress/progress.json": "3247ebfc3ad226ef7f44ffaedb98092d427be14a313e27ec94528b0c69ff1f20"
+  },
+  "stopOutcome": "confirmed-stopped-ready-same-editor",
+  "noDuplicatePlayOrStop": true,
+  "boundary": "Native entry/movement/back bytes unchanged; host Suspend remains existing separate boundary."
+}

@@ -1,0 +1,36 @@
+{
+  "productErrors": 0,
+  "counts": {
+    "error": 0,
+    "warn": 0,
+    "log": 101
+  },
+  "groundTruth": {
+    "sampledUtc": "2026-11-01T23:58:38.365024Z",
+    "ageMs": 265,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 101,
+    "seeded": true
+  },
+  "toolHistory": "Exact known Pipeline/UnityAI/CLI signatures only accepted; every original entry retained in native-console-history.json",
+  "warningHistory": {
+    "error": 0,
+    "warn": 0,
+    "log": 101
+  },
+  "currentWarningCount": 0,
+  "actualFinalCleanupConsole": {
+    "sampledUtc": "2026-11-01T23:58:43.99704Z",
+    "ageMs": 187,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 1,
+    "seeded": true
+  },
+  "noSuppression": true
+}
