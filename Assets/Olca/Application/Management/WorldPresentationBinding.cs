@@ -77,7 +77,12 @@ namespace Olca.Application.Management
                 if(disposed||!this.allowed())throw new OperationCanceledException();
                 View=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()??throw new InvalidOperationException("外界Viewがありません");
                 var lease=session.AttachPresentation();try{runtime?.Attach(this,input);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();});}catch{runtime?.Detach(this);lease.Dispose();throw;}
-            },panel=>{runtime?.Detach(this);if(panel!=null)panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()?.Hide();});
+            },panel=>{
+                runtime?.Detach(this);
+                // 管理側の閉鎖は復旧対象から外す。表示中の外部破棄ではこの経路を通らない。
+                View=null;
+                if(panel!=null)panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()?.Hide();
+            });
         }
         public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
         {if(disposed||!allowed())return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}

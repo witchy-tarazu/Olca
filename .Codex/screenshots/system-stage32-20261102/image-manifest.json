@@ -1,0 +1,227 @@
+[
+  {
+    "file": "open-before-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "ad1ee66a845d5f0b8a1a92983cf7bd1ad52c178cad4ce1928d302e90e460aca2",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "open-before-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "d274e9e8f0034ffa2dd1d22cd5726d5d8727d18ccbb443c5ab5dac32a5982275",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "open-before-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "17dc0224e2f742e21126d82f89d37ba3f9abf9c1242fd922b6908622bf8f544b",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "closed-after-destroy-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "b649a125b8ef326a8f05c04417968f58996df661f25eab3188ec71984edcd202",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "closed-after-destroy-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "dd7191a64e1a843b771169088dd2a59d276ce48ab6324a9af218e07ec64cdccb",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "closed-after-destroy-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "7dc40356bf2465c940991f793d7dfb91e9fefc258de246fc8d24e01c2222b667",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "active-recovered-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "82c590e7250e56a758f9ba8f1ded4b242aa1e6fb97980d8604603da9dab23869",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "active-recovered-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "ceeb97a00b60db3cce8c6fb5a327ca5c70d047580ceaadc7a84ae823620691ff",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "active-recovered-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "985c19beebcdadceea3b791fdeefa817c28e8926458838a2c27175108a340179",
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -838816768,
+      "core": 183753024,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  }
+]

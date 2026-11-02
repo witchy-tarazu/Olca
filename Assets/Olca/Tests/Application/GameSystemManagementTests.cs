@@ -755,6 +755,27 @@ namespace Olca.Tests.Application
             using(var recreated=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){Assert.IsTrue((await recreated.OpenAsync()).Succeeded);Assert.IsTrue(model.IsPresented);Assert.AreSame(model,system.OutsideExploration);}
             system.Dispose();Assert.IsTrue(model.IsEnded);Assert.IsFalse(model.IsPresented);
         }
+        [Test] public async Task 外界入口は管理側で閉じたViewの外部破棄を再表示要求と見なさない()
+        {
+            var layer=views.GetLayer("return-hub");var hub=Panel("outside-closed-hub");var entry=Button(hub,"outside-entry");
+            layer.Register(owner,"outside-closed-hub",_=>Task.FromResult(hub),(go,ctx)=>{go.SetActive(true);EventSystem.current.SetSelectedGameObject(entry.gameObject);},go=>go.SetActive(false));
+            var model=system.OutsideExploration;var core=model.Core;var gauge=core.CardGauge;int created=0,returned=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>{created++;return Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));};
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{returned++;layer.ShowAsync("outside-closed-hub").GetAwaiter().GetResult();})){
+                for(int route=0;route<3;route++){
+                    Assert.IsTrue((await binding.OpenAsync()).Succeeded);var closed=binding.View;var oldBack=closed.GetComponentsInChildren<Button>().Single(b=>b.name=="CloseOutsideExploration").onClick;
+                    if(route==0)oldBack.Invoke();else if(route==1)Assert.IsTrue((await layer.ShowAsync("outside-closed-hub")).Succeeded);else {layer.CloseCurrent();Assert.IsTrue((await layer.ShowAsync("outside-closed-hub")).Succeeded);}
+                    Assert.IsNull(binding.View);Assert.IsFalse(binding.IsOpen);Assert.IsFalse(model.IsPresented);
+                    typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(closed,null);UnityEngine.Object.DestroyImmediate(closed.gameObject);
+                    Assert.IsFalse(binding.HasLostView);oldBack.Invoke();binding.Pump(true);
+                    Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(1,returned);Assert.AreEqual(route+1,created);
+                    Assert.AreSame(core,model.Core);Assert.AreSame(gauge,core.CardGauge);Assert.AreEqual(0,core.Frame);
+                }
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(binding.IsOpen);Assert.AreEqual(4,created);
+            }
+            Assert.IsFalse(model.IsPresented);
+        }
+
         [Test] public async Task 外界入口の取消と欠損失敗は前画面のfocusとSessionを変更せず再試行できる()
         {
             var layer=views.GetLayer("return-hub");var hub=Panel("outside-failure-hub");var entry=Button(hub,"outside-failure-entry");ManagedScreenContext prior=null;
