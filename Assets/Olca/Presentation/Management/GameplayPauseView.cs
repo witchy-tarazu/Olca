@@ -222,7 +222,8 @@ namespace Olca.Presentation.Management
         protected Button confirm,cancel;
         protected ScrollRect inputScroll;protected bool directionScroll=true,manageMenu=true;
         public Func<IEnumerable<Button>> MenuExtras {get;set;}
-        protected bool CanOperatePopup=>generation!=null&&Live(generation)&&gameObject.activeInHierarchy;
+        protected virtual bool AcceptsInput=>true;
+        protected bool CanOperatePopup=>generation!=null&&Live(generation)&&AcceptsInput&&gameObject.activeInHierarchy;
         private DialogManager manager;
         private IDialogOwner owner;
         private DialogOwnerScope scope;
@@ -251,18 +252,18 @@ namespace Olca.Presentation.Management
             if(manager!=null&&manager.ActiveCount!=0)return false;
             var token=generation=new object();
             gameObject.SetActive(true);transform.SetAsLastSibling();
-            if(confirm!=null){confirm.onClick=new Button.ButtonClickedEvent();confirm.onClick.AddListener(()=>{if(Live(token)&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});}
+            if(confirm!=null){confirm.onClick=new Button.ButtonClickedEvent();confirm.onClick.AddListener(()=>{if(Live(token)&&AcceptsInput&&confirm.IsInteractable()&&confirm.gameObject.activeSelf)confirmFeedback?.Invoke();});}
             cancel.onClick=new Button.ButtonClickedEvent();
-            cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())cancelFeedback?.Invoke();});
+            cancel.onClick.AddListener(()=>{if(Live(token)&&AcceptsInput&&cancel.IsInteractable())cancelFeedback?.Invoke();});
             if(manager!=null){
                 if(owner==null){scope=manager.CreateOwner(()=>IsOpen&&!suspended&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false));owner=scope;}
                 Action<DialogResult> completed=result=>{if(Live(token))Finish(result);};
-                request=confirm==null?manager.ShowNotice(owner,gameObject,cancel,inputScroll,completed,manageMenu,()=>Live(token),MenuExtras):manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),completed,inputScroll,directionScroll,MenuExtras);
+                request=confirm==null?manager.ShowNotice(owner,gameObject,cancel,inputScroll,completed,manageMenu,()=>Live(token)&&AcceptsInput,MenuExtras):manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&AcceptsInput&&Attempt(),completed,inputScroll,directionScroll,MenuExtras);
                 if(request.IsCompleted){if(request.Result==DialogResult.ParentClosed||request.Result==DialogResult.Busy){Finish(DialogResult.ParentClosed);return false;}}
             }else{
-                if(confirm!=null)confirm.onClick.AddListener(()=>{if(!Live(token)||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
-                cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
-                if(manageMenu){legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&Olca.Unity.MenuPadScope.IsTopmost(transform),MenuExtras);
+                if(confirm!=null)confirm.onClick.AddListener(()=>{if(!Live(token)||!AcceptsInput||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
+                cancel.onClick.AddListener(()=>{if(Live(token)&&AcceptsInput&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
+                if(manageMenu){legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&AcceptsInput&&Olca.Unity.MenuPadScope.IsTopmost(transform),MenuExtras);
                 legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke(),inputScroll,directionScroll:directionScroll);}
             }
             return true;

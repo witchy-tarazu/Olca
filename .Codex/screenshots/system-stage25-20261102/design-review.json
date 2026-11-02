@@ -1,0 +1,43 @@
+{
+  "stage": 25,
+  "type": "read-only design investigation",
+  "proposal": [
+    "CustomCardDetailsDialog owns popup widgets, heading/backing, responsive layout, full text/property icons, close/cycle controls, .2 normalized scroll operation, device-dependent close caption and generic ticket lifetime.",
+    "Parent supplies typed display payload for card/transformation/combatant plus latest-cycle request callback, origin and active/input predicates. It retains cursor/selection/transformation index and battle target selection; no model mutation inside dialog.",
+    "Keep existing Custom keyboard/pad/longpress ingress in parent initially; route to dialog Close/Cycle/Scroll APIs. manageMenu=false remains essential: default Menu uses different bindings and scroll semantics.",
+    "Keep one active ticket while updating inspection content. Replace per-content button callbacks with token-checked callbacks; preserve lastDetailsCloseFrame/padViewVersion in parent completion so old queued confirm/card actions stay blocked.",
+    "CloseDetailsForSystemPause must release ticket ParentClosed without focus return or model changes. End-session explicit release must clear dialog delegates/model references and owned property-icon bindings even if never activated. Imported font/sprites remain borrowed."
+  ],
+  "risks": [
+    "Custom open and closed combatant inspection paths share the popup but have different validity; do not require customScreen.IsOpen for closed HUD inspection.",
+    "Keyboard Esc/left/right, custom pad Details/Cancel and .2 Up/Down, touch hold cancellation and cycle guards must preserve current behavior.",
+    "Close clone uses temporarily hidden confirm template; preserve active graphics and clear inherited listeners.",
+    "Cycle must not recreate owner/ticket or restore focus until actual close. Layout and icon binding need synchronous initial fit and resize refresh.",
+    "Legacy direct scene with no DialogManager must keep functioning; explicit teardown must invalidate old events before delayed native Destroy."
+  ],
+  "tests": [
+    "GameSystemManagementTests existing two Custom details cases: manager ticket, pause handoff, stale close/queued confirm/processing cancel, parent shutdown.",
+    "CustomScreenCostViewTests existing card/transformation/combatant detail text, heading/layout, long scroll, cycle and responsive tests; rebind hierarchy assertions only, keep strict geometry/content/model invariants.",
+    "Native actual keyboard/pad/touch longpress, custom remapped bindings, closed HUD inspection cycle, pause/retreat confirmation/resume, Single/host close and imported asset survival."
+  ],
+  "remainingMandatoryDialogInventory": [
+    {
+      "function": "Custom card/transformation/combatant details",
+      "status": "Current target; construction/layout still embedded in CustomScreenView."
+    },
+    {
+      "function": "ProgressActionDialog",
+      "status": "Already specific class, genuine pending/retry state; not missing migration."
+    },
+    {
+      "function": "DialogueBacklogDialog and ReadOnlyDetailsDialog",
+      "status": "Already specific display/input classes."
+    },
+    {
+      "function": "Simple discard/delete/reset/skip/retreat confirmation renderer",
+      "status": "Already shared ConfirmationDialog; retreat retains thin state/cover coordinator."
+    }
+  ],
+  "inventoryConclusion": "No other concrete mandatory Dialog-specific extraction identified by current Presentation ShowNotice/ShowDialog/ShowPersistent call-site inventory after this target. This is scoped to dialog ownership, not all uncompleted features/screens.",
+  "limits": "No implementation reviewed yet; no Unity/test/source changes performed."
+}

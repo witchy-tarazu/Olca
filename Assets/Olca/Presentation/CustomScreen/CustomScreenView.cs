@@ -375,7 +375,7 @@ namespace Olca.Presentation.CustomScreen
             }
             hiddenCustomControls.SetActive(false);
         }
-        private int inspectionIndex = -1; // -1は既存のカード/変身詳細、0は自分、1以降は生存敵。
+        private int inspectionIndex=>detailsDialog!=null?detailsDialog.InspectionIndex:-1;
         public void BindCombatants(BattleSystem battle)
         {
             inspectionBattle=battle;ClosePadDetails();SetScreenVisibility(true);UpdateInspectionButton();
@@ -401,26 +401,14 @@ namespace Olca.Presentation.CustomScreen
             if(hideCustomButton!=null){hideCustomButton.gameObject.SetActive(visible);hideCustomButton.interactable=visible&&IsCustomPadUiActive()&&!handAnimating;}
             if(!visible&&!isScreenVisible)SetScreenVisibility(true);
 
-            if(detailsPanel!=null&&detailsPanel.activeSelf&&inspectionIndex>=0){
-                if(!visible){ClosePadDetails();return;}
-                var enemies=InspectionEnemies();if(inspectionIndex>0&&enemies.Length==0){ClosePadDetails();return;}inspectionIndex=Mathf.Min(inspectionIndex,enemies.Length);
-                string value=inspectionIndex==0?CustomDisplay.CombatantDetails(inspectionBattle.Player):CustomDisplay.CombatantDetails(enemies[inspectionIndex-1]);
-                if(padDetailsText.text!=value){padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);}
-            }
+            if(DetailsOpen&&inspectionIndex>=0&&!visible)ClosePadDetails();
         }
         public void OpenCombatantDetails(int index)
         {
             if(!IsCustomPadUiActive()||handAnimating||inspectionBattle==null||inspectionBattle.IsGameOver||index<0)return;
             var enemies=InspectionEnemies();if(index>enemies.Length)return;
             if(index>0&&isScreenVisible)return;
-            inspectionIndex=index;
-            ShowDetailsValue(index==0?CustomDisplay.CombatantDetails(inspectionBattle.Player):CustomDisplay.CombatantDetails(enemies[index-1]));
-        }
-        private void CycleInspection(int direction)
-        {
-            if(!IsCustomPadUiActive()||inspectionBattle==null||inspectionBattle.IsGameOver||isScreenVisible||inspectionIndex<=0)return;
-            int count=InspectionEnemies().Length;if(count==0){ClosePadDetails();return;}
-            OpenCombatantDetails(((inspectionIndex-1+direction)%count+count)%count+1);
+            if(!CanStartDetails())return;EnsureDetailsDialog().SetCombatants(inspectionBattle,index);OpenDetailsDialog();
         }
 
         private void EnsureUndoButton()
@@ -490,14 +478,15 @@ namespace Olca.Presentation.CustomScreen
         private int lastDetailsCloseFrame=-1;
         private Olca.Presentation.Management.DialogManager detailsDialogs;
         private Olca.Presentation.Management.DialogOwnerScope detailsOwner;
-        private int detailsVersion;
         private bool DetailsInputBlocked=>customScreen==null||(detailsPanel!=null&&detailsPanel.activeSelf)||(detailsDialogs!=null&&(detailsDialogs.ActiveCount>0||detailsDialogs.Blocks(detailsOwner)||lastDetailsCloseFrame==Time.frameCount));
         public void ConfigureDetailsManagement(Olca.Presentation.Management.DialogManager dialogs){ClosePadDetails();detailsOwner?.Dispose();detailsOwner=null;detailsDialogs=dialogs;}
         // システムポーズへ入力所有を渡す前に、読取専用Popupのticketだけを返す。
         public void CloseDetailsForSystemPause(){if(detailsDialogs!=null)ClosePadDetails();}
-        private void ClearPadDetails(bool wasOpen){if(wasOpen){lastDetailsCloseFrame=Time.frameCount;if(detailsDialogs!=null)padViewVersion++;}detailsVersion++;inspectionIndex=-1;if(detailsPanel!=null)detailsPanel.SetActive(false);if(padDetailsText!=null){CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text="";}}
-        private void DismissPadDetails(){if(detailsDialogs!=null&&detailsPanel!=null&&detailsPanel.activeSelf)detailsPanel.transform.Find("CloseCustomPadDetails")?.GetComponent<Button>()?.onClick.Invoke();else ClosePadDetails();}
-        private GameObject detailsPanel,padGuidePanel;private Text padDetailsText,padGuide,detailsHeading;private ScrollRect padDetailsScroll;
+        private CustomCardDetailsDialog detailsDialog;
+        private bool DetailsOpen=>detailsDialog!=null&&detailsDialog.IsOpen;
+        private GameObject detailsPanel=>detailsDialog!=null?detailsDialog.gameObject:null;
+        private GameObject padGuidePanel;private Text padGuide;
+        private void DismissPadDetails(){if(detailsDialog!=null)detailsDialog.Dismiss();}
         private void ResetCustomPad(bool resetFocus=true){foreach(var hold in touchDetailHolds)hold.CancelPress();padViewVersion++;gamepadInput?.Reset();if(resetFocus)padTransformationIndex=-1;ClosePadDetails();SetScreenVisibility(true);}
         private void OnEnable()
         {
@@ -696,7 +685,7 @@ namespace Olca.Presentation.CustomScreen
         private void RefreshKana(){
             ApplyNarrowLayout(narrowLayoutAmount);
             UpdateProcessingControls();ProcessingLayout(narrowLayoutAmount);RefreshProcessingHint();
-            foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);
+            foreach(var label in GetComponentsInChildren<Text>(true))if(detailsPanel==null||!label.transform.IsChildOf(detailsPanel.transform))label.text=CustomDisplay.Katakana(label.text);
             if(cardDescriptionScroll!=null&&selectedCardDescription!=null){
                 float width=cardDescriptionScroll.viewport.rect.width;
                 bool changed=measuredCardDescription!=selectedCardDescription.text||!Mathf.Approximately(width,measuredCardWidth);
@@ -704,7 +693,7 @@ namespace Olca.Presentation.CustomScreen
                 FitDetailContent(selectedCardDescription,cardDescriptionScroll);
                 if(changed){cardDescriptionScroll.StopMovement();cardDescriptionScroll.verticalNormalizedPosition=1;}
             }
-            if(detailsPanel!=null&&detailsPanel.activeSelf&&padDetailsText!=null&&padDetailsScroll!=null){RefreshDetailLayout();FitDetailContent(padDetailsText,padDetailsScroll);}
+            if(detailsDialog!=null)detailsDialog.ConfigureLayout(narrowLayoutAmount,!isScreenVisible);
         }
         private void OnDisable(){StopHandPresentation();Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
         private bool HandleCustomGamepad()
@@ -728,14 +717,7 @@ namespace Olca.Presentation.CustomScreen
                 else if(command==Olca.Unity.CustomPadCommand.Details||command==Olca.Unity.CustomPadCommand.Left||command==Olca.Unity.CustomPadCommand.Right)OpenCombatantDetails(1);
                 return;
             }
-            if(detailsPanel!=null&&detailsPanel.activeSelf){
-                if(command==Olca.Unity.CustomPadCommand.Cancel||command==Olca.Unity.CustomPadCommand.Details)DismissPadDetails();
-                else if(command==Olca.Unity.CustomPadCommand.Left)CycleInspection(-1);
-                else if(command==Olca.Unity.CustomPadCommand.Right)CycleInspection(1);
-                else if(command==Olca.Unity.CustomPadCommand.Up)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition+.2f);
-                else if(command==Olca.Unity.CustomPadCommand.Down)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition-.2f);
-                return;
-            }
+            if(DetailsOpen){detailsDialog.HandlePad(command);return;}
             if(command==Olca.Unity.CustomPadCommand.Details){ShowPadDetails();return;}
             if(command==Olca.Unity.CustomPadCommand.Transform){if(!mode&&transformations?.AvailableDefinitions.Count>0){padTransformationIndex=padTransformationIndex<0?0:-1;RefreshTransformationButtons();}return;}
             if(command==Olca.Unity.CustomPadCommand.Cancel){if(mode)OnCustomizeModeCancelled();else if(padTransformationIndex>=0){customScreen?.Commands.Execute(new CustomScreenCommand(CustomCommandKind.CancelTransformation));RefreshTransformationButtons();}else CancelSelection();return;}
@@ -764,9 +746,7 @@ namespace Olca.Presentation.CustomScreen
             authoredPadGuideText=FormatPadGuide(processing,false,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
             narrowPadGuideText=FormatPadGuide(processing,true,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
             padGuide.text=narrowLayoutAmount>0?narrowPadGuideText:authoredPadGuideText;
-            if(detailsPanel!=null){var close=detailsPanel.transform.Find("CloseCustomPadDetails")?.GetComponentInChildren<Text>();if(close!=null)close.text=device==Olca.Unity.InputGuideDevice.Gamepad?
-                "閉じる / "+CustomGuideKey(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,"Cancel")+"・"+CustomGuideKey(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,"Details"):
-                device==Olca.Unity.InputGuideDevice.Touch?"閉じる":"閉じる / Esc";}
+
         }
         private static string CustomGuideKey(Olca.Core.Domain.InputBindingProfile profile,string action)
         {
@@ -822,94 +802,36 @@ namespace Olca.Presentation.CustomScreen
             if(!CanOpenTouchDetails()||transformations==null||index<0||index>=transformations.AvailableDefinitions.Count||transformations.IsUsed(transformations.AvailableDefinitions[index].Id))return;
             padTransformationIndex=index;ShowPadDetails();
         }
-        private void ClosePadDetails(){bool wasOpen=detailsPanel!=null&&detailsPanel.activeSelf;detailsDialogs?.CancelActiveOwner(detailsOwner);ClearPadDetails(wasOpen);}
+        private void ClosePadDetails(){if(detailsDialog!=null)detailsDialog.Abort();}
         private void ShowPadDetails()
         {
-            if(detailsDialogs!=null&&(detailsPanel==null||!detailsPanel.activeSelf)&&(detailsDialogs.ActiveCount>0||detailsDialogs.Blocks(detailsOwner)))return;
-            if(detailsDialogs!=null&&(detailsPanel==null||!detailsPanel.activeSelf)){
-                Button origin=padTransformationIndex>=0&&padTransformationIndex<transformationButtons.Count?transformationButtons[padTransformationIndex]:cursor!=null&&cursor.CurrentIndex>=0&&cursor.CurrentIndex<handCardViews.Count?handCardViews[cursor.CurrentIndex].GetComponentInChildren<Button>(true):null;
-                if(origin!=null&&origin.isActiveAndEnabled)UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(origin.gameObject);
-            }
-            string value;
-            if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];value=$"{GetTransformationName(d.Id)}\n手札上限 +{d.HandSizeBonus}\n弱点: {d.Weakness.Element} / {d.Weakness.Property}\n火 {d.Resistances.Get(ElementType.Fire)} / 水 {d.Resistances.Get(ElementType.Water)} / 風 {d.Resistances.Get(ElementType.Wind)} / 土 {d.Resistances.Get(ElementType.Earth)}";if(d.Attack!=null)value+=$"\n固有攻撃: {d.Attack.Element} / 通常 {d.Attack.NormalPowerPercent}% / タメ {d.Attack.ChargedPowerPercent}% / {d.Attack.ChargeFrames}フレーム";}
-            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;var card=inputHand[index];value=CustomDisplay.CardDetails(card);}
-            ShowDetailsValue(value);
-            if(padTransformationIndex<0&&cursor!=null&&cursor.CurrentIndex>=0&&cursor.CurrentIndex<inputHand.Count) {
-                CardAttackPropertyIcons.Bind(padDetailsText,inputHand[cursor.CurrentIndex],value);
-                Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);
-            }
+            if(!CanStartDetails())return;
+            Button origin=padTransformationIndex>=0&&padTransformationIndex<transformationButtons.Count?transformationButtons[padTransformationIndex]:cursor!=null&&cursor.CurrentIndex>=0&&cursor.CurrentIndex<handCardViews.Count?handCardViews[cursor.CurrentIndex].GetComponentInChildren<Button>(true):null;
+            if(detailsDialogs!=null&&!DetailsOpen&&origin!=null&&origin.isActiveAndEnabled)UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(origin.gameObject);
+            if(padTransformationIndex>=0&&transformations!=null&&padTransformationIndex<transformations.AvailableDefinitions.Count){var d=transformations.AvailableDefinitions[padTransformationIndex];EnsureDetailsDialog().SetTransformation(d,GetTransformationName(d.Id));}
+            else{int index=cursor?.CurrentIndex??-1;if(index<0||index>=inputHand.Count)return;EnsureDetailsDialog().SetCard(inputHand[index]);}
+            OpenDetailsDialog();
         }
-        private static void RestoreInspectionButtonGraphics(GameObject button)
+        private bool CanStartDetails()=>confirmButton!=null&&(detailsDialogs==null||DetailsOpen||detailsDialogs.ActiveCount==0&&!detailsDialogs.Blocks(detailsOwner));
+        private CustomCardDetailsDialog EnsureDetailsDialog()
         {
-            // 非表示中の確定ボタンから複製しても、詳細側の操作は描画・クリックを有効にする。
-            foreach(var graphic in button.GetComponentsInChildren<Graphic>(true)){graphic.enabled=true;graphic.raycastTarget=graphic.transform==button.transform;}
+            if(detailsDialog==null){detailsDialog=CustomCardDetailsDialog.Create(transform,selectedCardDescription!=null?selectedCardDescription.font:Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),confirmButton);detailsDialog.Closed+=OnDetailsClosed;}
+            return detailsDialog;
         }
-        private void ShowDetailsValue(string value)
+        private void OnDetailsClosed(){lastDetailsCloseFrame=Time.frameCount;if(detailsDialogs!=null)padViewVersion++;}
+        private void OpenDetailsDialog()
         {
-            if(confirmButton==null)return;
-            bool alreadyOpen=detailsPanel!=null&&detailsPanel.activeSelf;
-            if(detailsDialogs!=null&&(!alreadyOpen&&(detailsDialogs.ActiveCount>0||detailsDialogs.Blocks(detailsOwner))))return;
-            int version=++detailsVersion;
-            if(detailsPanel==null){
-                detailsPanel=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));detailsPanel.transform.SetParent(transform,false);var rect=(RectTransform)detailsPanel.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=detailsPanel.GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
-                var heading=new GameObject("CustomDetailsHeading",typeof(RectTransform),typeof(Text));heading.transform.SetParent(detailsPanel.transform,false);detailsHeading=heading.GetComponent<Text>();detailsHeading.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");detailsHeading.color=new Color(.74f,.91f,.97f);detailsHeading.alignment=TextAnchor.MiddleLeft;detailsHeading.supportRichText=false;detailsHeading.raycastTarget=false;var hr=detailsHeading.rectTransform;hr.anchorMin=new Vector2(.06f,1);hr.anchorMax=new Vector2(.94f,1);hr.pivot=new Vector2(.5f,1);hr.anchoredPosition=new Vector2(0,-32);hr.sizeDelta=new Vector2(0,72);
-                var rule=new GameObject("CustomDetailsRule",typeof(RectTransform),typeof(Image));rule.transform.SetParent(detailsPanel.transform,false);var rr=(RectTransform)rule.transform;rr.anchorMin=new Vector2(.06f,1);rr.anchorMax=new Vector2(.94f,1);rr.pivot=new Vector2(.5f,1);rr.anchoredPosition=new Vector2(0,-120);rr.sizeDelta=new Vector2(0,2);var ri=rule.GetComponent<Image>();ri.color=new Color(.55f,.85f,.94f,.3f);ri.raycastTarget=false;
-                var area=new GameObject("CustomPadDetailsScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(detailsPanel.transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.04f,.18f);ar.anchorMax=new Vector2(.96f,.96f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
-                var text=new GameObject("CustomPadDetailsText",typeof(RectTransform),typeof(Text));text.transform.SetParent(area.transform,false);padDetailsText=text.GetComponent<Text>();padDetailsText.font=selectedCardDescription?.font??Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");padDetailsText.fontSize=28;padDetailsText.supportRichText=false;padDetailsText.color=Color.white;padDetailsText.alignment=TextAnchor.UpperLeft;padDetailsText.rectTransform.anchorMin=new Vector2(0,1);padDetailsText.rectTransform.anchorMax=Vector2.one;padDetailsText.rectTransform.pivot=new Vector2(.5f,1);padDetailsText.rectTransform.anchoredPosition=Vector2.zero;padDetailsText.rectTransform.sizeDelta=Vector2.zero;
-                padDetailsScroll=area.GetComponent<ScrollRect>();padDetailsScroll.viewport=ar;padDetailsScroll.content=padDetailsText.rectTransform;padDetailsScroll.horizontal=false;padDetailsScroll.movementType=ScrollRect.MovementType.Clamped;
-                var close=Instantiate(confirmButton.gameObject,detailsPanel.transform);close.SetActive(true);close.name="CloseCustomPadDetails";RestoreInspectionButtonGraphics(close);var button=close.GetComponent<Button>();button.onClick=new Button.ButtonClickedEvent();var cr=(RectTransform)close.transform;cr.anchorMin=cr.anchorMax=new Vector2(.5f,.08f);cr.anchoredPosition=Vector2.zero;cr.sizeDelta=new Vector2(500,64);close.GetComponentInChildren<Text>().text="閉じる / "+Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom","Cancel")])+"・"+Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","custom","Details")]);
-            }
-            if(inspectionBattle!=null&&detailsPanel.transform.Find("PreviousInspection")==null){
-                foreach(bool next in new[]{false,true}){
-                    var obj=Instantiate(confirmButton.gameObject,detailsPanel.transform);obj.SetActive(true);obj.name=next?"NextInspection":"PreviousInspection";RestoreInspectionButtonGraphics(obj);
-                    var button=obj.GetComponent<Button>();button.onClick=new Button.ButtonClickedEvent();int direction=next?1:-1;
-                    var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(next ? .75f : .25f,.18f);rect.anchoredPosition=Vector2.zero;rect.sizeDelta=new Vector2(320,64);
-                    var label=obj.GetComponentInChildren<Text>();if(label!=null)label.text=next?"次の対象":"前の対象";
-                    Olca.Presentation.Dungeon.UiLook.Button(button);
-                }
-            }
-            {
-                var backing=detailsPanel.transform.Find("CombatantDetailsBacking");
-                if(backing==null){
-                    var obj=new GameObject("CombatantDetailsBacking",typeof(RectTransform),typeof(Image));obj.transform.SetParent(detailsPanel.transform,false);obj.transform.SetAsFirstSibling();backing=obj.transform;
-                    var rect=(RectTransform)obj.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(8,8);rect.offsetMax=new Vector2(-8,-8);
-                    var ink=Olca.Presentation.Dungeon.UiLook.Ink;obj.GetComponent<Image>().color=new Color(ink.r,ink.g,ink.b,.995f);
-                }
-                backing.gameObject.SetActive(true);
-                padDetailsScroll.viewport.anchorMin=new Vector2(.04f,inspectionIndex>=0?.28f:.18f);
-            }
-            foreach(string name in new[]{"PreviousInspection","NextInspection"}){var control=detailsPanel.transform.Find(name);if(control!=null)control.gameObject.SetActive(!isScreenVisible&&inspectionIndex>0);}
-            if(hiddenCustomControls!=null)hiddenCustomControls.SetActive(false);
-            detailsPanel.SetActive(true);detailsPanel.transform.SetAsLastSibling();RefreshDetailLayout();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=value;Canvas.ForceUpdateCanvases();FitDetailContent(padDetailsText,padDetailsScroll);padDetailsScroll.verticalNormalizedPosition=1;
-            foreach(string name in new[]{"PreviousInspection","NextInspection"}){var control=detailsPanel.transform.Find(name)?.GetComponent<Button>();if(control==null)continue;int direction=name=="NextInspection"?1:-1;control.onClick=new Button.ButtonClickedEvent();control.onClick.AddListener(()=>{if(this!=null&&version==detailsVersion&&detailsPanel!=null&&detailsPanel.activeSelf&&IsCustomPadUiActive())CycleInspection(direction);});}
-            var closeButton=detailsPanel.transform.Find("CloseCustomPadDetails").GetComponent<Button>();
-            if(detailsDialogs==null){closeButton.onClick=new Button.ButtonClickedEvent();closeButton.onClick.AddListener(()=>{if(this!=null&&version==detailsVersion&&detailsPanel!=null&&detailsPanel.activeSelf)ClosePadDetails();});}
-            else if(!alreadyOpen){
-                detailsOwner??=detailsDialogs.CreateOwner(()=>this!=null&&isActiveAndEnabled&&customScreen!=null&&customScreen.IsOpen&&!customScreen.IsConfirming);
-                closeButton.onClick=new Button.ButtonClickedEvent();
-                var owner=detailsOwner;var request=detailsDialogs.ShowNotice(owner,detailsPanel,closeButton,padDetailsScroll,_=>ClearPadDetails(true),manageMenu:false,inputAllowed:()=>this!=null&&IsCustomPadUiActive());
-                if(request.IsCompleted){ClearPadDetails(false);return;}
-                padViewVersion++;
+            if(detailsDialog==null)return;bool wasOpen=DetailsOpen;
+            detailsOwner??=detailsDialogs?.CreateOwner(()=>this!=null&&isActiveAndEnabled&&customScreen!=null&&customScreen.IsOpen&&!customScreen.IsConfirming);
+            var captured=customScreen;
+            detailsDialog.ConfigureLayout(narrowLayoutAmount,!isScreenVisible);
+            if(detailsDialog.Open(detailsDialogs,detailsOwner,()=>this!=null&&isActiveAndEnabled&&ReferenceEquals(customScreen,captured)&&captured!=null&&captured.IsOpen&&!captured.IsConfirming,()=>this!=null&&IsCustomPadUiActive())){
+                if(hiddenCustomControls!=null)hiddenCustomControls.SetActive(false);if(!wasOpen&&detailsDialogs!=null)padViewVersion++;
             }
         }
-
-        // 詳細本文の内容やスクロール操作を変えず、狭い比率では余る高さを読書へ使う。
-        private void RefreshDetailLayout()
-        {
-            if(detailsPanel==null||padDetailsText==null||padDetailsScroll==null)return;
-            float narrow=narrowLayoutAmount;
-            var rect=(RectTransform)detailsPanel.transform;
-            rect.offsetMin=new Vector2(0,-280*narrow);rect.offsetMax=new Vector2(0,280*narrow);
-            if(detailsHeading!=null){detailsHeading.text=inspectionIndex>=0?"ジョウタイ ショウサイ":padTransformationIndex>=0?"ヘンシン ショウサイ":"カード ショウサイ";detailsHeading.fontSize=Mathf.RoundToInt(Mathf.Lerp(36,44,narrow));}
-            bool cycle=!isScreenVisible&&inspectionIndex>0;
-            var viewport=padDetailsScroll.viewport;viewport.anchorMin=new Vector2(.06f,cycle?.26f:.14f);viewport.anchorMax=new Vector2(.94f,1);viewport.offsetMin=Vector2.zero;viewport.offsetMax=new Vector2(0,-150);
-            padDetailsText.fontSize=Mathf.RoundToInt(Mathf.Lerp(30,40,narrow));padDetailsText.lineSpacing=1.18f;
-            foreach(string name in new[]{"CloseCustomPadDetails","PreviousInspection","NextInspection"}){
-                var control=detailsPanel.transform.Find(name) as RectTransform;if(control==null)continue;
-                control.sizeDelta=new Vector2(control.sizeDelta.x,Mathf.Lerp(72,96,narrow));
-                var label=control.GetComponentInChildren<Text>(true);if(label!=null){label.fontSize=Mathf.RoundToInt(Mathf.Lerp(30,36,narrow));label.resizeTextForBestFit=false;var labelRect=label.rectTransform;labelRect.anchorMin=Vector2.zero;labelRect.anchorMax=Vector2.one;labelRect.offsetMin=new Vector2(12,4);labelRect.offsetMax=new Vector2(-12,-4);}
-            }
-        }
+        // 旧検証/APIの本文入口も、表示と操作の所有はDialogへ渡す。
+        private void ShowDetailsValue(string value){if(!CanStartDetails())return;EnsureDetailsDialog().SetText(value);OpenDetailsDialog();}
+        private void ReleaseDetailsPresentation(){var old=detailsDialog;detailsDialog=null;if(old==null)return;old.Release();if(Application.isPlaying)Destroy(old.gameObject);else DestroyImmediate(old.gameObject);}
 
         private void HandleInput()
         {
@@ -920,7 +842,7 @@ namespace Olca.Presentation.CustomScreen
                 if(Input.GetKeyDown(KeyCode.LeftArrow)||Input.GetKeyDown(KeyCode.RightArrow)||Input.GetKeyDown(KeyCode.Space))OpenCombatantDetails(1);
                 return;
             }
-            if(detailsPanel!=null&&detailsPanel.activeSelf){if(Input.GetKeyDown(KeyCode.Escape))DismissPadDetails();else if(Input.GetKeyDown(KeyCode.LeftArrow))CycleInspection(-1);else if(Input.GetKeyDown(KeyCode.RightArrow))CycleInspection(1);return;}
+            if(DetailsOpen){detailsDialog.HandleKeyboard();return;}
             if(Input.GetKeyDown(KeyCode.LeftArrow)||Input.GetKeyDown(KeyCode.RightArrow)||Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.A)||Input.GetKeyDown(KeyCode.D)||Input.GetKeyDown(KeyCode.W)||Input.GetKeyDown(KeyCode.S))padTransformationIndex=-1;
             // カスタマイズモード中
             if (customizeModeView != null && customizeModeView.IsActive)
@@ -2007,7 +1929,7 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>ホスト終了時は遅延Destroyより先に入力・モデル購読と論理確認delegateを返却する。</summary>
         public void ReleaseSessionPresentation()
         {
-            StopHandPresentation();ResetCustomPad();detailsOwner?.Dispose();detailsOwner=null;detailsDialogs=null;gamepadInput?.Dispose();gamepadInput=null;
+            StopHandPresentation();ResetCustomPad();ReleaseDetailsPresentation();detailsOwner?.Dispose();detailsOwner=null;detailsDialogs=null;gamepadInput?.Dispose();gamepadInput=null;
             UnbindCustomScreen();customScreen=null;
             if(customizeModeView!=null){customizeModeView.OnExecuteRequested-=OnCustomizeExecuteRequested;customizeModeView.OnCancelled-=OnCustomizeModeCancelled;}
             if(cursor!=null)cursor.OnCursorMoved-=OnCursorMoved;
@@ -2177,5 +2099,99 @@ namespace Olca.Presentation.CustomScreen
         public string DisplayNameKana;
         public UnityEngine.Sprite Icon;
         public TransformationVisualEntry Copy()=>new TransformationVisualEntry{Id=Id,DisplayNameKana=DisplayNameKana,Icon=Icon};
+    }
+}
+
+namespace Olca.Presentation.CustomScreen
+{
+    /// <summary>Custom内のカード/変身/対象詳細。表示・読取位置・閉鎖入力を所有し、選択や保存を実行しない。</summary>
+    public sealed class CustomCardDetailsDialog : Olca.Presentation.Management.OwnedPopup
+    {
+        private enum DetailKind{Card,Transformation,Combatant}
+        private DetailKind kind;private BattleSystem battle;private Card card;private int inspectionIndex=-1,contentVersion;private float narrowAmount;private bool allowCycle;
+        private Text padDetailsText,detailsHeading;private ScrollRect padDetailsScroll;private string authored="";private System.Func<bool> inputAllowed;
+        public int InspectionIndex=>kind==DetailKind.Combatant?inspectionIndex:-1;
+        public Text Body=>padDetailsText;public ScrollRect Scroll=>padDetailsScroll;
+        public event System.Action Closed;
+        protected override bool AcceptsInput=>inputAllowed?.Invoke()??false;
+        public static CustomCardDetailsDialog Create(Transform host,Font font,Button template)
+        {
+            var obj=new GameObject("CustomPadDetails",typeof(RectTransform),typeof(Image));obj.transform.SetParent(host,false);var value=obj.AddComponent<CustomCardDetailsDialog>();try{value.InitializeWidgets(font,template);obj.SetActive(false);return value;}catch{if(Application.isPlaying)Destroy(obj);else DestroyImmediate(obj);throw;}
+        }
+        private void InitializeWidgets(Font font,Button template)
+        {
+
+                var rect=(RectTransform)transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;var detailFace=GetComponent<Image>();detailFace.sprite=Resources.Load<Sprite>("OlcaUI/description");detailFace.type=Image.Type.Sliced;detailFace.color=Color.white;
+                var heading=new GameObject("CustomDetailsHeading",typeof(RectTransform),typeof(Text));heading.transform.SetParent(transform,false);detailsHeading=heading.GetComponent<Text>();detailsHeading.font=font;detailsHeading.color=new Color(.74f,.91f,.97f);detailsHeading.alignment=TextAnchor.MiddleLeft;detailsHeading.supportRichText=false;detailsHeading.raycastTarget=false;var hr=detailsHeading.rectTransform;hr.anchorMin=new Vector2(.06f,1);hr.anchorMax=new Vector2(.94f,1);hr.pivot=new Vector2(.5f,1);hr.anchoredPosition=new Vector2(0,-32);hr.sizeDelta=new Vector2(0,72);
+                var rule=new GameObject("CustomDetailsRule",typeof(RectTransform),typeof(Image));rule.transform.SetParent(transform,false);var rr=(RectTransform)rule.transform;rr.anchorMin=new Vector2(.06f,1);rr.anchorMax=new Vector2(.94f,1);rr.pivot=new Vector2(.5f,1);rr.anchoredPosition=new Vector2(0,-120);rr.sizeDelta=new Vector2(0,2);var ri=rule.GetComponent<Image>();ri.color=new Color(.55f,.85f,.94f,.3f);ri.raycastTarget=false;
+                var area=new GameObject("CustomPadDetailsScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(transform,false);var ar=(RectTransform)area.transform;ar.anchorMin=new Vector2(.04f,.18f);ar.anchorMax=new Vector2(.96f,.96f);ar.offsetMin=ar.offsetMax=Vector2.zero;area.GetComponent<Image>().color=new Color(0,0,0,.02f);
+                var text=new GameObject("CustomPadDetailsText",typeof(RectTransform),typeof(Text));text.transform.SetParent(area.transform,false);padDetailsText=text.GetComponent<Text>();padDetailsText.font=font;padDetailsText.fontSize=28;padDetailsText.supportRichText=false;padDetailsText.color=Color.white;padDetailsText.alignment=TextAnchor.UpperLeft;padDetailsText.rectTransform.anchorMin=new Vector2(0,1);padDetailsText.rectTransform.anchorMax=Vector2.one;padDetailsText.rectTransform.pivot=new Vector2(.5f,1);padDetailsText.rectTransform.anchoredPosition=Vector2.zero;padDetailsText.rectTransform.sizeDelta=Vector2.zero;
+                padDetailsScroll=area.GetComponent<ScrollRect>();padDetailsScroll.viewport=ar;padDetailsScroll.content=padDetailsText.rectTransform;padDetailsScroll.horizontal=false;padDetailsScroll.movementType=ScrollRect.MovementType.Clamped;
+                var close=Instantiate(template.gameObject,transform);close.SetActive(true);close.name="CloseCustomPadDetails";RestoreInspectionButtonGraphics(close);cancel=close.GetComponent<Button>();cancel.onClick=new Button.ButtonClickedEvent();var cr=(RectTransform)close.transform;cr.anchorMin=cr.anchorMax=new Vector2(.5f,.08f);cr.anchoredPosition=Vector2.zero;cr.sizeDelta=new Vector2(500,64);CaptureFeedback();
+
+            var obj=new GameObject("CombatantDetailsBacking",typeof(RectTransform),typeof(Image));obj.transform.SetParent(transform,false);obj.transform.SetAsFirstSibling();var br=(RectTransform)obj.transform;br.anchorMin=Vector2.zero;br.anchorMax=Vector2.one;br.offsetMin=new Vector2(8,8);br.offsetMax=new Vector2(-8,-8);var ink=Olca.Presentation.Dungeon.UiLook.Ink;obj.GetComponent<Image>().color=new Color(ink.r,ink.g,ink.b,.995f);
+            manageMenu=false;inputScroll=padDetailsScroll;
+        }
+        private void OnEnable(){Canvas.preWillRenderCanvases+=RefreshPresentation;}
+        private void OnDisable(){Canvas.preWillRenderCanvases-=RefreshPresentation;}
+        public void ConfigureLayout(float narrow,bool cycle){narrowAmount=narrow;allowCycle=cycle;if(IsOpen)RefreshPresentation();}
+        public void SetText(string value){kind=DetailKind.Card;inspectionIndex=-1;battle=null;card=null;SetValue(value);}
+        public void SetCard(Card value){kind=DetailKind.Card;inspectionIndex=-1;battle=null;card=value;SetValue(CustomDisplay.CardDetails(value));}
+        public void SetTransformation(TransformationDefenseDefinition value,string name)
+        {
+            kind=DetailKind.Transformation;inspectionIndex=-1;battle=null;card=null;
+            string text=$"{name}\n手札上限 +{value.HandSizeBonus}\n弱点: {value.Weakness.Element} / {value.Weakness.Property}\n火 {value.Resistances.Get(ElementType.Fire)} / 水 {value.Resistances.Get(ElementType.Water)} / 風 {value.Resistances.Get(ElementType.Wind)} / 土 {value.Resistances.Get(ElementType.Earth)}";if(value.Attack!=null)text+=$"\n固有攻撃: {value.Attack.Element} / 通常 {value.Attack.NormalPowerPercent}% / タメ {value.Attack.ChargedPowerPercent}% / {value.Attack.ChargeFrames}フレーム";SetValue(text);
+        }
+        public void SetCombatants(BattleSystem value,int index){kind=DetailKind.Combatant;battle=value;card=null;inspectionIndex=index;EnsureCycleControls();SetValue(CombatantText());}
+        private Enemy[] Enemies()=>battle?.Enemies.Where(e=>!e.IsDead).ToArray()??System.Array.Empty<Enemy>();
+        private string CombatantText(){var enemies=Enemies();inspectionIndex=Mathf.Min(inspectionIndex,enemies.Length);return inspectionIndex==0?CustomDisplay.CombatantDetails(battle.Player):CustomDisplay.CombatantDetails(enemies[inspectionIndex-1]);}
+        private void EnsureCycleControls()
+        {
+            if(transform.Find("PreviousInspection")!=null)return;var template=cancel.gameObject;
+            foreach(bool next in new[]{false,true}){var obj=Instantiate(template,transform);obj.SetActive(true);obj.name=next?"NextInspection":"PreviousInspection";RestoreInspectionButtonGraphics(obj);var button=obj.GetComponent<Button>();button.onClick=new Button.ButtonClickedEvent();var r=(RectTransform)obj.transform;r.anchorMin=r.anchorMax=new Vector2(next?.75f:.25f,.18f);r.anchoredPosition=Vector2.zero;r.sizeDelta=new Vector2(320,64);obj.GetComponentInChildren<Text>().text=next?"次の対象":"前の対象";Olca.Presentation.Dungeon.UiLook.Button(button);}
+        }
+        private static void RestoreInspectionButtonGraphics(GameObject button){foreach(var graphic in button.GetComponentsInChildren<Graphic>(true)){graphic.enabled=true;graphic.raycastTarget=graphic.transform==button.transform;}}
+        private void SetValue(string value){authored=value??"";contentVersion++;if(IsOpen)DrawContent(true);}
+        public bool Open(Olca.Presentation.Management.DialogManager manager,Olca.Presentation.Management.IDialogOwner owner,System.Func<bool> live,System.Func<bool> allowed)
+        {if(IsOpen)return true;inputAllowed=allowed;if(!Begin(manager,owner,live)){ClearContent();inputAllowed=null;return false;}Redraw();return true;}
+        protected override void Redraw(){DrawContent(true);RefreshPresentation();Rendered();}
+        private void DrawContent(bool reset)
+        {
+            if(padDetailsText==null)return;RefreshDetailLayout();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=authored;Canvas.ForceUpdateCanvases();Fit(padDetailsText,padDetailsScroll);if(reset)padDetailsScroll.verticalNormalizedPosition=1;
+            if(card!=null){CardAttackPropertyIcons.Bind(padDetailsText,card,authored);Canvas.ForceUpdateCanvases();Fit(padDetailsText,padDetailsScroll);}
+            int version=contentVersion;foreach(string name in new[]{"PreviousInspection","NextInspection"}){var button=transform.Find(name)?.GetComponent<Button>();if(button==null)continue;int direction=name=="NextInspection"?1:-1;button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{if(version==contentVersion)Cycle(direction);});}
+        }
+        private void Cycle(int direction){if(!CanOperatePopup||kind!=DetailKind.Combatant||battle==null||battle.IsGameOver||!allowCycle||inspectionIndex<=0)return;int count=Enemies().Length;if(count==0){Abort();return;}inspectionIndex=((inspectionIndex-1+direction)%count+count)%count+1;SetValue(CombatantText());}
+        public void Dismiss(){if(CanOperatePopup&&cancel!=null)cancel.onClick.Invoke();}
+        public void HandlePad(Olca.Unity.CustomPadCommand command)
+        {if(!CanOperatePopup)return;if(command==Olca.Unity.CustomPadCommand.Cancel||command==Olca.Unity.CustomPadCommand.Details)Dismiss();else if(command==Olca.Unity.CustomPadCommand.Left)Cycle(-1);else if(command==Olca.Unity.CustomPadCommand.Right)Cycle(1);else if(command==Olca.Unity.CustomPadCommand.Up)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition+.2f);else if(command==Olca.Unity.CustomPadCommand.Down)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition-.2f);}
+        public void HandleKeyboard(){if(!CanOperatePopup)return;if(Input.GetKeyDown(KeyCode.Escape))Dismiss();else if(Input.GetKeyDown(KeyCode.LeftArrow))Cycle(-1);else if(Input.GetKeyDown(KeyCode.RightArrow))Cycle(1);}
+        private void LateUpdate()
+        {RefreshLifetime();if(!IsOpen)return;if(kind==DetailKind.Combatant){if(battle==null||battle.IsGameOver||inspectionIndex>0&&Enemies().Length==0){Abort();return;}string value=CombatantText();if(value!=authored){authored=value;DrawContent(false);}}RefreshPresentation();}
+        private void RefreshPresentation()
+        {if(!IsOpen||padDetailsText==null)return;RefreshDetailLayout();foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);Fit(padDetailsText,padDetailsScroll);var labelClose=cancel.GetComponentInChildren<Text>();var device=Olca.Unity.InputGuideActivity.Current;string Key(string action){string binding=null;Olca.Unity.UnityInputProvider.ActiveGamepadProfile?.Bindings.TryGetValue(("gamepad","custom",action),out binding);return Olca.Unity.UnityInputProvider.GamepadBindingLabel(binding);}labelClose.text=CustomDisplay.Katakana(device==Olca.Unity.InputGuideDevice.Gamepad?"閉じる / "+Key("Cancel")+"・"+Key("Details"):device==Olca.Unity.InputGuideDevice.Touch?"閉じる":"閉じる / Esc");}
+        private static void Fit(Text text,ScrollRect scroll){text.verticalOverflow=VerticalWrapMode.Overflow;float height=Mathf.Max(scroll.viewport.rect.height,Mathf.Ceil(text.preferredHeight)+text.fontSize*2);if(!Mathf.Approximately(height,text.rectTransform.rect.height)){float position=scroll.verticalNormalizedPosition;text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,height);scroll.verticalNormalizedPosition=position;}}
+        private void RefreshDetailLayout()
+        {
+            float narrow=narrowAmount;
+            var rect=(RectTransform)transform;
+            rect.offsetMin=new Vector2(0,-280*narrow);rect.offsetMax=new Vector2(0,280*narrow);
+            if(detailsHeading!=null){detailsHeading.text=inspectionIndex>=0?"ジョウタイ ショウサイ":kind==DetailKind.Transformation?"ヘンシン ショウサイ":"カード ショウサイ";detailsHeading.fontSize=Mathf.RoundToInt(Mathf.Lerp(36,44,narrow));}
+            bool cycle=allowCycle&&inspectionIndex>0;
+            var viewport=padDetailsScroll.viewport;viewport.anchorMin=new Vector2(.06f,cycle?.26f:.14f);viewport.anchorMax=new Vector2(.94f,1);viewport.offsetMin=Vector2.zero;viewport.offsetMax=new Vector2(0,-150);
+            padDetailsText.fontSize=Mathf.RoundToInt(Mathf.Lerp(30,40,narrow));padDetailsText.lineSpacing=1.18f;
+            foreach(string name in new[]{"CloseCustomPadDetails","PreviousInspection","NextInspection"}){
+                var control=transform.Find(name) as RectTransform;if(control==null)continue;
+                control.sizeDelta=new Vector2(control.sizeDelta.x,Mathf.Lerp(72,96,narrow));
+                var label=control.GetComponentInChildren<Text>(true);if(label!=null){label.fontSize=Mathf.RoundToInt(Mathf.Lerp(30,36,narrow));label.resizeTextForBestFit=false;var labelRect=label.rectTransform;labelRect.anchorMin=Vector2.zero;labelRect.anchorMax=Vector2.one;labelRect.offsetMin=new Vector2(12,4);labelRect.offsetMax=new Vector2(-12,-4);}
+            }
+
+            foreach(string name in new[]{"PreviousInspection","NextInspection"}){var control=transform.Find(name);if(control!=null)control.gameObject.SetActive(allowCycle&&inspectionIndex>0);}
+        }
+        protected override bool Attempt()=>false;
+        protected override void OnResult(Olca.Presentation.Management.DialogResult result,string focus){ClearContent();inputAllowed=null;Closed?.Invoke();}
+        private void ClearContent(){contentVersion++;kind=DetailKind.Card;inspectionIndex=-1;battle=null;card=null;authored="";if(padDetailsText!=null){CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text="";}}
+        public void Release(){Abort();ClearContent();inputAllowed=null;Closed=null;foreach(var button in GetComponentsInChildren<Button>(true))button.onClick=new Button.ButtonClickedEvent();}
+        protected override void OnDestroy(){Canvas.preWillRenderCanvases-=RefreshPresentation;base.OnDestroy();ClearContent();Closed=null;inputAllowed=null;padDetailsText=detailsHeading=null;padDetailsScroll=null;}
     }
 }
