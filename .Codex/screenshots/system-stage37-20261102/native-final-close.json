@@ -1,0 +1,145 @@
+{
+  "saveHashesAfter": {
+    "progress/progress.json": "24c788aa021ec798236664cf35880e28f84f61ff794f853abcc994ea9976cfdf"
+  },
+  "close": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": -631000059,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -329295846,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -329295852,
+        -329295858,
+        -329295864
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "ownProofKeys": {
+    "keys": [
+      {
+        "name": "Deck35Old",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseSave",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseNew",
+        "present": false
+      },
+      {
+        "name": "Deck35Io",
+        "present": false
+      }
+    ]
+  },
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "b429855a4052bf8ba4e03207c04249e00adc3679713a2b71152c944f52cde665",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "75033abafffd0ca7e899f66054c285fec7501bc860f30a9f4d70e044f0e2c1d9",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "992ffe9ef66e188c3a3fb841e1ccbda0d5fb7c81149247daf1ae3ea63162cb80",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "28e64a661cdb702e7720c346495346123e0c6b4db400e2ecf07576b4a2a34518"
+  },
+  "console": {
+    "entries": [],
+    "cursor": 548391,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 65
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T20:21:00.867325Z",
+      "ageMs": 34,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 65,
+      "seeded": true
+    }
+  },
+  "warnings": {
+    "entries": [],
+    "cursor": 548391,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 65
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T20:21:00.867325Z",
+      "ageMs": 162,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 65,
+      "seeded": true
+    }
+  }
+}

@@ -634,7 +634,11 @@ namespace Olca.Tests
         }
         [Test] public void スタイル表示は登録名と解放条件を保ち定義済み属性だけを読みへ変換する()
         {
-            Assert.AreEqual(DepartureStyleDefinition.Basic.Name,ClearReturnView.FormatDepartureStyleChoice(DepartureStyleDefinition.Basic));var elements=new[]{ElementType.None,ElementType.Fire,ElementType.Water,ElementType.Wind,ElementType.Earth};var labels=new[]{"ムゾクセイ","ヒ","ミズ","カゼ","ツチ"};
+            var basic=DepartureStyleDefinition.Basic;string before=JsonUtility.ToJson(basic.Capture());
+            Assert.AreEqual("通常状態 / 無属性（カムイなし）",ClearReturnView.FormatDepartureStyleName(basic));
+            Assert.AreEqual(ClearReturnView.FormatDepartureStyleName(basic),ClearReturnView.FormatDepartureStyleChoice(basic));
+            Assert.AreEqual("ツウジョウジョウタイ / ムゾクセイ（カムイなし）",Olca.Presentation.CustomScreen.CustomDisplay.Katakana(ClearReturnView.FormatDepartureStyleChoice(basic)));
+            Assert.AreEqual(before,JsonUtility.ToJson(basic.Capture()));Assert.AreEqual("basic",basic.Id);Assert.AreEqual("基本 / 無属性",basic.Name);Assert.IsNull(basic.Attack);var elements=new[]{ElementType.None,ElementType.Fire,ElementType.Water,ElementType.Wind,ElementType.Earth};var labels=new[]{"ムゾクセイ","ヒ","ミズ","カゼ","ツチ"};
             for(int i=0;i<elements.Length;i++){var value=new DepartureStyleDefinition("display-"+i,"ほのおA / test", "route-x",new TransformationAttackDefinition(elements[i]));string display=ClearReturnView.FormatDepartureStyleChoice(value);StringAssert.Contains(value.Name,display);StringAssert.Contains("ゾクセイ "+labels[i],display);StringAssert.Contains("route-x",display);Assert.AreEqual("ほのおA / test",value.Name);Assert.AreEqual(elements[i],value.Attack.Element);}
         }
         [Test] public void 出撃先表示は出撃と行き先確定を区別し未解放と空一覧を漏らさない()

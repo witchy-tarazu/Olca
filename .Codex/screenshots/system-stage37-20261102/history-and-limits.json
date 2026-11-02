@@ -1,0 +1,26 @@
+{
+  "baseHead": "b05f35136c93caaa6051f8ebb41d55b4e15a7d07",
+  "finalCandidate": "v2",
+  "editorPid": 137059,
+  "productChanges": "UI-only basic name, original basic ID/Name/Capture/save/combat unchanged",
+  "v1": "Compile/reload only, no tests or Play. Existing integration expected-label literal found statically; local waiting coordinator stopped with no children before Play, Editor not touched. V2 includes that exact new string expectation.",
+  "fullWrapperTimedOut": true,
+  "beforeImages": "Prior actual screens from Stage35 hub and Round57 style. Historical references, not newly captured matched-frame before/after.",
+  "notImplemented": [
+    "kick/combo/attack connection or new art",
+    "S09/S10 choices",
+    "new exploration gameplay"
+  ],
+  "notVerifiedThisPass": [
+    "native normal-return transaction (visual layout fixture only; source/integration coverage)",
+    "other registered Kamui real product data (existing formatter regression)",
+    "physical input/IME",
+    "build",
+    "auditory",
+    "all HotReload"
+  ],
+  "preservedHistorical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassigned Sprite2095"
+  ]
+}

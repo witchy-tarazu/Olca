@@ -401,6 +401,7 @@ namespace Olca.Application.Dungeon
             departureStyles = styles.ToArray();
         }
         private DepartureStyleDefinition SelectedStyle => departureStyles.SingleOrDefault(s => s.Id == (clearReturnSession.Snapshot.SelectedStyleId ?? DepartureStyleDefinition.BasicId));
+        private string SelectedStyleDisplayName => SelectedStyle==null?"未登録スタイル":ClearReturnView.FormatDepartureStyleName(SelectedStyle);
         private void OpenStyleSelection()
         {
             if (exchangeOpen || !CanSelectDungeon) return;
@@ -493,7 +494,7 @@ namespace Olca.Application.Dungeon
                 () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
                     if (initialHub) { dungeonSelectionOpen = true; ShowDungeonSelection(); } else ShowClearReturn(); },
                 !CanSelectDungeon, clearReturnError ?? clearReturnSession.Error, RetryClearReturn,
-                OpenStyleSelection, SelectedStyle?.Name ?? "未登録スタイル", OpenTokenExchange,
+                OpenStyleSelection, SelectedStyleDisplayName, OpenTokenExchange,
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
@@ -1515,7 +1516,7 @@ namespace Olca.Application.Dungeon
             EnsureReturnView();
             clearReturnView.Render(clearReturnSession.Snapshot, clearReturnSession.DisplayFlow,
                 !clearReturnSession.Ready || clearReturnSession.HasPendingSave || progressStartupBlocked || clearReturnError != null,
-                clearReturnError ?? clearReturnSession.Error, dungeonName: (dungeonSelectionEnabled ? dungeonChoices[selectedDungeon].Label : "") + " / " + (SelectedStyle?.Name ?? "未登録スタイル"));
+                clearReturnError ?? clearReturnSession.Error, dungeonName: (dungeonSelectionEnabled ? dungeonChoices[selectedDungeon].Label : "") + " / " + (SelectedStyleDisplayName));
         }
         private void ResumeClearReturnIfNeeded()
         {

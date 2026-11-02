@@ -3240,7 +3240,7 @@ namespace Olca.Tests.Integration
             var locked=SelectionButton(c,"DungeonChoice_1").GetComponentInChildren<UnityEngine.UI.Text>().text;
             StringAssert.Contains("ミクリア",first);StringAssert.Contains("？？？",locked);StringAssert.DoesNotContain("selection-b",locked);StringAssert.Contains("ヒトつマエのダンジョンをクリア",locked);
             var help=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Text>(false).Single(t=>t.name=="DungeonSelectionHelp").text;
-            StringAssert.Contains("キホン / ムゾクセイ",help);
+            StringAssert.Contains("ツウジョウジョウタイ / ムゾクセイ（カムイなし）",help);
             var preview=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Text>(false).Single(t=>t.name=="DungeonPreviewInformation");
             Assert.IsTrue(preview.gameObject.activeInHierarchy);StringAssert.Contains("テキゾクセイ: ムゾクセイ",preview.text);StringAssert.Contains("チケイ: ノーマル",preview.text);
             KeyboardButton(c,"DungeonChoice_1");Assert.AreEqual(0,Get(c,"selectedDungeon"));Assert.AreEqual(revision,c.PersistentProgress.Revision);Assert.IsNull(c.PersistentProgress.NextDeparture);

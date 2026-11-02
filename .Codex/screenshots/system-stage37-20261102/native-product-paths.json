@@ -1,0 +1,2168 @@
+{
+  "initial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "texts": [
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      }
+    ]
+  },
+  "choice": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "StyleChoice_0",
+    "texts": [
+      {
+        "name": "StyleCandidateNote",
+        "text": "カクテイするまでヘンコウしません",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "StyleCurrentNote",
+        "text": "ホゾンされたシュツゲキスタイル",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "StyleCurrentRole",
+        "text": "ゲンザイ / ホゾンズみ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "ConfirmStyleSelectionLabel",
+        "text": "スタイルをホゾン",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "StyleSelectionTitle",
+        "text": "シュツゲキスタイル",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "StyleSelectionHelp",
+        "text": "コウリャクチュウはコテイ。ホゾンしてもシュツゲキはカイシしません。",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "PreviousStylePageLabel",
+        "text": "マエへ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "StyleCurrentValue",
+        "text": "ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "StyleEffectHelp",
+        "text": "ゾクセイとコユウ・タメコウゲキがカわります。",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "StyleCandidateValue",
+        "text": "ヘンコウなし",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "StyleCandidateRole",
+        "text": "コウホ / ゲンザイとオナじ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "StyleChoice_0Label",
+        "text": "［ゲンザイ・コウホ］ ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CancelStyleSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "StylePage",
+        "text": "1/1",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "NextStylePageLabel",
+        "text": "ツギへ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "CancelStyleSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmStyleSelection",
+        "text": "スタイルをホゾン",
+        "interactable": true
+      },
+      {
+        "name": "PreviousStylePage",
+        "text": "マエへ",
+        "interactable": false
+      },
+      {
+        "name": "NextStylePage",
+        "text": "ツギへ",
+        "interactable": false
+      },
+      {
+        "name": "StyleChoice_0",
+        "text": "［ゲンザイ・コウホ］ ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      }
+    ]
+  },
+  "cancel": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "SelectDepartureStyle",
+    "texts": [
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      }
+    ]
+  },
+  "confirmed": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "SelectDepartureStyle",
+    "texts": [
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      }
+    ]
+  },
+  "reopened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "ConfirmStyleSelection",
+    "texts": [
+      {
+        "name": "StyleSelectionHelp",
+        "text": "コウリャクチュウはコテイ。ホゾンしてもシュツゲキはカイシしません。",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "StyleCandidateValue",
+        "text": "ヘンコウなし",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "StyleEffectHelp",
+        "text": "ゾクセイとコユウ・タメコウゲキがカわります。",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "StyleCandidateRole",
+        "text": "コウホ / ゲンザイとオナじ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "StyleCurrentRole",
+        "text": "ゲンザイ / ホゾンズみ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "PreviousStylePageLabel",
+        "text": "マエへ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "StyleSelectionTitle",
+        "text": "シュツゲキスタイル",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "CancelStyleSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ConfirmStyleSelectionLabel",
+        "text": "スタイルをホゾン",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "StyleCandidateNote",
+        "text": "カクテイするまでヘンコウしません",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "StylePage",
+        "text": "1/1",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "StyleCurrentNote",
+        "text": "ホゾンされたシュツゲキスタイル",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "StyleChoice_0Label",
+        "text": "［ゲンザイ・コウホ］ ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "NextStylePageLabel",
+        "text": "ツギへ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "StyleCurrentValue",
+        "text": "ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "ConfirmStyleSelection",
+        "text": "スタイルをホゾン",
+        "interactable": true
+      },
+      {
+        "name": "NextStylePage",
+        "text": "ツギへ",
+        "interactable": false
+      },
+      {
+        "name": "StyleChoice_0",
+        "text": "［ゲンザイ・コウホ］ ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "CancelStyleSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "PreviousStylePage",
+        "text": "マエへ",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      }
+    ]
+  },
+  "returnLayoutFixture": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "SavedDeckMenu",
+    "texts": [
+      {
+        "name": "OwnedCardCount_1",
+        "text": "4/4マイ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "ReturnStatus",
+        "text": "",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "SelectDungeonLabel",
+        "text": "ダンジョンをセンタク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "NextDepartureLabel",
+        "text": "テストダンジョン / ツウジョウジョウタイ / ムゾクセイ（カムイなし）へ\nソウビデッキでサイシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "OwnedCard_3",
+        "text": "シールド　Normal",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "ReturnNextPageLabel",
+        "text": "ツギへ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardCount_0",
+        "text": "4/4マイ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "OwnedCard_1",
+        "text": "ボム　Normal",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardDetails_3Label",
+        "text": "ショウサイ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ReturnPreviousPageLabel",
+        "text": "マエへ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "OwnedTitle",
+        "text": "エイゾクショジカード",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "シュツゲキスタイル",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "HomeStats",
+        "text": "Lv 1　ソウケイケンチ 0　トークン 0\nHP 0/100　コウゲキ 10\nカード・ケイケンチはホゾンズみです。",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardDetails_2Label",
+        "text": "ショウサイ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "OwnedCard_2",
+        "text": "ヒール　Normal",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardDetails_4Label",
+        "text": "ショウサイ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardDetails_1Label",
+        "text": "ショウサイ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OwnedQuantityHeading",
+        "text": "マイスウ",
+        "font": "JikiTourai",
+        "size": 22,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardCount_3",
+        "text": "4/4マイ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardCount_2",
+        "text": "4/4マイ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OwnedCard_4",
+        "text": "チューニング　Normal",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Title",
+        "text": "キカンしました",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardDetails_0Label",
+        "text": "ショウサイ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "OwnedCard_0",
+        "text": "ソード　Normal",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "SavedDeckMenuLabel",
+        "text": "ホゾンデッキ・ソウビ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "EditOwnedDepartureLabel",
+        "text": "ショジカードでシュツゲキデッキをヘンセイ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "ReturnPage",
+        "text": "1/1",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "OwnedCardCount_4",
+        "text": "4/4マイ",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "EditOwnedDeparture",
+        "text": "ショジカードでシュツゲキデッキをヘンセイ",
+        "interactable": true
+      },
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_1",
+        "text": "ショウサイ",
+        "interactable": true
+      },
+      {
+        "name": "SelectDungeon",
+        "text": "ダンジョンをセンタク",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_4",
+        "text": "ショウサイ",
+        "interactable": true
+      },
+      {
+        "name": "ReturnNextPage",
+        "text": "ツギへ",
+        "interactable": false
+      },
+      {
+        "name": "NextDeparture",
+        "text": "テストダンジョン / ツウジョウジョウタイ / ムゾクセイ（カムイなし）へ\nソウビデッキでサイシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_3",
+        "text": "ショウサイ",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "シュツゲキスタイル",
+        "interactable": true
+      },
+      {
+        "name": "SavedDeckMenu",
+        "text": "ホゾンデッキ・ソウビ",
+        "interactable": true
+      },
+      {
+        "name": "ReturnPreviousPage",
+        "text": "マエへ",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_2",
+        "text": "ショウサイ",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "OwnedCardDetails_0",
+        "text": "ショウサイ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      }
+    ]
+  },
+  "final": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 44303106,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"e3c556597a52429999bca61454938395\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"5a6f94eb66c4462bbf6ae087dbb41370\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "SelectDepartureStyle",
+    "texts": [
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      },
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      }
+    ]
+  },
+  "legacyHashesBefore": {
+    "progress/progress.json": "24c788aa021ec798236664cf35880e28f84f61ff794f853abcc994ea9976cfdf"
+  },
+  "legacyHashesAfterNormal": {
+    "progress/progress.json": "24c788aa021ec798236664cf35880e28f84f61ff794f853abcc994ea9976cfdf"
+  },
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "b429855a4052bf8ba4e03207c04249e00adc3679713a2b71152c944f52cde665",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "75033abafffd0ca7e899f66054c285fec7501bc860f30a9f4d70e044f0e2c1d9",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "992ffe9ef66e188c3a3fb841e1ccbda0d5fb7c81149247daf1ae3ea63162cb80",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "28e64a661cdb702e7720c346495346123e0c6b4db400e2ecf07576b4a2a34518"
+  },
+  "actualInputBoundary": "Buttons use existing EventSystem first-raycast matching. No physical devices/IME, no name input or new attack input.",
+  "ownProofKeys": {
+    "keys": [
+      {
+        "name": "Deck35Old",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseSave",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseNew",
+        "present": false
+      },
+      {
+        "name": "Deck35Io",
+        "present": false
+      }
+    ]
+  }
+}

@@ -843,11 +843,17 @@ namespace Olca.Presentation.Dungeon
             SetMenu(content.transform,blocked?null:selected!=null?cancel:close,blocked?"RetryTokenExchange":selected==null?"CloseTokenExchange":"ExchangeOffer_"+selected,blocked);
         }
 
+        // 表示だけを更新し、旧保存/定義hashに含まれるbasicの名称やIDは変えない。
+        public static string FormatDepartureStyleName(DepartureStyleDefinition value)
+        {
+            if(value==null)throw new ArgumentNullException(nameof(value));
+            return value.Id==DepartureStyleDefinition.BasicId?"通常状態 / 無属性（カムイなし）":value.Name;
+        }
         public static string FormatDepartureStyleChoice(DepartureStyleDefinition value)
         {
             if(value==null)throw new ArgumentNullException(nameof(value));var element=value.Attack?.Element??ElementType.None;
             string attribute=element==ElementType.None?"ムゾクセイ":element==ElementType.Fire?"ヒ":element==ElementType.Water?"ミズ":element==ElementType.Wind?"カゼ":element==ElementType.Earth?"ツチ":"？？？";
-            return value.Name+(value.Id==DepartureStyleDefinition.BasicId?"":" / ゾクセイ "+attribute)+(value.RequiredClear==null?"":" / カイホウ: "+value.RequiredClear+"クリア");
+            return FormatDepartureStyleName(value)+(value.Id==DepartureStyleDefinition.BasicId?"":" / ゾクセイ "+attribute)+(value.RequiredClear==null?"":" / カイホウ: "+value.RequiredClear+"クリア");
         }
         private int stylePage;
         public void RenderStyleSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
